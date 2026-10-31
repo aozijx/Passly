@@ -29,6 +29,7 @@ data class AppPasswordChangeDialogState(
     val newPassword: String,
     val confirmPassword: String,
     val confirmEnabled: Boolean,
+    val isBusy: Boolean = false,
 )
 
 sealed interface AppPasswordChangeDialogEvent {
@@ -51,14 +52,14 @@ fun AppPasswordChangeDialog(
         keyboardController?.hide()
     }
     val submit = {
-        if (state.confirmEnabled) {
+        if (!state.isBusy && state.confirmEnabled) {
             dismissInput()
             onEvent(AppPasswordChangeDialogEvent.Confirmed)
         }
     }
     val dismiss = {
         dismissInput()
-        onEvent(AppPasswordChangeDialogEvent.Dismissed)
+        if (!state.isBusy) onEvent(AppPasswordChangeDialogEvent.Dismissed)
     }
     AlertDialog(
         onDismissRequest = dismiss,
@@ -70,6 +71,7 @@ fun AppPasswordChangeDialog(
                     onValueChange = {
                         onEvent(AppPasswordChangeDialogEvent.CurrentPasswordChanged(it))
                     },
+                    enabled = !state.isBusy,
                     label = { Text(stringResource(R.string.settings_auth_current_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
@@ -93,19 +95,25 @@ fun AppPasswordChangeDialog(
                         onEvent(AppPasswordChangeDialogEvent.ConfirmPasswordChanged(it))
                     },
                     onDone = submit,
+                    enabled = !state.isBusy,
                 )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = submit,
-                enabled = state.confirmEnabled,
+                enabled = !state.isBusy && state.confirmEnabled,
             ) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = dismiss) { Text(stringResource(R.string.cancel)) }
+            TextButton(
+                onClick = dismiss,
+                enabled = !state.isBusy,
+            ) {
+                Text(stringResource(R.string.cancel))
+            }
         }
     )
 }

@@ -14,6 +14,7 @@ internal data class AppPasswordDialogsModel(
     val appPasswordConfirm: String,
     val isSetPasswordConfirmEnabled: Boolean,
     val isChangePasswordConfirmEnabled: Boolean,
+    val isBusy: Boolean = false,
 )
 
 internal sealed interface AppPasswordDialogEvent {

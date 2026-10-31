@@ -11,6 +11,20 @@ import org.junit.Test
 class AppPasswordDialogCoordinatorTest {
 
     @Test
+    fun `busy operation rejects dialog events`() {
+        val coordinator = AppPasswordDialogCoordinator()
+        coordinator.onAppPasswordEntryAuthorized(alreadyEnabled = false)
+        coordinator.onEvent(AppPasswordDialogEvent.NewChanged("long-enough-password"))
+        coordinator.onEvent(AppPasswordDialogEvent.ConfirmChanged("long-enough-password"))
+
+        assertTrue(coordinator.model.isSetPasswordConfirmEnabled)
+        assertNull(coordinator.onEvent(AppPasswordDialogEvent.ConfirmSet, isBusy = true))
+        assertNull(coordinator.onEvent(AppPasswordDialogEvent.DismissSet, isBusy = true))
+        assertEquals(AppPasswordDialogState.Set, coordinator.model.activeAppPasswordDialog)
+        assertEquals("long-enough-password", coordinator.model.appPasswordNew)
+    }
+
+    @Test
     fun `coordinator owns dialog draft transitions and emits only submit actions`() {
         val coordinator = AppPasswordDialogCoordinator()
 

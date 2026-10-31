@@ -96,7 +96,7 @@ class AppPasswordSettingsInteractor @Inject constructor(
 
 }
 
-private fun AppPasswordChangeRequest.clearSensitiveInput() {
+internal fun AppPasswordChangeRequest.clearSensitiveInput() {
     when (this) {
         is AppPasswordChangeRequest.Set -> {
             password.fill('\u0000')

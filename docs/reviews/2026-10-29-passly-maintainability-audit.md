@@ -308,3 +308,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：`DiagnosticsViewModel` 直接通过 `writeSensitiveIf()` 发布，页面退出取消刷新和复制任务并使所有权 token 失效；删除 `CopyText` effect 与 Route 的直接剪贴板桥接。
 - 文档：诊断查看页明确敏感标记、用户保留策略和页面退出取消行为。
 - 验证：`DiagnosticsViewModelTest` 定向通过；完整 `:app:testDebugUnitTest` 896 项、`verifyArchitecture`、`:app:lintDebug`、`:app:compileDebugAndroidTestKotlin` 与 `git diff --check` 均通过。
+
+### 后续复核：App Password 请求归属与单飞（2026-10-31）
+
+- 根因：页面退出后的迟到 `SubmitChange` 会在 ViewModel 因无 owner 而提前返回，绕过 Interactor 唯一的 `finally` 清理；设置、修改和禁用请求也没有共同的进行中状态，重复设置可能并发执行 KDF 和凭据配置。
+- 修复：ViewModel 无 owner 或已有操作时立即清零新请求；操作开始前同步占用单飞状态，并在协程完成回调中再次清理缓冲区、恢复忙状态，覆盖协程未启动即被取消。Route 将忙状态传入弹窗，操作期间禁用编辑、确认、取消和动作选择；旧 owner 的完成结果仍由 `PageEffects` 过滤。
+- 回归：覆盖离页后迟到请求、ViewModel 启动前销毁、重复设置请求、页面重新进入时旧结果隔离及对话框忙碌事件拒绝。
+- 验证：App Password ViewModel/协调器定向单测、完整 `:app:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过。

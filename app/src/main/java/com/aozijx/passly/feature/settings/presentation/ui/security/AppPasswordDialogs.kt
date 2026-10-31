@@ -14,6 +14,7 @@ internal fun AppPasswordDialogs(
     when (state.activeAppPasswordDialog) {
         AppPasswordDialogState.None -> Unit
         AppPasswordDialogState.Action -> AppPasswordActionDialog(
+            isBusy = state.isBusy,
             onDismiss = { onEvent(AppPasswordDialogEvent.DismissAction) },
             onChangePassword = { onEvent(AppPasswordDialogEvent.ShowChange) },
             onDisablePassword = { onEvent(AppPasswordDialogEvent.ShowDisable) },
@@ -22,6 +23,7 @@ internal fun AppPasswordDialogs(
             newPassword = state.appPasswordNew,
             confirmPassword = state.appPasswordConfirm,
             confirmEnabled = state.isSetPasswordConfirmEnabled,
+            isBusy = state.isBusy,
             onNewPasswordChange = { onEvent(AppPasswordDialogEvent.NewChanged(it)) },
             onConfirmPasswordChange = { onEvent(AppPasswordDialogEvent.ConfirmChanged(it)) },
             onConfirm = { onEvent(AppPasswordDialogEvent.ConfirmSet) },
@@ -33,6 +35,7 @@ internal fun AppPasswordDialogs(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
                 confirmEnabled = state.isChangePasswordConfirmEnabled,
+                isBusy = state.isBusy,
             ),
             onEvent = { event ->
                 when (event) {

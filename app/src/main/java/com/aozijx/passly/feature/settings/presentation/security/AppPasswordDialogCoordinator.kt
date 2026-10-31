@@ -39,42 +39,48 @@ internal class AppPasswordDialogCoordinator {
         closeAndClear()
     }
 
-    fun onEvent(event: AppPasswordDialogEvent): AppPasswordChangeRequest? = when (event) {
-        AppPasswordDialogEvent.DismissAction -> {
-            activeDialog = AppPasswordDialogState.None
-            null
+    fun onEvent(
+        event: AppPasswordDialogEvent,
+        isBusy: Boolean = false,
+    ): AppPasswordChangeRequest? {
+        if (isBusy) return null
+        return when (event) {
+            AppPasswordDialogEvent.DismissAction -> {
+                activeDialog = AppPasswordDialogState.None
+                null
+            }
+            AppPasswordDialogEvent.ShowChange -> {
+                activeDialog = AppPasswordDialogState.Change
+                null
+            }
+            AppPasswordDialogEvent.ShowDisable -> AppPasswordChangeRequest.Disable
+            AppPasswordDialogEvent.DismissSet,
+            AppPasswordDialogEvent.DismissChange -> {
+                closeAndClear()
+                null
+            }
+            is AppPasswordDialogEvent.CurrentChanged -> {
+                currentPassword = event.value
+                null
+            }
+            is AppPasswordDialogEvent.NewChanged -> {
+                newPassword = event.value
+                null
+            }
+            is AppPasswordDialogEvent.ConfirmChanged -> {
+                confirmPassword = event.value
+                null
+            }
+            AppPasswordDialogEvent.ConfirmSet -> AppPasswordChangeRequest.Set(
+                password = newPassword.toCharArray(),
+                confirmation = confirmPassword.toCharArray(),
+            )
+            AppPasswordDialogEvent.ConfirmChange -> AppPasswordChangeRequest.Change(
+                currentPassword = currentPassword.toCharArray(),
+                newPassword = newPassword.toCharArray(),
+                confirmation = confirmPassword.toCharArray(),
+            )
         }
-        AppPasswordDialogEvent.ShowChange -> {
-            activeDialog = AppPasswordDialogState.Change
-            null
-        }
-        AppPasswordDialogEvent.ShowDisable -> AppPasswordChangeRequest.Disable
-        AppPasswordDialogEvent.DismissSet,
-        AppPasswordDialogEvent.DismissChange -> {
-            closeAndClear()
-            null
-        }
-        is AppPasswordDialogEvent.CurrentChanged -> {
-            currentPassword = event.value
-            null
-        }
-        is AppPasswordDialogEvent.NewChanged -> {
-            newPassword = event.value
-            null
-        }
-        is AppPasswordDialogEvent.ConfirmChanged -> {
-            confirmPassword = event.value
-            null
-        }
-        AppPasswordDialogEvent.ConfirmSet -> AppPasswordChangeRequest.Set(
-            password = newPassword.toCharArray(),
-            confirmation = confirmPassword.toCharArray(),
-        )
-        AppPasswordDialogEvent.ConfirmChange -> AppPasswordChangeRequest.Change(
-            currentPassword = currentPassword.toCharArray(),
-            newPassword = newPassword.toCharArray(),
-            confirmation = confirmPassword.toCharArray(),
-        )
     }
 
     private fun passwordPolicyAcceptsNewPassword(): Boolean =

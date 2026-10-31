@@ -6,9 +6,11 @@ import com.aozijx.passly.feature.settings.security.AppPasswordChangeResult
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.feature.settings.security.AppPasswordManagementAccess
 import com.aozijx.passly.feature.settings.security.AppPasswordSettingsInteractor
+import com.aozijx.passly.feature.settings.security.clearSensitiveInput
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,8 +40,13 @@ class AppPasswordSettingsViewModel @Inject constructor(
     }
 
     private fun runChange(request: AppPasswordChangeRequest) {
-        val owner = pageEffects.currentOwner ?: return
-        viewModelScope.launch {
+        val owner = pageEffects.currentOwner
+        if (owner == null || _uiState.value.isOperationInProgress) {
+            request.clearSensitiveInput()
+            return
+        }
+        _uiState.update { it.copy(isOperationInProgress = true) }
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             when (val result = appPasswordSettings.execute(request)) {
                 AppPasswordChangeResult.Completed -> emitEffect(owner,
                     when (request) {
@@ -57,6 +64,11 @@ class AppPasswordSettingsViewModel @Inject constructor(
                 AppPasswordChangeResult.Cancelled -> Unit
             }
         }
+        job.invokeOnCompletion {
+            request.clearSensitiveInput()
+            _uiState.update { it.copy(isOperationInProgress = false) }
+        }
+        job.start()
     }
 
     private fun requestAppPasswordEntry() {

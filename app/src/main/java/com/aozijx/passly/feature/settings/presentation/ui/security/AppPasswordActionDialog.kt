@@ -9,21 +9,22 @@ import com.aozijx.passly.R
 
 @Composable
 fun AppPasswordActionDialog(
+    isBusy: Boolean = false,
     onDismiss: () -> Unit,
     onChangePassword: () -> Unit,
     onDisablePassword: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isBusy) onDismiss() },
         title = { Text(stringResource(R.string.settings_app_password_manage_title)) },
         text = { Text(stringResource(R.string.settings_app_password_manage_description)) },
         confirmButton = {
-            TextButton(onClick = onChangePassword) {
+            TextButton(onClick = onChangePassword, enabled = !isBusy) {
                 Text(stringResource(R.string.settings_app_password_change_action))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDisablePassword) {
+            TextButton(onClick = onDisablePassword, enabled = !isBusy) {
                 Text(stringResource(R.string.settings_app_password_disable_action))
             }
         }

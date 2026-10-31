@@ -41,6 +41,7 @@ fun PasswordFields(
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
     onDone: () -> Unit,
+    enabled: Boolean = true,
 ) {
     var newPasswordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
@@ -51,6 +52,7 @@ fun PasswordFields(
     OutlinedTextField(
         value = newPassword,
         onValueChange = onNewPasswordChange,
+        enabled = enabled,
         singleLine = true,
         label = { Text(stringResource(R.string.auth_app_password_label)) },
         leadingIcon = {
@@ -60,7 +62,7 @@ fun PasswordFields(
             )
         },
         trailingIcon = {
-            IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+            IconButton(onClick = { newPasswordVisible = !newPasswordVisible }, enabled = enabled) {
                 Icon(
                     imageVector = if (newPasswordVisible) {
                         Icons.Outlined.VisibilityOff
@@ -104,6 +106,7 @@ fun PasswordFields(
     OutlinedTextField(
         value = confirmPassword,
         onValueChange = onConfirmPasswordChange,
+        enabled = enabled,
         singleLine = true,
         label = { Text(stringResource(R.string.settings_auth_app_password_confirm_label)) },
         leadingIcon = {
@@ -113,7 +116,7 @@ fun PasswordFields(
             )
         },
         trailingIcon = {
-            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }, enabled = enabled) {
                 Icon(
                     imageVector = if (confirmPasswordVisible) {
                         Icons.Outlined.VisibilityOff

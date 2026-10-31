@@ -98,9 +98,14 @@ internal fun SecurityRoute(
     }
 
     AppPasswordDialogs(
-        state = appPasswordDialogs.model,
+        state = appPasswordDialogs.model.copy(
+            isBusy = appPasswordState.isOperationInProgress,
+        ),
         onEvent = { event ->
-            appPasswordDialogs.onEvent(event)?.let { request ->
+            appPasswordDialogs.onEvent(
+                event = event,
+                isBusy = appPasswordState.isOperationInProgress,
+            )?.let { request ->
                 appPasswordViewModel.onAction(
                     AppPasswordSettingsAction.SubmitChange(request),
                 )

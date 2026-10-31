@@ -75,6 +75,7 @@ fun AppPasswordSetDialog(
                     onNewPasswordChange = onNewPasswordChange,
                     onConfirmPasswordChange = onConfirmPasswordChange,
                     onDone = submit,
+                    enabled = !isBusy,
                 )
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.size(8.dp))
