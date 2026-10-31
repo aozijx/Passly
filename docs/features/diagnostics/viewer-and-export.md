@@ -17,6 +17,7 @@
 已确认的日志清理继续完成。清除成功后同时清空 retained 和 visible 状态；排队写入未能及时排空
 或文件删除失败时保留当前内容并显示清除失败提示。数据管理页也会将清除失败显示为不可用的日志占用状态，避免把旧占用误报为清空。
 数据管理页离开后，已确认的清理仍继续完成；过期容量读取不会覆盖新页面状态，清理 Toast 不会在再次进入时重放。
+缓存清理失败会显示失败提示并重新读取实际占用；如果读取本身失败，占用状态显示为不可用。清理期间离开并重新进入时，完成后的占用刷新可更新当前页面，但旧页面的成功/失败 Toast 不会重放给新页面。
 诊断页不统计加密日志占用，该数值在数据管理页的“清除日志”行右侧显示。
 
 “数据管理”的日志 section 在“查看日志”上方以内嵌下拉框配置本地记录等级，默认 INFO 及以上，可选关闭、WARN 及以上
@@ -52,6 +53,6 @@ Top app bar 提供保存、分享和清除。保存与分享分别打开相同�
 | 诊断查看与操作界面 | `DiagnosticsScreen()` | [`DiagnosticsScreen.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/diagnostics/DiagnosticsScreen.kt) |
 | 诊断页面访问生命周期和系统 effect | `DiagnosticsRoute()` | [`DiagnosticsRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/data/DiagnosticsRoute.kt) |
 | 诊断页面状态与用户动作 | `DiagnosticsViewModel.onAction()`、`DiagnosticsEffect.ClearFailed` | [`DiagnosticsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt)、[`DiagnosticsContract.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsContract.kt) |
-| 数据管理页生命周期和容量清理 | `DataManagementRoute()`、`StorageSettingsViewModel.onAction()` | [`DataManagementRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/data/DataManagementRoute.kt)、[`StorageSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/data/StorageSettingsViewModel.kt) |
+| 数据管理页生命周期和容量清理 | `DataManagementRoute()`、`StorageSettingsViewModel.onAction()`、`StorageSettingsEffect.CacheClearFailed` | [`DataManagementRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/data/DataManagementRoute.kt)、[`StorageSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/data/StorageSettingsViewModel.kt)、[`StorageSettingsContract.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/data/StorageSettingsContract.kt) |
 | 诊断复制与剪贴板保留策略 | `SensitiveClipboardWriter`、`ClipboardCopyController.writeSensitiveIf()` | [`SensitiveClipboardWriter.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/clipboard/port/SensitiveClipboardWriter.kt)、[`ClipboardCopyController.kt`](../../../app/src/main/java/com/aozijx/passly/app/clipboard/ClipboardCopyController.kt) |
 | 诊断文件导出、丢弃与过期文件清理 | `ObservabilityExportService.export()`、`discard()`、`clearStaleExports()` | [`ObservabilityExportService.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |

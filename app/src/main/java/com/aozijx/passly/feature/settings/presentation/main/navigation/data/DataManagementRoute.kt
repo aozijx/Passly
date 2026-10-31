@@ -45,6 +45,7 @@ internal fun DataManagementRoute(
     var showDatabaseReset by rememberSaveable { mutableStateOf(false) }
     var showLogClearConfirmation by rememberSaveable { mutableStateOf(false) }
     val cacheClearedMessage = stringResource(R.string.settings_storage_cache_cleared)
+    val cacheClearFailedMessage = stringResource(R.string.settings_storage_cache_clear_failed)
     val logsClearedMessage = stringResource(R.string.settings_log_cleared)
     val logClearFailedMessage = stringResource(R.string.settings_log_clear_failed)
     val logRecordingSettingsSaveFailedMessage =
@@ -59,6 +60,7 @@ internal fun DataManagementRoute(
     LaunchedEffect(
         viewModel,
         cacheClearedMessage,
+        cacheClearFailedMessage,
         logsClearedMessage,
         logClearFailedMessage,
         logRecordingSettingsSaveFailedMessage,
@@ -67,6 +69,8 @@ internal fun DataManagementRoute(
             when (effect) {
                 StorageSettingsEffect.CacheCleared ->
                     Toast.makeText(context, cacheClearedMessage, Toast.LENGTH_SHORT).show()
+                StorageSettingsEffect.CacheClearFailed ->
+                    Toast.makeText(context, cacheClearFailedMessage, Toast.LENGTH_SHORT).show()
                 StorageSettingsEffect.LogsCleared ->
                     Toast.makeText(context, logsClearedMessage, Toast.LENGTH_SHORT).show()
                 StorageSettingsEffect.LogClearFailed ->

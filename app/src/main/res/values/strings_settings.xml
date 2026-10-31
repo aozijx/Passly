@@ -314,6 +314,7 @@
     <string name="settings_storage_cache_section">缓存</string>
     <string name="settings_storage_clear_cache">清除缓存</string>
     <string name="settings_storage_cache_cleared">缓存已清理</string>
+    <string name="settings_storage_cache_clear_failed">缓存清理失败</string>
     <string name="settings_about_feature_pending">功能开发中，敬请期待</string>
     <string name="settings_about_open_source_licenses">开源许可</string>
     <string name="settings_about_privacy_policy">隐私政策</string>

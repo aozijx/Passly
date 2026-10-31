@@ -190,9 +190,11 @@ class StorageSettingsViewModel @Inject constructor(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
+                val cache = readCacheSize()
                 if (pageEffects.currentOwner != null) {
-                    _uiState.update { it.copy(cache = StorageSizeUiState.Unavailable) }
+                    _uiState.update { it.copy(cache = cache) }
                 }
+                emitEffect(owner, StorageSettingsEffect.CacheClearFailed)
             } finally {
                 isCacheClearInProgress = false
             }

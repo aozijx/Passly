@@ -314,6 +314,7 @@
     <string name="settings_storage_cache_section">Cache</string>
     <string name="settings_storage_clear_cache">Clear cache</string>
     <string name="settings_storage_cache_cleared">Cache cleared</string>
+    <string name="settings_storage_cache_clear_failed">Failed to clear cache</string>
     <string name="settings_about_feature_pending">Coming soon</string>
     <string name="settings_about_open_source_licenses">Open-source licenses</string>
     <string name="settings_about_privacy_policy">Privacy policy</string>

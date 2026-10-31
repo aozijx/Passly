@@ -384,3 +384,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 边界：Credential Manager 与 Legacy Autofill 适配器仅获准读取 `SecureSessionAccessState`；架构规则继续禁止它们依赖 AuthenticationRequester 与 Entry repository，并由 `SourceBoundaryPolicyTest` 固定该例外范围。
 - 回归：新增 BackupViewModel 行为测试，验证 RecoveryMode 拒绝准备导出、准备导入、已准备导出及已准备导入，并保留各自失败 Effect/UI 错误；Authenticated 可准备导出和导入。
 - 验证：`:app:testDebugUnitTest --tests "*BackupViewModelAccessTest"` 通过；`:buildSrc:test --tests "passly.SourceBoundaryPolicyTest" :app:testDebugUnitTest --tests "*DetailViewModelTest" --tests "*LegacySaveFlowTest" --tests "*CredentialManagerFlowTest" --tests "*BackupReducerTest" --tests "*BackupNoticeMapperTest" verifyArchitecture --max-workers=1` 通过；`git diff --check` 通过。
+
+### 后续复核：数据管理页缓存清理失败反馈（2026-10-31）
+
+- 根因：`AppCacheStore.clear()` 抛异常时，`StorageSettingsViewModel` 只把缓存占用标成 `Unavailable`；Route 只处理成功提示，用户无法分辨清理失败与占用读取失败。
+- 修复：新增 `StorageSettingsEffect.CacheClearFailed` 及中英文提示。失败后重读缓存实际占用；重读失败才显示不可用。缓存清理任务继续由 ViewModel scope 持有，取消异常保持传播；迟到的占用刷新可以更新当前活跃页面，成功/失败 Effect 仍通过原页面 owner 过滤，不会送到重进页面。
+- 回归：StorageSettingsViewModelTest 覆盖成功清理和占用刷新、抛错后的失败提示与占用重读、取消不转成失败提示、页面退出/重进后的迟到失败只刷新当前占用且不重放旧提示。
+- 文档：诊断查看与导出主题页补充缓存清理结果及重进页面的行为。
+- 验证：`:app:testDebugUnitTest --tests "*StorageSettingsViewModelTest" --max-workers=1` 通过；`verifyArchitecture` 与 `git diff --check` 通过。编译输出有既有 SharedFlow `toList()` 弃用警告，与本改动无关。

@@ -22,6 +22,7 @@ sealed interface StorageSettingsAction {
 
 sealed interface StorageSettingsEffect {
     data object CacheCleared : StorageSettingsEffect
+    data object CacheClearFailed : StorageSettingsEffect
     data object LogsCleared : StorageSettingsEffect
     data object LogClearFailed : StorageSettingsEffect
     data object LogRecordingSettingsSaveFailed : StorageSettingsEffect
