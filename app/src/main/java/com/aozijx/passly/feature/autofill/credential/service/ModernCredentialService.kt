@@ -71,7 +71,7 @@ class ModernCredentialService : CredentialProviderService() {
             logger.withRootTrace(Operations.AutofillCredentialRequest) {
                 logger.log(LogStatements.Autofill.discoveryStarted())
                 try {
-                    val response = beginGetHandler.resolve(request, this@ModernCredentialService)
+                    val response = beginGetHandler.resolve(request)
                     if (!cancellationSignal.isCanceled) {
                         callback.onResult(response)
                     }

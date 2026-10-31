@@ -400,3 +400,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：ViewModel 测试确认重复帧只发一次成功 effect、空内容不发成功 effect、停扫后图片解码迟到结果不会触发 effect；Route effect collector 测试确认成功 effect 调用系统反馈一次，collector 取消后不再处理事件。
 - 文档：Scanner 职责表明确 ViewModel 只发语义事件，Route 持有触觉反馈和生命周期处理。
 - 验证：`:app:testDebugUnitTest --tests "*ScannerViewModelTest" --tests "*ScannerRouteEffectsTest" verifyArchitecture --max-workers=1` 通过；`git diff --check` 通过。未连接设备，未验证设备实际振动强度。
+
+### 后续批次：Credential Manager 一次性结果交付与 Autofill callback 失败收尾（2026-10-31）
+
+- 根因：Credential Manager 的完成 `Intent` 曾作为 `CredentialResponseUiState.Complete` 留在 ViewModel `StateFlow`，配置重建会向新 Route 重放结果；`LaunchedEffect` collector 只跟组合生命周期，Activity 进入 `STOPPED` 后仍可能执行系统结果副作用。Credential 与 Legacy Activity 也都先锁定实例级防重标志再运行 `AutofillResultDelivery.commitResult()`，callback 异常会留下无法取消的 claim。交付器在平台 callback 成功之后继续同步写结果日志/trace，诊断失败可能把已交付结果误认为 callback 失败。
+- 修复：移除 Credential `Complete` UI state/reducer，结果 Intent 仅通过进程内缓冲 Channel 作为 Credential Manager 协议事件传到 Activity；Route 仅在 `STARTED` 消费，ViewModel 不再接收 Context，Application Context 留在实际构造 Credential Framework response 的 handler。Credential 与 Legacy Activity 共用 `ActivityResultClaim`，callback 失败时回滚 claim 并取消当前 workflow；成功交付后清除 Credential selection 的 active interaction。`AutofillResultDelivery` 把 callback 成功作为不可逆交付点，之后的 logger/trace 异常不回滚平台结果，仍进入 interaction 与 lease 收尾。
+- 回归：新增事件跨 collector 空窗单次消费、collector 取消不吞后续事件、claim callback 失败释放/成功后封闭，以及 callback 失败后交付器可重试同一 receipt 的测试；既有交付顺序测试继续覆盖平台结果先于 interaction 完成与临时锁定。
+- 文档：更新 Credential Manager 和 Autofill 共享填充流程的结果 owner、生命周期及 callback 失败合同。完成项从本地活动计划移除；Legacy ViewModel 仍把 framework `FillResponse`/`Dataset`（含凭据值）保留在可重放 `StateFlow`，跨 Activity 重建的单次交付仍是 Task 21 待办。
+- 验证：`:app:testDebugUnitTest --tests "*CredentialResponseResultEventsTest" --tests "*ActivityResultClaimTest" --tests "*AutofillResultDeliveryTest" --tests "*AutofillFillReducerTest" verifyArchitecture --no-parallel --max-workers=1` 通过；定向 13 项均通过，`git diff --check` 通过。未运行 Activity 重建仪器测试或设备验收。

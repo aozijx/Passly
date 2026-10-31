@@ -1,6 +1,6 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-10-25）。
+状态：当前实现（代码核对：2026-10-31）。
 
 ## 应用内部输入边界
 
@@ -86,9 +86,15 @@ Credential Manager 同样用 `Immediate` 与 `CommittedSelection` 区分普通�
 Compose 路由将工作流状态映射为显式的 `Hidden` 或 `Candidates` 显示状态；终态提交属于独立副作用，不再通过
 nullable 候选列表或组合函数提前返回表达“当前不显示 UI”。
 
-平台 Activity 必须在 `AutofillResultDelivery.commitResult` 的提交回调内连续执行 `setResult` 和 `finish`；仅调用
-`setResult` 只是保存待返回值，不表示 Android 已收到结果。提交开始即关闭本轮 lease 的借用窗口，`finish` 返回后才在
-不可取消收尾中调用 `CompleteAutofillSelection`。首次终态转换记录使用活动并释放 lease；重复回调幂等。
+平台 Activity 在 `AutofillResultDelivery.commitResult` 的提交回调内连续执行 `setResult` 和 `finish`；仅调用
+`setResult` 只是保存待返回值，不表示 Android 已收到结果。提交开始即关闭本轮 lease 的借用窗口，平台 callback
+成功返回后才异步调用 `CompleteAutofillSelection` 并释放 lease。首次终态转换记录使用活动；重复的交付完成仍幂等。
+
+Credential Manager Route 只在 Activity 处于 `STARTED` 时消费进程内缓冲的单次结果事件；结果 Intent 不保存在 UI
+StateFlow 或 SavedState。Credential 与 Legacy Activity 均用 `ActivityResultClaim` 约束实例内重复提交。平台 callback
+失败会释放 claim：Credential Manager 取消 interaction 并返回 `RESULT_CANCELED`，Legacy Autofill 取消 ViewModel
+工作流并返回取消结果，`onDestroy()` 不会因残留的防重标志跳过清理。callback 已成功后，日志/trace 失败不会触发
+第二次平台提交或把成功结果覆盖为取消；结果已交给 Android 后继续完成 interaction 与 lease 收尾。
 
 最后一个已提交结果完成后，仍未向 Android 提交结果的列表、认证和选择 interaction 全部过期，再立即回收临时会话。
 关闭期间的新请求等待该会话完成锁定后再创建 interaction，不能落入“旧数据库仍开着但已禁止借用”的中间态。

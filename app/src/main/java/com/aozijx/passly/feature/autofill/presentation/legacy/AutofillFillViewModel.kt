@@ -29,10 +29,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class AutofillFillViewModel @Inject constructor(
@@ -233,11 +235,16 @@ class AutofillFillViewModel @Inject constructor(
     private fun cancel() {
         val request = currentRequest
         viewModelScope.launch {
-            request?.let {
-                finishInteraction.cancel(it.interactionId)
-                traceContinuations.discard(it.interactionId.value)
+            withContext(NonCancellable) {
+                request?.let {
+                    try {
+                        finishInteraction.cancel(it.interactionId)
+                    } finally {
+                        traceContinuations.discard(it.interactionId.value)
+                    }
+                }
+                mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
             }
-            mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
         }
     }
 

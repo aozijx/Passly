@@ -18,9 +18,9 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
+import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 
@@ -38,7 +38,7 @@ class CredentialResponseActivity : AppCompatActivity() {
     lateinit var logger: Logger
 
     private val viewModel: CredentialResponseViewModel by viewModels()
-    private val resultFinishing = AtomicBoolean(false)
+    private val resultClaim = ActivityResultClaim()
 
     companion object {
         private const val TAG = "CredResponse"
@@ -93,27 +93,45 @@ class CredentialResponseActivity : AppCompatActivity() {
     private fun finishWithResult(
         completion: CredentialResponseCompletion,
     ) {
-        if (!resultFinishing.compareAndSet(false, true)) return
-        // PendingIntentHandler requires RESULT_OK for both valid responses and
-        // valid Credential Manager exceptions.
-        when (completion) {
-            is CredentialResponseCompletion.Immediate -> {
-                setResult(RESULT_OK, completion.resultIntent)
-                hideIme()
-                finish()
-            }
-            is CredentialResponseCompletion.CommittedSelection ->
-                resultDelivery.commitResult(completion.receipt) {
-                    setResult(RESULT_OK, completion.resultIntent)
-                    hideIme()
-                    finish()
+        val committed = try {
+            resultClaim.commit {
+                // PendingIntentHandler requires RESULT_OK for valid responses and exceptions.
+                when (completion) {
+                    is CredentialResponseCompletion.Immediate -> {
+                        setResult(RESULT_OK, completion.resultIntent)
+                        hideIme()
+                        finish()
+                    }
+                    is CredentialResponseCompletion.CommittedSelection -> {
+                        resultDelivery.commitResult(completion.receipt) {
+                            setResult(RESULT_OK, completion.resultIntent)
+                            hideIme()
+                            finish()
+                        }
+                    }
                 }
+            }
+        } catch (_: Exception) {
+            finishCancelled()
+            return
         }
+        if (!committed) return
+        viewModel.onPlatformResultDelivered(completion)
     }
 
     private fun finishWithError() {
-        if (!resultFinishing.compareAndSet(false, true)) return
-        setResult(RESULT_CANCELED)
+        finishCancelled()
+    }
+
+    private fun finishCancelled() {
+        val committed = try {
+            resultClaim.commit { setResult(RESULT_CANCELED) }
+        } catch (_: Exception) {
+            viewModel.cancelActiveInteraction()
+            finish()
+            return
+        }
+        if (!committed) return
         hideIme()
         viewModel.cancelActiveInteraction()
         finish()
@@ -122,7 +140,7 @@ class CredentialResponseActivity : AppCompatActivity() {
     override fun onDestroy() {
         // Back/system-finish paths did not deliver a response. Configuration
         // changes keep the same ViewModel and must not cancel the interaction.
-        if (!resultFinishing.get() && isFinishing) {
+        if (!resultClaim.isClaimed && isFinishing) {
             viewModel.cancelActiveInteraction()
         }
         super.onDestroy()

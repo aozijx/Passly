@@ -11,12 +11,11 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
-import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
+import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
 import com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -32,7 +31,7 @@ class AutofillFillActivity : FragmentActivity() {
     lateinit var logger: Logger
 
     private val viewModel: AutofillFillViewModel by viewModels()
-    private val resultFinishing = AtomicBoolean(false)
+    private val resultClaim = ActivityResultClaim()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,55 +56,74 @@ class AutofillFillActivity : FragmentActivity() {
     }
 
     private fun finishWithResult(result: AutofillFillResult) {
-        if (!resultFinishing.compareAndSet(false, true)) return
-        when (result) {
-            is AutofillFillResult.DiscoveryResponse -> finishImmediately(
-                Intent().apply {
-                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
-                },
-            )
-            is AutofillFillResult.SelectedResponse -> finishAfterCommittedSelection(
-                result.receipt,
-                Intent().apply {
-                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
-                },
-            )
-            is AutofillFillResult.SelectedDataset -> finishAfterCommittedSelection(
-                result.receipt,
-                Intent().apply {
-                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
-                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
-                },
-            )
-            AutofillFillResult.Cancelled -> finishCancelled()
+        val committed = try {
+            resultClaim.commit {
+                when (result) {
+                    is AutofillFillResult.DiscoveryResponse -> {
+                        setResult(
+                            RESULT_OK,
+                            Intent().apply {
+                                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
+                            },
+                        )
+                        hideIme()
+                        finish()
+                    }
+                    is AutofillFillResult.SelectedResponse ->
+                        resultDelivery.commitResult(result.receipt) {
+                            setResult(
+                                RESULT_OK,
+                                Intent().apply {
+                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
+                                },
+                            )
+                            hideIme()
+                            finish()
+                        }
+                    is AutofillFillResult.SelectedDataset ->
+                        resultDelivery.commitResult(result.receipt) {
+                            setResult(
+                                RESULT_OK,
+                                Intent().apply {
+                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
+                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
+                                },
+                            )
+                            hideIme()
+                            finish()
+                        }
+                    AutofillFillResult.Cancelled -> {
+                        setResult(RESULT_CANCELED)
+                        hideIme()
+                        finish()
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            viewModel.onAction(AutofillFillUiAction.Cancel)
+            finishCancelledAfterDeliveryFailure()
+            return
         }
+        if (!committed) return
     }
 
-    private fun finishImmediately(resultIntent: Intent) {
-        setResult(RESULT_OK, resultIntent)
-        hideIme()
-        finish()
-    }
-
-    private fun finishCancelled() {
-        setResult(RESULT_CANCELED)
-        hideIme()
-        finish()
-    }
-
-    private fun finishAfterCommittedSelection(
-        receipt: AutofillSelectionReceipt,
-        resultIntent: Intent,
-    ) {
-        resultDelivery.commitResult(receipt) {
-            setResult(RESULT_OK, resultIntent)
+    private fun finishCancelledAfterDeliveryFailure() {
+        val committed = try {
+            resultClaim.commit {
+                setResult(RESULT_CANCELED)
+                hideIme()
+                finish()
+            }
+        } catch (_: Exception) {
             hideIme()
             finish()
+            return
         }
+        if (!committed) return
     }
 
     override fun onDestroy() {
-        if (!resultFinishing.get() && isFinishing) {
+        if (!resultClaim.isClaimed && isFinishing) {
             viewModel.onAction(AutofillFillUiAction.Cancel)
         }
         super.onDestroy()

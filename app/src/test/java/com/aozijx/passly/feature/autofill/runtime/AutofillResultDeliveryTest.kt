@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.autofill.runtime
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.*
+import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.core.observability.internal.*
 import com.aozijx.passly.core.observability.privacy.*
 import com.aozijx.passly.core.observability.sink.LogSink
@@ -35,6 +36,88 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutofillResultDeliveryTest {
+    @Test
+    fun `trace capture failure after platform delivery still completes selection and releases lease`() = runTest {
+        val store = AutofillInteractionStore()
+        val lockController = RecordingLockController()
+        val lease = AutofillUnlockLease(lockController)
+        val interaction = store.create(
+            source = AutofillInteractionSource.LEGACY,
+            scope = AutofillGrantContext("com.example.app"),
+            initialState = AutofillInteractionState.Authorized,
+        )
+        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+        val logger = TraceFailingLogger(testLogger())
+        val delivery = AutofillResultDelivery(
+            completeSelection = CompleteAutofillSelection(
+                NoOpActivityRecorder,
+                FinishAutofillInteraction(store, lease),
+            ),
+            unlockLease = lease,
+            scope = this,
+            logger = logger,
+            continuations = TraceContinuationStore(logger),
+        )
+        var platformDeliveries = 0
+
+        delivery.commitResult(
+            receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
+        ) {
+            platformDeliveries++
+            logger.failTraces = true
+        }
+        runCurrent()
+
+        assertEquals(1, platformDeliveries)
+        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+    }
+
+    @Test
+    fun `platform callback failure releases completion barrier and permits one successful retry`() = runTest {
+        val store = AutofillInteractionStore()
+        val lockController = RecordingLockController()
+        val lease = AutofillUnlockLease(lockController)
+        val interaction = store.create(
+            source = AutofillInteractionSource.LEGACY,
+            scope = AutofillGrantContext("com.example.app"),
+            initialState = AutofillInteractionState.Authorized,
+        )
+        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+        val logger = testLogger()
+        val delivery = AutofillResultDelivery(
+            completeSelection = CompleteAutofillSelection(
+                NoOpActivityRecorder,
+                FinishAutofillInteraction(store, lease),
+            ),
+            unlockLease = lease,
+            scope = this,
+            logger = logger,
+            continuations = TraceContinuationStore(logger),
+        )
+        val receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))
+
+        try {
+            delivery.commitResult(receipt) {
+                throw IllegalStateException("platform rejected result")
+            }
+            throw AssertionError("expected platform callback failure")
+        } catch (expected: IllegalStateException) {
+            assertEquals("platform rejected result", expected.message)
+        }
+
+        assertEquals(AutofillInteractionState.Authorized, store.snapshot(interaction.id)?.state)
+        assertNull(lockController.reason)
+
+        var successfulDeliveries = 0
+        delivery.commitResult(receipt) { successfulDeliveries++ }
+        runCurrent()
+
+        assertEquals(1, successfulDeliveries)
+        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+    }
+
     @Test
     fun `delivered result stops a later request from borrowing the completed fill session`() = runTest {
         val store = AutofillInteractionStore()
@@ -192,4 +275,23 @@ class AutofillResultDeliveryTest {
         processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
         secureSessionProvider = SecureSessionProvider { null },
     )
+
+    private class TraceFailingLogger(
+        private val delegate: Logger,
+    ) : Logger by delegate {
+        var failTraces: Boolean = false
+
+        override suspend fun <T> withRootTrace(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T {
+            if (failTraces) throw IllegalStateException("trace unavailable")
+            return delegate.withRootTrace(operation, block)
+        }
+
+        override fun captureTraceToken(singleUse: Boolean): TraceToken {
+            if (failTraces) throw IllegalStateException("trace unavailable")
+            return delegate.captureTraceToken(singleUse)
+        }
+    }
 }

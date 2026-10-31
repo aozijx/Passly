@@ -52,32 +52,48 @@ class AutofillResultDelivery internal constructor(
     ) {
         unlockLease.beginResultCompletion(receipt.interactionId)
         var committed = false
+        var platformCommitted = false
         try {
-            runBlocking {
-                continuations.continueOrRoot(
-                    receipt.interactionId.value,
-                    Operations.AutofillResultDelivery,
-                ) {
-                    val deliveryStartedAt = monotonicTimeMs()
-                    logger.log(LogStatements.Autofill.resultDeliveryStarted())
-                    try {
-                        commitToPlatform()
-                        logger.log(
-                            LogStatements.Autofill.resultDelivered(
-                                monotonicTimeMs() - deliveryStartedAt,
-                            ),
-                        )
-                        continuations.capture(receipt.interactionId.value)
-                    } catch (error: Exception) {
-                        logger.log(
-                            LogStatements.Autofill.resultDeliveryFailed(
-                                error,
-                                monotonicTimeMs() - deliveryStartedAt,
-                            ),
-                        )
-                        throw error
+            try {
+                runBlocking {
+                    continuations.continueOrRoot(
+                        receipt.interactionId.value,
+                        Operations.AutofillResultDelivery,
+                    ) {
+                        val deliveryStartedAt = monotonicTimeMs()
+                        logger.log(LogStatements.Autofill.resultDeliveryStarted())
+                        try {
+                            commitToPlatform()
+                            platformCommitted = true
+                        } catch (error: Exception) {
+                            try {
+                                logger.log(
+                                    LogStatements.Autofill.resultDeliveryFailed(
+                                        error,
+                                        monotonicTimeMs() - deliveryStartedAt,
+                                    ),
+                                )
+                            } catch (_: Exception) {
+                                // Preserve the platform callback failure as the primary result.
+                            }
+                            throw error
+                        }
+                        // Once the platform callback returns, observability failure must not
+                        // turn a delivered credential into a cancelled Activity result.
+                        try {
+                            logger.log(
+                                LogStatements.Autofill.resultDelivered(
+                                    monotonicTimeMs() - deliveryStartedAt,
+                                ),
+                            )
+                            continuations.capture(receipt.interactionId.value)
+                        } catch (_: Exception) {
+                            // The platform has the result; selection completion must continue.
+                        }
                     }
                 }
+            } catch (error: Exception) {
+                if (!platformCommitted) throw error
             }
             committed = true
         } finally {
@@ -90,41 +106,50 @@ class AutofillResultDelivery internal constructor(
 
     private fun completeDeliveredSelection(receipt: AutofillSelectionReceipt) {
         scope.launch {
+            var selectionCompleted = false
+            val closeStartedAt = monotonicTimeMs()
             try {
-                continuations.continueOrRoot(
-                    receipt.interactionId.value,
-                    Operations.AutofillSessionClose,
-                ) {
-                    val closeStartedAt = monotonicTimeMs()
-                    logger.log(LogStatements.Autofill.sessionCloseStarted())
-                    try {
+                try {
+                    continuations.continueOrRoot(
+                        receipt.interactionId.value,
+                        Operations.AutofillSessionClose,
+                    ) {
+                        logger.log(LogStatements.Autofill.sessionCloseStarted())
                         completeSelection(receipt.interactionId, receipt.entryId)
+                        selectionCompleted = true
                         logger.log(
                             LogStatements.Autofill.sessionClosed(
                                 monotonicTimeMs() - closeStartedAt,
                             ),
                         )
-                    } catch (cancelled: CancellationException) {
-                        throw cancelled
-                    } catch (error: Exception) {
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    // Trace/logging may fail before completion runs. Android already owns the
+                    // result, so finish the interaction without a trace too.
+                    if (!selectionCompleted) {
+                        completeSelection(receipt.interactionId, receipt.entryId)
+                        selectionCompleted = true
+                    }
+                    try {
                         logger.log(
                             LogStatements.Autofill.sessionCloseFailed(
                                 error,
                                 monotonicTimeMs() - closeStartedAt,
                             ),
                         )
-                        throw error
-                    } finally {
-                        continuations.discard(receipt.interactionId.value)
+                    } catch (_: Exception) {
+                        // Diagnostics must not block lease release after platform delivery.
                     }
                 }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                // Failure was recorded inside the close span; platform delivery already succeeded.
             } finally {
-                unlockLease.endResultCompletion {
-                    completeSelection.expireAbandonedInteractions()
+                try {
+                    continuations.discard(receipt.interactionId.value)
+                } finally {
+                    unlockLease.endResultCompletion {
+                        completeSelection.expireAbandonedInteractions()
+                    }
                 }
             }
         }

@@ -32,7 +32,6 @@ import com.aozijx.passly.feature.autofill.credential.service.CredentialResponseF
 import com.aozijx.passly.feature.autofill.credential.service.CredentialUnlockResponse
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -50,12 +49,13 @@ class CredentialResponseViewModel @Inject constructor(
     private val beginGetHandler: CredentialBeginGetHandler,
     private val logger: Logger,
     private val traceContinuations: TraceContinuationStore,
-    @param:ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<CredentialResponseUiState>(
         CredentialResponseUiState.Loading,
     )
     val state: StateFlow<CredentialResponseUiState> = mutableState.asStateFlow()
+    private val resultEvents = CredentialResponseResultEvents()
+    val completions = resultEvents.completions
 
     private val requestStarted = AtomicBoolean(false)
     private var activeInteractionId: AutofillInteractionId? = null
@@ -78,6 +78,13 @@ class CredentialResponseViewModel @Inject constructor(
                 traceContinuations.discard(interactionId.value)
             }
         }
+    }
+
+    fun onPlatformResultDelivered(completion: CredentialResponseCompletion) {
+        val deliveredInteractionId =
+            (completion as? CredentialResponseCompletion.CommittedSelection)?.receipt?.interactionId
+                ?: return
+        if (activeInteractionId == deliveredInteractionId) activeInteractionId = null
     }
 
     private fun handlePasswordGet(sourceIntent: Intent) = launchOnce(
@@ -106,7 +113,6 @@ class CredentialResponseViewModel @Inject constructor(
                     )
                 ) {
                     is CredentialManagerPasswordResult.Success -> {
-                        activeInteractionId = null
                         logger.log(
                             LogStatements.Autofill.authenticationCompleted(
                                 monotonicTimeMs() - authenticationStartedAt,
@@ -156,7 +162,6 @@ class CredentialResponseViewModel @Inject constructor(
                     val result = beginGetHandler.resolveAfterUnlock(
                         request = request.request,
                         interactionId = request.interactionId,
-                        context = appContext,
                     )
                 ) {
                     is CredentialUnlockResponse.Ready -> {
@@ -294,34 +299,21 @@ class CredentialResponseViewModel @Inject constructor(
 
     private fun rejectUnknownAction() {
         if (requestStarted.compareAndSet(false, true)) {
-            mutableState.value = CredentialResponseReducer.reduce(
-                mutableState.value,
-                CredentialResponseMutation.Unrecoverable,
-            )
+            mutableState.value = CredentialResponseUiState.Unrecoverable
         }
     }
 
     private fun completeImmediately(
         resultIntent: Intent,
     ) {
-        mutableState.value = CredentialResponseReducer.reduce(
-            mutableState.value,
-            CredentialResponseMutation.Completed(
-                CredentialResponseCompletion.Immediate(resultIntent),
-            ),
-        )
+        resultEvents.publish(CredentialResponseCompletion.Immediate(resultIntent))
     }
 
     private fun completeCommittedSelection(
         resultIntent: Intent,
         receipt: AutofillSelectionReceipt,
     ) {
-        mutableState.value = CredentialResponseReducer.reduce(
-            mutableState.value,
-            CredentialResponseMutation.Completed(
-                CredentialResponseCompletion.CommittedSelection(resultIntent, receipt),
-            ),
-        )
+        resultEvents.publish(CredentialResponseCompletion.CommittedSelection(resultIntent, receipt))
     }
 
     private fun completeGetError(exception: GetCredentialException) {
@@ -353,5 +345,10 @@ class CredentialResponseViewModel @Inject constructor(
         return logger.withRootTrace(Operations.AutofillCredentialRequest) {
             block()
         }
+    }
+
+    override fun onCleared() {
+        resultEvents.close()
+        super.onCleared()
     }
 }

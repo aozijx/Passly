@@ -35,6 +35,12 @@
 
 注册表是 APK 内静态 Kotlin 代码，不使用反射发现、动态下载、卸载、Hilt 多重绑定或按类型新增 Gradle 模块。Domain 不依赖 Data DTO 或 App 资源。任何改变持久化格式、敏感数据边界或创建支持集合的工作都需要独立验证与决策。
 
+## 实施审查记录
+
+- [Domain 条目类型字段注册与穷尽创建分类](../reviews/2026-10-29-domain-entry-type-registration.md)
+- [Data SecretPayload DTO 拆分](../reviews/2026-10-29-data-secret-payload-dto-split.md)
+- [Data 凭据载荷 adapter 注册与版本兼容验证](../reviews/2026-10-30-entry-payload-adapter-registration.md)
+
 ## 代码位置
 
 | 符号 | 源码 | 职责 |

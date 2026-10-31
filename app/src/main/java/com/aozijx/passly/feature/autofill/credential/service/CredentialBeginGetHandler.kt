@@ -8,6 +8,7 @@ import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.CredentialEntry
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.aozijx.passly.R
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
@@ -32,10 +33,10 @@ class CredentialBeginGetHandler @Inject constructor(
     private val pendingIntentFactory: CredentialPendingIntentFactory,
     private val logger: Logger,
     private val traceContinuations: TraceContinuationStore,
+    @param:ApplicationContext private val context: Context,
 ) {
     suspend fun resolve(
         request: BeginGetCredentialRequest,
-        context: Context,
     ): BeginGetCredentialResponse {
         val discoveryStartedAt = monotonicTimeMs()
         val passwordOptions = request.beginGetCredentialOptions
@@ -63,7 +64,6 @@ class CredentialBeginGetHandler @Inject constructor(
     suspend fun resolveAfterUnlock(
         request: BeginGetCredentialRequest,
         interactionId: AutofillInteractionId,
-        context: Context,
     ): CredentialUnlockResponse {
         val discoveryStartedAt = monotonicTimeMs()
         val passwordOptions = request.beginGetCredentialOptions
