@@ -51,6 +51,7 @@ SQLite `NOCASE`；从未使用的条目在最近使用升/降序中都排末尾�
 
 ## 层级
 
+- 层级偏好只由 `VaultViewModel` 读取并进入 `EntryListQuery`；Vault 展示配置只包含卡片样式，不重复投影该偏好。
 - `COLLAPSED`：隐藏已有有效 Account 归属的成员；
 - `EXPANDED`：Account 根条目与成员连续分组；
 - `SEPARATE`：隐藏 Account 根条目，只显示成员和其他条目。
@@ -78,6 +79,8 @@ EXPANDED 先用根条目的收藏和排序值定位组，再在组内先显示�
 菜单状态固定在搜索动作锚点下，排序/筛选子页只改变菜单内容。扫描和设置通过一个 `VaultRouteRequest` 离开
 UI 回调链。Scanner overlay 由 Route 持有；扫描出的 Wi-Fi seed 通过一次性非敏感 token 进入编辑页，不放入
 Vault ViewModel 或可保存状态。
+
+Vault 展示配置由 [`VaultDisplayViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/display/VaultDisplayViewModel.kt) 提供；层级筛选由 [`VaultViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) 并入查询状态。
 
 ## 滑动默认值
 

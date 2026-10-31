@@ -322,3 +322,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 清理：移除上述 dormant API、Data/Domain 清除端口与实现及测试替身。保留 `VaultSessionController` 锁定、`DatabaseResetController` 数据库重置、Inbox pending/quarantine 生命周期、bootstrap Proto 字段和独立的 Inbox key-material 清理。旧删除事件键保留在 EventCatalog 供历史日志识别，移除不再可调用的 LogStatements 生产器。
 - 文档：密钥管理、数据库和 Sealed Inbox 主题页明确当前没有完整 Vault 删除操作；永久数据库重置清理 SQLCipher 数据库和托管资源，但保留 bootstrap、Inbox key material 与 Inbox 文件队列。
 - 验证：`:core:test`、`:domain:test`、`:data:testDebugUnitTest`、`:security:testDebugUnitTest` 与 `verifyArchitecture` 通过；`git diff --check` 通过。
+
+### 后续批次：收窄 Vault 展示配置投影（2026-10-31）
+
+- 根因：`entryHierarchyDisplayMode` 同时被 `VaultViewModel` 用于实际列表查询，又被 `VaultDisplayViewModel` 复制到只读取卡片呈现配置的样式对象中；重复投影导致与 UI 无关的层级变化触发 Ready 状态变化。
+- 修复：从 `VaultStyleConfig` 和 `VaultDisplayViewModel` 映射移除层级字段，层级偏好继续由列表查询唯一消费。
+- 回归：新增投影测试，切换层级模式时断言 Vault 展示配置不变；预期旧实现失败。
+- 文档：列表与搜索页说明层级偏好和展示配置的单一消费边界。
+- 验证：`VaultDisplayViewModelTest` 新增用例在旧实现上失败、收窄投影后通过；完整 `:app:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过。

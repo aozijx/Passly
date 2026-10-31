@@ -33,7 +33,6 @@ class VaultDisplayViewModel @Inject constructor(
                 ),
                 style = VaultStyleConfig(
                     entryCardPresentations = librarySettings.entryCardPresentations,
-                    entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode
                 ),
                 interaction = VaultInteractionConfig(
                     isSwipeEnabled = interactionSettings.isSwipeEnabled,

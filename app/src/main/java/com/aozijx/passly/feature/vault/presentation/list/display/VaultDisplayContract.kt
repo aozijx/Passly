@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.display
 
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
 data class VaultLayoutConfig(
@@ -12,7 +11,6 @@ data class VaultLayoutConfig(
 
 data class VaultStyleConfig(
     val entryCardPresentations: List<EntryCardPresentation>,
-    val entryHierarchyDisplayMode: EntryHierarchyDisplayMode,
 )
 
 data class VaultInteractionConfig(
