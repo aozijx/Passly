@@ -11,6 +11,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
@@ -19,7 +20,6 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
-import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -52,7 +52,7 @@ class VaultViewModel @Inject internal constructor(
     private val copyEntryField: CopyEntryFieldUseCase,
     private val copyOtpCode: CopyOtpCodeUseCase,
     private val dataChangeSignal: VaultDataChangeSignal,
-    private val accessPolicy: SecureSessionAccessPolicy,
+    private val secureSessionAccessState: SecureSessionAccessState,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
 
@@ -261,7 +261,7 @@ class VaultViewModel @Inject internal constructor(
     }
 
     private fun ensureFullSecureSessionAccess(@StringRes messageRes: Int): Boolean {
-        if (accessPolicy.hasFullAccess()) return true
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
         emitError(UiErrorMessage(messageRes))
         mutate(VaultMutation.DialogsCleared)
         return false

@@ -13,7 +13,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
@@ -62,9 +61,8 @@ import javax.inject.Inject
 class DetailViewModel @Inject internal constructor(
     private val entryTagQuery: EntryTagQuery,
     private val activityQueryRepository: ActivityQueryRepository,
-    private val accessPolicy: SecureSessionAccessPolicy,
     exportEntryQr: ExportEntryQrUseCase,
-    secureSessionAccessState: SecureSessionAccessState,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val revealEntryFields: RevealEntryFieldsUseCase,
     private val editDetailEntry: EditDetailEntryUseCase,
     private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
@@ -93,7 +91,7 @@ class DetailViewModel @Inject internal constructor(
 
     private val _uiState = MutableStateFlow(DetailUiState())
     private val workSession = DetailWorkSession(
-        hasAccess = accessPolicy::hasFullAccess,
+        hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
         editEntry = editDetailEntry::edit,
         present = presentationLoader::present,
         onMutation = ::mutate,
@@ -120,7 +118,7 @@ class DetailViewModel @Inject internal constructor(
     init {
         viewModelScope.launch {
             secureSessionAccessState.authenticationState.collect {
-                if (!accessPolicy.hasFullAccess()) clearSensitiveState()
+                if (!secureSessionAccessState.hasFullSecureSessionAccess()) clearSensitiveState()
             }
         }
         viewModelScope.launch {
@@ -132,7 +130,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     fun onAction(event: DetailUiAction) {
-        if (event !is DetailUiAction.ClearSensitiveState && !accessPolicy.hasFullAccess()) {
+        if (event !is DetailUiAction.ClearSensitiveState && !secureSessionAccessState.hasFullSecureSessionAccess()) {
             clearSensitiveState()
             return
         }
@@ -496,7 +494,7 @@ class DetailViewModel @Inject internal constructor(
         clearRevisionReveals()
         mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
-            if (!accessPolicy.hasFullAccess()) return@launch
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
             val snapshot = presentationLoader.open(entryId) ?: return@launch
             if (!workSession.isCurrent(token)) return@launch
             val latest = snapshot.presentation.entry
@@ -521,7 +519,7 @@ class DetailViewModel @Inject internal constructor(
             if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }
         historyJob = viewModelScope.launch {
-            if (!accessPolicy.hasFullAccess()) return@launch
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
             activityQueryRepository.observeByEntryId(entryId.value)
                 .collect { history ->
                     if (workSession.isCurrent(token)) mutate(DetailMutation.HistoryChanged(entryId, history))
@@ -535,7 +533,7 @@ class DetailViewModel @Inject internal constructor(
     }
 
     private suspend fun revealFields(entry: Entry, requested: Set<FieldKey>) {
-        if (!accessPolicy.hasFullAccess()) return
+        if (!secureSessionAccessState.hasFullSecureSessionAccess()) return
         if (requested.isEmpty()) return
         val token = workSession.current(entry.id) ?: return
         val revealed = revealEntryFields.reveal(
@@ -752,7 +750,7 @@ class DetailViewModel @Inject internal constructor(
             editor.work == DetailFaviconWorkState.Processing ||
             !editor.dirty ||
             state.saveState is DetailSaveState.Saving ||
-            !accessPolicy.hasFullAccess()
+            !secureSessionAccessState.hasFullSecureSessionAccess()
         ) {
             return
         }

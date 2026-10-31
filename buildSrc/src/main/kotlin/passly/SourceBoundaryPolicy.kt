@@ -245,6 +245,9 @@ internal object SourceBoundaryPolicy {
                 "com.aozijx.passly.domain.access.port.",
                 "com.aozijx.passly.domain.entry.port.",
             ),
+            allowedImports = setOf(
+                "com.aozijx.passly.domain.access.port.SecureSessionAccessState",
+            ),
             allowedSourcePathContains = setOf("/src/test/"),
             message = "Credential Manager adapter imports authentication or entry repository ports",
         ),
@@ -254,6 +257,9 @@ internal object SourceBoundaryPolicy {
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.access.port.",
                 "com.aozijx.passly.domain.entry.port.",
+            ),
+            allowedImports = setOf(
+                "com.aozijx.passly.domain.access.port.SecureSessionAccessState",
             ),
             allowedSourcePathContains = setOf("/src/test/"),
             message = "legacy Autofill adapter imports authentication or entry repository ports",

@@ -55,7 +55,6 @@ import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
@@ -204,7 +203,6 @@ class DetailViewModelTest {
         val viewModel = DetailViewModel(
             entryTagQuery = EmptyEntryTagQuery,
             activityQueryRepository = EmptyActivityQueryRepository,
-            accessPolicy = SecureSessionAccessPolicy(access),
             exportEntryQr = ExportEntryQrUseCase(authGate, sensitive, activity, testLogger()),
             secureSessionAccessState = access,
             revealEntryFields = RevealEntryFieldsUseCase(authGate, fieldReader, sensitive, activity),

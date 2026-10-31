@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -13,8 +14,6 @@ import com.aozijx.passly.feature.backup.internal.operation.BackupExportOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupImportOperationRequest
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
-import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionDenial
-import com.aozijx.passly.feature.backup.internal.presentation.BackupSessionPolicy
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class BackupViewModel @Inject constructor(
     private val backupOperationInteractor: BackupOperationInteractor,
-    private val sessionPolicy: BackupSessionPolicy,
+    private val secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BackupUiState())
@@ -80,7 +79,7 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private fun prepareExport(format: BackupExportFormat) {
-        if (!requireSession(sessionPolicy.regularExportDenial(), BackupOperation.EXPORT)) return
+        if (!requireSession(BackupOperation.EXPORT)) return
         replaceWorkflow(
             BackupMutation.ExportPrepared(
                 format = format,
@@ -90,7 +89,7 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private fun prepareImport(uri: Uri) {
-        if (!requireSession(sessionPolicy.importDenial(), BackupOperation.IMPORT)) return
+        if (!requireSession(BackupOperation.IMPORT)) return
         replaceWorkflow(BackupMutation.ImportPrepared(uri))
     }
 
@@ -191,15 +190,12 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private fun canExecutePending(operation: BackupOperation): Boolean {
-        if (requireSession(sessionPolicy.pendingOperationDenial(), operation)) return true
+        if (requireSession(operation)) return true
         return false
     }
 
-    private fun requireSession(
-        denial: BackupSessionDenial?,
-        operation: BackupOperation,
-    ): Boolean {
-        if (denial == null) return true
+    private fun requireSession(operation: BackupOperation): Boolean {
+        if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
         emitEffect(BackupNoticeEffect.Failed(operation))
         replaceWorkflow(BackupMutation.OperationFailed(operation, BackupFailed()))
         return false

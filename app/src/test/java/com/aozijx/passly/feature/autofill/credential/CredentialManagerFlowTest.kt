@@ -300,7 +300,7 @@ class CredentialManagerFlowTest {
                 ),
                 resolveSelection = ResolveAutofillSelection(store, resolver),
                 saveCredential = saveCredential,
-                saveAccessPolicy = com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy(vault),
+                secureSessionAccessState = vault,
                 inboxQueue = com.aozijx.passly.domain.autofill.port.AutofillInboxQueue { _, _ ->
                     inboxOutcome
                 },

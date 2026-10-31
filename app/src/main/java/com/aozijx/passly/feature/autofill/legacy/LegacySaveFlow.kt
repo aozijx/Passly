@@ -6,8 +6,8 @@ import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
-import com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtraction
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtractor
 import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
@@ -34,13 +34,13 @@ class LegacySaveFlow internal constructor(
     @Inject
     constructor(
         settingsSource: InteractionSettingsSource,
-        saveAccessPolicy: AutofillSaveAccessPolicy,
+        secureSessionAccessState: SecureSessionAccessState,
         inboxQueue: AutofillInboxQueue,
         extractor: AutofillSaveDraftExtractor,
         saveCredential: SaveAutofillCredential,
     ) : this(
         settingsSource = settingsSource,
-        canPersistImmediately = saveAccessPolicy::canPersistImmediately,
+        canPersistImmediately = secureSessionAccessState::hasFullSecureSessionAccess,
         enqueueInbox = inboxQueue::enqueue,
         extractDraft = extractor::invoke,
         saveCredential = saveCredential::invoke,

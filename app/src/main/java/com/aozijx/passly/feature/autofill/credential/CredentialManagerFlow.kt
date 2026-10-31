@@ -13,10 +13,10 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
-import com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
@@ -76,7 +76,7 @@ class CredentialManagerFlow @Inject constructor(
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
     private val settingsSource: InteractionSettingsSource,
-    private val saveAccessPolicy: AutofillSaveAccessPolicy,
+    private val secureSessionAccessState: SecureSessionAccessState,
     private val inboxQueue: AutofillInboxQueue,
 ) {
     suspend fun beginGet(request: AutofillRequest): AutofillDiscoveryOutcome =
@@ -186,7 +186,7 @@ class CredentialManagerFlow @Inject constructor(
             username = username,
             password = password,
         )
-        if (!saveAccessPolicy.canPersistImmediately()) {
+        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
             when (inboxQueue.enqueue(AutofillInboxSource.CREDENTIAL_MANAGER, draft)) {
                 AutofillInboxEnqueueOutcome.Queued -> {
                     withContext(NonCancellable) { finishInteraction.complete(interactionId) }

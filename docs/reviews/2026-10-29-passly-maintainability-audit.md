@@ -376,3 +376,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：`PageEffectsTest` 保留旧 page owner 迟到退出不能关闭新 owner、旧页面排队事件不能跨页面交付的检查；`VaultNavigationTest` 覆盖 Settings 普通返回栈导航。未添加真实 NavHost/Compose 转场集成测试，结构合同通过 destination 源码检查与编译验证。
 - 文档：Vault 列表主题页记录 Trash 背景与返回行为，UI 宿主页禁止通过额外业务 Route 绘制模态背景。
 - 验证：`:app:testDebugUnitTest --tests "*PageEffectsTest" --tests "*VaultNavigationTest" --tests "*TrashViewModelTest" verifyArchitecture :app:compileDebugKotlin --max-workers=1` 通过；`git diff --check` 与 Trash destination 结构核对通过。未运行 NavHost/Compose 转场仪器测试。
+
+### 后续复核：访问状态判断移除转发策略层（2026-10-31）
+
+- 根因：Vault、Autofill 保存与 Backup 各自有一个薄包装器，只把 `SecureSessionAccessState.hasFullSecureSessionAccess()` 改名后转发；DetailViewModel 还同时注入访问端口和其包装器。包装器没有独立规则、缓存或生命周期，增加了重复依赖与测试面。
+- 修复：删除 `SecureSessionAccessPolicy`、`AutofillSaveAccessPolicy`、`BackupSessionPolicy` 及只验证相同布尔映射的 wrapper 测试；相关消费者直接依赖 Domain 访问状态端口。BackupViewModel 仍按导入/导出 operation 发出失败 Effect，并写入 operation-specific `BackupWorkflow.Failed` 状态。
+- 边界：Credential Manager 与 Legacy Autofill 适配器仅获准读取 `SecureSessionAccessState`；架构规则继续禁止它们依赖 AuthenticationRequester 与 Entry repository，并由 `SourceBoundaryPolicyTest` 固定该例外范围。
+- 回归：新增 BackupViewModel 行为测试，验证 RecoveryMode 拒绝准备导出、准备导入、已准备导出及已准备导入，并保留各自失败 Effect/UI 错误；Authenticated 可准备导出和导入。
+- 验证：`:app:testDebugUnitTest --tests "*BackupViewModelAccessTest"` 通过；`:buildSrc:test --tests "passly.SourceBoundaryPolicyTest" :app:testDebugUnitTest --tests "*DetailViewModelTest" --tests "*LegacySaveFlowTest" --tests "*CredentialManagerFlowTest" --tests "*BackupReducerTest" --tests "*BackupNoticeMapperTest" verifyArchitecture --max-workers=1` 通过；`git diff --check` 通过。

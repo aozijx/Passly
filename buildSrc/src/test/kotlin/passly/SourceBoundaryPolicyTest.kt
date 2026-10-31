@@ -530,6 +530,17 @@ class SourceBoundaryPolicyTest {
             SourceBoundaryVerifier.verify(sources, SourceBoundaryPolicy.generalRules)
                 .map { it.ruleId },
         )
+
+        val readOnlySessionProjection = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt",
+            content = "import com.aozijx.passly.domain.access.port.SecureSessionAccessState",
+        )
+        assertTrue(
+            SourceBoundaryVerifier.verify(
+                listOf(readOnlySessionProjection),
+                SourceBoundaryPolicy.generalRules,
+            ).isEmpty(),
+        )
     }
 
     @Test
