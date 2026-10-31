@@ -113,6 +113,10 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 
 详情保存遇到非预期异常时，当前访问仍有效就转为可重试失败状态，避免界面永久停在 Saving；协程取消继续传播。异常也可能发生在数据库已提交、详情展示刷新失败之后，因此失败提示不等于保证事务回滚；重新打开详情会从持久化真相源重新加载。
 
+条目创建、编辑、修订恢复、关系写入与回收站删除的附件/图标回收均发生在数据库提交之后。普通回收异常只记录结构化诊断，
+不把已提交写入报告成数据库失败；附件 `PENDING_GC` 在会话重开后自动重试，图标队列保留待处理路径并在图片处理器重建时补扫。
+若页面 owner 在提交之后取消，取消仍传播；页面重新进入后应重新读取条目或列表状态，以持久数据确定结果。
+
 ## 创建入口与能力边界
 
 [`VaultEditorDestinationRegistry`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt)

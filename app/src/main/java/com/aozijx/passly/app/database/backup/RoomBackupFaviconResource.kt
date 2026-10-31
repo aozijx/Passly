@@ -53,7 +53,7 @@ internal object RoomBackupFaviconResource {
         val root = iconRoot.canonicalFile.apply { mkdirs() }
         val target = File(
             root,
-            "restored_${
+            "favicon_restored_${
                 BackupBundleValidator.sha256Hex(record.id.toByteArray()).take(32)
             }.webp",
         )

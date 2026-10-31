@@ -23,6 +23,7 @@ internal class CreateEntryExecutor @Inject constructor(
     private val activityWriter: EntryActivityWriter,
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val postCommitCleanup: PostCommitCleanup,
 ) {
     suspend fun execute(entry: Entry): AppResult<EntryId> {
         return execute(entry, databaseTransactions::write)
@@ -85,7 +86,8 @@ internal class CreateEntryExecutor @Inject constructor(
                 EntryActivityContext.ContentRevision(EntryVersion.INITIAL))
             EntryId(entryId)
         }
-        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
-        return result
+        return postCommitCleanup.afterCommit(result) {
+            attachmentGarbageCollector.drain()
+        }
     }
 }

@@ -9,8 +9,15 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -23,9 +30,27 @@ import javax.inject.Singleton
 class AttachmentResourceGarbageCollector @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: AppDatabaseSession,
+    private val access: SecureSessionAccessState,
     private val logger: Logger,
 ) {
     private val mutationMutex = Mutex()
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val wakeups = Channel<Unit>(Channel.CONFLATED)
+
+    init {
+        cleanupScope.launch {
+            access.authenticationState.collect { wakeups.trySend(Unit) }
+        }
+        cleanupScope.launch {
+            databaseSession.lockStateFlow.collect { wakeups.trySend(Unit) }
+        }
+        cleanupScope.launch {
+            for (ignored in wakeups) {
+                if (!access.hasFullSecureSessionAccess()) continue
+                cleanupScope.launch { drainAfterUnlock() }.join()
+            }
+        }
+    }
 
     suspend fun <T> withMutationLock(block: suspend () -> T): T = mutationMutex.withLock { block() }
 
@@ -60,6 +85,16 @@ class AttachmentResourceGarbageCollector @Inject constructor(
         }
     }
 
+    private suspend fun drainAfterUnlock() {
+        try {
+            drain()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logger.log(LogStatements.Application.resourceCleanupFailed(error))
+        }
+    }
+
     private suspend fun drainOne(item: AttachmentResourceEntity) {
         val stillUnreferenced = databaseSession.transaction {
             val hasRefs = attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
@@ -75,10 +110,14 @@ class AttachmentResourceGarbageCollector @Inject constructor(
         if (!stillUnreferenced) return
 
         val deleted = withContext(Dispatchers.IO) {
-            runCatching {
+            try {
                 val file = resourceFile(item.resourceId)
                 !file.exists() || file.delete()
-            }.getOrDefault(false)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                false
+            }
         }
         if (!deleted) {
             databaseSession.transaction {

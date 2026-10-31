@@ -19,6 +19,7 @@ internal class InitializeEntryRevisionHistory @Inject constructor(
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val entryResourceCleaner: EntryResourceCleaner,
+    private val postCommitCleanup: PostCommitCleanup,
 ) {
     private val mutex = Mutex()
 
@@ -38,10 +39,17 @@ internal class InitializeEntryRevisionHistory @Inject constructor(
         }
         when (rebuild) {
             is AppResult.Failure -> rebuild
-            is AppResult.Success -> AppResult.runSuspendCatching {
-                maintenanceStore.markCompleted(CURRENT_GENERATION)
-                attachmentGarbageCollector.drain()
-                entryResourceCleaner.drainPendingIcons()
+            is AppResult.Success -> {
+                when (val marked = AppResult.runSuspendCatching {
+                    maintenanceStore.markCompleted(CURRENT_GENERATION)
+                }) {
+                    is AppResult.Failure -> marked
+                    is AppResult.Success -> {
+                        postCommitCleanup.run { attachmentGarbageCollector.drain() }
+                        postCommitCleanup.run { entryResourceCleaner.drainPendingIcons() }
+                        AppResult.success(Unit)
+                    }
+                }
             }
         }
     }

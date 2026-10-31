@@ -8,6 +8,7 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
+import com.aozijx.passly.data.repository.entry.command.PostCommitCleanup
 import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -29,6 +30,7 @@ internal class RoomEntryLinkRepository @Inject constructor(
     private val secretFieldStore: SecretFieldStore,
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val postCommitCleanup: PostCommitCleanup,
 ) : EntryLinkRepository {
 
     override fun observeAll(): Flow<List<EntryLink>> =
@@ -99,8 +101,9 @@ internal class RoomEntryLinkRepository @Inject constructor(
             }
             attachmentGarbageCollector.scheduleInTransaction(this)
         }
-        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
-        return result
+        return postCommitCleanup.afterCommit(result) {
+            attachmentGarbageCollector.drain()
+        }
     }
 
     override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> {
@@ -116,8 +119,9 @@ internal class RoomEntryLinkRepository @Inject constructor(
             }
             Unit
         }
-        result.onSuccessSuspend { attachmentGarbageCollector.drain() }
-        return result
+        return postCommitCleanup.afterCommit(result) {
+            attachmentGarbageCollector.drain()
+        }
     }
 
     private fun EntryLinkEntity.toDomain(): EntryLink = EntryLink.create(

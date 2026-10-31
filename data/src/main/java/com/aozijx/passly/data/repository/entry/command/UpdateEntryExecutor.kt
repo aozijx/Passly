@@ -13,6 +13,7 @@ internal class UpdateEntryExecutor @Inject constructor(
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val entryResourceCleaner: EntryResourceCleaner,
+    private val postCommitCleanup: PostCommitCleanup,
 ) {
     suspend fun execute(id: String, expectedVersion: Int, changes: EntryUpdate): AppResult<Unit> {
         val result = databaseTransactions.write("entry_update") {
@@ -20,12 +21,14 @@ internal class UpdateEntryExecutor @Inject constructor(
                 if (it is EntryContentUpdate.Changed) attachmentGarbageCollector.scheduleInTransaction(this)
             }
         }
-        result.onSuccessSuspend { update ->
+        val cleaned = postCommitCleanup.afterCommit(result) { update ->
             if (update is EntryContentUpdate.Changed) {
-                attachmentGarbageCollector.drain()
-                entryResourceCleaner.cleanReplacedIcon(update.previousIcon, update.currentIcon)
+                postCommitCleanup.run { attachmentGarbageCollector.drain() }
+                postCommitCleanup.run {
+                    entryResourceCleaner.cleanReplacedIcon(update.previousIcon, update.currentIcon)
+                }
             }
         }
-        return result.map { Unit }
+        return cleaned.map { Unit }
     }
 }

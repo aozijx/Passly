@@ -416,3 +416,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：Room/SQLCipher 仪器测试让真实 `AsyncPagingDataDiffer` 消费 `cachedIn(scope)` 分页流，核对同一 query generation 在 reset 后通过 SEALED 空页和 UNLOCKED Pager 恢复，保留筛选条件；随后令重开密钥不可用，断言页面变为空、session 保持 SEALED、旧条目不回显。`VaultQueryStateTest` 覆盖相同 query 不重建 generation，`VaultDatabaseResetControllerTest` 覆盖重开失败状态。
 - 文档：更新 Vault 列表、数据库生命周期与 Feature 文件归属审查，记录 session state 是 reset 后列表恢复的唯一触发源。
 - 验证：`:data:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.aozijx.passly.data.local.database.session.RoomObservationSessionTest' --no-parallel --max-workers=1` 通过（该类 4 项、0 失败）；`:app:testDebugUnitTest --tests "*VaultQueryStateTest" :data:testDebugUnitTest --tests "*VaultDatabaseResetControllerTest" verifyArchitecture --no-parallel --max-workers=1` 通过（定向单测分别 7 项和 2 项）；`git diff --check` 通过。仪器测试覆盖 Data session 与同等 Paging 缓存消费者；导航期间的实际 Compose/NavHost 转场仍未做宿主级仪器测试。
+
+### 后续批次：条目提交后资源清理异常与重试（2026-10-31）
+
+- 根因：条目/关系事务已提交后，附件 GC 或图标回收的普通异常仍可能逃出命令并表现为写入失败；先执行附件 drain 也会令其异常阻止图标路径入队。提交与图标队列登记之间进程中断时，只有之后的资源候选扫描能够补回。
+- 修复：新增 `PostCommitCleanup`，将普通 post-commit 清理异常记录为结构化诊断并保留原事务结果；数据库/附件阶段未知异常用 `STORAGE_FAILURE`，文件删除失败继续使用更具体的 `FILE_DELETE_FAILED`。提交失败时不运行清理。取消与 fatal `Error` 仍传播。永久删除/清空回收站先登记所有当前及历史图标，再分别执行附件与图标 drain；更新、修订恢复与关系写入也隔离清理阶段。附件 GC 监听完整 Vault 会话恢复，继续处理数据库中持久的 `PENDING_GC`。图标候选扫描纳入普通 favicon、新备份恢复命名及旧版 restored 命名；实际删除仍由事务同时核对当前与历史引用。
+- 取消合同：取消可能发生于数据库提交之后，取消结果不证明事务回滚。调用方重进或恢复 owner 后从 Repository/Room 真相重新读取，不能仅按取消盲目重复写入。普通清理失败由持久附件状态、图标待办队列和候选扫描恢复；fatal 错误不被降级。
+- 验证：`:data:testDebugUnitTest --tests "*PostCommitCleanupTest" --tests "*IconResourceCleanupQueueTest" :app:testDebugUnitTest --tests "*RoomBackupFaviconResourceTest" --no-parallel --max-workers=1` 通过。最终 `PostCommitCleanupTest` 6 项、`IconResourceCleanupQueueTest` 7 项和 `RoomBackupFaviconResourceTest` 2 项通过；`:data:compileDebugAndroidTestKotlin`、`:app:compileDebugAndroidTestKotlin` 与 `verifyArchitecture` 通过。`AttachmentResourceGarbageCollectorTest` 在 OXF-AN00 API 32 和 Pixel 8 Pro API 36 各 1 项通过；`FaviconImageStoreTest` 在两台设备各 4 项通过。`git diff --check` 通过。没有运行非本批的完整设备验收。

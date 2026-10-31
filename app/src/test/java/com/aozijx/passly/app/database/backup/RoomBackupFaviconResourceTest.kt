@@ -49,6 +49,7 @@ class RoomBackupFaviconResourceTest {
         journal.commit()
 
         assertEquals("webp", restored.extension)
+        assertTrue(restored.name.startsWith("favicon_restored_"))
         assertEquals(restoredRoot.canonicalFile, restored.canonicalFile.parentFile)
         assertTrue(restored.canonicalPath != source.canonicalPath)
         assertArrayEquals(sourceBytes, restored.readBytes())

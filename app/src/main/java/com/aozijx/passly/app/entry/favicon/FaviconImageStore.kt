@@ -30,7 +30,11 @@ class FaviconImageStore @Inject constructor(
 ) {
     /** Snapshot before this process can promote new editor-owned files. */
     val recoveredPromotedCandidates: List<String> = VaultResourcePaths.vaultImagesDir(context).listFiles()
-        .orEmpty().filter { it.isFile && it.name.startsWith("favicon_") && it.extension.equals("webp", ignoreCase = true) }
+        .orEmpty().filter {
+            it.isFile &&
+                it.extension.equals(WEBP_EXTENSION.removePrefix("."), ignoreCase = true) &&
+                PROMOTED_FILE_PREFIXES.any(it.name::startsWith)
+        }
         .map(File::getAbsolutePath)
 
     init {
@@ -118,5 +122,6 @@ class FaviconImageStore @Inject constructor(
         const val MAX_INPUT_BYTES = 10 * 1024 * 1024
         private const val INPUT_EXTENSION = ".input"
         private const val WEBP_EXTENSION = ".webp"
+        private val PROMOTED_FILE_PREFIXES = listOf("favicon_", "restored_")
     }
 }

@@ -43,8 +43,14 @@ EntryAssembler -> Entry
 
 修订的 `iconCustomReference` 是可查询的资源引用，与快照中的图标路径同步写入并建立索引；当前条目路径也建索引。
 资源回收无需解密修订，必须在写事务内同时确认两种引用均不存在。历史裁剪与条目永久删除先收集路径，
-提交后通过可重试队列回收；数据库失败不能退化为直接删除文件。Room schema 仍为 1，更新导出结构，
-不迁移旧开发数据库，也不在结构不匹配时静默删库。
+提交后通过可重试队列回收；附件 `PENDING_GC` 状态在同一事务持久化，并在完整 Vault 会话恢复时重试。
+附件 drain 和图标队列 drain 分阶段执行，某一阶段的普通异常不会阻止另一阶段登记/重试资源。普通 post-commit
+清理异常记录结构化 `ResourceCleanupFailed`（未分类的存储阶段异常使用 `STORAGE_FAILURE`；明确的文件删除失败
+保留 `FILE_DELETE_FAILED`），但保留数据库事务原结果；`CancellationException` 与 fatal `Error`
+继续传播。取消可能发生在事务提交之后，此时事务不会回滚，调用方应重新读取 Repository/Room 真相后决定下一步，
+不把取消本身解释为写入失败。图标文件扫描覆盖普通 `favicon_*.webp` 与备份恢复的 `favicon_restored_*.webp`，
+也兼容旧 `restored_*.webp` 名称；删除前仍由事务查询当前及历史引用。数据库失败不能退化为直接删除文件。
+Room schema 仍为 1，不迁移旧开发数据库，也不在结构不匹配时静默删库。
 
 ## 已存储条目的能力标记
 

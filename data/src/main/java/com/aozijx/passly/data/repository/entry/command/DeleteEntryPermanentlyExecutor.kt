@@ -19,6 +19,7 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val resourceCleaner: EntryResourceCleaner,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val postCommitCleanup: PostCommitCleanup,
 ) {
     suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> {
         val result = databaseTransactions.write("entry_delete_permanently") {
@@ -42,9 +43,9 @@ internal class DeleteEntryPermanentlyExecutor @Inject constructor(
             )
         }
 
-        result.onSuccessSuspend {
+        val cleaned = postCommitCleanup.afterCommit(result) {
             resourceCleaner.clean(listOf(it))
         }
-        return result.map { }
+        return cleaned.map { }
     }
 }

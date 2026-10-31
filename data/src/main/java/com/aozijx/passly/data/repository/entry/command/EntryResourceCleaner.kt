@@ -35,6 +35,7 @@ internal class EntryResourceCleaner @Inject constructor(
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val databaseTransactions: DatabaseTransactionRunner,
     private val logger: Logger,
+    private val postCommitCleanup: PostCommitCleanup,
     access: SecureSessionAccessState,
     databaseSession: AppDatabaseSession,
 ) : EntryIconResourceCleaner {
@@ -56,16 +57,14 @@ internal class EntryResourceCleaner @Inject constructor(
         get() = VaultResourcePaths.vaultImagesDir(context)
 
     suspend fun clean(resources: Collection<DeletedEntryResources>) {
-        logger.inSpan(Operations.ResourceCleanup) {
-            attachmentGarbageCollector.drain()
-            resources.mapNotNull(DeletedEntryResources::customIconPath).forEach(cleanupQueue::enqueue)
-            resources.flatMap(DeletedEntryResources::revisionIconPaths).forEach(cleanupQueue::enqueue)
-            cleanupQueue.drain()
-        }
+        resources.mapNotNull(DeletedEntryResources::customIconPath).forEach(cleanupQueue::request)
+        resources.flatMap(DeletedEntryResources::revisionIconPaths).forEach(cleanupQueue::request)
+        postCommitCleanup.run { attachmentGarbageCollector.drain() }
+        postCommitCleanup.run { cleanupQueue.drain() }
     }
 
     suspend fun cleanReplacedIcon(oldPath: String?, newPath: String?) {
-        oldPath?.takeIf { it.isNotBlank() && it != newPath }?.let(cleanupQueue::enqueue)
-        cleanupQueue.drain()
+        oldPath?.takeIf { it.isNotBlank() && it != newPath }?.let(cleanupQueue::request)
+        postCommitCleanup.run { cleanupQueue.drain() }
     }
 }

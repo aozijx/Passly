@@ -17,6 +17,7 @@ internal class RestoreEntryRevisionExecutor @Inject constructor(
     private val clock: DatabaseClock,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
     private val entryResourceCleaner: EntryResourceCleaner,
+    private val postCommitCleanup: PostCommitCleanup,
 ) {
     suspend fun execute(
         entryId: EntryId,
@@ -36,13 +37,15 @@ internal class RestoreEntryRevisionExecutor @Inject constructor(
                 attachmentGarbageCollector.scheduleInTransaction(this)
             }
         }
-        result.onSuccessSuspend { restored ->
-            attachmentGarbageCollector.drain()
-            entryResourceCleaner.cleanReplacedIcon(
-                oldPath = restored.previousIconPath,
-                newPath = restored.restoredIconPath,
-            )
+        val cleaned = postCommitCleanup.afterCommit(result) { restored ->
+            postCommitCleanup.run { attachmentGarbageCollector.drain() }
+            postCommitCleanup.run {
+                entryResourceCleaner.cleanReplacedIcon(
+                    oldPath = restored.previousIconPath,
+                    newPath = restored.restoredIconPath,
+                )
+            }
         }
-        return result.map { it.version }
+        return cleaned.map { it.version }
     }
 }

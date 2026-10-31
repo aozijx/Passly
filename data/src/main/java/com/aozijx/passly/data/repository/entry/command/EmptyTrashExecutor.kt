@@ -14,6 +14,7 @@ internal class EmptyTrashExecutor @Inject constructor(
     private val databaseTransactions: DatabaseTransactionRunner,
     private val resourceCleaner: EntryResourceCleaner,
     private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+    private val postCommitCleanup: PostCommitCleanup,
 ) {
     suspend fun execute(): AppResult<Int> {
         val result = databaseTransactions.write("entry_empty_trash") {
@@ -32,10 +33,10 @@ internal class EmptyTrashExecutor @Inject constructor(
             PurgedTrash(resources = resources, deletedCount = deletedCount)
         }
 
-        result.onSuccessSuspend {
+        val cleaned = postCommitCleanup.afterCommit(result) {
             resourceCleaner.clean(it.resources)
         }
-        return result.map(PurgedTrash::deletedCount)
+        return cleaned.map(PurgedTrash::deletedCount)
     }
 
     private data class PurgedTrash(

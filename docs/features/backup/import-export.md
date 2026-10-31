@@ -20,6 +20,9 @@ Data 实现，页面和普通 Backup 流程不导入 Data。
 [ADR-0022](../../decisions/ADR-0022-keyed-backup-document.md)。文档、加密容器和 Room Schema 各自独立版本；
 当前协议不兼容旧 `passly-vault`/`passly-archive` 文档。
 
+恢复的图标以本机 `favicon_restored_<id>.webp` 名称落盘；图片处理器重建时的资源发现也兼容此前使用的 `restored_<id>.webp`。
+这些本机文件名不进入归档格式。崩溃恢复候选在删除前仍按数据库中的当前条目和修订引用检查，避免回收有效资源。
+
 ## SAF 目录和指定目标
 
 默认备份目录使用 Storage Access Framework tree URI 与 persisted write grant，不请求传统存储权限或
