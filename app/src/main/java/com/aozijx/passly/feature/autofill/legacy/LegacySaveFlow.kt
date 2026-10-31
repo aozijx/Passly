@@ -5,12 +5,12 @@ import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AutofillSaveAccessPolicy
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtraction
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtractor
 import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
-import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueue
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.first

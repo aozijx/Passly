@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
@@ -26,7 +27,6 @@ import com.aozijx.passly.security.authentication.SingleThreadKdfRunner
 import com.aozijx.passly.security.authentication.VaultSessionController
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioner
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
-import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueue
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueueWriter
 import dagger.Binds
 import dagger.Module

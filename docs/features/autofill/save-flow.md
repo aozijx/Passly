@@ -36,6 +36,6 @@ Legacy 对 Saved/Queued 调一次 `SaveCallback.onSuccess()`；失败调一次�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 提取并校验平台保存草稿 | `AutofillSaveDraftExtractor.invoke()` | [`AutofillSaveDraftExtractor.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/AutofillSaveDraftExtractor.kt) |
-| 写入或排队保存凭据 | `SaveAutofillCredential.invoke()`、`AutofillInboxQueue.enqueue()` | [`SaveAutofillCredential.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/SaveAutofillCredential.kt)、[`AutofillInboxQueue.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxQueue.kt) |
+| 写入或排队保存凭据 | `SaveAutofillCredential.invoke()`、`AutofillInboxQueue.enqueue()` | [`SaveAutofillCredential.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/SaveAutofillCredential.kt)、[`AutofillInboxQueue.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillInboxQueue.kt) |
 | 处理旧版平台保存回调 | `LegacyAutofillService.onSaveRequest()` | [`LegacyAutofillService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt) |
 | 处理 Credential Manager 创建请求 | `CredentialManagerFlow.createPassword()` | [`CredentialManagerFlow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |

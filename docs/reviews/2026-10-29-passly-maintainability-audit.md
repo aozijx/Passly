@@ -330,3 +330,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：新增投影测试，切换层级模式时断言 Vault 展示配置不变；预期旧实现失败。
 - 文档：列表与搜索页说明层级偏好和展示配置的单一消费边界。
 - 验证：`VaultDisplayViewModelTest` 新增用例在旧实现上失败、收窄投影后通过；完整 `:app:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 后续批次：将 Autofill Inbox 队列契约归入 Domain（2026-10-31）
+
+- 根因：`AutofillInboxQueue` 只接受和返回 Domain 模型，却声明在 Security 包，导致 App Feature 直接依赖 Security 命名空间。
+- 修复：将接口移至 `domain.autofill.port`；`LegacySaveFlow`、`CredentialManagerFlow` 与 Security 实现均依赖 Domain port，Security 认证 Hilt 模块继续绑定具体 writer。Legacy/Credential Manager 各自的开关、来源、结果及取消处理未改。
+- 文档：保存流程、Sealed Inbox 和维护边界页标明能力端口与加密/耐久实现的归属。
+- 验证：`:domain:test`、`:security:testDebugUnitTest`、`:app:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过；全仓检索未发现旧 Security 契约引用。

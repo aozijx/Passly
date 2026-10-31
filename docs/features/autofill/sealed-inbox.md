@@ -100,6 +100,9 @@ Entry 表示此前已提交，可安全删文件。
 database/session-wide failure 中止整轮；记录级失败按上述策略处理。private envelope 解不开时
 保留并隔离，不删除。
 
+Legacy 与 Credential Manager 依赖 Domain 的 `AutofillInboxQueue` 能力端口；Security 保留队列加密、编码、限额
+和文件写入实现，并在认证模块组合处绑定实现。平台来源策略仍由两个 Feature Flow 分别持有。
+
 ## 备份和生命周期
 
 Manifest 当前 `allowBackup=false`，data extraction rules 也必须排除完整 Inbox root 与 `bootstrap.pb` 的 Inbox
@@ -114,6 +117,7 @@ Inbox root 或 pending records；队列仍按本页定义的保留期、容量�
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
+| 定义 Autofill 入口使用的入队能力端口 | `AutofillInboxQueue` | [`AutofillInboxQueue.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillInboxQueue.kt) |
 | 生成和校验密封收件箱密钥 | `AutofillInboxKeyProvisioner`、`AutofillInboxKeyMaterialCodec` | [`AutofillInboxKeyProvisioner.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyProvisioner.kt)、[`AutofillInboxKeyMaterialCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyMaterialCodec.kt) |
 | 加密队列记录并写入受限队列 | `AutofillInboxQueueWriter.enqueue()`、`AutofillInboxRecordCodec` | [`AutofillInboxQueueWriter.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxQueueWriter.kt)、[`AutofillInboxRecordCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxRecordCodec.kt) |
 | Vault 解锁后导入排队草稿 | `AutofillInboxCredentialImporter.import()` | [`AutofillInboxCredentialImporter.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AutofillInboxCredentialImporter.kt) |

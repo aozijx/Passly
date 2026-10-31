@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
+import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
@@ -23,7 +24,6 @@ import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
-import com.aozijx.passly.security.autofill.inbox.AutofillInboxQueue
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.NonCancellable

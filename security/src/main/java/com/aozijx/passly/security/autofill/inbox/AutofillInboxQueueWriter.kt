@@ -5,6 +5,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
+import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
 import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft

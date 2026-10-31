@@ -1,4 +1,4 @@
-package com.aozijx.passly.security.autofill.inbox
+package com.aozijx.passly.domain.autofill.port
 
 import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
