@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.R
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -22,10 +23,13 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,6 +90,109 @@ class TrashViewModelTest {
         release.complete(Unit)
         runCurrent()
         assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        clear(model)
+    }
+
+    @Test
+    fun `repository exception maps to command failure and a later retry succeeds`() = runTest {
+        var calls = 0
+        val commands = object : EntryCommandRepository by UnusedCommands {
+            override suspend fun restoreEntry(
+                id: EntryId,
+                expectedVersion: EntryVersion,
+            ): AppResult<Unit> {
+                calls++
+                if (calls == 1) error("repository unavailable")
+                return AppResult.Success(Unit)
+            }
+        }
+        val model = model(flowOf(listOf(entry)), commands)
+        runCurrent()
+
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        runCurrent()
+
+        assertEquals(
+            TrashOperationState.Failed(UiErrorMessage(R.string.trash_error_command)),
+            model.uiState.value.operation,
+        )
+        assertTrue(!model.uiState.value.isBusy)
+        model.onAction(TrashUiAction.ClearError)
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        runCurrent()
+        assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        assertEquals(2, calls)
+        clear(model)
+    }
+
+    @Test
+    fun `authorization exception maps to empty failure and retry remains available`() = runTest {
+        var attempts = 0
+        val commands = RecordingCommands { }
+        val authorization = RecordingAuthorization {
+            if (++attempts == 1) error("authorization unavailable")
+            true
+        }
+        val model = model(flowOf(listOf(entry)), commands, authorization)
+        runCurrent()
+
+        model.onAction(TrashUiAction.Empty)
+        runCurrent()
+
+        assertEquals(
+            TrashOperationState.Failed(UiErrorMessage(R.string.trash_error_empty)),
+            model.uiState.value.operation,
+        )
+        assertTrue(!model.uiState.value.isBusy)
+        assertEquals(0, commands.empties)
+        model.onAction(TrashUiAction.ClearError)
+        model.onAction(TrashUiAction.Empty)
+        runCurrent()
+        assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        assertEquals(1, commands.empties)
+        clear(model)
+    }
+
+    @Test
+    fun `cancelling in-flight command does not publish a failure`() = runTest {
+        val entered = CompletableDeferred<Unit>()
+        val commands = object : EntryCommandRepository by UnusedCommands {
+            override suspend fun restoreEntry(
+                id: EntryId,
+                expectedVersion: EntryVersion,
+            ): AppResult<Unit> {
+                entered.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        val model = model(flowOf(listOf(entry)), commands)
+        runCurrent()
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        runCurrent()
+        assertTrue(entered.isCompleted)
+
+        clear(model)
+        runCurrent()
+
+        assertEquals(TrashUiState(), model.uiState.value)
+    }
+
+    @Test
+    fun `command cancellation is not converted into an operation failure`() = runTest {
+        val commands = object : EntryCommandRepository by UnusedCommands {
+            override suspend fun restoreEntry(
+                id: EntryId,
+                expectedVersion: EntryVersion,
+            ): AppResult<Unit> = throw CancellationException("restore cancelled")
+        }
+        val model = model(flowOf(listOf(entry)), commands)
+        runCurrent()
+
+        model.onAction(TrashUiAction.Restore(entry.id.value, entry.identity.version.value))
+        runCurrent()
+
+        assertEquals(TrashOperationState.Idle, model.uiState.value.operation)
+        assertTrue(!model.uiState.value.isBusy)
         clear(model)
     }
 

@@ -344,3 +344,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 结论：不拆成独立 ViewModel。新所有者仍需父 ViewModel 提供访问/条目 token，并回调恢复后的根投影刷新；这会增加状态同步和桥接，不能形成独立生命周期。现有 `DetailRevisionReducer` 已单独承担纯状态转换。
 - 文档：修订历史主题页记录保留当前所有者的生命周期依据和拆分条件。
 - 验证：本项为只读边界评估和文档更新；未改变运行时代码。
+
+### 后续复核：Trash 命令异常与取消处理（2026-10-31）
+
+- 根因：`TrashViewModel` 的恢复/永久删除/清空命令只在 `finally` 复位忙状态；`TrashCommandUseCase` 的 Repository 或授权端口抛出的非取消异常会逃出协程，不映射到页面失败状态。
+- 修复：用一个私有操作执行函数共用“同步占用 → 执行 → 异常映射 → 释放”生命周期；各操作保留独立失败文案，取消原样传播。
+- 回归：覆盖 Repository 异常、授权异常后可重试，以及执行中销毁和命令取消不变成失败提示。
+- 文档：Vault 列表主题页记录失败映射、忙碌复位和取消合同。
+- 验证：`TrashViewModelTest` 与 `TrashCommandUseCaseTest` 定向测试通过；完整 `:app:testDebugUnitTest`、`verifyArchitecture` 和 `git diff --check` 通过。

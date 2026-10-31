@@ -23,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.CancellationException
 
 @HiltViewModel
 internal class TrashViewModel @Inject constructor(
@@ -94,25 +95,45 @@ internal class TrashViewModel @Inject constructor(
         operation: suspend () -> TrashCommandResult,
     ) {
         if (_uiState.value.isBusy) return
-        mutate(TrashMutation.EntryActionStarted(entryId))
-        viewModelScope.launch {
-            try {
-                applyResult(operation(), R.string.trash_error_command)
-            } finally {
-                mutate(TrashMutation.EntryActionFinished)
-            }
-        }
+        runOperation(
+            started = TrashMutation.EntryActionStarted(entryId),
+            finished = TrashMutation.EntryActionFinished,
+            fallback = R.string.trash_error_command,
+            operation = operation,
+        )
     }
 
     private fun emptyTrash() {
         val entries = (_uiState.value.content as? TrashContentState.Loaded)?.entries.orEmpty()
         if (_uiState.value.isBusy || entries.isEmpty()) return
-        mutate(TrashMutation.EmptyStarted)
+        runOperation(
+            started = TrashMutation.EmptyStarted,
+            finished = TrashMutation.EmptyFinished,
+            fallback = R.string.trash_error_empty,
+            operation = trashCommand::empty,
+        )
+    }
+
+    private fun runOperation(
+        started: TrashMutation,
+        finished: TrashMutation,
+        @StringRes fallback: Int,
+        operation: suspend () -> TrashCommandResult,
+    ) {
+        mutate(started)
         viewModelScope.launch {
             try {
-                applyResult(trashCommand.empty(), R.string.trash_error_empty)
+                val result = try {
+                    operation()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    mutate(TrashMutation.ActionFailed(failure.toUiErrorMessage(fallback)))
+                    return@launch
+                }
+                applyResult(result, fallback)
             } finally {
-                mutate(TrashMutation.EmptyFinished)
+                mutate(finished)
             }
         }
     }
