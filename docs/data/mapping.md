@@ -27,6 +27,16 @@ EntryAssembler -> Entry
 再由各自 Codec 加密。Revision 另有独立的 `EntryContentSnapshotCodec` 和
 `SensitiveRevisionSnapshotCodec`；其中 `SummaryPayload` 是历史快照格式，不是 `entries` 的当前格式。
 
+`SecretPayload` 保持扁平的版本 1 JSON 结构。`EntrySecretMapper` 是根边界：编码时核对凭据种类与预期
+`EntryType`；解码时拒绝未知 schema 版本、多个凭据槽位及槽位与条目类型不匹配。凭据槽位由按
+`EntryCredentialKind` 索引的 `EntryPayloadAdapterRegistry` 转换；`LOGIN` 等多个条目类型可共享同一凭据
+适配器。适配器只负责自己的凭据槽位，根映射仍负责 `notes`、自定义字段和 schema/类型校验。缺失适配器、
+不支持的值或适配失败都会显式失败，不会回退到其他凭据映射。
+
+当前适配器覆盖 OTP、Login、Card、Wi-Fi、Identity、SSH 和 Passkey；`NONE` 不需要适配器。适配器拆分
+不改变 `SecretPayload` 的字段名、默认值、顺序或版本，也不改变 Room schema、加密/AAD 或备份格式。
+新增凭据槽位时，需同步验证注册覆盖、所有字段双向往返和根边界的条目类型校验。
+
 银行卡发卡行、支行、产品名称、币种、客服电话及账单地址位于 `CardCredential` / `CardCredentialPayload`，
 经 Secret bundle 加密保存，不新增 Profile 明文列。持卡人的真相源为 `cardHolder`；字段读取与编辑不借用用户名。
 扩展字段保持 Payload 版本 1，读取、详情、修订快照和备份使用同一组凭据属性。
@@ -53,7 +63,7 @@ Wi-Fi 密码保存在加密 bundle 中，没有独立密码行；其密码能力
 - `codec/entry`：Secret bundle 和单字段密文编码。
 - `codec/revision`：Revision 快照编码。
 - `codec/entry/payload`：加密内容解密后的稳定序列化模型。
-- `mapper/entry`：Entity、Payload 与 Domain 的纯转换、拆分和组装。
+- `mapper/entry`：Entity、Payload 与 Domain 的纯转换、拆分和组装；根映射验证 schema/类型，凭据适配器映射各自槽位。
 - `repository/entry`：在 session/事务边界内编排 DAO、Codec 和 Mapper。
 
 ## 约束
@@ -76,4 +86,5 @@ Wi-Fi 密码保存在加密 bundle 中，没有独立密码行；其密码能力
 | --- | --- | --- |
 | 将数据库条目映射为领域 Profile | `EntryProfileMapper.fromEntity()` | [`EntryProfileMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryProfileMapper.kt) |
 | 拆分并组装低敏与高敏字段 | `EntrySecretMapper`、`EntrySecret.toSensitiveFieldUpdates()` | [`EntrySecretMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntrySecretMapper.kt)、[`SensitiveFieldSetMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/SensitiveFieldSetMapper.kt) |
+| 按凭据种类注册并转换 Secret payload 槽位 | `EntryPayloadAdapterRegistry`、`EntryPayloadAdapter` | [`EntryPayloadAdapterRegistry.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryPayloadAdapterRegistry.kt)、[`EntryPayloadAdapter.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryPayloadAdapter.kt) |
 | 编排秘密字段的持久化读取与写入 | `SecretFieldStore.readAll()`、`readField()` | [`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |

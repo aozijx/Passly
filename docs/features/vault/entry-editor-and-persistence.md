@@ -34,6 +34,11 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
 位于 Domain，目前显式转换四种创建类型。它再次检查草稿字段及身份类型；不能假定草稿一定经 `withValue()` 构造。
 无效草稿以字段键表达失败，不能把用户输入拼入异常。`EntryValidation` 仍负责最终完整凭据校验。
 
+`EntryTypeDefinitions` 是所有 `EntryType` 的领域字段目录，按类型拆分定义文件，并在建立索引时检查重复、缺失和意外类型；
+目录完整表示每种类型的字段元数据都有定义，不表示每种类型都支持创建或完整表单编辑。创建物化仍只实现 Login、OTP、
+Bank Card、Wi-Fi 四类，其余类型明确拒绝。新增类型时分别更新字段定义和实际支持的用例/表单，不用完整目录代替能力闭环，
+也不为每个类型添加只转发的物化器策略类。
+
 草稿只描述待创建内容；身份与初始版本由创建用例生成。
 已有条目通过 `EntryEdit` 与带预期版本的 Repository 更新合同修改，条目 ID 与版本由更新用例和端口参数表达。
 
@@ -139,6 +144,7 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 | --- | --- | --- |
 | 创建普通条目及 Autofill 条目 | `CreateEntryUseCase.invoke()`、`createFromAutofill()` | [`CreateEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CreateEntryUseCase.kt) |
 | 将新建草稿转换为可持久化条目 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
+| 登记所有条目的字段定义并检查目录覆盖 | `EntryTypeDefinitions`、`buildEntryTypeDefinitionIndex()` | [`EntryTypeDefinitions.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitions.kt)、[`EntryTypeDefinitionRegistry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitionRegistry.kt) |
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |
 | 编辑详情条目 | `EditDetailEntryUseCase.edit()` | [`EditDetailEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/EditDetailEntryUseCase.kt) |
 | 获授权读取完整编辑表单 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
