@@ -360,3 +360,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：覆盖确认调用者离开后仓库仍完成提交、启动前认证状态变化不写入、事务已开始后会话锁定仍以仓库提交结果结束、同 Activity 重建 Scanner 时并发确认被拒绝、失败结果反馈及关闭后的迟到回执过滤。初次实现中 ViewModel 方法与 UseCase 同名导致递归，测试运行暴露问题；重命名依赖后修复。
 - 文档：Scanner 与 OTP 创建页记录任务所有者、页面退出、访问撤销和提交后结果语义。
 - 验证：定向 `ScannedOtpImportViewModelTest`、`ScannerImportSessionTest`、`ImportScannedOtpUseCaseTest` 通过；完整 `:app:testDebugUnitTest verifyArchitecture --max-workers=1` 通过；`git diff --check` 通过。
+
+### 后续复核：Trash 模态目的地不再重复组合 Vault 页面（2026-10-31）
+
+- 根因：`AppRoute.Trash` 在 `TrashRoute` 之外额外组合了图级 `VaultRoute`，只将它的 PageEffects page owner 禁用；该后台 Route 仍收集 `VaultViewModel.effects`、UiState、Paging 与 OTP 状态，导致 Trash 页面期间保留无效且重复的 Vault 页面工作。
+- 修复：保留 Trash 模态底部表单和 `navigateBack` 返回 Settings；移除 Trash destination 中的 `VaultRoute`，由 `PasslyNavHost` 根 `Surface` 提供遮罩后背景。真正的 Vault destination 独占列表、OTP 和页面 effect 消费。
+- 回归：`PageEffectsTest` 保留旧 page owner 迟到退出不能关闭新 owner、旧页面排队事件不能跨页面交付的检查；`VaultNavigationTest` 覆盖 Settings 普通返回栈导航。未添加真实 NavHost/Compose 转场集成测试，结构合同通过 destination 源码检查与编译验证。
+- 文档：Vault 列表主题页记录 Trash 背景与返回行为，UI 宿主页禁止通过额外业务 Route 绘制模态背景。
+- 验证：`:app:testDebugUnitTest --tests "*PageEffectsTest" --tests "*VaultNavigationTest" --tests "*TrashViewModelTest" verifyArchitecture :app:compileDebugKotlin --max-workers=1` 通过；`git diff --check` 与 Trash destination 结构核对通过。未运行 NavHost/Compose 转场仪器测试。

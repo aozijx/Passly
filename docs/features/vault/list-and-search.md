@@ -9,6 +9,11 @@
 
 ## 回收站读取
 
+从 Settings 打开回收站时仍以模态底部表单呈现，并通过导航返回 Settings。Trash destination 只组合 `TrashRoute`；
+底部表单的遮罩后背景由 `PasslyNavHost` 根 Surface 提供，不额外渲染 Vault 页面。因而 Vault 的 Paging、可见 OTP
+订阅和页面 effect collector 只由真正的 Vault destination 持有，导航转场期间离开的旧 Vault 页仍遵循
+`VaultViewModel` 的 `PageEffects` owner 过滤规则。
+
 回收站单独订阅 `EntryListQueryRepository.deletedEntries`。加载失败保持明确的失败状态，显示重试入口，
 不展示“回收站为空”；关闭操作错误也不能将读取失败改成空列表。`RetryLoad` 只在读取失败时重建订阅，
 立即进入 Loading，重复点击不会创建重复订阅；恢复后继续以仓库 Flow 更新列表。

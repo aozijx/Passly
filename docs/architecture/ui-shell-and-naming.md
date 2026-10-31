@@ -37,6 +37,10 @@ Rail、全局 Snackbar 和认证遮罩属于 App Shell，不进入共享元素�
 每个目的地仍可使用自己的 Scaffold。目的地必须消费 App Shell 传入的 `PaddingValues`，并自行处理 IME；
 共享元素使用内容坐标，不负责窗口 Insets。
 
+模态目的地不得为绘制遮罩后背景而组合另一个业务 Route。根 `Surface` 提供宿主背景，模态 destination 只组合
+自己的内容；若需要保留下层页面内容，应由导航宿主显式支持 overlay，并确保下层页面的 ViewModel、Paging、
+可见数据订阅与 one-shot effect 不被重复组合。
+
 ## 页面层级与状态所有权
 
 页面默认采用能表达职责的最短链路：`Route → Screen → Section/Component/Overlay`。

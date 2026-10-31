@@ -50,16 +50,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             )
         }
 
-        composable(AppRoute.Trash.route) { backStackEntry ->
-            val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
-            VaultRoute(
-                navigation = context.toVaultNavigation(seedCoordinator),
-                vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
-                scannedOtpImportViewModel = scannedOtpImportViewModel,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = this,
-                isEffectsPage = false,
-            )
+        composable(AppRoute.Trash.route) {
             TrashRoute(onDismiss = context.navigateBack)
         }
     }
