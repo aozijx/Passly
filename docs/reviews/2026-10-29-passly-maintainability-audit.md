@@ -353,6 +353,14 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 文档：Vault 列表主题页记录失败映射、忙碌复位和取消合同。
 - 验证：`TrashViewModelTest` 与 `TrashCommandUseCaseTest` 定向测试通过；完整 `:app:testDebugUnitTest`、`verifyArchitecture` 和 `git diff --check` 通过。
 
+### 后续修复：Autofill 最后一个租约的锁责任（2026-10-31）
+
+- 根因：最后一个 borrower 被移除时，lease 在 `SessionLockController.lock()` 成功前就清除 `owned`；锁等待取消或抛错会遗失临时会话的锁定责任。result completion finalize 异常虽释放 barrier，但原来没有行为测试证明 pending lock 可恢复。
+- 修复：lease 在不可取消收尾中持有互斥权直至单次锁请求完成；失败时保留 `lockPending` 并交给进程级重试 owner，以 1 秒起步、最多 60 秒的指数退避重试，退避期间释放 lease mutex。新交互 readiness gate 在 pending lock 未完成时拒绝继续。成功调用后才清除 Autofill 所有权；未由 Autofill 解锁的既有用户会话不触发锁定。Accessibility Activity 去掉主线程 `runBlocking`，通过 ViewModel 开始 `NonCancellable + Dispatchers.IO` 的清理。
+- 回归：新增 `AutofillUnlockLeaseTest` 覆盖锁等待期间取消、报告单次失败后由独立 owner 重试、退避期间 mutex 可用但拒绝 borrower、result finalize 失败后的 pending lock 重试及未取得会话不锁定；既有交付和 interaction lifecycle 测试继续覆盖结果顺序与 borrower 行为。
+- 文档：填充流程页记录 lease 锁责任、重试和 Activity teardown 所有权。
+- 验证：Autofill lease/result delivery/interaction lifecycle 定向单测、`verifyArchitecture`、`:app:compileDebugKotlin` 与 `git diff --check` 通过。未连接 Android 设备，未完成 Activity finish/锁互斥等待的仪器级生命周期测试；Task 9 保留该验收项。
+
 ### 后续复核：确认后的 OTP 扫描导入所有权（2026-10-31）
 
 - 根因：Vault Route 直接读取 `VaultViewModel` 暴露的 `ImportScannedOtpUseCase` 并在 Scanner 的页面协程中执行；Scanner 关闭或离开 Vault 会取消等待中的任务。Route 退出时是否取消写入因此由 UI 生命周期偶然决定。

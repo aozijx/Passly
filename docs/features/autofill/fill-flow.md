@@ -94,6 +94,14 @@ nullable 候选列表或组合函数提前返回表达“当前不显示 UI”�
 关闭期间的新请求等待该会话完成锁定后再创建 interaction，不能落入“旧数据库仍开着但已禁止借用”的中间态。
 多个已经提交的 Legacy/Credential 结果分别完成，不互相误标为过期。
 
+最后一个 Autofill borrower 释放时，lease 保留临时会话所有权直到 `SessionLockController.lock()` 返回；锁请求在
+不可取消收尾中执行。失败会立即反馈给当前调用，并将 pending obligation 交给 lease 的进程级 retry owner；重试
+采用 1 秒起步、最多 60 秒的指数退避，等待期间不持有 lease mutex。新交互的 readiness gate 在 pending lock
+未完成时拒绝继续，Autofill 不会借用尚未锁定的临时会话。因此取消发生在等待 session mutex 之前或期间都不能
+静默丢失锁定责任。Accessibility Activity 的 `onDestroy()`
+只发起 ViewModel 清理，不在主线程 `runBlocking` 等待数据库封存；清理进入 `NonCancellable + Dispatchers.IO`
+后可跨 ViewModel 清除继续完成。
+
 这保证 Android 收到结果以前不会关库，同时填充完成后再次点击输入框会从全新锁定状态开始。Android 没有确认字段
 实际写入的回调时，日志不能伪造 `field_filled`。
 
@@ -118,4 +126,6 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 | 解析用户选择并准备填充结果 | `ResolveAutofillSelection` | [`ResolveAutofillSelection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/core/ResolveAutofillSelection.kt) |
 | 向平台提交 Autofill 结果 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
 | 维护交互授权、候选与结束状态 | `AutofillInteractionStore.create()`、`beginAuthorization()`、`recordCandidates()`、`finish()` | [`AutofillInteractionStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt) |
+| 保留、重试临时 Autofill session 锁责任 | `AutofillUnlockLease.release()`、`awaitReadyForInteraction()` | [`AutofillUnlockLease.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt) |
+| 异步结束无障碍选择页工作 | `AccessibilityFillActivity.onDestroy()`、`AccessibilityFillViewModel.cancel()` | [`AccessibilityFillActivity.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt)、[`AccessibilityFillViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillViewModel.kt) |
 | 无障碍填充事件与服务清理 | `ManualAccessibilityFillService.onAccessibilityEvent()`、`onDestroy()` | [`ManualAccessibilityFillService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt) |

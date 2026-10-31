@@ -8,14 +8,36 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /** Tracks only vault access acquired by Autofill; pre-existing access is never closed here. */
 @Singleton
-class AutofillUnlockLease @Inject constructor(
+class AutofillUnlockLease private constructor(
     private val sessionLockController: SessionLockController,
+    private val retryScope: CoroutineScope,
 ) {
+    @Inject
+    constructor(sessionLockController: SessionLockController) : this(
+        sessionLockController,
+        CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    )
+
+    internal constructor(
+        sessionLockController: SessionLockController,
+        retryScope: CoroutineScope,
+        @Suppress("UNUSED_PARAMETER") testScope: Unit,
+    ) : this(sessionLockController, retryScope)
+
     private val mutex = Mutex()
     private val stateMonitor = Any()
     private val borrowers = mutableSetOf<AutofillInteractionId>()
@@ -24,11 +46,17 @@ class AutofillUnlockLease @Inject constructor(
     private var completionsInFlight = 0
     private var completionBarrier: CompletableDeferred<Unit>? = null
     private var lockPending = false
+    private var lockRetryJob: Job? = null
 
     suspend fun awaitReadyForInteraction() {
         while (true) {
-            val barrier = synchronized(stateMonitor) { completionBarrier } ?: return
-            barrier.await()
+            val barrier = synchronized(stateMonitor) { completionBarrier }
+            if (barrier != null) {
+                barrier.await()
+                continue
+            }
+            retryPendingLock()
+            if (synchronized(stateMonitor) { completionBarrier } == null) return
         }
     }
 
@@ -39,15 +67,16 @@ class AutofillUnlockLease @Inject constructor(
         synchronized(stateMonitor) {
             if (acquiredUnlock) {
                 owned = true
+                lockPending = false
                 if (completionBarrier == null) acceptingNewBorrowers = true
             }
-            if (owned) borrowers += interactionId
+            if (owned && !lockPending) borrowers += interactionId
         }
     }
 
     suspend fun borrowIfOwned(interactionId: AutofillInteractionId): Boolean = mutex.withLock {
         synchronized(stateMonitor) {
-            val accepted = owned && acceptingNewBorrowers
+            val accepted = owned && !lockPending && acceptingNewBorrowers
             if (accepted) borrowers += interactionId
             accepted
         }
@@ -72,38 +101,100 @@ class AutofillUnlockLease @Inject constructor(
 
         try {
             finalizeSession()
-            val shouldLock = mutex.withLock {
-                synchronized(stateMonitor) {
-                    lockPending.also { lockPending = false }
-                }
-            }
-            if (shouldLock) lockAutofillSession()
+            retryPendingLock(allowLastCompletionBarrier = true)
             return true
         } finally {
-            val completedBarrier = synchronized(stateMonitor) {
-                acceptingNewBorrowers = true
-                completionBarrier.also { completionBarrier = null }
+            val (completedBarrier, shouldScheduleRetry) = synchronized(stateMonitor) {
+                acceptingNewBorrowers = !lockPending
+                val barrier = completionBarrier.also { completionBarrier = null }
+                barrier to (lockPending && owned && borrowers.isEmpty())
             }
             completedBarrier?.complete(Unit)
+            if (shouldScheduleRetry) schedulePendingLockRetry()
         }
     }
 
-    suspend fun release(interactionId: AutofillInteractionId) = mutex.withLock {
-        val shouldLock = synchronized(stateMonitor) {
-            borrowers -= interactionId
-            if (owned && borrowers.isEmpty()) {
-                owned = false
-                if (completionBarrier == null) {
-                    true
-                } else {
+    suspend fun release(interactionId: AutofillInteractionId) = withContext(NonCancellable) {
+        mutex.withLock {
+            val shouldLock = synchronized(stateMonitor) {
+                borrowers -= interactionId
+                if (owned && borrowers.isEmpty()) {
                     lockPending = true
+                    acceptingNewBorrowers = false
+                    completionBarrier == null
+                } else {
                     false
                 }
-            } else {
-                false
+            }
+            if (shouldLock) lockOwnedSessionIfPendingLocked()
+        }
+    }
+
+    private suspend fun retryPendingLock(allowLastCompletionBarrier: Boolean = false) =
+        withContext(NonCancellable) {
+            mutex.withLock {
+                lockOwnedSessionIfPendingLocked(allowLastCompletionBarrier)
+            }
+    }
+
+    /** Keep ownership until lock() returns; failures leave a retryable lock obligation. */
+    private suspend fun lockOwnedSessionIfPendingLocked(
+        allowLastCompletionBarrier: Boolean = false,
+    ) {
+        val shouldLock = synchronized(stateMonitor) {
+            lockPending && owned && borrowers.isEmpty() &&
+                (completionBarrier == null || allowLastCompletionBarrier && completionsInFlight == 0)
+        }
+        if (!shouldLock) return
+
+        try {
+            lockAutofillSession()
+        } catch (failure: Exception) {
+            schedulePendingLockRetry()
+            throw failure
+        }
+        synchronized(stateMonitor) {
+            if (lockPending && borrowers.isEmpty() &&
+                (completionBarrier == null || allowLastCompletionBarrier && completionsInFlight == 0)
+            ) {
+                owned = false
+                lockPending = false
+                acceptingNewBorrowers = true
+                lockRetryJob?.cancel()
+                lockRetryJob = null
             }
         }
-        if (shouldLock) lockAutofillSession()
+    }
+
+    /** Process-owned retry survives page teardown and never holds the lease mutex while backing off. */
+    private fun schedulePendingLockRetry() {
+        synchronized(stateMonitor) {
+            if (lockRetryJob?.isActive == true) return
+            lockRetryJob = retryScope.launch(start = CoroutineStart.DEFAULT) {
+                var delayMs = FIRST_LOCK_RETRY_DELAY_MS
+                while (true) {
+                    delay(delayMs)
+                    val shouldRetry = synchronized(stateMonitor) {
+                        lockPending && owned && borrowers.isEmpty() && completionBarrier == null
+                    }
+                    if (!shouldRetry) return@launch
+
+                    try {
+                        retryPendingLock()
+                        val stillPending = synchronized(stateMonitor) { lockPending }
+                        if (!stillPending) return@launch
+                    } catch (_: Exception) {
+                        delayMs = (delayMs * 2).coerceAtMost(MAX_LOCK_RETRY_DELAY_MS)
+                    }
+                }
+            }.also { job ->
+                job.invokeOnCompletion {
+                    synchronized(stateMonitor) {
+                        if (lockRetryJob === job) lockRetryJob = null
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun lockAutofillSession() = sessionLockController.lock(
@@ -112,4 +203,9 @@ class AutofillUnlockLease @Inject constructor(
             LockTrigger.AUTOFILL_COMPLETION,
         ),
     )
+
+    private companion object {
+        const val FIRST_LOCK_RETRY_DELAY_MS = 1_000L
+        const val MAX_LOCK_RETRY_DELAY_MS = 60_000L
+    }
 }

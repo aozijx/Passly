@@ -17,7 +17,6 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class AccessibilityFillActivity : FragmentActivity() {
@@ -54,7 +53,7 @@ class AccessibilityFillActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
-        if (isFinishing) runBlocking { viewModel.abandon() }
+        if (isFinishing) viewModel.cancel()
         super.onDestroy()
     }
 

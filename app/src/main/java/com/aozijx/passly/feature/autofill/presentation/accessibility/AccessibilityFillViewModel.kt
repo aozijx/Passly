@@ -28,6 +28,8 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -232,7 +234,9 @@ class AccessibilityFillViewModel @Inject constructor(
     }
 
     fun cancel() {
-        viewModelScope.launch { abandon() }
+        viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            withContext(NonCancellable + Dispatchers.IO) { abandon() }
+        }
     }
 
     suspend fun abandon() = withContext(NonCancellable) {
