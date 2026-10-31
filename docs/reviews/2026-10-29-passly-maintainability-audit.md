@@ -392,3 +392,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：StorageSettingsViewModelTest 覆盖成功清理和占用刷新、抛错后的失败提示与占用重读、取消不转成失败提示、页面退出/重进后的迟到失败只刷新当前占用且不重放旧提示。
 - 文档：诊断查看与导出主题页补充缓存清理结果及重进页面的行为。
 - 验证：`:app:testDebugUnitTest --tests "*StorageSettingsViewModelTest" --max-workers=1` 通过；`verifyArchitecture` 与 `git diff --check` 通过。编译输出有既有 SharedFlow `toList()` 弃用警告，与本改动无关。
+
+### 后续复核：Scanner 触觉反馈归 Route 生命周期（2026-10-31）
+
+- 根因：`ScannerViewModel` 的注入构造器读取 Android `VibratorManager` 并在扫码分类时同步振动；平台副作用与 ViewModel 的扫描状态/任务 owner 混在一起。
+- 修复：移除 ViewModel 的 `Context`、Vibrator 与测试 lambda 依赖；唯一接受的新扫描结果发布 `ScannerEffect.ScanSucceeded`。Route 在自身 `LaunchedEffect` 中消费该事件并执行原有 100ms `VibratorManager` 反馈，页面销毁即取消消费。现有 Android 版本和 Manifest `VIBRATE` 权限未改。
+- 回归：ViewModel 测试确认重复帧只发一次成功 effect、空内容不发成功 effect、停扫后图片解码迟到结果不会触发 effect；Route effect collector 测试确认成功 effect 调用系统反馈一次，collector 取消后不再处理事件。
+- 文档：Scanner 职责表明确 ViewModel 只发语义事件，Route 持有触觉反馈和生命周期处理。
+- 验证：`:app:testDebugUnitTest --tests "*ScannerViewModelTest" --tests "*ScannerRouteEffectsTest" verifyArchitecture --max-workers=1` 通过；`git diff --check` 通过。未连接设备，未验证设备实际振动强度。

@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.scanner.presentation
 
+import android.content.Context
 import android.content.Intent
+import android.os.VibrationEffect
+import android.os.VibratorManager
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -44,14 +47,24 @@ internal fun ScannerRoute(
     }
 
     LaunchedEffect(viewModel, context, copySucceededMessage, imageNoBarcodeMessage, imageDecodeFailedMessage) {
-        viewModel.effects.collect { effect ->
-            val message = when (effect) {
-                ScannerEffect.CopySucceeded -> copySucceededMessage
-                ScannerEffect.ImageNoBarcode -> imageNoBarcodeMessage
-                ScannerEffect.ImageDecodeFailed -> imageDecodeFailedMessage
+        collectScannerRouteEffects(
+            effects = viewModel.effects,
+            onScanSucceeded = {
+                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
+                    .defaultVibrator.vibrate(
+                        VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE),
+                    )
+            },
+            onUiEffect = { effect ->
+                val message = when (effect) {
+                    ScannerEffect.CopySucceeded -> copySucceededMessage
+                    ScannerEffect.ImageNoBarcode -> imageNoBarcodeMessage
+                    ScannerEffect.ImageDecodeFailed -> imageDecodeFailedMessage
+                    ScannerEffect.ScanSucceeded -> return@collectScannerRouteEffects
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        }
+        )
     }
 
     DisposableEffect(viewModel) {

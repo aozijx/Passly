@@ -12,11 +12,11 @@ OTP 分类直接调用 Domain 的类型化 URI 解析器，与手动输入和导
 ## 职责边界
 
 - `ScannerCameraHost` 只负责相机权限、CameraX 预览、ML Kit 分析和资源释放，并向上报告原始值。
-- `ScannerViewModel` 负责扫描任务归属、分类、停止分析、震动和安全剪贴板写入；状态以
+- `ScannerViewModel` 负责扫描任务归属、分类、停止分析和安全剪贴板写入；成功识别时发布一次语义成功 effect。状态以
   `Scanning / ProcessingImage / ShowingResult / Stopped` 明确表达。相机只在 `Scanning` 接受结果，
   不允许后续帧覆盖展示内容；无需另存一份原始值作为去重缓存。
 - `ScannerScreen` 只根据不可变状态渲染取景框、动画和结果卡，并通过 `ScannerScreenAction` 报告交互。
-- `ScannerRoute` 负责相册选择、Toast、打开外部链接和类型化导入确认；`ScannerPurpose` 明确限制当前
+- `ScannerRoute` 负责相册选择、Toast、扫码成功后的系统震动、打开外部链接和类型化导入确认；Route 生命周期结束会取消 effect 收集，停止或重扫后迟到的扫描结果不会再触发震动。`ScannerPurpose` 明确限制当前
   调用方能够接收的结果类型。
 
 相机权限被拒绝时 Scanner 直接退出，权限申请与 CameraX 生命周期不会泄漏到 Vault 或编辑器。
@@ -86,5 +86,6 @@ Composable 桥或持久化原始内容。
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 扫描结果类型与分类 | `ScannerResult`、`ScannerResultClassifier.classify()` | [`ScannerResult.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResult.kt)、[`ScannerResultClassifier.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultClassifier.kt) |
-| 路由状态收集与事件处理 | `ScannerRoute()` | [`ScannerRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRoute.kt) |
+| ViewModel 状态、任务归属及语义 effect | `ScannerViewModel`、`ScannerEffect.ScanSucceeded` | [`ScannerViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerViewModel.kt)、[`ScannerEffect.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerEffect.kt) |
+| 路由 effect 收集、系统震动与 UI 提示 | `ScannerRoute()`、`collectScannerRouteEffects()` | [`ScannerRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRoute.kt)、[`ScannerRouteEffects.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRouteEffects.kt) |
 | CameraX 预览宿主及资源释放 | `ScannerCameraHost()`、`ScannerCameraHost.stop()` | [`ScannerCameraHost.kt`](../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraHost.kt) |

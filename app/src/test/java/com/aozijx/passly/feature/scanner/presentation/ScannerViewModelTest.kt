@@ -22,6 +22,48 @@ class ScannerViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
+    fun `accepted scan publishes one success effect`() = runTest {
+        val model = model { BarcodeImageResult.NoBarcode }
+        val effects = mutableListOf<ScannerEffect>()
+        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+        model.onAction(ScannerUiAction.BarcodeDetected("one scan"))
+        model.onAction(ScannerUiAction.BarcodeDetected("duplicate frame"))
+        runCurrent()
+
+        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
+    }
+
+    @Test
+    fun `empty scan publishes no success effect`() = runTest {
+        val model = model { BarcodeImageResult.NoBarcode }
+        val effects = mutableListOf<ScannerEffect>()
+        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+        model.onAction(ScannerUiAction.BarcodeDetected(""))
+        runCurrent()
+
+        assertEquals(emptyList<ScannerEffect>(), effects)
+    }
+
+    @Test
+    fun `stopping scanner discards success feedback from a late image decode`() = runTest {
+        val pending = CompletableDeferred<BarcodeImageResult>()
+        val model = model { pending.await() }
+        val effects = mutableListOf<ScannerEffect>()
+        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+        model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
+        runCurrent()
+        model.onAction(ScannerUiAction.StopScanning)
+        pending.complete(BarcodeImageResult.Decoded("too late"))
+        runCurrent()
+
+        assertEquals(ScannerUiState.Stopped, model.uiState.value)
+        assertEquals(emptyList<ScannerEffect>(), effects)
+    }
+
+    @Test
     fun `older image cannot replace a newer result even if native work ignores cancellation`() = runTest {
         val old = CompletableDeferred<BarcodeImageResult>()
         val model = model { image ->
@@ -108,7 +150,7 @@ class ScannerViewModelTest {
         clipboard.finishWrite.complete(Unit)
         runCurrent()
         assertNull(clipboard.lastValue)
-        assertEquals(emptyList<ScannerEffect>(), effects)
+        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
     }
 
     @Test
@@ -120,7 +162,7 @@ class ScannerViewModelTest {
         val effects = mutableListOf<ScannerEffect>()
         backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
         runCurrent()
-        assertEquals(emptyList<ScannerEffect>(), effects)
+        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
     }
 
     @Test
@@ -142,7 +184,6 @@ class ScannerViewModelTest {
         clipboardWriter = clipboardWriter,
         logger = testLogger(),
         decode = decode,
-        vibrate = {},
     )
 
     private class DelayedClipboard : SensitiveClipboardWriter {

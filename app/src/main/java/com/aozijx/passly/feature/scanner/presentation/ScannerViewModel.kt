@@ -1,8 +1,5 @@
 package com.aozijx.passly.feature.scanner.presentation
 
-import android.content.Context
-import android.os.VibrationEffect
-import android.os.VibratorManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
@@ -10,7 +7,6 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -31,17 +27,12 @@ class ScannerViewModel internal constructor(
     private val clipboardWriter: SensitiveClipboardWriter,
     private val logger: Logger,
     private val decode: suspend (ImageRef) -> BarcodeImageResult,
-    private val vibrate: () -> Unit,
 ) : ViewModel() {
     @Inject constructor(
-        @ApplicationContext context: Context,
         clipboardWriter: SensitiveClipboardWriter,
         logger: Logger,
         decoder: BarcodeImageDecoder,
-    ) : this(clipboardWriter, logger, decoder::decode, {
-        (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
-            .defaultVibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-    })
+    ) : this(clipboardWriter, logger, decoder::decode)
 
     private sealed interface Work {
         class Active(val scope: CoroutineScope) : Work
@@ -91,9 +82,10 @@ class ScannerViewModel internal constructor(
         ScannerClassification.Empty -> false
         is ScannerClassification.Classified -> {
             // A displayed result owns subsequent actions; retire pending image/copy feedback.
-            replaceWork(newWork())
-            vibrate()
+            val owner = newWork()
+            replaceWork(owner)
             mutate(ScannerMutation.ScanCompleted(classified.result))
+            deliveries.trySend(Delivery(owner, ScannerEffect.ScanSucceeded))
             true
         }
     }
