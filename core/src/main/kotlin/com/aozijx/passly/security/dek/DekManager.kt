@@ -35,12 +35,6 @@ class DekManager @Inject constructor(
     private val _isUnlocked = MutableStateFlow(false)
     val isUnlocked: StateFlow<Boolean> = _isUnlocked.asStateFlow()
 
-    private var lockCallback: (suspend () -> Unit)? = null
-
-    fun setLockCallback(callback: suspend () -> Unit) {
-        lockCallback = callback
-    }
-
     val state: DekState get() = _state
 
     suspend fun initializeWithKey(
@@ -213,38 +207,11 @@ class DekManager @Inject constructor(
             _isUnlocked.value = false
             logger.log(LogStatements.Security.vaultLockStarted())
         }
-        try {
-            lockCallback?.invoke()
-        } catch (e: Exception) {
-            logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.CallbackFailed))
-        }
         mutex.withLock {
             wipeCurrentDek()
             fieldKeyManager.clear()
             _state = DekState.Locked
             logger.log(LogStatements.Security.vaultLocked())
-        }
-        }
-    }
-
-    suspend fun deleteVault() {
-        logger.inSpan(Operations.VaultKeyManagement) {
-        mutex.withLock {
-            _state = DekState.Deleting
-            _isUnlocked.value = false
-            logger.log(LogStatements.Security.vaultDeletionStarted())
-        }
-        try {
-            lockCallback?.invoke()
-        } catch (e: Exception) {
-            logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.CallbackFailed))
-        }
-        mutex.withLock {
-            wipeCurrentDek()
-            fieldKeyManager.clear()
-            vaultBootstrapStore.clear()
-            _state = DekState.Locked
-            logger.log(LogStatements.Security.vaultDeleted())
         }
         }
     }

@@ -43,6 +43,4 @@ interface VaultBootstrapStore {
     suspend fun disableBiometric(activeAlias: String)
 
     suspend fun clearBiometricRotationJournal()
-
-    suspend fun clear()
 }

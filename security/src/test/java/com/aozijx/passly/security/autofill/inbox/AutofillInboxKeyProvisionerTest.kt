@@ -192,9 +192,6 @@ class AutofillInboxKeyProvisionerTest {
         override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
         override suspend fun disableBiometric(activeAlias: String) = Unit
         override suspend fun clearBiometricRotationJournal() = Unit
-        override suspend fun clear() {
-            inboxKeyMaterial = null
-        }
         override suspend fun saveAutofillInboxKeyMaterial(material: AutofillInboxKeyMaterial) {
             inboxKeyMaterial = material
             inboxSaveCount++
@@ -219,7 +216,6 @@ class AutofillInboxKeyProvisionerTest {
         override suspend fun pending(keyId: ByteArray): List<AutofillInboxStoredRecord> = emptyList()
         override suspend fun remove(keyId: ByteArray, draftId: AutofillInboxDraftId) = Unit
         override suspend fun quarantine(keyId: ByteArray, draftId: AutofillInboxDraftId) = Unit
-        override suspend fun clear() = Unit
     }
 
     private class MemoryRecordStore(
@@ -245,7 +241,6 @@ class AutofillInboxKeyProvisionerTest {
             quarantined += draftId
             stored.removeAll { it.draftId == draftId }
         }
-        override suspend fun clear() = Unit
     }
 
     private object NoOpLogger : Logger {

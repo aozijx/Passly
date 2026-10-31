@@ -116,6 +116,5 @@ class BiometricRotationCandidateTest {
         override suspend fun loadSensitiveKeyEnvelope() = error("unused")
         override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) = error("unused")
         override suspend fun loadAttachmentKeyEnvelope() = error("unused")
-        override suspend fun clear() = error("unused")
     }
 }

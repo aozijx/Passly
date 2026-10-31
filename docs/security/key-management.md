@@ -30,8 +30,12 @@ Room schema 当前没有认证 Envelope 真相源；不得重新把认证材料�
 2. 解锁时读取指定 Envelope，解封并验证 DEK。
 3. `DekManager` 保存 DEK 的内存副本并派生会话密钥。
 4. 添加认证方式只新增或替换 Envelope。
-5. 锁定时关闭数据库并覆盖内存数组。
-6. 删除 Vault 时清除 VaultBootstrapStore 和数据库数据，操作必须显式且不可伪装成错误恢复。
+5. 锁定由 `VaultSessionController` 协调数据库封存，再由 `DekManager` 覆盖内存 DEK 与字段密钥。
+
+当前应用没有删除完整 Vault 的操作。设置中的“永久重置”只删除 SQLCipher 数据库及托管附件/图片，随后用现有
+Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物识别绑定和 Autofill Inbox 的密钥材料及队列
+均保留。该操作不等同于删除 Vault，也不清除 Inbox。完整行为见[数据库重置](../data/database.md#初始化失败与数据重置)
+和[Sealed Inbox 生命周期](../features/autofill/sealed-inbox.md#备份和生命周期)。
 
 `SecretKeySpec.encoded` 可能返回副本，对它调用 `fill(0)` 不能证明内部密钥已被擦除。文档和注释只能表述为“尽力缩短并覆盖可控副本”。
 

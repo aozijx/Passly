@@ -44,10 +44,6 @@ internal class AutofillInboxRecordStoreImpl @Inject constructor(
         withContext(Dispatchers.IO) { manager.quarantine(keyId, draftId) }
     }
 
-    override suspend fun clear() {
-        withContext(Dispatchers.IO) { manager.clear() }
-    }
-
     private companion object {
         const val ROOT_DIRECTORY = "vault/autofill-inbox"
     }
@@ -157,13 +153,6 @@ internal class AutofillInboxFileManager(
                 throw IOException("Unable to restore Inbox record after quarantine timestamp failure")
             }
             throw IOException("Unable to set Autofill Inbox quarantine time")
-        }
-    }
-
-    @Synchronized
-    fun clear() {
-        if (root.exists() && !root.deleteRecursively()) {
-            throw IOException("Unable to clear Autofill Inbox storage")
         }
     }
 

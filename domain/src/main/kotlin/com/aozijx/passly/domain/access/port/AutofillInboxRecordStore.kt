@@ -17,6 +17,4 @@ interface AutofillInboxRecordStore {
     suspend fun remove(keyId: ByteArray, draftId: AutofillInboxDraftId)
 
     suspend fun quarantine(keyId: ByteArray, draftId: AutofillInboxDraftId)
-
-    suspend fun clear()
 }

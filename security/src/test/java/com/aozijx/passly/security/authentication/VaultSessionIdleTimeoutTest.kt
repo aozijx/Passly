@@ -758,6 +758,5 @@ class VaultSessionIdleTimeoutTest {
         override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
         override suspend fun disableBiometric(activeAlias: String) = Unit
         override suspend fun clearBiometricRotationJournal() = Unit
-        override suspend fun clear() = Unit
     }
 }

@@ -407,16 +407,6 @@ object LogStatements {
             LogFields.Empty,
         )
 
-        fun vaultDeletionStarted(): LogStatement = InfoStatement(
-            Events.Security.VaultDeletionStarted,
-            LogFields.Empty,
-        )
-
-        fun vaultDeleted(): LogStatement = InfoStatement(
-            Events.Security.VaultDeleted,
-            LogFields.Empty,
-        )
-
         fun vaultLockStarted(): LogStatement = InfoStatement(
             Events.Security.VaultLockStarted,
             LogFields.Empty,

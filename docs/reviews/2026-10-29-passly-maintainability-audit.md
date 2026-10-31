@@ -315,3 +315,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：ViewModel 无 owner 或已有操作时立即清零新请求；操作开始前同步占用单飞状态，并在协程完成回调中再次清理缓冲区、恢复忙状态，覆盖协程未启动即被取消。Route 将忙状态传入弹窗，操作期间禁用编辑、确认、取消和动作选择；旧 owner 的完成结果仍由 `PageEffects` 过滤。
 - 回归：覆盖离页后迟到请求、ViewModel 启动前销毁、重复设置请求、页面重新进入时旧结果隔离及对话框忙碌事件拒绝。
 - 验证：App Password ViewModel/协调器定向单测、完整 `:app:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 后续批次：移除未使用的 DEK 回调和全量清除链（2026-10-31）
+
+- 根因：`DekManager.setLockCallback()` 没有注册方；`deleteVault()` 与 `DekState.Deleting` 无外部调用者，并成为 `VaultBootstrapStore.clear()`、Inbox 全 root `clear()` 的唯一入口。该入口不是当前数据库重置流程。
+- 清理：移除上述 dormant API、Data/Domain 清除端口与实现及测试替身。保留 `VaultSessionController` 锁定、`DatabaseResetController` 数据库重置、Inbox pending/quarantine 生命周期、bootstrap Proto 字段和独立的 Inbox key-material 清理。旧删除事件键保留在 EventCatalog 供历史日志识别，移除不再可调用的 LogStatements 生产器。
+- 文档：密钥管理、数据库和 Sealed Inbox 主题页明确当前没有完整 Vault 删除操作；永久数据库重置清理 SQLCipher 数据库和托管资源，但保留 bootstrap、Inbox key material 与 Inbox 文件队列。
+- 验证：`:core:test`、`:domain:test`、`:data:testDebugUnitTest`、`:security:testDebugUnitTest` 与 `verifyArchitecture` 通过；`git diff --check` 通过。

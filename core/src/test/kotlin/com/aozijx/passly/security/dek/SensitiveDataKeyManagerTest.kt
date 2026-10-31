@@ -147,14 +147,5 @@ class SensitiveDataKeyManagerTest {
 
         override suspend fun clearBiometricRotationJournal() = Unit
 
-        override suspend fun clear() {
-            envelopes.clear()
-            verificationTag?.fill(0)
-            verificationTag = null
-            sensitiveKeyEnvelope?.fill(0)
-            sensitiveKeyEnvelope = null
-            attachmentKeyEnvelope?.fill(0)
-            attachmentKeyEnvelope = null
-        }
     }
 }

@@ -104,7 +104,8 @@ database/session-wide failure 中止整轮；记录级失败按上述策略处�
 
 Manifest 当前 `allowBackup=false`，data extraction rules 也必须排除完整 Inbox root 与 `bootstrap.pb` 的 Inbox
 材料。该设计只承诺在容量/保留期内同一安装上的进程死亡和设备重启不丢失，不承诺跨设备或 Passly Backup 恢复。
-删除 Vault 时清除 bootstrap material 与 Inbox root。
+当前应用没有删除完整 Vault 的操作。数据库永久重置只删除 SQLCipher 数据库及托管资源，不清除 bootstrap material、
+Inbox root 或 pending records；队列仍按本页定义的保留期、容量和 key-ID 清理规则管理。
 
 决策见 [ADR-0025](../../decisions/ADR-0025-sealed-autofill-save-inbox.md)。
 

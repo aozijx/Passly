@@ -140,7 +140,6 @@ class AutofillInboxQueueWriterTest {
             keyId: ByteArray,
             draftId: com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId,
         ) = Unit
-        override suspend fun clear() = Unit
     }
 
     private object NoOpLogger : Logger {

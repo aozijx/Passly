@@ -86,9 +86,5 @@ class AttachmentContentCryptoTest {
         override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
         override suspend fun disableBiometric(activeAlias: String) = Unit
         override suspend fun clearBiometricRotationJournal() = Unit
-        override suspend fun clear() {
-            attachmentEnvelope?.fill(0)
-            attachmentEnvelope = null
-        }
     }
 }
