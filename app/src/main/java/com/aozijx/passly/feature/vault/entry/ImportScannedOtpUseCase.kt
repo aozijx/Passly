@@ -9,8 +9,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 
 class ImportScannedOtpUseCase @Inject constructor(
     private val createEntry: CreateEntryUseCase,
@@ -28,7 +26,6 @@ class ImportScannedOtpUseCase @Inject constructor(
             }
             try {
                 val result = createEntry(draft)
-                currentCoroutineContext().ensureActive()
                 result is AppResult.Success
             } catch (cancelled: CancellationException) {
                 throw cancelled

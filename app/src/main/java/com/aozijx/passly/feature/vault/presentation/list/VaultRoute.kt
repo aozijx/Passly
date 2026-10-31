@@ -29,6 +29,7 @@ import com.aozijx.passly.feature.vault.presentation.list.action.handleSwipeActio
 import com.aozijx.passly.feature.vault.presentation.list.action.resolveCopyRequest
 import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiState
+import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultScreen
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
@@ -41,6 +42,7 @@ import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationRe
 @Composable
 internal fun VaultRoute(
     vaultViewModel: VaultViewModel,
+    scannedOtpImportViewModel: ScannedOtpImportViewModel,
     navigation: VaultNavigation,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -169,7 +171,7 @@ internal fun VaultRoute(
             onImport = { scannerImport ->
                 when (scannerImport) {
                     is ScannerImport.Otp -> {
-                        if (vaultViewModel.importScannedOtp(scannerImport.config)) {
+                        if (scannedOtpImportViewModel.importScannedOtp(scannerImport.config)) {
                             ScannerImportHandlingResult.Applied
                         } else {
                             ScannerImportHandlingResult.Rejected

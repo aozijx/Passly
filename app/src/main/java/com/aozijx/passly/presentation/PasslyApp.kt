@@ -55,6 +55,7 @@ internal fun PasslyApp(
             ) {
                 AuthenticationHost(activity, authenticationHostRegistry, logger) {
                     AppShell(
+                        activity = activity,
                         uiState = shellState,
                         effects = shellViewModel.effects,
                         onAction = shellViewModel::onAction,

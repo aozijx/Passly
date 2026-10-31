@@ -23,7 +23,6 @@ import com.aozijx.passly.feature.vault.SecureSessionAccessPolicy
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
-import com.aozijx.passly.feature.vault.entry.ImportScannedOtpUseCase
 import com.aozijx.passly.feature.vault.trash.TrashCommandResult
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
@@ -49,7 +48,6 @@ class VaultViewModel @Inject internal constructor(
     private val entryListQueryRepository: EntryListQueryRepository,
     private val entryPageSource: VaultEntryPageSource,
     private val settingsRepository: LibraryViewSettingsRepository,
-    internal val importScannedOtp: ImportScannedOtpUseCase,
     private val trashCommand: TrashCommandUseCase,
     private val copyEntryField: CopyEntryFieldUseCase,
     private val copyOtpCode: CopyOtpCodeUseCase,

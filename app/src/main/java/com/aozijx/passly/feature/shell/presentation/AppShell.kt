@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.shell.presentation
 
 import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Composable
 internal fun AppShell(
+    activity: FragmentActivity,
     uiState: AppShellUiState,
     effects: Flow<AppShellEffect>,
     onAction: (AppShellUiAction) -> Unit,
@@ -53,7 +55,7 @@ internal fun AppShell(
                 )
             }
 
-            AppShellDestination.VAULT -> PasslyAppNavigation()
+            AppShellDestination.VAULT -> PasslyAppNavigation(activity)
             AppShellDestination.RECOVERY -> RecoveryModeRoute(
                 onExit = { onAction(AppShellUiAction.ExitRecovery) },
             )

@@ -352,3 +352,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：覆盖 Repository 异常、授权异常后可重试，以及执行中销毁和命令取消不变成失败提示。
 - 文档：Vault 列表主题页记录失败映射、忙碌复位和取消合同。
 - 验证：`TrashViewModelTest` 与 `TrashCommandUseCaseTest` 定向测试通过；完整 `:app:testDebugUnitTest`、`verifyArchitecture` 和 `git diff --check` 通过。
+
+### 后续复核：确认后的 OTP 扫描导入所有权（2026-10-31）
+
+- 根因：Vault Route 直接读取 `VaultViewModel` 暴露的 `ImportScannedOtpUseCase` 并在 Scanner 的页面协程中执行；Scanner 关闭或离开 Vault 会取消等待中的任务。Route 退出时是否取消写入因此由 UI 生命周期偶然决定。
+- 修复：删除 VaultViewModel 的 UseCase 暴露，将确认后的导入交给 Activity 作用域的 `ScannedOtpImportViewModel`。Route 只等待结果，等待者取消不取消 Activity 所有的任务；新任务执行前核对完整访问和确认时的认证状态，`CreateEntryUseCase` 与 Data session transaction 再次核验写入授权。同一 Activity 同时只接受一个 OTP 导入，避免 Scanner 重建导致并发重复写入；已提交事务不再因 UseCase 返回前的冗余 `ensureActive()` 被误报为取消失败。
+- 回归：覆盖确认调用者离开后仓库仍完成提交、启动前认证状态变化不写入、事务已开始后会话锁定仍以仓库提交结果结束、同 Activity 重建 Scanner 时并发确认被拒绝、失败结果反馈及关闭后的迟到回执过滤。初次实现中 ViewModel 方法与 UseCase 同名导致递归，测试运行暴露问题；重命名依赖后修复。
+- 文档：Scanner 与 OTP 创建页记录任务所有者、页面退出、访问撤销和提交后结果语义。
+- 验证：定向 `ScannedOtpImportViewModelTest`、`ScannerImportSessionTest`、`ImportScannedOtpUseCaseTest` 通过；完整 `:app:testDebugUnitTest verifyArchitecture --max-workers=1` 通过；`git diff --check` 通过。

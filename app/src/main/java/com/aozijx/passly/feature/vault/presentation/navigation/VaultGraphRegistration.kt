@@ -26,12 +26,14 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.list.VaultRoute
 import com.aozijx.passly.feature.vault.presentation.list.VaultViewModel
+import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.trash.TrashRoute
 
 internal fun NavGraphBuilder.registerVaultGraph(
     context: ShellNavigationContext,
     navController: NavHostController,
     sharedTransitionScope: SharedTransitionScope,
+    scannedOtpImportViewModel: ScannedOtpImportViewModel,
 ) {
     navigation(
         startDestination = AppRoute.Vault.route,
@@ -42,6 +44,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             VaultRoute(
                 navigation = context.toVaultNavigation(seedCoordinator),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
+                scannedOtpImportViewModel = scannedOtpImportViewModel,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
             )
@@ -52,6 +55,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
             VaultRoute(
                 navigation = context.toVaultNavigation(seedCoordinator),
                 vaultViewModel = vaultGraphViewModel(navController, backStackEntry),
+                scannedOtpImportViewModel = scannedOtpImportViewModel,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
                 isEffectsPage = false,

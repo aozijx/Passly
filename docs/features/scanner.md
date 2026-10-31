@@ -42,8 +42,10 @@ OTP 与 Wi-Fi 编辑器分别使用 `ApplyToOtpEditor`、`ApplyToWifiEditor`，�
 编辑器的 `Applied` 表示内容已被表单接受，Wi-Fi 首页的 `Applied` 表示已进入编辑页，不表示已保存。
 OTP 与 Wi-Fi 编辑器都通过带接受回执的 ViewModel 方法应用扫码内容；锁定、保存中或销毁后返回
 `Rejected`，不改写表单，也不因一次被忽略的 action 而关闭扫码结果。
-`ScannerImportSession` 在确认期间拦截重复确认、重扫与相册切换；退出会取消 Route 的确认协程，
-旧结果的迟到回执不再关闭页面或弹提示。取消不代表已完成的数据库写入会回滚。
+`ScannerImportSession` 在确认期间拦截重复确认、重扫与相册切换。首页 OTP 确认后由 Activity 生命周期的
+`ScannedOtpImportViewModel` 接管保存任务；关闭 Scanner 或离开 Vault 会取消页面等待和旧回执处理，但不会取消已确认的写入。
+页面仍在等待时，仓库成功才返回 `Applied`，失败返回 `Rejected` 并保留结果供重试；页面已离开时不向旧 Scanner 显示迟到提示。
+任务开始前若完整访问被撤销或认证会话已变化，导入会拒绝写入；事务已经开始后，数据库 session lease 负责与锁定串行化，已提交写入不会因离页被回滚或误报为取消失败。同一 Activity 生命周期内已有 OTP 导入在运行时，新 Scanner session 的确认会被拒绝，避免并发重复创建。
 
 首页 Wi-Fi 结果不会把 SSID 或密码写入导航参数。`EntryEditorSeedCoordinator` 在 Vault 图作用域内保存一份
 只可消费一次的临时内容，导航只携带随机 token；内容绑定暂存时的认证对象，读取和暂存都会核对所有权，
