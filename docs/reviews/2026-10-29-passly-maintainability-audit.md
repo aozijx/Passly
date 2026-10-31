@@ -408,3 +408,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：新增事件跨 collector 空窗单次消费、collector 取消不吞后续事件、claim callback 失败释放/成功后封闭，以及 callback 失败后交付器可重试同一 receipt 的测试；既有交付顺序测试继续覆盖平台结果先于 interaction 完成与临时锁定。
 - 文档：更新 Credential Manager 和 Autofill 共享填充流程的结果 owner、生命周期及 callback 失败合同。完成项从本地活动计划移除；Legacy ViewModel 仍把 framework `FillResponse`/`Dataset`（含凭据值）保留在可重放 `StateFlow`，跨 Activity 重建的单次交付仍是 Task 21 待办。
 - 验证：`:app:testDebugUnitTest --tests "*CredentialResponseResultEventsTest" --tests "*ActivityResultClaimTest" --tests "*AutofillResultDeliveryTest" --tests "*AutofillFillReducerTest" verifyArchitecture --no-parallel --max-workers=1` 通过；定向 13 项均通过，`git diff --check` 通过。未运行 Activity 重建仪器测试或设备验收。
+
+### 后续复核：移除 Vault reset 重复刷新桥（2026-10-31）
+
+- 根因：数据库重置同时通过 session SEALED→UNLOCKED 触发 `RoomEntryPagingStore.pages()` 的 `observeWhenReadable()` 重订阅，并另发 `EntryDataRefreshNotifier` 经 app signal、ViewModel `_refreshTrigger/reloadVersion` 重建查询。两路机制描述同一数据库替换，要求两个通知链保持同步。
+- 修复：删除 `EntryDataRefreshNotifier`、`VaultDataChangeSignal`、`DataVaultDataChangeSignal`、Hilt signal binding、ViewModel refresh collector 和 `reloadVersion`；保留仍负责跨 app/Data 边界的 `VaultEntryPageSource` / `DataVaultEntryPageSource`。查询变化仍由 `flatMapLatest` 切换，普通写入继续由 Room invalidation 更新。
+- 回归：Room/SQLCipher 仪器测试让真实 `AsyncPagingDataDiffer` 消费 `cachedIn(scope)` 分页流，核对同一 query generation 在 reset 后通过 SEALED 空页和 UNLOCKED Pager 恢复，保留筛选条件；随后令重开密钥不可用，断言页面变为空、session 保持 SEALED、旧条目不回显。`VaultQueryStateTest` 覆盖相同 query 不重建 generation，`VaultDatabaseResetControllerTest` 覆盖重开失败状态。
+- 文档：更新 Vault 列表、数据库生命周期与 Feature 文件归属审查，记录 session state 是 reset 后列表恢复的唯一触发源。
+- 验证：`:data:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.aozijx.passly.data.local.database.session.RoomObservationSessionTest' --no-parallel --max-workers=1` 通过（该类 4 项、0 失败）；`:app:testDebugUnitTest --tests "*VaultQueryStateTest" :data:testDebugUnitTest --tests "*VaultDatabaseResetControllerTest" verifyArchitecture --no-parallel --max-workers=1` 通过（定向单测分别 7 项和 2 项）；`git diff --check` 通过。仪器测试覆盖 Data session 与同等 Paging 缓存消费者；导航期间的实际 Compose/NavHost 转场仍未做宿主级仪器测试。

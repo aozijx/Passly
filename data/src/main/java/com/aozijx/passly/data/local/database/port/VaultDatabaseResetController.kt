@@ -23,7 +23,6 @@ import javax.inject.Singleton
 internal class VaultDatabaseResetController @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseSession: DatabaseSessionLifecycle,
-    private val dataRefreshNotifier: EntryDataRefreshNotifier,
     private val logger: Logger,
 ) : DatabaseResetController {
     override suspend fun reset(): Throwable? = withContext(Dispatchers.IO) {
@@ -50,8 +49,6 @@ internal class VaultDatabaseResetController @Inject constructor(
                 } catch (error: Throwable) {
                     error
                 }
-                if (reopenError == null) dataRefreshNotifier.notifyRefresh()
-
                 if (resetError != null && reopenError != null && reopenError !== resetError) {
                     resetError.addSuppressed(reopenError)
                 }

@@ -17,20 +17,17 @@ import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SecureSessionState
 import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.async
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class VaultDatabaseResetControllerTest {
     @Test
-    fun reopenFailureIsReturnedAfterFilesAreDeletedWithoutPublishingRefresh() = runTest {
+    fun reopenFailureIsReturnedAfterFilesAreDeletedAndSessionRemainsSealed() = runTest {
         val root = Files.createTempDirectory("vault-reset-test").toFile()
         val actions = mutableListOf<String>()
         val reopenFailure = IllegalStateException("database reopen failed")
@@ -43,18 +40,13 @@ class VaultDatabaseResetControllerTest {
                 return true
             }
         }
-        val notifier = EntryDataRefreshNotifier()
-        val refreshed = async { notifier.events.first() }
-        runCurrent()
-        val controller = VaultDatabaseResetController(context, session, notifier, NoOpLogger)
+        val controller = VaultDatabaseResetController(context, session, NoOpLogger)
 
         val result = controller.reset()
 
         assertEquals(reopenFailure, result)
         assertEquals(listOf("seal-start", "seal-finished", "delete", "unlock"), actions)
         assertEquals(SecureSessionState.SEALED, session.lockState)
-        assertFalse(refreshed.isCompleted)
-        refreshed.cancel()
     }
 
     @Test
@@ -72,10 +64,7 @@ class VaultDatabaseResetControllerTest {
                 return true
             }
         }
-        val notifier = EntryDataRefreshNotifier()
-        val refreshed = async { notifier.events.first() }
-        runCurrent()
-        val controller = VaultDatabaseResetController(context, session, notifier, NoOpLogger)
+        val controller = VaultDatabaseResetController(context, session, NoOpLogger)
 
         val reset = async { controller.reset() }
         sealStarted.await()
@@ -89,7 +78,6 @@ class VaultDatabaseResetControllerTest {
         }
 
         assertEquals(listOf("seal-start", "seal-finished", "delete", "unlock"), actions)
-        refreshed.await()
     }
 
     private class RecordingDatabaseSession(

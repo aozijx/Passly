@@ -122,13 +122,13 @@ Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 
 该操作不删除完整 Vault：Bootstrap DataStore、Autofill Inbox 密钥材料、pending/quarantine 文件队列都会保留。
 因此数据库重置后，待导入 Inbox 草稿仍可在完整解锁后继续处理；Inbox 自身的过期和容量清理规则不变。
 
-进入数据库封存后，重置会在不可取消区完成封存、删除数据库与托管资源、重新打开数据库并发布刷新信号，
-然后才向调用方传播取消。尚未开始封存时收到的取消会阻止重置启动；执行期间的取消不能留下“已封存但未清理”
-或“已重开但列表未刷新”的半完成状态。
+进入数据库封存后，重置会在不可取消区完成封存、删除数据库与托管资源并重新打开数据库，然后才向调用方传播取消。
+尚未开始封存时收到的取消会阻止重置启动；执行期间的取消不能留下“已封存但未清理”的半完成状态。
 
 数据库重置与认证锁定、解锁共用 Security 会话互斥。重置期间不报告完整 Vault 访问；重开成功后恢复会话，
 重开失败则撤销授权、清除敏感数据密钥并转入锁定状态。活动查询流同时要求认证授权和数据库会话为 `UNLOCKED`；
-数据库封存时取消 Room 观察并发出空结果，重开后重新订阅，不依赖认证状态先发生一次虚假变化。
+数据库封存时取消 Room 观察并发出空结果，重开后重新订阅，不依赖认证状态先发生一次虚假变化。Vault Paging
+直接随数据库 session state 重建 Pager，不再从重置控制器另发列表刷新事件。
 
 ## 代码位置
 
@@ -137,5 +137,6 @@ Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 
 | Room schema 与数据库定义 | `AppDatabase` | [`AppDatabase.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt) |
 | 数据库依赖提供 | `DatabaseProvider` | [`DatabaseProvider.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt) |
 | 会话查询、事务、观察与锁定生命周期 | `AppDatabaseSession.query()`、`transaction()`、`observeFlow()`、`unlock()`、`softLock()`、`seal()`、`closeDatabase()` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
+| Vault 数据库重置与可读观察 gate | `VaultDatabaseResetController.reset()`、`observeWhenReadable()` | [`VaultDatabaseResetController.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/port/VaultDatabaseResetController.kt)、[`AppDatabaseSessionObservations.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSessionObservations.kt) |
 | 秘密字段替换、读取与 OTP 配置读取 | `SecretFieldStore.replaceAll()`、`readBundle()`、`readField()`、`readOtpConfig()` | [`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
 | 查找元数据策略决策 | [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md) | [`ADR-0018-lookup-metadata-strategy.md`](../decisions/ADR-0018-lookup-metadata-strategy.md) |

@@ -51,7 +51,7 @@
 ### Vault 工作流与数据适配边界复核（2026-10-29）
 
 - **保留 Vault 的非 UI 流程子包。** `entry` 持有创建、导入、移动回收站及编辑器导航数据流程；`detail` 持有详情编辑、揭示与二维码等应用服务；`history` 持有修订读取/恢复编排；`trash` 持有回收站命令；`otp` 持有运行时口令状态。各组都有相应单元测试，详情与列表的 Presentation 测试镜像具体 UI 状态和异步发布职责。没有证据支持把这些流程搬入 ViewModel 或 `presentation`。
-- **保留分页端口和 app/Data 适配器拆分。** Vault 的 `VaultEntryPageSource`、`VaultDataChangeSignal` 是 feature 所需能力合同；`app/entry/paging` 中的 `DataVaultEntryPageSource`、`DataVaultDataChangeSignal` 分别接到 Data 的 `EntryPagingStore` 与刷新通知端口，并由 `VaultEntryDataAdapterModule` 绑定。具体 Data 实现未进入 feature，DI 注册位置与应用组合职责吻合。
+- **保留分页端口和 app/Data 适配器拆分。** `VaultEntryPageSource` 与 `DataVaultEntryPageSource` 连接 Vault feature 和 Data 的 `EntryPagingStore`，仍是实际的模块边界。旧 `VaultDataChangeSignal` / `DataVaultDataChangeSignal` 刷新桥已在 2026-10-31 复核后删除，见下方追加记录。
 - **保留 detail/history 的独立包。** 详情编辑与修订恢复分别由各自应用服务编排，详情 ViewModel 显式依赖这些用例；历史用例有单测覆盖。单纯因页面汇总展示历史而将历史流程并入 detail，会模糊恢复/授权职责，没有带来更清晰的所有权。
 - 静态审查没有发现上述流程合同的重复转发实现或需要改动的导航、Manifest、资源、持久化键。此结论依据代码调用、Hilt binding 与现有测试路径；本轮没有运行测试。
 
@@ -94,3 +94,9 @@ Picker 的两个字符串资源仍留在 app 资源集中。组件实现与行�
 ## 审查限制
 
 本轮逐项核对了源码组织、关键生产调用方、Data/Security 依赖边界、Hilt/Manifest 注册、资源入口、测试位置与正式文档。未按文件数量或目录名称批量搬迁。审查仅为静态检查，没有运行功能测试或设备级验证；后续只有在消费者、边界或目录职责变化时才需要重新评估保留项。
+
+### Vault reset 刷新通知复核（2026-10-31）
+
+2026-10-29 的保留结论基于当时的双接口设计。复核后移除 `VaultDataChangeSignal`、`DataVaultDataChangeSignal` 与 `EntryDataRefreshNotifier`：`RoomEntryPagingStore.pages()` 已通过 `AppDatabaseSession.observeWhenReadable()` 观察 session 可读状态，数据库 reset 的 SEALED→UNLOCKED 转换会在同一个 query collector 中取消旧 Room Pager、发出空页并重建 Pager。独立 refresh signal 与 session state 重复表达同一次数据库替换，增加了一个 DI/adapter/collector 注册链，并使 reset 行为依赖两路通知协调。`VaultEntryPageSource` 与 `DataVaultEntryPageSource` 仍是必要的 app/Data 分层适配边界；普通写入由 Room invalidation 驱动。该复核不改变既有跨模块分页端口的保留结论。
+
+**验证范围：** `RoomObservationSessionTest` 使用真实 `AsyncPagingDataDiffer` 消费分页结果，检查 query generation 数、reset 前后 PagingData 发射次数以及过滤结果；Data session/paging 仪器测试、Vault query 测试与架构门禁的实际结果记录在维护审查中。该测试证明 Data 层 collector 行为，不单独证明 Activity 导航期间的 Compose collector 生命周期。

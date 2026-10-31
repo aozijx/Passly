@@ -1,6 +1,6 @@
 # Vault 列表、搜索与排序
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-10-31）。
 
 列表只查询可展示摘要；密码、OTP secret、私钥等高敏值通过明确授权的窄入口按需读取。
 修订历史是可恢复的版本快照，访问活动记录查看、复制和 Autofill 等行为，两者不是同一数据源；
@@ -35,7 +35,7 @@
 - 快捷筛选包括全部、密码、TOTP，按 capability flag 过滤，不按 EntryType 猜测能力。
 - 标签分类通过 `json_each` 发现，忽略大小写并稳定排序；编辑与导入入口必须规范化标签空白。
 - 有效搜索文本先去重，再防抖 250 ms；无关 UI 状态刷新及只改变首尾空白的输入不会重置搜索截止时间。
-  分类、排序、层级和刷新参数继续即时传播，搜索等待期间沿用上次已生效的文本。查询变化通过 `flatMapLatest` 取消旧 Pager。
+  分类、排序和层级即时传播，搜索等待期间沿用上次已生效的文本。查询变化通过 `flatMapLatest` 取消旧 Pager。
 
 数据库整体由 SQLCipher 保护，因此摘要可参与 SQL 查询；高敏值不进入分页行。
 
@@ -74,6 +74,10 @@ EXPANDED 先用根条目的收藏和排序值定位组，再在组内先显示�
 锁定/seal 使可读状态立即为 false，取消旧流并返回空数据；重新解锁才创建新 Pager。禁止在 factory 中用
 `runBlocking` 取数据库或缓存跨会话 DAO/数据库实例。
 
+外部内容整体替换或永久重置数据库时也遵循同一会话边界：活动列表在 seal 时结束当前 Pager 并呈现空页，重开后
+通过 session state 重建一个 Pager，保留当前 `EntryListQuery` 的搜索、类型、分类和排序条件。列表不订阅第二个
+“全量刷新”信号；失败重开保持 SEALED 和空页，不回显重置前的页面内容。普通条目写入则继续依靠 Room invalidation。
+
 ## 搜索与菜单所有权
 
 查询和“是否搜索”属于 `VaultViewModel`；焦点、下拉进度、键盘、返回收起和 Popup 动画属于 Compose
@@ -108,4 +112,6 @@ Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删�
 | --- | --- | --- |
 | 列表查询条件与排序规则 | `EntryListQuery`、`EntrySort` | [`EntryListQuery.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)、[`EntrySort.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt) |
 | 构造 SQLite 分类与分页查询 | `buildEntryCategoryQuery()`、`buildEntryPagingQuery()` | [`EntryPagingQueryFactory.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt) |
+| Session 可读期间创建/重建 Room Pager | `RoomEntryPagingStore.pages()`、`observeWhenReadable()` | [`RoomEntryPagingStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/paging/RoomEntryPagingStore.kt)、[`AppDatabaseSessionObservations.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSessionObservations.kt) |
+| Vault 查询代际与 Paging 缓存 owner | `switchQueryGenerations()`、`VaultViewModel.entries` | [`VaultQueryState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryState.kt)、[`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
 | 列表界面动作与可见 OTP 订阅 | `VaultViewModel.onAction()`、`subscribeVisibleOtp()`、`unsubscribeVisibleOtp()` | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |

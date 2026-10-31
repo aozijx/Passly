@@ -1,8 +1,14 @@
 package com.aozijx.passly.data.local.database.session
 
 import android.content.Context
+import androidx.paging.AsyncPagingDataDiffer
+import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aozijx.passly.core.error.model.DatabaseInitFailed
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.LogFields
@@ -22,7 +28,15 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.model.query.EntryListQuery
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
+import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
+import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionLockedException
@@ -39,12 +53,18 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,6 +75,114 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class RoomObservationSessionTest {
+    @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun activePagingRestartsOnceAfterDatabaseResetAndKeepsQueryFilters() = runBlocking {
+        System.loadLibrary("sqlcipher")
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        val logger = NoOpLogger
+        val failReopen = AtomicBoolean(false)
+        val session = AppDatabaseSession(
+            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+            keySource = SessionKeySource {
+                if (failReopen.get()) throw IOException("Test database key unavailable")
+                DATABASE_KEY.copyOf()
+            },
+            eventLogger = DatabaseSessionEventLogger(logger),
+        )
+        val access = FixedAuthenticatedAccess()
+        val controller = VaultDatabaseResetController(context, session, logger)
+        val store = RoomEntryPagingStore(session, access)
+        val query = EntryListQuery(
+            searchText = "needle",
+            entryTypes = setOf(EntryType.LOGIN),
+            sort = EntrySort(
+                field = EntrySortField.TITLE,
+                direction = SortDirection.ASC,
+                pinFavorites = false,
+            ),
+        )
+        val differ = AsyncPagingDataDiffer(
+            diffCallback = object : DiffUtil.ItemCallback<EntryListItem>() {
+                override fun areItemsTheSame(oldItem: EntryListItem, newItem: EntryListItem) =
+                    oldItem.id == newItem.id
+
+                override fun areContentsTheSame(oldItem: EntryListItem, newItem: EntryListItem) =
+                    oldItem == newItem
+            },
+            updateCallback = NoOpListUpdateCallback,
+            mainDispatcher = Dispatchers.Main,
+            workerDispatcher = Dispatchers.IO,
+        )
+        val pageEmissions = AtomicInteger()
+        val pageSourceGenerations = AtomicInteger()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val pages = kotlinx.coroutines.flow.flowOf(query)
+            .flatMapLatest { currentQuery ->
+                pageSourceGenerations.incrementAndGet()
+                store.pages(currentQuery, PagingConfig(pageSize = 20, enablePlaceholders = false))
+            }
+            .onEach { pageEmissions.incrementAndGet() }
+            .cachedIn(scope)
+        val collection = scope.launch {
+            pages.collectLatest(differ::submitData)
+        }
+
+        try {
+            awaitPageEmissions(pageEmissions, 1)
+            assertNull(session.unlock())
+            awaitPageEmissions(pageEmissions, 2)
+            session.transaction {
+                entryCommandDao().insertStrict(
+                    EntryEntity(entryId = "before-match", entryType = EntryType.LOGIN, title = "Needle before"),
+                )
+                entryCommandDao().insertStrict(
+                    EntryEntity(entryId = "before-other", entryType = EntryType.LOGIN, title = "Other before"),
+                )
+            }
+            awaitPageTitles(differ, listOf("Needle before"))
+            val beforeResetEmissions = pageEmissions.get()
+            assertEquals(3, beforeResetEmissions)
+            assertEquals(1, pageSourceGenerations.get())
+
+            assertNull(controller.reset())
+            withTimeout(10_000L) {
+                while (pageEmissions.get() < beforeResetEmissions + 2) delay(10L)
+            }
+            awaitPageTitles(differ, emptyList())
+            delay(250L)
+            assertEquals(beforeResetEmissions + 2, pageEmissions.get())
+            assertEquals(1, pageSourceGenerations.get())
+
+            session.transaction {
+                entryCommandDao().insertStrict(
+                    EntryEntity(entryId = "after-match", entryType = EntryType.LOGIN, title = "Needle after"),
+                )
+                entryCommandDao().insertStrict(
+                    EntryEntity(entryId = "after-other", entryType = EntryType.LOGIN, title = "Other after"),
+                )
+            }
+            awaitPageTitles(differ, listOf("Needle after"))
+            assertEquals(1, pageSourceGenerations.get())
+
+            val beforeFailedResetEmissions = pageEmissions.get()
+            failReopen.set(true)
+            assertTrue(controller.reset() is DatabaseInitFailed)
+            awaitPageEmissions(pageEmissions, beforeFailedResetEmissions + 1)
+            awaitPageTitles(differ, emptyList())
+            assertEquals(SecureSessionState.SEALED, session.lockStateFlow.first())
+            delay(250L)
+            assertEquals(beforeFailedResetEmissions + 1, pageEmissions.get())
+            assertEquals(1, pageSourceGenerations.get())
+        } finally {
+            collection.cancelAndJoin()
+            scope.cancel()
+            session.seal()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+        }
+    }
+
     @Test
     fun sealingWaitsForActiveRoomTransactionBeforeClosingDatabase() = runBlocking {
         System.loadLibrary("sqlcipher")
@@ -285,6 +413,28 @@ class RoomObservationSessionTest {
             }
             error("Unreachable")
         }
+
+    private suspend fun awaitPageEmissions(emissions: AtomicInteger, expected: Int) {
+        withTimeout(10_000L) {
+            while (emissions.get() < expected) delay(10L)
+        }
+    }
+
+    private suspend fun awaitPageTitles(
+        differ: AsyncPagingDataDiffer<EntryListItem>,
+        expected: List<String>,
+    ) {
+        withTimeout(10_000L) {
+            while (differ.snapshot().items.map(EntryListItem::title) != expected) delay(10L)
+        }
+    }
+
+    private object NoOpListUpdateCallback : ListUpdateCallback {
+        override fun onInserted(position: Int, count: Int) = Unit
+        override fun onRemoved(position: Int, count: Int) = Unit
+        override fun onMoved(fromPosition: Int, toPosition: Int) = Unit
+        override fun onChanged(position: Int, count: Int, payload: Any?) = Unit
+    }
 
     private suspend fun <T> nextEmpty(channel: Channel<List<T>>): List<T> =
         withTimeout(10_000L) {

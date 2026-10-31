@@ -213,11 +213,9 @@ internal object SourceBoundaryPolicy {
             sourcePathContains = "/app/src/",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.data.repository.entry.paging.EntryPagingStore",
-                "com.aozijx.passly.data.local.database.port.EntryDataRefreshNotifier",
             ),
             allowedSourcePathContains = setOf(
                 "/app/entry/paging/DataVaultEntryPageSource.kt",
-                "/app/entry/paging/DataVaultDataChangeSignal.kt",
             ),
             message = "vault paging Data types may only be imported by App adapters",
         ),

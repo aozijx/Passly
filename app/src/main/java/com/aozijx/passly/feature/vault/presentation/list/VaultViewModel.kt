@@ -25,7 +25,6 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.trash.TrashCommandResult
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
-import com.aozijx.passly.feature.vault.entry.VaultDataChangeSignal
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
@@ -51,7 +50,6 @@ class VaultViewModel @Inject internal constructor(
     private val trashCommand: TrashCommandUseCase,
     private val copyEntryField: CopyEntryFieldUseCase,
     private val copyOtpCode: CopyOtpCodeUseCase,
-    private val dataChangeSignal: VaultDataChangeSignal,
     private val secureSessionAccessState: SecureSessionAccessState,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
@@ -66,16 +64,7 @@ class VaultViewModel @Inject internal constructor(
         emitEffect(VaultEffect.ShowError(message))
     }
 
-    private val _refreshTrigger = MutableStateFlow(0L)
     private val deletingEntryIds = mutableSetOf<EntryId>()
-
-    /**
-     * 外部替换数据库内容后重建 Room 订阅。
-     * 普通增删改依靠 Room 的失效通知，不应手动触发重复查询。
-     */
-    private fun requestFullReload() {
-        _refreshTrigger.value++
-    }
 
     private val totp = otpCodeRuntimeFactory.create(viewModelScope)
 
@@ -87,7 +76,6 @@ class VaultViewModel @Inject internal constructor(
     private val queryState: Flow<VaultQueryState> = buildVaultQueryStates(
         uiStates = uiState,
         hierarchyModes = hierarchyMode,
-        reloadVersions = _refreshTrigger,
     )
 
     val entries: Flow<PagingData<VaultListItemUiModel>> = queryState
@@ -234,12 +222,6 @@ class VaultViewModel @Inject internal constructor(
         viewModelScope.launch {
             entryListQueryRepository.availableCategories.collect { categories ->
                 mutate(VaultMutation.CategoriesChanged(categories))
-            }
-        }
-
-        viewModelScope.launch {
-            dataChangeSignal.changes().collect {
-                requestFullReload()
             }
         }
     }

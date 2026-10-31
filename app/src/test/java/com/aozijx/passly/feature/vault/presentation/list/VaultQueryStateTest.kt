@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -32,7 +30,6 @@ class VaultQueryStateTest {
             sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.EXPANDED,
-            reloadVersion = 7L,
         )
 
         val allQuery = state.toEntryListQuery()
@@ -48,25 +45,22 @@ class VaultQueryStateTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `reload version switches generation while equal state is deduplicated`() = runTest {
+    fun `equal query states do not restart the generation`() = runTest {
         val initial = VaultQueryState.create(
             searchText = "mail",
             category = null,
             sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
-            reloadVersion = 0L,
         )
         val states = MutableSharedFlow<VaultQueryState>(replay = 1, extraBufferCapacity = 2)
         states.tryEmit(initial)
         val loadedQueries = mutableListOf<String>()
-        val outputs = mutableListOf<Int>()
-
         val collection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             states.switchQueryGenerations { query ->
                 loadedQueries += query.searchText
                 flowOf(loadedQueries.size)
-            }.take(2).toList(outputs)
+            }.collect {}
         }
         runCurrent()
 
@@ -74,12 +68,8 @@ class VaultQueryStateTest {
         runCurrent()
         assertEquals(listOf("mail"), loadedQueries)
 
-        states.emit(initial.copy(reloadVersion = 1L))
-        runCurrent()
-        collection.join()
-
-        assertEquals(listOf("mail", "mail"), loadedQueries)
-        assertEquals(listOf(1, 2), outputs)
+        assertEquals(listOf("mail"), loadedQueries)
+        collection.cancel()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -91,7 +81,6 @@ class VaultQueryStateTest {
             sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
-            reloadVersion = 0L,
         )
         val states = MutableSharedFlow<VaultQueryState>(replay = 1)
         states.emit(initial)
@@ -133,7 +122,6 @@ class VaultQueryStateTest {
             sort = createdAtDescendingSort,
             entryTypes = emptySet(),
             hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
-            reloadVersion = 0L,
         )
         val states = MutableSharedFlow<VaultQueryState>(replay = 1)
         states.emit(initial)
@@ -168,7 +156,7 @@ class VaultQueryStateTest {
         val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
         val observed = mutableListOf<VaultQueryState>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED), flowOf(0L))
+            buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED))
                 .collect(observed::add)
         }
         runCurrent()
@@ -190,7 +178,7 @@ class VaultQueryStateTest {
         val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
         val observed = mutableListOf<VaultQueryState>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED), flowOf(0L))
+            buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED))
                 .collect(observed::add)
         }
         runCurrent()
@@ -216,11 +204,10 @@ class VaultQueryStateTest {
             VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort),
         )
         val hierarchyModes = MutableStateFlow(EntryHierarchyDisplayMode.COLLAPSED)
-        val reloadVersions = MutableStateFlow(0L)
         val observed = mutableListOf<VaultQueryState>()
 
         val collection = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            buildVaultQueryStates(uiStates, hierarchyModes, reloadVersions).collect(observed::add)
+            buildVaultQueryStates(uiStates, hierarchyModes).collect(observed::add)
         }
         runCurrent()
         assertEquals(emptyList<VaultQueryState>(), observed)

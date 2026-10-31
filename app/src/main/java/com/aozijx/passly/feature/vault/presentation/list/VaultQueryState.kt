@@ -22,7 +22,6 @@ internal data class VaultQueryState(
     val sort: EntrySort,
     val entryTypes: Set<EntryType> = emptySet(),
     val hierarchyMode: EntryHierarchyDisplayMode,
-    val reloadVersion: Long,
 ) {
     fun toEntryListQuery() = EntryListQuery(
         searchText = searchText,
@@ -39,38 +38,27 @@ internal data class VaultQueryState(
             sort: EntrySort,
             entryTypes: Set<EntryType> = emptySet(),
             hierarchyMode: EntryHierarchyDisplayMode,
-            reloadVersion: Long,
         ) = VaultQueryState(
             searchText = searchText.trim(),
             category = category?.trim()?.takeIf(String::isNotEmpty),
             sort = sort,
             entryTypes = entryTypes,
             hierarchyMode = hierarchyMode,
-            reloadVersion = reloadVersion,
         )
     }
 }
 
-private data class VaultQueryGeneration(
-    val query: EntryListQuery,
-    val reloadVersion: Long,
-)
-
 @OptIn(ExperimentalCoroutinesApi::class)
 internal fun <T> Flow<VaultQueryState>.switchQueryGenerations(
     load: (EntryListQuery) -> Flow<T>,
-): Flow<T> = map { state ->
-    VaultQueryGeneration(
-        query = state.toEntryListQuery(),
-        reloadVersion = state.reloadVersion,
-    )
-}.distinctUntilChanged().flatMapLatest { generation -> load(generation.query) }
+): Flow<T> = map(VaultQueryState::toEntryListQuery)
+    .distinctUntilChanged()
+    .flatMapLatest(load)
 
 @OptIn(FlowPreview::class)
 internal fun buildVaultQueryStates(
     uiStates: Flow<VaultUiState>,
     hierarchyModes: Flow<EntryHierarchyDisplayMode>,
-    reloadVersions: Flow<Long>,
 ): Flow<VaultQueryState> {
     val effectiveSearch = uiStates
         .map { state -> state.searchQuery.trim() }
@@ -92,15 +80,13 @@ internal fun buildVaultQueryStates(
         effectiveSearch,
         selection,
         hierarchyModes.distinctUntilChanged(),
-        reloadVersions,
-    ) { search, currentSelection, hierarchy, reloadVersion ->
+    ) { search, currentSelection, hierarchy ->
         VaultQueryState.create(
             searchText = search,
             category = currentSelection.category,
             sort = currentSelection.sort,
             entryTypes = currentSelection.entryTypes,
             hierarchyMode = hierarchy,
-            reloadVersion = reloadVersion,
         )
     }.distinctUntilChanged()
 }
