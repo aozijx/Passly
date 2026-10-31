@@ -337,3 +337,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：将接口移至 `domain.autofill.port`；`LegacySaveFlow`、`CredentialManagerFlow` 与 Security 实现均依赖 Domain port，Security 认证 Hilt 模块继续绑定具体 writer。Legacy/Credential Manager 各自的开关、来源、结果及取消处理未改。
 - 文档：保存流程、Sealed Inbox 和维护边界页标明能力端口与加密/耐久实现的归属。
 - 验证：`:domain:test`、`:security:testDebugUnitTest`、`:app:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check` 通过；全仓检索未发现旧 Security 契约引用。
+
+### 后续评估：保留 Detail 修订历史所有权（2026-10-31）
+
+- 评估：修订历史的观察、比较、授权揭示、恢复状态和敏感值清理都绑定当前 `DetailWorkSession` 条目令牌；认证撤权或切换 Entry 会同步关闭根详情状态。恢复事务成功后还需通过 `DetailPresentationLoader` 重载根投影。
+- 结论：不拆成独立 ViewModel。新所有者仍需父 ViewModel 提供访问/条目 token，并回调恢复后的根投影刷新；这会增加状态同步和桥接，不能形成独立生命周期。现有 `DetailRevisionReducer` 已单独承担纯状态转换。
+- 文档：修订历史主题页记录保留当前所有者的生命周期依据和拆分条件。
+- 验证：本项为只读边界评估和文档更新；未改变运行时代码。

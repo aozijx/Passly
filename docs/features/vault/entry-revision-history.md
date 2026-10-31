@@ -10,6 +10,10 @@
 `DetailViewModel` 启动或取消观察、比较、揭示和恢复；`DetailRevisionReducer` 只处理纯状态转换。根状态只有
 Closed 和 Open。Open 固定绑定一个 Entry ID，并分别持有列表与当前页：
 
+修订历史继续由 Detail 页的 `DetailViewModel` 持有，不另建 ViewModel：其任务令牌来自同一条 `DetailWorkSession`，
+条目切换和会话撤权必须同时取消历史观察/操作并擦除揭示值；恢复提交后还要重新打开并发布根详情投影。独立
+所有者必须把这些生命周期和刷新动作回调给父 ViewModel，不能减少桥接或明确所有权，因此不做机械拆分。
+
 - 列表：Loading / Ready / Failed；
 - 当前页：列表或绑定 revision ID 的比较页；
 - 比较：Loading / Ready / Failed；
