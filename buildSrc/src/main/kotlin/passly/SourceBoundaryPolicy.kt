@@ -1,6 +1,107 @@
 package passly
 
 internal object SourceBoundaryPolicy {
+    val featureIntegrationAllowances = listOf(
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme"),
+            owner = "Autofill Activity theme host",
+            rationale = "System Activity owns the Compose host and applies the persisted app theme.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/autofill/presentation/credential/CredentialResponseActivity.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme"),
+            owner = "Autofill Activity theme host",
+            rationale = "System Activity owns the Compose host and applies the persisted app theme.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/autofill/presentation/legacy/AutofillFillActivity.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme"),
+            owner = "Autofill Activity theme host",
+            rationale = "System Activity owns the Compose host and applies the persisted app theme.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt",
+            targetFeature = "autofill",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource"),
+            owner = "Autofill service status capability",
+            rationale = "Settings consumes a single-method observation port implemented by the app platform layer.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/settings/presentation/main/navigation/data/BackupRoute.kt",
+            targetFeature = "backup",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.backup.presentation.BackupOperationRoute"),
+            owner = "Settings Backup page host",
+            rationale = "Settings owns the page and Activity Result launcher while composing Backup operation UI.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/settings/presentation/main/navigation/data/DataManagementRoute.kt",
+            targetFeature = "database",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.database.presentation.reset.DatabaseResetRoute"),
+            owner = "Settings data management host",
+            rationale = "Settings owns the Data Management destination that presents database reset UI.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/settings/presentation/main/navigation/core/AppearanceRoute.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.LocalAppearanceSettings"),
+            owner = "Application theme composition",
+            rationale = "Settings reads the theme settings currently provided by the root theme composition.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/settings/presentation/main/navigation/SettingsGraphRegistration.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute", "com.aozijx.passly.feature.shell.presentation.navigation.ShellNavigationContext"),
+            owner = "App navigation contract",
+            rationale = "Settings registers its graph against the shared root route and navigation context.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt",
+            targetFeature = "scanner",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.scanner.presentation."),
+            owner = "OTP editor scanner host",
+            rationale = "OTP Route owns its editor lifecycle and composes the scanner interaction in that host.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/vault/presentation/editor/wifi/AddWifiEditorRoute.kt",
+            targetFeature = "scanner",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.scanner.presentation."),
+            owner = "Wi-Fi editor scanner host",
+            rationale = "Wi-Fi Route owns its editor lifecycle and composes QR scanning in that host.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/vault/presentation/list/VaultRoute.kt",
+            targetFeature = "scanner",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.scanner.presentation."),
+            owner = "Vault scanner host",
+            rationale = "Vault Route owns the scanner purpose and result handling lifecycle.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute"),
+            owner = "App navigation contract",
+            rationale = "Vault destination registry maps feature destinations to the shared root route type.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/vault/presentation/navigation/VaultGraphRegistration.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute", "com.aozijx.passly.feature.shell.presentation.navigation.ShellNavigationContext"),
+            owner = "App navigation contract",
+            rationale = "Vault registers its graph against the shared root route and navigation context.",
+        ),
+        FeatureIntegrationAllowance(
+            sourcePathContains = "/feature/vault/presentation/navigation/VaultNavigation.kt",
+            targetFeature = "shell",
+            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute"),
+            owner = "App navigation contract",
+            rationale = "Vault navigation emits destinations through the shared root route type.",
+        ),
+    )
+
     private val featurePresentationPath = Regex(
         "/com/aozijx/passly/feature/[^/]+/presentation/",
         RegexOption.IGNORE_CASE,
@@ -186,6 +287,13 @@ internal object SourceBoundaryPolicy {
             sourcePathPatterns = setOf(featurePresentationPath),
             forbiddenImportPrefixes = setOf("com.aozijx.passly.data."),
             message = "imports a forbidden namespace",
+        ),
+        SourceBoundaryRule(
+            id = "FEATURE_CROSS_FEATURE",
+            owner = "feature",
+            sourcePathContains = "/com/aozijx/passly/feature/",
+            allowedSourcePathContains = setOf("/src/test/", "/src/androidTest/"),
+            message = "cross-Feature reference has no reviewed integration owner",
         ),
     )
 

@@ -344,6 +344,60 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun crossFeatureImportsRequireAnExactReviewedOwner() {
+        assertTrue(
+            SourceBoundaryPolicy.featureIntegrationAllowances.all { allowance ->
+                allowance.sourcePathContains.isNotBlank() &&
+                    allowance.targetFeature.isNotBlank() &&
+                    allowance.allowedImportPrefixes.isNotEmpty() &&
+                    allowance.owner.isNotBlank() &&
+                    allowance.rationale.isNotBlank()
+            },
+        )
+        val businessDependency = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/autofill/core/SaveCredential.kt",
+            content = "import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase",
+        )
+        val violation = SourceBoundaryVerifier.verify(
+            listOf(businessDependency),
+            SourceBoundaryPolicy.generalRules,
+        ).single()
+        assertEquals("FEATURE_CROSS_FEATURE", violation.ruleId)
+        assertEquals("feature.autofill", violation.owner)
+
+        val qualifiedBusinessDependency = businessDependency.copy(
+            content = "val writer: com.aozijx.passly.feature.`vault`.entry.CreateEntryUseCase",
+        )
+        assertEquals(
+            "FEATURE_CROSS_FEATURE",
+            SourceBoundaryVerifier.verify(
+                listOf(qualifiedBusinessDependency),
+                SourceBoundaryPolicy.generalRules,
+            ).single().ruleId,
+        )
+
+        val reviewedRouteIntegration = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt",
+            content = "import com.aozijx.passly.feature.scanner.presentation.ScannerRoute",
+        )
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(reviewedRouteIntegration), SourceBoundaryPolicy.generalRules),
+        )
+
+        val unregisteredRouteIntegration = businessDependency.copy(
+            content = "import com.aozijx.passly.feature.scanner.presentation.ScannerRoute",
+        )
+        assertEquals(
+            "FEATURE_CROSS_FEATURE",
+            SourceBoundaryVerifier.verify(
+                listOf(unregisteredRouteIntegration),
+                SourceBoundaryPolicy.generalRules,
+            ).single { it.ruleId == "FEATURE_CROSS_FEATURE" }.ruleId,
+        )
+    }
+
+    @Test
     fun directDomainConsumersAreRequiredByTheModulePolicy() {
         val requiredEdges = setOf(
             edge(":app", ":domain"),

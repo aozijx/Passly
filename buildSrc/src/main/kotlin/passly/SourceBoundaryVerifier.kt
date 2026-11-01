@@ -1,10 +1,14 @@
 package passly
 
 internal object SourceBoundaryVerifier {
-    private val qualifiedNamePattern = Regex("""[A-Za-z_][A-Za-z0-9_]*(?:\s*\.\s*[A-Za-z_][A-Za-z0-9_]*)+""")
+    private val qualifiedNamePattern = Regex(
+        """(?:[A-Za-z_][A-Za-z0-9_]*|`[^`\r\n]+`)(?:\s*\.\s*(?:[A-Za-z_][A-Za-z0-9_]*|`[^`\r\n]+`))+""",
+    )
     private val dotWhitespacePattern = Regex("""\s*\.\s*""")
     private val importAliasPattern = Regex("""\s+as\s+.*$""")
     private val escapedIdentifierPattern = Regex("""`([A-Za-z_][A-Za-z0-9_]*)`""")
+    private val featurePathPattern = Regex("""/feature/([^/]+)/""")
+    private val featureReferencePattern = Regex("""^com\.aozijx\.passly\.feature\.([^.]+)\.""")
 
     fun verify(
         sources: List<EditorSource>,
@@ -20,26 +24,32 @@ internal object SourceBoundaryVerifier {
                     val evidence = rawLine.trim()
                     val codeEvidence = codeLine.trim()
                     parseImport(codeEvidence)?.let { importedType ->
-                        if (rule.isForbiddenReference(importedType)) {
-                            add(rule.violation(source.path, evidence))
-                        }
+                        rule.referenceViolation(source.path, normalizedPath, importedType, evidence)?.let(::add)
                     }
                     if (rule.forbiddenContentMarkers.any(codeEvidence::contains)
                     ) {
                         add(rule.violation(source.path, evidence))
                     }
                 }
-                val forbiddenReferenceLines = qualifiedNamePattern.findAll(code)
-                    .filter { match ->
-                        val reference = match.value.replace(dotWhitespacePattern, ".")
-                        rule.isForbiddenReference(reference)
+                val forbiddenReferences = qualifiedNamePattern.findAll(code)
+                    .map { match ->
+                        val lineIndex = code.substring(0, match.range.first).count { it == '\n' }
+                        val reference = escapedIdentifierPattern.replace(match.value) { escaped ->
+                            escaped.groupValues[1]
+                        }.replace(dotWhitespacePattern, ".")
+                        Triple(lineIndex, reference, match.value)
                     }
-                    .map { match -> code.substring(0, match.range.first).count { it == '\n' } }
-                    .distinct()
-                forbiddenReferenceLines.forEach { lineIndex ->
+                    .filter { (lineIndex, reference) ->
+                        val line = codeLines.getOrNull(lineIndex).orEmpty().trimStart()
+                        !line.startsWith("import ") &&
+                            rule.referenceViolation(source.path, normalizedPath, reference, "") != null
+                    }
+                    .distinctBy { (lineIndex) -> lineIndex }
+                forbiddenReferences.forEach { (lineIndex, reference) ->
                     val codeLine = codeLines.getOrNull(lineIndex).orEmpty().trimStart()
                     if (!codeLine.startsWith("import ")) {
-                        add(rule.violation(source.path, rawLines.getOrNull(lineIndex).orEmpty().trim()))
+                        val evidence = rawLines.getOrNull(lineIndex).orEmpty().trim()
+                        rule.referenceViolation(source.path, normalizedPath, reference, evidence)?.let(::add)
                     }
                 }
             }
@@ -67,6 +77,32 @@ internal object SourceBoundaryVerifier {
         val allowed = allowedImports.any { reference == it || reference.startsWith("$it.") } ||
             allowedImportPrefixes.any(reference::startsWith)
         return forbidden && !allowed
+    }
+
+    private fun SourceBoundaryRule.referenceViolation(
+        path: String,
+        normalizedPath: String,
+        reference: String,
+        evidence: String,
+    ): SourceBoundaryViolation? {
+        if (id != "FEATURE_CROSS_FEATURE") {
+            return if (isForbiddenReference(reference)) violation(path, evidence) else null
+        }
+        val sourceFeature = featurePathPattern.find(normalizedPath)?.groupValues?.get(1) ?: return null
+        val targetFeature = featureReferencePattern.find(reference)?.groupValues?.get(1) ?: return null
+        if (sourceFeature == targetFeature) return null
+        val isReviewed = SourceBoundaryPolicy.featureIntegrationAllowances.any { allowance ->
+            normalizedPath.contains(allowance.sourcePathContains, ignoreCase = true) &&
+                allowance.targetFeature == targetFeature &&
+                allowance.allowedImportPrefixes.any(reference::startsWith)
+        }
+        return if (isReviewed) null else SourceBoundaryViolation(
+            ruleId = id,
+            owner = "feature.$sourceFeature",
+            path = path.replace('\\', '/'),
+            evidence = evidence,
+            message = "references feature.$targetFeature without an explicit integration owner",
+        )
     }
 
     private fun maskCommentsAndStrings(source: String): String = KotlinCodeMasker(source).mask()

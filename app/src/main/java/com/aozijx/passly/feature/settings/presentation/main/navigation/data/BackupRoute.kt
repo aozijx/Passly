@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.data
 
 import android.widget.Toast
+import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,7 +19,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
-import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.feature.backup.presentation.BackupOperationRoute
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsEffect
@@ -97,7 +97,10 @@ internal fun BackupRoute(
                 lastExportFileLabel = notSetText,
                 onPickBackupPath = {
                     backupPathPicker.launch(
-                        BackupStorageSupport.defaultDocumentsTreeUri()
+                        DocumentsContract.buildTreeDocumentUri(
+                            "com.android.externalstorage.documents",
+                            "primary:Documents",
+                        ),
                     )
                 },
                 onClearBackupPath = if (readyState.directoryUri.isNullOrBlank()) null

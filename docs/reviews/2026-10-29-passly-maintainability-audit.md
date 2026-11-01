@@ -471,3 +471,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - RED/GREEN：普通、alias、star 三种 escaped forbidden import 用例在旧实现上失败；修复后被拒绝，含 escaped 合法标识符的允许包仍通过。
 - 文档：包边界页说明 escaped package segment 与 alias/star import 共用边界规则。
 - 验证：`:buildSrc:test` 和 `verifyArchitecture` 通过；`git diff --check` 通过。
+
+### 后续批次：登记跨 Feature 集成 owner 并阻止新依赖（2026-11-01）
+
+- 盘点：当前生产代码共有 7 组跨 Feature 导入边，分为 Vault→Scanner Route 协作、Settings→Backup/Database 页面组合、Settings→Autofill 狭窄状态能力、Vault/Settings→Shell 导航合同、Autofill/Settings→Shell 主题宿主。具体源文件、包前缀与 owner 记录在 `SourceBoundaryPolicy.featureIntegrationAllowances` 和包边界文档。
+- 修复：新增 `FEATURE_CROSS_FEATURE` 架构规则，生产源码只有精确登记的 source file + target feature + import prefix 才允许跨 Feature；既检查 import，也检查跨 Feature FQN（含反引号包段）。测试源码排除在生产依赖规则外。Settings `BackupRoute` 不再穿透 Backup `internal` 包获取默认目录 URI；初始 Documents tree URI 由持有 OpenDocumentTree launcher 的 Settings Route 使用平台 API 创建。
+- Owner 决定：Scanner Route 与 Backup/Database 页面保留宿主生命周期集成；Autofill 状态保留窄合同；当前导航与主题边界有明确 app owner 但源码包迁移尚待后续批次。Settings 重入数据库重置状态仍按 Task 18 独立待办，不视作已修复。
+- 回归：架构测试覆盖未登记业务导入拒绝、精确登记的 Scanner Route 导入允许、相同 source 下未登记 Route 仍拒绝、转义 FQN 也拒绝，以及所有登记项必须提供 owner/理由。
+- 验证：`:buildSrc:test`、`:app:compileDebugKotlin` 与 `verifyArchitecture` 通过；`git diff --check` 通过。

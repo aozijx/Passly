@@ -176,6 +176,21 @@ security -> *.data.repository / *.data.local
 匹配按完整路径段和包名段处理，`presentation_models` 等相似名称不作为页面。Windows 与 Unix 路径统一处理；
 带别名或通配符的 import、使用反引号标识符的包段及未导入的完全限定名引用仍执行同一规则；Kotlin 点号续行按完整引用检查并将诊断定位到引用起始行。注释和字符串字面量文本不作为依赖，字符串模板 `${...}` 内的可执行表达式继续检查完全限定名。受审查的精确文件例外保留在规则中。
 
+### 跨 Feature 集成
+
+生产 Feature 源码不能直接依赖另一个 Feature；Route、系统 Activity 和窄能力合同等确有 owner 的协作，必须在 `SourceBoundaryPolicy.featureIntegrationAllowances` 按源文件、目标 Feature、允许包前缀、owner 和理由逐项登记。测试源码不受该生产依赖规则限制。当前登记为：
+
+| 依赖边 | 允许内容 | Owner / 边界 |
+| --- | --- | --- |
+| Vault → Scanner | OTP/Wi-Fi 编辑器和 Vault Route 的 Scanner UI 合同 | 对应 Vault Route 持有页面与扫描结果生命周期 |
+| Settings → Backup | `BackupOperationRoute` | Settings 持有页面和 SAF Activity Result launcher；Backup 内部存储实现不可导入 |
+| Settings → Database | `DatabaseResetRoute` | Settings 持有 Data Management 宿主；关闭重开后的 reset 状态合同仍待完成 |
+| Settings → Autofill | `AutofillServiceStatusSource` | 仅观察服务启用状态的能力合同，Android 实现由 App 提供 |
+| Vault/Settings → Shell navigation | `AppRoute`、`ShellNavigationContext` | App 导航合同；当前符号还在 Shell 包，后续需归位到中立 app navigation owner |
+| Autofill/Settings → Shell theme | `PersistedAppTheme`、`LocalAppearanceSettings` | 系统 Activity 应用已持久化主题、Settings 读取已生效外观；主题仍待归位到应用级 owner |
+
+每一条登记都只允许指定源码文件中的指定包前缀；新增业务实现依赖或未经登记的页面集成会使 `verifyArchitecture` 失败。App composition root 连接 Feature 不算 Feature 之间的依赖。
+
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |
