@@ -1,5 +1,10 @@
 package com.aozijx.passly.feature.autofill.presentation.legacy
 
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
+import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -46,6 +51,29 @@ class AutofillFillReducerTest {
         )
 
         assertSame(AutofillFillUiState.Initial, cleared)
+    }
+
+    @Test
+    fun `selection terminal retains semantic credential and delivery receipt`() {
+        val payload = AutofillCredentialPayload(
+            entryId = EntryId("entry-1"),
+            username = "alice",
+            password = "secret",
+            otpCode = "123456",
+        )
+        val receipt = AutofillSelectionReceipt(AutofillInteractionId("interaction-1"), payload.entryId)
+        val selected = AutofillFillResult.SelectedCredential(
+            payload = payload,
+            receipt = receipt,
+            target = LegacyAutofillResultTarget.DATASET,
+        )
+
+        val state = AutofillFillReducer.reduce(
+            AutofillFillUiState.Loading,
+            AutofillFillMutation.Completed(selected),
+        ) as AutofillFillUiState.Result
+
+        assertSame(selected, state.result)
     }
 
     @Test

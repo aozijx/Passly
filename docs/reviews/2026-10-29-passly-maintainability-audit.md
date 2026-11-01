@@ -539,3 +539,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 文档：`docs/security/autofill.md` 记录 claim owner、ack 清理及与交付器 lease 顺序的合同；ViewModel 仍持有 Android framework result 的边界继续留在 Task 21。
 - 回归：`AutofillFillReducerTest` 覆盖结果/错误终态成功交付后清理；既有 `ActivityResultClaimTest` 覆盖 callback 失败回滚与成功后拒绝重复 claim；`AutofillResultDeliveryTest` 覆盖平台交付后 selection/lease 顺序。
 - 验证：`AutofillFillReducerTest`、`ActivityResultClaimTest`、`AutofillResultDeliveryTest`，`:app:compileDebugKotlin`、`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 后续批次：Legacy Autofill 协议对象改由 Activity 构造（2026-11-01）
+
+- 修复：`AutofillFillViewModel` 不再注入 Application Context 或使用 `LegacyResponseFactory`；终态改为 `AutofillDiscoveryOutcome` 或带 receipt/目标的语义 `AutofillCredentialPayload`。`AutofillFillActivity` 在 retained result claim 的交付 callback 内调用既有 `LegacyResponseFactory` 构造 `FillResponse`/`Dataset`，只有选中凭据才进入 `AutofillResultDelivery`，保持先交平台结果再完成 selection/释放 lease 的顺序。
+- 生命周期：成功 ack 将状态清回 `Initial`，释放 framework result、payload 和 receipt；callback 失败仍回滚 claim 并走取消兜底。无法由平台 factory 构造有效结果时取消 interaction 并返回平台取消结果。
+- 回归：Reducer 覆盖选中终态只保留语义凭据及 receipt、成功交付后清理结果/error；既有 `ActivityResultClaimTest`、`AutofillResultDeliveryTest` 覆盖单次 claim、失败重试与 lease barrier。现有 `LegacyResponseFactoryInstrumentedTest` 已编译；尚未运行设备测试，也未覆盖真实 Activity configuration recreation。
+- 验证：`:app:compileDebugAndroidTestKotlin`、定向 `AutofillFillReducerTest`/`ActivityResultClaimTest`/`AutofillResultDeliveryTest`、`verifyArchitecture` 与 `git diff --check` 通过。

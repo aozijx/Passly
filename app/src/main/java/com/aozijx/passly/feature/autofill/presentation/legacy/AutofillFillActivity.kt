@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.autofill.presentation.legacy
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.content.Intent
 import android.os.Bundle
+import android.service.autofill.FillResponse
 import android.view.autofill.AutofillManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -11,6 +12,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
+import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
+import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -29,6 +32,9 @@ class AutofillFillActivity : FragmentActivity() {
     @Inject
     lateinit var logger: Logger
 
+    @Inject
+    lateinit var responseFactory: LegacyResponseFactory
+
     private val viewModel: AutofillFillViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,50 +52,75 @@ class AutofillFillActivity : FragmentActivity() {
                     AutofillFillRoute(
                         request = request,
                         viewModel = viewModel,
-                        onResult = ::finishWithResult,
+                        onResult = { result -> finishWithResult(request, result) },
                     )
                 }
             }
         }
     }
 
-    private fun finishWithResult(result: AutofillFillResult) {
+    private fun finishWithResult(request: AutofillFillRequest, result: AutofillFillResult) {
         val committed = try {
             viewModel.commitPlatformResult {
                 when (result) {
-                    is AutofillFillResult.DiscoveryResponse -> {
-                        setResult(
-                            RESULT_OK,
-                            Intent().apply {
-                                putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
-                            },
-                        )
+                    is AutofillFillResult.Discovery -> {
+                        val response = responseFactory.buildResult(
+                            this,
+                            result.outcome,
+                            request.toParsedStructure(),
+                            request.inlineRequest,
+                        ).response
+                        if (response == null) {
+                            viewModel.onAction(AutofillFillUiAction.Cancel)
+                            setResult(RESULT_CANCELED)
+                        } else {
+                            setResult(
+                                RESULT_OK,
+                                Intent().apply {
+                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response)
+                                },
+                            )
+                        }
                         hideIme()
                         finish()
                     }
-                    is AutofillFillResult.SelectedResponse ->
-                        resultDelivery.commitResult(result.receipt) {
-                            setResult(
-                                RESULT_OK,
-                                Intent().apply {
-                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
-                                },
-                            )
+                    is AutofillFillResult.SelectedCredential -> {
+                        val dataset = responseFactory.buildDataset(
+                            payload = result.payload,
+                            usernameIds = request.usernameIds,
+                            passwordIds = request.passwordIds,
+                            otpIds = request.otpIds,
+                        )
+                        if (dataset == null) {
+                            viewModel.onAction(AutofillFillUiAction.Cancel)
+                            setResult(RESULT_CANCELED)
                             hideIme()
                             finish()
+                        } else {
+                            val platformResult = when (result.target) {
+                                LegacyAutofillResultTarget.DATASET -> dataset
+                                LegacyAutofillResultTarget.RESPONSE -> FillResponse.Builder()
+                                    .addDataset(dataset)
+                                    .build()
+                            }
+                            resultDelivery.commitResult(result.receipt) {
+                                setResult(
+                                    RESULT_OK,
+                                    Intent().apply {
+                                        putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, platformResult)
+                                        if (result.target == LegacyAutofillResultTarget.DATASET) {
+                                            putExtra(
+                                                AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET,
+                                                true,
+                                            )
+                                        }
+                                    },
+                                )
+                                hideIme()
+                                finish()
+                            }
                         }
-                    is AutofillFillResult.SelectedDataset ->
-                        resultDelivery.commitResult(result.receipt) {
-                            setResult(
-                                RESULT_OK,
-                                Intent().apply {
-                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, result.value)
-                                    putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
-                                },
-                            )
-                            hideIme()
-                            finish()
-                        }
+                    }
                     AutofillFillResult.Cancelled -> {
                         setResult(RESULT_CANCELED)
                         hideIme()

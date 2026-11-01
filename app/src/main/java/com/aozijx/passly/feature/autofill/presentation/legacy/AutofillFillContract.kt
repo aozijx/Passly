@@ -1,10 +1,10 @@
 package com.aozijx.passly.feature.autofill.presentation.legacy
 
-import android.service.autofill.Dataset
-import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.inputmethod.InlineSuggestionsRequest
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
+import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
@@ -12,18 +12,14 @@ import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 
 sealed interface AutofillFillResult {
-    data class DiscoveryResponse(
-        val value: FillResponse,
+    data class Discovery(
+        val outcome: AutofillDiscoveryOutcome,
     ) : AutofillFillResult
 
-    data class SelectedResponse(
-        val value: FillResponse,
+    data class SelectedCredential(
+        val payload: AutofillCredentialPayload,
         val receipt: AutofillSelectionReceipt,
-    ) : AutofillFillResult
-
-    data class SelectedDataset(
-        val value: Dataset,
-        val receipt: AutofillSelectionReceipt,
+        val target: LegacyAutofillResultTarget,
     ) : AutofillFillResult
 
     data object Cancelled : AutofillFillResult

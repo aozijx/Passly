@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.autofill.presentation.legacy
 
-import android.content.Context
-import android.service.autofill.FillResponse
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.observability.Logger
@@ -21,13 +19,10 @@ import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
-import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
-import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -44,10 +39,8 @@ class AutofillFillViewModel @Inject constructor(
     private val resolveSelection: ResolveAutofillSelection,
     private val finishInteraction: FinishAutofillInteraction,
     private val interactionStore: AutofillInteractionStore,
-    private val responseFactory: LegacyResponseFactory,
     private val logger: Logger,
     private val traceContinuations: TraceContinuationStore,
-    @param:ApplicationContext private val appContext: Context,
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<AutofillFillUiState>(AutofillFillUiState.Initial)
     val uiState: StateFlow<AutofillFillUiState> = mutableUiState.asStateFlow()
@@ -166,19 +159,8 @@ class AutofillFillViewModel @Inject constructor(
         request: AutofillFillRequest,
         outcome: AutofillDiscoveryOutcome,
     ) {
-        val response = responseFactory.buildResult(
-            appContext,
-            outcome,
-            request.toParsedStructure(),
-            request.inlineRequest,
-        ).response
-        if (response == null) {
-            finishInteraction.cancel(request.interactionId)
-            mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
-        } else {
-            traceContinuations.capture(request.interactionId.value)
-            mutate(AutofillFillMutation.Completed(AutofillFillResult.DiscoveryResponse(response)))
-        }
+        traceContinuations.capture(request.interactionId.value)
+        mutate(AutofillFillMutation.Completed(AutofillFillResult.Discovery(outcome)))
     }
 
     private fun selectCandidate(entryId: EntryId) {
@@ -221,27 +203,13 @@ class AutofillFillViewModel @Inject constructor(
         request: AutofillFillRequest,
         outcome: AutofillSelectionOutcome.Filled,
     ) {
-        val dataset = responseFactory.buildDataset(
-            payload = outcome.payload,
-            usernameIds = request.usernameIds,
-            passwordIds = request.passwordIds,
-            otpIds = request.otpIds,
-        )
-        if (dataset == null) {
-            fail(request, "legacy.no_fillable_fields")
-            return
-        }
-
         val receipt = AutofillSelectionReceipt(request.interactionId, outcome.payload.entryId)
         traceContinuations.capture(request.interactionId.value)
-        val result = when (request.resultTarget) {
-            LegacyAutofillResultTarget.DATASET ->
-                AutofillFillResult.SelectedDataset(dataset, receipt)
-            LegacyAutofillResultTarget.RESPONSE -> AutofillFillResult.SelectedResponse(
-                value = FillResponse.Builder().addDataset(dataset).build(),
-                receipt = receipt,
-            )
-        }
+        val result = AutofillFillResult.SelectedCredential(
+            payload = outcome.payload,
+            receipt = receipt,
+            target = request.resultTarget,
+        )
         mutate(AutofillFillMutation.Completed(result))
     }
 
@@ -256,7 +224,9 @@ class AutofillFillViewModel @Inject constructor(
                         traceContinuations.discard(it.interactionId.value)
                     }
                 }
-                mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
+                if (!resultClaim.isClaimed) {
+                    mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
+                }
             }
         }
     }
