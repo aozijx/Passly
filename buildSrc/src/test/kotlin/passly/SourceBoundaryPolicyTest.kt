@@ -286,6 +286,31 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun fullyQualifiedReferencesInsideStringTemplatesAreScannedButTextAndEscapedDollarsAreIgnored() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/presentation/ui/Template.kt",
+            content = listOf(
+                "val regular = \"\${com.aozijx.passly.domain.entry.model.Entry::class.simpleName}\"",
+                "val nested = \"\${run { val type = com.aozijx.passly.domain.entry.model.Entry::class; type.simpleName }}\"",
+                "val nestedTemplate = \"\${run { val label = \\\"\${com.aozijx.passly.domain.entry.model.Entry::class.simpleName}\\\"; label }}\"",
+                "val raw = \"\"\"\${com.aozijx.passly.domain.entry.model.Entry::class.simpleName}\"\"\"",
+                "val escaped = \"\\\$com.aozijx.passly.domain.entry.model.Entry\"",
+                "val text = \"com.aozijx.passly.domain.entry.model.Entry\"",
+                "// com.aozijx.passly.domain.entry.model.Entry",
+            ).joinToString("\n"),
+        )
+
+        val violations = SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.generalRules)
+
+        assertEquals(4, violations.size)
+        assertTrue(violations.all { it.ruleId == "LAYER_PRESENTATION_UI" })
+        assertEquals(
+            source.content.lineSequence().take(4).toList(),
+            violations.map { it.evidence },
+        )
+    }
+
+    @Test
     fun directDomainConsumersAreRequiredByTheModulePolicy() {
         val requiredEdges = setOf(
             edge(":app", ":domain"),

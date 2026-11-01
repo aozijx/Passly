@@ -447,3 +447,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：创建用例、四类编辑器、扫码 UseCase/ViewModel、Autofill 保存和 Credential Manager 调用测试均通过；`verifyArchitecture` 通过，确认新端口和依赖方向符合现有边界。
 - 文档：更新条目编辑与 OTP 创建、包边界以及本审计，明确创建端口、实现位置和扫码保存 owner。
 - 验证：`:app:testDebugUnitTest --tests "*CreateEntryUseCaseTest" --tests "*ImportScannedOtpUseCaseTest" --tests "*ScannedOtpImportViewModelTest" --tests "*AddPasswordViewModelTest" --tests "*AddOtpViewModelTest" --tests "*AddBankCardViewModelTest" --tests "*AddWifiViewModelTest" --tests "*SaveAutofillCredentialTest" --tests "*CredentialManagerFlowTest" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。未增加设备级验证。
+
+### 后续批次：边界验证器扫描 Kotlin 字符串模板（2026-11-01）
+
+- 根因：`SourceBoundaryVerifier.maskCommentsAndStrings()` 原先把每个字符串整体屏蔽，因此 `${...}` 中的 Kotlin 可执行代码也绕过完全限定名边界检查。
+- 修复：保留注释、字符字面量和字符串文本屏蔽；词法扫描器现在递归扫描普通/raw 字符串模板的 `${...}` 表达式，处理嵌套花括号、注释及嵌套模板，并继续忽略转义 `$` 后的普通文本。
+- RED/GREEN：新增测试先在旧实现上按预期失败，再覆盖普通模板、嵌套表达式、嵌套模板、raw template，以及转义美元符号、纯字符串文本和注释 decoy；实现后全部通过。
+- 文档：包边界页明确注释和字符串文本忽略，但模板表达式仍按可执行代码检查。
+- 验证：`:buildSrc:test --tests "passly.SourceBoundaryPolicyTest" --no-parallel --max-workers=1` 与 `:buildSrc:test verifyArchitecture --no-parallel --max-workers=1` 均通过；`git diff --check` 通过。

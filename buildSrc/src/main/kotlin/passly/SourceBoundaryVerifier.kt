@@ -55,69 +55,121 @@ internal object SourceBoundaryVerifier {
         return forbidden && !allowed
     }
 
-    private fun maskCommentsAndStrings(source: String): String {
-        val masked = StringBuilder(source.length)
-        var index = 0
-        var blockDepth = 0
-        var lineComment = false
-        var quote: Char? = null
-        var rawString = false
-
-        fun mask(character: Char) = masked.append(
-            if (character == '\n' || character == '\r') character else ' ',
-        )
-
-        while (index < source.length) {
-            val current = source[index]
-            val next = source.getOrNull(index + 1)
-            val startsRawString = source.startsWith("\"\"\"", index)
-
-            when {
-                lineComment -> {
-                    mask(current)
-                    index++
-                    if (current == '\n') lineComment = false
-                }
-                blockDepth > 0 && current == '/' && next == '*' -> {
-                    mask(current); mask(next!!); index += 2; blockDepth++
-                }
-                blockDepth > 0 && current == '*' && next == '/' -> {
-                    mask(current); mask(next!!); index += 2; blockDepth--
-                }
-                blockDepth > 0 -> { mask(current); index++ }
-                rawString && startsRawString -> {
-                    repeat(3) { mask(source[index + it]) }
-                    index += 3
-                    rawString = false
-                }
-                rawString -> { mask(current); index++ }
-                quote != null && current == '\\' && next != null -> {
-                    mask(current); mask(next); index += 2
-                }
-                quote != null -> {
-                    mask(current)
-                    index++
-                    if (current == quote) quote = null
-                }
-                current == '/' && next == '/' -> {
-                    mask(current); mask(next!!); index += 2; lineComment = true
-                }
-                current == '/' && next == '*' -> {
-                    mask(current); mask(next!!); index += 2; blockDepth = 1
-                }
-                startsRawString -> {
-                    repeat(3) { mask(source[index + it]) }
-                    index += 3
-                    rawString = true
-                }
-                current == '"' || current == '\'' -> { mask(current); index++; quote = current }
-                else -> { masked.append(current); index++ }
-            }
-        }
-
-        return masked.toString()
-    }
+    private fun maskCommentsAndStrings(source: String): String = KotlinCodeMasker(source).mask()
 
     private fun SourceBoundaryRule.violation(path: String, evidence: String) =
         SourceBoundaryViolation(id, owner, path.replace('\\', '/'), evidence, message)
+}
+
+private class KotlinCodeMasker(private val source: String) {
+    private val output = CharArray(source.length) { index ->
+        source[index].takeIf { it == '\n' || it == '\r' } ?: ' '
+    }
+
+    fun mask(): String {
+        scanCode(0, stopAtTemplateBrace = false)
+        return output.concatToString()
+    }
+
+    private fun scanCode(start: Int, stopAtTemplateBrace: Boolean): Int {
+        var index = start
+        var braceDepth = 0
+        while (index < source.length) {
+            val current = source[index]
+            val next = source.getOrNull(index + 1)
+            when {
+                current == '/' && next == '/' -> index = skipLineComment(index)
+                current == '/' && next == '*' -> index = skipBlockComment(index)
+                source.startsWith("\"\"\"", index) -> index = scanString(index, raw = true)
+                current == '"' -> index = scanString(index, raw = false)
+                current == '\'' -> index = skipCharacterLiteral(index)
+                stopAtTemplateBrace && current == '}' && braceDepth == 0 -> return index + 1
+                current == '{' -> {
+                    preserve(index)
+                    braceDepth++
+                    index++
+                }
+                current == '}' && braceDepth > 0 -> {
+                    preserve(index)
+                    braceDepth--
+                    index++
+                }
+                else -> {
+                    preserve(index)
+                    index++
+                }
+            }
+        }
+        return index
+    }
+
+    private fun scanString(start: Int, raw: Boolean): Int {
+        val delimiterLength = if (raw) 3 else 1
+        var index = start + delimiterLength
+        while (index < source.length) {
+            if (raw && source.startsWith("\"\"\"", index)) return index + 3
+            val current = source[index]
+            if (!raw && current == '"') return index + 1
+            if (!raw && current == '\\') {
+                index = (index + 2).coerceAtMost(source.length)
+                continue
+            }
+            if (current == '$') {
+                when (source.getOrNull(index + 1)) {
+                    '{' -> index = scanCode(index + 2, stopAtTemplateBrace = true)
+                    else -> index = skipSimpleTemplate(index)
+                }
+                continue
+            }
+            index++
+        }
+        return index
+    }
+
+    private fun skipSimpleTemplate(start: Int): Int {
+        var index = start + 1
+        if (!source.getOrNull(index).isIdentifierStart()) return index
+        index++
+        while (source.getOrNull(index).isIdentifierPart()) index++
+        return index
+    }
+
+    private fun skipLineComment(start: Int): Int {
+        val lineEnd = source.indexOf('\n', start + 2)
+        return if (lineEnd < 0) source.length else lineEnd
+    }
+
+    private fun skipBlockComment(start: Int): Int {
+        var index = start + 2
+        var depth = 1
+        while (index < source.length && depth > 0) {
+            when {
+                source.startsWith("/*", index) -> { depth++; index += 2 }
+                source.startsWith("*/", index) -> { depth--; index += 2 }
+                else -> index++
+            }
+        }
+        return index
+    }
+
+    private fun skipCharacterLiteral(start: Int): Int {
+        var index = start + 1
+        while (index < source.length) {
+            when {
+                source[index] == '\\' -> index = (index + 2).coerceAtMost(source.length)
+                source[index] == '\'' -> return index + 1
+                else -> index++
+            }
+        }
+        return index
+    }
+
+    private fun preserve(index: Int) {
+        output[index] = source[index]
+    }
+
+    private fun Char?.isIdentifierStart(): Boolean = this == '_' || this?.isLetter() == true
+
+    private fun Char?.isIdentifierPart(): Boolean =
+        this == '_' || this?.isLetterOrDigit() == true
 }
