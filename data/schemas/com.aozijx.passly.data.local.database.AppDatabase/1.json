@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "14eafcc37e62e3c79dca7e49683e9134",
+    "identityHash": "eeb6e6fc59c9a9436af7404bae028bea",
     "entities": [
       {
         "tableName": "entries",
@@ -607,7 +607,7 @@
       },
       {
         "tableName": "attachment_refs",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `entryId` TEXT, `stagingOwnerId` TEXT, `fileName` TEXT NOT NULL, `mimeType` TEXT, `displayOrder` INTEGER NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`resourceId`) REFERENCES `attachment_resources`(`resourceId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`attachmentId` TEXT NOT NULL, `resourceId` TEXT NOT NULL, `entryId` TEXT NOT NULL, `fileName` TEXT NOT NULL, `mimeType` TEXT, `displayOrder` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`attachmentId`), FOREIGN KEY(`entryId`) REFERENCES `entries`(`entryId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`resourceId`) REFERENCES `attachment_resources`(`resourceId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
         "fields": [
           {
             "fieldPath": "attachmentId",
@@ -624,12 +624,8 @@
           {
             "fieldPath": "entryId",
             "columnName": "entryId",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "stagingOwnerId",
-            "columnName": "stagingOwnerId",
-            "affinity": "TEXT"
+            "affinity": "TEXT",
+            "notNull": true
           },
           {
             "fieldPath": "fileName",
@@ -646,12 +642,6 @@
             "fieldPath": "displayOrder",
             "columnName": "displayOrder",
             "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "status",
-            "columnName": "status",
-            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -685,24 +675,6 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_resourceId` ON `${TABLE_NAME}` (`resourceId`)"
-          },
-          {
-            "name": "index_attachment_refs_status",
-            "unique": false,
-            "columnNames": [
-              "status"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_status` ON `${TABLE_NAME}` (`status`)"
-          },
-          {
-            "name": "index_attachment_refs_stagingOwnerId",
-            "unique": false,
-            "columnNames": [
-              "stagingOwnerId"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_attachment_refs_stagingOwnerId` ON `${TABLE_NAME}` (`stagingOwnerId`)"
           }
         ],
         "foreignKeys": [
@@ -822,7 +794,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '14eafcc37e62e3c79dca7e49683e9134')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eeb6e6fc59c9a9436af7404bae028bea')"
     ]
   }
 }

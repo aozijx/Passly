@@ -61,7 +61,7 @@ internal class EntryRevisionWriter @Inject constructor(
                 updatedAt = link.updatedAt,
             )
         }
-        val attachmentRefs = attachmentRefQueryDao().getCommittedByEntryId(entryId)
+        val attachmentRefs = attachmentRefQueryDao().getByEntryId(entryId)
         val sensitiveFields = secretFieldQueryDao().getAll(entryId).filter { row ->
             row.fieldKey != SecretBundleCodec.FIELD_KEY
         }

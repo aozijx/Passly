@@ -16,14 +16,12 @@ import com.aozijx.passly.data.local.database.maintenance.DatabaseCleaner
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
-import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.data.mapper.entry.toDatabaseFlags
-import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
@@ -175,8 +173,6 @@ internal class RoomBackupSnapshotRestorer @Inject constructor(
                                 resourceId = resourceId,
                                 fileName = resource.fileName.orEmpty(),
                                 mimeType = resource.mimeType,
-                                status = AttachmentStatus.COMMITTED.toStorageKey(),
-                                stagingOwnerId = null,
                                 createdAt = resource.createdAt ?: record.updatedAt,
                             )
                         )

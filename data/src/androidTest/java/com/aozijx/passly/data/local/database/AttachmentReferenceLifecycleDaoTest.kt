@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -95,33 +95,22 @@ class AttachmentReferenceLifecycleDaoTest {
     }
 
     @Test
-    fun databaseRejectsInvalidPendingAndCommittedOwnership() = runBlocking {
+    fun databaseRequiresAnExistingEntryAndActiveResource() = runBlocking {
         insertEntry("entry-a")
         database.attachmentResourceDao().insertStrict(resource())
-        val invalidPending = currentRef("pending", "entry-a").copy(
-            status = AttachmentStatus.PENDING.name,
-            stagingOwnerId = "editor-session",
+        assertTrue(runCatching {
+            database.attachmentRefCommandDao().insertStrict(currentRef("missing-entry", "missing-entry"))
+        }.isFailure)
+
+        val pendingResourceId = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        database.attachmentResourceDao().insertStrict(
+            resource(resourceId = pendingResourceId, lifecycleState = AttachmentResourceState.PENDING_GC),
         )
         assertTrue(runCatching {
-            database.attachmentRefCommandDao().insertStrict(invalidPending)
-        }.isFailure)
-        val invalidCommitted = currentRef("committed", "entry-a").copy(
-            stagingOwnerId = "editor-session",
-        )
-        assertTrue(runCatching {
-            database.attachmentRefCommandDao().insertStrict(invalidCommitted)
-        }.isFailure)
-        database.attachmentRefCommandDao().insertStrict(
-            AttachmentRefEntity(
-                attachmentId = "pending-valid",
-                resourceId = RESOURCE_ID,
-                entryId = null,
-                stagingOwnerId = "editor-session",
-                fileName = "readme.md",
-                mimeType = null,
-                status = AttachmentStatus.PENDING.name,
+            database.attachmentRefCommandDao().insertStrict(
+                currentRef("inactive-resource", "entry-a").copy(resourceId = pendingResourceId),
             )
-        )
+        }.isFailure)
     }
 
     private suspend fun insertEntry(id: String) {
@@ -136,9 +125,13 @@ class AttachmentReferenceLifecycleDaoTest {
         )
     }
 
-    private fun resource() = AttachmentResourceEntity(
-        resourceId = RESOURCE_ID,
+    private fun resource(
+        resourceId: String = RESOURCE_ID,
+        lifecycleState: String = AttachmentResourceState.ACTIVE,
+    ) = AttachmentResourceEntity(
+        resourceId = resourceId,
         fileSize = 4L,
+        lifecycleState = lifecycleState,
         createdAt = 1L,
     )
 
@@ -148,8 +141,6 @@ class AttachmentReferenceLifecycleDaoTest {
         resourceId = RESOURCE_ID,
         fileName = "shared.bin",
         mimeType = "application/octet-stream",
-        status = AttachmentStatus.COMMITTED.name,
-        stagingOwnerId = null,
         createdAt = 1L,
     )
 

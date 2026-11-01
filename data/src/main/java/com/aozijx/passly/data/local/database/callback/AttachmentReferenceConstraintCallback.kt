@@ -3,7 +3,7 @@ package com.aozijx.passly.data.local.database.callback
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-/** SQLite is the final guard for the PENDING/COMMITTED ownership invariant. */
+/** SQLite prevents attachment references from targeting resources queued for collection. */
 internal object AttachmentReferenceConstraintCallback : RoomDatabase.Callback() {
     override fun onCreate(db: SupportSQLiteDatabase) {
         super.onCreate(db)
@@ -20,10 +20,6 @@ internal object AttachmentReferenceConstraintCallback : RoomDatabase.Callback() 
         db.execSQL(UPDATE_TRIGGER)
     }
 
-    private const val VALID_STATE = """
-        ((NEW.status = 'PENDING' AND NEW.entryId IS NULL AND NEW.stagingOwnerId IS NOT NULL)
-        OR (NEW.status = 'COMMITTED' AND NEW.entryId IS NOT NULL AND NEW.stagingOwnerId IS NULL))
-    """
     private const val ACTIVE_RESOURCE = """
         EXISTS (SELECT 1 FROM attachment_resources
                 WHERE resourceId = NEW.resourceId AND lifecycleState = 'ACTIVE')
@@ -31,7 +27,7 @@ internal object AttachmentReferenceConstraintCallback : RoomDatabase.Callback() 
     private const val INSERT_TRIGGER = """
         CREATE TRIGGER IF NOT EXISTS attachment_refs_validate_insert
         BEFORE INSERT ON attachment_refs
-        WHEN NOT ($VALID_STATE AND $ACTIVE_RESOURCE)
+        WHEN NOT ($ACTIVE_RESOURCE)
         BEGIN
             SELECT RAISE(ABORT, 'invalid attachment ref state');
         END
@@ -39,7 +35,7 @@ internal object AttachmentReferenceConstraintCallback : RoomDatabase.Callback() 
     private const val UPDATE_TRIGGER = """
         CREATE TRIGGER IF NOT EXISTS attachment_refs_validate_update
         BEFORE UPDATE ON attachment_refs
-        WHEN NOT ($VALID_STATE AND $ACTIVE_RESOURCE)
+        WHEN NOT ($ACTIVE_RESOURCE)
         BEGIN
             SELECT RAISE(ABORT, 'invalid attachment ref state');
         END

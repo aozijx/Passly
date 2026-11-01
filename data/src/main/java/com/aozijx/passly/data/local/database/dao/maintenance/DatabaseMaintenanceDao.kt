@@ -6,12 +6,8 @@ import androidx.room.Query
 @Dao
 interface DatabaseMaintenanceDao {
 
-    @Query("DELETE FROM attachment_refs WHERE status = 'COMMITTED'")
+    @Query("DELETE FROM attachment_refs")
     suspend fun clearAttachments(): Int
-
-    /** 清理所有 PENDING 附件（崩溃恢复时调用） */
-    @Query("DELETE FROM attachment_refs WHERE status = 'PENDING'")
-    suspend fun clearPending(): Int
 
     @Query("DELETE FROM entry_activities")
     suspend fun clearActivities(): Int

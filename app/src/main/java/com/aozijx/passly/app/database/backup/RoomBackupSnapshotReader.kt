@@ -94,7 +94,7 @@ internal class RoomBackupSnapshotReader @Inject constructor(
             }
 
             if (includeAttachments) {
-                attachmentRefQueryDao().getCommittedByEntryIds(entryIds).forEach { entity ->
+                attachmentRefQueryDao().getByEntryIds(entryIds).forEach { entity ->
                     val resource = requireNotNull(attachmentResourceDao().getById(entity.resourceId)) {
                         "附件资源缺失: ${entity.attachmentId}"
                     }

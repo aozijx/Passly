@@ -1,6 +1,7 @@
 # 数据库
 
 状态：当前实现（Room Schema v1）。本文描述当前代码与全新安装，不承诺旧开发 Schema 的迁移。
+Room Schema 保持版本 1，当前没有旧开发库迁移；使用旧结构的本地开发数据库前，需清除应用数据或重新安装，再验证当前 Schema。
 
 ## 所有权与访问边界
 
@@ -37,7 +38,7 @@ Room Entity 当作可移植协议。
 | `entry_revisions` | Entry Profile 与敏感字段集合的完整历史快照密文 |
 | `entry_activities` | 查看、复制、使用等审计/统计事件，不用于恢复 |
 | `attachment_resources` | keyed content ID 标识的不可变加密附件资源及其 GC 生命周期状态 |
-| `attachment_refs` | 当前 Entry 对资源的引用、文件名、MIME、顺序和 staging 状态 |
+| `attachment_refs` | 当前 Entry 对资源的引用、文件名、MIME 和顺序；每行都必须归属现存 Entry |
 | `revision_attachment_refs` | 历史 Revision 对不可变附件资源的引用 |
 
 Schema 的唯一事实源是 `AppDatabase`、Entity 和导出的 `data/schemas`。当前没有 `entry_drafts`、
@@ -93,6 +94,7 @@ CVV、支付 PIN、身份号码、助记词、恢复码、SSH 私钥/口令、Pa
 - 若调用方在数据库提交后、清理完成前取消，取消仍向上传播且不会回滚已提交数据。重新进入页面时以 Room
   查询结果为准，不应仅凭取消结果盲目重放写入；附件 GC 可在会话重开后继续，图标回收保留队列请求并由图片处理器重建时的候选扫描补齐中断窗口。
 - 外键和删除前引用计数阻止仍被引用的内容被回收。附件不做通用压缩。
+- 每条附件引用都绑定现存 Entry 与 `ACTIVE` 资源。Backup 导入和修订恢复在对应写事务中创建引用；当前没有附件编辑/上传流程需要数据库保存草稿 owner。
 
 ## Session 生命周期
 

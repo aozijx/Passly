@@ -14,8 +14,6 @@ data class DatabaseClearResult(
     val activityDeleted: Int = 0,
     val attachmentsDeleted: Int = 0,
     val attachmentResourcesDeleted: Int = 0,
-    /** PENDING 状态附件（未提交的暂存附件）删除行数 */
-    val stagingDeleted: Int = 0
 )
 
 /**
@@ -31,7 +29,6 @@ interface DatabaseCleaner {
 
 /**
  * 按子表→父表顺序执行清理，确保外键约束不受影响。
- * 同时统计草稿和暂存附件的删除数量。
  */
 @Singleton
 internal class DatabaseCleanerImpl @Inject constructor(
@@ -41,13 +38,11 @@ internal class DatabaseCleanerImpl @Inject constructor(
     override suspend fun clearAllData(): DatabaseClearResult = databaseSession.transaction {
         val maintenance = databaseMaintenanceDao()
         // 子表→父表顺序：先删依赖表，再删主表
-        val stagingDeleted = maintenance.clearPending()
         val attachmentsDeleted = maintenance.clearAttachments()
         val revisionsDeleted = maintenance.clearRevisions()
         maintenance.clearAttachmentGcQueue()
         val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
         DatabaseClearResult(
-            stagingDeleted = stagingDeleted,
             revisionsDeleted = revisionsDeleted,
             activityDeleted = maintenance.clearActivities(),
             attachmentsDeleted = attachmentsDeleted,

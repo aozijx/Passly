@@ -2,7 +2,6 @@ package com.aozijx.passly.data.codec
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
@@ -120,17 +119,6 @@ internal fun sensitiveFieldKeyFromStorageKey(key: String): SensitiveFieldKey = w
     "PASSKEY_PRIVATE_REFERENCE" -> SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE
     "OTP_SECRET" -> SensitiveFieldKey.OTP_SECRET
     else -> invalidStorageKey("sensitive field", key)
-}
-
-fun AttachmentStatus.toStorageKey(): String = when (this) {
-    AttachmentStatus.PENDING -> "PENDING"
-    AttachmentStatus.COMMITTED -> "COMMITTED"
-}
-
-internal fun attachmentStatusFromStorageKey(key: String): AttachmentStatus = when (key) {
-    "PENDING" -> AttachmentStatus.PENDING
-    "COMMITTED" -> AttachmentStatus.COMMITTED
-    else -> invalidStorageKey("attachment status", key)
 }
 
 internal fun RevisionChange.toStorageKey(): String = when (this) {

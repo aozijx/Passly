@@ -2,7 +2,6 @@ package com.aozijx.passly.data.codec
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
@@ -25,9 +24,6 @@ class StorageEnumMappingsTest {
         }
         SensitiveFieldKey.entries.forEach { value ->
             assertEquals(value, sensitiveFieldKeyFromStorageKey(value.toStorageKey()))
-        }
-        AttachmentStatus.entries.forEach { value ->
-            assertEquals(value, attachmentStatusFromStorageKey(value.toStorageKey()))
         }
         RevisionChange.entries.forEach { value ->
             assertEquals(value, revisionChangeFromStorageKey(value.toStorageKey()))

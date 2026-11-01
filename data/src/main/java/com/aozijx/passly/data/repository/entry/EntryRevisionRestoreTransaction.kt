@@ -23,7 +23,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
-import com.aozijx.passly.domain.entry.model.attachment.AttachmentStatus
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
@@ -144,7 +143,7 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         if (content.links.isNotEmpty()) {
             entryLinkCommandDao().insertAllStrict(content.links.map { it.toEntity() })
         }
-        attachmentRefCommandDao().deleteCommittedByEntryId(entryId.value)
+        attachmentRefCommandDao().deleteByEntryId(entryId.value)
         if (revisionAttachments.isNotEmpty()) {
             attachmentRefCommandDao().insertAllStrict(
                 revisionAttachments.map { it.toCurrentRef(entryId.value) },
@@ -230,11 +229,9 @@ internal class EntryRevisionRestoreTransaction @Inject constructor(
         attachmentId = attachmentId,
         resourceId = resourceId,
         entryId = entryId,
-        stagingOwnerId = null,
         fileName = fileName,
         mimeType = mimeType,
         displayOrder = displayOrder,
-        status = AttachmentStatus.COMMITTED.toStorageKey(),
         createdAt = createdAt,
     )
 

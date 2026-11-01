@@ -17,12 +17,6 @@ interface AttachmentRefCommandDao {
     @Query("DELETE FROM attachment_refs WHERE attachmentId = :attachmentId")
     suspend fun deleteById(attachmentId: String): Int
 
-    @Query("UPDATE attachment_refs SET status = 'COMMITTED', entryId = :entryId, stagingOwnerId = NULL WHERE stagingOwnerId = :stagingOwnerId AND status = 'PENDING'")
-    suspend fun commitByOwner(stagingOwnerId: String, entryId: String): Int
-
-    @Query("DELETE FROM attachment_refs WHERE stagingOwnerId = :stagingOwnerId AND status = 'PENDING'")
-    suspend fun deletePendingByOwner(stagingOwnerId: String): Int
-
-    @Query("DELETE FROM attachment_refs WHERE entryId = :entryId AND status = 'COMMITTED'")
-    suspend fun deleteCommittedByEntryId(entryId: String): Int
+    @Query("DELETE FROM attachment_refs WHERE entryId = :entryId")
+    suspend fun deleteByEntryId(entryId: String): Int
 }
