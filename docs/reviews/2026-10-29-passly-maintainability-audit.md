@@ -511,3 +511,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：原有 shape、animated color scheme 逻辑测试保持覆盖；App compile 与主题相关单测验证现有主题值/形状/颜色插值行为。
 - 文档：包边界页更新当前跨 Feature 边清单和主题 owner。
 - 验证：`:app:testDebugUnitTest --tests "*AppShapesTest" --tests "*AnimatedColorSchemeTest" verifyArchitecture --no-parallel --max-workers=1` 与 `:app:compileDebugAndroidTestKotlin` 通过；`git diff --check` 通过。未运行 Android Compose instrumentation。
+
+### 后续批次：应用级导航与跨 Feature 集成收尾（2026-11-01）
+
+- 收尾：创建能力已由 `app.entry.creation` 持有；全局导航、共享主题合同归 App 组合根；架构门禁只允许有 owner 的精确跨 Feature 集成边。Settings→Backup 默认目录不再穿透 Backup internal；Database Reset 重入与 Autofill Activity 认证宿主有明确生命周期/精确范围。
+- Verifier 回归：Kotlin 字符串模板执行表达式、跨行 FQN、反引号 import 均纳入边界检查；新增跨 Feature 生产依赖规则并登记保留的展示/宿主集成边。
+- 验证：Task 18 最终集成门禁在 `3126c134b` 执行，`:app:testDebugUnitTest` 覆盖创建用例、扫描 OTP 写入与 ViewModel、OTP/Wi-Fi 编辑器、Scanner Route effects、Autofill 保存/认证流程、Vault 导航与目的地映射，并运行 `verifyArchitecture`；全部通过。`git diff --check` 通过。Android Compose instrumentation 仅编译，未运行。
