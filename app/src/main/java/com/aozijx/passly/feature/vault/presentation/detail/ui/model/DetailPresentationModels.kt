@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,
@@ -34,6 +35,7 @@ data class DetailBodyUiModel(
     val metadata: DetailMetadataUiModel,
     val activities: List<DetailActivityUiModel>,
     val activityHistory: DetailActivityHistoryState,
+    val snapshotState: DetailSnapshotState,
 )
 
 data class DetailSeedPhraseUiModel(

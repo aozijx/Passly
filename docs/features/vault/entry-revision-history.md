@@ -42,6 +42,8 @@ Closed 和 Open。Open 固定绑定一个 Entry ID，并分别持有列表与当
 
 Revision snapshot 是不可变历史事实。恢复不是把旧 row 原地设为当前，而是在 Data 层单事务中：校验 Entry 和
 revision、消费精确 permit、物化快照、写入新的当前版本并记录活动。UI 只有收到事务成功才显示完成。
+恢复成功后的根详情 snapshot 刷新由 Detail 独立持有，不跟随版本弹层关闭而取消。普通读取失败会明确显示
+“恢复已保存、详情刷新失败”，重试只重读当前详情，不会再次执行恢复事务；条目替换或会话关闭仍会取消/丢弃旧刷新。
 
 恢复不得信任快照携带的外部权限或降低字段敏感度。缺失、陈旧、损坏、认证失败和意外错误映射为功能级失败；
 用户取消不作为错误记录。
@@ -66,6 +68,11 @@ Usage / Lifecycle。活动只含类型、版本、条目标识与时间，不含
 entry visit 内重订阅，失败提示提供重试；若此前已有记录，则失败期间仍显示已取得的记录。正常空结果才显示空历史。
 会话锁定不显示为普通查询错误，取消继续传播，致命 Error 保持未捕获。
 
+## 详情快照加载与恢复后刷新
+
+详情主体快照与修订列表分别管理加载状态。`DetailSnapshotState` 区分首次加载、已加载、条目不存在、加载失败、恢复后刷新中及刷新失败。
+首次加载失败时 Route 提供重试；条目不存在时返回详情入口。修订历史的重试只重新初始化并订阅修订元数据，不代替详情快照重试。恢复后的快照刷新语义见上文。
+
 ## 历史弹层布局
 
 弹层只在 Hidden / Expanded 间切换，不预留屏幕百分比高度。空列表、短列表和无差异比较按内容收缩；
@@ -87,6 +94,7 @@ entry visit 内重订阅，失败提示提供重试；若此前已有记录，�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 详情页历史状态和交互编排 | `DetailViewModel`、`DetailRevisionReducer` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevisionReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/history/DetailRevisionReducer.kt) |
+| Detail 根 snapshot 加载与恢复后刷新 | `DetailSnapshotState`、`DetailPresentationLoader`、`retryDetailLoad()`、`retrySnapshotRefresh()` | [`DetailUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt)、[`DetailPresentationLoader.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPresentationLoader.kt)、[`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRoute.kt) |
 | 活动历史加载状态与重试展示 | `DetailActivityHistoryState`、`ActivityTimelineSection` | [`DetailUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt)、[`ActivityTimelineSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/ActivityTimelineSection.kt) |
 | 比较与恢复历史版本 | `CompareEntryRevisionUseCase`、`RestoreEntryRevisionUseCase` | [`CompareEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/CompareEntryRevisionUseCase.kt)、[`RestoreEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/RestoreEntryRevisionUseCase.kt) |
 | 在事务中写入版本并恢复修订 | `EntryRevisionWriter`、`EntryRevisionRestoreTransaction` | [`EntryRevisionWriter.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt)、[`EntryRevisionRestoreTransaction.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/EntryRevisionRestoreTransaction.kt) |

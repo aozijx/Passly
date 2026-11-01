@@ -78,6 +78,13 @@ class DetailViewModel @Inject internal constructor(
     private val restoreEntryRevision: RestoreEntryRevisionUseCase,
     otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
 ) : ViewModel() {
+    private sealed interface SnapshotRead {
+        data class Loaded(val snapshot: DetailSessionSnapshot) : SnapshotRead
+        data object Missing : SnapshotRead
+        data object SessionLocked : SnapshotRead
+        data object Failed : SnapshotRead
+    }
+
     private val revealStore = DetailRevealStore()
     private val revisionRevealStore = DetailRevisionRevealStore()
     private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
@@ -90,9 +97,11 @@ class DetailViewModel @Inject internal constructor(
     private var tagEditorLoadJob: Job? = null
     private var revisionObservationJob: Job? = null
     private var revisionOperationJob: Job? = null
+    private var snapshotRefreshJob: Job? = null
     private var historyObservationGeneration = 0L
     private var revisionObservationGeneration = 0L
     private var loadedEntryId: EntryId? = null
+    private var loadedLaunchMode = DetailLaunchMode.VIEW
 
     private val _uiState = MutableStateFlow(DetailUiState())
     private val workSession = DetailWorkSession(
@@ -178,6 +187,8 @@ class DetailViewModel @Inject internal constructor(
             }
 
             DetailUiAction.LoadPackagePickerApps -> loadPackagePickerApps()
+            DetailUiAction.RetryDetailLoad -> retryDetailLoad()
+            DetailUiAction.RetrySnapshotRefresh -> retrySnapshotRefresh()
             is DetailUiAction.SelectAssociatedPackage -> {
                 if (_uiState.value.entry == null) return
                 viewModelScope.launch {
@@ -490,7 +501,9 @@ class DetailViewModel @Inject internal constructor(
         (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         qrSession.close()
         loadedEntryId = entryId
+        loadedLaunchMode = launchMode
         entryLoadJob?.cancel()
+        snapshotRefreshJob?.cancel()
         historyJob?.cancel()
         packagePickerLoadJob?.cancel()
         revisionObservationJob?.cancel()
@@ -502,7 +515,18 @@ class DetailViewModel @Inject internal constructor(
         mutate(DetailMutation.StateCleared)
         entryLoadJob = viewModelScope.launch {
             if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
-            val snapshot = presentationLoader.open(entryId) ?: return@launch
+            val snapshot = when (val result = readSnapshot(entryId)) {
+                is SnapshotRead.Loaded -> result.snapshot
+                SnapshotRead.Missing -> {
+                    if (workSession.isCurrent(token)) mutate(DetailMutation.SnapshotNotFound)
+                    return@launch
+                }
+                SnapshotRead.SessionLocked -> return@launch
+                SnapshotRead.Failed -> {
+                    if (workSession.isCurrent(token)) mutate(DetailMutation.SnapshotLoadFailed)
+                    return@launch
+                }
+            }
             if (!workSession.isCurrent(token)) return@launch
             val latest = snapshot.presentation.entry
             mutate(DetailMutation.SessionOpened(snapshot))
@@ -526,6 +550,47 @@ class DetailViewModel @Inject internal constructor(
             }
             if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }
+    }
+
+    private fun retryDetailLoad() {
+        if (_uiState.value.snapshotState != DetailSnapshotState.Failed) return
+        val entryId = loadedEntryId ?: return
+        load(entryId.value, loadedLaunchMode)
+    }
+
+    private fun retrySnapshotRefresh() {
+        if (_uiState.value.snapshotState != DetailSnapshotState.RefreshFailedAfterRestore) return
+        val entryId = _uiState.value.entry?.id ?: return
+        val token = workSession.current(entryId) ?: return
+        refreshSnapshotAfterRestore(entryId, token)
+    }
+
+    private fun refreshSnapshotAfterRestore(entryId: EntryId, token: DetailWorkSession.Scope.Active) {
+        snapshotRefreshJob?.cancel()
+        mutate(DetailMutation.SnapshotRefreshStarted)
+        snapshotRefreshJob = viewModelScope.launch {
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
+            val snapshot = when (val result = readSnapshot(entryId)) {
+                is SnapshotRead.Loaded -> result.snapshot
+                SnapshotRead.Missing, SnapshotRead.Failed -> {
+                    if (workSession.isCurrent(token)) mutate(DetailMutation.SnapshotRefreshFailed)
+                    return@launch
+                }
+                SnapshotRead.SessionLocked -> return@launch
+            }
+            if (!workSession.isCurrent(token) || !currentCoroutineContext().isActive) return@launch
+            mutate(DetailMutation.SessionOpened(snapshot))
+        }
+    }
+
+    private suspend fun readSnapshot(entryId: EntryId): SnapshotRead = try {
+        presentationLoader.open(entryId)?.let(SnapshotRead::Loaded) ?: SnapshotRead.Missing
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: SessionLockedException) {
+        SnapshotRead.SessionLocked
+    } catch (_: Exception) {
+        SnapshotRead.Failed
     }
 
     private fun retryActivityHistory() {
@@ -582,6 +647,7 @@ class DetailViewModel @Inject internal constructor(
         (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
         workSession.close()
         entryLoadJob?.cancel()
+        snapshotRefreshJob?.cancel()
         historyJob?.cancel()
         packagePickerLoadJob?.cancel()
         qrSession.close()
@@ -756,11 +822,7 @@ class DetailViewModel @Inject internal constructor(
                 is RevisionOperationResult.Succeeded -> {
                     clearRevisionReveals()
                     mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreSucceeded))
-                    presentationLoader.open(entryId)?.let {
-                        if (workSession.isCurrent(token) && currentCoroutineContext().isActive) {
-                            mutate(DetailMutation.SessionOpened(it))
-                        }
-                    }
+                    refreshSnapshotAfterRestore(entryId, token)
                 }
 
                 RevisionOperationResult.Cancelled ->

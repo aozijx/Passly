@@ -9,6 +9,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSection
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 
 data class DetailUiState(
+    val snapshotState: DetailSnapshotState = DetailSnapshotState.Loading,
     val entry: Entry? = null,
     val isEditingTitle: Boolean = false,
     val editedTitle: String = "",
@@ -33,6 +34,8 @@ data class DetailUiState(
 }
 
 enum class DetailActivityHistoryState { Loading, Ready, Failed }
+
+enum class DetailSnapshotState { Loading, Ready, NotFound, Failed, RefreshingAfterRestore, RefreshFailedAfterRestore }
 
 data class DetailFieldEditState(
     private val drafts: Map<DetailDraftKey, String> = emptyMap(),

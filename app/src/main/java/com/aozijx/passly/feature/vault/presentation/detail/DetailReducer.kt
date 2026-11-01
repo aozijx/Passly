@@ -17,6 +17,10 @@ internal sealed interface DetailMutation {
     data class SessionOpened(
         val snapshot: DetailSessionSnapshot,
     ) : DetailMutation
+    data object SnapshotNotFound : DetailMutation
+    data object SnapshotLoadFailed : DetailMutation
+    data object SnapshotRefreshStarted : DetailMutation
+    data object SnapshotRefreshFailed : DetailMutation
     data class EntryPresented(
         val presentation: DetailEntryPresentation,
     ) : DetailMutation
@@ -81,6 +85,7 @@ internal object DetailReducer {
             is DetailMutation.SessionOpened -> mutation.snapshot.let { snapshot ->
                 val presentation = snapshot.presentation
                 state.copy(
+                    snapshotState = DetailSnapshotState.Ready,
                     entry = presentation.entry,
                     sections = presentation.sections,
                     associatedApps = presentation.associatedApps,
@@ -90,6 +95,11 @@ internal object DetailReducer {
                     editedTitle = presentation.entry.detailDisplayTitle,
                 )
             }
+
+            DetailMutation.SnapshotNotFound -> state.copy(snapshotState = DetailSnapshotState.NotFound)
+            DetailMutation.SnapshotLoadFailed -> state.copy(snapshotState = DetailSnapshotState.Failed)
+            DetailMutation.SnapshotRefreshStarted -> state.copy(snapshotState = DetailSnapshotState.RefreshingAfterRestore)
+            DetailMutation.SnapshotRefreshFailed -> state.copy(snapshotState = DetailSnapshotState.RefreshFailedAfterRestore)
 
             is DetailMutation.EntryPresented -> mutation.presentation.let { presentation ->
                 state.copy(

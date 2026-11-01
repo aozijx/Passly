@@ -21,6 +21,8 @@ sealed interface DetailUiAction {
     data class UpdateDomainDraft(val value: String) : DetailEntryAction
     data object SaveDomain : DetailEntryAction
     data object LoadPackagePickerApps : DetailEntryAction
+    data object RetryDetailLoad : DetailEntryAction
+    data object RetrySnapshotRefresh : DetailEntryAction
     data class SelectAssociatedPackage(val packageName: String) : DetailEntryAction
 
     data class StartFieldEdit(val field: DetailFieldUiModel, val initialValue: String) : DetailSensitiveAction

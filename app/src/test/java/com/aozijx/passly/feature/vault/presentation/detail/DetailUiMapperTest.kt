@@ -56,6 +56,19 @@ class DetailUiMapperTest {
     }
 
     @Test
+    fun snapshotRefreshStateReachesDetailContent() {
+        val state = DetailUiState(
+            entry = noteEntry(),
+            snapshotState = DetailSnapshotState.RefreshFailedAfterRestore,
+        )
+
+        assertEquals(
+            DetailSnapshotState.RefreshFailedAfterRestore,
+            toDetailPresentationModel(state, null)?.content?.snapshotState,
+        )
+    }
+
+    @Test
     fun contentMapperProjectsOnlySharedContentModels() {
         val entry = noteEntry()
         val state = DetailUiState(

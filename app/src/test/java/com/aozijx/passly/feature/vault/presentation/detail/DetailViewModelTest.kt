@@ -413,6 +413,245 @@ class DetailViewModelTest {
     }
 
     @Test
+    fun detailSnapshotFailureCanBeRetriedWithoutBecomingNotFound() = runTest {
+        var failNextRead = true
+        val fixture = Fixture(
+            entryQueryRepository = { entries ->
+                object : EntryQueryRepository {
+                    override suspend fun getById(entryId: EntryId): Entry? {
+                        if (failNextRead) {
+                            failNextRead = false
+                            throw IllegalStateException("entry query failed")
+                        }
+                        return entries.getById(entryId)
+                    }
+                }
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+
+            assertEquals(DetailSnapshotState.Failed, model.uiState.value.snapshotState)
+            assertEquals(null, model.uiState.value.entry)
+
+            model.onAction(DetailUiAction.RetryDetailLoad)
+            runCurrent()
+
+            assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+            assertEquals("Current title", model.uiState.value.entry?.title)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun missingEntryHasASeparateSnapshotState() = runTest {
+        val fixture = Fixture(
+            entryQueryRepository = {
+                object : EntryQueryRepository {
+                    override suspend fun getById(entryId: EntryId): Entry? = null
+                }
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+
+            assertEquals(DetailSnapshotState.NotFound, model.uiState.value.snapshotState)
+            assertEquals(null, model.uiState.value.entry)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun parallelSnapshotQueriesFailAtomicallyAndRetry() = runTest {
+        var failPresence = true
+        assertSnapshotFailureThenRetry(
+            Fixture(
+                sensitiveFieldRepository = sensitiveFields { entryId ->
+                    if (failPresence) {
+                        failPresence = false
+                        throw IllegalStateException("sensitive presence query failed")
+                    }
+                    SensitiveFieldPresence(entryId, emptySet())
+                },
+            ),
+        )
+
+        var failLinks = true
+        assertSnapshotFailureThenRetry(
+            Fixture(
+                entryLinkRepository = object : EntryLinkRepository by EmptyEntryLinkRepository {
+                    override suspend fun getAll(): List<EntryLink> {
+                        if (failLinks) {
+                            failLinks = false
+                            throw IllegalStateException("entry links query failed")
+                        }
+                        return emptyList()
+                    }
+                },
+            ),
+        )
+
+        var failMetadata = true
+        assertSnapshotFailureThenRetry(
+            Fixture(
+                initialEntry = currentEntry().let { entry ->
+                    entry.copy(
+                        profile = entry.profile.copy(
+                            associations = EntryAssociations(applicationIds = setOf("example.app")),
+                        ),
+                    )
+                },
+                installedApps = installedAppDirectory { packageName ->
+                    if (failMetadata) {
+                        failMetadata = false
+                        throw IllegalStateException("associated app metadata query failed")
+                    }
+                    InstalledAppMetadata(label = packageName, packageName = packageName)
+                },
+            ),
+        )
+    }
+
+    @Test
+    fun detailSnapshotCancellationDoesNotBecomeFailure() = runTest {
+        val fixture = Fixture(
+            entryQueryRepository = {
+                object : EntryQueryRepository {
+                    override suspend fun getById(entryId: EntryId): Entry? = awaitCancellation()
+                }
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            model.onAction(DetailUiAction.ClearSensitiveState)
+            runCurrent()
+
+            assertEquals(DetailSnapshotState.Loading, model.uiState.value.snapshotState)
+            assertEquals(null, model.uiState.value.entry)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun detailSnapshotFatalErrorEscapesRecoveryBoundary() {
+        val fatal = AssertionError("detail query failed fatally")
+        val thrown = assertThrows(AssertionError::class.java) {
+            runTest {
+                val fixture = Fixture(
+                    entryQueryRepository = {
+                        object : EntryQueryRepository {
+                            override suspend fun getById(entryId: EntryId): Entry? = throw fatal
+                        }
+                    },
+                )
+                val model = fixture.viewModel
+                val store = ViewModelStore().apply { put("detail", model) }
+                try {
+                    model.load(ENTRY_ID.value)
+                    runCurrent()
+                } finally {
+                    store.clear()
+                }
+            }
+        }
+
+        assertSame(fatal, thrown)
+    }
+
+    @Test
+    fun lateDetailSnapshotFailureCannotReplaceNewEntry() = runTest {
+        val oldQueryStarted = CompletableDeferred<Unit>()
+        val releaseOldQuery = CompletableDeferred<Unit>()
+        val fixture = Fixture(
+            entryQueryRepository = { entries ->
+                object : EntryQueryRepository {
+                    override suspend fun getById(entryId: EntryId): Entry? {
+                        if (entryId == ENTRY_ID) {
+                            oldQueryStarted.complete(Unit)
+                            withContext(NonCancellable) { releaseOldQuery.await() }
+                            throw IllegalStateException("stale detail query failed")
+                        }
+                        return entries.getById(entryId)
+                    }
+                }
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            oldQueryStarted.await()
+
+            model.load(OTHER_ENTRY_ID.value)
+            runCurrent()
+            releaseOldQuery.complete(Unit)
+            runCurrent()
+
+            assertEquals("Other title", model.uiState.value.entry?.title)
+            assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+        } finally {
+            releaseOldQuery.complete(Unit)
+            store.clear()
+        }
+    }
+
+    @Test
+    fun restoreCommitSurvivesSnapshotRefreshFailureAndRefreshRetry() = runTest {
+        var failNextRead = false
+        val fixture = Fixture(
+            entryQueryRepository = { entries ->
+                object : EntryQueryRepository {
+                    override suspend fun getById(entryId: EntryId): Entry? {
+                        if (failNextRead) {
+                            failNextRead = false
+                            throw IllegalStateException("post-restore query failed")
+                        }
+                        return entries.getById(entryId)
+                    }
+                }
+            },
+        )
+        fixture.revisions.onRestoreCommitted = { failNextRead = true }
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            startRestore(model)
+            fixture.revisions.releasePostCommitCleanup.complete(Unit)
+            runCurrent()
+
+            assertTrue(fixture.revisions.restoreCompleted)
+            assertEquals(1, fixture.revisions.restoreCalls)
+            assertEquals(DetailSnapshotState.RefreshFailedAfterRestore, model.uiState.value.snapshotState)
+            assertEquals("Current title", model.uiState.value.entry?.title)
+            val revisions = model.uiState.value.revisions as DetailRevisionState.Open
+            assertEquals(DetailRevisionPage.List, revisions.page)
+
+            model.onAction(DetailUiAction.RetrySnapshotRefresh)
+            runCurrent()
+
+            assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+            assertEquals("Restored title", model.uiState.value.entry?.title)
+            assertEquals(1, fixture.revisions.restoreCalls)
+        } finally {
+            fixture.revisions.releasePostCommitCleanup.complete(Unit)
+            store.clear()
+        }
+    }
+
+    @Test
     fun backAndDismissDoNotCancelRestoreBeforeItRefreshesTheEntry() = runTest {
         val fixture = Fixture()
         val viewModel = fixture.viewModel
@@ -503,16 +742,39 @@ class DetailViewModelTest {
         runCurrent()
     }
 
+    private suspend fun TestScope.assertSnapshotFailureThenRetry(fixture: Fixture) {
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            assertEquals(DetailSnapshotState.Failed, model.uiState.value.snapshotState)
+            assertEquals(null, model.uiState.value.entry)
+
+            model.onAction(DetailUiAction.RetryDetailLoad)
+            runCurrent()
+
+            assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+            assertEquals("Current title", model.uiState.value.entry?.title)
+        } finally {
+            store.clear()
+        }
+    }
+
     private class Fixture(
         installedApps: InstalledAppDirectory = EmptyInstalledAppDirectory,
         activityQueryRepository: ActivityQueryRepository = EmptyActivityQueryRepository,
         revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>> = { flowOf(listOf(revisionMetadata())) },
+        entryQueryRepository: (MutableEntries) -> EntryQueryRepository = { it },
+        sensitiveFieldRepository: SensitiveFieldRepository = EmptySensitiveFieldRepository(),
+        entryLinkRepository: EntryLinkRepository = EmptyEntryLinkRepository,
+        initialEntry: Entry = currentEntry(),
     ) {
         val access = AuthenticatedAccess()
-        val entries = MutableEntries(currentEntry())
+        val entries = MutableEntries(initialEntry)
+        private val entryQuery = entryQueryRepository(entries)
         val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow)
-        private val sensitive = EmptySensitiveFieldRepository()
-        private val links = EmptyEntryLinkRepository
+        private val sensitive = sensitiveFieldRepository
         private val authGate = UnusedAuthorizationGate
         private val activity = NoOpActivityRecorder
         private val fieldReader: EntryFieldReader = DefaultEntryFieldReader()
@@ -540,7 +802,7 @@ class DetailViewModelTest {
             copyOtpCodeUseCase = CopyOtpCodeUseCase(authGate, clipboard, activity),
             faviconImageProcessor = favicon,
             presentationLoader = DetailPresentationLoader(
-                DetailSessionQuery(entries, sensitive, links),
+                DetailSessionQuery(entryQuery, sensitive, entryLinkRepository),
                 installedAppDirectory,
             ),
             entryRevisionRepository = revisions,
@@ -597,6 +859,8 @@ class DetailViewModelTest {
         val restoreEntered = CompletableDeferred<Unit>()
         val releasePostCommitCleanup = CompletableDeferred<Unit>()
         var restoreCompleted = false
+        var restoreCalls = 0
+        var onRestoreCommitted: () -> Unit = {}
 
         override suspend fun initializeHistory(): AppResult<Unit> = AppResult.Success(Unit)
 
@@ -620,7 +884,9 @@ class DetailViewModelTest {
             expectedVersion: EntryVersion,
             permit: AuthorizationPermit?,
         ): AppResult<EntryVersion> {
+            restoreCalls += 1
             entries.restoreFrom(restoredSnapshot(), expectedVersion)
+            onRestoreCommitted()
             restoreEntered.complete(Unit)
             withContext(NonCancellable) { releasePostCommitCleanup.await() }
             restoreCompleted = true
@@ -630,6 +896,28 @@ class DetailViewModelTest {
 
     private class EmptySensitiveFieldRepository : SensitiveFieldRepository {
         override suspend fun getPresence(entryId: EntryId) = SensitiveFieldPresence(entryId, emptySet())
+        override suspend fun reveal(
+            entryId: EntryId,
+            key: SensitiveFieldKey,
+            action: com.aozijx.passly.domain.access.model.SensitiveAccessAction,
+            permit: AuthorizationPermit,
+        ): RevealedSensitiveField? = error("Not used")
+
+        override suspend fun revealMany(
+            entryId: EntryId,
+            keys: Set<SensitiveFieldKey>,
+            action: com.aozijx.passly.domain.access.model.SensitiveAccessAction,
+            permit: AuthorizationPermit,
+        ): List<RevealedSensitiveField> = error("Not used")
+
+        override suspend fun readBundle(entryId: EntryId): EntrySecret = error("Not used")
+        override suspend fun readAll(entryId: EntryId): EntrySecret = error("Not used")
+    }
+
+    private fun sensitiveFields(
+        readPresence: suspend (EntryId) -> SensitiveFieldPresence,
+    ): SensitiveFieldRepository = object : SensitiveFieldRepository {
+        override suspend fun getPresence(entryId: EntryId) = readPresence(entryId)
         override suspend fun reveal(
             entryId: EntryId,
             key: SensitiveFieldKey,
@@ -691,6 +979,13 @@ class DetailViewModelTest {
     ): InstalledAppDirectory = object : InstalledAppDirectory {
         override suspend fun metadataFor(packageName: String): InstalledAppMetadata? = null
         override suspend fun launchableApps() = launchableApps()
+    }
+
+    private fun installedAppDirectory(
+        lookupMetadata: suspend (String) -> InstalledAppMetadata?,
+    ): InstalledAppDirectory = object : InstalledAppDirectory {
+        override suspend fun metadataFor(packageName: String) = lookupMetadata(packageName)
+        override suspend fun launchableApps(): List<InstalledAppMetadata> = emptyList()
     }
 
     private object NoOtpConfigRepository : OtpConfigRepository {

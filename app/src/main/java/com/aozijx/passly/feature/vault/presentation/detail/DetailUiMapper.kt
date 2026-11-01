@@ -152,6 +152,7 @@ internal fun toDetailPresentationModel(
             metadata = shared.metadata,
             activities = shared.activities,
             activityHistory = state.activityHistory,
+            snapshotState = state.snapshotState,
         ),
         overlays = DetailEditorOverlaysUiModel(
             tagEditor = state.tagEditor.toTagEditorUiModel(),

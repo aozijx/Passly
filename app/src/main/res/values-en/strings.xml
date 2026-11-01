@@ -223,6 +223,10 @@
     <string name="revision_load_failed">Version history could not be loaded. Try again.</string>
     <string name="vault_detail_history_load_failed">Activity history could not be loaded.</string>
     <string name="vault_detail_history_retry">Retry</string>
+    <string name="vault_detail_load_failed">This entry could not be loaded. Try again.</string>
+    <string name="vault_detail_entry_not_found">This entry no longer exists.</string>
+    <string name="vault_detail_refreshing_after_restore">Restore saved. Refreshing the entry…</string>
+    <string name="vault_detail_refresh_failed_after_restore">Restore saved, but the entry could not be refreshed.</string>
     <string name="revision_reveal_action">Verify and view</string>
     <string name="revision_field_title">Title</string>
     <string name="revision_field_notes">Notes</string>
