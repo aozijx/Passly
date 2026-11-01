@@ -572,3 +572,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：Dispatcher 对路由/投递普通 `Exception` 返回可重试失败并释放去重 claim；`CancellationException` 和 fatal `Error` 均先释放 claim 再原样传播。Android system gateway 同样不再用 `runCatching` 吞掉 `Error` 或取消。
 - 回归：sink 普通异常返回失败后可用相同 eventId 成功重试；router `AssertionError` 观察到旧实现错误吞掉后，修复后按同一对象向上传播，且 claim 已释放、相同事件可重试。
 - 风险边界：未在设备上主动制造 Android NotificationManager/TextResolver fatal 错误；gateway catch 规则由类型边界改为 `Exception` 且 AndroidTest 源码编译验证。
+
+### 后续批次：为通知等级声明显式语义（2026-11-01）
+
+- 修复：Domain `MessageLevel` 以显式 severity 比较 topic 最低等级；App `NoticeLevel.longToast` 显式定义 Toast 持续时长。生产消息代码不再以 enum ordinal 决定投递过滤或提示长度。
+- 回归：Domain 测试覆盖全部 25 组实际等级/最低等级比较，App 测试覆盖五种 NoticeLevel 的短/长提示合同；原 Router 阈值测试保持通过。
+- 文档：消息中心页记录声明顺序不再影响等级路由与 Toast 时长。

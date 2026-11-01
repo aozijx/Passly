@@ -27,7 +27,7 @@ class DefaultNoticeRouter @Inject constructor() : NoticeRouter {
             if (!topic.enabled) {
                 return NoticeRoutePlan.suppressed(RouteReason.TOPIC_DISABLED)
             }
-            if (policy.level.toMessageLevel().ordinal < topic.minimumLevel.ordinal) {
+            if (!policy.level.toMessageLevel().meetsMinimum(topic.minimumLevel)) {
                 return NoticeRoutePlan.suppressed(RouteReason.BELOW_MINIMUM_LEVEL)
             }
         }

@@ -29,12 +29,14 @@ enum class MessageTopic {
     DATABASE
 }
 
-enum class MessageLevel {
-    INFO,
-    SUCCESS,
-    WARNING,
-    ERROR,
-    CRITICAL
+enum class MessageLevel(val severity: Int) {
+    INFO(10),
+    SUCCESS(20),
+    WARNING(30),
+    ERROR(40),
+    CRITICAL(50);
+
+    fun meetsMinimum(minimum: MessageLevel): Boolean = severity >= minimum.severity
 }
 
 fun defaultMessageTopicSettings(): Map<MessageTopic, TopicMessageSettings> = mapOf(

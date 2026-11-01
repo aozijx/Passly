@@ -39,6 +39,9 @@ Router/Sink 抛出的普通 `Exception` 映射为 `FAILED/NO_AVAILABLE_TARGET`�
 强制消息只绕过产品总开关、topic 和最低等级，不依赖通知设置快照中的用户偏好；快照仍在加载或读取失败时，使用中性系统开关值继续路由，
 但不绕过 Android 权限或系统 channel。普通消息遇到 Loading 则抑制，不占用去重 claim。
 
+通知等级比较使用 `MessageLevel.severity` 明确表示最低等级顺序；Snackbar/Toast 长度由 `NoticeLevel.longToast` 显式标记。
+调整 enum 声明顺序不会改变过滤阈值或提示时长。
+
 `DefaultMessageSettingsSnapshotProvider` 首次读取前为 Loading。设置 Flow 正常结束或抛出普通异常后都会清除旧 Ready 值为 Loading，并在固定 1 秒间隔后重新订阅；
 取消和 fatal `Error` 不映射为普通读取失败。恢复后的每次实际设置 emission 都生成新版本。Loading 期间普通通知仍按上述 best-effort 合同处理，
 不保留队列事件等待恢复。

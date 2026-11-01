@@ -1,7 +1,6 @@
 package com.aozijx.passly.app.message.presentation
 
 import androidx.lifecycle.ViewModel
-import com.aozijx.passly.app.message.model.NoticeLevel
 import com.aozijx.passly.app.message.contract.InAppNoticeStream
 import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,7 +17,7 @@ class AppNoticeHostViewModel @Inject constructor(
         val resolved = textResolver.resolve(notice)
         RenderedNotice(
             text = resolved.text,
-            longDuration = resolved.level.ordinal >= NoticeLevel.ERROR.ordinal
+            longDuration = resolved.level.longToast
         )
     }
 }

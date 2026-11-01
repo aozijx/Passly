@@ -49,12 +49,12 @@ enum class NoticeTopic {
     DATABASE
 }
 
-enum class NoticeLevel {
-    INFO,
-    SUCCESS,
-    WARNING,
-    ERROR,
-    CRITICAL
+enum class NoticeLevel(val longToast: Boolean) {
+    INFO(longToast = false),
+    SUCCESS(longToast = false),
+    WARNING(longToast = false),
+    ERROR(longToast = true),
+    CRITICAL(longToast = true)
 }
 
 enum class DeliveryPolicy {
