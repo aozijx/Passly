@@ -20,14 +20,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailScreen
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun DetailRoute(
@@ -40,6 +41,7 @@ fun DetailRoute(
     val viewModel = hiltViewModel<DetailViewModel>()
     val context = LocalContext.current
     val resources = LocalResources.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val qrState by viewModel.qrState.collectAsStateWithLifecycle()
@@ -52,8 +54,8 @@ fun DetailRoute(
     LaunchedEffect(entryId, viewModel) {
         viewModel.load(entryId, launchMode)
     }
-    LaunchedEffect(viewModel, context, resources, copiedMessageFormat, otpLabel) {
-        viewModel.effects.collectLatest { effect ->
+    LaunchedEffect(viewModel, lifecycle, context, resources, copiedMessageFormat, otpLabel) {
+        collectPageEffects(lifecycle, viewModel.effects) { effect ->
             val label = when (effect) {
                 is DetailEffect.ContentCopied -> resources.getString(effect.fieldKey.copyLabelRes())
                 DetailEffect.OtpCopied -> otpLabel

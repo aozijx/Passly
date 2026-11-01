@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.presentation.BackupOperationRoute
@@ -27,6 +28,7 @@ import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSett
 import com.aozijx.passly.feature.settings.presentation.ui.data.BackupDirectoryClearDialog
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,9 +37,17 @@ internal fun BackupRoute(
 ) {
     val context = LocalContext.current
     val viewModel: DataManagementSettingsViewModel = hiltViewModel()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val pageOwner = remember(viewModel) { mutableStateOf<Any?>(null) }
+    val directoryRequestId = remember(viewModel) { mutableStateOf<String?>(null) }
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
-        onDispose { viewModel.onPageExited(owner) }
+        pageOwner.value = owner
+        onDispose {
+            pageOwner.value = null
+            directoryRequestId.value = null
+            viewModel.onPageExited(owner)
+        }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val readyState = when (val current = state) {
@@ -61,19 +71,27 @@ internal fun BackupRoute(
     val backupPathPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
-        viewModel.onAction(
-            DataManagementSettingsUiAction.BackupDirectoryPicked(uri?.toString()),
+        val owner = pageOwner.value
+        val requestId = directoryRequestId.value
+        directoryRequestId.value = null
+        if (owner != null && requestId != null) viewModel.onAction(
+            DataManagementSettingsUiAction.BackupDirectoryPicked(
+                uri = uri?.toString(),
+                pageOwner = owner,
+                requestId = requestId,
+            ),
         )
     }
 
     LaunchedEffect(
         viewModel,
+        lifecycle,
         context,
         selectionCancelledMessage,
         permissionDeniedMessage,
         unavailableMessage,
     ) {
-        viewModel.effects.collect { effect ->
+        collectPageEffects(lifecycle, viewModel.effects) { effect ->
             val message = when (effect) {
                 DataManagementSettingsEffect.BackupDirectorySelectionCancelled ->
                     selectionCancelledMessage
@@ -96,12 +114,17 @@ internal fun BackupRoute(
                 directoryLabel = pathLabel,
                 lastExportFileLabel = notSetText,
                 onPickBackupPath = {
-                    backupPathPicker.launch(
-                        DocumentsContract.buildTreeDocumentUri(
-                            "com.android.externalstorage.documents",
-                            "primary:Documents",
-                        ),
-                    )
+                    val owner = pageOwner.value
+                    val requestId = owner?.let(viewModel::beginDirectorySelection)
+                    if (requestId != null) {
+                        directoryRequestId.value = requestId
+                        backupPathPicker.launch(
+                            DocumentsContract.buildTreeDocumentUri(
+                                "com.android.externalstorage.documents",
+                                "primary:Documents",
+                            ),
+                        )
+                    }
                 },
                 onClearBackupPath = if (readyState.directoryUri.isNullOrBlank()) null
                 else ({ showClearDirectoryDialog = true }),

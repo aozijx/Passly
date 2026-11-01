@@ -17,6 +17,7 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -44,6 +45,7 @@ class DiagnosticsViewModel @Inject constructor(
     private var activeRefreshOwner: Any? = null
     private var copyJob: Job? = null
     private var activeCopyOwner: Any? = null
+    private var pendingLocalDocument: PendingLocalDocument? = null
 
     fun onAction(action: DiagnosticsAction) {
         when (action) {
@@ -59,8 +61,16 @@ class DiagnosticsViewModel @Inject constructor(
             is DiagnosticsAction.RequestExport -> mutate(DiagnosticsMutation.ExportActionSelected(action.action))
             DiagnosticsAction.DismissFormatSheet -> mutate(DiagnosticsMutation.FormatSheetDismissed)
             is DiagnosticsAction.SelectFormat -> selectFormat(action.format)
-            is DiagnosticsAction.SaveToDocument -> saveToDocument(action.uri)
-            DiagnosticsAction.SaveDocumentCancelled -> mutate(DiagnosticsMutation.LocalExportConsumed)
+            is DiagnosticsAction.SaveToDocument -> completeLocalDocument(
+                action.pageOwner,
+                action.requestId,
+                action.uri,
+            )
+            is DiagnosticsAction.SaveDocumentCancelled -> completeLocalDocument(
+                action.pageOwner,
+                action.requestId,
+                null,
+            )
             DiagnosticsAction.RequestClear -> mutate(DiagnosticsMutation.ClearRequested)
             DiagnosticsAction.DismissClear -> mutate(DiagnosticsMutation.ClearDismissed)
             DiagnosticsAction.ConfirmClear -> clearLogs()
@@ -69,6 +79,8 @@ class DiagnosticsViewModel @Inject constructor(
 
     fun onPageEntered(): Any {
         val owner = pageEffects.enter()
+        pendingLocalDocument = null
+        mutate(DiagnosticsMutation.LocalExportConsumed)
         refresh()
         return owner
     }
@@ -111,24 +123,35 @@ class DiagnosticsViewModel @Inject constructor(
             }
             ExportAction.EXPORT_LOCAL -> {
                 mutate(DiagnosticsMutation.LocalFormatSelected(format))
-                offerEffect(
+                val request = PendingLocalDocument(pageOwner, UUID.randomUUID().toString())
+                pendingLocalDocument = request
+                if (!offerEffect(
                     pageOwner,
                     DiagnosticsEffect.SelectSaveDocument(
                         format = format,
                         mimeType = format.mimeType,
                         fileName = "passly_logs.${format.extension}",
+                        requestId = request.requestId,
                     ),
-                )
+                )) {
+                    pendingLocalDocument = null
+                    mutate(DiagnosticsMutation.LocalExportConsumed)
+                }
             }
             null -> Unit
         }
     }
 
-    private fun saveToDocument(uri: String) {
-        val pageOwner = pageEffects.currentOwner ?: return
+    private fun completeLocalDocument(owner: Any, requestId: String, uri: String?) {
+        val request = pendingLocalDocument ?: return
+        if (request.pageOwner !== owner || request.requestId != requestId || !pageEffects.isActive(owner)) return
+        pendingLocalDocument = null
         val format = _uiState.value.pendingLocalFormat ?: return
         mutate(DiagnosticsMutation.LocalExportConsumed)
-        authenticateAndExport(DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, format, uri), pageOwner)
+        if (uri != null) authenticateAndExport(
+            DiagnosticsExportRequest(ExportAction.EXPORT_LOCAL, format, uri),
+            owner,
+        )
     }
 
     private fun copyRows(lines: List<DiagnosticsLogLine>) {
@@ -157,6 +180,10 @@ class DiagnosticsViewModel @Inject constructor(
     fun onPageExited(owner: Any) {
         if (!pageEffects.isActive(owner)) return
         pageEffects.exit(owner)
+        if (pendingLocalDocument?.pageOwner === owner) {
+            pendingLocalDocument = null
+            mutate(DiagnosticsMutation.LocalExportConsumed)
+        }
         activeCopyOwner = null
         copyJob?.cancel()
         copyJob = null
@@ -214,8 +241,8 @@ class DiagnosticsViewModel @Inject constructor(
         }
     }
 
-    private fun offerEffect(owner: Any, effect: DiagnosticsEffect) {
-        pageEffects.tryEmit(owner, effect)
+    private fun offerEffect(owner: Any, effect: DiagnosticsEffect): Boolean {
+        return pageEffects.tryEmit(owner, effect)
     }
 
     private fun mutate(mutation: DiagnosticsMutation) {
@@ -226,4 +253,6 @@ class DiagnosticsViewModel @Inject constructor(
         const val MAX_VIEW_LINES = 500
         const val MAX_COPY_LINES = 100
     }
+
+    private data class PendingLocalDocument(val pageOwner: Any, val requestId: String)
 }

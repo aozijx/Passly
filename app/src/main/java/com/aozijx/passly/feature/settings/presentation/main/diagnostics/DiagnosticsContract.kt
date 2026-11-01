@@ -46,8 +46,15 @@ sealed interface DiagnosticsAction {
     data class RequestExport(val action: ExportAction) : DiagnosticsAction
     data object DismissFormatSheet : DiagnosticsAction
     data class SelectFormat(val format: LogFormat) : DiagnosticsAction
-    data class SaveToDocument(val uri: String) : DiagnosticsAction
-    data object SaveDocumentCancelled : DiagnosticsAction
+    data class SaveToDocument(
+        val uri: String,
+        val pageOwner: Any,
+        val requestId: String,
+    ) : DiagnosticsAction
+    data class SaveDocumentCancelled(
+        val pageOwner: Any,
+        val requestId: String,
+    ) : DiagnosticsAction
     data object RequestClear : DiagnosticsAction
     data object DismissClear : DiagnosticsAction
     data object ConfirmClear : DiagnosticsAction
@@ -58,6 +65,7 @@ sealed interface DiagnosticsEffect {
         val format: LogFormat,
         val mimeType: String,
         val fileName: String,
+        val requestId: String,
     ) : DiagnosticsEffect
 
     data object SaveCompleted : DiagnosticsEffect

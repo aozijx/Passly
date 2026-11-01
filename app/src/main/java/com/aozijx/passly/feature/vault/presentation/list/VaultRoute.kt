@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
@@ -37,6 +38,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemA
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationRequest
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationResult
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +61,7 @@ internal fun VaultRoute(
 
     val context = LocalContext.current
     val resources = LocalResources.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
@@ -128,8 +131,8 @@ internal fun VaultRoute(
     )
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
     val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
-    LaunchedEffect(vaultViewModel, context, resources, totpLabel, fieldCopiedFormat) {
-        vaultViewModel.effects.collect { effect ->
+    LaunchedEffect(vaultViewModel, lifecycle, context, resources, totpLabel, fieldCopiedFormat) {
+        collectPageEffects(lifecycle, vaultViewModel.effects) { effect ->
             val message = when (effect) {
                 is VaultEffect.ShowError -> resources.getString(effect.message.resourceId)
                 is VaultEffect.FieldCopied -> fieldCopiedFormat.format(

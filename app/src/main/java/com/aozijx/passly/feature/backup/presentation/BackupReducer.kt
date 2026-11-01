@@ -16,6 +16,7 @@ internal sealed interface BackupMutation {
         val fileName: String,
     ) : BackupMutation
     data object ExportTargetRequested : BackupMutation
+    data object ExportTargetRequestFailed : BackupMutation
     data class ImportPrepared(val sourceUri: String) : BackupMutation
     data class PasswordUpdated(val password: SensitiveValue) : BackupMutation
     data class ImportModeUpdated(val mode: ImportMode) : BackupMutation
@@ -49,6 +50,9 @@ internal object BackupReducer {
         )
         BackupMutation.ExportTargetRequested -> state.updateExportOptions { options ->
             BackupWorkflow.AwaitingExportTarget(options)
+        }
+        BackupMutation.ExportTargetRequestFailed -> state.updateExportOptions { options ->
+            BackupWorkflow.ConfigureExport(options)
         }
         is BackupMutation.ImportPrepared -> state.copy(
             workflow = BackupWorkflow.ConfigureImport(BackupImportOptions(mutation.sourceUri)),

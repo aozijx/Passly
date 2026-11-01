@@ -161,7 +161,7 @@ class VaultViewModel @Inject internal constructor(
         val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             when (copyEntryField(EntryId(entryId), entryType, fieldKey)) {
-                CopyEntryFieldResult.Copied -> pageEffects.send(owner, VaultEffect.FieldCopied(fieldKey))
+                CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.FieldCopied(fieldKey))
                 CopyEntryFieldResult.NotAuthorized,
                 CopyEntryFieldResult.Unavailable,
                 -> Unit
@@ -178,7 +178,7 @@ class VaultViewModel @Inject internal constructor(
                     (totp.states.value[entryId] as? OtpCodeState.Ready)?.code
                 }
             ) {
-                CopyEntryFieldResult.Copied -> pageEffects.send(owner, VaultEffect.OtpCopied)
+                CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.OtpCopied)
                 CopyEntryFieldResult.NotAuthorized,
                 CopyEntryFieldResult.Unavailable,
                 -> Unit

@@ -35,4 +35,14 @@ class PageEffectsTest {
         assertTrue(pageEffects.tryEmit(newOwner, "current page"))
         assertEquals("current page", pageEffects.effects.first())
     }
+
+    @Test
+    fun `bounded notice queue drops overflow without blocking the producer`() = runTest {
+        val pageEffects = PageEffects<String>()
+        val owner = pageEffects.enter()
+
+        repeat(64) { index -> assertTrue(pageEffects.tryEmit(owner, "notice-$index")) }
+
+        assertFalse(pageEffects.tryEmit(owner, "overflow"))
+    }
 }

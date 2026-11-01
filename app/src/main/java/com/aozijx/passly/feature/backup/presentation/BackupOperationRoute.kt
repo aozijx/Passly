@@ -11,8 +11,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.newAppNotice
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.presentation.ui.BackupRestoreSheet
@@ -32,17 +34,25 @@ fun BackupOperationRoute(
     onClearBackupPath: (() -> Unit)?,
 ) {
     val viewModel: BackupViewModel = hiltViewModel()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val noticePublisher = LocalAppNoticePublisher.current
     val pageOwner = remember(viewModel) { mutableStateOf<Any?>(null) }
     val importRequestId = remember(viewModel) { mutableStateOf<String?>(null) }
+    val exportRequestId = remember(viewModel) { mutableStateOf<String?>(null) }
 
     fun startManualExport(uri: Uri?) {
-        if (uri == null) {
-            viewModel.onAction(BackupUiAction.DismissOptions)
-            return
-        }
-        viewModel.onAction(BackupUiAction.StartExport(uri = uri.toString(), deleteOnFailure = true))
+        val owner = pageOwner.value
+        val requestId = exportRequestId.value
+        exportRequestId.value = null
+        if (owner != null && requestId != null) viewModel.onAction(
+            BackupUiAction.StartExport(
+                uri = uri?.toString(),
+                pageOwner = owner,
+                requestId = requestId,
+                deleteOnFailure = true,
+            ),
+        )
     }
 
     val encryptedExportPicker = rememberLauncherForActivityResult(
@@ -68,8 +78,8 @@ fun BackupOperationRoute(
         importRequestId.value = null
     }
 
-    LaunchedEffect(viewModel, noticePublisher) {
-        viewModel.effects.collect { effect ->
+    LaunchedEffect(viewModel, lifecycle, noticePublisher) {
+        collectPageEffects(lifecycle, viewModel.effects) { effect ->
             when (effect) {
                 is BackupNoticeEffect ->
                     noticePublisher.publish(
@@ -88,10 +98,13 @@ fun BackupOperationRoute(
                     )
                 }
 
-                is BackupEffect.SelectExportDocument -> when (effect.format) {
-                    BackupExportFormat.ENCRYPTED -> encryptedExportPicker.launch(effect.fileName)
-                    BackupExportFormat.JSON -> jsonExportPicker.launch(effect.fileName)
-                    BackupExportFormat.TEXT -> textExportPicker.launch(effect.fileName)
+                is BackupEffect.SelectExportDocument -> {
+                    exportRequestId.value = effect.requestId
+                    when (effect.format) {
+                        BackupExportFormat.ENCRYPTED -> encryptedExportPicker.launch(effect.fileName)
+                        BackupExportFormat.JSON -> jsonExportPicker.launch(effect.fileName)
+                        BackupExportFormat.TEXT -> textExportPicker.launch(effect.fileName)
+                    }
                 }
             }
         }
@@ -103,6 +116,7 @@ fun BackupOperationRoute(
         onDispose {
             pageOwner.value = null
             importRequestId.value = null
+            exportRequestId.value = null
             viewModel.onPageExited(owner)
         }
     }

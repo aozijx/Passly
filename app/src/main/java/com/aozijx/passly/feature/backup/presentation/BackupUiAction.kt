@@ -13,7 +13,9 @@ sealed interface BackupUiAction {
     data class SelectExportFormat(val format: BackupExportFormat) : BackupUiAction
 
     data class StartExport(
-        val uri: String,
+        val uri: String?,
+        val pageOwner: Any,
+        val requestId: String,
         val deleteOnFailure: Boolean = false,
     ) : BackupUiAction
 

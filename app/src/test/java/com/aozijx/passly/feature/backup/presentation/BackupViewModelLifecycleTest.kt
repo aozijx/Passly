@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.backup.contract.BackupExecutionResult
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.contract.BackupImportOperationRequest
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperation
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -103,6 +105,65 @@ class BackupViewModelLifecycleTest {
 
         assertTrue(password.isWiped)
         assertTrue((request.password as OwnedChars).isWiped)
+    }
+
+    @Test
+    fun `full notice queue drops notices and keeps export target selection retryable`() = runTest {
+        val model = model { BackupExecutionResult.ExportSucceeded }
+        val owner = model.onPageEntered()
+
+        repeat(100) {
+            model.onAction(BackupUiAction.CheckDirectoryPermission(null))
+            runCurrent()
+        }
+        assertEquals(BackupWorkflow.Idle, model.uiState.value.workflow)
+
+        model.onAction(BackupUiAction.OpenExportOptions)
+        model.onAction(BackupUiAction.SelectExportFormat(BackupExportFormat.JSON))
+        assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureExport)
+        model.onAction(BackupUiAction.SubmitExport(useConfiguredDirectory = false))
+
+        assertTrue(
+            "A dropped document-picker command must leave the export form retryable",
+            model.uiState.value.workflow is BackupWorkflow.ConfigureExport,
+        )
+        model.onPageExited(owner)
+    }
+
+    @Test
+    fun `late export target result from the previous page cannot start export`() = runTest {
+        val gateway = FakeBackupOperationGateway()
+        val model = BackupViewModel(
+            backupOperationGateway = gateway,
+            secureSessionAccessState = object : SecureSessionAccessState {
+                override val authenticationState = MutableStateFlow<AuthenticationState>(
+                    AuthenticationState.Authenticated(1L),
+                )
+
+                override fun isUnlocked() = true
+            },
+        )
+        val oldOwner = model.onPageEntered()
+        model.onAction(BackupUiAction.OpenExportOptions)
+        model.onAction(BackupUiAction.SelectExportFormat(BackupExportFormat.JSON))
+        val pickerEffect = async { model.effects.first() }
+        model.onAction(BackupUiAction.SubmitExport(useConfiguredDirectory = false))
+        val picker = pickerEffect.await() as BackupEffect.SelectExportDocument
+
+        model.onPageEntered()
+        model.onPageExited(oldOwner)
+        model.onAction(
+            BackupUiAction.StartExport(
+                uri = "content://stale",
+                pageOwner = oldOwner,
+                requestId = picker.requestId,
+                deleteOnFailure = true,
+            ),
+        )
+        runCurrent()
+
+        assertEquals(BackupWorkflow.Idle, model.uiState.value.workflow)
+        assertEquals(null, gateway.exportedUri)
     }
 
     private suspend fun requestImport(model: BackupViewModel, owner: Any): String = coroutineScope {

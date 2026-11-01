@@ -9,6 +9,7 @@ internal sealed interface BackupEffect {
     data class SelectExportDocument(
         val format: BackupExportFormat,
         val fileName: String,
+        val requestId: String,
     ) : BackupEffect
 }
 

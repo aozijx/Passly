@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetRoute
@@ -31,6 +32,7 @@ import com.aozijx.passly.feature.settings.presentation.ui.data.DataManagementSec
 import com.aozijx.passly.feature.settings.presentation.ui.data.LogSettingsSection
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +43,7 @@ internal fun DataManagementRoute(
 ) {
     val context = LocalContext.current
     val viewModel: StorageSettingsViewModel = hiltViewModel()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showDatabaseReset by rememberSaveable { mutableStateOf(false) }
     var showLogClearConfirmation by rememberSaveable { mutableStateOf(false) }
@@ -59,13 +62,14 @@ internal fun DataManagementRoute(
     }
     LaunchedEffect(
         viewModel,
+        lifecycle,
         cacheClearedMessage,
         cacheClearFailedMessage,
         logsClearedMessage,
         logClearFailedMessage,
         logRecordingSettingsSaveFailedMessage,
     ) {
-        viewModel.effects.collect { effect ->
+        collectPageEffects(lifecycle, viewModel.effects) { effect ->
             when (effect) {
                 StorageSettingsEffect.CacheCleared ->
                     Toast.makeText(context, cacheClearedMessage, Toast.LENGTH_SHORT).show()

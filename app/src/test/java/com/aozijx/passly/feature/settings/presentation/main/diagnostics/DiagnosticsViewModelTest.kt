@@ -179,16 +179,14 @@ class DiagnosticsViewModelTest {
         val pickerEffect = async { viewModel.effects.first() }
         viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
         viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
-        assertEquals(
-            DiagnosticsEffect.SelectSaveDocument(
-                format = LogFormat.JSONL,
-                mimeType = "application/x-ndjson",
-                fileName = "passly_logs.jsonl",
-            ),
-            pickerEffect.await(),
-        )
+        val picker = pickerEffect.await() as DiagnosticsEffect.SelectSaveDocument
+        assertEquals(LogFormat.JSONL, picker.format)
+        assertEquals("application/x-ndjson", picker.mimeType)
+        assertEquals("passly_logs.jsonl", picker.fileName)
 
-        viewModel.onAction(DiagnosticsAction.SaveToDocument("content://test/export"))
+        viewModel.onAction(
+            DiagnosticsAction.SaveToDocument("content://test/export", oldOwner, picker.requestId),
+        )
         gateway.exportStarted.await()
         viewModel.onPageExited(oldOwner)
         viewModel.onPageEntered()
@@ -201,26 +199,48 @@ class DiagnosticsViewModelTest {
     @Test
     fun `local format selection emits matching saf contract independent of level filters`() = runTest {
         val viewModel = viewModel(RecordingLogStore(emptyList()))
-        viewModel.onPageEntered()
+        val owner = viewModel.onPageEntered()
         viewModel.onAction(DiagnosticsAction.ToggleLevel(LogLevel.INFO))
         viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
 
         val effect = async { viewModel.effects.first() }
         viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.TSV))
 
-        assertEquals(
-            DiagnosticsEffect.SelectSaveDocument(
-                format = LogFormat.TSV,
-                mimeType = "text/tab-separated-values",
-                fileName = "passly_logs.tsv",
-            ),
-            effect.await(),
-        )
+        val request = effect.await() as DiagnosticsEffect.SelectSaveDocument
+        assertEquals(LogFormat.TSV, request.format)
+        assertEquals("text/tab-separated-values", request.mimeType)
+        assertEquals("passly_logs.tsv", request.fileName)
         assertEquals(LogFormat.TSV, viewModel.uiState.value.pendingLocalFormat)
 
-        viewModel.onAction(DiagnosticsAction.SaveDocumentCancelled)
+        viewModel.onAction(DiagnosticsAction.SaveDocumentCancelled(owner, request.requestId))
 
         assertEquals(null, viewModel.uiState.value.pendingLocalFormat)
+    }
+
+    @Test
+    fun `late document result from an exited page cannot start an export`() = runTest {
+        val gateway = RecordingExportGateway()
+        val viewModel = viewModel(
+            store = RecordingLogStore(emptyList()),
+            gate = AllowingAuthorizationGate,
+            gateway = gateway,
+            logger = ExecutingLogger,
+        )
+        val oldOwner = viewModel.onPageEntered()
+        viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+        val effect = async { viewModel.effects.first() }
+        viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
+        val picker = effect.await() as DiagnosticsEffect.SelectSaveDocument
+
+        viewModel.onPageExited(oldOwner)
+        viewModel.onPageEntered()
+        viewModel.onAction(
+            DiagnosticsAction.SaveToDocument("content://stale", oldOwner, picker.requestId),
+        )
+        runCurrent()
+
+        assertNull(gateway.request)
+        assertNull(viewModel.uiState.value.pendingLocalFormat)
     }
 
     @Test

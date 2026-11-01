@@ -12,6 +12,8 @@ internal class FakeBackupOperationGateway(
         BackupExecutionResult.ImportSucceeded(TEST_IMPORT_RESULT)
     },
 ) : BackupOperationGateway {
+    var exportedUri: String? = null
+
     override fun buildExportFileName(format: BackupExportFormat): String = "backup.${format.extension}"
 
     override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult =
@@ -24,7 +26,10 @@ internal class FakeBackupOperationGateway(
         request: BackupExportOperationRequest,
         targetUri: String,
         deleteOnFailure: Boolean,
-    ): BackupExecutionResult = BackupExecutionResult.ExportSucceeded
+    ): BackupExecutionResult {
+        exportedUri = targetUri
+        return BackupExecutionResult.ExportSucceeded
+    }
 
     override suspend fun import(request: BackupImportOperationRequest): BackupExecutionResult = performImport(request)
 

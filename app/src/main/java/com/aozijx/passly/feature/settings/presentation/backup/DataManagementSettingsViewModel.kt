@@ -7,6 +7,7 @@ import com.aozijx.passly.feature.settings.backup.BackupDirectorySelectionResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,7 @@ class DataManagementSettingsViewModel @Inject constructor(
     )
     val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
     val effects = pageEffects.effects
+    private var pendingDirectorySelection: PendingDirectorySelection? = null
 
     init {
         viewModelScope.launch {
@@ -37,11 +39,16 @@ class DataManagementSettingsViewModel @Inject constructor(
     }
 
     fun onAction(action: DataManagementSettingsUiAction) {
-        val owner = pageEffects.currentOwner
         viewModelScope.launch {
             when (action) {
-                is DataManagementSettingsUiAction.BackupDirectoryPicked ->
-                    owner?.let { handleSelection(action.uri, it) }
+                is DataManagementSettingsUiAction.BackupDirectoryPicked -> {
+                    if (pendingDirectorySelection?.matches(action) == true &&
+                        pageEffects.isActive(action.pageOwner)
+                    ) {
+                        pendingDirectorySelection = null
+                        handleSelection(action.uri, action.pageOwner)
+                    }
+                }
                 DataManagementSettingsUiAction.ClearBackupDirectory -> when (_uiState.value) {
                     DataManagementSettingsUiState.Loading -> Unit
                     is DataManagementSettingsUiState.Ready -> directorySettings.clear()
@@ -53,15 +60,15 @@ class DataManagementSettingsViewModel @Inject constructor(
     private suspend fun handleSelection(uri: String?, owner: Any) {
         when (directorySettings.select(uri)) {
             BackupDirectorySelectionResult.Saved -> Unit
-            BackupDirectorySelectionResult.Cancelled -> pageEffects.send(
+            BackupDirectorySelectionResult.Cancelled -> pageEffects.tryEmit(
                 owner,
                 DataManagementSettingsEffect.BackupDirectorySelectionCancelled,
             )
-            BackupDirectorySelectionResult.PermissionDenied -> pageEffects.send(
+            BackupDirectorySelectionResult.PermissionDenied -> pageEffects.tryEmit(
                 owner,
                 DataManagementSettingsEffect.BackupDirectoryPermissionDenied,
             )
-            BackupDirectorySelectionResult.Unavailable -> pageEffects.send(
+            BackupDirectorySelectionResult.Unavailable -> pageEffects.tryEmit(
                 owner,
                 DataManagementSettingsEffect.BackupDirectoryUnavailable,
             )
@@ -69,10 +76,24 @@ class DataManagementSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
+        pendingDirectorySelection = null
         return pageEffects.enter()
+    }
+
+    fun beginDirectorySelection(owner: Any): String? {
+        if (!pageEffects.isActive(owner) || pendingDirectorySelection != null) return null
+        val requestId = UUID.randomUUID().toString()
+        pendingDirectorySelection = PendingDirectorySelection(owner, requestId)
+        return requestId
     }
 
     fun onPageExited(owner: Any) {
         pageEffects.exit(owner)
+        if (pendingDirectorySelection?.pageOwner === owner) pendingDirectorySelection = null
+    }
+
+    private data class PendingDirectorySelection(val pageOwner: Any, val requestId: String) {
+        fun matches(action: DataManagementSettingsUiAction.BackupDirectoryPicked): Boolean =
+            pageOwner === action.pageOwner && requestId == action.requestId
     }
 }

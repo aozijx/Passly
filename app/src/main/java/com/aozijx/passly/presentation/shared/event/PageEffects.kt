@@ -1,7 +1,10 @@
 package com.aozijx.passly.presentation.shared.event
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -41,5 +44,19 @@ internal class PageEffects<Effect : Any> {
 
     suspend fun send(owner: Any, effect: Effect) {
         if (isActive(owner)) channel.send(Delivery(owner, effect))
+    }
+}
+
+/**
+ * Collects one-shot page effects while their host is visible. The supplied flow may buffer effects
+ * until resume; it must reject effects from a page visit after that visit exits.
+ */
+internal suspend fun <Effect : Any> collectPageEffects(
+    lifecycle: Lifecycle,
+    effects: Flow<Effect>,
+    onEffect: suspend (Effect) -> Unit,
+) {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        effects.collect(onEffect)
     }
 }

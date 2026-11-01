@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
@@ -19,18 +20,20 @@ import com.aozijx.passly.feature.recovery.presentation.ui.RecoveryModeScreen
 import com.aozijx.passly.feature.recovery.presentation.ui.RecoveryPasswordDialog
 import com.aozijx.passly.feature.recovery.presentation.ui.RecoveryPasswordStrengthTone
 import com.aozijx.passly.feature.recovery.presentation.ui.RecoveryPasswordStrengthUiModel
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @Composable
 fun RecoveryModeRoute(onExit: () -> Unit) {
     val viewModel: RecoveryModeViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
         onDispose { viewModel.onPageExited(owner) }
     }
-    LaunchedEffect(viewModel) {
-        viewModel.effect.collect { effect ->
+    LaunchedEffect(viewModel, lifecycle) {
+        collectPageEffects(lifecycle, viewModel.effect) { effect ->
             when (effect) {
                 RecoveryModeEffect.ExitRecovery -> onExit()
                 RecoveryModeEffect.PasswordResetCompleted -> Toast.makeText(

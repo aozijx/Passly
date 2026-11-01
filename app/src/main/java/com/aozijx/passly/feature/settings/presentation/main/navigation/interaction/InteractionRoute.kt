@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsEffect
@@ -23,6 +24,7 @@ import com.aozijx.passly.feature.settings.presentation.ui.interaction.Interactio
 import com.aozijx.passly.feature.settings.presentation.ui.interaction.SwipeActionSelectDialog
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 private enum class SwipeActionDialog { Left, Right }
 
@@ -39,11 +41,12 @@ internal fun InteractionRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val savedMessage = stringResource(R.string.settings_saved)
     var activeDialog by rememberSaveable { mutableStateOf<SwipeActionDialog?>(null) }
 
-    LaunchedEffect(viewModel, context, resources, savedMessage) {
-        viewModel.effects.collect { effect ->
+    LaunchedEffect(viewModel, lifecycle, context, resources, savedMessage) {
+        collectPageEffects(lifecycle, viewModel.effects) { effect ->
             val message = when (effect) {
                 InteractionSettingsEffect.Saved -> savedMessage
                 is InteractionSettingsEffect.SaveFailed -> resources.getString(effect.message.resourceId)

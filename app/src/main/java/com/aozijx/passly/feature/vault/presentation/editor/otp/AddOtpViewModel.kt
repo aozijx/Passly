@@ -40,7 +40,7 @@ class AddOtpViewModel @Inject internal constructor(
 ) : ViewModel() {
     private sealed interface FeedbackScope {
         data object Closed : FeedbackScope
-        class Active(val authentication: AuthenticationState) : FeedbackScope
+        class Active(val authentication: AuthenticationState, val pageOwner: Any) : FeedbackScope
     }
     private data class InputEvent(val owner: FeedbackScope.Active, val event: AddOtpEvent)
 
@@ -49,9 +49,11 @@ class AddOtpViewModel @Inject internal constructor(
     private var editLoadJob: kotlinx.coroutines.Job? = null
     val uiState = _uiState.asStateFlow()
     private var feedbackScope: FeedbackScope = FeedbackScope.Closed
+    private var activePageOwner: Any? = null
     private val _events = Channel<InputEvent>(Channel.CONFLATED)
     val events: Flow<AddOtpEvent> = _events.receiveAsFlow().filter { delivery ->
-        feedbackScope === delivery.owner && secureSessionAccessState.hasFullSecureSessionAccess() &&
+        feedbackScope === delivery.owner && activePageOwner === delivery.owner.pageOwner &&
+            secureSessionAccessState.hasFullSecureSessionAccess() &&
             secureSessionAccessState.authenticationState.value === delivery.owner.authentication
     }.map { it.event }
     private val writeSession = EditorWriteSession(
@@ -69,6 +71,17 @@ class AddOtpViewModel @Inject internal constructor(
         onClear = ::clearSensitiveContent,
     )
     internal val effects = writeSession.effects
+
+    fun onPageEntered(): Any = Any().also { owner ->
+        activePageOwner = owner
+        feedbackScope = FeedbackScope.Closed
+    }
+
+    fun onPageExited(owner: Any) {
+        if (activePageOwner !== owner) return
+        activePageOwner = null
+        feedbackScope = FeedbackScope.Closed
+    }
 
     fun loadExistingEntry(rawEntryId: String) {
         if (editingEntryId != null) return
@@ -150,7 +163,8 @@ class AddOtpViewModel @Inject internal constructor(
     }
 
     private fun publishFeedback(event: AddOtpEvent) {
-        val owner = FeedbackScope.Active(secureSessionAccessState.authenticationState.value)
+        val pageOwner = activePageOwner ?: return
+        val owner = FeedbackScope.Active(secureSessionAccessState.authenticationState.value, pageOwner)
         feedbackScope = owner
         _events.trySend(InputEvent(owner, event))
     }

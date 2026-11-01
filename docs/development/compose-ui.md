@@ -10,6 +10,11 @@
 `remember` 保存 UI 瞬时状态；页面可恢复业务状态由 ViewModel/持久化源拥有。`LaunchedEffect` 只负责 effect 收集、
 一次启动和 UI 副作用。Flow 使用 lifecycle-aware collection。
 
+页面一次性 effect 使用 `collectPageEffects()` 在宿主处于 `STARTED` 时消费。同一次页面访问在暂停期间产生的
+effect 可在恢复后消费一次；页面 owner 退出后旧 effect 丢弃。提示类 effect 队列满时允许丢弃，不能用挂起发送阻塞
+已完成的业务操作；系统选择器等命令必须带页面 owner 和请求 ID，消费失败时将工作流恢复到可重试状态。生命周期暂停
+不取消已提交的数据库写入。
+
 ## Material 和主题
 
 - 优先使用 Material 3/Expressive 官方组件、Defaults、`MaterialTheme` 排版、颜色、shape 和对齐。

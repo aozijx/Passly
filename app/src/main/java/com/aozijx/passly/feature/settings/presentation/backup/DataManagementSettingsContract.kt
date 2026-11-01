@@ -6,7 +6,11 @@ sealed interface DataManagementSettingsUiState {
 }
 
 sealed interface DataManagementSettingsUiAction {
-    data class BackupDirectoryPicked(val uri: String?) : DataManagementSettingsUiAction
+    data class BackupDirectoryPicked(
+        val uri: String?,
+        val pageOwner: Any,
+        val requestId: String,
+    ) : DataManagementSettingsUiAction
     data object ClearBackupDirectory : DataManagementSettingsUiAction
 }
 

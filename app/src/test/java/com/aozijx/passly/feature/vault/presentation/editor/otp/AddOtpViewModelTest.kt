@@ -38,6 +38,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -140,6 +141,7 @@ class AddOtpViewModelTest {
     @Test
     fun onlyTheLatestUriResultIsDeliveredToALateCollector() = runTest {
         val model = createViewModel()
+        model.onPageEntered()
         model.onAction(AddOtpAction.UriChanged("invalid", true))
         model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
         val events = mutableListOf<AddOtpEvent>()
@@ -249,6 +251,7 @@ class AddOtpViewModelTest {
     @Test
     fun encodedUriPopulatesTheEditorWithoutChangingPlusOrPercentCharacters() = runTest {
         val viewModel = createViewModel()
+        viewModel.onPageEntered()
 
         viewModel.onAction(AddOtpAction.UriChanged(
             "otpauth://totp/Example%3Aalice+tag%2540mail?secret=JBSWY3DPEHPK3PXP&issuer=Example",
@@ -263,6 +266,7 @@ class AddOtpViewModelTest {
     @Test
     fun unsupportedUriReportsFailureWithoutReplacingExistingCredentials() = runTest {
         val viewModel = createViewModel()
+        viewModel.onPageEntered()
         viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Keep", secret = "Existing")))
 
         viewModel.onAction(AddOtpAction.UriChanged(
@@ -273,6 +277,18 @@ class AddOtpViewModelTest {
         assertEquals("Existing", viewModel.uiState.value.form.secret)
         assertEquals("Keep", viewModel.uiState.value.form.title)
         assertEquals(AddOtpEvent.UriParseFailed, viewModel.events.first())
+    }
+
+    @Test
+    fun `parse feedback buffered by an exited editor is not delivered after reentry`() = runTest {
+        val viewModel = createViewModel()
+        val oldOwner = viewModel.onPageEntered()
+        viewModel.onAction(AddOtpAction.UriChanged("invalid", reportFailure = true))
+
+        viewModel.onPageExited(oldOwner)
+        viewModel.onPageEntered()
+
+        assertNull(withTimeoutOrNull(1) { viewModel.events.first() })
     }
 
     @Test

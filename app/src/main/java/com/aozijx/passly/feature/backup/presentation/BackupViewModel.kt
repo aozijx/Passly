@@ -35,6 +35,7 @@ internal class BackupViewModel @Inject constructor(
     private val pageEffects = PageEffects<BackupEffect>()
     val effects = pageEffects.effects
     private var pendingImportDocument: PendingImportDocument? = null
+    private var pendingExportTarget: PendingExportTarget? = null
 
     fun onAction(action: BackupUiAction) {
         if (_uiState.value.workflow is BackupWorkflow.Executing) return
@@ -43,10 +44,7 @@ internal class BackupViewModel @Inject constructor(
             BackupUiAction.OpenExportOptions -> mutate(BackupMutation.ExportOptionsOpened)
             is BackupUiAction.RequestImportDocument -> requestImportDocument(action.pageOwner)
             is BackupUiAction.SelectExportFormat -> prepareExport(action.format)
-            is BackupUiAction.StartExport -> startManualExport(
-                uri = action.uri,
-                deleteOnFailure = action.deleteOnFailure,
-            )
+            is BackupUiAction.StartExport -> completeExportTarget(action)
             is BackupUiAction.StartImport -> startImport(action)
             is BackupUiAction.UpdatePassword -> replacePassword(
                 OwnedChars.fromString(action.password),
@@ -99,7 +97,9 @@ internal class BackupViewModel @Inject constructor(
         if (!pageEffects.isActive(owner)) return
         val request = PendingImportDocument(owner, UUID.randomUUID().toString())
         pendingImportDocument = request
-        emitEffect(owner, BackupEffect.SelectImportDocument(request.requestId))
+        if (!emitEffect(owner, BackupEffect.SelectImportDocument(request.requestId))) {
+            pendingImportDocument = null
+        }
     }
 
     private fun startImport(action: BackupUiAction.StartImport) {
@@ -123,14 +123,33 @@ internal class BackupViewModel @Inject constructor(
                 backupOperationGateway.exportToConfiguredDirectory(options.toRequest())
             }
         } else {
+            val owner = pageEffects.currentOwner ?: return
+            val request = PendingExportTarget(owner, UUID.randomUUID().toString())
+            pendingExportTarget = request
             mutate(BackupMutation.ExportTargetRequested)
-            emitEffect(
+            val delivered = emitEffect(
+                owner,
                 BackupEffect.SelectExportDocument(
                     format = options.format,
                     fileName = options.fileName,
+                    requestId = request.requestId,
                 ),
             )
+            if (!delivered) {
+                pendingExportTarget = null
+                mutate(BackupMutation.ExportTargetRequestFailed)
+            }
         }
+    }
+
+    private fun completeExportTarget(action: BackupUiAction.StartExport) {
+        val pending = pendingExportTarget ?: return
+        if (pending.pageOwner !== action.pageOwner || pending.requestId != action.requestId) return
+        pendingExportTarget = null
+        if (!pageEffects.isActive(action.pageOwner)) return
+        action.uri?.let { uri ->
+            startManualExport(uri, action.deleteOnFailure)
+        } ?: closeWorkflow()
     }
 
     private fun startManualExport(uri: String, deleteOnFailure: Boolean) {
@@ -238,22 +257,30 @@ internal class BackupViewModel @Inject constructor(
         replaceWorkflow(BackupMutation.WorkflowClosed)
     }
 
-    private fun emitEffect(effect: BackupEffect) {
-        pageEffects.tryEmit(effect)
+    private fun emitEffect(effect: BackupEffect): Boolean {
+        return pageEffects.tryEmit(effect)
     }
 
-    private fun emitEffect(owner: Any, effect: BackupEffect) {
-        pageEffects.tryEmit(owner, effect)
+    private fun emitEffect(owner: Any, effect: BackupEffect): Boolean {
+        return pageEffects.tryEmit(owner, effect)
     }
 
     fun onPageEntered(): Any {
-        return pageEffects.enter()
+        val previousOwner = pageEffects.currentOwner
+        val owner = pageEffects.enter()
+        if (previousOwner != null) {
+            pendingImportDocument = null
+            pendingExportTarget = null
+            if (_uiState.value.workflow !is BackupWorkflow.Executing) closeWorkflow()
+        }
+        return owner
     }
 
     fun onPageExited(owner: Any) {
         if (!pageEffects.isActive(owner)) return
         pageEffects.exit(owner)
         if (pendingImportDocument?.pageOwner === owner) pendingImportDocument = null
+        if (pendingExportTarget?.pageOwner === owner) pendingExportTarget = null
         if (_uiState.value.workflow !is BackupWorkflow.Executing) closeWorkflow()
     }
 
@@ -271,6 +298,7 @@ internal class BackupViewModel @Inject constructor(
     }
 
     private data class PendingImportDocument(val pageOwner: Any, val requestId: String)
+    private data class PendingExportTarget(val pageOwner: Any, val requestId: String)
 }
 
 private fun BackupExportOptions.toRequest() = BackupExportOperationRequest(

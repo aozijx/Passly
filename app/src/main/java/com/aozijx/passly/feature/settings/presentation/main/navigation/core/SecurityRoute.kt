@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsAction
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsViewModel
@@ -23,12 +24,14 @@ import com.aozijx.passly.feature.settings.presentation.ui.security.AppPasswordDi
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.feature.settings.presentation.ui.security.SecurityDetail
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @Composable
 internal fun SecurityRoute(
     onBack: (() -> Unit)?,
 ) {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val securityViewModel: SecuritySettingsViewModel = hiltViewModel()
     val appPasswordViewModel: AppPasswordSettingsViewModel = hiltViewModel()
     DisposableEffect(securityViewModel, appPasswordViewModel) {
@@ -44,8 +47,8 @@ internal fun SecurityRoute(
     val appPasswordState by appPasswordViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordDialogs = rememberAppPasswordDialogCoordinator()
 
-    LaunchedEffect(appPasswordViewModel, context) {
-        appPasswordViewModel.effects.collect { effect ->
+    LaunchedEffect(appPasswordViewModel, lifecycle, context) {
+        collectPageEffects(lifecycle, appPasswordViewModel.effects) { effect ->
             when (effect) {
                 AppPasswordSettingsEffect.AppPasswordSet,
                 AppPasswordSettingsEffect.AppPasswordChanged,

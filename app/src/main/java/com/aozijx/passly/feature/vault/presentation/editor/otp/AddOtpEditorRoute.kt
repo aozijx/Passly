@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
@@ -23,6 +25,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandl
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.otp.AddOtpEditorScreen
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @Composable
 fun AddOtpEditorRoute(
@@ -34,6 +37,7 @@ fun AddOtpEditorRoute(
 ) {
     val viewModel = hiltViewModel<AddOtpViewModel>()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
@@ -45,6 +49,11 @@ fun AddOtpEditorRoute(
         animatedVisibilityScope = animatedVisibilityScope,
     )
     var overlay by remember { mutableStateOf<OtpEditorOverlay>(OtpEditorOverlay.None) }
+
+    DisposableEffect(viewModel) {
+        val owner = viewModel.onPageEntered()
+        onDispose { viewModel.onPageExited(owner) }
+    }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     LaunchedEffect(viewModel, editEntryId) {
@@ -62,7 +71,7 @@ fun AddOtpEditorRoute(
         uriParsedMessage,
         uriParseFailedMessage,
     ) {
-        viewModel.events.collect { event ->
+        collectPageEffects(lifecycleOwner.lifecycle, viewModel.events) { event ->
             when (event) {
                 AddOtpEvent.UriParsed ->
                     Toast.makeText(context, uriParsedMessage, Toast.LENGTH_SHORT).show()

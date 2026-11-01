@@ -114,8 +114,8 @@ class StorageSettingsViewModel @Inject constructor(
         emitEffect(owner, StorageSettingsEffect.LogClearFailed)
     }
 
-    private suspend fun emitEffect(owner: Any, effect: StorageSettingsEffect) {
-        pageEffects.send(owner, effect)
+    private fun emitEffect(owner: Any, effect: StorageSettingsEffect) {
+        pageEffects.tryEmit(owner, effect)
     }
 
     fun onPageEntered(): Any {
