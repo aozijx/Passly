@@ -1,18 +1,14 @@
 package com.aozijx.passly.app.message.runtime
 
-import com.aozijx.passly.domain.settings.model.MessageSettings
-import com.aozijx.passly.app.message.model.NoticeCode
-import com.aozijx.passly.app.message.model.DeliveryPolicy
-import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.contract.AppVisibility
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider
-import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
+import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
-import com.aozijx.passly.app.message.contract.NoticeRouter
 import com.aozijx.passly.app.message.contract.NoticeDispatchStatus
 import com.aozijx.passly.app.message.contract.NoticeEnqueueResult
 import com.aozijx.passly.app.message.contract.NoticeRoutePlan
+import com.aozijx.passly.app.message.contract.NoticeRouter
 import com.aozijx.passly.app.message.contract.NoticeRoutingContext
 import com.aozijx.passly.app.message.contract.NoticeSink
 import com.aozijx.passly.app.message.contract.NoticeTarget
@@ -21,9 +17,23 @@ import com.aozijx.passly.app.message.contract.SinkResult
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.message.contract.defaultNoticeCodePolicy
+import com.aozijx.passly.app.message.model.AppNotice
+import com.aozijx.passly.app.message.model.DeliveryPolicy
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
+import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.domain.settings.port.MessageSettingsSource
+import java.io.IOException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -85,6 +95,39 @@ class DefaultAppNoticeDispatcherTest {
     }
 
     @Test
+    fun mandatoryNoticeIgnoresProductNotificationPreferenceWhenSnapshotIsReady() = runBlocking {
+        var systemDeliveries = 0
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = MessageSettingsSnapshotProvider {
+                MessageSettingsSnapshot.Ready(
+                    version = 4,
+                    value = MessageSettings(
+                        optionalMessagesEnabled = false,
+                        systemNotificationsEnabled = false,
+                    ),
+                )
+            },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(sink(NoticeTarget.SYSTEM) {
+                systemDeliveries++
+                SinkResult.Delivered
+            }),
+        )
+
+        val receipt = dispatcher.dispatch(
+            newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "mandatory-pref-off"),
+        )
+
+        assertEquals(1, systemDeliveries)
+        assertEquals(NoticeDispatchStatus.DELIVERED, receipt.status)
+        assertEquals(4, receipt.settingsVersion)
+    }
+
+    @Test
     fun queuedOptionalNoticeIsDroppedDuringLoadingWhileMandatoryNoticeIsDelivered() = runBlocking {
         val snapshot = AtomicReference<MessageSettingsSnapshot>(MessageSettingsSnapshot.Loading)
         val firstSettingsRead = CountDownLatch(1)
@@ -141,6 +184,91 @@ class DefaultAppNoticeDispatcherTest {
         assertTrue(barrierDelivered.await(5, TimeUnit.SECONDS))
 
         assertEquals(listOf("queue-mandatory", "queue-barrier"), synchronized(delivered) { delivered.toList() })
+    }
+
+    @Test
+    fun queuedOptionalNoticeRetriesAfterSettingsSourceRecoveryWithoutStaleDedupClaim() = runBlocking {
+        val attempts = AtomicInteger()
+        val retryStarted = CountDownLatch(1)
+        val allowRecovery = CountDownLatch(1)
+        val recovered = CountDownLatch(1)
+        val settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val settingsProvider = DefaultMessageSettingsSnapshotProvider.create(
+            settingsSource = object : MessageSettingsSource {
+                override val messages = flow {
+                    if (attempts.getAndIncrement() == 0) throw IOException("settings unavailable")
+                    retryStarted.countDown()
+                    check(allowRecovery.await(5, TimeUnit.SECONDS))
+                    emit(MessageSettings())
+                    recovered.countDown()
+                    awaitCancellation()
+                }
+            },
+            scope = settingsScope,
+            retryDelayMillis = 10,
+        )
+        try {
+            val firstSettingsRead = CountDownLatch(1)
+            val mandatoryDelivered = CountDownLatch(1)
+            val optionalRetryDelivered = CountDownLatch(1)
+            val delivered = mutableListOf<String>()
+            val dispatcher = DefaultAppNoticeDispatcher(
+                router = DefaultNoticeRouter(),
+                deduplicator = DefaultNoticeDeduplicator { 1_000L },
+                codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+                settingsProvider = MessageSettingsSnapshotProvider {
+                    settingsProvider.current().also {
+                        if (it == MessageSettingsSnapshot.Loading) firstSettingsRead.countDown()
+                    }
+                },
+                visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+                systemStateProvider = availableSystemState(),
+                sinks = setOf(
+                    recordingSink(NoticeTarget.IN_APP, delivered) {
+                        if (it == "optional-retried-after-settings-error") {
+                            optionalRetryDelivered.countDown()
+                        }
+                    },
+                    recordingSink(NoticeTarget.SYSTEM, delivered) {
+                        if (it == "mandatory-during-settings-error") mandatoryDelivered.countDown()
+                    },
+                ),
+            )
+            val optional = newAppNotice(
+                NoticeCode.CLIPBOARD_CLEARED,
+                eventId = "optional-retried-after-settings-error",
+            )
+
+            assertEquals(NoticeEnqueueResult.Accepted, dispatcher.publish(optional))
+            assertTrue(firstSettingsRead.await(5, TimeUnit.SECONDS))
+            assertTrue(retryStarted.await(5, TimeUnit.SECONDS))
+            assertEquals(
+                NoticeEnqueueResult.Accepted,
+                dispatcher.publish(
+                    newAppNotice(
+                        NoticeCode.SECURITY_ACTION_FAILED,
+                        eventId = "mandatory-during-settings-error",
+                    ),
+                ),
+            )
+            assertTrue(mandatoryDelivered.await(5, TimeUnit.SECONDS))
+            assertEquals(
+                listOf("mandatory-during-settings-error"),
+                synchronized(delivered) { delivered.toList() },
+            )
+
+            allowRecovery.countDown()
+            assertTrue(recovered.await(5, TimeUnit.SECONDS))
+            assertEquals(NoticeEnqueueResult.Accepted, dispatcher.publish(optional))
+            assertTrue(optionalRetryDelivered.await(5, TimeUnit.SECONDS))
+            assertEquals(
+                listOf("mandatory-during-settings-error", "optional-retried-after-settings-error"),
+                synchronized(delivered) { delivered.toList() },
+            )
+        } finally {
+            allowRecovery.countDown()
+            settingsScope.cancel()
+        }
     }
 
     @Test
@@ -339,7 +467,9 @@ class DefaultAppNoticeDispatcherTest {
         val dispatcher = DefaultAppNoticeDispatcher(
             router = DefaultNoticeRouter(),
             deduplicator = DefaultNoticeDeduplicator { 1_000L },
-            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            codeRegistry = NoticeCodeRegistry { code ->
+                defaultNoticeCodePolicy(code).copy(deliveryPolicy = DeliveryPolicy.PREFER_SYSTEM)
+            },
             settingsProvider = MessageSettingsSnapshotProvider {
                 MessageSettingsSnapshot.Ready(
                     3,
@@ -361,7 +491,7 @@ class DefaultAppNoticeDispatcherTest {
         )
 
         val receipt = dispatcher.dispatch(
-            newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "security-setting-off")
+            newAppNotice(NoticeCode.BACKUP_EXPORT_COMPLETED, eventId = "optional-setting-off")
         )
 
         assertEquals(listOf(NoticeTarget.IN_APP), delivered)
@@ -387,7 +517,21 @@ class DefaultAppNoticeDispatcherTest {
     ) = object : NoticeSink {
         override val target: NoticeTarget = sinkTarget
         override suspend fun deliver(
-            notice: com.aozijx.passly.app.message.model.AppNotice
+            notice: AppNotice
         ): SinkResult = delivery()
+    }
+
+    private fun recordingSink(
+        sinkTarget: NoticeTarget,
+        delivered: MutableList<String>,
+        onDelivery: (String) -> Unit = {},
+    ) = object : NoticeSink {
+        override val target: NoticeTarget = sinkTarget
+
+        override suspend fun deliver(notice: AppNotice): SinkResult {
+            synchronized(delivered) { delivered += notice.eventId }
+            onDelivery(notice.eventId)
+            return SinkResult.Delivered
+        }
     }
 }

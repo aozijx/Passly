@@ -82,7 +82,7 @@ class DefaultAppNoticeDispatcher @Inject constructor(
             is MessageSettingsSnapshot.Ready -> snapshot
         }
         val systemState = systemStateProvider.current().copy(
-            userSettingEnabled = settings.value.systemNotificationsEnabled
+            userSettingEnabled = policy.mandatory || settings.value.systemNotificationsEnabled
         )
         val context = NoticeRoutingContext(
             settings = settings.value,
@@ -90,17 +90,16 @@ class DefaultAppNoticeDispatcher @Inject constructor(
             appVisibility = visibilityProvider.current(),
             systemNotificationState = systemState
         )
-        val claim = deduplicator.begin(notice.eventId, policy.eventIdTtlMs)
-        if (claim is DeduplicationClaim.Duplicate) {
-            return receipt(
+        val claim = when (val result = deduplicator.begin(notice.eventId, policy.eventIdTtlMs)) {
+            DeduplicationClaim.Duplicate -> return receipt(
                 notice,
                 settings.version,
                 NoticeRoutePlan.suppressed(RouteReason.SUPPRESSED_BY_DEDUP),
                 emptyMap(),
                 NoticeDispatchStatus.DUPLICATE
             )
+            is DeduplicationClaim.Acquired -> result
         }
-        claim as DeduplicationClaim.Acquired
 
         try {
             val plan = router.route(notice, policy, context)
