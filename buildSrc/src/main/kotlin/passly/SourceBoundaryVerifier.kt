@@ -3,6 +3,8 @@ package passly
 internal object SourceBoundaryVerifier {
     private val qualifiedNamePattern = Regex("""[A-Za-z_][A-Za-z0-9_]*(?:\s*\.\s*[A-Za-z_][A-Za-z0-9_]*)+""")
     private val dotWhitespacePattern = Regex("""\s*\.\s*""")
+    private val importAliasPattern = Regex("""\s+as\s+.*$""")
+    private val escapedIdentifierPattern = Regex("""`([A-Za-z_][A-Za-z0-9_]*)`""")
 
     fun verify(
         sources: List<EditorSource>,
@@ -52,7 +54,10 @@ internal object SourceBoundaryVerifier {
 
     private fun parseImport(line: String): String? {
         if (!line.startsWith("import ")) return null
-        return line.removePrefix("import ").substringBefore(" as ").trim().takeIf(String::isNotEmpty)
+        val importedType = line.removePrefix("import ").replace(importAliasPattern, "").trim()
+        return escapedIdentifierPattern.replace(importedType) { match ->
+            match.groupValues[1]
+        }.takeIf(String::isNotEmpty)
     }
 
     private fun SourceBoundaryRule.isForbiddenReference(reference: String): Boolean {

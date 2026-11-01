@@ -463,3 +463,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - RED/GREEN：新测试在旧实现上因无违规被拒绝而失败；修复后检测跨行禁止引用，并断言诊断证据是原始起始行。
 - 文档：包边界页说明 Kotlin 点号续行会按完整引用检查。
 - 验证：`:buildSrc:test` 和 `verifyArchitecture` 通过；`git diff --check` 通过。
+
+### 后续批次：边界验证器规范化 escaped import（2026-11-01）
+
+- 根因：`parseImport()` 保留反引号，而禁止前缀按普通包名匹配；`import com.aozijx.passly.`data`.repository.*` 会逃过普通 forbidden prefix 检查。
+- 修复：先剥离可选 import alias，再将反引号内的普通 Kotlin 标识符规范化后应用同一禁止/允许规则；未知的非普通 escaped 名称不被破坏性改写。
+- RED/GREEN：普通、alias、star 三种 escaped forbidden import 用例在旧实现上失败；修复后被拒绝，含 escaped 合法标识符的允许包仍通过。
+- 文档：包边界页说明 escaped package segment 与 alias/star import 共用边界规则。
+- 验证：`:buildSrc:test` 和 `verifyArchitecture` 通过；`git diff --check` 通过。

@@ -324,6 +324,26 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun escapedImportSegmentsAreNormalizedBeforeBoundaryChecks() {
+        val forbiddenImports = listOf(
+            "com.aozijx.passly.`data`.repository.Repository",
+            "com.aozijx.passly.`data`.repository.Repository as Store",
+            "com.aozijx.passly.`data`.repository.*",
+        )
+        forbiddenImports.forEach { imported ->
+            val violation = SourceBoundaryVerifier.verify(
+                listOf(uiSource("import $imported")),
+                SourceBoundaryPolicy.generalRules,
+            ).single()
+
+            assertEquals("LAYER_PRESENTATION_UI", violation.ruleId, imported)
+        }
+
+        val allowed = uiSource("import com.aozijx.passly.core.`ui`.theme.PasslyTheme")
+        assertEquals(emptyList(), SourceBoundaryVerifier.verify(listOf(allowed), SourceBoundaryPolicy.generalRules))
+    }
+
+    @Test
     fun directDomainConsumersAreRequiredByTheModulePolicy() {
         val requiredEdges = setOf(
             edge(":app", ":domain"),
