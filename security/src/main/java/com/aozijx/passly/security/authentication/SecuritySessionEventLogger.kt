@@ -18,6 +18,17 @@ import kotlinx.coroutines.CancellationException
 class SecuritySessionEventLogger @Inject internal constructor(
     private val logger: Logger,
 ) {
+    suspend fun recordAvailabilityRefreshFailure(failure: Throwable) =
+        logger.inSpan(Operations.SecurityAuthentication) {
+            logger.log(
+                LogStatements.Security.vaultOperationFailed(
+                    failure,
+                    Reasons.UnknownFailure,
+                    degraded = failure !is Error,
+                ),
+            )
+        }
+
     suspend fun <T> traceLock(
         request: SessionLockRequest,
         timeoutMs: Long,

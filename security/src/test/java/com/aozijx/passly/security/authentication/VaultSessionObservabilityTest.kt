@@ -42,6 +42,21 @@ import org.junit.Test
 
 class VaultSessionObservabilityTest {
     @Test
+    fun `availability refresh failure severity preserves fatal errors`() = runTest {
+        val records = mutableListOf<SanitizedLogRecord>()
+        val events = SecuritySessionEventLogger(logger(records))
+
+        events.recordAvailabilityRefreshFailure(IllegalStateException("resolver failed"))
+        events.recordAvailabilityRefreshFailure(AssertionError("fatal resolver failure"))
+
+        assertEquals(listOf(LogLevel.WARN, LogLevel.ERROR), records.map(SanitizedLogRecord::level))
+        assertEquals(Events.Security.VaultOperationFailed, records[0].event)
+        assertEquals(Events.Security.VaultOperationFailed, records[1].event)
+        assertEquals("IllegalStateException", records[0].error!!.exception!!.type.value)
+        assertEquals("AssertionError", records[1].error!!.exception!!.type.value)
+    }
+
+    @Test
     fun `lock start and completion share trace and expose controlled lifecycle fields`() = runTest {
         val records = mutableListOf<SanitizedLogRecord>()
         val events = SecuritySessionEventLogger(logger(records))

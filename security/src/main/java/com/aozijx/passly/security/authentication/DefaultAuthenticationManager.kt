@@ -22,7 +22,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -57,14 +57,14 @@ class DefaultAuthenticationManager @Inject constructor(
 ) : AuthenticationManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val requestMutex = Mutex()
-    private val _methods = MutableStateFlow(AuthenticationMethods())
+    private val authenticationMethods = AuthenticationMethodsState()
 
     /** 记录最近一次成功的认证方式，用于会话复用场景。 */
     @Volatile
     private var lastAuthMethod: AuthenticationMethod = AuthenticationMethod.BIOMETRIC
 
     override val state: StateFlow<AuthenticationState> = session.authenticationState
-    override val methods: StateFlow<AuthenticationMethods> = _methods
+    override val methods: StateFlow<AuthenticationMethods> = authenticationMethods.methods
 
     init {
         scope.launch { refreshAvailability() }
@@ -172,7 +172,7 @@ class DefaultAuthenticationManager @Inject constructor(
             val authorizedByPurpose = AuthenticationMethodPolicy.allowedAuthenticationMethods(request.purpose)
             val available = request.allowedMethods
                 .intersect(authorizedByPurpose)
-                .filter { it in _methods.value }
+                .filter { it in authenticationMethods.value }
             if (available.isEmpty()) {
                 if (opensSession) restoreState(previousState)
                 return finish(
@@ -242,9 +242,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 is MethodExecutionResult.Success -> {
                     if (execution.method == AuthenticationMethod.RECOVERY_CODE) {
                         // Successful recovery authentication durably consumes its envelope.
-                        _methods.value = AuthenticationMethods(
-                            _methods.value.available - AuthenticationMethod.RECOVERY_CODE
-                        )
+                        authenticationMethods.onRecoveryCodeConsumed()
                     }
                     if (AuthenticationMethodPolicy.unlocksSensitiveDataKey(request.purpose)) {
                         sensitiveDataKeyManager.unlockAfterFreshAuthentication()
@@ -288,7 +286,14 @@ class DefaultAuthenticationManager @Inject constructor(
     override suspend fun lock(request: SessionLockRequest) = session.lock(request)
 
     override suspend fun refreshAvailability() {
-        _methods.value = availabilityResolver.resolve()
+        val generation = authenticationMethods.beginRefresh()
+        scope.async {
+            authenticationMethods.refresh(
+                generation = generation,
+                resolve = availabilityResolver::resolve,
+                onFailure = securityEvents::recordAvailabilityRefreshFailure,
+            )
+        }.await()
     }
 
     override fun snapshot(): AuthenticationSnapshot {

@@ -45,6 +45,7 @@ stateDiagram-v2
 
 认证方式可用性从 `VaultBootstrapStore` 一次读取 `AuthenticationCredentialSnapshot`。DataStore adapter 在同一份 Bootstrap
 值中投影 biometric envelope/binding、应用密码与恢复码是否配置；BiometricManager 的硬件能力在该持久快照之外单独判断。
+`AuthenticationMethodsState` 为每次可用性刷新分配 generation 并串行执行解析；较新的刷新会使较旧的在途结果失效，之后重新读取持久状态。恢复码提交消费也会使旧快照失效，不能重新发布已消费的方式。Manager 的长期 scope 托管刷新 job：调用方取消会立即收到取消，但不会取消已发起的最新状态同步；Mutex 释放后队列中的刷新继续执行。后台解析失败在独立 trace span 中使用结构化 `VaultOperationFailed` 日志记录；可恢复异常记为 WARN 降级，fatal `Error` 记为 ERROR。普通观察器异常作为 suppressed 信息保留，观察器抛取消或 fatal Error 时优先传播该异常，并将原解析错误保留为 suppressed。
 
 Main、Autofill Fill 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
