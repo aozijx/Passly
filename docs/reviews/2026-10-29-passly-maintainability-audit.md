@@ -578,3 +578,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：Domain `MessageLevel` 以显式 severity 比较 topic 最低等级；App `NoticeLevel.longToast` 显式定义 Toast 持续时长。生产消息代码不再以 enum ordinal 决定投递过滤或提示长度。
 - 回归：Domain 测试覆盖全部 25 组实际等级/最低等级比较，App 测试覆盖五种 NoticeLevel 的短/长提示合同；原 Router 阈值测试保持通过。
 - 文档：消息中心页记录声明顺序不再影响等级路由与 Toast 时长。
+
+### 后续批次：收窄 Backup Presentation 的平台 URI 与归档注册表依赖（2026-11-01）
+
+- 修复：SAF Route 将 `Uri` 转成字符串后发送给 Backup ViewModel；Action、工作流状态及流程编排不再持有 Android `Uri`。页面导出类型默认来自 Domain `EntryType.entries`，不直接依赖归档稳定键注册表。
+- 穷尽保证：归档注册表测试仍遍历所有 `EntryType` 验证稳定键可往返，并断言注册表支持集等于类型全集。新类型若没有归档映射，测试会失败；页面与协议各自保留正确 owner。
+- 授权边界：单文件 SAF URI 是短期操作句柄，字符串化保留 URI 标识；应用在收到 picker 授权后立即执行操作，不把它当作跨重启持久授权。默认备份目录仍使用单独持久化的 tree grant。
+- 待办：Presentation 仍直接引用 Backup 内部格式/策略/操作类型及 interactor；本批次只完成 URI 与注册表边界，没有通过重复模型或逐字段 mapper 搬层。模块门禁及剩余依赖仍需后续审查。

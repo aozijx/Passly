@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.model.BackupFailed
@@ -91,9 +90,9 @@ internal class BackupViewModel @Inject constructor(
         )
     }
 
-    private fun prepareImport(uri: Uri) {
+    private fun prepareImport(uri: String) {
         if (!requireSession(BackupOperation.IMPORT)) return
-        replaceWorkflow(BackupMutation.ImportPrepared(uri.toString()))
+        replaceWorkflow(BackupMutation.ImportPrepared(uri))
     }
 
     private fun requestImportDocument(owner: Any) {
@@ -134,7 +133,7 @@ internal class BackupViewModel @Inject constructor(
         }
     }
 
-    private fun startManualExport(uri: Uri, deleteOnFailure: Boolean) {
+    private fun startManualExport(uri: String, deleteOnFailure: Boolean) {
         val workflow = _uiState.value.workflow as? BackupWorkflow.AwaitingExportTarget ?: return
         val options = workflow.options
         if (!options.canSubmit || !canExecutePending(BackupOperation.EXPORT)) return
@@ -144,7 +143,7 @@ internal class BackupViewModel @Inject constructor(
         ) {
             backupOperationInteractor.exportToUri(
                 request = options.toRequest(),
-                targetUri = uri.toString(),
+                targetUri = uri,
                 deleteOnFailure = deleteOnFailure,
             )
         }

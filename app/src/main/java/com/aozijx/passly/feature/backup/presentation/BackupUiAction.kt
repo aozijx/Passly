@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation
 
-import android.net.Uri
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
@@ -14,12 +13,12 @@ sealed interface BackupUiAction {
     data class SelectExportFormat(val format: BackupExportFormat) : BackupUiAction
 
     data class StartExport(
-        val uri: Uri,
+        val uri: String,
         val deleteOnFailure: Boolean = false,
     ) : BackupUiAction
 
     data class StartImport(
-        val uri: Uri?,
+        val uri: String?,
         val pageOwner: Any,
         val requestId: String,
     ) : BackupUiAction

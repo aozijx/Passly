@@ -42,7 +42,7 @@ fun BackupOperationRoute(
             viewModel.onAction(BackupUiAction.DismissOptions)
             return
         }
-        viewModel.onAction(BackupUiAction.StartExport(uri = uri, deleteOnFailure = true))
+        viewModel.onAction(BackupUiAction.StartExport(uri = uri.toString(), deleteOnFailure = true))
     }
 
     val encryptedExportPicker = rememberLauncherForActivityResult(
@@ -63,7 +63,7 @@ fun BackupOperationRoute(
         val owner = pageOwner.value
         val requestId = importRequestId.value
         if (owner != null && requestId != null) {
-            viewModel.onAction(BackupUiAction.StartImport(uri, owner, requestId))
+            viewModel.onAction(BackupUiAction.StartImport(uri?.toString(), owner, requestId))
         }
         importRequestId.value = null
     }

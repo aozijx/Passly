@@ -1,7 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation
 
-import android.net.Uri
-import android.net.TestUri
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
@@ -44,7 +42,7 @@ class BackupViewModelAccessTest {
 
         val requestId = requestImportDocument(model, owner)
         val importEffect = async { model.effects.first() }
-        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestId))
+        model.onAction(BackupUiAction.StartImport("content://backup/document", owner, requestId))
         assertEquals(BackupNoticeEffect.Failed(BackupOperation.IMPORT), importEffect.await())
         assertFailed(model, BackupOperation.IMPORT)
     }
@@ -70,7 +68,9 @@ class BackupViewModelAccessTest {
         val access = MutableAccess(AuthenticationState.Authenticated(1L))
         val model = model(access)
         val owner = model.onPageEntered()
-        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestImportDocument(model, owner)))
+        model.onAction(
+            BackupUiAction.StartImport("content://backup/document", owner, requestImportDocument(model, owner)),
+        )
         assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureImport)
 
         access.authenticationState.value = AuthenticationState.RecoveryMode(2L)
@@ -88,8 +88,11 @@ class BackupViewModelAccessTest {
 
         model.onAction(BackupUiAction.SelectExportFormat(BackupExportFormat.JSON))
         assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureExport)
-        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestImportDocument(model, owner)))
-        assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureImport)
+        model.onAction(
+            BackupUiAction.StartImport("content://backup/document", owner, requestImportDocument(model, owner)),
+        )
+        val import = model.uiState.value.workflow as BackupWorkflow.ConfigureImport
+        assertEquals("content://backup/document", import.options.sourceUri)
     }
 
     @Test
@@ -101,10 +104,10 @@ class BackupViewModelAccessTest {
         model.onPageExited(oldPageOwner)
         val newPageOwner = model.onPageEntered()
         val newRequestId = requestImportDocument(model, newPageOwner)
-        model.onAction(BackupUiAction.StartImport(TestUri, newPageOwner, requestId))
+        model.onAction(BackupUiAction.StartImport("content://backup/document", newPageOwner, requestId))
         assertEquals(BackupWorkflow.Idle, model.uiState.value.workflow)
 
-        model.onAction(BackupUiAction.StartImport(TestUri, newPageOwner, newRequestId))
+        model.onAction(BackupUiAction.StartImport("content://backup/document", newPageOwner, newRequestId))
         assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureImport)
     }
 

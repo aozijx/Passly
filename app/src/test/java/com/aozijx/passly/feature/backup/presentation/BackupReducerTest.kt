@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.backup.presentation
 
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import org.junit.Assert.assertEquals
@@ -50,7 +49,7 @@ class BackupReducerTest {
         assertEquals("backup.txt", options.fileName)
         assertFalse(options.includeIcons)
         assertFalse(options.includeAttachments)
-        assertEquals(BackupArchiveKeyRegistry.archiveEntryTypes, options.includedEntryTypes)
+        assertEquals(EntryType.entries.toSet(), options.includedEntryTypes)
     }
 
     @Test

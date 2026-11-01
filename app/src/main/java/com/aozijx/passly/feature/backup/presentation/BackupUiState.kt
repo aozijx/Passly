@@ -4,7 +4,6 @@ import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.model.ImportMode
@@ -34,7 +33,7 @@ internal data class BackupExportOptions(
     val includeIcons: Boolean = format.supportsResources,
     val includeAttachments: Boolean = format.supportsResources,
     val includeDeleted: Boolean = true,
-    val includedEntryTypes: Set<EntryType> = BackupArchiveKeyRegistry.archiveEntryTypes,
+    val includedEntryTypes: Set<EntryType> = EntryType.entries.toSet(),
 ) {
     val canSubmit: Boolean
         get() = includedEntryTypes.isNotEmpty() &&

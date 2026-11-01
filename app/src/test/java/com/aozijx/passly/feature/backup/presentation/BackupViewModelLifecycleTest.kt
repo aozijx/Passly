@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation
 
-import android.net.TestUri
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
@@ -53,7 +52,7 @@ class BackupViewModelLifecycleTest {
             finishImport.await()
         }
         val oldOwner = model.onPageEntered()
-        model.onAction(BackupUiAction.StartImport(TestUri, oldOwner, requestImport(model, oldOwner)))
+        model.onAction(BackupUiAction.StartImport("content://backup/document", oldOwner, requestImport(model, oldOwner)))
         model.onAction(BackupUiAction.UpdatePassword("secret"))
         val password = model.uiState.value.workflow.password() as OwnedChars
         val observedEffects = mutableListOf<BackupEffect>()
@@ -84,7 +83,7 @@ class BackupViewModelLifecycleTest {
     fun `password is wiped and failure is shown while its page remains active`() = runTest {
         val model = model { AppResult.failure(BackupFailed()) }
         val owner = model.onPageEntered()
-        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestImport(model, owner)))
+        model.onAction(BackupUiAction.StartImport("content://backup/document", owner, requestImport(model, owner)))
         model.onAction(BackupUiAction.UpdatePassword("secret"))
         val password = model.uiState.value.workflow.password() as OwnedChars
 
@@ -105,7 +104,7 @@ class BackupViewModelLifecycleTest {
         val store = ViewModelStore()
         store.put("backup", model)
         val owner = model.onPageEntered()
-        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestImport(model, owner)))
+        model.onAction(BackupUiAction.StartImport("content://backup/document", owner, requestImport(model, owner)))
         model.onAction(BackupUiAction.UpdatePassword("secret"))
         val password = model.uiState.value.workflow.password() as OwnedChars
         model.onAction(BackupUiAction.SubmitImport)
