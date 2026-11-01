@@ -517,3 +517,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 收尾：创建能力已由 `app.entry.creation` 持有；全局导航、共享主题合同归 App 组合根；架构门禁只允许有 owner 的精确跨 Feature 集成边。Settings→Backup 默认目录不再穿透 Backup internal；Database Reset 重入与 Autofill Activity 认证宿主有明确生命周期/精确范围。
 - Verifier 回归：Kotlin 字符串模板执行表达式、跨行 FQN、反引号 import 均纳入边界检查；新增跨 Feature 生产依赖规则并登记保留的展示/宿主集成边。
 - 验证：Task 18 最终集成门禁在 `3126c134b` 执行，`:app:testDebugUnitTest` 覆盖创建用例、扫描 OTP 写入与 ViewModel、OTP/Wi-Fi 编辑器、Scanner Route effects、Autofill 保存/认证流程、Vault 导航与目的地映射，并运行 `verifyArchitecture`；全部通过。`git diff --check` 通过。Android Compose instrumentation 仅编译，未运行。
+
+### 后续批次：Recovery Code 设置页离开时清理敏感状态（2026-11-01）
+
+- 根因：恢复码设置页是 Settings 内部 AnimatedContent 页面，离开时不会销毁 Settings NavBackStackEntry 持有的 ViewModel；原 `onPageExited()` 只使 one-shot effect owner 失效，Ready/Committing disclosure、验证输入及 SavedStateHandle disclosure 标记仍可保留。验证协程也没有 page/request owner，认证端口迟到返回会覆盖重入页面的状态。
+- 修复：离页时取消草稿生成与验证工作、关闭未确认草稿、移除 SavedStateHandle 标记，并擦除全部验证输入/结果 `OwnedChars`。验证结果只有在原 page owner 和 request 仍有效时才发布；新页面进入会先退出清理旧 owner。Committing 的展示副本离页立即擦除并隐藏，确认后的 Domain commit 继续在 ViewModel scope 收尾，终态只更新非敏感可用状态且不恢复旧页面结果；失败/用户取消会关闭未提交候选。
+- 文档：`docs/security/authentication.md` 补充离页敏感值清理、验证请求代际与确认提交继续收尾的 owner 合同。
+- 回归：`RecoveryCodeSettingsViewModelTest` 覆盖 Ready disclosure 与输入清理、迟到认证结果、Accepted/Rejected/Failed 输入擦除、确认提交离页成功/失败/取消、旧 page owner 不影响新页面及提交单飞。
+- 验证：`:app:testDebugUnitTest --tests "*RecoveryCodeSettingsViewModelTest" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。

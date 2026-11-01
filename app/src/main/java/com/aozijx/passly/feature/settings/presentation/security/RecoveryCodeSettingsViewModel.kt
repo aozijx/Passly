@@ -13,6 +13,7 @@ import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,10 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     val uiState: StateFlow<RecoveryCodeSettingsUiState> = _uiState.asStateFlow()
     private val pageEffects = PageEffects<RecoveryCodeSettingsEffect>()
     val effects = pageEffects.effects
+    private var generationJob: Job? = null
+    private var verificationJob: Job? = null
+    private var verificationRequest: Any? = null
+    private var commitInFlight = false
 
     init {
         viewModelScope.launch {
@@ -45,6 +50,7 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     fun onAction(action: RecoveryCodeSettingsAction) {
+        if (pageEffects.currentOwner == null) return
         when (action) {
             RecoveryCodeSettingsAction.Generate -> generate()
             RecoveryCodeSettingsAction.Copy -> copy()
@@ -58,27 +64,37 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     private fun generate() {
+        val owner = pageEffects.currentOwner ?: return
         if (_uiState.value.draft is RecoveryCodeDraftUiState.Creating ||
-            _uiState.value.draft is RecoveryCodeDraftUiState.Committing
+            _uiState.value.draft is RecoveryCodeDraftUiState.Committing || commitInFlight
         ) return
-        viewModelScope.launch {
+        generationJob = viewModelScope.launch {
             replaceDraft(RecoveryCodeDraftUiState.Creating)
             savedStateHandle[WAS_DISCLOSURE_OPEN] = false
             try {
                 when (val result = draftInteractor.generate()) {
                     is RecoveryCodeDraftResult.Ready -> {
+                        if (!pageEffects.isActive(owner)) {
+                            result.disclosure.wipe()
+                            draftInteractor.dismiss()
+                            return@launch
+                        }
                         savedStateHandle[WAS_DISCLOSURE_OPEN] = true
                         replaceDraft(RecoveryCodeDraftUiState.Ready(result.disclosure))
                     }
-                    RecoveryCodeDraftResult.Cancelled ->
+                    RecoveryCodeDraftResult.Cancelled -> if (pageEffects.isActive(owner)) {
                         replaceDraft(RecoveryCodeDraftUiState.Empty)
-                    RecoveryCodeDraftResult.Failed ->
+                    }
+                    RecoveryCodeDraftResult.Failed -> if (pageEffects.isActive(owner)) {
                         replaceDraft(RecoveryCodeDraftUiState.Failed)
+                    }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Throwable) {
-                replaceDraft(RecoveryCodeDraftUiState.Failed)
+                if (pageEffects.isActive(owner)) replaceDraft(RecoveryCodeDraftUiState.Failed)
+            } finally {
+                if (generationJob === coroutineContext[Job]) generationJob = null
             }
         }
     }
@@ -96,11 +112,43 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
+        pageEffects.currentOwner?.let(::onPageExited)
         return pageEffects.enter()
     }
 
     fun onPageExited(owner: Any) {
+        if (!pageEffects.isActive(owner)) return
         pageEffects.exit(owner)
+        generationJob?.cancel()
+        generationJob = null
+        verificationRequest = null
+        verificationJob?.cancel()
+        verificationJob = null
+
+        val previousInput = _uiState.value.verification.input
+        _uiState.update { it.copy(verification = RecoveryCodeVerificationUiState.Editing(OwnedChars.EMPTY)) }
+        previousInput.wipe()
+
+        when (val draft = _uiState.value.draft) {
+            is RecoveryCodeDraftUiState.Ready -> {
+                draftInteractor.dismiss()
+                clearDisclosureMarker()
+                replaceDraft(RecoveryCodeDraftUiState.Empty)
+            }
+            is RecoveryCodeDraftUiState.Committing -> {
+                clearDisclosureMarker()
+                replaceDraft(draft.copy(disclosure = null))
+            }
+            RecoveryCodeDraftUiState.Creating -> {
+                draftInteractor.dismiss()
+                clearDisclosureMarker()
+                replaceDraft(RecoveryCodeDraftUiState.Empty)
+            }
+            else -> {
+                clearDisclosureMarker()
+                replaceDraft(RecoveryCodeDraftUiState.Empty)
+            }
+        }
     }
 
     private fun emitEffect(owner: Any, effect: RecoveryCodeSettingsEffect) {
@@ -109,27 +157,42 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
 
     private fun confirmAndEnable() {
         val ready = _uiState.value.draft as? RecoveryCodeDraftUiState.Ready ?: return
+        if (commitInFlight) return
+        val owner = pageEffects.currentOwner ?: return
+        commitInFlight = true
         replaceDraft(RecoveryCodeDraftUiState.Committing(ready.disclosure))
         viewModelScope.launch {
-            val result = try {
-                draftInteractor.commit()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Throwable) {
-                RecoveryCodeCommitResult.Failed
-            }
-            when (result) {
-                RecoveryCodeCommitResult.Committed -> {
-                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-                    replaceDraft(RecoveryCodeDraftUiState.Committed)
-                    _uiState.update { it.copy(hasRecoveryCode = true) }
+            try {
+                val result = try {
+                    draftInteractor.commit()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Throwable) {
+                    RecoveryCodeCommitResult.Failed
                 }
-                RecoveryCodeCommitResult.Failed,
-                RecoveryCodeCommitResult.NoActiveDraft -> {
-                    draftInteractor.dismiss()
-                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
-                    replaceDraft(RecoveryCodeDraftUiState.Failed)
+                when (result) {
+                    RecoveryCodeCommitResult.Committed -> {
+                        _uiState.update { it.copy(hasRecoveryCode = true) }
+                        if (pageEffects.isActive(owner)) {
+                            savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                            replaceDraft(RecoveryCodeDraftUiState.Committed)
+                        } else {
+                            replaceDraft(RecoveryCodeDraftUiState.Empty)
+                        }
+                    }
+                    RecoveryCodeCommitResult.Failed,
+                    RecoveryCodeCommitResult.NoActiveDraft -> {
+                        draftInteractor.dismiss()
+                        if (pageEffects.isActive(owner)) {
+                            savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                            replaceDraft(RecoveryCodeDraftUiState.Failed)
+                        } else {
+                            replaceDraft(RecoveryCodeDraftUiState.Empty)
+                        }
+                    }
                 }
+            } finally {
+                commitInFlight = false
             }
         }
     }
@@ -143,45 +206,43 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
 
     private fun updateVerificationInput(value: String) {
         if (_uiState.value.verification is RecoveryCodeVerificationUiState.Verifying) return
-        val previous = _uiState.value.verification.input
         val replacement = OwnedChars.fromString(value)
-        _uiState.update {
-            it.copy(verification = RecoveryCodeVerificationUiState.Editing(replacement))
-        }
-        previous.wipe()
+        replaceVerification(RecoveryCodeVerificationUiState.Editing(replacement))
     }
 
     private fun verify() {
         val current = _uiState.value.verification
+        val owner = pageEffects.currentOwner ?: return
         if (current is RecoveryCodeVerificationUiState.Verifying || current.input.isEmpty) return
-        viewModelScope.launch {
-            val input = _uiState.value.verification.input
-            val code = input.toCharArray()
-            _uiState.update {
-                it.copy(verification = RecoveryCodeVerificationUiState.Verifying(input))
-            }
+        val input = current.input
+        val code = input.toCharArray()
+        val request = Any()
+        verificationRequest = request
+        replaceVerification(RecoveryCodeVerificationUiState.Verifying(input))
+        verificationJob = viewModelScope.launch {
             try {
                 val valid = authenticationSettings.verifyRecoveryCode(code)
-                _uiState.update {
-                    it.copy(
-                        verification = if (valid) {
-                            RecoveryCodeVerificationUiState.Accepted(input)
-                        } else {
-                            RecoveryCodeVerificationUiState.Rejected(input)
-                        },
+                if (pageEffects.isActive(owner) && verificationRequest === request) {
+                    replaceVerification(
+                        if (valid) RecoveryCodeVerificationUiState.Accepted(input)
+                        else RecoveryCodeVerificationUiState.Rejected(input),
                     )
                 }
             } catch (cancelled: CancellationException) {
-                _uiState.update {
-                    it.copy(verification = RecoveryCodeVerificationUiState.Editing(input))
+                if (pageEffects.isActive(owner) && verificationRequest === request) {
+                    replaceVerification(RecoveryCodeVerificationUiState.Editing(input))
                 }
                 throw cancelled
             } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(verification = RecoveryCodeVerificationUiState.Failed(input))
+                if (pageEffects.isActive(owner) && verificationRequest === request) {
+                    replaceVerification(RecoveryCodeVerificationUiState.Failed(input))
                 }
             } finally {
                 code.fill('\u0000')
+                if (verificationRequest === request) {
+                    verificationRequest = null
+                    verificationJob = null
+                }
             }
         }
     }
@@ -191,9 +252,17 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
         if (current is RecoveryCodeVerificationUiState.Verifying ||
             current is RecoveryCodeVerificationUiState.Editing
         ) return
-        _uiState.update {
-            it.copy(verification = RecoveryCodeVerificationUiState.Editing(current.input))
-        }
+        replaceVerification(RecoveryCodeVerificationUiState.Editing(current.input))
+    }
+
+    private fun replaceVerification(verification: RecoveryCodeVerificationUiState) {
+        val previous = _uiState.value.verification.input
+        _uiState.update { it.copy(verification = verification) }
+        if (previous !== verification.input) previous.wipe()
+    }
+
+    private fun clearDisclosureMarker() {
+        savedStateHandle.remove<Boolean>(WAS_DISCLOSURE_OPEN)
     }
 
     private fun replaceDraft(draft: RecoveryCodeDraftUiState) {

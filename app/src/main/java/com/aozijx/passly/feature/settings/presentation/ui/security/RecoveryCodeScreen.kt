@@ -52,7 +52,7 @@ fun RecoveryCodeScreen(
 
     val disclosure = when (val draft = state.draft) {
         is RecoveryCodeDraftUiState.Ready -> draft.disclosure to false
-        is RecoveryCodeDraftUiState.Committing -> draft.disclosure to true
+        is RecoveryCodeDraftUiState.Committing -> draft.disclosure?.let { it to true }
         else -> null
     }
     disclosure?.let { (value, isCommitting) ->

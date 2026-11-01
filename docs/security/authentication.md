@@ -81,13 +81,16 @@ stateDiagram-v2
     DraftReady --> Committing: 我已安全保存并启用
     Committing --> Committed: 持久化成功
     Committing --> DraftFailed: 持久化失败并丢弃候选
+    Committing --> Committing: 离开页面，确认后的提交继续
     DraftReady --> DraftExpired: 进程死亡后恢复页面
 ```
 
 - 旧 Recovery Envelope 在用户确认前保持有效；确认提交后旧码才失效。
 - 可提交草稿由 Activity-retained `RecoveryCodeDraft` 持有；展示期间 presentation 只在
   `RecoveryCodeDraftUiState.Ready` 分支持有独立的可擦除 disclosure。该副本不进入 SavedStateHandle、
-  Bundle 或磁盘，并在关闭、提交进入终态、替换及 ViewModel 清理时擦除。
+  Bundle 或磁盘，并在关闭、提交进入终态、替换及 ViewModel 清理时擦除。页面离开时关闭 Ready 草稿、擦除
+  presentation disclosure 并移除 SavedStateHandle 标记；若用户已确认并进入 Committing，Domain 提交由仍存活的
+  ViewModel scope 收尾，页面 state 只保留不含 disclosure 的 Committing 标记，完成后不把旧页面结果重新展示。
 - 确认操作会在启动协程前同步占用 `Committing` 状态，重复确认不会再次提交。提交期间页面保留同一 disclosure，
   禁用复制、确认和丢弃，并忽略弹层关闭；成功进入 `Committed` 并更新恢复码可用状态，失败则丢弃候选并进入 `Failed`。
 - SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
@@ -95,7 +98,9 @@ stateDiagram-v2
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，
   但 `VaultAccessState.isAuthorized` 仍为 false，主 Vault、详情、查看和复制密码都不能挂载。
 - 恢复码草稿复制绑定仍然活动的草稿；关闭或替换草稿期间，剪贴板保留策略读取完成后会重新核对所有权，不会复制旧草稿。
-- 设置页验证已有恢复码时，输入框在检查期间禁用；ViewModel 也拒绝迟到的输入事件，避免验证结果与被替换或擦除的输入脱节。
+- 设置页验证已有恢复码时，输入框在检查期间禁用；ViewModel 也拒绝迟到的输入事件。验证请求绑定页面 owner，页面离开时
+  取消请求、擦除原始 `OwnedChars` 和验证用 `CharArray` 并重置输入；若认证端口迟到返回，owner/request 检查会丢弃结果，
+  不会覆盖新页面状态。
 - 恢复模式只允许设置新的应用密码、重新配置生物识别、`RECOVERY_EXPORT` 和退出锁定。设置新应用密码后立即以
   `RECOVERY_EXIT` 锁定，用户必须用新密码重新进入普通完整会话。
 - `RECOVERY_EXPORT` 只接受恢复码，并且只能输出要求新备份密码的 Passly 加密格式；恢复码不作为备份密码，也不能
