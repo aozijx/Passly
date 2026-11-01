@@ -74,19 +74,26 @@ class SourceBoundaryPolicyTest {
 
     @Test
     fun backupPresentationUsesFeatureContractInsteadOfInternalImplementation() {
-        val path = "app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupViewModel.kt"
-        val violation = EditorSource(
-            path = path,
+        val productionViolation = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupViewModel.kt",
+            content = "import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor",
+        )
+        val testViolation = EditorSource(
+            path = "app/src/test/java/com/aozijx/passly/feature/backup/presentation/BackupViewModelTest.kt",
             content = "import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor",
         )
         val contract = EditorSource(
-            path = path,
+            path = productionViolation.path,
             content = "import com.aozijx.passly.feature.backup.contract.BackupOperationGateway",
         )
 
         assertEquals(
             "BACKUP_PRESENTATION_INTERNAL_DEPENDENCY",
-            SourceBoundaryVerifier.verify(listOf(violation), SourceBoundaryPolicy.generalRules).single().ruleId,
+            SourceBoundaryVerifier.verify(listOf(productionViolation), SourceBoundaryPolicy.generalRules).single().ruleId,
+        )
+        assertEquals(
+            "BACKUP_PRESENTATION_INTERNAL_DEPENDENCY",
+            SourceBoundaryVerifier.verify(listOf(testViolation), SourceBoundaryPolicy.generalRules).single().ruleId,
         )
         assertEquals(emptyList(), SourceBoundaryVerifier.verify(listOf(contract), SourceBoundaryPolicy.generalRules))
     }

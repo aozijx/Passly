@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 internal class BackupViewModel @Inject constructor(
-    private val backupOperationInteractor: BackupOperationGateway,
+    private val backupOperationGateway: BackupOperationGateway,
     private val secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
 
@@ -76,7 +76,7 @@ internal class BackupViewModel @Inject constructor(
             operation = BackupOperation.DIRECTORY_CHECK,
             password = EmptySensitiveValue,
         ) {
-            backupOperationInteractor.checkDirectoryWritable(uri)
+            backupOperationGateway.checkDirectoryWritable(uri)
         }
     }
 
@@ -85,7 +85,7 @@ internal class BackupViewModel @Inject constructor(
         replaceWorkflow(
             BackupMutation.ExportPrepared(
                 format = format,
-                fileName = backupOperationInteractor.buildExportFileName(format),
+                fileName = backupOperationGateway.buildExportFileName(format),
             ),
         )
     }
@@ -120,7 +120,7 @@ internal class BackupViewModel @Inject constructor(
                 operation = BackupOperation.EXPORT,
                 password = options.password,
             ) {
-                backupOperationInteractor.exportToConfiguredDirectory(options.toRequest())
+                backupOperationGateway.exportToConfiguredDirectory(options.toRequest())
             }
         } else {
             mutate(BackupMutation.ExportTargetRequested)
@@ -141,7 +141,7 @@ internal class BackupViewModel @Inject constructor(
             operation = BackupOperation.EXPORT,
             password = options.password,
         ) {
-            backupOperationInteractor.exportToUri(
+            backupOperationGateway.exportToUri(
                 request = options.toRequest(),
                 targetUri = uri,
                 deleteOnFailure = deleteOnFailure,
@@ -157,7 +157,7 @@ internal class BackupViewModel @Inject constructor(
             operation = BackupOperation.IMPORT,
             password = options.password,
         ) {
-            backupOperationInteractor.import(options.toRequest())
+            backupOperationGateway.import(options.toRequest())
         }
     }
 

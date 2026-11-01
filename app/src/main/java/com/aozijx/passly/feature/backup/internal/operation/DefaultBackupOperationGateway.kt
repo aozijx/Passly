@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-/** Application use case boundary for backup flows; the ViewModel only dispatches state. */
+/** Internal implementation of the feature-owned operation boundary. */
 internal class DefaultBackupOperationGateway @Inject constructor(
     private val settingsSource: BackupDirectorySettingsSource,
     private val backupService: BackupArchiveService,

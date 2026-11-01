@@ -405,7 +405,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "BACKUP_PRESENTATION_INTERNAL_DEPENDENCY",
-            sourcePathContains = "/src/main/java/com/aozijx/passly/feature/backup/presentation/",
+            sourcePathContains = "/feature/backup/presentation/",
             forbiddenImportPrefixes = setOf("com.aozijx.passly.feature.backup.internal."),
             message = "backup presentation imports an internal protocol or execution implementation",
         ),

@@ -10,18 +10,19 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.feature.backup.contract.BackupExecutionResult
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.contract.BackupExportOperationRequest
 import com.aozijx.passly.feature.backup.contract.BackupImportOperationRequest
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
-import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
-import com.aozijx.passly.feature.backup.contract.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.ImportMode
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
+import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
+import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
+import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
@@ -36,7 +37,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class BackupOperationInteractorTest {
+class DefaultBackupOperationGatewayTest {
     @Test
     fun `operation request is independent from presentation state`() {
         val request = exportRequest()
@@ -46,10 +47,56 @@ class BackupOperationInteractorTest {
     }
 
     @Test
+    fun `import wipes its temporary archive password buffer after success`() = runBlocking {
+        val gate = RecordingAuthorizationGate()
+        val storage = RecordingStorageSupport(gate)
+        val archivePassword = CompletableDeferred<CharArray>()
+        val archiveService = object : BackupArchiveService by UnusedBackupService {
+            override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
+                archivePassword.complete(requireNotNull(request.password))
+                return AppResult.success(
+                    BackupImportResult(
+                        importedEntryCount = 1,
+                        existingEntryCount = 0,
+                        skippedEntryCount = 0,
+                        ignoredFieldCount = 0,
+                        prunedLinkCount = 0,
+                        prunedResourceCount = 0,
+                    ),
+                )
+            }
+        }
+        val gateway = DefaultBackupOperationGateway(
+            settingsSource = object : BackupDirectorySettingsSource {
+                override val backupDirectoryUri = flowOf(null)
+            },
+            backupService = archiveService,
+            storageSupport = storage,
+            authorizationGate = gate,
+            errorReporter = NoopErrorReporter,
+        )
+        val ownedPassword = OwnedChars.fromString("secret")
+
+        val result = gateway.import(
+            BackupImportOperationRequest(
+                sourceUri = "content://documents/import",
+                password = ownedPassword,
+                mode = ImportMode.APPEND,
+                strategy = BackupImportStrategy.STRICT,
+            ),
+        )
+
+        assertTrue(result is BackupExecutionResult.ImportSucceeded)
+        assertTrue(archivePassword.await().all { it == '\u0000' })
+        assertTrue("the caller retains and clears its own value", !ownedPassword.isWiped)
+        ownedPassword.wipe()
+    }
+
+    @Test
     fun `configured export resolves storage target inside authorization scope`() = runBlocking {
         val gate = RecordingAuthorizationGate()
         val storage = RecordingStorageSupport(gate)
-        val interactor = DefaultBackupOperationGateway(
+        val gateway = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf("content://tree")
             },
@@ -59,7 +106,7 @@ class BackupOperationInteractorTest {
             errorReporter = NoopErrorReporter,
         )
 
-        val result = interactor.exportToConfiguredDirectory(exportRequest())
+        val result = gateway.exportToConfiguredDirectory(exportRequest())
 
         assertTrue(result is BackupExecutionResult.Failure)
         assertEquals(
@@ -72,7 +119,7 @@ class BackupOperationInteractorTest {
     @Test
     fun `directory check validates the configured tree through storage support`() = runBlocking {
         val storage = RecordingStorageSupport(RecordingAuthorizationGate())
-        val interactor = DefaultBackupOperationGateway(
+        val gateway = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -84,7 +131,7 @@ class BackupOperationInteractorTest {
 
         assertEquals(
             BackupExecutionResult.DirectoryWritable,
-            interactor.checkDirectoryWritable("content://documents/tree/backup"),
+            gateway.checkDirectoryWritable("content://documents/tree/backup"),
         )
         assertEquals("content://documents/tree/backup", storage.checkedDirectoryUri)
     }
@@ -96,7 +143,7 @@ class BackupOperationInteractorTest {
         val exportStarted = CompletableDeferred<Unit>()
         val finishExport = CompletableDeferred<Unit>()
         val target = "content://documents/export"
-        val interactor = DefaultBackupOperationGateway(
+        val gateway = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -107,7 +154,7 @@ class BackupOperationInteractorTest {
         )
 
         val export = async {
-            interactor.exportToUri(exportRequest(), target, deleteOnFailure = true)
+            gateway.exportToUri(exportRequest(), target, deleteOnFailure = true)
         }
         exportStarted.await()
         export.cancelAndJoin()
@@ -119,7 +166,7 @@ class BackupOperationInteractorTest {
     fun `cancelled import propagates cancellation instead of returning a failure`() = runTest {
         val gate = RecordingAuthorizationGate()
         val cancellation = java.util.concurrent.CancellationException("import cancelled")
-        val interactor = DefaultBackupOperationGateway(
+        val gateway = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -135,7 +182,7 @@ class BackupOperationInteractorTest {
 
         var propagated = false
         try {
-            interactor.import(
+            gateway.import(
                 BackupImportOperationRequest(
                     sourceUri = "content://documents/import",
                     password = EmptySensitiveValue,
@@ -154,7 +201,7 @@ class BackupOperationInteractorTest {
         val gate = RecordingAuthorizationGate()
         val storage = RecordingStorageSupport(gate).apply { deleteResult = false }
         val cancellation = CancellationException("export cancelled")
-        val interactor = DefaultBackupOperationGateway(
+        val gateway = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -170,7 +217,7 @@ class BackupOperationInteractorTest {
 
         var propagated = false
         try {
-            interactor.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+            gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
         } catch (failure: CancellationException) {
             propagated = failure === cancellation
         }
@@ -184,7 +231,7 @@ class BackupOperationInteractorTest {
     fun `cancellation carried by storage results is not reported as a backup failure`() = runTest {
         val gate = RecordingAuthorizationGate()
         val storage = RecordingStorageSupport(gate)
-        val interactor = DefaultBackupOperationGateway(
+        val gateway = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf("content://tree")
             },
@@ -196,11 +243,11 @@ class BackupOperationInteractorTest {
 
         val targetCancellation = CancellationException("target cancelled")
         storage.targetFailure = targetCancellation
-        assertCancellation(targetCancellation) { interactor.exportToConfiguredDirectory(exportRequest()) }
+        assertCancellation(targetCancellation) { gateway.exportToConfiguredDirectory(exportRequest()) }
 
         val directoryCancellation = CancellationException("directory check cancelled")
         storage.directoryCheckFailure = directoryCancellation
-        assertCancellation(directoryCancellation) { interactor.checkDirectoryWritable("content://tree") }
+        assertCancellation(directoryCancellation) { gateway.checkDirectoryWritable("content://tree") }
     }
 
     private suspend fun assertCancellation(

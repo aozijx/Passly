@@ -592,3 +592,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 协议边界：Presentation 可见的 `BackupExportFormat` 不再暴露 wire format ID；唯一穷尽映射位于归档内部，测试校验 ENCRYPTED/JSON/TEXT 对应的稳定 ID。SAF URI 与 `EntryType` 默认覆盖沿用前批的 Route/注册表边界。
 - 架构门禁：`SourceBoundaryPolicy` 禁止 Backup 生产 Presentation 导入 `feature.backup.internal`；测试覆盖内部依赖拒绝与 feature contract 通过。app Room Snapshot Reader/Restorer 继续通过既有 app→Backup 归档映射集成，不搬入 Feature、不让 Feature 依赖 Data。
 - 验证：Backup JVM 测试、`SourceBoundaryPolicyTest`、`:app:compileDebugAndroidTestKotlin`、`verifyArchitecture` 与 `git diff --check` 通过。Android instrumentation 未运行。
+
+### Backup Presentation 测试解除内部实现依赖（2026-11-01）
+
+- 清理：ViewModel 测试改用 `FakeBackupOperationGateway`，删除测试对 `DefaultBackupOperationGateway`、归档服务、StorageSupport 和授权实现的组装；ViewModel 字段与执行器测试名统一改用 Gateway/Default 实现语义，移除旧 Interactor 命名桥接。独立执行器测试继续直接验证临时归档密码缓冲在成功后擦零，避免 fixture 解耦时丢掉敏感值回归覆盖。
+- 门禁：`BACKUP_PRESENTATION_INTERNAL_DEPENDENCY` 扩大到整个 `feature/backup/presentation` 源树，包含 main 与 test；回归测试同时验证生产代码、测试代码拒绝 internal import，feature contract import 通过。
+- 验证：Backup ViewModel Access/Lifecycle 定向测试、`SourceBoundaryPolicyTest`、`verifyModuleBoundaries`、`verifyArchitecture` 与 `git diff --check` 通过。
