@@ -13,6 +13,7 @@ import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
@@ -1047,6 +1048,7 @@ class VaultSessionIdleTimeoutTest {
         override suspend fun save(envelope: KeyEnvelope) = Unit
         override suspend fun load(type: EnvelopeType): KeyEnvelope? = null
         override suspend fun loadAll(): List<KeyEnvelope> = emptyList()
+        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
         override suspend fun delete(type: EnvelopeType) = Unit
         override suspend fun saveVerificationTag(tag: ByteArray) = Unit
         override suspend fun loadVerificationTag(): ByteArray? = null

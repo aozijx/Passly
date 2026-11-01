@@ -2,6 +2,7 @@ package com.aozijx.passly.security.dek
 
 import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
@@ -67,6 +68,7 @@ class AttachmentContentCryptoTest {
         override suspend fun save(envelope: KeyEnvelope) { envelopes[envelope.type] = envelope }
         override suspend fun load(type: EnvelopeType): KeyEnvelope? = envelopes[type]
         override suspend fun loadAll(): List<KeyEnvelope> = envelopes.values.toList()
+        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
         override suspend fun delete(type: EnvelopeType) { envelopes.remove(type) }
         override suspend fun saveVerificationTag(tag: ByteArray) { verificationTag = tag.clone() }
         override suspend fun loadVerificationTag(): ByteArray? = verificationTag?.clone()

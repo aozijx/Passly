@@ -2,6 +2,7 @@ package com.aozijx.passly.security.dek
 
 import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricBinding
@@ -104,6 +105,7 @@ class SensitiveDataKeyManagerTest {
         override suspend fun load(type: EnvelopeType): KeyEnvelope? = envelopes[type]
 
         override suspend fun loadAll(): List<KeyEnvelope> = envelopes.values.toList()
+        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
 
         override suspend fun delete(type: EnvelopeType) {
             envelopes.remove(type)

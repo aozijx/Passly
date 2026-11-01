@@ -4,6 +4,7 @@ import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,21 +23,12 @@ class AuthenticationAvailabilityResolver @Inject constructor(
     private val biometricManager: BiometricManager
 ) {
     suspend fun resolve(): AuthenticationMethods = withContext(Dispatchers.Default) {
-        val biometricState = vaultBootstrapStore.loadBiometricState()
-        AuthenticationMethods(buildSet {
-            if (biometricManager.canAuthenticate(
+        val credentials = vaultBootstrapStore.loadAuthenticationCredentialSnapshot()
+        credentials.toAuthenticationMethods(
+            biometricAvailable = biometricManager.canAuthenticate(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG
-            ) == BiometricManager.BIOMETRIC_SUCCESS &&
-                    vaultBootstrapStore.load(EnvelopeType.BIOMETRIC) != null &&
-                    biometricState.binding != null
-            ) add(AuthenticationMethod.BIOMETRIC)
-            if (vaultBootstrapStore.load(EnvelopeType.APP_PASSWORD) != null) {
-                add(AuthenticationMethod.APP_PASSWORD)
-            }
-            if (vaultBootstrapStore.load(EnvelopeType.RECOVERY) != null) {
-                add(AuthenticationMethod.RECOVERY_CODE)
-            }
-        })
+            ) == BiometricManager.BIOMETRIC_SUCCESS,
+        )
     }
 
     /** 是否存在除 [method] 之外的其他可用 primary factor。 */
@@ -49,3 +41,11 @@ class AuthenticationAvailabilityResolver @Inject constructor(
             }
         }
 }
+
+internal fun AuthenticationCredentialSnapshot.toAuthenticationMethods(
+    biometricAvailable: Boolean,
+): AuthenticationMethods = AuthenticationMethods(buildSet {
+    if (biometricAvailable && biometricConfigured) add(AuthenticationMethod.BIOMETRIC)
+    if (appPasswordConfigured) add(AuthenticationMethod.APP_PASSWORD)
+    if (recoveryCodeConfigured) add(AuthenticationMethod.RECOVERY_CODE)
+})

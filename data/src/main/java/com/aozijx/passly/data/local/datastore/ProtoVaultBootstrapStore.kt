@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.BiometricRotationPhase
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
@@ -69,6 +70,9 @@ internal class ProtoVaultBootstrapStore @Inject constructor(
         val data = dataStore.data.first()
         return data.envelopesList.map { it.toDomain() }
     }
+
+    override suspend fun loadAuthenticationCredentialSnapshot(): AuthenticationCredentialSnapshot =
+        dataStore.data.first().readAuthenticationCredentialSnapshot()
 
     override suspend fun delete(type: EnvelopeType) {
         dataStore.updateData { current ->

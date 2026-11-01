@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-10-29。
+代码核对日期：2026-11-02。
 
 ## 契约与状态机
 
@@ -42,6 +42,9 @@ stateDiagram-v2
 系统文件选择器、分享页和 Autofill 认证 Activity 导致的短暂前后台切换因此不会立即截断已授权操作。
 
 ## Host 与生物识别
+
+认证方式可用性从 `VaultBootstrapStore` 一次读取 `AuthenticationCredentialSnapshot`。DataStore adapter 在同一份 Bootstrap
+值中投影 biometric envelope/binding、应用密码与恢复码是否配置；BiometricManager 的硬件能力在该持久快照之外单独判断。
 
 Main、Autofill Fill 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host

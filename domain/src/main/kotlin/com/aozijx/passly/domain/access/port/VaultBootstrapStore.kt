@@ -3,6 +3,7 @@ package com.aozijx.passly.domain.access.port
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 
@@ -13,6 +14,8 @@ interface VaultBootstrapStore {
     suspend fun load(type: EnvelopeType): KeyEnvelope?
 
     suspend fun loadAll(): List<KeyEnvelope>
+
+    suspend fun loadAuthenticationCredentialSnapshot(): AuthenticationCredentialSnapshot
 
     suspend fun delete(type: EnvelopeType)
 

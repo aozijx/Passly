@@ -634,3 +634,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：biometric callback/cancellation 按 `RequestOwnedSlot` 的 request identity 认领 prompt；旧成功/错误/取消回调不再清除或取消新 prompt，已有 active prompt 不允许被覆盖。prompt owner 同时持有 continuation，Activity cleanup 会取消 continuation 并关闭对应 prompt，避免 callback 被 identity guard 忽略后挂起等待。prompt 启动与取消在 owner 上串行化，确保先取消则不启动，先启动则等 authenticate 调用返回后再取消。
 - 回归：`SecretDialogSubmissionTest` 覆盖过期 dialog identity 的 Secret 不消费输入；`RequestOwnedSlotTest` 覆盖旧 prompt completion 保留新 prompt、当前 prompt 不可覆盖、生命周期只清理当前 prompt，以及取消/启动门的两个顺序。
 - 限制：Activity/Compose 实际并发时序、pause/destroy 及 biometric rotation journal 场景未运行 instrumentation；Task 45 的编排行为测试继续开放。
+
+### 认证方式解析使用单一 Bootstrap 快照（2026-11-02）
+
+- 修复：Domain `AuthenticationCredentialSnapshot` 仅携带 biometric、应用密码与恢复码的配置状态；`ProtoVaultBootstrapStore` 从一次 `dataStore.data.first()` 生成该领域快照，biometric 仅在同一 Bootstrap 值同时具有非空 binding alias 与 envelope 时视为已配置。Resolver 用这一份快照解析持久凭据，不再分别读取 envelope 和 biometric state 后拼接。
+- 回归：Data mapping 测试覆盖完整配置及 biometric envelope/binding 缺一、binding 为空的情况；Security 测试覆盖硬件能力只控制 biometric 方法，不影响密码/恢复码解析。
+- 验证：Data 定向单测通过；Domain、Data、Security 与 Core 测试源编译通过。AuthenticationManager 并发 refresh 发布顺序尚未处理，继续留在 Task 46 后续批次。

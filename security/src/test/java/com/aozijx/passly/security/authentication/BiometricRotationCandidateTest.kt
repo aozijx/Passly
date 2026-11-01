@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
@@ -109,6 +110,7 @@ class BiometricRotationCandidateTest {
         override suspend fun save(envelope: KeyEnvelope) = error("unused")
         override suspend fun load(type: EnvelopeType) = error("unused")
         override suspend fun loadAll() = error("unused")
+        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
         override suspend fun delete(type: EnvelopeType) = error("unused")
         override suspend fun saveVerificationTag(tag: ByteArray) = error("unused")
         override suspend fun loadVerificationTag() = error("unused")
