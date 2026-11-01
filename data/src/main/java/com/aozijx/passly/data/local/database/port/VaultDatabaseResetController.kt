@@ -27,31 +27,38 @@ internal class VaultDatabaseResetController @Inject constructor(
 ) : DatabaseResetController {
     override suspend fun reset(): Throwable? {
         currentCoroutineContext().ensureActive()
-        var fatalForCaller: Error? = null
-        val outcome = try {
-            withContext(Dispatchers.IO) {
-                withContext(NonCancellable) {
+        val outcome: Result<Throwable?> = withContext(Dispatchers.IO) {
+            withContext(NonCancellable) {
+                try {
                     logger.inSpan(Operations.DatabaseReset) {
-                        executeReset { fatalForCaller = it }
+                        executeReset()
                     }
+                } catch (cancelled: CancellationException) {
+                    Result.failure(cancelled)
+                } catch (failure: Error) {
+                    Result.failure(failure)
                 }
             }
-        } catch (cancelled: CancellationException) {
-            fatalForCaller?.let { throw it }
-            throw cancelled
-        } catch (failure: Error) {
-            val fatal = fatalForCaller ?: failure
-            fatalForCaller = fatal
-            withContext(NonCancellable) { sealForFatalFailure(fatal) }
-            throw fatal
         }
-        fatalForCaller?.let { throw it }
-        outcome.cancellation?.let { throw it }
-        currentCoroutineContext().ensureActive()
-        return outcome.error
+        return outcome.fold(
+            onSuccess = { error ->
+                currentCoroutineContext().ensureActive()
+                error
+            },
+            onFailure = { failure ->
+                when (failure) {
+                    is CancellationException -> throw failure
+                    is Error -> {
+                        withContext(NonCancellable) { sealForFatalFailure(failure) }
+                        throw failure
+                    }
+                    else -> throw failure
+                }
+            },
+        )
     }
 
-    private suspend fun executeReset(recordFatal: (Error) -> Unit): ResetOutcome {
+    private suspend fun executeReset(): Result<Throwable?> {
         var error: Throwable? = null
         var cancellation: CancellationException? = null
         var fatal: Error? = null
@@ -85,7 +92,7 @@ internal class VaultDatabaseResetController @Inject constructor(
             reopen = true
         } catch (failure: Error) {
             fatal = failure
-        } catch (failure: Throwable) {
+        } catch (failure: Exception) {
             error = failure
             reopen = true
         }
@@ -102,7 +109,7 @@ internal class VaultDatabaseResetController @Inject constructor(
                 cancellation = cancellation ?: cancelled
             } catch (failure: Error) {
                 fatal = failure
-            } catch (failure: Throwable) {
+            } catch (failure: Exception) {
                 error?.addSuppressedUnlessSame(failure) ?: run { error = failure }
             }
         }
@@ -117,6 +124,8 @@ internal class VaultDatabaseResetController @Inject constructor(
                 logger.log(LogStatements.Database.resetFailed(failure))
             } catch (logFailure: Error) {
                 fatal = fatal ?: logFailure
+            } catch (_: CancellationException) {
+                // Logging cannot interrupt the reset cleanup already in progress.
             } catch (_: Exception) {
                 // A failed diagnostic must not change an ordinary reset result.
             }
@@ -124,10 +133,10 @@ internal class VaultDatabaseResetController @Inject constructor(
 
         fatal?.let { fatalError ->
             error?.let { fatalError.addSuppressedUnlessSame(it) }
-            sealForFatalFailure(fatalError)
-            recordFatal(fatalError)
+            return Result.failure(fatalError)
         }
-        return ResetOutcome(error, cancellation)
+        cancellation?.let { return Result.failure(it) }
+        return Result.success(error)
     }
 
     private suspend fun sealForFatalFailure(fatal: Error) {
@@ -142,11 +151,6 @@ internal class VaultDatabaseResetController @Inject constructor(
     private fun Throwable.addSuppressedUnlessSame(other: Throwable) {
         if (this !== other) addSuppressed(other)
     }
-
-    private data class ResetOutcome(
-        val error: Throwable?,
-        val cancellation: CancellationException?,
-    )
 
     private fun deleteDatabaseFiles() {
         val databaseFile = context.getDatabasePath(DatabaseSchema.DATABASE_NAME)
