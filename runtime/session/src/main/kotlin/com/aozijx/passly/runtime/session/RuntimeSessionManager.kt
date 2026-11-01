@@ -34,23 +34,36 @@ class RuntimeSessionManager<Handle : Any>(
         leaseGate.closeFailure()?.let { return SessionUnlockResult.OpenFailed(it) }
         if (leaseGate.resumeIfOpen()) return SessionUnlockResult.Success
 
-        return withContext(ioDispatcher) {
-            val key = try {
-                keySource.copyKey()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Throwable) {
-                return@withContext SessionUnlockResult.KeyUnavailable(error)
-            }
+        var fatalError: Error? = null
+        val result = withContext(ioDispatcher) {
+            var key: ByteArray? = null
             try {
-                leaseGate.open(key)
+                key = try {
+                    keySource.copyKey()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Throwable) {
+                    if (error is Error) {
+                        fatalError = error
+                        return@withContext SessionUnlockResult.OpenFailed(error)
+                    }
+                    return@withContext SessionUnlockResult.KeyUnavailable(error)
+                }
+                try {
+                    leaseGate.open(requireNotNull(key))
+                } catch (error: Error) {
+                    fatalError = error
+                    SessionUnlockResult.OpenFailed(error)
+                }
             } finally {
-                key.fill(0)
+                key?.fill(0)
             }
         }
+        fatalError?.let { throw it }
+        return result
     }
 
     suspend fun softLock() = leaseGate.softLock()
 
-    suspend fun seal(timeout: Duration = 5.seconds): SessionSealResult = leaseGate.seal(timeout)
+    suspend fun seal(timeout: Duration = 5.seconds): Result<Unit> = leaseGate.seal(timeout)
 }

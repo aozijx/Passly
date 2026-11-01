@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.EventKey
+import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.LogFields
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.OperationCode
@@ -14,19 +15,112 @@ import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionSealResult
 import com.aozijx.passly.runtime.session.SecureSessionState
 import java.io.File
+import java.io.IOException
 import java.nio.file.Files
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class VaultDatabaseResetControllerTest {
+    @Test
+    fun fatalFileDeletionErrorPropagatesWithoutReopening() = runTest {
+        val root = Files.createTempDirectory("vault-reset-test").toFile()
+        val actions = mutableListOf<String>()
+        val fatal = AssertionError("delete fatal")
+        val session = RecordingDatabaseSession(actions)
+        val context = object : ContextWrapper(null) {
+            override fun getDatabasePath(name: String) = File(root, name)
+            override fun getFilesDir() = root
+            override fun deleteDatabase(name: String): Boolean {
+                actions += "delete"
+                throw fatal
+            }
+        }
+        val controller = VaultDatabaseResetController(context, session, NoOpLogger)
+
+        val caught = try {
+            controller.reset()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(listOf("seal-start", "seal-finished", "delete"), actions)
+        assertEquals(SecureSessionState.SEALED, session.lockState)
+    }
+
+    @Test
+    fun fatalReopenErrorPropagatesAfterFilesAreDeleted() = runTest {
+        val root = Files.createTempDirectory("vault-reset-test").toFile()
+        val actions = mutableListOf<String>()
+        val fatal = AssertionError("reopen fatal")
+        val session = RecordingDatabaseSession(actions, unlockFailure = fatal)
+        val context = object : ContextWrapper(null) {
+            override fun getDatabasePath(name: String) = File(root, name)
+            override fun getFilesDir() = root
+            override fun deleteDatabase(name: String): Boolean {
+                actions += "delete"
+                return true
+            }
+        }
+        val controller = VaultDatabaseResetController(context, session, NoOpLogger)
+
+        val caught = try {
+            controller.reset()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(listOf("seal-start", "seal-finished", "delete", "unlock"), actions)
+        assertEquals(SecureSessionState.SEALED, session.lockState)
+    }
+
+    @Test
+    fun fatalResetLoggerErrorResealsAnAlreadyReopenedSession() = runTest {
+        val root = Files.createTempDirectory("vault-reset-test").toFile()
+        val actions = mutableListOf<String>()
+        val fatal = AssertionError("logger fatal")
+        val session = RecordingDatabaseSession(actions)
+        val context = object : ContextWrapper(null) {
+            override fun getDatabasePath(name: String) = File(root, name)
+            override fun getFilesDir() = root
+            override fun deleteDatabase(name: String): Boolean {
+                actions += "delete"
+                throw IOException("ordinary delete failure")
+            }
+        }
+        val logger = object : Logger by NoOpLogger {
+            override fun log(statement: LogStatement) {
+                throw fatal
+            }
+        }
+        val controller = VaultDatabaseResetController(context, session, logger)
+
+        val caught = try {
+            controller.reset()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(
+            listOf("seal-start", "seal-finished", "delete", "unlock", "seal-start", "seal-finished"),
+            actions,
+        )
+        assertEquals(SecureSessionState.SEALED, session.lockState)
+    }
+
     @Test
     fun closeFailureSkipsDatabaseAndResourceDeletionAndKeepsSessionSealed() = runTest {
         val root = Files.createTempDirectory("vault-reset-test").toFile()
@@ -34,7 +128,7 @@ class VaultDatabaseResetControllerTest {
         val closeFailure = IllegalStateException("database close failed")
         val session = RecordingDatabaseSession(
             actions = actions,
-            sealResult = SessionSealResult.CloseFailed(closeFailure),
+            sealResult = Result.failure(closeFailure),
         )
         val context = object : ContextWrapper(null) {
             override fun getDatabasePath(name: String) = File(root, name)
@@ -112,11 +206,11 @@ class VaultDatabaseResetControllerTest {
         private val sealStarted: CompletableDeferred<Unit> = CompletableDeferred(),
         private val finishSeal: CompletableDeferred<Unit> = CompletableDeferred(Unit),
         private val unlockFailure: Throwable? = null,
-        private val sealResult: SessionSealResult = SessionSealResult.Sealed,
+        private val sealResult: Result<Unit> = Result.success(Unit),
     ) : DatabaseSessionLifecycle {
         override var lockState: SecureSessionState = SecureSessionState.UNLOCKED
 
-        override suspend fun seal(): SessionSealResult {
+        override suspend fun seal(): Result<Unit> {
             actions += "seal-start"
             sealStarted.complete(Unit)
             finishSeal.await()

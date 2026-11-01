@@ -27,39 +27,87 @@ internal class SecureDatabaseResetCoordinator(
 ) : DatabaseResetSessionCoordinator {
     override suspend fun withExclusiveDatabaseReset(
         operation: suspend () -> Throwable?,
-    ): Throwable? = sessionMutex.withLock {
-        if (!hasSecureAccess()) {
-            return@withLock SessionLockedException("Database reset requires an unlocked Vault session")
-        }
+    ): Throwable? {
+        var fatalForCaller: Error? = null
+        return try {
+            sessionMutex.withLock {
+                if (!hasSecureAccess()) {
+                    return@withLock SessionLockedException("Database reset requires an unlocked Vault session")
+                }
 
-        lockStateManager.mark(SecureSessionState.SEALED)
-        var operationFailure: Throwable? = null
-        try {
-            operation().also { operationFailure = it }
-        } catch (error: Throwable) {
-            operationFailure = error
-            throw error
-        } finally {
-            withContext(NonCancellable) {
-                if (sessionManager.lockState == SecureSessionState.UNLOCKED) {
-                    lockStateManager.mark(SecureSessionState.UNLOCKED)
-                    databaseFailure.value = null
-                } else {
-                    val failure = operationFailure
-                        ?: SessionLockedException("Database reset did not reopen the secure database")
-                    databaseFailure.value = failure
-                    lockStateManager.mark(sessionManager.lockState)
-                    runCatching { authorizationPermitRevoker.revokeAll() }
-                        .exceptionOrNull()
-                        ?.let(failure::addSuppressed)
-                    runCatching { sensitiveDataKeyManager.clear() }
-                        .exceptionOrNull()
-                        ?.let(failure::addSuppressed)
-                    withContext(Dispatchers.Main.immediate) {
-                        authenticationState.value = AuthenticationState.Locked
+                lockStateManager.mark(SecureSessionState.SEALED)
+                var operationFailure: Throwable? = null
+                var fatalError: Error? = null
+                try {
+                    operation().also {
+                        operationFailure = it
+                        fatalError = it as? Error
+                    }
+                } catch (error: Throwable) {
+                    operationFailure = error
+                    fatalError = error as? Error
+                    throw error
+                } finally {
+                    withContext(NonCancellable) {
+                        val failure = operationFailure
+                            ?: SessionLockedException("Database reset did not reopen the secure database")
+
+                        fun collectCleanupFailure(cleanupFailure: Throwable) {
+                            when (cleanupFailure) {
+                                is Error -> when (val primaryFatal = fatalError) {
+                                    null -> {
+                                        fatalError = cleanupFailure
+                                        if (failure !== cleanupFailure) cleanupFailure.addSuppressed(failure)
+                                    }
+                                    else -> if (primaryFatal !== cleanupFailure) {
+                                        primaryFatal.addSuppressed(cleanupFailure)
+                                    }
+                                }
+                                else -> if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+                            }
+                        }
+
+                        fatalError?.takeIf { sessionManager.lockState != SecureSessionState.SEALED }?.let {
+                            try {
+                                sessionManager.seal().exceptionOrNull()?.let(::collectCleanupFailure)
+                            } catch (cleanupFailure: Throwable) {
+                                collectCleanupFailure(cleanupFailure)
+                            }
+                        }
+
+                        when {
+                            sessionManager.lockState == SecureSessionState.UNLOCKED && fatalError == null -> {
+                                lockStateManager.mark(SecureSessionState.UNLOCKED)
+                                databaseFailure.value = null
+                            }
+                            else -> {
+                                lockStateManager.mark(sessionManager.lockState)
+                                try {
+                                    authorizationPermitRevoker.revokeAll()
+                                } catch (cleanupFailure: Throwable) {
+                                    collectCleanupFailure(cleanupFailure)
+                                }
+                                try {
+                                    sensitiveDataKeyManager.clear()
+                                } catch (cleanupFailure: Throwable) {
+                                    collectCleanupFailure(cleanupFailure)
+                                }
+                                withContext(Dispatchers.Main.immediate) {
+                                    authenticationState.value = AuthenticationState.Locked
+                                }
+                                databaseFailure.value = fatalError ?: failure
+                                fatalError?.let {
+                                    fatalForCaller = it
+                                    throw it
+                                }
+                            }
+                        }
                     }
                 }
             }
+        } catch (failure: Throwable) {
+            fatalForCaller?.let { throw it }
+            throw failure
         }
     }
 

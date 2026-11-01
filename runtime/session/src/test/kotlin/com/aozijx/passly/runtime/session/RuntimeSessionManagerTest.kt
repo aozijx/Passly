@@ -24,6 +24,75 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class RuntimeSessionManagerTest {
     @Test
+    fun `fatal resource close error is rethrown unchanged and remains terminal`() = runBlocking {
+        val fatal = AssertionError("resource close fatal")
+        val events = mutableListOf<SessionTransitionEvent>()
+        val resource = FakeResource(closeFailure = fatal)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink(events::add),
+        )
+        manager.unlock()
+
+        val caught = try {
+            manager.seal()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertEquals(1, resource.closeAttempts)
+        assertEquals(1, events.count { it.reason == SessionTransitionReason.CLOSE_FAILED })
+        val retry = manager.unlock()
+        assertTrue(retry is SessionUnlockResult.OpenFailed)
+        assertSame(fatal, (retry as SessionUnlockResult.OpenFailed).cause)
+        assertEquals(1, resource.openCount)
+    }
+
+    @Test
+    fun `unlock propagates fatal error from key source`() = runBlocking {
+        val fatal = AssertionError("key source fatal")
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(),
+            keySource = SessionKeySource { throw fatal },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `unlock propagates fatal error from resource open`() = runBlocking {
+        val fatal = AssertionError("resource open fatal")
+        val resource = FakeResource(openFailure = fatal)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertEquals(1, resource.openCount)
+    }
+
+    @Test
     fun `unlock propagates cancellation while fetching key`() = runBlocking {
         val cancellation = CancellationException("key retrieval cancelled")
         val manager = RuntimeSessionManager(
@@ -310,8 +379,8 @@ class RuntimeSessionManagerTest {
 
         val result = manager.seal()
 
-        assertTrue(result is SessionSealResult.CloseFailed)
-        val reportedFailure = (result as SessionSealResult.CloseFailed).cause
+        assertTrue(result.isFailure)
+        val reportedFailure = requireNotNull(result.exceptionOrNull())
         assertEquals(failure.javaClass, reportedFailure.javaClass)
         assertEquals(failure.message, reportedFailure.message)
         val closeFailure = events.single { it.reason == SessionTransitionReason.CLOSE_FAILED }

@@ -115,6 +115,7 @@ internal class SessionLeaseGate<Handle : Any>(
             throw cancelled
         } catch (error: Throwable) {
             discardOpened(opened, published, error)
+            if (error is Error) throw error
             emitTransition(
                 startedAt,
                 fromState,
@@ -157,6 +158,7 @@ internal class SessionLeaseGate<Handle : Any>(
             try {
                 resource.close(opened)
             } catch (cleanupFailure: Throwable) {
+                if (cleanupFailure is Error && cause !is Error) throw cleanupFailure
                 if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
             }
         }
@@ -174,7 +176,7 @@ internal class SessionLeaseGate<Handle : Any>(
         )
     }
 
-    suspend fun seal(timeout: Duration): SessionSealResult {
+    suspend fun seal(timeout: Duration): Result<Unit> {
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
         leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
@@ -198,7 +200,7 @@ internal class SessionLeaseGate<Handle : Any>(
             }
         }
 
-        val closeError = close()
+        val closeResult = close()
         emitTransition(
             startedAt,
             fromState,
@@ -207,36 +209,54 @@ internal class SessionLeaseGate<Handle : Any>(
             SessionLockType.SEALED,
             timeoutMs = timeout.inWholeMilliseconds,
         )
-        return closeError?.let(SessionSealResult::CloseFailed) ?: SessionSealResult.Sealed
+        return closeResult
     }
 
     suspend fun closeFailure(): Throwable? = resourceMutex.withLock { closeFailure }
 
-    private suspend fun close(): Throwable? {
+    private suspend fun close(): Result<Unit> {
         val startedAt = elapsedRealtimeMs()
         return resourceMutex.withLock {
-            closeFailure?.let { return@withLock it }
-            val current = handle ?: return@withLock null
+            closeFailure?.let { return@withLock Result.failure(it) }
+            val current = handle ?: return@withLock Result.success(Unit)
+            var fatalClose: Error? = null
             try {
-                withContext(ioDispatcher) { resource.close(current) }
+                withContext(ioDispatcher) {
+                    try {
+                        resource.close(current)
+                    } catch (error: Error) {
+                        fatalClose = error
+                        throw error
+                    }
+                }
                 handle = null
-                null
+                Result.success(Unit)
             } catch (cancelled: CancellationException) {
                 closeFailure = cancelled
                 throw cancelled
             } catch (error: Throwable) {
-                closeFailure = error
+                val closeError = fatalClose ?: error
+                closeFailure = closeError
                 val state = mutableLockState.value
-                emitTransition(
-                    startedAt,
-                    state,
-                    state,
-                    SessionTransitionReason.CLOSE_FAILED,
-                    if (state == SecureSessionState.SEALED) SessionLockType.SEALED else SessionLockType.NONE,
-                    error = error,
-                )
+                try {
+                    emitTransition(
+                        startedAt,
+                        state,
+                        state,
+                        SessionTransitionReason.CLOSE_FAILED,
+                        if (state == SecureSessionState.SEALED) SessionLockType.SEALED else SessionLockType.NONE,
+                        error = closeError,
+                    )
+                } catch (eventError: Throwable) {
+                    fatalClose?.let {
+                        if (it !== eventError) it.addSuppressed(eventError)
+                        throw it
+                    }
+                    throw eventError
+                }
+                fatalClose?.let { throw it }
                 if (error is Error) throw error
-                error
+                Result.failure(closeError)
             }
         }
     }

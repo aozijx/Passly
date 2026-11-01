@@ -19,7 +19,6 @@ import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionSealResult
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekUnlockResult
 import com.aozijx.passly.security.dek.DekManager
@@ -342,27 +341,64 @@ class VaultSessionController @Inject internal constructor(
         rollbackStagedSession(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT)
 
     private suspend fun rollbackStagedSession(reason: LockReason, trigger: LockTrigger) {
-        withContext(NonCancellable) {
-            securityEvents.traceLock(
-                SessionLockRequest(reason, trigger),
-                timeoutMs = 5_000,
-            ) {
-                try {
-                    when (val result = sessionManager.seal()) {
-                        SessionSealResult.Sealed -> Unit
-                        is SessionSealResult.CloseFailed ->
-                            recordFailure(result.cause, Reasons.SessionSealFailed)
+        var fatalForCaller: Error? = null
+        try {
+            withContext(NonCancellable) {
+                securityEvents.traceLock(
+                    SessionLockRequest(reason, trigger),
+                    timeoutMs = 5_000,
+                ) {
+                    val fatal = sealDatabaseForLock(
+                        onCancellation = { recordFailure(it, Reasons.SessionSealFailed) },
+                        onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                    )
+                    dekManager.lock()
+                    lockStateManager.mark(SecureSessionState.SEALED)
+                    transition(AuthenticationState.Locked)
+                    fatal?.let {
+                        fatalForCaller = it
+                        throw it
                     }
-                } catch (cancelled: CancellationException) {
-                    recordFailure(cancelled, Reasons.SessionSealFailed)
-                } catch (failure: Throwable) {
-                    recordFailure(failure, Reasons.SessionSealFailed)
                 }
-                dekManager.lock()
-                lockStateManager.mark(SecureSessionState.SEALED)
-                transition(AuthenticationState.Locked)
             }
+        } catch (failure: Throwable) {
+            fatalForCaller?.let { throw it }
+            throw failure
         }
+    }
+
+    private suspend fun sealDatabaseForLock(
+        onCancellation: (CancellationException) -> Unit,
+        onFailure: (Throwable) -> Unit,
+    ): Error? = try {
+        sessionManager.seal().exceptionOrNull()?.also(onFailure) as? Error
+    } catch (cancelled: CancellationException) {
+        onCancellation(cancelled)
+        null
+    } catch (failure: Throwable) {
+        onFailure(failure)
+        failure as? Error
+    }
+
+    private suspend fun clearSecurityAccess(): Error? {
+        var fatal: Error? = null
+        try {
+            authorizationPermitRevoker.revokeAll()
+        } catch (failure: Error) {
+            fatal = failure
+        }
+        try {
+            sensitiveDataKeyManager.clear()
+        } catch (failure: Error) {
+            fatal = combineFatal(fatal, failure)
+        }
+        return fatal
+    }
+
+    private fun combineFatal(primary: Error?, next: Error?): Error? = when {
+        primary == null -> next
+        next == null || primary === next -> primary
+        else -> primary.apply { addSuppressed(next) }
     }
 
     // ============================== 锁定 ==============================
@@ -377,82 +413,83 @@ class VaultSessionController @Inject internal constructor(
      * - SEALED（AUTOFILL_REQUEST_FINISHED / BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：
      *   排干 + 关库 + 擦 DEK
      */
-    suspend fun lock(request: SessionLockRequest) = securityEvents.traceLock(
-        request = request,
-        timeoutMs = if (request.reason.toLockLevel() == SecureSessionState.SEALED) 5_000 else 0,
-    ) {
-        mutex.withLock {
-            if (!shouldApplyLock(_state.value, request.reason)) return@withLock
-            var cleanupCancellation: CancellationException? = null
-            withContext(NonCancellable) {
-                authorizationPermitRevoker.revokeAll()
-                sensitiveDataKeyManager.clear()
-                // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
-                val targetLevel = if (_state.value is AuthenticationState.RecoveryMode) {
-                    SecureSessionState.SEALED
-                } else {
-                    request.reason.toLockLevel()
-                }
-                if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
-                    // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
-                    // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
-                    if (targetLevel == SecureSessionState.SEALED) {
-                        try {
-                            when (val result = sessionManager.seal()) {
-                                SessionSealResult.Sealed -> Unit
-                                is SessionSealResult.CloseFailed ->
-                                    recordFailure(result.cause, Reasons.SessionSealFailed)
-                            }
-                        } catch (cancelled: CancellationException) {
-                            cleanupCancellation = cancelled
-                        } catch (failure: Throwable) {
-                            recordFailure(failure, Reasons.SessionSealFailed)
+    suspend fun lock(request: SessionLockRequest) {
+        var fatalForCaller: Error? = null
+        try {
+            securityEvents.traceLock(
+                request = request,
+                timeoutMs = if (request.reason.toLockLevel() == SecureSessionState.SEALED) 5_000 else 0,
+            ) {
+                mutex.withLock {
+                    if (!shouldApplyLock(_state.value, request.reason)) return@withLock
+                    var cleanupCancellation: CancellationException? = null
+                    var cleanupFatal: Error? = null
+                    withContext(NonCancellable) {
+                        cleanupFatal = clearSecurityAccess()
+                        // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
+                        val targetLevel = if (_state.value is AuthenticationState.RecoveryMode) {
+                            SecureSessionState.SEALED
+                        } else {
+                            request.reason.toLockLevel()
                         }
-                        dekManager.lock()
-                        transition(AuthenticationState.Locked)
-                    }
-                } else {
-                    transition(AuthenticationState.Locking(request.reason))
-                    idleJob?.cancel()
-                    idleJob = null
-
-                    when (targetLevel) {
-                        SecureSessionState.SOFT_LOCKED -> {
-                            try {
-                                sessionManager.softLock()
-                            } catch (cancelled: CancellationException) {
-                                cleanupCancellation = cancelled
-                            } catch (failure: Throwable) {
-                                recordFailure(failure, Reasons.SessionSoftLockFailed)
+                        if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
+                            // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
+                            // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
+                            if (targetLevel == SecureSessionState.SEALED) {
+                                cleanupFatal = combineFatal(
+                                    cleanupFatal,
+                                    sealDatabaseForLock(
+                                        onCancellation = { cleanupCancellation = it },
+                                        onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                    ),
+                                )
+                                dekManager.lock()
+                                transition(AuthenticationState.Locked)
                             }
-                            lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
-                        }
+                        } else {
+                            transition(AuthenticationState.Locking(request.reason))
+                            idleJob?.cancel()
+                            idleJob = null
 
-                        SecureSessionState.SEALED -> {
-                            try {
-                                when (val result = sessionManager.seal()) {
-                                    SessionSealResult.Sealed -> Unit
-                                    is SessionSealResult.CloseFailed ->
-                                        recordFailure(result.cause, Reasons.SessionSealFailed)
+                            when (targetLevel) {
+                                SecureSessionState.SOFT_LOCKED -> {
+                                    try {
+                                        sessionManager.softLock()
+                                    } catch (cancelled: CancellationException) {
+                                        cleanupCancellation = cancelled
+                                    } catch (failure: Throwable) {
+                                        recordFailure(failure, Reasons.SessionSoftLockFailed)
+                                    }
+                                    lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                                 }
-                            } catch (cancelled: CancellationException) {
-                                cleanupCancellation = cancelled
-                            } catch (failure: Throwable) {
-                                recordFailure(failure, Reasons.SessionSealFailed)
+                                SecureSessionState.SEALED -> {
+                                    cleanupFatal = combineFatal(
+                                        cleanupFatal,
+                                        sealDatabaseForLock(
+                                            onCancellation = { cleanupCancellation = it },
+                                            onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                        ),
+                                    )
+                                    dekManager.lock()
+                                    lockStateManager.mark(SecureSessionState.SEALED)
+                                }
+                                SecureSessionState.UNLOCKED -> Unit
                             }
-                            dekManager.lock()
-                            lockStateManager.mark(SecureSessionState.SEALED)
-                        }
 
-                        SecureSessionState.UNLOCKED -> { /* 锁定不可能目标是 UNLOCKED */
+                            transition(AuthenticationState.Locked)
                         }
+                        cleanupFatal?.let {
+                            fatalForCaller = it
+                            throw it
+                        }
+                        cleanupCancellation?.let { throw it }
                     }
-
-                    transition(AuthenticationState.Locked)
+                    currentCoroutineContext().ensureActive()
                 }
-                cleanupCancellation?.let { throw it }
             }
-            currentCoroutineContext().ensureActive()
+        } catch (failure: Throwable) {
+            fatalForCaller?.let { throw it }
+            throw failure
         }
     }
 

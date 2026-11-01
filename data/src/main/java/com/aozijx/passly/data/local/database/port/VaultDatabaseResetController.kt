@@ -7,7 +7,6 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionSealResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -26,51 +25,122 @@ internal class VaultDatabaseResetController @Inject constructor(
     private val databaseSession: DatabaseSessionLifecycle,
     private val logger: Logger,
 ) : DatabaseResetController {
-    override suspend fun reset(): Throwable? = withContext(Dispatchers.IO) {
+    override suspend fun reset(): Throwable? {
         currentCoroutineContext().ensureActive()
-        val outcome = withContext(NonCancellable) {
-            logger.inSpan(Operations.DatabaseReset) {
-                var resetError: Throwable? = null
-                var cancellation: CancellationException? = null
-                var reopenAllowed = true
-                try {
-                    when (val sealResult = databaseSession.seal()) {
-                        SessionSealResult.Sealed -> {
-                            deleteDatabaseFiles()
-                            VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach(::deleteVaultFileDirectory)
-                        }
-                        is SessionSealResult.CloseFailed -> {
-                            resetError = sealResult.cause
-                            reopenAllowed = false
-                        }
+        var fatalForCaller: Error? = null
+        val outcome = try {
+            withContext(Dispatchers.IO) {
+                withContext(NonCancellable) {
+                    logger.inSpan(Operations.DatabaseReset) {
+                        executeReset { fatalForCaller = it }
                     }
-                } catch (cancelled: CancellationException) {
-                    cancellation = cancelled
-                } catch (error: Throwable) {
-                    resetError = error
                 }
-
-                val reopenError = if (reopenAllowed) {
-                    try {
-                        databaseSession.unlock()
-                    } catch (cancelled: CancellationException) {
-                        cancellation = cancellation ?: cancelled
-                        null
-                    } catch (error: Throwable) {
-                        error
-                    }
-                } else null
-                if (resetError != null && reopenError != null && reopenError !== resetError) {
-                    resetError.addSuppressed(reopenError)
-                }
-                val error = resetError ?: reopenError
-                error?.let { runCatching { logger.log(LogStatements.Database.resetFailed(it)) } }
-                ResetOutcome(error, cancellation)
             }
+        } catch (cancelled: CancellationException) {
+            fatalForCaller?.let { throw it }
+            throw cancelled
+        } catch (failure: Error) {
+            val fatal = fatalForCaller ?: failure
+            fatalForCaller = fatal
+            withContext(NonCancellable) { sealForFatalFailure(fatal) }
+            throw fatal
         }
+        fatalForCaller?.let { throw it }
         outcome.cancellation?.let { throw it }
         currentCoroutineContext().ensureActive()
-        outcome.error
+        return outcome.error
+    }
+
+    private suspend fun executeReset(recordFatal: (Error) -> Unit): ResetOutcome {
+        var error: Throwable? = null
+        var cancellation: CancellationException? = null
+        var fatal: Error? = null
+        var reopen = false
+
+        try {
+            when (val sealFailure = databaseSession.seal().exceptionOrNull()) {
+                null -> {
+                    reopen = true
+                    try {
+                        deleteDatabaseFiles()
+                        VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach(::deleteVaultFileDirectory)
+                    } catch (cancelled: CancellationException) {
+                        cancellation = cancelled
+                    } catch (failure: Error) {
+                        fatal = failure
+                        reopen = false
+                    } catch (failure: Throwable) {
+                        error = failure
+                    }
+                }
+                is CancellationException -> {
+                    cancellation = sealFailure
+                    reopen = true
+                }
+                is Error -> fatal = sealFailure
+                else -> error = sealFailure
+            }
+        } catch (cancelled: CancellationException) {
+            cancellation = cancelled
+            reopen = true
+        } catch (failure: Error) {
+            fatal = failure
+        } catch (failure: Throwable) {
+            error = failure
+            reopen = true
+        }
+
+        if (reopen && fatal == null) {
+            try {
+                when (val reopenFailure = databaseSession.unlock()) {
+                    null -> Unit
+                    is CancellationException -> cancellation = cancellation ?: reopenFailure
+                    is Error -> fatal = reopenFailure
+                    else -> error?.addSuppressedUnlessSame(reopenFailure) ?: run { error = reopenFailure }
+                }
+            } catch (cancelled: CancellationException) {
+                cancellation = cancellation ?: cancelled
+            } catch (failure: Error) {
+                fatal = failure
+            } catch (failure: Throwable) {
+                error?.addSuppressedUnlessSame(failure) ?: run { error = failure }
+            }
+        }
+
+        when (val failure = error) {
+            is Error -> {
+                fatal = fatal ?: failure
+                error = null
+            }
+            null -> Unit
+            else -> try {
+                logger.log(LogStatements.Database.resetFailed(failure))
+            } catch (logFailure: Error) {
+                fatal = fatal ?: logFailure
+            } catch (_: Exception) {
+                // A failed diagnostic must not change an ordinary reset result.
+            }
+        }
+
+        fatal?.let { fatalError ->
+            error?.let { fatalError.addSuppressedUnlessSame(it) }
+            sealForFatalFailure(fatalError)
+            recordFatal(fatalError)
+        }
+        return ResetOutcome(error, cancellation)
+    }
+
+    private suspend fun sealForFatalFailure(fatal: Error) {
+        if (databaseSession.lockState == com.aozijx.passly.runtime.session.SecureSessionState.SEALED) return
+        try {
+            databaseSession.seal().exceptionOrNull()?.let { fatal.addSuppressedUnlessSame(it) }
+        } catch (cleanupFailure: Throwable) {
+            fatal.addSuppressedUnlessSame(cleanupFailure)
+        }
+    }
+
+    private fun Throwable.addSuppressedUnlessSame(other: Throwable) {
+        if (this !== other) addSuppressed(other)
     }
 
     private data class ResetOutcome(

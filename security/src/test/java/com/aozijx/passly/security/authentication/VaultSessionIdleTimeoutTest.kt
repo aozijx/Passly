@@ -26,7 +26,6 @@ import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionSealResult
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.DekState
@@ -56,11 +55,142 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionIdleTimeoutTest {
+    @Test
+    fun `fatal reset result is propagated after locking the session`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("fatal reset result")
+            val session = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.withExclusiveDatabaseReset { fatal }
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `fatal authorization revocation still clears keys seals and locks`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("permit revoke fatal")
+            val session = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                revokeAuthorization = { throw fatal },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `fatal close result propagates after lock revokes access and clears keys`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("database close fatal")
+            var revoked = 0
+            val session = YieldingDatabaseSession(
+                sealResult = Result.failure(fatal),
+            )
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                revokeAuthorization = { revoked++ },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, revoked)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `fatal authorization revocation still locks and propagates`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("permit revoke fatal")
+            val session = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                revokeAuthorization = { throw fatal },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.withExclusiveDatabaseReset {
+                    session.seal()
+                    IllegalStateException("ordinary reset failure")
+                }
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @Test
     fun `close failure during security lock is reported after fail closed cleanup`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -69,7 +199,7 @@ class VaultSessionIdleTimeoutTest {
             val logger = RecordingLogger()
             val closeFailure = IllegalStateException("database close failed")
             val session = YieldingDatabaseSession(
-                sealResult = SessionSealResult.CloseFailed(closeFailure),
+                sealResult = Result.failure(closeFailure),
             )
             val controller = createController(
                 dispatcher = dispatcher,
@@ -98,7 +228,7 @@ class VaultSessionIdleTimeoutTest {
             var revoked = 0
             val closeFailure = IllegalStateException("database close failed")
             val session = YieldingDatabaseSession(
-                sealResult = SessionSealResult.CloseFailed(closeFailure),
+                sealResult = Result.failure(closeFailure),
             )
             val controller = createController(
                 dispatcher = dispatcher,
@@ -110,10 +240,10 @@ class VaultSessionIdleTimeoutTest {
             controller.transition(AuthenticationState.Authenticated(0L))
 
             val result = controller.withExclusiveDatabaseReset {
-                when (val sealed = session.seal()) {
-                    SessionSealResult.Sealed -> session.unlock()
-                    is SessionSealResult.CloseFailed -> sealed.cause
-                }
+                session.seal().fold(
+                    onSuccess = { session.unlock() },
+                    onFailure = { it },
+                )
             }
 
             assertEquals(closeFailure, result)
@@ -714,7 +844,7 @@ class VaultSessionIdleTimeoutTest {
         private val softLockFailure: Throwable? = null,
         private val pauseUnlock: Boolean = false,
         private val unlockFailure: Throwable? = null,
-        private val sealResult: SessionSealResult = SessionSealResult.Sealed,
+        private val sealResult: Result<Unit> = Result.success(Unit),
         initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
     ) : DatabaseSessionLifecycle {
         override var lockState: SecureSessionState = initialLockState
@@ -744,7 +874,7 @@ class VaultSessionIdleTimeoutTest {
             softLockFailure?.let { throw it }
         }
 
-        override suspend fun seal(): SessionSealResult {
+        override suspend fun seal(): Result<Unit> {
             sealStarted.complete(Unit)
             if (pauseSeal) allowSealToFinish.await()
             sealCount += 1

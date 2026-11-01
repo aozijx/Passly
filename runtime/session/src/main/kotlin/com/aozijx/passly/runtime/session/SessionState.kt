@@ -27,5 +27,6 @@ interface DatabaseSessionLifecycle {
 
     suspend fun unlock(): Throwable?
     suspend fun softLock()
-    suspend fun seal(): SessionSealResult
+    /** Closes the resource; a failed close leaves this process permanently SEALED. */
+    suspend fun seal(): Result<Unit>
 }

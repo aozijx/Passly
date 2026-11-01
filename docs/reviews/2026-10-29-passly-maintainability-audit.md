@@ -601,7 +601,15 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 
 ### 数据库关闭失败的终态封存合同（2026-11-01）
 
-- 选择：数据库句柄关闭失败后，本进程永久保持 `SEALED`，直到进程重启。Runtime 返回明确的 `SessionSealResult.CloseFailed`，保留失败句柄状态并拒绝同进程重开，不重试 close，也不并行创建替代句柄。
+- 选择：数据库句柄关闭失败后，本进程永久保持 `SEALED`，直到进程重启。Runtime 用 Kotlin `Result<Unit>` 返回 close failure，保留失败句柄状态并拒绝同进程重开，不重试 close，也不并行创建替代句柄；调用方用 `fold`/`exceptionOrNull` 执行各自恢复规则。
 - 重置门槛：`VaultDatabaseResetController` 只在 seal 成功后删除 SQLite/SQLCipher 文件及托管资源；关闭失败时返回原错误，不删文件、不尝试 unlock。Security reset coordinator 根据 SEALED 状态撤销授权、清除敏感密钥并发布 Locked。
 - 回归：Runtime 覆盖关闭异常、取消、同进程重开拒绝与模拟进程重启；Data 覆盖 close failure 不触发数据库删除、资源删除或 unlock；Security 覆盖 reset 关闭失败后的认证锁定与授权撤销，并验证普通安全锁在清理后记录封存失败。
 - 验证：`:runtime:session:test --tests "*RuntimeSessionManagerTest"`、`:data:testDebugUnitTest --tests "*VaultDatabaseResetControllerTest"`、`:security:testDebugUnitTest --tests "*DatabaseSessionRetryCoordinatorTest" --tests "*VaultSessionIdleTimeoutTest"` 通过。fatal `Error` 的恢复与传播仍由 Task 25 后续子批次处理。
+
+### Task 25：fatal Error 收尾与 Kotlin Result 接口（2026-11-01）
+
+- 接口精简：封存 API 改为 Kotlin `Result<Unit>`，调用方通过 `fold`、`exceptionOrNull` 或 `onFailure` 处理结果；取消和 fatal `Error` 仍直接传播，不再维护自定义封闭结果层次。
+- Runtime：Session key source/resource open 的 `Error` 不再转换成 `KeyUnavailable/OpenFailed`；在清理已打开资源、擦除临时 key 后将原 fatal 传播到调用方。
+- Reset：文件操作、重开及 logger 的 fatal `Error` 不作为普通 reset failure 返回；先保持或恢复 SEALED，再原样传播 fatal，后续清理失败作为 suppressed。普通异常仍可返回，数据库 close failure 仍跳过删除和重开。
+- Security：Reset coordinator 捕获操作 fatal 后先封存会话、分别尝试撤权和清敏感 key、发布 Locked，再传播 fatal；普通 lock 即使撤权回调或 seal 返回 fatal，也继续敏感 key/DEK 收尾和 Locked 转换后传播。close failure 仍写 `DatabaseResourceCloseFailed` 和 `SessionSealFailed` 诊断。
+- 验证：RuntimeSessionManagerTest、VaultDatabaseResetControllerTest、DatabaseSessionRetryCoordinatorTest、VaultSessionIdleTimeoutTest、`verifyArchitecture` 与 `git diff --check` 通过。`SensitiveDataKeyManager` 是具体 final 类，当前无法独立注入其 `clear()` 的 fatal；该单点 fatal 故障注入仍待测试 seam 方案，不影响实现对其 `Throwable` 的收尾处理。

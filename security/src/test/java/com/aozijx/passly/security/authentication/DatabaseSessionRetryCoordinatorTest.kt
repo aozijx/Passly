@@ -2,7 +2,6 @@ package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionSealResult
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.test.runTest
@@ -84,6 +83,6 @@ class DatabaseSessionRetryCoordinatorTest {
 
         override suspend fun unlock(): Throwable? = unlockError.also { unlockCalls++ }
         override suspend fun softLock() = Unit
-        override suspend fun seal() = SessionSealResult.Sealed
+        override suspend fun seal() = Result.success(Unit)
     }
 }
