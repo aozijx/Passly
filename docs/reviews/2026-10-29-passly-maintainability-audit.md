@@ -525,3 +525,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 文档：`docs/security/authentication.md` 补充离页敏感值清理、验证请求代际与确认提交继续收尾的 owner 合同。
 - 回归：`RecoveryCodeSettingsViewModelTest` 覆盖 Ready disclosure 与输入清理、迟到认证结果、Accepted/Rejected/Failed 输入擦除、确认提交离页成功/失败/取消、旧 page owner 不影响新页面及提交单飞。
 - 验证：`:app:testDebugUnitTest --tests "*RecoveryCodeSettingsViewModelTest" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。
+
+### 后续批次：收窄条目查询端口和 Room DAO（2026-11-01）
+
+- 盘点：全仓生产调用未找到 `EntryQueryRepository.count()` 或 `EntryQueryDao.countActive()`、`countActiveByType()`、`countDeleted()` 的消费者；`findEntriesWithCustomIcons()` 也没有生产调用者，其实现会先取出全部 active entity，再读取并装配每个条目的 secret bundle。
+- 修复：删除上述未消费 Domain/Data/DAO 查询和 App 测试替身中的空 override。保留有消费者的 `EntryQueryRepository.getById()`、`EntryTagQuery.findAllTags()`、DAO `getActive()` 与图标回收所需的 `countByIconCustomReference()`。Room schema 与资源清理/恢复流程未改变。
+- 验证：全仓代码及正式文档不再含已删 API；`:domain:test`、`:data:compileDebugKotlin`（含 Room KSP）、`:app:testDebugUnitTest` 与 `verifyArchitecture` 全部通过；`git diff --check` 通过。

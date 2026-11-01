@@ -65,8 +65,6 @@ internal class EditableEntryUseCaseFixture(
 
     internal class TestQuery(var current: Entry?) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId) = current
-        override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
-        override suspend fun count() = if (current == null) 0 else 1
     }
 
     private class TestAuthorization : AuthorizationGate {

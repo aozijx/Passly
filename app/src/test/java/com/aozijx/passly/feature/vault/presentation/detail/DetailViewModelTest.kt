@@ -237,8 +237,6 @@ class DetailViewModelTest {
         }
 
         override suspend fun getById(entryId: EntryId): Entry? = values[entryId]
-        override suspend fun findEntriesWithCustomIcons(): List<Entry> = emptyList()
-        override suspend fun count(): Int = values.size
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> = AppResult.Success(entry.id)
 
         override suspend fun updateEntry(

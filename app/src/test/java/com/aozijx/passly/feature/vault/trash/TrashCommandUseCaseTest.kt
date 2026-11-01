@@ -233,7 +233,5 @@ class TrashCommandUseCaseTest {
         var reads = 0
 
         override suspend fun getById(entryId: EntryId): Entry? = entry.also { reads++ }
-        override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
-        override suspend fun count() = 0
     }
 }

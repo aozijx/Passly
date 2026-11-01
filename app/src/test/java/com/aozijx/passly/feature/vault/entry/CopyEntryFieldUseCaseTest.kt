@@ -230,8 +230,6 @@ class CopyEntryFieldUseCaseTest {
             beforeRead()
             return entry
         }
-        override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
-        override suspend fun count() = 0
     }
 
     private object UsernameReader : EntryFieldReader {

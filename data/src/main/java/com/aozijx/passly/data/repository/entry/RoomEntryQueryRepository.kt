@@ -33,18 +33,6 @@ internal class RoomEntryQueryRepository @Inject constructor(
         }
     }
 
-    override suspend fun findEntriesWithCustomIcons(): List<Entry> {
-        if (!sessionState.hasFullSecureSessionAccess()) return emptyList()
-        return databaseSession.query {
-            val metaEntities = entryQueryDao().getActive()
-            metaEntities.map { metaEntity ->
-                val summary = EntryProfileMapper.fromEntity(metaEntity)
-                val secret = secretFieldStore.readBundle(this, metaEntity.entryId, metaEntity.entryType)
-                EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
-            }
-        }
-    }
-
     override suspend fun findAllTags(): Set<String> {
         if (!sessionState.hasFullSecureSessionAccess()) return emptySet()
         return databaseSession.query {
@@ -52,8 +40,4 @@ internal class RoomEntryQueryRepository @Inject constructor(
         }
     }
 
-    override suspend fun count(): Int {
-        if (!sessionState.hasFullSecureSessionAccess()) return 0
-        return databaseSession.query { entryQueryDao().countActive() }
-    }
 }

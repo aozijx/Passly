@@ -95,17 +95,6 @@ interface EntryQueryDao {
     @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId AND deletedAt IS NULL)")
     suspend fun existsActive(entryId: String): Boolean
 
-    // ---- count ----
-
-    @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NULL")
-    suspend fun countActive(): Int
-
-    @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NULL AND entryType = :entryType")
-    suspend fun countActiveByType(entryType: EntryType): Int
-
-    @Query("SELECT COUNT(*) FROM entries WHERE deletedAt IS NOT NULL")
-    suspend fun countDeleted(): Int
-
     @Query("SELECT COUNT(*) FROM entries WHERE iconCustomReference = :path")
     suspend fun countByIconCustomReference(path: String): Int
 

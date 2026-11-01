@@ -360,12 +360,6 @@ class EditDetailEntryUseCaseTest {
         var current: Entry? = initial
 
         override suspend fun getById(entryId: EntryId): Entry? = current
-
-        override suspend fun findEntriesWithCustomIcons(): List<Entry> =
-            listOfNotNull(current?.takeIf { it.icon.customReference != null })
-
-
-        override suspend fun count(): Int = if (current == null) 0 else 1
     }
 
     private class FakeCommandRepository(

@@ -148,8 +148,6 @@ class DetailPresentationLoaderTest {
         private val entries: Map<EntryId, Entry>,
     ) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId): Entry? = entries[entryId]
-        override suspend fun findEntriesWithCustomIcons() = emptyList<Entry>()
-        override suspend fun count() = entries.size
     }
 
     private class FakeSensitiveFieldRepository(
