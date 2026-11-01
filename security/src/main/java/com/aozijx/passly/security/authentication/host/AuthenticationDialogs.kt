@@ -31,13 +31,19 @@ internal enum class AuthenticationMethodUiModel {
 }
 
 internal sealed interface AuthenticationDialogUiState {
-    data class ChooseMethod(val methods: List<AuthenticationMethodUiModel>) : AuthenticationDialogUiState
-    data class Secret(val method: AuthenticationMethodUiModel) : AuthenticationDialogUiState
+    data class ChooseMethod(
+        val identity: AuthUiRequestId,
+        val methods: List<AuthenticationMethodUiModel>,
+    ) : AuthenticationDialogUiState
+    data class Secret(
+        val identity: AuthUiRequestId,
+        val method: AuthenticationMethodUiModel,
+    ) : AuthenticationDialogUiState
 }
 
 internal interface AuthenticationDialogEventHandler {
-    fun onMethodSelected(method: AuthenticationMethodUiModel?)
-    fun onSecretSubmitted(secret: CharArray?)
+    fun onMethodSelected(identity: AuthUiRequestId, method: AuthenticationMethodUiModel?)
+    fun onSecretSubmitted(identity: AuthUiRequestId, secret: CharArray?)
 }
 
 @Composable
@@ -48,13 +54,14 @@ internal fun AuthenticationDialogs(
     when (state) {
         is AuthenticationDialogUiState.ChooseMethod -> MethodDialog(
             methods = state.methods,
-            onSelected = events::onMethodSelected,
-            onCancel = { events.onMethodSelected(null) },
+            onSelected = { events.onMethodSelected(state.identity, it) },
+            onCancel = { events.onMethodSelected(state.identity, null) },
         )
         is AuthenticationDialogUiState.Secret -> SecretDialog(
+            identity = state.identity,
             method = state.method,
-            onSubmit = events::onSecretSubmitted,
-            onCancel = { events.onSecretSubmitted(null) },
+            onSubmit = { events.onSecretSubmitted(state.identity, it) },
+            onCancel = { events.onSecretSubmitted(state.identity, null) },
         )
         null -> Unit
     }
@@ -85,11 +92,12 @@ private fun MethodDialog(
 
 @Composable
 private fun SecretDialog(
+    identity: AuthUiRequestId,
     method: AuthenticationMethodUiModel,
     onSubmit: (CharArray) -> Unit,
     onCancel: () -> Unit,
 ) {
-    var secret by remember(method) { mutableStateOf("") }
+    var secret by remember(identity) { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val dismissInput = {

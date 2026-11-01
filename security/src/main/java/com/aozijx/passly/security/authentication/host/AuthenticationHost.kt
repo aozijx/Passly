@@ -64,12 +64,15 @@ fun AuthenticationHost(
         state = dialog.toUiState(),
         events = remember(host) {
             object : AuthenticationDialogEventHandler {
-                override fun onMethodSelected(method: AuthenticationMethodUiModel?) {
-                    host.submitMethod(method?.toDomainModel())
+                override fun onMethodSelected(
+                    identity: AuthUiRequestId,
+                    method: AuthenticationMethodUiModel?,
+                ) {
+                    host.submitMethod(identity, method?.toDomainModel())
                 }
 
-                override fun onSecretSubmitted(secret: CharArray?) {
-                    host.submitSecret(secret)
+                override fun onSecretSubmitted(identity: AuthUiRequestId, secret: CharArray?) {
+                    host.submitSecret(identity, secret)
                 }
             }
         },
@@ -78,10 +81,12 @@ fun AuthenticationHost(
 
 private fun AuthenticationDialogRequest?.toUiState(): AuthenticationDialogUiState? = when (this) {
     is AuthenticationDialogRequest.ChooseMethod -> AuthenticationDialogUiState.ChooseMethod(
-        methods.map(AuthenticationMethod::toUiModel),
+        identity = identity,
+        methods = methods.map(AuthenticationMethod::toUiModel),
     )
     is AuthenticationDialogRequest.Secret -> AuthenticationDialogUiState.Secret(
-        method.toUiModel(),
+        identity = identity,
+        method = method.toUiModel(),
     )
     null -> null
 }

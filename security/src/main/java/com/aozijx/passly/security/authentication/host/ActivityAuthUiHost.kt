@@ -18,29 +18,35 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 
 internal sealed interface AuthenticationDialogRequest {
+    val identity: AuthUiRequestId
+
     data class ChooseMethod(
         val purpose: AuthenticationPurpose,
         val methods: List<AuthenticationMethod>,
-        val continuation: CancellableContinuation<AuthenticationMethod?>
+        val continuation: CancellableContinuation<AuthenticationMethod?>,
+        override val identity: AuthUiRequestId = AuthUiRequestId(),
     ) : AuthenticationDialogRequest
 
     data class Secret(
         val purpose: AuthenticationPurpose,
         val method: AuthenticationMethod,
-        val continuation: CancellableContinuation<SecretHostResult>
+        val continuation: CancellableContinuation<SecretHostResult>,
+        override val identity: AuthUiRequestId = AuthUiRequestId(),
     ) : AuthenticationDialogRequest
 }
 
 internal fun submitSecretInput(
     request: AuthenticationDialogRequest?,
+    expectedIdentity: AuthUiRequestId,
     chars: CharArray?,
 ) {
     val activeRequest = when (request) {
-        is AuthenticationDialogRequest.Secret -> request.takeIf { it.continuation.isActive }
+        is AuthenticationDialogRequest.Secret -> request.takeIf {
+            it.identity === expectedIdentity && it.continuation.isActive
+        }
         is AuthenticationDialogRequest.ChooseMethod, null -> null
     }
     if (activeRequest == null) {
@@ -60,7 +66,7 @@ class ActivityAuthUiHost(
 ) : AuthUiHost {
     private val _dialog = MutableStateFlow<AuthenticationDialogRequest?>(null)
     internal val dialog: StateFlow<AuthenticationDialogRequest?> = _dialog.asStateFlow()
-    private val activePrompt = AtomicReference<BiometricPrompt?>(null)
+    private val activePrompt = RequestOwnedSlot<ActiveBiometricPrompt>()
 
     override fun snapshot(): AuthHostSnapshot = AuthHostSnapshot(
         resumed = activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED),
@@ -75,9 +81,12 @@ class ActivityAuthUiHost(
         if (!snapshot().usable) return null
         return suspendCancellableCoroutine { continuation ->
             val request = AuthenticationDialogRequest.ChooseMethod(purpose, methods, continuation)
-            _dialog.value = request
+            if (!_dialog.compareAndSet(null, request)) {
+                continuation.resume(null)
+                return@suspendCancellableCoroutine
+            }
             continuation.invokeOnCancellation {
-                if (_dialog.value === request) _dialog.value = null
+                _dialog.compareAndSet(request, null)
             }
         }
     }
@@ -89,9 +98,12 @@ class ActivityAuthUiHost(
         if (!snapshot().usable) return SecretHostResult.HostUnavailable
         return suspendCancellableCoroutine { continuation ->
             val request = AuthenticationDialogRequest.Secret(purpose, method, continuation)
-            _dialog.value = request
+            if (!_dialog.compareAndSet(null, request)) {
+                continuation.resume(SecretHostResult.HostUnavailable)
+                return@suspendCancellableCoroutine
+            }
             continuation.invokeOnCancellation {
-                if (_dialog.value === request) _dialog.value = null
+                _dialog.compareAndSet(request, null)
             }
         }
     }
@@ -112,10 +124,11 @@ class ActivityAuthUiHost(
             return@inSpan BiometricHostResult.Failure(BiometricHostFailure.CRYPTO_OBJECT_INVALID)
         }
         suspendCancellableCoroutine { continuation ->
+            val requestIdentity = AuthUiRequestId()
             val callback = object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    activePrompt.set(null)
-                    if (continuation.isActive) continuation.resume(
+                    val activeRequest = activePrompt.take(requestIdentity) ?: return
+                    if (activeRequest.continuation.isActive) activeRequest.continuation.resume(
                         BiometricHostResult.Success(
                             result
                         )
@@ -123,8 +136,8 @@ class ActivityAuthUiHost(
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    activePrompt.set(null)
-                    if (!continuation.isActive) return
+                    val activeRequest = activePrompt.take(requestIdentity) ?: return
+                    if (!activeRequest.continuation.isActive) return
                     val result = when (errorCode) {
                         BiometricPrompt.ERROR_NEGATIVE_BUTTON,
                         BiometricPrompt.ERROR_USER_CANCELED -> BiometricHostResult.Cancelled(true)
@@ -137,7 +150,7 @@ class ActivityAuthUiHost(
                             errorCode
                         )
                     }
-                    continuation.resume(result)
+                    activeRequest.continuation.resume(result)
                 }
             }
             val prompt = try {
@@ -153,20 +166,30 @@ class ActivityAuthUiHost(
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
                 return@suspendCancellableCoroutine
             }
-            activePrompt.set(prompt)
+            val activeRequest = ActiveBiometricPrompt(continuation) { prompt.cancelAuthentication() }
+            if (!activePrompt.install(requestIdentity, activeRequest)) {
+                if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
+                return@suspendCancellableCoroutine
+            }
             continuation.invokeOnCancellation {
-                activePrompt.getAndSet(null)?.cancelAuthentication()
+                activePrompt.take(requestIdentity)?.cancelPrompt()
             }
             if (!snapshot().usable) {
-                activePrompt.set(null)
-                continuation.resume(BiometricHostResult.HostUnavailable)
+                if (activePrompt.take(requestIdentity) != null) {
+                    activeRequest.cancelPrompt()
+                    if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
+                }
                 return@suspendCancellableCoroutine
             }
             try {
-                if (cryptoObject == null) prompt.authenticate(promptInfo)
-                else prompt.authenticate(promptInfo, cryptoObject)
+                val started = activeRequest.startIfActive {
+                    if (cryptoObject == null) prompt.authenticate(promptInfo)
+                    else prompt.authenticate(promptInfo, cryptoObject)
+                }
+                if (!started) return@suspendCancellableCoroutine
             } catch (failure: IllegalArgumentException) {
-                activePrompt.set(null)
+                if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
+                activeRequest.cancelPrompt()
                 logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.InvalidConfiguration))
                 if (continuation.isActive) {
                     continuation.resume(
@@ -174,7 +197,8 @@ class ActivityAuthUiHost(
                     )
                 }
             } catch (failure: IllegalStateException) {
-                activePrompt.set(null)
+                if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
+                activeRequest.cancelPrompt()
                 logger.log(
                     LogStatements.Security.biometricPromptFailed(
                         failure,
@@ -184,7 +208,8 @@ class ActivityAuthUiHost(
                 )
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             } catch (failure: SecurityException) {
-                activePrompt.set(null)
+                if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
+                activeRequest.cancelPrompt()
                 logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.PermissionDenied))
                 if (continuation.isActive) {
                     continuation.resume(
@@ -192,33 +217,43 @@ class ActivityAuthUiHost(
                     )
                 }
             } catch (failure: Exception) {
-                activePrompt.set(null)
+                if (activePrompt.take(requestIdentity) == null) return@suspendCancellableCoroutine
+                activeRequest.cancelPrompt()
                 logger.log(LogStatements.Security.biometricPromptFailed(failure, Reasons.UnknownFailure))
                 if (continuation.isActive) continuation.resume(BiometricHostResult.HostUnavailable)
             }
         }
     }
 
-    internal fun submitMethod(method: AuthenticationMethod?) {
+    internal fun submitMethod(identity: AuthUiRequestId, method: AuthenticationMethod?) {
         val request = _dialog.value as? AuthenticationDialogRequest.ChooseMethod ?: return
-        _dialog.value = null
+        if (request.identity !== identity) return
+        if (!_dialog.compareAndSet(request, null)) return
         if (request.continuation.isActive) request.continuation.resume(method)
     }
 
-    internal fun submitSecret(chars: CharArray?) {
+    internal fun submitSecret(identity: AuthUiRequestId, chars: CharArray?) {
         val request = _dialog.value
-        _dialog.value = null
-        submitSecretInput(request, chars)
+        if (request?.identity !== identity || request !is AuthenticationDialogRequest.Secret) {
+            chars?.fill('\u0000')
+            return
+        }
+        if (!_dialog.compareAndSet(request, null)) {
+            chars?.fill('\u0000')
+            return
+        }
+        submitSecretInput(request, identity, chars)
     }
 
     fun cancelOwnedRequests() {
-        activePrompt.getAndSet(null)?.cancelAuthentication()
-        when (val request = _dialog.value) {
+        activePrompt.takeCurrent()?.cancel()
+        val request = _dialog.value
+        when (request) {
             is AuthenticationDialogRequest.ChooseMethod -> request.continuation.cancel()
             is AuthenticationDialogRequest.Secret -> request.continuation.cancel()
             null -> Unit
         }
-        _dialog.value = null
+        if (request != null) _dialog.compareAndSet(request, null)
     }
 }
 

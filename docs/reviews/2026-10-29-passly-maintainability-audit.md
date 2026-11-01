@@ -627,3 +627,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 清理：删除从未读取的 `registeredAtMs` 与 `CONFIGURATION_RECONNECT_WINDOW_MS`，让 Host 注册状态仅保留真实使用的 owner、token 与弱引用；租约 release 直接归还 registry Mutex，没有增加转发对象。
 - 回归：Registry 测试覆盖活动租约期间的排队、等待取消、Host 不可用超时后重试、重复 release 幂等以及释放后租约失效。
 - 验证：`:security:testDebugUnitTest :app:compileDebugKotlin verifyArchitecture` 通过。旧 Compose callback 与之后新 dialog 的 request identity 绑定仍待 Task 45 后续覆盖。
+
+### 认证 Host 回调与 biometric prompt 请求身份（2026-11-02）
+
+- 修复：方法选择与密码 dialog 将 `AuthUiRequestId` 带入 Compose event callback，Host 只完成 identity 匹配的活动请求；dialog 安装、完成、取消和 Activity cleanup 用 `MutableStateFlow.compareAndSet` 对准原请求，避免旧回调把新请求清空。密码输入按 Secret dialog identity 重置，迟到输入擦零。
+- 修复：biometric callback/cancellation 按 `RequestOwnedSlot` 的 request identity 认领 prompt；旧成功/错误/取消回调不再清除或取消新 prompt，已有 active prompt 不允许被覆盖。prompt owner 同时持有 continuation，Activity cleanup 会取消 continuation 并关闭对应 prompt，避免 callback 被 identity guard 忽略后挂起等待。prompt 启动与取消在 owner 上串行化，确保先取消则不启动，先启动则等 authenticate 调用返回后再取消。
+- 回归：`SecretDialogSubmissionTest` 覆盖过期 dialog identity 的 Secret 不消费输入；`RequestOwnedSlotTest` 覆盖旧 prompt completion 保留新 prompt、当前 prompt 不可覆盖、生命周期只清理当前 prompt，以及取消/启动门的两个顺序。
+- 限制：Activity/Compose 实际并发时序、pause/destroy 及 biometric rotation journal 场景未运行 instrumentation；Task 45 的编排行为测试继续开放。
