@@ -218,6 +218,8 @@
     <string name="related_entries">关联条目</string>
     <string name="app_package_picker_title">选择关联应用</string>
     <string name="app_package_picker_search">搜索应用或包名</string>
+    <string name="app_package_picker_load_failed">应用列表暂时无法加载，请重试。</string>
+    <string name="app_package_picker_retry">重试</string>
     <string name="revision_history_title">版本历史</string>
     <string name="revision_history_empty">暂无可用版本</string>
     <string name="revision_version_format">版本 %1$d</string>

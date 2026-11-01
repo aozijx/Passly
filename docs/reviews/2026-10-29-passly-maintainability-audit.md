@@ -651,4 +651,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 
 - 修复：`AddPasswordViewModel.loadAssociatedApps()` 将失败边界从 `Throwable` 收窄为 `Exception`。目录普通异常仍保持未加载、可重新打开重试；`CancellationException` 继续传播，fatal `Error` 交由 ViewModel 协程异常边界处理。
 - 回归：`AddPasswordViewModelTest` 在 `viewModelScope` 内触发 `AssertionError`，验证错误不会被 selector 的恢复 catch 吞掉；RED 时旧 `catch(Throwable)` 没有向协程异常边界交付错误，收窄后可捕获到同一错误实例。
-- 验证：`:app:testDebugUnitTest verifyArchitecture` 与 `git diff --check` 通过。Detail picker 的普通查询失败 UI 状态仍是 Task 47 未完成项。
+- 验证：`:app:testDebugUnitTest verifyArchitecture` 与 `git diff --check` 通过；Detail picker 的失败状态、retry、条目替换后的迟到失败抑制、取消和 fatal 传播另由 Detail ViewModel 行为测试覆盖。
+
+### Detail 关联应用选择器提供可恢复失败状态（2026-11-02）
+
+- 修复：`DetailViewModel.loadPackagePickerApps()` 只把普通 `Exception` 映射到当前条目的 picker 失败状态；取消继续传播，fatal `Error` 越过恢复边界。共享 bottom sheet 在失败时展示本地化提示和 Retry，成功后清除失败状态。
+- 回归：`DetailViewModelTest` 覆盖普通目录失败后重试成功、条目替换后旧失败不改新状态、条目替换取消查询不显示失败、fatal `AssertionError` 从失败恢复边界传播；`AddPasswordViewModelTest` 覆盖 fatal 传播和普通异常后重试。
+- 验证：`:app:testDebugUnitTest verifyArchitecture` 与 `git diff --check` 通过。PackageManager 查询和 ResolveInfo label 查询仍由 Android 实现直接抛出原异常，ViewModel 是各页面的恢复 owner。

@@ -20,6 +20,7 @@ data class DetailUiState(
     val associatedApps: List<DetailInstalledApp> = emptyList(),
     val packagePickerApps: List<DetailInstalledApp> = emptyList(),
     val packagePickerAppsLoaded: Boolean = false,
+    val packagePickerAppsLoadFailed: Boolean = false,
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val saveState: DetailSaveState = DetailSaveState.Idle,

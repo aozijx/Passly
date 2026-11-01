@@ -143,6 +143,7 @@ internal fun toDetailPresentationModel(
             ),
             associatedApps = state.associatedApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
             packagePickerApps = state.packagePickerApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
+            packagePickerAppsLoadFailed = state.packagePickerAppsLoadFailed,
             notes = DetailNotesUiModel(
                 notes = entry.secret.notes,
                 editedNotes = state.fieldEdits.draft(DetailDraftKey.Notes),

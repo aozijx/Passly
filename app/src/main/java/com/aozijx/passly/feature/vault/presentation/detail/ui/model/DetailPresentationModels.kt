@@ -28,6 +28,7 @@ data class DetailBodyUiModel(
     val associations: DetailAssociatedInfoUiModel,
     val associatedApps: List<AppPackagePickerItemUiModel>,
     val packagePickerApps: List<AppPackagePickerItemUiModel>,
+    val packagePickerAppsLoadFailed: Boolean,
     val notes: DetailNotesUiModel,
     val metadata: DetailMetadataUiModel,
     val activities: List<DetailActivityUiModel>,

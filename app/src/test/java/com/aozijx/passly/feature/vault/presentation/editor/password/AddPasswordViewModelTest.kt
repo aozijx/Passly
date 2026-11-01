@@ -206,6 +206,24 @@ class AddPasswordViewModelTest {
     }
 
     @Test
+    fun `associated app picker can retry after a regular query failure`() = runTest {
+        var queries = 0
+        val viewModel = viewModel(directory = directory {
+            if (++queries == 1) throw IllegalStateException("temporary package query failure")
+            listOf(InstalledAppMetadata("Mail", "com.example.mail"))
+        })
+
+        viewModel.onAction(AddPasswordAction.LoadAssociatedApps)
+        advanceUntilIdle()
+        viewModel.onAction(AddPasswordAction.LoadAssociatedApps)
+        advanceUntilIdle()
+
+        assertEquals(2, queries)
+        assertTrue(viewModel.uiState.value.availableAppsLoaded)
+        assertEquals("com.example.mail", viewModel.uiState.value.availableApps.single().packageName)
+    }
+
+    @Test
     fun sessionLockWipesPasswordContent() = runTest {
         val session = MutableSession()
         val viewModel = viewModel(session = session)

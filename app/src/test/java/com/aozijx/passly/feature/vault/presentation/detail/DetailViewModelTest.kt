@@ -74,7 +74,9 @@ import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -86,6 +88,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -93,6 +97,117 @@ import org.junit.Test
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
+
+    @Test
+    fun packagePickerRecoversAfterTransientDirectoryFailure() = runTest {
+        var queries = 0
+        val fixture = Fixture(
+            installedApps = installedAppsDirectory {
+                if (++queries == 1) throw IllegalStateException("package query failed")
+                listOf(InstalledAppMetadata("Mail", "com.example.mail"))
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            model.onAction(DetailUiAction.LoadPackagePickerApps)
+            runCurrent()
+            assertTrue(model.uiState.value.packagePickerAppsLoadFailed)
+            model.onAction(DetailUiAction.LoadPackagePickerApps)
+            runCurrent()
+
+            assertEquals(2, queries)
+            assertTrue(model.uiState.value.packagePickerAppsLoaded)
+            assertFalse(model.uiState.value.packagePickerAppsLoadFailed)
+            assertEquals("com.example.mail", model.uiState.value.packagePickerApps.single().packageName)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun latePickerFailureCannotChangeTheReplacementEntryState() = runTest {
+        val failureStarted = CompletableDeferred<Unit>()
+        val releaseFailure = CompletableDeferred<Unit>()
+        val fixture = Fixture(
+            installedApps = installedAppsDirectory {
+                failureStarted.complete(Unit)
+                withContext(NonCancellable) { releaseFailure.await() }
+                throw IllegalStateException("old entry query failed")
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            model.onAction(DetailUiAction.LoadPackagePickerApps)
+            runCurrent()
+            failureStarted.await()
+
+            model.load(OTHER_ENTRY_ID.value)
+            runCurrent()
+            releaseFailure.complete(Unit)
+            runCurrent()
+
+            assertEquals("Other title", model.uiState.value.entry?.title)
+            assertFalse(model.uiState.value.packagePickerAppsLoadFailed)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun cancelledPickerLoadDoesNotBecomeFailureState() = runTest {
+        val loadStarted = CompletableDeferred<Unit>()
+        val fixture = Fixture(
+            installedApps = installedAppsDirectory {
+                loadStarted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            model.onAction(DetailUiAction.LoadPackagePickerApps)
+            runCurrent()
+            loadStarted.await()
+
+            model.load(OTHER_ENTRY_ID.value)
+            runCurrent()
+
+            assertFalse(model.uiState.value.packagePickerAppsLoadFailed)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun packagePickerFatalErrorEscapesRecoveryBoundary() {
+        val fatal = AssertionError("package query failed fatally")
+        val thrown = assertThrows(AssertionError::class.java) {
+            runTest {
+                val model = Fixture(
+                    installedApps = installedAppsDirectory { throw fatal },
+                ).viewModel
+                val store = ViewModelStore().apply { put("detail", model) }
+                try {
+                    model.load(ENTRY_ID.value)
+                    runCurrent()
+                    model.onAction(DetailUiAction.LoadPackagePickerApps)
+                    runCurrent()
+                } finally {
+                    store.clear()
+                }
+            }
+        }
+
+        assertSame(fatal, thrown)
+    }
 
     @Test
     fun backAndDismissDoNotCancelRestoreBeforeItRefreshesTheEntry() = runTest {
@@ -185,7 +300,9 @@ class DetailViewModelTest {
         runCurrent()
     }
 
-    private class Fixture {
+    private class Fixture(
+        installedApps: InstalledAppDirectory = EmptyInstalledAppDirectory,
+    ) {
         val access = AuthenticatedAccess()
         val entries = MutableEntries(currentEntry())
         val revisions = BlockingRevisionRepository(entries)
@@ -197,7 +314,7 @@ class DetailViewModelTest {
         private val clipboard = SensitiveClipboardWriter { }
         private val sessionProvider = UnlockedSessionProvider()
         private val freshness = FreshnessState()
-        private val installedApps = EmptyInstalledAppDirectory
+        private val installedAppDirectory = installedApps
         private val favicon = UnusedFaviconImageProcessor
 
         val viewModel = DetailViewModel(
@@ -219,7 +336,7 @@ class DetailViewModelTest {
             faviconImageProcessor = favicon,
             presentationLoader = DetailPresentationLoader(
                 DetailSessionQuery(entries, sensitive, links),
-                installedApps,
+                installedAppDirectory,
             ),
             entryRevisionRepository = revisions,
             compareEntryRevision = CompareEntryRevisionUseCase(revisions),
@@ -362,6 +479,13 @@ class DetailViewModelTest {
     private object EmptyInstalledAppDirectory : InstalledAppDirectory {
         override suspend fun metadataFor(packageName: String): InstalledAppMetadata? = null
         override suspend fun launchableApps(): List<InstalledAppMetadata> = emptyList()
+    }
+
+    private fun installedAppsDirectory(
+        launchableApps: suspend () -> List<InstalledAppMetadata>,
+    ): InstalledAppDirectory = object : InstalledAppDirectory {
+        override suspend fun metadataFor(packageName: String): InstalledAppMetadata? = null
+        override suspend fun launchableApps() = launchableApps()
     }
 
     private object NoOtpConfigRepository : OtpConfigRepository {

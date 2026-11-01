@@ -210,6 +210,8 @@
     <string name="related_entries">Related entries</string>
     <string name="app_package_picker_title">Choose associated app</string>
     <string name="app_package_picker_search">Search apps or package names</string>
+    <string name="app_package_picker_load_failed">Apps could not be loaded. Try again.</string>
+    <string name="app_package_picker_retry">Retry</string>
     <string name="revision_history_title">Version history</string>
     <string name="revision_history_empty">No versions available</string>
     <string name="revision_version_format">Version %1$d</string>

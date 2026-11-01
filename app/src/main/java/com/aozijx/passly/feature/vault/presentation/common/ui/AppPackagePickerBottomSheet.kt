@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -45,6 +46,8 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemU
 @Composable
 fun AppPackagePickerBottomSheet(
     apps: List<AppPackagePickerItemUiModel>,
+    loadErrorMessage: String? = null,
+    onRetry: (() -> Unit)? = null,
     appIcon: @Composable (String) -> ImageBitmap?,
     onSelect: (AppPackagePickerItemUiModel) -> Unit,
     onDismiss: () -> Unit,
@@ -86,6 +89,15 @@ fun AppPackagePickerBottomSheet(
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 label = { Text(stringResource(R.string.app_package_picker_search)) },
             )
+
+            if (loadErrorMessage != null && onRetry != null) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(loadErrorMessage, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = onRetry) {
+                        Text(stringResource(R.string.app_package_picker_retry))
+                    }
+                }
+            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),

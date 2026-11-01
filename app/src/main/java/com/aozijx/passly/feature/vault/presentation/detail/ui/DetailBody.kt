@@ -210,6 +210,10 @@ fun DetailBody(
     if (showPackagePicker) {
         AppPackagePickerBottomSheet(
             apps = model.packagePickerApps,
+            loadErrorMessage = if (model.packagePickerAppsLoadFailed) {
+                stringResource(R.string.app_package_picker_load_failed)
+            } else null,
+            onRetry = { onAction(DetailUiAction.LoadPackagePickerApps) },
             appIcon = { rememberInstalledAppIconBitmap(it) },
             onSelect = {
                 showPackagePicker = false

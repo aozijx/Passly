@@ -34,6 +34,7 @@ internal sealed interface DetailMutation {
         val entryId: EntryId,
         val apps: List<DetailInstalledApp>,
     ) : DetailMutation
+    data class PackagePickerAppsFailed(val entryId: EntryId) : DetailMutation
     data class SaveStarted(val completion: DetailEditCompletion) : DetailMutation
     data class SaveSucceeded(val completion: DetailEditCompletion) : DetailMutation
     data class SaveFailed(
@@ -150,7 +151,13 @@ internal object DetailReducer {
                 state.copy(
                     packagePickerApps = mutation.apps,
                     packagePickerAppsLoaded = true,
+                    packagePickerAppsLoadFailed = false,
                 )
+            } else {
+                state
+            }
+            is DetailMutation.PackagePickerAppsFailed -> if (state.entry?.id == mutation.entryId) {
+                state.copy(packagePickerAppsLoadFailed = true)
             } else {
                 state
             }

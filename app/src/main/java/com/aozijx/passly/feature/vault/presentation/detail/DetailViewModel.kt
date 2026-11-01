@@ -41,6 +41,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -800,8 +801,18 @@ class DetailViewModel @Inject internal constructor(
         val token = workSession.current(entryId) ?: return
         if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
         packagePickerLoadJob = viewModelScope.launch {
-            val apps = presentationLoader.launchableApps()
-            if (workSession.isCurrent(token)) mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
+            try {
+                val apps = presentationLoader.launchableApps()
+                if (workSession.isCurrent(token)) {
+                    mutate(DetailMutation.PackagePickerAppsChanged(entryId, apps))
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (workSession.isCurrent(token)) {
+                    mutate(DetailMutation.PackagePickerAppsFailed(entryId))
+                }
+            }
         }
     }
 
