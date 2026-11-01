@@ -46,6 +46,7 @@ stateDiagram-v2
 Main、Autofill Fill 和 Credential Response Activity 都在根 Compose 安装 `AuthenticationHost`。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
 时最多等待 500 ms，Activity 销毁会取消所属请求，Autofill 请求不会转交 MainActivity。
+密码 dialog 回调交付一次性 `CharArray`：活跃的 Secret 请求通过 `SecretChars.take()` 接管并清零源数组；请求已取消、dialog 已离开 Secret 状态或 owner 已清除时，宿主直接擦除迟到输入，不保留到下一次请求。
 
 Legacy 锁定保存不再启动保存 Activity 或创建认证 interaction，而是写入密封 Inbox；完整 Vault 解锁后才解密并写入 Entry。
 保存处理与填充结果的临时 lease 生命周期相互独立；已存在的完整 `Authenticated` 会话不受影响。

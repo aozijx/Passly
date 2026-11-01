@@ -614,3 +614,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - Reset：文件操作、重开及 logger 的 fatal `Error` 不作为普通 reset failure 返回；先保持或恢复 SEALED，再原样传播 fatal，后续清理失败作为 suppressed。普通异常仍可返回，数据库 close failure 仍跳过删除和重开。
 - Security：Reset coordinator 捕获操作 fatal 后先封存会话、分别尝试撤权和清敏感 key、发布 Locked，再传播 fatal；普通 lock 即使撤权回调、soft lock、seal 或敏感 key 清理返回 fatal，也继续封存/清敏感 key/DEK 收尾和 Locked 转换后传播。Security 仅依赖 `SensitiveDataKeyClearer` 能力，由现有 `SensitiveDataKeyManager` 直接实现并由 Hilt 绑定，无额外转发适配器。close failure 仍写 `DatabaseResourceCloseFailed` 和 `SessionSealFailed` 诊断。
 - 验证：RuntimeSessionManagerTest、VaultDatabaseResetControllerTest、DatabaseSessionRetryCoordinatorTest、VaultSessionIdleTimeoutTest（含 lock/reset 下敏感 key clear fatal 覆盖）、`SensitiveDataKeyManagerTest`、`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 迟到认证密码回调的敏感输入收尾（2026-11-01）
+
+- 修复：将输入交接逻辑收敛到 `submitSecretInput()`：只由仍 active 的 Secret continuation 接收 `SecretChars.take()`；空 dialog、ChooseMethod dialog 和已取消 continuation 都清零传入数组后返回。`ActivityAuthUiHost` 先清除当前请求，再将捕获的请求快照交给同一 owner 处理，迟到回调不影响后续 dialog。
+- 回归：Security 单测覆盖没有请求、dialog 类型错误、continuation 已取消时擦零，以及 active 请求成功接管、调用方数组擦零和 secret 内容保持。
+- 验证范围：`:security:testDebugUnitTest --tests "*SecretDialogSubmissionTest"` 通过；Compose/Activity 真实生命周期时序仍未运行仪器测试。

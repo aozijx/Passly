@@ -35,6 +35,24 @@ internal sealed interface AuthenticationDialogRequest {
     ) : AuthenticationDialogRequest
 }
 
+internal fun submitSecretInput(
+    request: AuthenticationDialogRequest?,
+    chars: CharArray?,
+) {
+    val activeRequest = when (request) {
+        is AuthenticationDialogRequest.Secret -> request.takeIf { it.continuation.isActive }
+        is AuthenticationDialogRequest.ChooseMethod, null -> null
+    }
+    if (activeRequest == null) {
+        chars?.fill('\u0000')
+        return
+    }
+    activeRequest.continuation.resume(
+        if (chars == null) SecretHostResult.Cancelled(true)
+        else SecretHostResult.Submitted(SecretChars.take(chars))
+    )
+}
+
 class ActivityAuthUiHost(
     private val activity: FragmentActivity,
     override val ownerId: String,
@@ -188,16 +206,9 @@ class ActivityAuthUiHost(
     }
 
     internal fun submitSecret(chars: CharArray?) {
-        val request = _dialog.value as? AuthenticationDialogRequest.Secret ?: return
+        val request = _dialog.value
         _dialog.value = null
-        if (!request.continuation.isActive) {
-            chars?.fill('\u0000')
-            return
-        }
-        request.continuation.resume(
-            if (chars == null) SecretHostResult.Cancelled(true)
-            else SecretHostResult.Submitted(SecretChars.take(chars))
-        )
+        submitSecretInput(request, chars)
     }
 
     fun cancelOwnedRequests() {
