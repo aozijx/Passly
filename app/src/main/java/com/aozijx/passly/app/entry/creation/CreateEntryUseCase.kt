@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.entry
+package com.aozijx.passly.app.entry.creation
 
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
@@ -21,6 +21,7 @@ import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.policy.InvalidEntryDraft
 import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
+import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.github.f4b6a3.uuid.UuidCreator
 import java.util.UUID
 import javax.inject.Inject
@@ -35,7 +36,7 @@ class CreateEntryUseCase internal constructor(
     private val clock: () -> Long,
     private val logger: Logger,
     private val monotonicClock: () -> Long,
-) {
+) : EntryCreation {
     @Inject
     constructor(
         entryCommandRepository: EntryCommandRepository,
@@ -70,16 +71,16 @@ class CreateEntryUseCase internal constructor(
         monotonicClock = ::monotonicTimeMs,
     )
 
-    suspend operator fun invoke(draft: EntryDraft): AppResult<EntryId> = observeCreate(
+    override suspend operator fun invoke(draft: EntryDraft): AppResult<EntryId> = observeCreate(
         draft = draft,
         trigger = EntryCreateTrigger.USER,
         hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
         persist = entryCommandRepository::createEntry,
     )
 
-    internal suspend fun createFromAutofill(
+    override suspend fun createFromAutofill(
         draft: EntryDraft,
-        inboxDraftId: AutofillInboxDraftId? = null,
+        inboxDraftId: AutofillInboxDraftId?,
     ): AppResult<EntryId> {
         val stableId = inboxDraftId?.let(::stableInboxEntryId)
         return observeCreate(

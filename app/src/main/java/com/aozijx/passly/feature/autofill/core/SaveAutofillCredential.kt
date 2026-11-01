@@ -12,14 +12,14 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.domain.entry.port.EntryCreation
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SaveAutofillCredential @Inject constructor(
     private val applicationLabelResolver: ApplicationLabelResolver,
-    private val createEntry: CreateEntryUseCase,
+    private val createEntry: EntryCreation,
 ) {
     suspend operator fun invoke(
         draft: AutofillSaveDraft,

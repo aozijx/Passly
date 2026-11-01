@@ -12,7 +12,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportOutcome
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportSession
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

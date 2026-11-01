@@ -62,8 +62,9 @@ Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Cre
 `CUSTOM_FIELDS` 是带名称和类型的集合，不隐式拼成单个字符串，仍由专属流程处理。
 
 `EntryDraftMaterializer` 位于同一 Domain 策略包，只将草稿和给定身份转换为条目；不生成 ID、不读取会话、
-不记录日志或写入仓库。Feature 的 `CreateEntryUseCase` 负责校验、会话检查、身份生成与持久化，App DI 连接
-纯转换实例。新增凭据字段时在 Domain 测试其转换，不能把持卡人等凭据值借用为 Profile 用户名。
+不记录日志或写入仓库。Domain 的 `EntryCreation` 是 Vault、扫码和 Autofill 共用的能力端口；App 根组合中的
+`CreateEntryUseCase` 实现校验、会话检查、身份生成与持久化，App DI 将实现绑定到端口。
+新增凭据字段时在 Domain 测试其转换，不能把持卡人等凭据值借用为 Profile 用户名。
 `EntryDraft.invalidProvidedFields` 校验所有已提供字段的归属、值类型和空数字；创建用例与物化器共用该检查，
 不能假定所有草稿都经由 `withValue` 构造。必填检查与完整凭据校验分别处理缺失字段和具体业务规则。
 

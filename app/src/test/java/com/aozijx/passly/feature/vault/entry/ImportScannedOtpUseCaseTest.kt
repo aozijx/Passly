@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.entry
 
+import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState

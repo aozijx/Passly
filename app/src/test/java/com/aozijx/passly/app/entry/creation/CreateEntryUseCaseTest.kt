@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.entry
+package com.aozijx.passly.app.entry.creation
 
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.SessionModeRestricted

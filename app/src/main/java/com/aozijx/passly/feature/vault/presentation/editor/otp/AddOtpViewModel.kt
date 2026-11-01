@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
@@ -33,7 +33,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddOtpViewModel @Inject internal constructor(
-    createEntryUseCase: CreateEntryUseCase,
+    createEntryUseCase: EntryCreation,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val loadEditableEntry: LoadEditableEntryUseCase,
     private val editDetailEntry: EditDetailEntryUseCase,

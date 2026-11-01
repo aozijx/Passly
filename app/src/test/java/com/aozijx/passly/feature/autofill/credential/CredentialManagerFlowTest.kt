@@ -54,7 +54,7 @@ import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.flow.Flow

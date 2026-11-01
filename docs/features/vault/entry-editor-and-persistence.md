@@ -11,7 +11,7 @@ Profile/Secret 中其余数据和未揭示字段。完整编辑不覆盖用户�
 | 层 | 当前职责 | 主要入口 |
 | --- | --- | --- |
 | Domain | 字段定义、草稿类型、纯校验、物化、单字段及完整表单应用 | `EntryTypeDefinitions`、`EntryDraftMaterializer`、`EntryFieldEditor`、`EntryFormEditor`、`EntryEdit` |
-| App feature | 会话检查、敏感读取授权、冲突处理、日志和 Repository 编排 | `CreateEntryUseCase`、`LoadEditableEntryUseCase`、`EditDetailEntryUseCase` |
+| App integration | 跨功能创建能力、会话检查、日志和 Repository 编排；编辑读取/更新用例 | `CreateEntryUseCase`、`LoadEditableEntryUseCase`、`EditDetailEntryUseCase` |
 | App presentation | 类型专属表单、敏感内容回填、状态、Action、ViewModel、Route 和 Compose 内容 | `feature/vault/presentation/editor/<类型>`、`presentation/detail` |
 | Data | 事务、乐观锁、高敏字段保留/替换/清除、加密、修订和活动写入 | `UpdateEntryExecutor`、`SecretFieldStore`、`EntryRevisionWriter` |
 
@@ -22,13 +22,15 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
 
 ```text
 类型 Action -> ViewModel 的表单快照 -> toEntryDraft()
-  -> CreateEntryUseCase -> EntryDraftMaterializer -> EntryValidation
+  -> EntryCreation -> CreateEntryUseCase -> EntryDraftMaterializer -> EntryValidation
   -> EntryCommandRepository.createEntry -> Data 事务
 ```
 
-[`CreateEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CreateEntryUseCase.kt)
-接收只含 `type` 和类型化字段值的创建草稿。它先检查当前权限，再检查必填字段和 `invalidProvidedFields`，生成身份后物化、
-执行完整领域校验并写入 Repository。Autofill 创建复用同一纯规则，但使用自己的会话访问检查和写入端口。
+Domain 的 [`EntryCreation`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt)
+是 Vault、扫码 OTP 和 Autofill 共用的创建能力合同；App 根组合中的
+[`CreateEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/CreateEntryUseCase.kt)
+实现该合同。它接收只含 `type` 和类型化字段值的创建草稿，先检查当前权限，再检查必填字段和 `invalidProvidedFields`，
+生成身份后物化、执行完整领域校验并写入 Repository。Autofill 创建复用同一纯规则，但使用自己的会话访问检查和写入端口。
 
 [`EntryDraftMaterializer`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt)
 位于 Domain，目前显式转换四种创建类型。它再次检查草稿字段及身份类型；不能假定草稿一定经 `withValue()` 构造。
@@ -115,7 +117,8 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 
 条目创建、编辑、修订恢复、关系写入与回收站删除的附件/图标回收均发生在数据库提交之后。普通回收异常只记录结构化诊断，
 不把已提交写入报告成数据库失败；附件 `PENDING_GC` 在会话重开后自动重试，图标队列保留待处理路径并在图片处理器重建时补扫。
-若页面 owner 在提交之后取消，取消仍传播；页面重新进入后应重新读取条目或列表状态，以持久数据确定结果。
+编辑器保存仍由对应 ViewModel owner 执行。扫码 OTP 确认后，导入任务由 Activity 作用域的
+`ScannedOtpImportViewModel` 持有；关闭 Scanner 或离开 Vault 只取消结果等待，不取消已确认的保存。页面重新进入后应重新读取条目或列表状态，以持久数据确定结果。
 
 ## 创建入口与能力边界
 
@@ -146,7 +149,8 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 创建普通条目及 Autofill 条目 | `CreateEntryUseCase.invoke()`、`createFromAutofill()` | [`CreateEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CreateEntryUseCase.kt) |
+| 创建能力合同 | `EntryCreation.invoke()`、`createFromAutofill()` | [`EntryCreation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt) |
+| 创建普通条目及 Autofill 条目 | `CreateEntryUseCase.invoke()`、`createFromAutofill()` | [`CreateEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/CreateEntryUseCase.kt) |
 | 将新建草稿转换为可持久化条目 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
 | 登记所有条目的字段定义并检查目录覆盖 | `EntryTypeDefinitions`、`buildEntryTypeDefinitionIndex()` | [`EntryTypeDefinitions.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitions.kt)、[`EntryTypeDefinitionRegistry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitionRegistry.kt) |
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |

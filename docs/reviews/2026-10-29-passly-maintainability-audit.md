@@ -439,3 +439,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：每次打开导入选择器都创建一次性 request ID，并与当前 page owner 一起校验回执；取消选择也消费 request。页面退出清除 pending token。导入工作流仅存 URI 字符串，避免 Presentation state 对 Android `Uri.equals()` 的依赖。主线程 `Main.immediate` 语义下操作 launch 会在 action 返回前进入 coroutine body；未添加非生产的排队取消补偿。
 - RED：新回归先证明旧 API 的迟到 URI 会在重开页面后进入 ConfigureImport；主线程测试夹具首轮暴露 Android `Uri` 测试桩的 `equals()` 不可用，状态改为仅保存 URI 字符串后解决。
 - GREEN：`BackupViewModelAccessTest` 5 项、`BackupViewModelLifecycleTest` 3 项（含立即启动、离页继续、阻止重复提交、成功/失败/销毁取消及双重密码缓冲擦除）、`BackupOperationInteractorTest` 7 项、`RestoredAttachmentFileTest` 1 项、`RestoreFileJournalTest` 2 项、`RoomBackupFaviconResourceTest` 2 项通过；App 编译、`verifyArchitecture` 与 `git diff --check` 通过。未运行实际 Activity Result/Compose UI 自动化。
+
+### 后续批次：跨功能条目创建能力归 App 根组合（2026-11-01）
+
+- 根因：`CreateEntryUseCase` 放在 Vault Feature 包中，却同时承担 Vault 编辑器、确认后的扫码 OTP 导入和 Autofill 写入；Autofill 反向引用 Vault 的具体用例，创建能力的归属不符合实际调用范围。
+- 修复：新增 Domain `EntryCreation` 能力端口，由 App 根组合包中的 `CreateEntryUseCase` 实现，并由 Hilt 在 App 层绑定。Vault 编辑器、扫码导入和 Autofill 均注入该端口，校验、会话授权、身份生成、日志和持久化仍共用原实现。确认后的扫码任务继续由 Activity 作用域的 `ScannedOtpImportViewModel` 持有；离开 Scanner/Vault 只影响结果等待，不取消保存。
+- 回归：创建用例、四类编辑器、扫码 UseCase/ViewModel、Autofill 保存和 Credential Manager 调用测试均通过；`verifyArchitecture` 通过，确认新端口和依赖方向符合现有边界。
+- 文档：更新条目编辑与 OTP 创建、包边界以及本审计，明确创建端口、实现位置和扫码保存 owner。
+- 验证：`:app:testDebugUnitTest --tests "*CreateEntryUseCaseTest" --tests "*ImportScannedOtpUseCaseTest" --tests "*ScannedOtpImportViewModelTest" --tests "*AddPasswordViewModelTest" --tests "*AddOtpViewModelTest" --tests "*AddBankCardViewModelTest" --tests "*AddWifiViewModelTest" --tests "*SaveAutofillCredentialTest" --tests "*CredentialManagerFlowTest" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。未增加设备级验证。

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
@@ -26,7 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddPasswordViewModel @Inject internal constructor(
-    createEntryUseCase: CreateEntryUseCase,
+    createEntryUseCase: EntryCreation,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val installedAppDirectory: InstalledAppDirectory,
     private val loadEditableEntry: LoadEditableEntryUseCase,

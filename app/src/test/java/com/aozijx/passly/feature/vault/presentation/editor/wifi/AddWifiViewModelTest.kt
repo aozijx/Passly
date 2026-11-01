@@ -17,7 +17,7 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer

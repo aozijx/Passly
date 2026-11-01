@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.entry
 
+import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
@@ -11,7 +12,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 
 class ImportScannedOtpUseCase @Inject constructor(
-    private val createEntry: CreateEntryUseCase,
+    private val createEntry: EntryCreation,
     private val access: SecureSessionAccessState,
     private val logger: Logger,
 ) {
