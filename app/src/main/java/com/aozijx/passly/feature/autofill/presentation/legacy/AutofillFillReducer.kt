@@ -7,6 +7,7 @@ sealed interface AutofillFillMutation {
     data class CandidatesAvailable(val candidates: List<AutofillCandidateSummary>) : AutofillFillMutation
     data class Completed(val result: AutofillFillResult) : AutofillFillMutation
     data class Failed(val message: String) : AutofillFillMutation
+    data object ResultDelivered : AutofillFillMutation
 }
 
 object AutofillFillReducer {
@@ -16,6 +17,15 @@ object AutofillFillReducer {
             is AutofillFillMutation.CandidatesAvailable -> AutofillFillUiState.ShowCandidates(mutation.candidates)
             is AutofillFillMutation.Completed -> AutofillFillUiState.Result(mutation.result)
             is AutofillFillMutation.Failed -> AutofillFillUiState.Error(mutation.message)
+            AutofillFillMutation.ResultDelivered -> when (state) {
+                is AutofillFillUiState.Result,
+                is AutofillFillUiState.Error,
+                -> AutofillFillUiState.Initial
+                AutofillFillUiState.Initial,
+                AutofillFillUiState.Loading,
+                is AutofillFillUiState.ShowCandidates,
+                -> state
+            }
         }
     }
 }

@@ -531,3 +531,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 盘点：全仓生产调用未找到 `EntryQueryRepository.count()` 或 `EntryQueryDao.countActive()`、`countActiveByType()`、`countDeleted()` 的消费者；`findEntriesWithCustomIcons()` 也没有生产调用者，其实现会先取出全部 active entity，再读取并装配每个条目的 secret bundle。
 - 修复：删除上述未消费 Domain/Data/DAO 查询和 App 测试替身中的空 override。保留有消费者的 `EntryQueryRepository.getById()`、`EntryTagQuery.findAllTags()`、DAO `getActive()` 与图标回收所需的 `countByIconCustomReference()`。Room schema 与资源清理/恢复流程未改变。
 - 验证：全仓代码及正式文档不再含已删 API；`:domain:test`、`:data:compileDebugKotlin`（含 Room KSP）、`:app:testDebugUnitTest` 与 `verifyArchitecture` 全部通过；`git diff --check` 通过。
+
+### 后续批次：Legacy Autofill 结果 claim 跨 Activity 重建（2026-11-01）
+
+- 根因：`AutofillFillActivity` 的 `ActivityResultClaim` 是 Activity 实例字段，配置重建会创建新的未 claim 实例；Route 又会重放保留在 ViewModel StateFlow 的终态结果。平台交付成功后，终态也没有 ack 清理。
+- 修复：将 claim 移至 Activity-retained `AutofillFillViewModel`。只有当前 `Result`/`Error` 可以提交；平台回调成功后 reducer 清理终态到 `Initial`，callback 抛异常时 claim 回滚，原 Activity 仍可走取消结果兜底。`onDestroy()` 按保留 claim 判断是否取消 workflow。
+- 文档：`docs/security/autofill.md` 记录 claim owner、ack 清理及与交付器 lease 顺序的合同；ViewModel 仍持有 Android framework result 的边界继续留在 Task 21。
+- 回归：`AutofillFillReducerTest` 覆盖结果/错误终态成功交付后清理；既有 `ActivityResultClaimTest` 覆盖 callback 失败回滚与成功后拒绝重复 claim；`AutofillResultDeliveryTest` 覆盖平台交付后 selection/lease 顺序。
+- 验证：`AutofillFillReducerTest`、`ActivityResultClaimTest`、`AutofillResultDeliveryTest`，`:app:compileDebugKotlin`、`verifyArchitecture` 与 `git diff --check` 通过。

@@ -28,6 +28,27 @@ class AutofillFillReducerTest {
     }
 
     @Test
+    fun `successful platform delivery clears the retained terminal result`() {
+        val terminal = AutofillFillUiState.Result(
+            AutofillFillResult.Cancelled,
+        )
+
+        val cleared = AutofillFillReducer.reduce(terminal, AutofillFillMutation.ResultDelivered)
+
+        assertSame(AutofillFillUiState.Initial, cleared)
+    }
+
+    @Test
+    fun `successful cancellation delivery clears an error terminal state`() {
+        val cleared = AutofillFillReducer.reduce(
+            AutofillFillUiState.Error("failed"),
+            AutofillFillMutation.ResultDelivered,
+        )
+
+        assertSame(AutofillFillUiState.Initial, cleared)
+    }
+
+    @Test
     fun `failure exposes the workflow message`() {
         val result = AutofillFillReducer.reduce(
             AutofillFillUiState.Loading,

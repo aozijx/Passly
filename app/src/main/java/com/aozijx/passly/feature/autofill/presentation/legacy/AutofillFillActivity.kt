@@ -11,7 +11,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
-import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
 import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -31,7 +30,6 @@ class AutofillFillActivity : FragmentActivity() {
     lateinit var logger: Logger
 
     private val viewModel: AutofillFillViewModel by viewModels()
-    private val resultClaim = ActivityResultClaim()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +55,7 @@ class AutofillFillActivity : FragmentActivity() {
 
     private fun finishWithResult(result: AutofillFillResult) {
         val committed = try {
-            resultClaim.commit {
+            viewModel.commitPlatformResult {
                 when (result) {
                     is AutofillFillResult.DiscoveryResponse -> {
                         setResult(
@@ -109,7 +107,7 @@ class AutofillFillActivity : FragmentActivity() {
 
     private fun finishCancelledAfterDeliveryFailure() {
         val committed = try {
-            resultClaim.commit {
+            viewModel.commitPlatformResult {
                 setResult(RESULT_CANCELED)
                 hideIme()
                 finish()
@@ -123,7 +121,7 @@ class AutofillFillActivity : FragmentActivity() {
     }
 
     override fun onDestroy() {
-        if (!resultClaim.isClaimed && isFinishing) {
+        if (!viewModel.hasClaimedPlatformResult && isFinishing) {
             viewModel.onAction(AutofillFillUiAction.Cancel)
         }
         super.onDestroy()

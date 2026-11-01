@@ -23,6 +23,7 @@ import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
 import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
+import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -50,8 +51,20 @@ class AutofillFillViewModel @Inject constructor(
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow<AutofillFillUiState>(AutofillFillUiState.Initial)
     val uiState: StateFlow<AutofillFillUiState> = mutableUiState.asStateFlow()
+    private val resultClaim = ActivityResultClaim()
+
+    val hasClaimedPlatformResult: Boolean
+        get() = resultClaim.isClaimed
 
     private var currentRequest: AutofillFillRequest? = null
+
+    fun commitPlatformResult(deliver: () -> Unit): Boolean {
+        val state = mutableUiState.value
+        if (state !is AutofillFillUiState.Result && state !is AutofillFillUiState.Error) return false
+        val committed = resultClaim.commit(deliver)
+        if (committed) mutate(AutofillFillMutation.ResultDelivered)
+        return committed
+    }
 
     fun onAction(action: AutofillFillUiAction) {
         when (action) {
