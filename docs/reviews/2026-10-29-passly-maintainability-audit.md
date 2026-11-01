@@ -565,7 +565,7 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 合同：`AppNoticePublisher.publish() == Accepted` 只说明事件进入容量有限的内存队列，不保证最终投递；普通消息若在设置快照 Loading 时被消费则抑制并丢弃，不无限等待或重放。mandatory 消息绕过产品偏好快照，仍检查真实系统通知权限/channel 与路由能力。
 - 修复：`DefaultMessageSettingsSnapshotProvider` 在来源正常完成或抛普通异常时清除旧 Ready 为 Loading，并每 1 秒重新订阅；取消原样传播，fatal `Error` 不被转换为可恢复读取失败。
 - 回归：新测试覆盖“已发旧值、读取异常、立即清除旧策略、重新订阅恢复”；dispatcher 测试覆盖设置仍 Loading 时 mandatory 系统通知仍投递。既有普通通知 Loading 抑制测试保持通过。
-- 文档：消息中心记录 Accepted 的易失语义、普通与 mandatory 行为及 snapshot retry。消息事件真实异步队列的进程/路由组合回归仍待 Task 23 后续补齐。
+- 文档：消息中心记录 Accepted 的易失语义、普通与 mandatory 行为及 snapshot retry。真实异步队列的启动快照、mandatory 路由已由 Task 23 后续测试覆盖；系统 gateway fatal 注入仍待设备侧测试。
 
 ### 后续批次：传播消息分发中的 fatal Error（2026-11-01）
 

@@ -11,6 +11,7 @@ import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
 import com.aozijx.passly.app.message.contract.NoticeRouter
 import com.aozijx.passly.app.message.contract.NoticeDispatchStatus
+import com.aozijx.passly.app.message.contract.NoticeEnqueueResult
 import com.aozijx.passly.app.message.contract.NoticeRoutePlan
 import com.aozijx.passly.app.message.contract.NoticeRoutingContext
 import com.aozijx.passly.app.message.contract.NoticeSink
@@ -21,6 +22,9 @@ import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.message.contract.defaultNoticeCodePolicy
 import kotlinx.coroutines.runBlocking
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -78,6 +82,65 @@ class DefaultAppNoticeDispatcherTest {
         assertEquals(1, systemDeliveries)
         assertEquals(NoticeDispatchStatus.DELIVERED, receipt.status)
         assertEquals(0, receipt.settingsVersion)
+    }
+
+    @Test
+    fun queuedOptionalNoticeIsDroppedDuringLoadingWhileMandatoryNoticeIsDelivered() = runBlocking {
+        val snapshot = AtomicReference<MessageSettingsSnapshot>(MessageSettingsSnapshot.Loading)
+        val firstSettingsRead = CountDownLatch(1)
+        val mandatoryDelivered = CountDownLatch(1)
+        val barrierDelivered = CountDownLatch(1)
+        val delivered = mutableListOf<String>()
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = MessageSettingsSnapshotProvider {
+                if (snapshot.get() == MessageSettingsSnapshot.Loading) firstSettingsRead.countDown()
+                snapshot.get()
+            },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(
+                object : NoticeSink {
+                    override val target = NoticeTarget.IN_APP
+                    override suspend fun deliver(notice: com.aozijx.passly.app.message.model.AppNotice): SinkResult {
+                        synchronized(delivered) { delivered += notice.eventId }
+                        if (notice.eventId == "queue-barrier") barrierDelivered.countDown()
+                        if (notice.eventId == "queue-mandatory") mandatoryDelivered.countDown()
+                        return SinkResult.Delivered
+                    }
+                },
+                object : NoticeSink {
+                    override val target = NoticeTarget.SYSTEM
+                    override suspend fun deliver(notice: com.aozijx.passly.app.message.model.AppNotice): SinkResult {
+                        synchronized(delivered) { delivered += notice.eventId }
+                        if (notice.eventId == "queue-mandatory") mandatoryDelivered.countDown()
+                        return SinkResult.Delivered
+                    }
+                },
+            ),
+        )
+
+        assertEquals(
+            NoticeEnqueueResult.Accepted,
+            dispatcher.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "queue-optional")),
+        )
+        assertTrue(firstSettingsRead.await(5, TimeUnit.SECONDS))
+        assertEquals(
+            NoticeEnqueueResult.Accepted,
+            dispatcher.publish(newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "queue-mandatory")),
+        )
+        assertTrue(mandatoryDelivered.await(5, TimeUnit.SECONDS))
+
+        snapshot.set(MessageSettingsSnapshot.Ready(3, MessageSettings()))
+        assertEquals(
+            NoticeEnqueueResult.Accepted,
+            dispatcher.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "queue-barrier")),
+        )
+        assertTrue(barrierDelivered.await(5, TimeUnit.SECONDS))
+
+        assertEquals(listOf("queue-mandatory", "queue-barrier"), synchronized(delivered) { delivered.toList() })
     }
 
     @Test
