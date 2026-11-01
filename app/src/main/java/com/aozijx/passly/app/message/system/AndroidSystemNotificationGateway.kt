@@ -19,6 +19,7 @@ import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 @Singleton
 class AndroidSystemNotificationGateway @Inject constructor(
@@ -47,7 +48,7 @@ class AndroidSystemNotificationGateway @Inject constructor(
         val state = current()
         if (!state.runtimePermissionGranted) return SinkResult.PermissionMissing
         if (!state.notificationsEnabledBySystem || !state.channelEnabled) return SinkResult.Disabled
-        return runCatching {
+        return try {
             ensureChannel()
             val resolved = textResolver.resolve(notice)
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -64,7 +65,9 @@ class AndroidSystemNotificationGateway @Inject constructor(
                 notification
             )
             SinkResult.Delivered
-        }.getOrElse {
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
             SinkResult.Failed("notice.system_delivery_failed")
         }
     }

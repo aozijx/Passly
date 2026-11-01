@@ -138,7 +138,10 @@ class DefaultAppNoticeDispatcher @Inject constructor(
         } catch (cancelled: CancellationException) {
             deduplicator.release(claim)
             throw cancelled
-        } catch (_: Throwable) {
+        } catch (fatal: Error) {
+            deduplicator.release(claim)
+            throw fatal
+        } catch (_: Exception) {
             deduplicator.release(claim)
             return receipt(
                 notice,

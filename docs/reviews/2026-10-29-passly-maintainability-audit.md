@@ -566,3 +566,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：`DefaultMessageSettingsSnapshotProvider` 在来源正常完成或抛普通异常时清除旧 Ready 为 Loading，并每 1 秒重新订阅；取消原样传播，fatal `Error` 不被转换为可恢复读取失败。
 - 回归：新测试覆盖“已发旧值、读取异常、立即清除旧策略、重新订阅恢复”；dispatcher 测试覆盖设置仍 Loading 时 mandatory 系统通知仍投递。既有普通通知 Loading 抑制测试保持通过。
 - 文档：消息中心记录 Accepted 的易失语义、普通与 mandatory 行为及 snapshot retry。消息事件真实异步队列的进程/路由组合回归仍待 Task 23 后续补齐。
+
+### 后续批次：传播消息分发中的 fatal Error（2026-11-01）
+
+- 修复：Dispatcher 对路由/投递普通 `Exception` 返回可重试失败并释放去重 claim；`CancellationException` 和 fatal `Error` 均先释放 claim 再原样传播。Android system gateway 同样不再用 `runCatching` 吞掉 `Error` 或取消。
+- 回归：sink 普通异常返回失败后可用相同 eventId 成功重试；router `AssertionError` 观察到旧实现错误吞掉后，修复后按同一对象向上传播，且 claim 已释放、相同事件可重试。
+- 风险边界：未在设备上主动制造 Android NotificationManager/TextResolver fatal 错误；gateway catch 规则由类型边界改为 `Exception` 且 AndroidTest 源码编译验证。

@@ -9,7 +9,10 @@ import com.aozijx.passly.app.message.contract.AppVisibilityProvider
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshotProvider
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.app.message.contract.NoticeCodeRegistry
+import com.aozijx.passly.app.message.contract.NoticeRouter
 import com.aozijx.passly.app.message.contract.NoticeDispatchStatus
+import com.aozijx.passly.app.message.contract.NoticeRoutePlan
+import com.aozijx.passly.app.message.contract.NoticeRoutingContext
 import com.aozijx.passly.app.message.contract.NoticeSink
 import com.aozijx.passly.app.message.contract.NoticeTarget
 import com.aozijx.passly.app.message.contract.RouteReason
@@ -19,6 +22,7 @@ import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.message.contract.defaultNoticeCodePolicy
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -74,6 +78,65 @@ class DefaultAppNoticeDispatcherTest {
         assertEquals(1, systemDeliveries)
         assertEquals(NoticeDispatchStatus.DELIVERED, receipt.status)
         assertEquals(0, receipt.settingsVersion)
+    }
+
+    @Test
+    fun thrownSinkExceptionReleasesClaimAndReturnsRetryableFailure() = runBlocking {
+        var attempts = 0
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry { code ->
+                defaultNoticeCodePolicy(code).copy(deliveryPolicy = DeliveryPolicy.SYSTEM_ONLY)
+            },
+            settingsProvider = readySettings(),
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(sink(NoticeTarget.SYSTEM) {
+                attempts++
+                if (attempts == 1) throw IllegalStateException("temporary sink error")
+                SinkResult.Delivered
+            }),
+        )
+        val notice = newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "throwing-sink")
+
+        val failed = dispatcher.dispatch(notice)
+        val retried = dispatcher.dispatch(notice)
+
+        assertEquals(NoticeDispatchStatus.FAILED, failed.status)
+        assertEquals(NoticeDispatchStatus.DELIVERED, retried.status)
+        assertEquals(2, attempts)
+    }
+
+    @Test
+    fun fatalRouterErrorPropagatesAfterReleasingClaimForRetry() = runBlocking {
+        val fatal = AssertionError("fatal router error")
+        var shouldFail = true
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = NoticeRouter { _, _, _ ->
+                if (shouldFail) throw fatal
+                NoticeRoutePlan.allowed(setOf(NoticeTarget.SYSTEM))
+            },
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = readySettings(),
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(sink(NoticeTarget.SYSTEM) { SinkResult.Delivered }),
+        )
+        val notice = newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "fatal-router")
+
+        val actual = try {
+            dispatcher.dispatch(notice)
+            throw AssertionError("expected fatal router error")
+        } catch (error: AssertionError) {
+            error
+        }
+        shouldFail = false
+        val retried = dispatcher.dispatch(notice)
+
+        assertSame(fatal, actual)
+        assertEquals(NoticeDispatchStatus.DELIVERED, retried.status)
     }
 
     @Test
@@ -249,6 +312,10 @@ class DefaultAppNoticeDispatcherTest {
             notificationsEnabledBySystem = true,
             channelEnabled = true
         )
+    }
+
+    private fun readySettings() = MessageSettingsSnapshotProvider {
+        MessageSettingsSnapshot.Ready(1, MessageSettings())
     }
 
     private fun sink(

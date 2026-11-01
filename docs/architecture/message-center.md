@@ -32,6 +32,10 @@ flowchart LR
 5. `PREFER_*` 在首选目标不可用或投递失败时按策略回退；`SYSTEM_ONLY` 不回退。
 6. 投递完成后，至少一个目标成功才完成 eventId claim；所有目标失败时释放 claim，允许同一事件重试。
 
+Router/Sink 抛出的普通 `Exception` 映射为 `FAILED/NO_AVAILABLE_TARGET`，并释放 claim 供相同 eventId 重试；
+`CancellationException` 与 fatal JVM `Error` 清理 claim 后原样传播。Android system gateway 只把普通投递 `Exception`
+映射为 `SinkResult.Failed`，不会吞掉取消或 fatal `Error`。因此致命故障会终止当前队列 consumer 子协程并交给 coroutine 异常处理器，而不会伪装成单条普通投递失败。
+
 强制消息只绕过产品总开关、topic 和最低等级，不依赖通知设置快照中的用户偏好；快照仍在加载或读取失败时，使用中性系统开关值继续路由，
 但不绕过 Android 权限或系统 channel。普通消息遇到 Loading 则抑制，不占用去重 claim。
 
