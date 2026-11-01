@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.access.port.DatabaseResetSessionCoordinator
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.runtime.session.SecureSessionState
-import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -21,7 +21,7 @@ internal class SecureDatabaseResetCoordinator(
     private val sessionManager: DatabaseSessionLifecycle,
     private val lockStateManager: LockStateManager,
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
-    private val sensitiveDataKeyManager: SensitiveDataKeyManager,
+    private val sensitiveDataKeyClearer: SensitiveDataKeyClearer,
     private val authenticationState: MutableStateFlow<AuthenticationState>,
     private val databaseFailure: MutableStateFlow<Throwable?>,
 ) : DatabaseResetSessionCoordinator {
@@ -88,7 +88,7 @@ internal class SecureDatabaseResetCoordinator(
                                     collectCleanupFailure(cleanupFailure)
                                 }
                                 try {
-                                    sensitiveDataKeyManager.clear()
+                                    sensitiveDataKeyClearer.clear()
                                 } catch (cleanupFailure: Throwable) {
                                     collectCleanupFailure(cleanupFailure)
                                 }

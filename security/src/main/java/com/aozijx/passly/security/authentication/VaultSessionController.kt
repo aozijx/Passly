@@ -22,7 +22,7 @@ import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekUnlockResult
 import com.aozijx.passly.security.dek.DekManager
-import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.CancellationException
@@ -49,7 +49,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Singleton
 class VaultSessionController @Inject internal constructor(
     private val dekManager: DekManager,
-    private val sensitiveDataKeyManager: SensitiveDataKeyManager,
+    private val sensitiveDataKeyClearer: SensitiveDataKeyClearer,
     private val authorizationPermitRevoker: AuthorizationPermitRevoker,
     private val sessionManager: DatabaseSessionLifecycle,
     private val vaultBootstrapStore: VaultBootstrapStore,
@@ -68,7 +68,7 @@ class VaultSessionController @Inject internal constructor(
         sessionManager = sessionManager,
         lockStateManager = lockStateManager,
         authorizationPermitRevoker = authorizationPermitRevoker,
-        sensitiveDataKeyManager = sensitiveDataKeyManager,
+        sensitiveDataKeyClearer = sensitiveDataKeyClearer,
         authenticationState = _state,
         databaseFailure = _databaseFailure,
     )
@@ -388,7 +388,7 @@ class VaultSessionController @Inject internal constructor(
             fatal = failure
         }
         try {
-            sensitiveDataKeyManager.clear()
+            sensitiveDataKeyClearer.clear()
         } catch (failure: Error) {
             fatal = combineFatal(fatal, failure)
         }

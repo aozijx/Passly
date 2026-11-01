@@ -30,6 +30,7 @@ import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.DekState
 import com.aozijx.passly.security.dek.FieldKeyManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.lock.LockStateManager
@@ -115,6 +116,75 @@ class VaultSessionIdleTimeoutTest {
             }
 
             assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `fatal sensitive key clear still seals and locks`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("sensitive key clear fatal")
+            val session = YieldingDatabaseSession()
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                clearSensitiveKey = SensitiveDataKeyClearer { throw fatal },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, session.sealCount)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `fatal sensitive key clear during reset locks before propagating`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("sensitive key clear fatal")
+            val session = YieldingDatabaseSession()
+            var revoked = 0
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                revokeAuthorization = { revoked++ },
+                clearSensitiveKey = SensitiveDataKeyClearer { throw fatal },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.withExclusiveDatabaseReset {
+                    session.seal()
+                    IllegalStateException("ordinary reset failure")
+                }
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(1, revoked)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
             assertEquals(SecureSessionState.SEALED, session.lockState)
         } finally {
@@ -369,7 +439,7 @@ class VaultSessionIdleTimeoutTest {
             val lockState = LockStateManager()
             val controller = VaultSessionController(
                 dekManager = dekManager,
-                sensitiveDataKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
                 authorizationPermitRevoker = { },
                 sessionManager = session,
                 vaultBootstrapStore = bootstrap,
@@ -422,7 +492,7 @@ class VaultSessionIdleTimeoutTest {
             val lockState = LockStateManager().apply { mark(SecureSessionState.SOFT_LOCKED) }
             val controller = VaultSessionController(
                 dekManager = dekManager,
-                sensitiveDataKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
                 authorizationPermitRevoker = { },
                 sessionManager = session,
                 vaultBootstrapStore = bootstrap,
@@ -469,7 +539,7 @@ class VaultSessionIdleTimeoutTest {
             val lockState = LockStateManager()
             val controller = VaultSessionController(
                 dekManager = dekManager,
-                sensitiveDataKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
                 authorizationPermitRevoker = { },
                 sessionManager = session,
                 vaultBootstrapStore = bootstrap,
@@ -512,7 +582,7 @@ class VaultSessionIdleTimeoutTest {
             val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
             val controller = VaultSessionController(
                 dekManager = dekManager,
-                sensitiveDataKeyManager = SensitiveDataKeyManager(
+                sensitiveDataKeyClearer = SensitiveDataKeyManager(
                     bootstrap,
                     dekManager,
                     CoroutineScope(dispatcher),
@@ -566,7 +636,7 @@ class VaultSessionIdleTimeoutTest {
             val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
             val controller = VaultSessionController(
                 dekManager = dekManager,
-                sensitiveDataKeyManager = SensitiveDataKeyManager(
+                sensitiveDataKeyClearer = SensitiveDataKeyManager(
                     bootstrap,
                     dekManager,
                     CoroutineScope(dispatcher),
@@ -750,7 +820,7 @@ class VaultSessionIdleTimeoutTest {
             val timeout = MutableStateFlow(1L)
             val controller = VaultSessionController(
                 dekManager = dekManager,
-                sensitiveDataKeyManager = sensitiveKeyManager,
+                sensitiveDataKeyClearer = sensitiveKeyManager,
                 authorizationPermitRevoker = { },
                 sessionManager = databaseSession,
                 vaultBootstrapStore = bootstrap,
@@ -819,14 +889,16 @@ class VaultSessionIdleTimeoutTest {
         logger: RecordingLogger = RecordingLogger(),
         provisionInboxKey: suspend () -> Unit = {},
         revokeAuthorization: () -> Unit = {},
+        clearSensitiveKey: SensitiveDataKeyClearer? = null,
     ): VaultSessionController {
         val bootstrap = EmptyVaultBootstrapStore()
         val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
-        val sensitiveKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
+        val sensitiveDataKeyClearer = clearSensitiveKey
+            ?: SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
         val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
         return VaultSessionController(
             dekManager = dekManager,
-            sensitiveDataKeyManager = sensitiveKeyManager,
+            sensitiveDataKeyClearer = sensitiveDataKeyClearer,
             authorizationPermitRevoker = revokeAuthorization,
             sessionManager = databaseSession,
             vaultBootstrapStore = bootstrap,

@@ -1,11 +1,12 @@
 package com.aozijx.passly.security.di
 
 import com.aozijx.passly.core.crypto.FieldKeyProvider
-import com.aozijx.passly.security.dek.FieldKeyManager
-import com.aozijx.passly.security.dek.SensitiveKeyScope
-import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.runtime.session.SessionKeySource
+import com.aozijx.passly.security.dek.FieldKeyManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
+import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.SensitiveKeyScope
 import com.aozijx.passly.security.session.SecureSessionKeySource
 import dagger.Binds
 import dagger.Module
@@ -32,6 +33,12 @@ internal abstract class SensitiveKeyModule {
     abstract fun bindSensitiveKeyFreshnessState(
         implementation: SensitiveDataKeyManager,
     ): SensitiveKeyFreshnessState
+
+    @Binds
+    @Singleton
+    abstract fun bindSensitiveDataKeyClearer(
+        implementation: SensitiveDataKeyManager,
+    ): SensitiveDataKeyClearer
 
     companion object {
         @Provides

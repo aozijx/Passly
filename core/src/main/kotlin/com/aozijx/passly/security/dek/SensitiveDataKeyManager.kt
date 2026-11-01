@@ -27,7 +27,7 @@ class SensitiveDataKeyManager @Inject constructor(
     private val vaultBootstrapStore: VaultBootstrapStore,
     private val dekManager: DekManager,
     @param:SensitiveKeyScope private val scope: CoroutineScope
-) : SensitiveKeyFreshnessState {
+) : SensitiveKeyFreshnessState, SensitiveDataKeyClearer {
     private val mutex = Mutex()
     private val random = SecureRandom()
     private var cachedKey: ByteArray? = null
@@ -68,7 +68,7 @@ class SensitiveDataKeyManager @Inject constructor(
         }
     }
 
-    suspend fun clear() = mutex.withLock { clearCachedKey() }
+    override suspend fun clear() = mutex.withLock { clearCachedKey() }
 
     private suspend fun loadOrCreateKey(): ByteArray {
         val wrappingKey = deriveWrappingKey()
