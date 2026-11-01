@@ -455,3 +455,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - RED/GREEN：新增测试先在旧实现上按预期失败，再覆盖普通模板、嵌套表达式、嵌套模板、raw template，以及转义美元符号、纯字符串文本和注释 decoy；实现后全部通过。
 - 文档：包边界页明确注释和字符串文本忽略，但模板表达式仍按可执行代码检查。
 - 验证：`:buildSrc:test --tests "passly.SourceBoundaryPolicyTest" --no-parallel --max-workers=1` 与 `:buildSrc:test verifyArchitecture --no-parallel --max-workers=1` 均通过；`git diff --check` 通过。
+
+### 后续批次：边界验证器扫描跨行限定名（2026-11-01）
+
+- 根因：完全限定名检查逐行应用正则，Kotlin 允许点号续行，因而跨行的 `com.aozijx.passly` + `.data...` 可拆开避过前缀判断。
+- 修复：对已屏蔽注释和字符串的完整源码扫描限定名，允许点号两侧存在空白并规范化后执行规则匹配；每条违规仍归到匹配起始行，import 行继续由 import 规则处理。
+- RED/GREEN：新测试在旧实现上因无违规被拒绝而失败；修复后检测跨行禁止引用，并断言诊断证据是原始起始行。
+- 文档：包边界页说明 Kotlin 点号续行会按完整引用检查。
+- 验证：`:buildSrc:test` 和 `verifyArchitecture` 通过；`git diff --check` 通过。

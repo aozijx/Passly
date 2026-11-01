@@ -1,7 +1,8 @@
 package passly
 
 internal object SourceBoundaryVerifier {
-    private val qualifiedNamePattern = Regex("""[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+""")
+    private val qualifiedNamePattern = Regex("""[A-Za-z_][A-Za-z0-9_]*(?:\s*\.\s*[A-Za-z_][A-Za-z0-9_]*)+""")
+    private val dotWhitespacePattern = Regex("""\s*\.\s*""")
 
     fun verify(
         sources: List<EditorSource>,
@@ -10,8 +11,10 @@ internal object SourceBoundaryVerifier {
         sources.forEach { source ->
             val normalizedPath = "/${source.path.replace('\\', '/').trimStart('/')}"
             val code = maskCommentsAndStrings(source.content)
+            val rawLines = source.content.lineSequence().toList()
+            val codeLines = code.lineSequence().toList()
             rules.filter { it.appliesTo(normalizedPath) }.forEach { rule ->
-                source.content.lineSequence().zip(code.lineSequence()).forEach { (rawLine, codeLine) ->
+                rawLines.zip(codeLines).forEach { (rawLine, codeLine) ->
                     val evidence = rawLine.trim()
                     val codeEvidence = codeLine.trim()
                     parseImport(codeEvidence)?.let { importedType ->
@@ -19,16 +22,22 @@ internal object SourceBoundaryVerifier {
                             add(rule.violation(source.path, evidence))
                         }
                     }
-                    if (!codeEvidence.startsWith("import ") &&
-                        qualifiedNamePattern.findAll(codeLine).any { match ->
-                            rule.isForbiddenReference(match.value)
-                        }
-                    ) {
-                        add(rule.violation(source.path, evidence))
-                    }
                     if (rule.forbiddenContentMarkers.any(codeEvidence::contains)
                     ) {
                         add(rule.violation(source.path, evidence))
+                    }
+                }
+                val forbiddenReferenceLines = qualifiedNamePattern.findAll(code)
+                    .filter { match ->
+                        val reference = match.value.replace(dotWhitespacePattern, ".")
+                        rule.isForbiddenReference(reference)
+                    }
+                    .map { match -> code.substring(0, match.range.first).count { it == '\n' } }
+                    .distinct()
+                forbiddenReferenceLines.forEach { lineIndex ->
+                    val codeLine = codeLines.getOrNull(lineIndex).orEmpty().trimStart()
+                    if (!codeLine.startsWith("import ")) {
+                        add(rule.violation(source.path, rawLines.getOrNull(lineIndex).orEmpty().trim()))
                     }
                 }
             }

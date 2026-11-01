@@ -311,6 +311,19 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun fullyQualifiedReferencesContinueAcrossLinesAndReportTheirStartingLine() {
+        val source = EditorSource(
+            path = "app/src/main/java/com/aozijx/passly/feature/sync_engine2/presentation/Route.kt",
+            content = "val repository = com.aozijx.passly\n    .data.repository.EntryRepositoryImpl",
+        )
+
+        val violation = SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.layerRules).single()
+
+        assertEquals("LAYER_FEATURE_PRESENTATION", violation.ruleId)
+        assertEquals("val repository = com.aozijx.passly", violation.evidence)
+    }
+
+    @Test
     fun directDomainConsumersAreRequiredByTheModulePolicy() {
         val requiredEdges = setOf(
             edge(":app", ":domain"),
