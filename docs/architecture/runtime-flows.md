@@ -28,6 +28,11 @@ sequenceDiagram
 会在不可取消清理区撤销已发布句柄、尝试关闭新句柄并恢复 SEALED。清理期间的 fatal `Error` 会覆盖普通失败并保留原始失败为
 suppressed；主失败本身为 fatal 时保持主错误并附加清理错误。key buffer 在 `unlock()` 的 `finally` 中归零。
 
+session transition event 由 `SessionEventSink` best-effort 记录，普通遥测 `Exception` 不回滚已提交的状态或资源操作；
+取消和 fatal `Error` 仍向调用方传播。`DRAIN_TIMEOUT` 遥测失败会延后到 lease 取消和资源关闭完成后传播，因此日志可能缺少后续
+的 `SEAL` 事件，但 session 仍保持 SEALED，且资源结果不由日志采集决定。生产的 `DatabaseSessionEventLogger` 将事件转为
+结构化 Logger 记录；`DefaultLogger` 隔离普通日志 sink 错误，Runtime 边界继续处理 Logger 其余普通异常。
+
 恢复码走独立流程：`RECOVER_AUTH_METHODS` 解封同一个 DEK 后只发布 `RecoveryMode`，不会发布普通
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 

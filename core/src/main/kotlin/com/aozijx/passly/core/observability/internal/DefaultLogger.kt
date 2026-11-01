@@ -221,8 +221,10 @@ class DefaultLogger(
             sinks.forEach { sink ->
                 try {
                     sink.emit(result.record)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (_: Exception) {
-                    // A diagnostic sink must never change application behavior.
+                    // Ordinary diagnostic sink failures must not change application behavior.
                 }
             }
         }

@@ -302,11 +302,13 @@
 
 ## Task 55：隔离 Runtime Session 状态转换与遥测 sink 故障
 
-- [ ] 明确 `SessionEventSink` 是非权威遥测边界：普通日志/采集失败不得改变资源 open、soft-lock、resume、seal 的业务结果；fatal `Error` 仍按 AGENTS 的清理后传播规则处理，不得伪装为可恢复转换失败。不要把转换前后的事件日志失败当成底层资源 `open/close` 失败。
-- [ ] 保持状态迁移与资源动作的真实终态一致。特别是 `SessionLeaseGate.open()` 已发布 handle 和 `UNLOCKED` 后才发 `OPEN` 事件；若 sink 抛普通异常，当前 catch 会按资源 open 失败执行 `discardOpened()`、关闭 handle，再尝试发 `OPEN_FAILED`。对 `softLock()`、`resumeIfOpen()` 与 `seal()` 也核对“状态已提交但 event sink 抛错”的调用结果；收尾事件的失败不可覆盖原始资源错误或取消。
-- [ ] 增加 Runtime Session 测试替身令 sink 在 OPEN/RESUME/SOFT_LOCK/SEAL/CLOSE_FAILED/DRAIN_TIMEOUT 各阶段抛 `IllegalStateException`、`CancellationException` 与 `AssertionError`；验证哪些事件允许丢失、业务状态/资源句柄仍符合转换结果、取消仍传播、fatal 只在必要清理后传播且原始原因保留。覆盖 Data 的 `DatabaseSessionEventLogger` 到生产 Logger adapter 行为，并运行 Runtime/Data session 定向测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 明确 `SessionEventSink` 是非权威遥测边界：普通日志/采集失败不得改变资源 open、soft-lock、resume、seal 的业务结果；fatal `Error` 仍按 AGENTS 的清理后传播规则处理，不得伪装为可恢复转换失败。不要把转换前后的事件日志失败当成底层资源 `open/close` 失败。
+- [x] 保持状态迁移与资源动作的真实终态一致。特别是 `SessionLeaseGate.open()` 已发布 handle 和 `UNLOCKED` 后才发 `OPEN` 事件；普通遥测异常会被隔离，不再按资源 open 失败执行 `discardOpened()` 或关闭 handle。对 `softLock()`、`resumeIfOpen()` 与 `seal()` 也核对“状态已提交但 event sink 抛错”的调用结果；收尾事件的失败不可覆盖原始资源错误或取消。
+- [x] 增加 Runtime Session 测试替身令 sink 在 OPEN/RESUME/SOFT_LOCK/SEAL/CLOSE_FAILED/DRAIN_TIMEOUT 各阶段抛 `IllegalStateException`、`CancellationException` 与 `AssertionError`；验证哪些事件允许丢失、业务状态/资源句柄仍符合转换结果、取消仍传播、fatal 只在必要清理后传播且原始原因保留。覆盖 Data 的 `DatabaseSessionEventLogger` 到生产 Logger adapter 行为，并运行 Runtime/Data session 定向测试、`verifyArchitecture` 与 `git diff --check`。
 
 **证据：** `RuntimeSessionManager` 将可挂起的 `SessionEventSink.emit()` 注入公开状态机，接口没有记录 sink 必须无异常或 best-effort。`SessionLeaseGate.open()` 在 `resource.open(key)` 成功、发布 `handle` 并将状态改成 UNLOCKED 后调用 `emitTransition(OPEN)`；该调用若抛错会落入同一个 `catch(Throwable)`，先撤销/关闭已发布 handle，再将正常成功改写为 `OpenFailed`，并再次调用 sink 记录 `OPEN_FAILED`。`softLock()`/`resumeIfOpen()` 在状态写入后才发 transition，`seal()` 在 close 后发 SEAL，sink 异常同样使调用方看到与已提交状态不同的失败。生产 `AppDatabaseSession` 使用 `SessionEventSink(eventLogger::record)`；`DatabaseSessionEventLogger.record()` 直接调用 `Logger.inSpan/log`，自身没有故障隔离。`DefaultLogger` 会隔离各 `LogSink` 的普通 `Exception`，但 sanitize、聚合与事件构造发生在该 sink catch 之外，因此 adapter 没有类型级不抛保证。现有 Runtime 测试只注入成功的列表 sink 或 `None`，未测试事件 sink 失败时状态/资源转换是否仍一致。此项区分资源关闭结果、并发状态转换与 fatal 错误映射，聚焦非权威遥测对已提交 session 状态的反向控制。
+
+**实现进度（2026-11-02）：** 已完成实现与验证。Runtime 在单一事件边界忽略普通 `Exception`，保留取消/fatal 传播；DRAIN_TIMEOUT 的取消/fatal 延后到 lease 取消、close 和 SEALED 恢复后传播。`DefaultLogger` 也在同步 `LogSink` 边界保留 `CancellationException`，普通 sink 异常仍隔离。Runtime Session 测试为 27 tests、Data adapter 定向测试为 5 tests、Core `DefaultLogger` 定向测试为 3 tests，均 0 failures/errors；`:runtime:session:test verifyArchitecture --max-workers=32`、Data/Core 定向测试及 `git diff --check` 均通过。
 
 ## Task 56：移除未消费且无 fresh authorization 的完整敏感字段读取端口
 

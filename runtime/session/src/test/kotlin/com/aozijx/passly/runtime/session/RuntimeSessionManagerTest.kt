@@ -129,15 +129,15 @@ class RuntimeSessionManagerTest {
     }
 
     @Test
-    fun `cleanup fatal error supersedes ordinary open failure after sealing and suppresses it`() = runBlocking {
-        val openFailure = IOException("open transition failed")
+    fun `cleanup fatal error supersedes open cancellation after sealing and suppresses it`() = runBlocking {
+        val openCancellation = CancellationException("open transition cancelled")
         val closeFatal = AssertionError("failed-open cleanup fatal")
         val resource = FakeResource(closeFailure = closeFatal)
         val manager = RuntimeSessionManager(
             resource = resource,
             keySource = SessionKeySource { byteArrayOf(9) },
             eventSink = SessionEventSink { event ->
-                if (event.reason == SessionTransitionReason.OPEN) throw openFailure
+                if (event.reason == SessionTransitionReason.OPEN) throw openCancellation
             },
         )
 
@@ -149,10 +149,246 @@ class RuntimeSessionManagerTest {
         }
 
         assertSame(closeFatal, caught)
-        assertTrue(closeFatal.suppressed.any { it === openFailure })
+        assertTrue(closeFatal.suppressed.any { it === openCancellation })
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         assertEquals(1, resource.closeAttempts)
         assertFalse(resource.closed)
+    }
+
+    @Test
+    fun `ordinary telemetry failure does not change open resume soft lock or seal outcomes`() = runBlocking {
+        val resource = FakeResource()
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { throw IllegalStateException("telemetry unavailable") },
+        )
+
+        assertEquals(SessionUnlockResult.Success, manager.unlock())
+        assertEquals(SecureSessionState.UNLOCKED, manager.lockState)
+        manager.softLock()
+        assertEquals(SecureSessionState.SOFT_LOCKED, manager.lockState)
+        assertEquals(SessionUnlockResult.Success, manager.unlock())
+        assertEquals(SecureSessionState.UNLOCKED, manager.lockState)
+        assertTrue(manager.seal().isSuccess)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertTrue(resource.closed)
+    }
+
+    @Test
+    fun `ordinary close event failure preserves the resource close result`() = runBlocking {
+        val closeFailure = IOException("database close failed")
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(closeFailure = closeFailure),
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.CLOSE_FAILED) {
+                    throw IllegalStateException("telemetry unavailable")
+                }
+            },
+        )
+        manager.unlock()
+
+        val result = manager.seal()
+
+        val reportedFailure = requireNotNull(result.exceptionOrNull())
+        assertEquals(closeFailure.javaClass, reportedFailure.javaClass)
+        assertEquals(closeFailure.message, reportedFailure.message)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        val retry = manager.unlock()
+        assertTrue(retry is SessionUnlockResult.OpenFailed)
+        val retryFailure = (retry as SessionUnlockResult.OpenFailed).cause
+        assertEquals(closeFailure.javaClass, retryFailure.javaClass)
+        assertEquals(closeFailure.message, retryFailure.message)
+    }
+
+    @Test
+    fun `ordinary drain timeout event failure does not skip lease cancellation or close`() = runBlocking {
+        val leaseStarted = CompletableDeferred<Unit>()
+        val resource = FakeResource()
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) {
+                    throw IllegalStateException("telemetry unavailable")
+                }
+            },
+        )
+        manager.unlock()
+        val reader = launch {
+            manager.read {
+                leaseStarted.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        leaseStarted.await()
+
+        val result = try {
+            manager.seal(timeout = 1.milliseconds)
+        } finally {
+            reader.cancelAndJoin()
+        }
+
+        assertTrue(result.isSuccess)
+        assertTrue(reader.isCancelled)
+        assertTrue(resource.closed)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `drain timeout cancellation propagates after cancelling leases and closing resource`() = runBlocking {
+        val leaseStarted = CompletableDeferred<Unit>()
+        val resource = FakeResource()
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) {
+                    throw CancellationException("telemetry cancelled")
+                }
+            },
+        )
+        manager.unlock()
+        val reader = launch {
+            manager.read {
+                leaseStarted.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        leaseStarted.await()
+
+        val caught = try {
+            try {
+                manager.seal(timeout = 1.milliseconds)
+                null
+            } catch (error: CancellationException) {
+                error
+            }
+        } finally {
+            reader.cancelAndJoin()
+        }
+
+        assertTrue(caught is CancellationException)
+        assertTrue(reader.isCancelled)
+        assertTrue(resource.closed)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `drain timeout fatal telemetry error propagates after cancelling leases and closing resource`() = runBlocking {
+        val leaseStarted = CompletableDeferred<Unit>()
+        val fatal = AssertionError("telemetry fatal")
+        val resource = FakeResource()
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) throw fatal
+            },
+        )
+        manager.unlock()
+        val reader = launch {
+            manager.read {
+                leaseStarted.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        leaseStarted.await()
+
+        val caught = try {
+            try {
+                manager.seal(timeout = 1.milliseconds)
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+        } finally {
+            reader.cancelAndJoin()
+        }
+
+        assertSame(fatal, caught)
+        assertTrue(reader.isCancelled)
+        assertTrue(resource.closed)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `cancellation and fatal telemetry errors preserve each transition outcome`() = runBlocking {
+        val reasons = listOf(
+            SessionTransitionReason.OPEN,
+            SessionTransitionReason.RESUME,
+            SessionTransitionReason.SOFT_LOCK,
+            SessionTransitionReason.SEAL,
+            SessionTransitionReason.CLOSE_FAILED,
+        )
+        val failures = listOf<Throwable>(
+            CancellationException("telemetry cancelled"),
+            AssertionError("telemetry fatal"),
+        )
+
+        reasons.forEach { reason ->
+            failures.forEach { failure ->
+                val resource = FakeResource(
+                    closeFailure = if (reason == SessionTransitionReason.CLOSE_FAILED) {
+                        IOException("database close failed")
+                    } else {
+                        null
+                    },
+                )
+                val manager = RuntimeSessionManager(
+                    resource = resource,
+                    keySource = SessionKeySource { byteArrayOf(9) },
+                    eventSink = SessionEventSink { event ->
+                        if (event.reason == reason) throw failure
+                    },
+                )
+                if (reason != SessionTransitionReason.OPEN) manager.unlock()
+                if (reason == SessionTransitionReason.RESUME) manager.softLock()
+
+                val caught = try {
+                    when (reason) {
+                        SessionTransitionReason.OPEN -> manager.unlock()
+                        SessionTransitionReason.RESUME -> manager.unlock()
+                        SessionTransitionReason.SOFT_LOCK -> manager.softLock()
+                        SessionTransitionReason.SEAL,
+                        SessionTransitionReason.CLOSE_FAILED -> manager.seal()
+                        else -> error("Unexpected transition $reason")
+                    }
+                    null
+                } catch (error: Throwable) {
+                    error
+                }
+
+                if (failure is Error) assertSame(failure, caught) else assertTrue(caught is CancellationException)
+                when (reason) {
+                    SessionTransitionReason.OPEN -> {
+                        assertEquals(SecureSessionState.SEALED, manager.lockState)
+                        assertTrue(resource.closed)
+                        assertEquals(1, resource.closeAttempts)
+                    }
+                    SessionTransitionReason.RESUME -> {
+                        assertEquals(SecureSessionState.UNLOCKED, manager.lockState)
+                        assertFalse(resource.closed)
+                    }
+                    SessionTransitionReason.SOFT_LOCK -> {
+                        assertEquals(SecureSessionState.SOFT_LOCKED, manager.lockState)
+                        assertFalse(resource.closed)
+                    }
+                    SessionTransitionReason.SEAL -> {
+                        assertEquals(SecureSessionState.SEALED, manager.lockState)
+                        assertTrue(resource.closed)
+                    }
+                    SessionTransitionReason.CLOSE_FAILED -> {
+                        assertEquals(SecureSessionState.SEALED, manager.lockState)
+                        assertFalse(resource.closed)
+                        assertEquals(1, resource.closeAttempts)
+                        assertTrue(requireNotNull(caught).suppressed.any { it is IOException })
+                    }
+                    else -> error("Unexpected transition $reason")
+                }
+            }
+        }
     }
 
     @Test

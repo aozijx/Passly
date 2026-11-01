@@ -32,6 +32,7 @@ data class SessionTransitionEvent(
     }
 }
 
+/** Best-effort telemetry; ordinary failures are ignored, while cancellation and fatal errors propagate. */
 fun interface SessionEventSink {
     suspend fun emit(event: SessionTransitionEvent)
 

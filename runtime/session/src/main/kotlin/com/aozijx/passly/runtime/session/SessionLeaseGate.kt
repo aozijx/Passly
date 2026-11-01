@@ -118,14 +118,19 @@ internal class SessionLeaseGate<Handle : Any>(
             throw error
         } catch (error: Exception) {
             discardOpened(opened, published, error)?.let { throw it }
-            emitTransition(
-                startedAt,
-                fromState,
-                SecureSessionState.SEALED,
-                SessionTransitionReason.OPEN_FAILED,
-                SessionLockType.NONE,
-                error = error,
-            )
+            try {
+                emitTransition(
+                    startedAt,
+                    fromState,
+                    SecureSessionState.SEALED,
+                    SessionTransitionReason.OPEN_FAILED,
+                    SessionLockType.NONE,
+                    error = error,
+                )
+            } catch (eventFailure: Throwable) {
+                addSuppressed(eventFailure, error)
+                throw eventFailure
+            }
             SessionUnlockResult.OpenFailed(error)
         }
     }
@@ -200,7 +205,34 @@ internal class SessionLeaseGate<Handle : Any>(
         val drained = withTimeoutOrNull(timeout) {
             while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
         }
-        if (drained == null) {
+        val (closeResult, transitionFailure) = if (drained == null) {
+            closeAfterDrainTimeout(startedAt, fromState, timeout)
+        } else {
+            close() to null
+        }
+        transitionFailure?.let { throw it }
+        try {
+            emitTransition(
+                startedAt,
+                fromState,
+                SecureSessionState.SEALED,
+                SessionTransitionReason.SEAL,
+                SessionLockType.SEALED,
+                timeoutMs = timeout.inWholeMilliseconds,
+            )
+        } catch (eventFailure: Throwable) {
+            closeResult.exceptionOrNull()?.let { addSuppressed(eventFailure, it) }
+            throw eventFailure
+        }
+        return closeResult
+    }
+
+    private suspend fun closeAfterDrainTimeout(
+        startedAt: Long,
+        fromState: SecureSessionState,
+        timeout: Duration,
+    ): Pair<Result<Unit>, Throwable?> {
+        var transitionFailure = try {
             emitTransition(
                 startedAt,
                 fromState,
@@ -210,22 +242,34 @@ internal class SessionLeaseGate<Handle : Any>(
                 timeoutMs = timeout.inWholeMilliseconds,
                 activeLeaseCount = activeLeases.get(),
             )
-            leaseOwners.keys.forEach(Job::cancel)
+            null
+        } catch (failure: CancellationException) {
+            failure
+        } catch (failure: Error) {
+            failure
+        }
+        leaseOwners.keys.forEach(Job::cancel)
+        var closeThrown: Throwable? = null
+        val closeResult = withContext(NonCancellable) {
             withTimeoutOrNull(POST_CANCEL_GRACE_MS) {
                 while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
             }
+            try {
+                close()
+            } catch (failure: Throwable) {
+                closeThrown = failure
+                Result.failure(failure)
+            }
         }
-
-        val closeResult = close()
-        emitTransition(
-            startedAt,
-            fromState,
-            SecureSessionState.SEALED,
-            SessionTransitionReason.SEAL,
-            SessionLockType.SEALED,
-            timeoutMs = timeout.inWholeMilliseconds,
-        )
-        return closeResult
+        closeThrown?.let { failure ->
+            transitionFailure = transitionFailure?.let { combineFailures(it, failure) } ?: failure
+        }
+        if (closeThrown == null && transitionFailure != null) {
+            closeResult.exceptionOrNull()?.let { failure ->
+                transitionFailure = combineFailures(requireNotNull(transitionFailure), failure)
+            }
+        }
+        return closeResult to transitionFailure
     }
 
     suspend fun closeFailure(): Throwable? = resourceMutex.withLock { closeFailure }
@@ -268,6 +312,7 @@ internal class SessionLeaseGate<Handle : Any>(
                         if (it !== eventError) it.addSuppressed(eventError)
                         throw it
                     }
+                    addSuppressed(eventError, closeError)
                     throw eventError
                 }
                 fatalClose?.let { throw it }
@@ -315,19 +360,36 @@ internal class SessionLeaseGate<Handle : Any>(
         activeLeaseCount: Int = 0,
         error: Throwable? = null,
     ) {
-        eventSink.emit(
-            SessionTransitionEvent(
-                fromState = fromState,
-                toState = toState,
-                owner = SessionTransitionOwner.SESSION_RUNTIME,
-                reason = reason,
-                lockType = lockType,
-                elapsedMs = (elapsedRealtimeMs() - startedAt).coerceAtLeast(0),
-                timeoutMs = timeoutMs,
-                activeLeaseCount = activeLeaseCount,
-                error = error,
-            ),
-        )
+        try {
+            eventSink.emit(
+                SessionTransitionEvent(
+                    fromState = fromState,
+                    toState = toState,
+                    owner = SessionTransitionOwner.SESSION_RUNTIME,
+                    reason = reason,
+                    lockType = lockType,
+                    elapsedMs = (elapsedRealtimeMs() - startedAt).coerceAtLeast(0),
+                    timeoutMs = timeoutMs,
+                    activeLeaseCount = activeLeaseCount,
+                    error = error,
+                ),
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Telemetry is best-effort and cannot own session state transitions.
+        }
+    }
+
+    private fun combineFailures(primary: Throwable, secondary: Throwable): Throwable {
+        val result = if (primary is Error || secondary !is Error) primary else secondary
+        val suppressed = if (result === primary) secondary else primary
+        addSuppressed(result, suppressed)
+        return result
+    }
+
+    private fun addSuppressed(primary: Throwable, secondary: Throwable) {
+        if (primary !== secondary) primary.addSuppressed(secondary)
     }
 
     private fun elapsedRealtimeMs(): Long = System.nanoTime() / NANOS_PER_MILLISECOND
