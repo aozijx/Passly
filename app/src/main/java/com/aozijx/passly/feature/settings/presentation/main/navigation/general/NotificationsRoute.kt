@@ -1,5 +1,8 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.general
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -51,6 +54,7 @@ internal fun NotificationsRoute(
     val viewModel: NotificationSettingsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val noticePublisher = LocalAppNoticePublisher.current
@@ -130,8 +134,10 @@ internal fun NotificationsRoute(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             permissionLaunch = NotificationPermissionLaunch.Idle
-            viewModel.onAction(NotificationSettingsAction.CancelRuntimePermissionRequest)
-            viewModel.onPageExited(owner)
+            viewModel.onPageExited(
+                owner,
+                preservePendingPermissionRequest = activity?.isChangingConfigurations == true,
+            )
         }
     }
 
@@ -151,4 +157,10 @@ internal fun NotificationsRoute(
             }
         }
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

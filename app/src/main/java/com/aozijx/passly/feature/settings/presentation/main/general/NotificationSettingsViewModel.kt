@@ -24,7 +24,11 @@ class NotificationSettingsViewModel @Inject constructor(
 ) : ViewModel() {
     private sealed interface PermissionRequestState {
         data object Idle : PermissionRequestState
-        data class Pending(val request: NotificationPermissionRequest, val enableWhenGranted: Boolean) : PermissionRequestState
+        data class Pending(
+            val request: NotificationPermissionRequest,
+            val enableWhenGranted: Boolean,
+            val owner: Any?,
+        ) : PermissionRequestState
     }
     private var permissionRequestState: PermissionRequestState = PermissionRequestState.Idle
     private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
@@ -72,9 +76,6 @@ class NotificationSettingsViewModel @Inject constructor(
                 if (pending.enableWhenGranted) emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
             }
 
-            NotificationSettingsAction.CancelRuntimePermissionRequest ->
-                permissionRequestState = PermissionRequestState.Idle
-
             NotificationSettingsAction.RefreshSystemNotificationState ->
                 readSystemNotificationState()
 
@@ -101,7 +102,11 @@ class NotificationSettingsViewModel @Inject constructor(
         when {
             !system.runtimePermissionGranted -> {
                 val request = NotificationPermissionRequest()
-                permissionRequestState = PermissionRequestState.Pending(request, enableWhenGranted = true)
+                permissionRequestState = PermissionRequestState.Pending(
+                    request,
+                    enableWhenGranted = true,
+                    owner = pageEffects.currentOwner,
+                )
                 emitEffect(NotificationSettingsEffect.RequestRuntimeNotificationPermission(request))
             }
 
@@ -112,12 +117,15 @@ class NotificationSettingsViewModel @Inject constructor(
 
     internal fun canLaunchRuntimePermissionRequest(request: NotificationPermissionRequest): Boolean {
         val pending = permissionRequestState
-        return pending is PermissionRequestState.Pending && pending.request === request && pending.enableWhenGranted
+        return pending is PermissionRequestState.Pending &&
+            pending.request === request &&
+            pending.enableWhenGranted &&
+            pending.owner?.let(pageEffects::isActive) == true
     }
 
     private fun completeRuntimePermissionRequest(request: NotificationPermissionRequest) {
         val pending = permissionRequestState as? PermissionRequestState.Pending ?: return
-        if (pending.request !== request) return
+        if (pending.request !== request || pending.owner?.let(pageEffects::isActive) != true) return
         permissionRequestState = PermissionRequestState.Idle
         val system = readSystemNotificationState()
         if (!pending.enableWhenGranted) return
@@ -154,11 +162,35 @@ class NotificationSettingsViewModel @Inject constructor(
     }
 
     fun onPageEntered(): Any {
-        return pageEffects.enter()
+        pageEffects.currentOwner?.let(::cancelPermissionRequest)
+        val owner = pageEffects.enter()
+        val pending = permissionRequestState as? PermissionRequestState.Pending
+        if (pending != null && pending.owner == null && pending.enableWhenGranted) {
+            permissionRequestState = pending.copy(owner = owner)
+            emitEffect(owner, NotificationSettingsEffect.RequestRuntimeNotificationPermission(pending.request))
+        }
+        return owner
     }
 
-    fun onPageExited(owner: Any) {
+    fun onPageExited(
+        owner: Any,
+        preservePendingPermissionRequest: Boolean = false,
+    ) {
+        if (!pageEffects.isActive(owner)) return
+        val pending = permissionRequestState as? PermissionRequestState.Pending
+        if (pending?.owner === owner) {
+            permissionRequestState = if (preservePendingPermissionRequest && pending.enableWhenGranted) {
+                pending.copy(owner = null)
+            } else {
+                PermissionRequestState.Idle
+            }
+        }
         pageEffects.exit(owner)
+    }
+
+    private fun cancelPermissionRequest(owner: Any) {
+        val pending = permissionRequestState as? PermissionRequestState.Pending ?: return
+        if (pending.owner === owner) permissionRequestState = PermissionRequestState.Idle
     }
 
     private fun readSystemNotificationState() =

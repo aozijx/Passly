@@ -159,11 +159,12 @@ class NotificationSettingsViewModelTest {
         val repository = RecordingMessageSettingsRepository()
         var system = unavailableState(false)
         val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
-            .also { it.onPageEntered() }
+        val owner = model.onPageEntered()
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
-        model.onAction(NotificationSettingsAction.CancelRuntimePermissionRequest)
         val oldRequest = model.nextPermissionRequest()
+        model.onPageExited(owner)
         assertEquals(false, model.canLaunchRuntimePermissionRequest(oldRequest))
+        model.onPageEntered()
         model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
         val currentRequest = model.nextPermissionRequest()
         assertTrue(model.canLaunchRuntimePermissionRequest(currentRequest))
@@ -247,6 +248,43 @@ class NotificationSettingsViewModelTest {
         assertEquals(listOf(MessageTopic.SECURITY to false), repository.topicWrites)
     }
 
+    @Test
+    fun `configuration recreation reissues the same pending request and commits the granted setting`() = runTest {
+        val repository = RecordingMessageSettingsRepository()
+        var system = unavailableState(runtimePermissionGranted = false)
+        val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
+        val oldOwner = model.onPageEntered()
+        model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
+        val request = model.nextPermissionRequest()
+
+        model.onPageExited(oldOwner, preservePendingPermissionRequest = true)
+        val newOwner = model.onPageEntered()
+        val restoredRequest = model.nextPermissionRequest()
+        system = availableState()
+        model.onAction(NotificationSettingsAction.RuntimePermissionGranted(restoredRequest))
+        advanceUntilIdle()
+
+        assertTrue(newOwner !== oldOwner)
+        assertTrue(restoredRequest === request)
+        assertEquals(listOf(true), repository.systemNotificationWrites)
+    }
+
+    @Test
+    fun `late dispose from an old page owner cannot cancel the new page request`() = runTest {
+        val repository = RecordingMessageSettingsRepository()
+        val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { unavailableState(false) })
+        val oldOwner = model.onPageEntered()
+        model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
+        model.nextPermissionRequest()
+
+        model.onPageExited(oldOwner, preservePendingPermissionRequest = true)
+        val currentOwner = model.onPageEntered()
+        val currentRequest = model.nextPermissionRequest()
+        model.onPageExited(oldOwner, preservePendingPermissionRequest = false)
+
+        assertTrue(currentOwner !== oldOwner)
+        assertTrue(model.canLaunchRuntimePermissionRequest(currentRequest))
+    }
     private fun viewModel(
         repository: RecordingMessageSettingsRepository,
         state: SystemNotificationState,

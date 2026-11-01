@@ -552,3 +552,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：`DiscoverAutofillCandidates` 在已存在 `CandidatesReady` interaction 且请求指定 direct entry 时返回语义 `ResumeSelection`，避免重新搜索；`AutofillFillViewModel` 不再依赖 `AutofillInteractionStore` 或读取状态枚举。普通候选发现路径不变。
 - 安全校验：续接结果仍交给 `ResolveAutofillSelection`，继续校验交互 scope/state 和目标条目是否属于已展示候选；Credential Manager 与 Legacy protocol adapter 对新增 outcome 都有显式处理。
 - 回归：新增用例先观察到旧签名拒绝 `directEntryId` 后失败，再验证已有候选被续接且 repository search 仍只调用一次。Activity configuration recreation 与平台回调生命周期覆盖仍是 Task 21 未完成项。
+
+### 后续批次：保留通知权限开启意图跨 Activity 配置重建（2026-11-01）
+
+- 修复：`NotificationsRoute` 销毁时识别 Activity 配置重建，将待处理开通意图与同一 `NotificationPermissionRequest` 暂存于仍保留的 ViewModel；新 Route 进入后重新绑定 page owner 并重新提交该请求给新的 Activity Result host。授权回调仍读取当前 Android 权限状态，再按有效开通意图保存产品开关。
+- 所有权：等待请求带 page owner；真正离页会取消当前 owner 的请求，新的页面 owner 进入时也会使旧 owner 请求失效。迟到的旧 Route dispose 和旧 request 结果不会取消或完成新 owner 的请求。
+- 回归：ViewModel 用例覆盖配置重建后相同 request token 恢复并只写一次、旧 owner dispose 不取消新 owner 请求、真正离页使旧结果失效。现有 `PermissionRequestHostTest` 覆盖宿主替换后拒绝旧 launch/result 并释放 arbiter lease。
+- 文档：权限中心及通知设置文档更新配置重建/真离页合同。未连接 Android 设备；尚未运行真实 `AppCompatDelegate.setApplicationLocales()` Activity recreation 与系统授权弹窗组合验证，该 Compose/Activity Result 行为项仍待设备验收。

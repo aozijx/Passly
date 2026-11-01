@@ -43,6 +43,9 @@ flowchart LR
 - `rememberPermissionRequestHost` 按 owner、Activity 和服务依赖创建会话，并按会话隔离 Activity Result 注册。
   更换宿主会注销旧 launcher 并关闭旧会话；旧结果不会消费新请求。已失效 launcher 的平台异常返回 `HostUnavailable`，
   其他异常清理租约后继续传播；页面不能保留全局请求占用来等待一个已无所有者的回调。
+- 通知设置页在 Activity 配置重建时由 ViewModel 保留同一开通请求和用户意图；旧 Route 释放自己的页面 owner 后，
+  新 Route 重新绑定该请求并在新 Activity Result host 上发起/接收结果。真正离页会按原 page owner 取消；迟到的旧 owner
+  dispose 或旧请求结果不能取消、完成新页面的请求。授权结果仍从系统状态读取器核对实际权限后才保存产品开关。
 - `PermissionRequestHistory` 仅用于区分首次拒绝与永久拒绝，不存储授权真值。
 - requester 返回明确的 start/outcome 类型，不使用 Boolean 表示多种状态。
 - 产品开关与授权状态分离；永久拒绝后由 UI 引导系统设置，中心不自动循环请求。

@@ -44,7 +44,6 @@ internal sealed interface NotificationSettingsAction {
 
     data class RuntimePermissionGranted(val request: NotificationPermissionRequest) : NotificationSettingsAction
     data class RuntimePermissionDenied(val request: NotificationPermissionRequest) : NotificationSettingsAction
-    data object CancelRuntimePermissionRequest : NotificationSettingsAction
     data object RefreshSystemNotificationState : NotificationSettingsAction
     data object OpenSystemNotificationSettings : NotificationSettingsAction
     data class SetOptionalMessagesEnabled(val enabled: Boolean) : NotificationSettingsAction
