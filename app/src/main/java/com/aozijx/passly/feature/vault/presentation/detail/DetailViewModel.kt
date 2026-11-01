@@ -29,6 +29,7 @@ import com.aozijx.passly.feature.vault.history.RevisionOperationResult
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionFailure
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRevealStore
@@ -40,6 +41,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
+import com.aozijx.passly.runtime.session.SessionLockedException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -88,6 +90,8 @@ class DetailViewModel @Inject internal constructor(
     private var tagEditorLoadJob: Job? = null
     private var revisionObservationJob: Job? = null
     private var revisionOperationJob: Job? = null
+    private var historyObservationGeneration = 0L
+    private var revisionObservationGeneration = 0L
     private var loadedEntryId: EntryId? = null
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -408,6 +412,7 @@ class DetailViewModel @Inject internal constructor(
             }
 
             DetailUiAction.OpenRevisionHistory -> openRevisionHistory()
+            DetailUiAction.RetryRevisionHistory -> retryRevisionHistory()
             DetailUiAction.DismissRevisionHistory -> closeRevisionHistory()
             is DetailUiAction.SelectRevision -> selectRevision(event.revisionId)
             DetailUiAction.RevisionBack -> {
@@ -425,6 +430,7 @@ class DetailViewModel @Inject internal constructor(
                 mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreCancelled))
 
             DetailUiAction.ConfirmRevisionRestore -> restoreSelectedRevision()
+            DetailUiAction.RetryActivityHistory -> retryActivityHistory()
         }
     }
 
@@ -500,6 +506,7 @@ class DetailViewModel @Inject internal constructor(
             if (!workSession.isCurrent(token)) return@launch
             val latest = snapshot.presentation.entry
             mutate(DetailMutation.SessionOpened(snapshot))
+            observeActivityHistory(entryId, token)
             if (launchMode != DetailLaunchMode.VIEW) {
                 when {
                     latest.username.isNotEmpty() -> mutate(
@@ -519,12 +526,37 @@ class DetailViewModel @Inject internal constructor(
             }
             if (latest.secret.otp != null) otpRuntime.autoUnlock(entryId.value)
         }
+    }
+
+    private fun retryActivityHistory() {
+        val state = _uiState.value
+        val entryId = state.entry?.id ?: return
+        if (state.activityHistory != DetailActivityHistoryState.Failed) return
+        val token = workSession.current(entryId) ?: return
+        observeActivityHistory(entryId, token)
+    }
+
+    private fun observeActivityHistory(entryId: EntryId, token: DetailWorkSession.Scope.Active) {
+        historyJob?.cancel()
+        val generation = ++historyObservationGeneration
+        mutate(DetailMutation.HistoryLoadStarted(entryId))
         historyJob = viewModelScope.launch {
             if (!secureSessionAccessState.hasFullSecureSessionAccess()) return@launch
-            activityQueryRepository.observeByEntryId(entryId.value)
-                .collect { history ->
-                    if (workSession.isCurrent(token)) mutate(DetailMutation.HistoryChanged(entryId, history))
+            try {
+                activityQueryRepository.observeByEntryId(entryId.value).collect { history ->
+                    if (workSession.isCurrent(token) && generation == historyObservationGeneration) {
+                        mutate(DetailMutation.HistoryChanged(entryId, history))
+                    }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: SessionLockedException) {
+                // Session closure clears this screen through the access-state observer.
+            } catch (_: Exception) {
+                if (workSession.isCurrent(token) && generation == historyObservationGeneration) {
+                    mutate(DetailMutation.HistoryLoadFailed(entryId))
+                }
+            }
         }
     }
 
@@ -580,27 +612,59 @@ class DetailViewModel @Inject internal constructor(
         revisionOperationJob?.cancel()
         clearRevisionReveals()
         mutate(DetailMutation.Revision(DetailRevisionMutation.Opened(entryId)))
-        revisionObservationJob = viewModelScope.launch {
-            when (val initialization = entryRevisionRepository.initializeHistory()) {
-                is AppResult.Failure -> {
-                    if (!workSession.isCurrent(token)) return@launch
-                    mutateRevisionFailure(
-                        entryId = entryId,
-                        revisionId = null,
-                        result = RevisionOperationResult.Failed(initialization.error),
-                    )
-                    return@launch
-                }
+        observeRevisionHistory(entryId, token)
+    }
 
-                is AppResult.Success -> Unit
-            }
-            entryRevisionRepository.observeMetadata(entryId).collect { revisions ->
-                if (!workSession.isCurrent(token)) return@collect
-                mutate(
-                    DetailMutation.Revision(
-                        DetailRevisionMutation.MetadataChanged(entryId.value, revisions),
-                    ),
-                )
+    private fun retryRevisionHistory() {
+        val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
+        if (state.page != DetailRevisionPage.List || state.revisions !is DetailRevisionListState.Failed) return
+        val token = workSession.current(state.entryId) ?: return
+        revisionObservationJob?.cancel()
+        mutate(DetailMutation.Revision(DetailRevisionMutation.Opened(state.entryId)))
+        observeRevisionHistory(state.entryId, token)
+    }
+
+    private fun observeRevisionHistory(entryId: EntryId, token: DetailWorkSession.Scope.Active) {
+        val generation = ++revisionObservationGeneration
+        revisionObservationJob = viewModelScope.launch {
+            try {
+                when (val initialization = entryRevisionRepository.initializeHistory()) {
+                    is AppResult.Failure -> {
+                        if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@launch
+                        mutateRevisionFailure(
+                            entryId = entryId,
+                            revisionId = null,
+                            result = RevisionOperationResult.Failed(initialization.error),
+                        )
+                        return@launch
+                    }
+
+                    is AppResult.Success -> Unit
+                }
+                entryRevisionRepository.observeMetadata(entryId).collect { revisions ->
+                    if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@collect
+                    mutate(
+                        DetailMutation.Revision(
+                            DetailRevisionMutation.MetadataChanged(entryId.value, revisions),
+                        ),
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: SessionLockedException) {
+                // Session closure invalidates this visit and clears revision state.
+            } catch (_: Exception) {
+                if (workSession.isCurrent(token) && generation == revisionObservationGeneration) {
+                    mutate(
+                        DetailMutation.Revision(
+                            DetailRevisionMutation.Failed(
+                                entryId.value,
+                                null,
+                                DetailRevisionFailure.UNEXPECTED,
+                            ),
+                        ),
+                    )
+                }
             }
         }
     }

@@ -204,7 +204,13 @@ fun DetailBody(
                 onAction(DetailUiAction.OpenRevisionHistory)
             }
         }
-        item { ActivityTimelineSection(model.activities) }
+        item {
+            ActivityTimelineSection(
+                activityList = model.activities,
+                loadState = model.activityHistory,
+                onRetry = { onAction(DetailUiAction.RetryActivityHistory) },
+            )
+        }
     }
 
     if (showPackagePicker) {

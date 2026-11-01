@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
+import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
 import androidx.compose.ui.platform.LocalConfiguration
 import java.text.DateFormat
@@ -42,7 +45,11 @@ enum class ActivityFilter {
 }
 
 @Composable
-fun ActivityTimelineSection(activityList: List<DetailActivityUiModel>) {
+fun ActivityTimelineSection(
+    activityList: List<DetailActivityUiModel>,
+    loadState: DetailActivityHistoryState,
+    onRetry: () -> Unit,
+) {
     var currentFilter by remember { mutableStateOf(ActivityFilter.ALL) }
 
     val filteredList = remember(activityList, currentFilter) {
@@ -84,20 +91,43 @@ fun ActivityTimelineSection(activityList: List<DetailActivityUiModel>) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (filteredList.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.vault_detail_history_empty_filtered),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 8.dp)
+            when (loadState) {
+                DetailActivityHistoryState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.padding(vertical = 8.dp).size(20.dp),
+                    strokeWidth = 2.dp,
                 )
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    filteredList.take(20).forEach { activity ->
-                        ActivityItem(activity)
+                DetailActivityHistoryState.Failed -> {
+                    Text(
+                        text = stringResource(R.string.vault_detail_history_load_failed),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    TextButton(onClick = onRetry) {
+                        Text(stringResource(R.string.vault_detail_history_retry))
+                    }
+                    if (filteredList.isNotEmpty()) {
+                        ActivityItems(filteredList)
                     }
                 }
+                DetailActivityHistoryState.Ready -> if (filteredList.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.vault_detail_history_empty_filtered),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    ActivityItems(filteredList)
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun ActivityItems(activities: List<DetailActivityUiModel>) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        activities.take(20).forEach { activity ->
+            ActivityItem(activity)
         }
     }
 }

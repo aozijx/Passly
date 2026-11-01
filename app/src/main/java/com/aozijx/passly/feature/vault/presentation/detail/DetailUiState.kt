@@ -16,6 +16,7 @@ data class DetailUiState(
     val revealedFields: Map<FieldKey, SensitiveValue> = emptyMap(),
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
     val history: List<EntryActivity> = emptyList(),
+    val activityHistory: DetailActivityHistoryState = DetailActivityHistoryState.Loading,
     val relatedEntries: List<Entry> = emptyList(),
     val associatedApps: List<DetailInstalledApp> = emptyList(),
     val packagePickerApps: List<DetailInstalledApp> = emptyList(),
@@ -30,6 +31,8 @@ data class DetailUiState(
 ) {
     fun revealed(key: FieldKey): SensitiveValue? = revealedFields[key]
 }
+
+enum class DetailActivityHistoryState { Loading, Ready, Failed }
 
 data class DetailFieldEditState(
     private val drafts: Map<DetailDraftKey, String> = emptyMap(),

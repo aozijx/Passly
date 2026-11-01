@@ -21,6 +21,9 @@ Closed 和 Open。Open 固定绑定一个 Entry ID，并分别持有列表与当
 
 异步结果必须同时匹配当前 Entry ID 和 revision ID，过期结果由 reducer 丢弃。关闭状态不能残留 selection，
 列表页或尚未加载的比较页不能发起恢复。
+修订元数据观察在初始化成功后发生普通异常时进入列表 Failed，并提供重试；重试重新初始化当前条目历史再订阅。
+每次观察使用递增代际；关闭后重开时，旧 collector 的迟到值或异常不能改写新观察状态。
+协程取消继续传播，会话锁定由会话生命周期清理，致命 Error 不转换为页面错误。
 恢复先同步从 Confirming 占用 Restoring，再启动协程；重复确认、重复请求及迟到的对话框取消均不能重启执行。
 对话框取消与授权取消使用不同事件，授权取消才从 Restoring 回到 Idle，允许重新确认和重试。
 恢复执行期间 Back 与整张弹层的关闭/下滑手势均不可用；Reducer 也拒绝关闭和返回列表事件，避免数据库事务已成功、提交后清理仍挂起时取消 ViewModel job，造成数据已恢复而当前详情未刷新。切换条目或关闭敏感会话仍会使旧结果失效，禁止回写新的或已清空的页面状态。
@@ -59,6 +62,9 @@ Usage / Lifecycle。活动只含类型、版本、条目标识与时间，不含
 使用记录统一由 `EntryActivityWriter` 写入，拒绝通过 usage 入口写入内容事件；活动按时间及活动 ID 稳定倒序读取。
 修订最多保留每条 50、全库 1000 份；活动不随修订裁剪删除，使用频次与最后使用时间继续基于已存使用记录统计。
 界面直接使用 Domain 活动类型，按当前语言格式化日期和关联版本，不复制一份同名枚举。
+详情页在 entry 成功打开后才开始活动观察；加载状态明确区分 Loading、Ready 与 Failed。普通查询异常可在当前
+entry visit 内重订阅，失败提示提供重试；若此前已有记录，则失败期间仍显示已取得的记录。正常空结果才显示空历史。
+会话锁定不显示为普通查询错误，取消继续传播，致命 Error 保持未捕获。
 
 ## 历史弹层布局
 
@@ -81,6 +87,7 @@ Usage / Lifecycle。活动只含类型、版本、条目标识与时间，不含
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 详情页历史状态和交互编排 | `DetailViewModel`、`DetailRevisionReducer` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevisionReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/history/DetailRevisionReducer.kt) |
+| 活动历史加载状态与重试展示 | `DetailActivityHistoryState`、`ActivityTimelineSection` | [`DetailUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt)、[`ActivityTimelineSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/ActivityTimelineSection.kt) |
 | 比较与恢复历史版本 | `CompareEntryRevisionUseCase`、`RestoreEntryRevisionUseCase` | [`CompareEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/CompareEntryRevisionUseCase.kt)、[`RestoreEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/RestoreEntryRevisionUseCase.kt) |
 | 在事务中写入版本并恢复修订 | `EntryRevisionWriter`、`EntryRevisionRestoreTransaction` | [`EntryRevisionWriter.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt)、[`EntryRevisionRestoreTransaction.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/EntryRevisionRestoreTransaction.kt) |
 | 写入条目活动记录 | `EntryActivityWriter` | [`EntryActivityWriter.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryActivityWriter.kt) |

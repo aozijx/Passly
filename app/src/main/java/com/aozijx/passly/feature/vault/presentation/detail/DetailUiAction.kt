@@ -63,6 +63,7 @@ sealed interface DetailUiAction {
     data class ToggleAccessHistoryRecording(val enabled: Boolean) : DetailSensitiveAction
     data object ClearSensitiveState : DetailSensitiveAction
     data object OpenRevisionHistory : DetailRevisionAction
+    data object RetryRevisionHistory : DetailRevisionAction
     data object DismissRevisionHistory : DetailRevisionAction
     data class SelectRevision(val revisionId: String) : DetailRevisionAction
     data object RevisionBack : DetailRevisionAction
@@ -70,6 +71,7 @@ sealed interface DetailUiAction {
     data object RequestRevisionRestore : DetailRevisionAction
     data object CancelRevisionRestore : DetailRevisionAction
     data object ConfirmRevisionRestore : DetailRevisionAction
+    data object RetryActivityHistory : DetailEntryAction
 }
 
 sealed interface DetailEntryAction : DetailUiAction

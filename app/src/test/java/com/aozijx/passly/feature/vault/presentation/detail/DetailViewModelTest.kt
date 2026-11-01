@@ -65,7 +65,9 @@ import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
@@ -80,6 +82,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -210,6 +213,206 @@ class DetailViewModelTest {
     }
 
     @Test
+    fun activityHistoryFailureCanBeRetriedAfterAnEmission() = runTest {
+        var subscriptions = 0
+        val activity = EntryActivity(
+            entryId = ENTRY_ID.value,
+            activityType = ActivityType.AUTOFILL,
+            createdAt = 10L,
+        )
+        val fixture = Fixture(
+            activityQueryRepository = object : ActivityQueryRepository {
+                override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> = flow {
+                    if (++subscriptions == 1) {
+                        emit(listOf(activity))
+                        throw IllegalStateException("history query failed")
+                    }
+                    emit(emptyList())
+                }
+
+                override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
+                override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            assertEquals(listOf(activity), model.uiState.value.history)
+            assertEquals(DetailActivityHistoryState.Failed, model.uiState.value.activityHistory)
+            assertEquals(1, subscriptions)
+
+            model.onAction(DetailUiAction.RetryActivityHistory)
+            runCurrent()
+
+            assertEquals(2, subscriptions)
+            assertEquals(emptyList<EntryActivity>(), model.uiState.value.history)
+            assertEquals(DetailActivityHistoryState.Ready, model.uiState.value.activityHistory)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun revisionMetadataFailureCanBeRetried() = runTest {
+        var subscriptions = 0
+        val fixture = Fixture(
+            revisionMetadataFlow = {
+                if (++subscriptions == 1) flow { throw IllegalStateException("revision query failed") }
+                else flowOf(listOf(revisionMetadata()))
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            model.onAction(DetailUiAction.OpenRevisionHistory)
+            runCurrent()
+
+            val failed = model.uiState.value.revisions as DetailRevisionState.Open
+            assertTrue(failed.revisions is DetailRevisionListState.Failed)
+
+            model.onAction(DetailUiAction.RetryRevisionHistory)
+            runCurrent()
+
+            val ready = model.uiState.value.revisions as DetailRevisionState.Open
+            assertEquals(2, subscriptions)
+            assertTrue(ready.revisions is DetailRevisionListState.Ready)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun activityHistorySessionLockIsNotReportedAsQueryFailure() = runTest {
+        val fixture = Fixture(
+            activityQueryRepository = object : ActivityQueryRepository {
+                override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
+                    flow { throw SessionLockedException() }
+
+                override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
+                override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+
+            assertEquals(DetailActivityHistoryState.Loading, model.uiState.value.activityHistory)
+        } finally {
+            store.clear()
+        }
+    }
+
+    @Test
+    fun lateActivityHistoryFailureCannotAffectReplacementEntry() = runTest {
+        val oldObserverStarted = CompletableDeferred<Unit>()
+        val releaseOldObserver = CompletableDeferred<Unit>()
+        val fixture = Fixture(
+            activityQueryRepository = object : ActivityQueryRepository {
+                override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> = flow {
+                    if (entryId == ENTRY_ID.value) {
+                        oldObserverStarted.complete(Unit)
+                        withContext(NonCancellable) { releaseOldObserver.await() }
+                        throw IllegalStateException("stale activity query failed")
+                    }
+                    emit(emptyList())
+                }
+
+                override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
+                override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            oldObserverStarted.await()
+
+            model.load(OTHER_ENTRY_ID.value)
+            runCurrent()
+            releaseOldObserver.complete(Unit)
+            runCurrent()
+
+            assertEquals("Other title", model.uiState.value.entry?.title)
+            assertEquals(DetailActivityHistoryState.Ready, model.uiState.value.activityHistory)
+        } finally {
+            releaseOldObserver.complete(Unit)
+            store.clear()
+        }
+    }
+
+    @Test
+    fun revisionMetadataFatalErrorEscapesRecoveryBoundary() {
+        val fatal = AssertionError("revision query failed fatally")
+        val thrown = assertThrows(AssertionError::class.java) {
+            runTest {
+                val model = Fixture(
+                    revisionMetadataFlow = { flow { throw fatal } },
+                ).viewModel
+                val store = ViewModelStore().apply { put("detail", model) }
+                try {
+                    model.load(ENTRY_ID.value)
+                    runCurrent()
+                    model.onAction(DetailUiAction.OpenRevisionHistory)
+                    runCurrent()
+                } finally {
+                    store.clear()
+                }
+            }
+        }
+
+        assertSame(fatal, thrown)
+    }
+
+    @Test
+    fun closedRevisionObserverCannotFailAReopenedHistorySheet() = runTest {
+        var subscriptions = 0
+        val oldObserverStarted = CompletableDeferred<Unit>()
+        val releaseOldObserver = CompletableDeferred<Unit>()
+        val fixture = Fixture(
+            revisionMetadataFlow = {
+                if (++subscriptions == 1) flow {
+                    oldObserverStarted.complete(Unit)
+                    withContext(NonCancellable) { releaseOldObserver.await() }
+                    throw IllegalStateException("stale revision query failed")
+                } else {
+                    flowOf(listOf(revisionMetadata()))
+                }
+            },
+        )
+        val model = fixture.viewModel
+        val store = ViewModelStore().apply { put("detail", model) }
+        try {
+            model.load(ENTRY_ID.value)
+            runCurrent()
+            model.onAction(DetailUiAction.OpenRevisionHistory)
+            runCurrent()
+            oldObserverStarted.await()
+
+            model.onAction(DetailUiAction.DismissRevisionHistory)
+            runCurrent()
+            model.onAction(DetailUiAction.OpenRevisionHistory)
+            runCurrent()
+            assertTrue((model.uiState.value.revisions as DetailRevisionState.Open).revisions is DetailRevisionListState.Ready)
+
+            releaseOldObserver.complete(Unit)
+            runCurrent()
+
+            assertTrue((model.uiState.value.revisions as DetailRevisionState.Open).revisions is DetailRevisionListState.Ready)
+            assertEquals(2, subscriptions)
+        } finally {
+            releaseOldObserver.complete(Unit)
+            store.clear()
+        }
+    }
+
+    @Test
     fun backAndDismissDoNotCancelRestoreBeforeItRefreshesTheEntry() = runTest {
         val fixture = Fixture()
         val viewModel = fixture.viewModel
@@ -302,10 +505,12 @@ class DetailViewModelTest {
 
     private class Fixture(
         installedApps: InstalledAppDirectory = EmptyInstalledAppDirectory,
+        activityQueryRepository: ActivityQueryRepository = EmptyActivityQueryRepository,
+        revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>> = { flowOf(listOf(revisionMetadata())) },
     ) {
         val access = AuthenticatedAccess()
         val entries = MutableEntries(currentEntry())
-        val revisions = BlockingRevisionRepository(entries)
+        val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow)
         private val sensitive = EmptySensitiveFieldRepository()
         private val links = EmptyEntryLinkRepository
         private val authGate = UnusedAuthorizationGate
@@ -319,7 +524,7 @@ class DetailViewModelTest {
 
         val viewModel = DetailViewModel(
             entryTagQuery = EmptyEntryTagQuery,
-            activityQueryRepository = EmptyActivityQueryRepository,
+            activityQueryRepository = activityQueryRepository,
             exportEntryQr = ExportEntryQrUseCase(authGate, sensitive, activity, testLogger()),
             secureSessionAccessState = access,
             revealEntryFields = RevealEntryFieldsUseCase(authGate, fieldReader, sensitive, activity),
@@ -387,6 +592,7 @@ class DetailViewModelTest {
 
     private class BlockingRevisionRepository(
         private val entries: MutableEntries,
+        private val revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>>,
     ) : EntryRevisionRepository {
         val restoreEntered = CompletableDeferred<Unit>()
         val releasePostCommitCleanup = CompletableDeferred<Unit>()
@@ -394,8 +600,7 @@ class DetailViewModelTest {
 
         override suspend fun initializeHistory(): AppResult<Unit> = AppResult.Success(Unit)
 
-        override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> =
-            flowOf(listOf(revisionMetadata()))
+        override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> = revisionMetadataFlow(entryId)
 
         override suspend fun loadRedacted(
             entryId: EntryId,

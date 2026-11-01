@@ -30,6 +30,8 @@ internal sealed interface DetailMutation {
     data class RevealedFieldChanged(val key: FieldKey, val value: SensitiveValue?) : DetailMutation
     data object RevealedFieldsCleared : DetailMutation
     data class HistoryChanged(val entryId: EntryId, val history: List<EntryActivity>) : DetailMutation
+    data class HistoryLoadStarted(val entryId: EntryId) : DetailMutation
+    data class HistoryLoadFailed(val entryId: EntryId) : DetailMutation
     data class PackagePickerAppsChanged(
         val entryId: EntryId,
         val apps: List<DetailInstalledApp>,
@@ -143,7 +145,17 @@ internal object DetailReducer {
 
             DetailMutation.RevealedFieldsCleared -> state.copy(revealedFields = emptyMap())
             is DetailMutation.HistoryChanged -> if (state.entry?.id == mutation.entryId) {
-                state.copy(history = mutation.history)
+                state.copy(history = mutation.history, activityHistory = DetailActivityHistoryState.Ready)
+            } else {
+                state
+            }
+            is DetailMutation.HistoryLoadStarted -> if (state.entry?.id == mutation.entryId) {
+                state.copy(activityHistory = DetailActivityHistoryState.Loading)
+            } else {
+                state
+            }
+            is DetailMutation.HistoryLoadFailed -> if (state.entry?.id == mutation.entryId) {
+                state.copy(activityHistory = DetailActivityHistoryState.Failed)
             } else {
                 state
             }

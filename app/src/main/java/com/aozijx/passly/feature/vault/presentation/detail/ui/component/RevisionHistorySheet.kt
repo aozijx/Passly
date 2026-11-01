@@ -108,11 +108,16 @@ private fun RevisionList(
         )
         when (content) {
             DetailRevisionListUiState.Loading -> Loading()
-            DetailRevisionListUiState.Failed -> Text(
-                text = stringResource(R.string.revision_load_failed),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(24.dp),
-            )
+            DetailRevisionListUiState.Failed -> Column {
+                Text(
+                    text = stringResource(R.string.revision_load_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(24.dp),
+                )
+                TextButton(onClick = { onAction(DetailUiAction.RetryRevisionHistory) }) {
+                    Text(stringResource(R.string.retry))
+                }
+            }
             is DetailRevisionListUiState.Ready -> {
                 if (content.revisions.isEmpty()) {
                     Text(
