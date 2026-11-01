@@ -620,3 +620,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：将输入交接逻辑收敛到 `submitSecretInput()`：只由仍 active 的 Secret continuation 接收 `SecretChars.take()`；空 dialog、ChooseMethod dialog 和已取消 continuation 都清零传入数组后返回。`ActivityAuthUiHost` 先清除当前请求，再将捕获的请求快照交给同一 owner 处理，迟到回调不影响后续 dialog。
 - 回归：Security 单测覆盖没有请求、dialog 类型错误、continuation 已取消时擦零，以及 active 请求成功接管、调用方数组擦零和 secret 内容保持。
 - 验证范围：`:security:testDebugUnitTest --tests "*SecretDialogSubmissionTest"` 通过；Compose/Activity 真实生命周期时序仍未运行仪器测试。
+
+### 认证 UI 流程共享独占租约（2026-11-01）
+
+- 修复：Registry 的 `HostLease` 现在占用可取消的 UI 请求互斥；认证管理器覆盖方法选择、密码/生物识别认证到状态提交的完整流程，认证方式 Provisioner 覆盖生物识别轮换和可用性刷新，并都在 `finally` 释放。旧请求无法与轮换 prompt 同时使用同一 Activity Host。
+- 清理：删除从未读取的 `registeredAtMs` 与 `CONFIGURATION_RECONNECT_WINDOW_MS`，让 Host 注册状态仅保留真实使用的 owner、token 与弱引用；租约 release 直接归还 registry Mutex，没有增加转发对象。
+- 回归：Registry 测试覆盖活动租约期间的排队、等待取消、Host 不可用超时后重试、重复 release 幂等以及释放后租约失效。
+- 验证：`:security:testDebugUnitTest :app:compileDebugKotlin verifyArchitecture` 通过。旧 Compose callback 与之后新 dialog 的 request identity 绑定仍待 Task 45 后续覆盖。

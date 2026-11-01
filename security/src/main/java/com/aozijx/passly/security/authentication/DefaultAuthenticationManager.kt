@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.security.authentication.host.HostLease
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -116,6 +117,7 @@ class DefaultAuthenticationManager @Inject constructor(
             // 自动填充需要临时解锁 vault 才能检索并解密候选凭据；
             // Autofill interaction lease 会在最后一个交互结束后收回解锁。
             request.purpose == AuthenticationPurpose.AUTOFILL
+        var hostLease: HostLease? = null
         try {
             if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
                 return finish(
@@ -164,6 +166,7 @@ class DefaultAuthenticationManager @Inject constructor(
                     )
                 )
             ).also { if (opensSession) restoreState(previousState) }
+            hostLease = lease
             // 策略决策：根据目的确定可用的认证方式。
             // 调用者的 allowedMethods 只能缩小范围，不能扩权。
             val authorizedByPurpose = AuthenticationMethodPolicy.allowedAuthenticationMethods(request.purpose)
@@ -277,6 +280,7 @@ class DefaultAuthenticationManager @Inject constructor(
                 )
             )
         } finally {
+            hostLease?.release()
             requestMutex.unlock()
         }
     }

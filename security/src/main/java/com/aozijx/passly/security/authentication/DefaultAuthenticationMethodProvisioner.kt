@@ -192,20 +192,31 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         invalidateOnEnrollment: Boolean
     ): AuthenticationResult {
         val correlationId = UuidCreator.getTimeOrderedEpoch().toString()
-        val host = hostRegistry.awaitLease()?.hostOrNull()
+        val lease = hostRegistry.awaitLease()
             ?: return AuthenticationResult.Failure(
                 AuthenticationFailure(
                     AuthenticationFailureCode.HOST_UNAVAILABLE,
                     AuthenticationRequestId(correlationId),
                 )
             )
-        val result = rotateBiometricKey.rotate(
-            host = host,
-            invalidateOnEnrollment = invalidateOnEnrollment,
-            correlationId = correlationId
-        )
-        if (result is AuthenticationResult.Success) authenticationManager.refreshAvailability()
-        return result
+        return try {
+            val host = lease.hostOrNull()
+                ?: return AuthenticationResult.Failure(
+                    AuthenticationFailure(
+                        AuthenticationFailureCode.HOST_UNAVAILABLE,
+                        AuthenticationRequestId(correlationId),
+                    )
+                )
+            val result = rotateBiometricKey.rotate(
+                host = host,
+                invalidateOnEnrollment = invalidateOnEnrollment,
+                correlationId = correlationId
+            )
+            if (result is AuthenticationResult.Success) authenticationManager.refreshAvailability()
+            result
+        } finally {
+            lease.release()
+        }
     }
 
     override suspend fun hasRecoveryCode(): Boolean =
