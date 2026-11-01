@@ -42,11 +42,10 @@ class RuntimeSessionManager<Handle : Any>(
                     keySource.copyKey()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
-                } catch (error: Throwable) {
-                    if (error is Error) {
-                        fatalError = error
-                        return@withContext SessionUnlockResult.OpenFailed(error)
-                    }
+                } catch (error: Error) {
+                    fatalError = error
+                    return@withContext SessionUnlockResult.OpenFailed(error)
+                } catch (error: Exception) {
                     return@withContext SessionUnlockResult.KeyUnavailable(error)
                 }
                 try {

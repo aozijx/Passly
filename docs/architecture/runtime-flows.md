@@ -22,9 +22,11 @@ sequenceDiagram
 `VaultBootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
 提供，DEK 解锁后 `DatabaseProvider` 才能创建 Room 实例。
 
-运行时 session 从 `SessionKeySource` 取得专属密钥副本后交给资源打开；打开完成或失败都会擦除该副本。取 key 期间发生
-`CancellationException` 必须继续传播，其他取 key 异常才映射为 `KeyUnavailable`，不能把调用方取消误报为解锁失败。
-若资源已创建后调用方取消，RuntimeSessionManager 会在不可取消清理区关闭新句柄、撤销已发布句柄并保持 SEALED，再传播原始取消。
+运行时 session 从 `SessionKeySource` 取得专属密钥副本后交给资源打开；打开完成或失败都会擦除该副本。key source 和资源打开
+的普通 `Exception` 分别映射为 `KeyUnavailable` 和 `OpenFailed`；`CancellationException` 继续传播，JVM fatal `Error`
+在必要的资源清理后继续传播，不作为可重试的业务结果返回。若资源已创建后调用方取消或打开流程失败，RuntimeSessionManager
+会在不可取消清理区撤销已发布句柄、尝试关闭新句柄并恢复 SEALED。清理期间的 fatal `Error` 会覆盖普通失败并保留原始失败为
+suppressed；主失败本身为 fatal 时保持主错误并附加清理错误。key buffer 在 `unlock()` 的 `finally` 中归零。
 
 恢复码走独立流程：`RECOVER_AUTH_METHODS` 解封同一个 DEK 后只发布 `RecoveryMode`，不会发布普通
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
@@ -61,4 +63,5 @@ flowchart LR
 | --- | --- | --- |
 | 认证请求编排与 Vault 会话转换 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
 | DEK 生命周期与派生会话密钥 | `DekManager` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt) |
+| Runtime session 解锁、句柄清理与状态门控 | `RuntimeSessionManager.unlock()`、`SessionLeaseGate.open()` | [`RuntimeSessionManager.kt`](../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/RuntimeSessionManager.kt)、[`SessionLeaseGate.kt`](../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/SessionLeaseGate.kt) |
 | 通知路由与派发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |

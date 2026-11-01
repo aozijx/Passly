@@ -17,9 +17,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 
 class RuntimeSessionManagerTest {
@@ -75,9 +77,10 @@ class RuntimeSessionManagerTest {
     fun `unlock propagates fatal error from resource open`() = runBlocking {
         val fatal = AssertionError("resource open fatal")
         val resource = FakeResource(openFailure = fatal)
+        val key = byteArrayOf(9)
         val manager = RuntimeSessionManager(
             resource = resource,
-            keySource = SessionKeySource { byteArrayOf(9) },
+            keySource = SessionKeySource { key },
         )
 
         val caught = try {
@@ -90,6 +93,151 @@ class RuntimeSessionManagerTest {
         assertSame(fatal, caught)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
         assertEquals(1, resource.openCount)
+        assertArrayEquals(byteArrayOf(0), key)
+    }
+
+    @Test
+    fun `ordinary key source failure remains a key unavailable result`() = runBlocking {
+        val failure = IOException("key unavailable")
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(),
+            keySource = SessionKeySource { throw failure },
+        )
+
+        val result = manager.unlock()
+
+        assertTrue(result is SessionUnlockResult.KeyUnavailable)
+        assertSame(failure, (result as SessionUnlockResult.KeyUnavailable).cause)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `ordinary resource open failure remains an open failed result and wipes key`() = runBlocking {
+        val failure = IOException("resource open failed")
+        val key = byteArrayOf(9)
+        val manager = RuntimeSessionManager(
+            resource = FakeResource(openFailure = failure),
+            keySource = SessionKeySource { key },
+        )
+
+        val result = manager.unlock()
+
+        assertTrue(result is SessionUnlockResult.OpenFailed)
+        assertSame(failure, (result as SessionUnlockResult.OpenFailed).cause)
+        assertArrayEquals(byteArrayOf(0), key)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+    }
+
+    @Test
+    fun `cleanup fatal error supersedes ordinary open failure after sealing and suppresses it`() = runBlocking {
+        val openFailure = IOException("open transition failed")
+        val closeFatal = AssertionError("failed-open cleanup fatal")
+        val resource = FakeResource(closeFailure = closeFatal)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.OPEN) throw openFailure
+            },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(closeFatal, caught)
+        assertTrue(closeFatal.suppressed.any { it === openFailure })
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertEquals(1, resource.closeAttempts)
+        assertFalse(resource.closed)
+    }
+
+    @Test
+    fun `fatal open transition is rethrown after closing handle and allows retry`() = runBlocking {
+        val fatal = AssertionError("open event fatal")
+        val key = byteArrayOf(9)
+        val eventAttempts = AtomicInteger()
+        val resource = FakeResource()
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { key },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.OPEN && eventAttempts.getAndIncrement() == 0) {
+                    throw fatal
+                }
+            },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertTrue(resource.closed)
+        assertEquals(1, resource.closeAttempts)
+        assertArrayEquals(byteArrayOf(0), key)
+        assertEquals(SessionUnlockResult.Success, manager.unlock())
+        assertEquals(SecureSessionState.UNLOCKED, manager.lockState)
+        assertEquals(2, resource.openCount)
+    }
+
+    @Test
+    fun `fatal open failure remains primary and carries cleanup failure`() = runBlocking {
+        val fatal = AssertionError("primary open fatal")
+        val cleanupFatal = AssertionError("cleanup fatal")
+        val resource = FakeResource(closeFailure = cleanupFatal)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.OPEN) throw fatal
+            },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertTrue(fatal.suppressed.any { it === cleanupFatal })
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertEquals(1, resource.closeAttempts)
+    }
+
+    @Test
+    fun `fatal open failure retains identity when cleanup also fails`() = runBlocking {
+        val fatal = AssertionError("primary open fatal")
+        val cleanupFailure = IOException("cleanup failed")
+        val resource = FakeResource(closeFailure = cleanupFailure)
+        val manager = RuntimeSessionManager(
+            resource = resource,
+            keySource = SessionKeySource { byteArrayOf(9) },
+            eventSink = SessionEventSink { event ->
+                if (event.reason == SessionTransitionReason.OPEN) throw fatal
+            },
+        )
+
+        val caught = try {
+            manager.unlock()
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatal, caught)
+        assertTrue(fatal.suppressed.any { it === cleanupFailure })
+        assertEquals(SecureSessionState.SEALED, manager.lockState)
+        assertEquals(1, resource.closeAttempts)
     }
 
     @Test

@@ -291,12 +291,14 @@
 
 ## Task 54：让 Runtime 解锁边界传播 fatal Error
 
-- [ ] 收窄 `RuntimeSessionManager.unlock()` 与 `SessionLeaseGate.open()` 的异常映射：`keySource.copyKey()` 和 `resource.open(key)` 的普通可恢复异常可继续映射为 `KeyUnavailable`/`OpenFailed`，`CancellationException` 继续原样传播；JVM fatal `Error` 不应变成可供 UI 重试的普通解锁失败结果。
-- [ ] fatal `Error` 发生在资源打开阶段时，先完成与打开阶段一致的句柄撤销、SEALED 状态恢复及可行的资源关闭，再重抛原始 Error；清理异常只作为 suppressed 信息附加，不能覆盖 fatal 根因。避免把生命周期转换并发合同与数据库重置关闭结果混为一谈。
-- [ ] 明确原始失败与清理失败的 fatal 优先级：`SessionLeaseGate.closeAfterFailedOpen()` 当前把所有清理 `Throwable` 加到原始 `cause.suppressed` 后返回；若原始失败是普通 Exception、资源 close 抛 `AssertionError`，fatal 会被隐藏且 `open()` 仍返回普通 `OpenFailed`。完成 SEALED/句柄清理后必须传播 cleanup fatal，并把原始普通失败作为 suppressed；主失败本身已是 fatal 时保留主错误并附加 cleanup 错误。
-- [ ] 补 `RuntimeSessionManagerTest`：key source 与 resource open 分别抛普通异常、`CancellationException`、同一 `AssertionError`；断言前两者保持既有 result/取消合同，fatal Error 以同一对象重抛，session 保持 SEALED，已创建资源关闭，交给 Runtime 的 key buffer 仍在 `unlock()` 的 `finally` 中归零，后续解锁可重试。另覆盖 cleanup 本身抛错时不覆盖原始 Error；当主失败为普通 Exception 而 close cleanup 抛 fatal Error 时，验证 fatal 仍传播并保留原始异常。运行 Runtime Session 定向测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 收窄 `RuntimeSessionManager.unlock()` 与 `SessionLeaseGate.open()` 的异常映射：`keySource.copyKey()` 和 `resource.open(key)` 的普通可恢复异常可继续映射为 `KeyUnavailable`/`OpenFailed`，`CancellationException` 继续原样传播；JVM fatal `Error` 不应变成可供 UI 重试的普通解锁失败结果。
+- [x] fatal `Error` 发生在资源打开阶段时，先完成与打开阶段一致的句柄撤销、SEALED 状态恢复及可行的资源关闭，再重抛原始 Error；清理异常只作为 suppressed 信息附加，不能覆盖 fatal 根因。避免把生命周期转换并发合同与数据库重置关闭结果混为一谈。
+- [x] 明确原始失败与清理失败的 fatal 优先级：`SessionLeaseGate.closeAfterFailedOpen()` 当前把所有清理 `Throwable` 加到原始 `cause.suppressed` 后返回；若原始失败是普通 Exception、资源 close 抛 `AssertionError`，fatal 会被隐藏且 `open()` 仍返回普通 `OpenFailed`。完成 SEALED/句柄清理后必须传播 cleanup fatal，并把原始普通失败作为 suppressed；主失败本身已是 fatal 时保留主错误并附加 cleanup 错误。
+- [x] 补 `RuntimeSessionManagerTest`：key source 与 resource open 分别抛普通异常、`CancellationException`、同一 `AssertionError`；断言前两者保持既有 result/取消合同，fatal Error 以同一对象重抛，session 保持 SEALED，已创建资源关闭，交给 Runtime 的 key buffer 仍在 `unlock()` 的 `finally` 中归零，后续解锁可重试。另覆盖 cleanup 本身抛错时不覆盖原始 Error；当主失败为普通 Exception 而 close cleanup 抛 fatal Error 时，验证 fatal 仍传播并保留原始异常。运行 Runtime Session 定向测试、`verifyArchitecture` 与 `git diff --check`。
 
 **证据：** `RuntimeSessionManager.unlock()` 的 key-source catch 只特判 `CancellationException`，其余 `Throwable` 均包装为 `SessionUnlockResult.KeyUnavailable`；`SessionLeaseGate.open()` 同样把所有非取消 `Throwable` 包装成 `SessionUnlockResult.OpenFailed`。因此 `AssertionError`、`OutOfMemoryError` 等 fatal Error 会以普通业务结果返回，而非让进程级严重错误沿调用栈传播。`open()` 已有 `discardOpened()` 在失败后以 `NonCancellable` 清理已创建或发布的 handle，`RuntimeSessionManager.unlock()` 也在 `finally` 清零取得的 key，适合作为 fatal 重抛前的资源保证；`SessionLeaseGate.closeAfterFailedOpen()` 也将任意 cleanup `Throwable` 作为 suppressed 附加到原始 cause；普通 open 后续异常加 cleanup fatal 会因此仍返回普通 `OpenFailed`。现有测试只有 CancellationException 的 key-source/resource-open 用例，未覆盖 fatal 对象身份、两种主/清理异常优先级与 key wipe。此项针对异常类别和资源清理顺序，不重复 Task 26 的 open/seal 并发转换或 数据库重置的关闭失败门槛。
+
+**实现进度（2026-11-02）：** 已完成。普通 `Exception` 映射保持业务结果，取消继续传播，fatal `Error` 在密钥擦除和句柄回滚后传播；清理 fatal 覆盖普通失败并保留原始失败，主 fatal 保持优先级。新增覆盖普通失败、取消、key wipe、SEALED 恢复、资源清理和可重试状态的 Runtime Session 测试。`:runtime:session:test verifyArchitecture --max-workers=32` 通过；测试报告为 21 tests、0 failures、0 errors，`git diff --check` 通过。
 
 ## Task 55：隔离 Runtime Session 状态转换与遥测 sink 故障
 

@@ -111,11 +111,13 @@ internal class SessionLeaseGate<Handle : Any>(
             currentCoroutineContext().ensureActive()
             SessionUnlockResult.Success
         } catch (cancelled: CancellationException) {
-            discardOpened(opened, published, cancelled)
+            discardOpened(opened, published, cancelled)?.let { throw it }
             throw cancelled
-        } catch (error: Throwable) {
+        } catch (error: Error) {
             discardOpened(opened, published, error)
-            if (error is Error) throw error
+            throw error
+        } catch (error: Exception) {
+            discardOpened(opened, published, error)?.let { throw it }
             emitTransition(
                 startedAt,
                 fromState,
@@ -132,34 +134,48 @@ internal class SessionLeaseGate<Handle : Any>(
         opened: Handle?,
         published: Boolean,
         cause: Throwable,
-    ) = withContext(NonCancellable) {
+    ): Error? = withContext(NonCancellable) {
         var shouldSeal = opened == null
-        if (opened != null) {
-            if (published) {
-                resourceMutex.withLock {
-                    if (handle === opened) {
-                        handle = null
-                        shouldSeal = true
-                        closeAfterFailedOpen(opened, cause)
+        var fatalCleanup: Error? = null
+        try {
+            if (opened != null) {
+                if (published) {
+                    resourceMutex.withLock {
+                        if (handle === opened) {
+                            handle = null
+                            shouldSeal = true
+                            fatalCleanup = closeAfterFailedOpen(opened, cause)
+                        }
                     }
+                } else {
+                    shouldSeal = true
+                    fatalCleanup = closeAfterFailedOpen(opened, cause)
                 }
-            } else {
-                shouldSeal = true
-                closeAfterFailedOpen(opened, cause)
+            }
+        } finally {
+            if (shouldSeal) {
+                leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
             }
         }
-        if (shouldSeal) {
-            leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
-        }
+        fatalCleanup
     }
 
     private suspend fun closeAfterFailedOpen(opened: Handle, cause: Throwable) =
         withContext(ioDispatcher) {
             try {
                 resource.close(opened)
-            } catch (cleanupFailure: Throwable) {
-                if (cleanupFailure is Error && cause !is Error) throw cleanupFailure
+                null
+            } catch (cleanupFailure: Error) {
+                if (cause is Error) {
+                    if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
+                    null
+                } else {
+                    if (cause !== cleanupFailure) cleanupFailure.addSuppressed(cause)
+                    cleanupFailure
+                }
+            } catch (cleanupFailure: Exception) {
                 if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
+                null
             }
         }
 
