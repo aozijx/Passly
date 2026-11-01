@@ -5,6 +5,8 @@ sealed interface ScannerUiAction {
     data class DecodeImage(val image: ImageRef) : ScannerUiAction
     data object CopyText : ScannerUiAction
     data object StartScanning : ScannerUiAction
+    data object HostStarted : ScannerUiAction
+    data object HostStopped : ScannerUiAction
     data object StopScanning : ScannerUiAction
     data class CameraFailure(val error: Throwable) : ScannerUiAction
 }

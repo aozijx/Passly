@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ui.ScannerScreen
@@ -29,6 +30,7 @@ internal fun ScannerRoute(
     onDismiss: () -> Unit,
 ) {
     val viewModel = hiltViewModel<ScannerViewModel>()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val importSession = remember(state) { ScannerImportSession() }
@@ -46,9 +48,12 @@ internal fun ScannerRoute(
         viewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
     }
 
-    LaunchedEffect(viewModel, context, copySucceededMessage, imageNoBarcodeMessage, imageDecodeFailedMessage) {
+    LaunchedEffect(viewModel, lifecycleOwner, context, copySucceededMessage, imageNoBarcodeMessage, imageDecodeFailedMessage) {
         collectScannerRouteEffects(
+            lifecycle = lifecycleOwner.lifecycle,
             effects = viewModel.effects,
+            onHostStarted = { viewModel.onAction(ScannerUiAction.HostStarted) },
+            onHostStopped = { viewModel.onAction(ScannerUiAction.HostStopped) },
             onScanSucceeded = {
                 (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
                     .defaultVibrator.vibrate(
@@ -68,7 +73,6 @@ internal fun ScannerRoute(
     }
 
     DisposableEffect(viewModel) {
-        viewModel.onAction(ScannerUiAction.StartScanning)
         onDispose { viewModel.onAction(ScannerUiAction.StopScanning) }
     }
 

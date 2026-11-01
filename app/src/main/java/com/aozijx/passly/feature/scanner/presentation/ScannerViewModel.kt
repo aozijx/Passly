@@ -57,6 +57,8 @@ class ScannerViewModel internal constructor(
                 replaceWork(newWork())
                 mutate(ScannerMutation.Started)
             }
+            ScannerUiAction.HostStarted -> resumeForHost()
+            ScannerUiAction.HostStopped -> pauseForHost()
             ScannerUiAction.StopScanning -> {
                 replaceWork(Work.Stopped)
                 mutate(ScannerMutation.Stopped)
@@ -76,6 +78,32 @@ class ScannerViewModel internal constructor(
         val previous = work
         work = next
         if (previous is Work.Active) previous.scope.cancel()
+    }
+
+    private fun pauseForHost() {
+        when (work) {
+            Work.Stopped, Work.Destroyed -> return
+            is Work.Active -> when (uiState.value) {
+                is ScannerUiState.ShowingResult -> replaceWork(newWork())
+                ScannerUiState.Scanning,
+                ScannerUiState.ProcessingImage,
+                ScannerUiState.Stopped,
+                -> {
+                    replaceWork(Work.Stopped)
+                    mutate(ScannerMutation.Stopped)
+                }
+            }
+        }
+    }
+
+    private fun resumeForHost() {
+        when (work) {
+            is Work.Active, Work.Destroyed -> Unit
+            Work.Stopped -> {
+                replaceWork(newWork())
+                if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
+            }
+        }
     }
 
     private fun completeScan(raw: String): Boolean = when (val classified = ScannerResultClassifier.classify(raw)) {

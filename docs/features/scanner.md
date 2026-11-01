@@ -16,7 +16,7 @@ OTP 分类直接调用 Domain 的类型化 URI 解析器，与手动输入和导
   `Scanning / ProcessingImage / ShowingResult / Stopped` 明确表达。相机只在 `Scanning` 接受结果，
   不允许后续帧覆盖展示内容；无需另存一份原始值作为去重缓存。
 - `ScannerScreen` 只根据不可变状态渲染取景框、动画和结果卡，并通过 `ScannerScreenAction` 报告交互。
-- `ScannerRoute` 负责相册选择、Toast、扫码成功后的系统震动、打开外部链接和类型化导入确认；Route 生命周期结束会取消 effect 收集，停止或重扫后迟到的扫描结果不会再触发震动。`ScannerPurpose` 明确限制当前
+- `ScannerRoute` 负责相册选择、Toast、扫码成功后的系统震动、打开外部链接和类型化导入确认；ViewModel 发布的一次性复制/解码提示和扫码震动只在宿主处于 `STARTED` 时消费。宿主离开 `STARTED` 会取消图片解码和待写入的复制任务，并轮换任务 owner，使已排队的短提示不会在恢复后补播；已显示的结果保留，纯扫描/图片处理中状态停止，恢复后重新扫描。路由销毁仍清空扫描状态。相册选择器返回后，宿主先恢复扫描，所选图片再进入解码。`ScannerPurpose` 明确限制当前
   调用方能够接收的结果类型。
 
 相机权限被拒绝时 Scanner 直接退出，权限申请与 CameraX 生命周期不会泄漏到 Vault 或编辑器。

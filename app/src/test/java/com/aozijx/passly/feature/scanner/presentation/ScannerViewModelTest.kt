@@ -177,6 +177,48 @@ class ScannerViewModelTest {
         assertEquals(emptyList<ScannerEffect>(), effects)
     }
 
+    @Test
+    fun `host pause preserves a visible result but restarts a stopped scan`() = runTest {
+        val model = model { BarcodeImageResult.Decoded("selected photo") }
+
+        model.onAction(ScannerUiAction.BarcodeDetected("visible result"))
+        model.onAction(ScannerUiAction.HostStopped)
+        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
+
+        model.onAction(ScannerUiAction.HostStarted)
+        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
+
+        model.onAction(ScannerUiAction.StartScanning)
+        model.onAction(ScannerUiAction.HostStopped)
+        assertEquals(ScannerUiState.Stopped, model.uiState.value)
+        model.onAction(ScannerUiAction.HostStarted)
+        model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
+        runCurrent()
+
+        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("selected photo")), model.uiState.value)
+    }
+
+    @Test
+    fun `host pause prevents an in-flight copy from writing after foreground loss`() = runTest {
+        val clipboard = DelayedClipboard()
+        val model = model(clipboardWriter = clipboard) { BarcodeImageResult.NoBarcode }
+        val effects = mutableListOf<ScannerEffect>()
+        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+        model.onAction(ScannerUiAction.BarcodeDetected("sensitive text"))
+        model.onAction(ScannerUiAction.CopyText)
+        runCurrent()
+        clipboard.writeStarted.await()
+
+        model.onAction(ScannerUiAction.HostStopped)
+        clipboard.finishWrite.complete(Unit)
+        runCurrent()
+
+        assertNull(clipboard.lastValue)
+        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
+        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("sensitive text")), model.uiState.value)
+    }
+
     private fun model(
         clipboardWriter: SensitiveClipboardWriter = SensitiveClipboardWriter { },
         decode: suspend (ImageRef) -> BarcodeImageResult,
