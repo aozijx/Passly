@@ -170,6 +170,11 @@
     <string name="settings_autofill_system_service_summary">Select Passly as the system autofill service</string>
     <string name="settings_autofill_system_enabled">Enabled</string>
     <string name="settings_autofill_system_disabled">Not enabled</string>
+    <string name="settings_autofill_system_status_loading">Checking…</string>
+    <string name="settings_autofill_system_status_unavailable">System status unavailable</string>
+    <string name="settings_autofill_preferences_loading">Loading Autofill settings…</string>
+    <string name="settings_autofill_preferences_load_failed">Could not load Autofill settings</string>
+    <string name="settings_autofill_preferences_refreshing">Refreshing settings; controls stay read-only until they load</string>
     <string name="settings_autofill_presentation">Suggestion display</string>
     <string name="accessibility_fill_service_label">Passly manual fill</string>
     <string name="accessibility_fill_service_description">Reads the current input fields and fills your chosen credential only after you tap the floating button.</string>

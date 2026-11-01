@@ -170,6 +170,11 @@
     <string name="settings_autofill_system_service_summary">选择 Passly 作为系统自动填充服务</string>
     <string name="settings_autofill_system_enabled">已启用</string>
     <string name="settings_autofill_system_disabled">未启用</string>
+    <string name="settings_autofill_system_status_loading">正在检查…</string>
+    <string name="settings_autofill_system_status_unavailable">无法读取系统状态</string>
+    <string name="settings_autofill_preferences_loading">正在读取自动填充设置…</string>
+    <string name="settings_autofill_preferences_load_failed">无法读取自动填充设置</string>
+    <string name="settings_autofill_preferences_refreshing">正在重新读取设置；读取完成前设置保持只读</string>
     <string name="settings_autofill_presentation">候选展示</string>
     <string name="accessibility_fill_service_label">Passly 手动填充</string>
     <string name="accessibility_fill_service_description">仅在你点击浮动按钮后读取当前输入框并填充所选凭据。</string>

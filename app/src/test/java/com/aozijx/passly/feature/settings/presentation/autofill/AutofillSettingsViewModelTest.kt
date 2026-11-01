@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import java.io.IOException
+import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
@@ -11,12 +12,14 @@ import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.advanceTimeBy
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -35,7 +38,165 @@ class AutofillSettingsViewModelTest {
         )
         viewModel.onPageEntered()
 
-        assertEquals(AutofillSettingsUiState.Loading, viewModel.uiState.value)
+        assertEquals(
+            AutofillSourceState.Loading<AutofillSettings>(),
+            viewModel.uiState.value.preferences,
+        )
+    }
+
+    @Test
+    fun `preference failure preserves last value and does not fail system status`() = runTest {
+        val lastSettings = AutofillSettings(enabled = false)
+        val repository = RecordingInteractionSettingsRepository(
+            interaction = flow {
+                emit(InteractionSettings(autofill = lastSettings))
+                throw IOException("preferences unavailable")
+            },
+        )
+        val viewModel = AutofillSettingsViewModel(
+            repository,
+            AutofillServiceStatusSource { MutableStateFlow(true) },
+        )
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+
+        assertEquals(
+            AutofillSourceState.Failed(lastSettings),
+            viewModel.uiState.value.preferences,
+        )
+        assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
+    }
+
+    @Test
+    fun `system status failure is not presented as disabled`() = runTest {
+        val repository = RecordingInteractionSettingsRepository()
+        val viewModel = AutofillSettingsViewModel(
+            repository,
+            AutofillServiceStatusSource { flow { throw IOException("status unavailable") } },
+        )
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+
+        assertEquals(
+            AutofillSourceState.Ready(AutofillSettings()),
+            viewModel.uiState.value.preferences,
+        )
+        assertEquals(
+            AutofillSourceState.Failed<Boolean>(null),
+            viewModel.uiState.value.systemService,
+        )
+    }
+
+    @Test
+    fun `retry restarts only failed system source`() = runTest {
+        var preferenceStarts = 0
+        var systemStarts = 0
+        var cancelledSystemCollectors = 0
+        val repository = RecordingInteractionSettingsRepository(
+            interaction = flow {
+                preferenceStarts++
+                emit(InteractionSettings())
+                kotlinx.coroutines.awaitCancellation()
+            },
+        )
+        val viewModel = AutofillSettingsViewModel(
+            repository,
+            AutofillServiceStatusSource {
+                flow {
+                    systemStarts++
+                    try {
+                        if (systemStarts == 1) {
+                            emit(false)
+                            throw IOException("status unavailable")
+                        }
+                        emit(true)
+                        kotlinx.coroutines.awaitCancellation()
+                    } finally {
+                        cancelledSystemCollectors++
+                    }
+                }
+            },
+        )
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+        assertEquals(1, preferenceStarts)
+        assertEquals(1, systemStarts)
+        assertEquals(AutofillSourceState.Failed(false), viewModel.uiState.value.systemService)
+
+        viewModel.onAction(AutofillSettingsAction.RetrySystemService)
+        runCurrent()
+
+        assertEquals(1, preferenceStarts)
+        assertEquals(2, systemStarts)
+        assertEquals(1, cancelledSystemCollectors)
+        assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
+    }
+
+    @Test
+    fun `retrying failed preferences keeps system collector and recovers controls`() = runTest {
+        var preferenceStarts = 0
+        var systemStarts = 0
+        val repository = RecordingInteractionSettingsRepository(
+            interaction = flow {
+                preferenceStarts++
+                if (preferenceStarts == 1) throw IOException("preferences unavailable")
+                emit(InteractionSettings(autofill = AutofillSettings(enabled = false)))
+                kotlinx.coroutines.awaitCancellation()
+            },
+        )
+        val viewModel = AutofillSettingsViewModel(
+            repository,
+            AutofillServiceStatusSource {
+                flow {
+                    systemStarts++
+                    emit(true)
+                    kotlinx.coroutines.awaitCancellation()
+                }
+            },
+        )
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+        assertEquals(AutofillSourceState.Failed<AutofillSettings>(null), viewModel.uiState.value.preferences)
+        assertEquals(1, systemStarts)
+        viewModel.onAction(AutofillSettingsAction.SetSavePromptsEnabled(false))
+        runCurrent()
+        assertEquals(emptyList<Boolean>(), repository.savePromptWrites)
+
+        viewModel.onAction(AutofillSettingsAction.RetryPreferences)
+        runCurrent()
+
+        assertEquals(2, preferenceStarts)
+        assertEquals(1, systemStarts)
+        assertEquals(
+            AutofillSourceState.Ready(AutofillSettings(enabled = false)),
+            viewModel.uiState.value.preferences,
+        )
+        assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
+    }
+
+    @Test
+    fun `source collector is cancelled after the page loses its state subscriber`() = runTest {
+        var sourceCancelled = false
+        val viewModel = AutofillSettingsViewModel(
+            RecordingInteractionSettingsRepository(),
+            AutofillServiceStatusSource {
+                flow {
+                    emit(true)
+                    try {
+                        kotlinx.coroutines.awaitCancellation()
+                    } finally {
+                        sourceCancelled = true
+                    }
+                }
+            },
+        )
+        val collection = backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+        collection.cancel()
+        advanceTimeBy(5_001L)
+        runCurrent()
+
+        assertEquals(true, sourceCancelled)
     }
 
     @Test
@@ -46,6 +207,8 @@ class AutofillSettingsViewModelTest {
             autofillServiceStatusSource = AutofillServiceStatusSource { MutableStateFlow(false) },
         )
         viewModel.onPageEntered()
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
 
         viewModel.onAction(AutofillSettingsAction.SetSavePromptsEnabled(false))
         advanceUntilIdle()

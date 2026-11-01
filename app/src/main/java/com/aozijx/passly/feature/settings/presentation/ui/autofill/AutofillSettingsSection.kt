@@ -12,9 +12,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
+import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
@@ -36,8 +38,26 @@ internal fun AutofillSettingsSection(
         candidateLimit = settings.maxSuggestions.toFloat()
     }
 
-    val enabled = settings.enabled
+    val enabled = settings.enabled && settings.canEditPreferences
     SettingsSectionTitle(text = stringResource(R.string.settings_autofill_section))
+    when {
+        settings.preferencesFailed -> Row {
+            Text(stringResource(R.string.settings_autofill_preferences_load_failed))
+            TextButton(onClick = { onAction(AutofillSettingsAction.RetryPreferences) }) {
+                Text(stringResource(R.string.retry))
+            }
+        }
+        settings.preferencesRefreshing ->
+            Text(stringResource(R.string.settings_autofill_preferences_refreshing))
+    }
+    if (settings.systemService is AutofillSourceState.Failed) {
+        Row {
+            Text(stringResource(R.string.settings_autofill_system_status_unavailable))
+            TextButton(onClick = { onAction(AutofillSettingsAction.RetrySystemService) }) {
+                Text(stringResource(R.string.retry))
+            }
+        }
+    }
     SegmentedSettingsGroup(
         items = buildList {
             add(
@@ -45,13 +65,7 @@ internal fun AutofillSettingsSection(
                     key = "autofill.system_settings",
                     title = stringResource(R.string.settings_autofill_system_service),
                     subtitle = stringResource(R.string.settings_autofill_system_service_summary),
-                    value = stringResource(
-                        if (settings.isSystemServiceEnabled) {
-                            R.string.settings_autofill_system_enabled
-                        } else {
-                            R.string.settings_autofill_system_disabled
-                        }
-                    ),
+                    value = stringResource(settings.systemService.toDisplayString()),
                     onClick = { onAction(AutofillSettingsAction.OpenSystemAutofillSettings) },
                 )
             )
@@ -60,6 +74,7 @@ internal fun AutofillSettingsSection(
                     key = "autofill.enabled",
                     title = stringResource(R.string.settings_autofill_enabled),
                     subtitle = stringResource(R.string.settings_autofill_enabled_summary),
+                    enabled = settings.canEditPreferences,
                     checked = settings.enabled,
                     onCheckedChange = { onAction(AutofillSettingsAction.SetEnabled(it)) },
                 )
@@ -89,7 +104,7 @@ internal fun AutofillSettingsSection(
                         }
                     ),
                     onClick = {
-                        showPresentationDialog = true
+                        if (enabled) showPresentationDialog = true
                     },
                 )
             )
@@ -208,4 +223,17 @@ internal fun AutofillSettingsSection(
             },
         )
     }
+}
+
+private fun AutofillSourceState<Boolean>.toDisplayString(): Int = when (this) {
+    is AutofillSourceState.Loading -> previous?.toDisplayString()
+        ?: R.string.settings_autofill_system_status_loading
+    is AutofillSourceState.Ready -> value.toDisplayString()
+    is AutofillSourceState.Failed -> R.string.settings_autofill_system_status_unavailable
+}
+
+private fun Boolean.toDisplayString(): Int = if (this) {
+    R.string.settings_autofill_system_enabled
+} else {
+    R.string.settings_autofill_system_disabled
 }

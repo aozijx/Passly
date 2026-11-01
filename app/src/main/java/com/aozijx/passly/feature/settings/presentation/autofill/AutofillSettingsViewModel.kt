@@ -2,15 +2,24 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
-import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
+import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
+import com.aozijx.passly.R
+import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
+import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,19 +33,32 @@ class AutofillSettingsViewModel @Inject constructor(
     private val pageEffects = PageEffects<AutofillSettingsEffect>()
     val effects = pageEffects.effects
 
+    private val retryPreferences = MutableStateFlow(0)
+    private val retrySystemService = MutableStateFlow(0)
+    private val lastPreferences = MutableStateFlow<AutofillSettings?>(null)
+    private val lastSystemServiceEnabled = MutableStateFlow<Boolean?>(null)
+
+    private val preferences = observeSource(
+        retry = retryPreferences,
+        lastValue = lastPreferences,
+        source = { settingsRepository.interaction.map { it.autofill } },
+    )
+    private val systemService = observeSource(
+        retry = retrySystemService,
+        lastValue = lastSystemServiceEnabled,
+        source = { autofillServiceStatusSource.observeServiceEnabled() },
+    )
+
     val uiState: StateFlow<AutofillSettingsUiState> = combine(
-        settingsRepository.interaction,
-        autofillServiceStatusSource.observeServiceEnabled(),
-    ) { interaction, systemAutofillEnabled ->
-        AutofillSettingsUiState.Ready(
-            autofill = interaction.autofill,
-            isSystemAutofillEnabled = systemAutofillEnabled,
-        )
+        preferences,
+        systemService,
+    ) { preferences, systemService ->
+        AutofillSettingsUiState(preferences, systemService)
     }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000L),
-            AutofillSettingsUiState.Loading,
+            AutofillSettingsUiState(),
         )
 
     fun onAction(action: AutofillSettingsAction) {
@@ -65,6 +87,8 @@ class AutofillSettingsViewModel @Inject constructor(
             is AutofillSettingsAction.SetMaxSuggestions -> saveSetting {
                 settingsRepository.setAutofillMaxSuggestions(action.count)
             }
+            AutofillSettingsAction.RetryPreferences -> retryPreferences.value++
+            AutofillSettingsAction.RetrySystemService -> retrySystemService.value++
             AutofillSettingsAction.OpenSystemAutofillSettings ->
                 emitEffect(AutofillSettingsEffect.OpenSystemAutofillSettings)
             AutofillSettingsAction.OpenAccessibilitySettings ->
@@ -73,6 +97,7 @@ class AutofillSettingsViewModel @Inject constructor(
     }
 
     private fun saveSetting(write: suspend () -> Unit) {
+        if (uiState.value.preferences !is AutofillSourceState.Ready) return
         val owner = pageEffects.currentOwner ?: return
         viewModelScope.launch {
             writePreferenceWithFeedback(
@@ -97,5 +122,26 @@ class AutofillSettingsViewModel @Inject constructor(
 
     private fun emitEffect(owner: Any, effect: AutofillSettingsEffect) {
         pageEffects.tryEmit(owner, effect)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun <T : Any> observeSource(
+        retry: MutableStateFlow<Int>,
+        lastValue: MutableStateFlow<T?>,
+        source: () -> Flow<T>,
+    ): Flow<AutofillSourceState<T>> = retry.flatMapLatest {
+        flow {
+            emit(AutofillSourceState.Loading(lastValue.value))
+            source().collect { value ->
+                lastValue.value = value
+                emit(AutofillSourceState.Ready(value))
+            }
+        }.catch { error ->
+            when (error) {
+                is CancellationException -> throw error
+                is Exception -> emit(AutofillSourceState.Failed(lastValue.value))
+                else -> throw error
+            }
+        }
     }
 }

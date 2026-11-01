@@ -10,20 +10,24 @@ import org.junit.Test
 class AutofillSettingsUiMapperTest {
     @Test
     fun mapsSettingsAndPlatformAvailabilityToUiModel() {
-        val state = AutofillSettingsUiState.Ready(
-            autofill = AutofillSettings(
+        val autofill = AutofillSettings(
                 enabled = false,
                 presentation = AutofillPresentation.BOTTOM_SHEET,
                 savePromptsEnabled = false,
                 maxSuggestions = AutofillSettings.MAX_SUGGESTIONS + 5,
-            ),
-            isSystemAutofillEnabled = true,
+            )
+
+        val model = autofill.toAutofillSettingsUiModel(
+            supportsCredentialManager = false,
+            canEditPreferences = true,
+            preferencesRefreshing = false,
+            preferencesFailed = false,
+            systemService = AutofillSourceState.Ready(true),
         )
 
-        val model = state.toAutofillSettingsUiModel(supportsCredentialManager = false)
-
         assertFalse(model.enabled)
-        assertTrue(model.isSystemServiceEnabled)
+        assertTrue(model.canEditPreferences)
+        assertEquals(AutofillSourceState.Ready(true), model.systemService)
         assertFalse(model.supportsCredentialManager)
         assertFalse(model.savePromptsEnabled)
         assertEquals(AutofillPresentation.BOTTOM_SHEET, model.presentation)

@@ -29,3 +29,31 @@
 - 过期、旧 key-ID、retry/quarantine、全 root 512 KiB 上限按合同执行。
 - Android Auto Backup/device transfer 和 Passly Backup 均不包含 Inbox。
 - Vault 删除清理 key material、文件和 import log；真实 DEK rotation 原子重包 private envelope。
+
+## Settings observation recovery
+
+Autofill preferences and Android's selected Autofill service are observed as independent sources.
+Each source keeps its own loading, ready, and failed state; a failure in one does not stop the other.
+Failed preference reads retain the last readable settings for display, disable preference edits, and
+offer a preference-only retry. A failed Android status read is displayed as unavailable, never as
+“not enabled”; retry recreates only that status collector. If no previous preference value exists,
+the page keeps its Autofill identity visible and offers a retry instead of rendering empty content.
+
+The Android source registers its `ContentObserver` before taking the registered snapshot. Registration
+or read exceptions from the initial read, registered snapshot, or observer callback fail that source;
+a registered observer is removed when collection fails or is cancelled. A null secure setting remains
+a valid “not enabled” value. The existing outer initial read and its ordering are unchanged; removal
+of that duplicate read remains Task 33.
+
+`AutofillSettingsViewModelTest` covers independent errors, last-known values, source-only retries,
+recovery, write blocking while preferences are unavailable, and cancellation after the state
+subscriber leaves. `AutofillSettingsSectionTest` covers the unknown status and read-only preferences;
+these Android tests were compiled but not run because no device was attached during this change.
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| Autofill 设置源状态、隔离重试和写入门禁 | `AutofillSettingsViewModel.observeSource()` | [`AutofillSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt) |
+| Autofill 设置失败和重试 UI | `AutofillRoute`、`AutofillSettingsSection` | [`AutofillRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/autofill/AutofillRoute.kt)、[`AutofillSettingsSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/autofill/AutofillSettingsSection.kt) |
+| Android 系统服务状态观察和 observer 清理 | `AndroidAutofillServiceStatusSource.observeServiceEnabled()` | [`AndroidAutofillServiceStatusSource.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillServiceStatusSource.kt) |

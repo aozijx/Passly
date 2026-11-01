@@ -3,19 +3,26 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.ui.autofill.model.AutofillSettingsUiModel
 
-fun AutofillSettingsUiState.Ready.toAutofillSettingsUiModel(
+fun AutofillSettings.toAutofillSettingsUiModel(
     supportsCredentialManager: Boolean,
+    canEditPreferences: Boolean,
+    preferencesRefreshing: Boolean,
+    preferencesFailed: Boolean,
+    systemService: AutofillSourceState<Boolean>,
 ): AutofillSettingsUiModel = AutofillSettingsUiModel(
-    enabled = autofill.enabled,
-    presentation = autofill.presentation,
-    credentialManagerEnabled = autofill.credentialManagerEnabled,
+    enabled = enabled,
+    presentation = presentation,
+    credentialManagerEnabled = credentialManagerEnabled,
     supportsCredentialManager = supportsCredentialManager,
-    requireAuthentication = autofill.requireAuthentication,
-    includeOtp = autofill.includeOtp,
-    savePromptsEnabled = autofill.savePromptsEnabled,
-    allowUnmatchedSuggestions = autofill.allowUnmatchedSuggestions,
-    maxSuggestions = autofill.normalizedMaxSuggestions,
+    requireAuthentication = requireAuthentication,
+    includeOtp = includeOtp,
+    savePromptsEnabled = savePromptsEnabled,
+    allowUnmatchedSuggestions = allowUnmatchedSuggestions,
+    maxSuggestions = normalizedMaxSuggestions,
     minSuggestions = AutofillSettings.MIN_SUGGESTIONS,
     maxSuggestionsLimit = AutofillSettings.MAX_SUGGESTIONS,
-    isSystemServiceEnabled = isSystemAutofillEnabled,
+    canEditPreferences = canEditPreferences,
+    preferencesRefreshing = preferencesRefreshing,
+    preferencesFailed = preferencesFailed,
+    systemService = systemService,
 )
