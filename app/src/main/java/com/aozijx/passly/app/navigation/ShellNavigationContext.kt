@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.shell.presentation.navigation
+package com.aozijx.passly.app.navigation
 
 internal class ShellNavigationContext(
     val navigateBack: () -> Unit,

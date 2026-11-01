@@ -495,3 +495,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：测试三个 Activity 源文件路径可以使用认证 Host，同时 Autofill ViewModel 路径因同一 import 触发规则。
 - 文档：包边界页记录三个系统入口的宿主 owner 与精确例外范围。
 - 验证：新增边界用例 RED 后 GREEN；`:buildSrc:test --tests "passly.SourceBoundaryPolicyTest.autofillAuthenticationHostSecurityImportsAreLimitedToSystemActivities" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。
+
+### 后续批次：全局导航合同归 App 所有（2026-11-01）
+
+- 根因：Shell 已不再组装 Vault/Settings 全局图，但 `AppRoute` 与 `ShellNavigationContext` 仍留在 Shell presentation；Vault/Settings 因而继续反向依赖 Shell。
+- 修复：将两个共享导航合同移动到 `app.navigation`。Shell NavHost 使用 App 定义的 route/context，Vault 与 Settings 保留自己的 graph 注册；全局图仍由 App composition root 连接。删除原有 Vault/Settings→Shell navigation 跨 Feature 例外登记。
+- 回归：Vault 导航与目的地映射现有测试继续使用同一 route 值，验证新增编辑目的地和 Settings/Trash 导航未变；架构门禁与 App 编译验证新的依赖方向。
+- 文档：包边界页更新跨 Feature 边清单和导航 owner。
+- 验证：`:app:testDebugUnitTest --tests "*VaultNavigationTest" --tests "*VaultEditorDestinationRegistryTest" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。

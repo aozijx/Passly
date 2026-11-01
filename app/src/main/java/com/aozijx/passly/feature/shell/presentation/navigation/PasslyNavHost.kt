@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
+import com.aozijx.passly.app.navigation.AppRoute
+import com.aozijx.passly.app.navigation.ShellNavigationContext
 
 internal typealias FeatureGraphRegistration = NavGraphBuilder.(
     context: ShellNavigationContext,

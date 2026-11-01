@@ -4,7 +4,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUi
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationRequest
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationResult
-import com.aozijx.passly.feature.shell.presentation.navigation.AppRoute
+import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.feature.vault.entry.EditorSeedToken
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload

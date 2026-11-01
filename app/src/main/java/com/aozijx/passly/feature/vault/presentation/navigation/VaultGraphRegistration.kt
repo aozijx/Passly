@@ -12,8 +12,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
-import com.aozijx.passly.feature.shell.presentation.navigation.AppRoute
-import com.aozijx.passly.feature.shell.presentation.navigation.ShellNavigationContext
+import com.aozijx.passly.app.navigation.AppRoute
+import com.aozijx.passly.app.navigation.ShellNavigationContext
 import com.aozijx.passly.feature.vault.presentation.detail.DetailRoute
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardEditorRoute
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpEditorRoute

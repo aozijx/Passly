@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.main.navigation
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import com.aozijx.passly.feature.shell.presentation.navigation.AppRoute
-import com.aozijx.passly.feature.shell.presentation.navigation.ShellNavigationContext
+import com.aozijx.passly.app.navigation.AppRoute
+import com.aozijx.passly.app.navigation.ShellNavigationContext
 
 internal fun NavGraphBuilder.registerSettingsGraph(context: ShellNavigationContext) {
     composable(AppRoute.Settings.route) {

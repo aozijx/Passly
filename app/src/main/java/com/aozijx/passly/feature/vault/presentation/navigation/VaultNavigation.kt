@@ -1,6 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.navigation
 
-import com.aozijx.passly.feature.shell.presentation.navigation.AppRoute
+import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload

@@ -52,13 +52,6 @@ internal object SourceBoundaryPolicy {
             rationale = "Settings reads the theme settings currently provided by the root theme composition.",
         ),
         FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/settings/presentation/main/navigation/SettingsGraphRegistration.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute", "com.aozijx.passly.feature.shell.presentation.navigation.ShellNavigationContext"),
-            owner = "App navigation contract",
-            rationale = "Settings registers its graph against the shared root route and navigation context.",
-        ),
-        FeatureIntegrationAllowance(
             sourcePathContains = "/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt",
             targetFeature = "scanner",
             allowedImportPrefixes = setOf("com.aozijx.passly.feature.scanner.presentation."),
@@ -78,27 +71,6 @@ internal object SourceBoundaryPolicy {
             allowedImportPrefixes = setOf("com.aozijx.passly.feature.scanner.presentation."),
             owner = "Vault scanner host",
             rationale = "Vault Route owns the scanner purpose and result handling lifecycle.",
-        ),
-        FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute"),
-            owner = "App navigation contract",
-            rationale = "Vault destination registry maps feature destinations to the shared root route type.",
-        ),
-        FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/vault/presentation/navigation/VaultGraphRegistration.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute", "com.aozijx.passly.feature.shell.presentation.navigation.ShellNavigationContext"),
-            owner = "App navigation contract",
-            rationale = "Vault registers its graph against the shared root route and navigation context.",
-        ),
-        FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/vault/presentation/navigation/VaultNavigation.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.navigation.AppRoute"),
-            owner = "App navigation contract",
-            rationale = "Vault navigation emits destinations through the shared root route type.",
         ),
     )
 
