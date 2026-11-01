@@ -191,6 +191,8 @@ security -> *.data.repository / *.data.local
 
 每一条登记都只允许指定源码文件中的指定包前缀；新增业务实现依赖或未经登记的页面集成会使 `verifyArchitecture` 失败。App composition root 连接 Feature 不算 Feature 之间的依赖。
 
+Autofill 的 `AutofillFillActivity`、`AccessibilityFillActivity` 和 `CredentialResponseActivity` 是 Manifest 系统入口，分别持有 Android Activity 生命周期，并在 Activity 根组合 `AuthenticationHost`。这三个精确文件允许导入 `security.authentication.host`；Autofill ViewModel、Route 和其他 Feature 源码均受 `AUTOFILL_AUTH_HOST_ACTIVITY_OWNER` 限制，不能获得该宿主实现依赖。
+
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |

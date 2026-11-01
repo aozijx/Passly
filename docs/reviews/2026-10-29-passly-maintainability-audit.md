@@ -487,3 +487,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：测试完成后关闭/重开可再次提交两次；挂起中的 reset 离页后仍保持 `Resetting`，完成后重入回 `Idle`，未重复执行或取消旧操作。
 - 文档：更新数据库重置生命周期和跨 Feature 集成 owner 合同。
 - 验证：`:app:testDebugUnitTest --tests "*DatabaseResetViewModelTest" --no-parallel --max-workers=1` 通过；`:app:compileDebugKotlin` 与 `verifyArchitecture` 通过；`git diff --check` 通过。
+
+### 后续批次：限制 Autofill Activity 认证宿主依赖（2026-11-01）
+
+- Owner：三个 Autofill Activity 都是 Manifest 系统入口，需要在各自 Activity owner 下组合认证 Host，并处理 unlock/认证结果；这属于 Android 宿主集成，不是 Autofill ViewModel 或业务能力依赖。暂按精确文件例外保留 Activity 生命周期，不搬迁系统 Activity。
+- 修复：新增 `AUTOFILL_AUTH_HOST_ACTIVITY_OWNER`，只对 `AutofillFillActivity`、`AccessibilityFillActivity`、`CredentialResponseActivity` 豁免 `security.authentication.host.*`；同 Feature ViewModel/Route 的同包引用仍被禁止。
+- 回归：测试三个 Activity 源文件路径可以使用认证 Host，同时 Autofill ViewModel 路径因同一 import 触发规则。
+- 文档：包边界页记录三个系统入口的宿主 owner 与精确例外范围。
+- 验证：新增边界用例 RED 后 GREEN；`:buildSrc:test --tests "passly.SourceBoundaryPolicyTest.autofillAuthenticationHostSecurityImportsAreLimitedToSystemActivities" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。

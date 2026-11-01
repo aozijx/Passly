@@ -622,6 +622,31 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun autofillAuthenticationHostSecurityImportsAreLimitedToSystemActivities() {
+        val hostImport = "import com.aozijx.passly.security.authentication.host.AuthenticationHost"
+        val approvedActivities = listOf(
+            "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillActivity.kt",
+            "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt",
+            "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseActivity.kt",
+        ).map { path -> EditorSource(path, hostImport) }
+
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(approvedActivities, SourceBoundaryPolicy.generalRules),
+        )
+
+        val businessViewModel = EditorSource(
+            "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt",
+            hostImport,
+        )
+        val violation = SourceBoundaryVerifier.verify(
+            listOf(businessViewModel),
+            SourceBoundaryPolicy.generalRules,
+        ).single()
+        assertEquals("AUTOFILL_AUTH_HOST_ACTIVITY_OWNER", violation.ruleId)
+    }
+
+    @Test
     fun autofillPlatformAdaptersCannotImportRepositoriesOrAuthenticationPorts() {
         val sources = listOf(
             EditorSource(

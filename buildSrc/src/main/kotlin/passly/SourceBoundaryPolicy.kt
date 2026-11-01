@@ -345,6 +345,17 @@ internal object SourceBoundaryPolicy {
             message = "autofill imports the full authentication manager",
         ),
         SourceBoundaryRule(
+            id = "AUTOFILL_AUTH_HOST_ACTIVITY_OWNER",
+            sourcePathContains = "/feature/autofill/presentation/",
+            allowedSourcePathContains = setOf(
+                "/feature/autofill/presentation/legacy/AutofillFillActivity.kt",
+                "/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt",
+                "/feature/autofill/presentation/credential/CredentialResponseActivity.kt",
+            ),
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.security.authentication.host."),
+            message = "authentication host implementation is restricted to Autofill system Activity roots",
+        ),
+        SourceBoundaryRule(
             id = "AUTOFILL_CREDENTIAL_ADAPTER_DOMAIN_PORT",
             sourcePathContains = "/feature/autofill/credential/",
             forbiddenImportPrefixes = setOf(
