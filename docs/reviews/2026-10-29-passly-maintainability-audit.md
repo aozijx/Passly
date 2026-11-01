@@ -431,3 +431,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 存储约束：Room Schema 版本保持 1，未新增迁移。`attachment_refs` 结构改变只对当前 schema/全新安装成立；按数据库主题页要求清除旧开发数据库或重新安装后运行，不能将旧 v1 DB 当成兼容输入。
 - RED：改造前运行 `AttachmentReferenceLifecycleDaoTest.databaseRejectsReferencesWithoutACommittedEntryOwner`，Pixel 8 Pro 上该测试按预期失败，因为旧 trigger 接受无 Entry owner 的 PENDING 引用；实体手机安装测试 APK 时用户拒绝 Android 安装确认，未作为有效用例结果。
 - GREEN：修复 Room identity hash 的测试夹具后，`DatabaseSchemaCompatibilityTest` 证明旧 v1 `attachment_refs` schema 开库失败且数据库文件/旧列仍保留；Pixel 8 Pro API 36 上 `AttachmentReferenceLifecycleDaoTest` 3 项、`AttachmentResourceGarbageCollectorTest` 1 项、`EntryRevisionRestoreTransactionTest` 6 项通过。Data 单测、AndroidTest Kotlin 编译、App Kotlin 编译、`verifyArchitecture` 通过；Backup `RestoredAttachmentFileTest` 1 项与 `RoomBackupFaviconResourceTest` 2 项通过；schema 已由 KSP 导出，`git diff --check` 通过。未运行实体手机测试，也未执行 Backup Activity/Route 级恢复测试。
+
+### 后续批次：Backup 操作 owner 与迟到 SAF 回执（2026-11-01）
+
+- 根因：`BackupViewModel.execute()` 已把密码交给 `viewModelScope` 协程，但页面退出会把 `Executing` 清成 `Idle`；原协程仍继续，用户重进后可再提交一个 Backup 操作。`OpenDocument` 回执只携带 URI，离页后到达可重建旧导入配置。
+- 合同：提交后的任务归 ViewModel scope 所有，离开 Route 不取消；页面 owner 失效旧通知，但执行状态留存并阻止并行操作，完成后只结束仍匹配的 `Executing(operation)`。Activity/ViewModel 销毁取消任务；密码在协程 `finally` 擦除，导入遵守 Room/journal 取消合同，手动 SAF 导出在失败或取消时删除部分文件。
+- 修复：每次打开导入选择器都创建一次性 request ID，并与当前 page owner 一起校验回执；取消选择也消费 request。页面退出清除 pending token。导入工作流仅存 URI 字符串，避免 Presentation state 对 Android `Uri.equals()` 的依赖。主线程 `Main.immediate` 语义下操作 launch 会在 action 返回前进入 coroutine body；未添加非生产的排队取消补偿。
+- RED：新回归先证明旧 API 的迟到 URI 会在重开页面后进入 ConfigureImport；主线程测试夹具首轮暴露 Android `Uri` 测试桩的 `equals()` 不可用，状态改为仅保存 URI 字符串后解决。
+- GREEN：`BackupViewModelAccessTest` 5 项、`BackupViewModelLifecycleTest` 3 项（含立即启动、离页继续、阻止重复提交、成功/失败/销毁取消及双重密码缓冲擦除）、`BackupOperationInteractorTest` 7 项、`RestoredAttachmentFileTest` 1 项、`RestoreFileJournalTest` 2 项、`RoomBackupFaviconResourceTest` 2 项通过；App 编译、`verifyArchitecture` 与 `git diff --check` 通过。未运行实际 Activity Result/Compose UI 自动化。

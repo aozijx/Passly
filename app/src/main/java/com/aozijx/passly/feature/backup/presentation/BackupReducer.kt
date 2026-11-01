@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation
 
-import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -17,7 +16,7 @@ internal sealed interface BackupMutation {
         val fileName: String,
     ) : BackupMutation
     data object ExportTargetRequested : BackupMutation
-    data class ImportPrepared(val uri: Uri) : BackupMutation
+    data class ImportPrepared(val sourceUri: String) : BackupMutation
     data class PasswordUpdated(val password: SensitiveValue) : BackupMutation
     data class ImportModeUpdated(val mode: ImportMode) : BackupMutation
     data class ImportStrategyUpdated(val strategy: BackupImportStrategy) : BackupMutation
@@ -52,7 +51,7 @@ internal object BackupReducer {
             BackupWorkflow.AwaitingExportTarget(options)
         }
         is BackupMutation.ImportPrepared -> state.copy(
-            workflow = BackupWorkflow.ConfigureImport(BackupImportOptions(mutation.uri)),
+            workflow = BackupWorkflow.ConfigureImport(BackupImportOptions(mutation.sourceUri)),
         )
         is BackupMutation.PasswordUpdated -> state.updateOptionsPassword(mutation.password)
         is BackupMutation.ImportModeUpdated -> state.updateImportOptions {

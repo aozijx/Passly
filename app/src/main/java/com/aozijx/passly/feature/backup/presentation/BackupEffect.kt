@@ -5,7 +5,7 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 
 internal sealed interface BackupEffect {
-    data object SelectImportDocument : BackupEffect
+    data class SelectImportDocument(val requestId: String) : BackupEffect
     data class SelectExportDocument(
         val format: BackupExportFormat,
         val fileName: String,

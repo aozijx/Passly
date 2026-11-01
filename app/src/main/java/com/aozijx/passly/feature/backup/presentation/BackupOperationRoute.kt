@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
@@ -32,13 +34,15 @@ fun BackupOperationRoute(
     val viewModel: BackupViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val noticePublisher = LocalAppNoticePublisher.current
+    val pageOwner = remember(viewModel) { mutableStateOf<Any?>(null) }
+    val importRequestId = remember(viewModel) { mutableStateOf<String?>(null) }
 
     fun startManualExport(uri: Uri?) {
         if (uri == null) {
             viewModel.onAction(BackupUiAction.DismissOptions)
             return
         }
-        viewModel.onAction(BackupUiAction.StartExport(uri = uri))
+        viewModel.onAction(BackupUiAction.StartExport(uri = uri, deleteOnFailure = true))
     }
 
     val encryptedExportPicker = rememberLauncherForActivityResult(
@@ -56,9 +60,12 @@ fun BackupOperationRoute(
     val importPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        if (uri != null) {
-            viewModel.onAction(BackupUiAction.StartImport(uri))
+        val owner = pageOwner.value
+        val requestId = importRequestId.value
+        if (owner != null && requestId != null) {
+            viewModel.onAction(BackupUiAction.StartImport(uri, owner, requestId))
         }
+        importRequestId.value = null
     }
 
     LaunchedEffect(viewModel, noticePublisher) {
@@ -69,14 +76,17 @@ fun BackupOperationRoute(
                         newAppNotice(effect.toNoticeCode(), effect.toNoticeArguments()),
                     )
 
-                BackupEffect.SelectImportDocument -> importPicker.launch(
-                    arrayOf(
-                        "application/octet-stream",
-                        "application/json",
-                        "text/json",
-                        "*/*",
-                    ),
-                )
+                is BackupEffect.SelectImportDocument -> {
+                    importRequestId.value = effect.requestId
+                    importPicker.launch(
+                        arrayOf(
+                            "application/octet-stream",
+                            "application/json",
+                            "text/json",
+                            "*/*",
+                        ),
+                    )
+                }
 
                 is BackupEffect.SelectExportDocument -> when (effect.format) {
                     BackupExportFormat.ENCRYPTED -> encryptedExportPicker.launch(effect.fileName)
@@ -89,7 +99,10 @@ fun BackupOperationRoute(
 
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
+        pageOwner.value = owner
         onDispose {
+            pageOwner.value = null
+            importRequestId.value = null
             viewModel.onPageExited(owner)
         }
     }
@@ -98,7 +111,11 @@ fun BackupOperationRoute(
         backupPathLabel = directoryLabel,
         lastExportFileLabel = lastExportFileLabel,
         onExport = { viewModel.onAction(BackupUiAction.OpenExportOptions) },
-        onImport = { viewModel.onAction(BackupUiAction.RequestImportDocument) },
+        onImport = {
+            pageOwner.value?.let { owner ->
+                viewModel.onAction(BackupUiAction.RequestImportDocument(owner))
+            }
+        },
         onPickBackupPath = onPickBackupPath,
         onTestBackupWrite = {
             viewModel.onAction(BackupUiAction.CheckDirectoryPermission(directoryUri))

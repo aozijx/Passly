@@ -22,6 +22,7 @@ import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -34,15 +35,16 @@ class BackupViewModelAccessTest {
     @Test
     fun `recovery mode rejects preparing export and import with operation feedback`() = runTest {
         val model = model(MutableAccess(AuthenticationState.RecoveryMode(1L)))
-        model.onPageEntered()
+        val owner = model.onPageEntered()
 
         val exportEffect = async { model.effects.first() }
         model.onAction(BackupUiAction.SelectExportFormat(BackupExportFormat.JSON))
         assertEquals(BackupNoticeEffect.Failed(BackupOperation.EXPORT), exportEffect.await())
         assertFailed(model, BackupOperation.EXPORT)
 
+        val requestId = requestImportDocument(model, owner)
         val importEffect = async { model.effects.first() }
-        model.onAction(BackupUiAction.StartImport(TestUri))
+        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestId))
         assertEquals(BackupNoticeEffect.Failed(BackupOperation.IMPORT), importEffect.await())
         assertFailed(model, BackupOperation.IMPORT)
     }
@@ -67,8 +69,8 @@ class BackupViewModelAccessTest {
     fun `recovery mode rejects an already prepared import`() = runTest {
         val access = MutableAccess(AuthenticationState.Authenticated(1L))
         val model = model(access)
-        model.onPageEntered()
-        model.onAction(BackupUiAction.StartImport(TestUri))
+        val owner = model.onPageEntered()
+        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestImportDocument(model, owner)))
         assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureImport)
 
         access.authenticationState.value = AuthenticationState.RecoveryMode(2L)
@@ -82,11 +84,36 @@ class BackupViewModelAccessTest {
     @Test
     fun `authenticated session permits preparing export and import`() = runTest {
         val model = model(MutableAccess(AuthenticationState.Authenticated(1L)))
+        val owner = model.onPageEntered()
 
         model.onAction(BackupUiAction.SelectExportFormat(BackupExportFormat.JSON))
         assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureExport)
-        model.onAction(BackupUiAction.StartImport(TestUri))
+        model.onAction(BackupUiAction.StartImport(TestUri, owner, requestImportDocument(model, owner)))
         assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureImport)
+    }
+
+    @Test
+    fun `late import picker result from an exited page cannot start a workflow`() = runTest {
+        val model = model(MutableAccess(AuthenticationState.Authenticated(1L)))
+        val oldPageOwner = model.onPageEntered()
+        val requestId = requestImportDocument(model, oldPageOwner)
+
+        model.onPageExited(oldPageOwner)
+        val newPageOwner = model.onPageEntered()
+        val newRequestId = requestImportDocument(model, newPageOwner)
+        model.onAction(BackupUiAction.StartImport(TestUri, newPageOwner, requestId))
+        assertEquals(BackupWorkflow.Idle, model.uiState.value.workflow)
+
+        model.onAction(BackupUiAction.StartImport(TestUri, newPageOwner, newRequestId))
+        assertTrue(model.uiState.value.workflow is BackupWorkflow.ConfigureImport)
+    }
+
+    private suspend fun requestImportDocument(model: BackupViewModel, owner: Any): String {
+        return coroutineScope {
+            val pickerEffect = async { model.effects.first() }
+            model.onAction(BackupUiAction.RequestImportDocument(owner))
+            (pickerEffect.await() as BackupEffect.SelectImportDocument).requestId
+        }
     }
 
     private fun assertFailed(model: BackupViewModel, operation: BackupOperation) {

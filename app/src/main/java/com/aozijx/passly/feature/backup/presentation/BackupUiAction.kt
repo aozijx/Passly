@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 sealed interface BackupUiAction {
     data class CheckDirectoryPermission(val uri: String?) : BackupUiAction
     data object OpenExportOptions : BackupUiAction
-    data object RequestImportDocument : BackupUiAction
+    data class RequestImportDocument(val pageOwner: Any) : BackupUiAction
     data class SelectExportFormat(val format: BackupExportFormat) : BackupUiAction
 
     data class StartExport(
@@ -18,7 +18,11 @@ sealed interface BackupUiAction {
         val deleteOnFailure: Boolean = false,
     ) : BackupUiAction
 
-    data class StartImport(val uri: Uri) : BackupUiAction
+    data class StartImport(
+        val uri: Uri?,
+        val pageOwner: Any,
+        val requestId: String,
+    ) : BackupUiAction
 
     data class UpdatePassword(val password: String) : BackupUiAction
     data class UpdateImportMode(val mode: ImportMode) : BackupUiAction

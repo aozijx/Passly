@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation
 
-import android.net.Uri
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
@@ -43,7 +42,7 @@ internal data class BackupExportOptions(
 }
 
 internal data class BackupImportOptions(
-    val uri: Uri,
+    val sourceUri: String,
     val password: SensitiveValue = EmptySensitiveValue,
     val mode: ImportMode = ImportMode.APPEND,
     val strategy: BackupImportStrategy = BackupImportStrategy.COMPATIBLE,

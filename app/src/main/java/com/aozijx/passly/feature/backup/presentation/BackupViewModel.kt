@@ -16,12 +16,13 @@ import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
 import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 internal class BackupViewModel @Inject constructor(
@@ -34,18 +35,20 @@ internal class BackupViewModel @Inject constructor(
 
     private val pageEffects = PageEffects<BackupEffect>()
     val effects = pageEffects.effects
+    private var pendingImportDocument: PendingImportDocument? = null
 
     fun onAction(action: BackupUiAction) {
+        if (_uiState.value.workflow is BackupWorkflow.Executing) return
         when (action) {
             is BackupUiAction.CheckDirectoryPermission -> checkDirectoryPermission(action.uri)
             BackupUiAction.OpenExportOptions -> mutate(BackupMutation.ExportOptionsOpened)
-            BackupUiAction.RequestImportDocument -> emitEffect(BackupEffect.SelectImportDocument)
+            is BackupUiAction.RequestImportDocument -> requestImportDocument(action.pageOwner)
             is BackupUiAction.SelectExportFormat -> prepareExport(action.format)
             is BackupUiAction.StartExport -> startManualExport(
                 uri = action.uri,
                 deleteOnFailure = action.deleteOnFailure,
             )
-            is BackupUiAction.StartImport -> prepareImport(action.uri)
+            is BackupUiAction.StartImport -> startImport(action)
             is BackupUiAction.UpdatePassword -> replacePassword(
                 OwnedChars.fromString(action.password),
             )
@@ -90,7 +93,22 @@ internal class BackupViewModel @Inject constructor(
 
     private fun prepareImport(uri: Uri) {
         if (!requireSession(BackupOperation.IMPORT)) return
-        replaceWorkflow(BackupMutation.ImportPrepared(uri))
+        replaceWorkflow(BackupMutation.ImportPrepared(uri.toString()))
+    }
+
+    private fun requestImportDocument(owner: Any) {
+        if (!pageEffects.isActive(owner)) return
+        val request = PendingImportDocument(owner, UUID.randomUUID().toString())
+        pendingImportDocument = request
+        emitEffect(owner, BackupEffect.SelectImportDocument(request.requestId))
+    }
+
+    private fun startImport(action: BackupUiAction.StartImport) {
+        val pending = pendingImportDocument ?: return
+        if (pending.pageOwner !== action.pageOwner || pending.requestId != action.requestId) return
+        pendingImportDocument = null
+        if (!pageEffects.isActive(action.pageOwner)) return
+        action.uri?.let(::prepareImport)
     }
 
     private fun submitExport(useConfiguredDirectory: Boolean) {
@@ -171,20 +189,21 @@ internal class BackupViewModel @Inject constructor(
         when (result) {
             BackupExecutionResult.DirectoryWritable -> {
                 emitEffect(owner, BackupNoticeEffect.DirectoryWritable)
-                mutate(owner, BackupMutation.OperationSucceeded)
+                mutateIfExecuting(operation, BackupMutation.OperationSucceeded)
             }
             BackupExecutionResult.ExportSucceeded -> {
                 emitEffect(owner, BackupNoticeEffect.ExportSucceeded)
-                mutate(owner, BackupMutation.OperationSucceeded)
+                mutateIfExecuting(operation, BackupMutation.OperationSucceeded)
             }
             is BackupExecutionResult.ImportSucceeded -> {
                 emitEffect(owner, BackupNoticeEffect.ImportSucceeded(result.result))
-                mutate(owner, BackupMutation.OperationSucceeded)
+                mutateIfExecuting(operation, BackupMutation.OperationSucceeded)
             }
-            BackupExecutionResult.Cancelled -> mutate(owner, BackupMutation.WorkflowClosed)
+            BackupExecutionResult.Cancelled ->
+                mutateIfExecuting(operation, BackupMutation.WorkflowClosed)
             is BackupExecutionResult.Failure -> {
                 emitEffect(owner, BackupNoticeEffect.Failed(operation))
-                mutate(owner, BackupMutation.OperationFailed(operation, result.error))
+                mutateIfExecuting(operation, BackupMutation.OperationFailed(operation, result.error))
             }
         }
     }
@@ -235,20 +254,24 @@ internal class BackupViewModel @Inject constructor(
     fun onPageExited(owner: Any) {
         if (!pageEffects.isActive(owner)) return
         pageEffects.exit(owner)
-        closeWorkflow()
+        if (pendingImportDocument?.pageOwner === owner) pendingImportDocument = null
+        if (_uiState.value.workflow !is BackupWorkflow.Executing) closeWorkflow()
     }
 
     private fun mutate(mutation: BackupMutation) {
         _uiState.update { state -> BackupReducer.reduce(state, mutation) }
     }
 
-    private fun mutate(owner: Any, mutation: BackupMutation) {
-        if (pageEffects.isActive(owner)) mutate(mutation)
+    private fun mutateIfExecuting(operation: BackupOperation, mutation: BackupMutation) {
+        if (_uiState.value.workflow == BackupWorkflow.Executing(operation)) mutate(mutation)
     }
 
     override fun onCleared() {
+        pendingImportDocument = null
         _uiState.value.workflow.password().wipe()
     }
+
+    private data class PendingImportDocument(val pageOwner: Any, val requestId: String)
 }
 
 private fun BackupExportOptions.toRequest() = BackupExportOperationRequest(
@@ -264,6 +287,6 @@ private fun BackupExportOptions.toRequest() = BackupExportOperationRequest(
 private fun BackupImportOptions.toRequest() = BackupImportOperationRequest(
     mode = mode,
     strategy = strategy,
-    sourceUri = uri.toString(),
+    sourceUri = sourceUri,
     password = password,
 )
