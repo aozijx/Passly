@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.settings.security.RecoveryCodeDraftInteractor
 import com.aozijx.passly.feature.settings.security.RecoveryCodeDraftResult
 import com.aozijx.passly.feature.settings.security.RecoveryCodeCommitResult
@@ -14,11 +15,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class RecoveryCodeSettingsViewModel @Inject constructor(
@@ -91,7 +94,7 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 if (pageEffects.isActive(owner)) replaceDraft(RecoveryCodeDraftUiState.Failed)
             } finally {
                 if (generationJob === coroutineContext[Job]) generationJob = null
@@ -166,9 +169,17 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
                 val result = try {
                     draftInteractor.commit()
                 } catch (cancelled: CancellationException) {
+                    reconcileInterruptedCommit(owner, ready.disclosure, restoreReady = true)
                     throw cancelled
-                } catch (_: Throwable) {
-                    RecoveryCodeCommitResult.Failed
+                } catch (error: Error) {
+                    reconcileInterruptedCommit(owner, ready.disclosure, restoreReady = false)
+                    throw error
+                } catch (_: Exception) {
+                    if (withContext(NonCancellable) { draftInteractor.reconcileCommit() }) {
+                        RecoveryCodeCommitResult.Committed
+                    } else {
+                        RecoveryCodeCommitResult.Failed
+                    }
                 }
                 when (result) {
                     RecoveryCodeCommitResult.Committed -> {
@@ -195,6 +206,37 @@ class RecoveryCodeSettingsViewModel @Inject constructor(
                 commitInFlight = false
             }
         }
+    }
+
+    private suspend fun reconcileInterruptedCommit(
+        owner: Any,
+        disclosure: SensitiveValue,
+        restoreReady: Boolean,
+    ): Boolean {
+        val committed = withContext(NonCancellable) { draftInteractor.reconcileCommit() }
+        when {
+            committed -> {
+                _uiState.update { it.copy(hasRecoveryCode = true) }
+                if (pageEffects.isActive(owner)) {
+                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                    replaceDraft(RecoveryCodeDraftUiState.Committed)
+                } else {
+                    replaceDraft(RecoveryCodeDraftUiState.Empty)
+                }
+            }
+            pageEffects.isActive(owner) && restoreReady ->
+                replaceDraft(RecoveryCodeDraftUiState.Ready(disclosure))
+            else -> {
+                draftInteractor.dismiss()
+                if (pageEffects.isActive(owner)) {
+                    savedStateHandle[WAS_DISCLOSURE_OPEN] = false
+                    replaceDraft(RecoveryCodeDraftUiState.Failed)
+                } else {
+                    replaceDraft(RecoveryCodeDraftUiState.Empty)
+                }
+            }
+        }
+        return committed
     }
 
     private fun dismissDisclosure() {

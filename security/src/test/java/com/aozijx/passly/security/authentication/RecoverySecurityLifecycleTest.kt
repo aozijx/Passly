@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class RecoverySecurityLifecycleTest {
@@ -79,6 +80,21 @@ class RecoverySecurityLifecycleTest {
             refreshAvailability = { error("derived availability refresh failed") }
         )
 
+        assertTrue(sealed)
+    }
+
+    @Test
+    fun `availability refresh fatal error propagates only after recovery session is sealed`() = runBlocking {
+        val fatal = AssertionError("fatal refresh failure")
+        var sealed = false
+        val actual = runCatching {
+            finishRecoveryPasswordProvisioning(
+                seal = { sealed = true },
+                refreshAvailability = { throw fatal },
+            )
+        }.exceptionOrNull()
+
+        assertSame(fatal, actual)
         assertTrue(sealed)
     }
 }

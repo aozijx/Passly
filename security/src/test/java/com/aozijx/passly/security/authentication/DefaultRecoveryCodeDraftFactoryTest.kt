@@ -132,6 +132,7 @@ class DefaultRecoveryCodeDraftFactoryTest {
             committed = true
             return AuthenticationResult.Success(com.aozijx.passly.domain.access.model.AuthenticationMethod.RECOVERY_CODE)
         }
+        override val isCommitted: Boolean get() = committed
         override fun close() = Unit
     }
 }

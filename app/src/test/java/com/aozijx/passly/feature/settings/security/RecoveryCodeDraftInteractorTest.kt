@@ -77,9 +77,26 @@ class RecoveryCodeDraftInteractorTest {
         assertTrue(draft.closed)
     }
 
+    @Test
+    fun `reconcile commit releases active draft only after durable commit`() = runTest {
+        val draft = FakeDraft("recovery-code")
+        val interactor = RecoveryCodeDraftInteractor(
+            draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
+            clipboardWriter = RecordingClipboard(),
+        )
+        (interactor.generate() as RecoveryCodeDraftResult.Ready).disclosure.wipe()
+
+        assertEquals(false, interactor.reconcileCommit())
+        draft.committed = true
+        assertEquals(true, interactor.reconcileCommit())
+        assertEquals(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
+        assertEquals(false, draft.closed)
+    }
+
     private class FakeDraft(private val value: String) : RecoveryCredentialDraft {
         override val id = RecoveryCredentialId("draft-id")
         var closed = false
+        var committed = false
 
         override fun reveal(): CharArray? = if (closed) null else value.toCharArray()
 
@@ -87,6 +104,8 @@ class RecoveryCodeDraftInteractorTest {
             method = AuthenticationMethod.RECOVERY_CODE,
             reusedSession = false,
         )
+
+        override val isCommitted: Boolean get() = committed
 
         override fun close() {
             closed = true

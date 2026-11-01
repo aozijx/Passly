@@ -12,6 +12,8 @@ interface RecoveryCredentialDraft : AutoCloseable {
     val id: RecoveryCredentialId
     fun reveal(): CharArray?
     suspend fun commit(): AuthenticationResult
+    /** Whether the exact draft envelope crossed the durable store commit point. */
+    val isCommitted: Boolean
     override fun close()
 }
 

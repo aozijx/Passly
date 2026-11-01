@@ -25,8 +25,10 @@ import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.envelope.EnvelopeManager
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
@@ -125,7 +127,7 @@ internal class DefaultRecoveryCredentialGenerator @Inject constructor(
             RecoveryCredentialCreation.Ready(draft)
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Throwable) {
+        } catch (_: Exception) {
             RecoveryCredentialCreation.Failed(transitionFailure(correlationId))
         } finally {
             code.fill('\u0000')
@@ -161,6 +163,8 @@ internal class SessionBoundRecoveryCredentialDraft(
         return delegate.commit()
     }
 
+    override val isCommitted: Boolean get() = delegate.isCommitted
+
     override fun close() = delegate.close()
 
     private fun hasOriginalSession(): Boolean =
@@ -172,7 +176,7 @@ internal class SessionBoundRecoveryCredentialDraft(
     }
 }
 
-private class SecureRecoveryCodeDraft(
+internal class SecureRecoveryCodeDraft(
     generationId: String,
     sourceCode: CharArray,
     sourceEnvelope: KeyEnvelope,
@@ -183,6 +187,8 @@ private class SecureRecoveryCodeDraft(
     private val mutex = Mutex()
     private var code: CharArray? = sourceCode.copyOf()
     private var envelope: KeyEnvelope? = sourceEnvelope
+    @Volatile
+    private var durableCommit = false
 
     @Synchronized
     override fun reveal(): CharArray? = code?.copyOf()
@@ -197,22 +203,55 @@ private class SecureRecoveryCodeDraft(
             salt = current.salt.copyOf(),
         )
         try {
-            vaultBootstrapStore.save(copy)
+            try {
+                vaultBootstrapStore.save(copy)
+                durableCommit = true
+            } catch (saveFailure: Throwable) {
+                val persisted = try {
+                    withContext(NonCancellable) { persistedEnvelopeMatches(copy) }
+                } catch (readFailure: Throwable) {
+                    throw saveFailure.withSuppressedAndPriority(readFailure)
+                }
+                durableCommit = persisted
+                if (saveFailure is CancellationException || saveFailure is Error || !persisted) {
+                    throw saveFailure
+                }
+            }
             close()
             try {
                 authenticationManager.refreshAvailability()
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 // The envelope is already committed; availability is refreshed before the next authentication request.
             }
             AuthenticationResult.Success(AuthenticationMethod.RECOVERY_CODE)
         } catch (cancelled: CancellationException) {
+            if (durableCommit) close()
             throw cancelled
-        } catch (_: Throwable) {
-            AuthenticationResult.Failure(transitionFailure(id.value))
+        } catch (error: Error) {
+            close()
+            throw error
+        } catch (_: Exception) {
+            if (durableCommit) {
+                close()
+                AuthenticationResult.Success(AuthenticationMethod.RECOVERY_CODE)
+            } else {
+                AuthenticationResult.Failure(transitionFailure(id.value))
+            }
         } finally {
             KeyEnvelope.destroy(copy)
+        }
+    }
+
+    override val isCommitted: Boolean get() = durableCommit
+
+    private suspend fun persistedEnvelopeMatches(candidate: KeyEnvelope): Boolean {
+        val persisted = vaultBootstrapStore.load(EnvelopeType.RECOVERY) ?: return false
+        return try {
+            persisted == candidate
+        } finally {
+            KeyEnvelope.destroy(persisted)
         }
     }
 
@@ -223,6 +262,13 @@ private class SecureRecoveryCodeDraft(
         envelope?.let(KeyEnvelope::destroy)
         envelope = null
     }
+}
+
+private fun Throwable.withSuppressedAndPriority(other: Throwable): Throwable = when {
+    other is Error && this !is Error -> other.apply { addSuppressed(this@withSuppressedAndPriority) }
+    other is CancellationException && this !is Error && this !is CancellationException ->
+        other.apply { addSuppressed(this@withSuppressedAndPriority) }
+    else -> apply { if (other !== this) addSuppressed(other) }
 }
 
 private fun restrictedSessionFailure(): RecoveryCredentialCreation.Failed =

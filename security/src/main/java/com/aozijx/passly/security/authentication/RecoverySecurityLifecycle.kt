@@ -36,7 +36,7 @@ internal suspend fun finishRecoveryPasswordProvisioning(
         refreshAvailability()
     } catch (cancelled: CancellationException) {
         throw cancelled
-    } catch (_: Throwable) {
+    } catch (_: Exception) {
         // The envelope is authoritative. The next authentication request refreshes availability.
     }
 }

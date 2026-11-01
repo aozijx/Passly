@@ -69,6 +69,14 @@ SavedStateHandle 或 PendingIntent。`KeyMissing`、`KeyInvalidated`、`CryptoOb
 会在 `NonCancellable` 中封存数据库、擦除 DEK 并发布 `Locked`，然后继续传播取消；已有 DEK 的软锁恢复取消时保留
 DEK，并按数据库会话实际状态恢复锁级别。恢复模式解锁取消会封存会话并擦除暂存 DEK。
 
+设置应用密码以持久化的新 Envelope 为提交点。若后续可用性刷新或会话发布抛普通异常，provisioner 会在
+`NonCancellable` 中读取持久 envelope，并用本次随机 salt 确认写入；已提交时结果仍表示应用密码已设置，避免引导用户
+重复提交。未发现本次 envelope 时才返回设置失败；取消继续传播，fatal `Error` 不映射成业务失败。密码、salt、派生 key
+分别由 `SecretChars`、`finally` 和 `OwnedBytes.use` 清理。恢复码草稿在 `VaultBootstrapStore.save()` 成功后即已提交；若
+store 在写入后抛错，会读回并比较完整 envelope。`RecoveryCredentialDraft.isCommitted` 供页面在提交取消或抛错后读取该
+提交事实：已提交则更新可用状态并移除 disclosure，未提交且取消则恢复可重试 disclosure。生成和 commit 只将普通
+`Exception` 映射为业务失败；取消仍传播，fatal `Error` 在草稿密钥与明文清理后传播。
+
 安全设置中的应用密码设置、修改和禁用共享一个进行中操作状态。提交后确认、取消和输入控件禁用，ViewModel 同步拒绝重复请求；
 请求字符数组由 Interactor 的 `finally` 清理，若页面 owner 已退出、请求被拒绝或 ViewModel 在协程启动前销毁，ViewModel 也会清理。
 页面退出使当前结果 owner 失效，但不会主动取消已启动的操作；旧结果不会投递给之后重新进入的页面。
@@ -184,4 +192,6 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 | 管理应用密码设置请求与页面结果归属 | `AppPasswordSettingsViewModel.runChange()`、`AppPasswordSettingsInteractor.execute()` | [`AppPasswordSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/AppPasswordSettingsViewModel.kt)、[`AppPasswordSettingsInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/AppPasswordSettingsInteractor.kt) |
 | 提供 Activity 认证宿主和生命周期租约 | `AuthenticationHost`、`AuthenticationHostRegistry` | [`AuthenticationHost.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHost.kt)、[`AuthenticationHostRegistry.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHostRegistry.kt) |
 | 派生和封存 Vault 会话密钥 | `DekManager`、`VaultSessionController` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
+| 区分应用密码 Envelope 提交与会话协调结果 | `runAppPasswordProvisioning()`、`DefaultAuthenticationMethodProvisioner.setAppPassword()` | [`AppPasswordProvisioningCommit.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/AppPasswordProvisioningCommit.kt)、[`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt) |
+| 生成并提交 Recovery Code 草稿 | `DefaultRecoveryCredentialGenerator`、`SecureRecoveryCodeDraft`、`RecoveryCodeDraftInteractor`、`RecoveryCodeSettingsViewModel` | [`DefaultRecoveryCodeDraftFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultRecoveryCodeDraftFactory.kt)、[`RecoveryCodeDraftInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt)、[`RecoveryCodeSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt) |
 | 执行生物识别密钥轮换 | `RotateBiometricKeyUseCase`、`BiometricCryptoFactory` | [`RotateBiometricKeyUseCase.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/RotateBiometricKeyUseCase.kt)、[`BiometricCryptoFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/BiometricCryptoFactory.kt) |

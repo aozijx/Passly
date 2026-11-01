@@ -65,6 +65,14 @@ class RecoveryCodeDraftInteractor @Inject constructor(
         }
     }
 
+    /** Reconciles an interrupted commit from the draft's durable store marker. */
+    suspend fun reconcileCommit(): Boolean {
+        val draft = activeDraft ?: return false
+        if (!draft.isCommitted) return false
+        activeDraft = null
+        return true
+    }
+
     fun dismiss() = closeDraft()
 
     override fun close() = closeDraft()

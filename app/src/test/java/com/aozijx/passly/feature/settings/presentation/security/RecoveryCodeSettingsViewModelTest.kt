@@ -204,6 +204,57 @@ class RecoveryCodeSettingsViewModelTest {
     }
 
     @Test
+    fun `cancelled commit after durable save reconciles recovery code state before propagating`() = runTest {
+        val draft = DeferredCommitDraft(
+            commitGate = CompletableDeferred(),
+            commitFailure = kotlinx.coroutines.CancellationException("cancelled after save"),
+            commitBeforeFailure = true,
+        )
+        val savedState = SavedStateHandle()
+        val model = fixture(draft, savedState = savedState)
+        model.onPageEntered()
+        model.onAction(RecoveryCodeSettingsAction.Generate)
+        runCurrent()
+        model.onAction(RecoveryCodeSettingsAction.ConfirmAndEnable)
+        runCurrent()
+
+        draft.commitGate.complete(Unit)
+        runCurrent()
+
+        assertEquals(true, model.uiState.value.hasRecoveryCode)
+        assertEquals(RecoveryCodeDraftUiState.Committed, model.uiState.value.draft)
+        assertEquals(false, savedState.get<Boolean>("wasRecoveryDisclosureOpen"))
+        assertEquals(true, draft.durableCommit)
+    }
+
+    @Test
+    fun `fatal commit error reconciles durable state before coroutine termination`() {
+        val fatal = AssertionError("fatal after durable commit")
+        val actual = runCatching {
+            runTest {
+                val draft = DeferredCommitDraft(
+                    commitGate = CompletableDeferred(),
+                    commitFailure = fatal,
+                    commitBeforeFailure = true,
+                )
+                val model = fixture(draft)
+                model.onPageEntered()
+                model.onAction(RecoveryCodeSettingsAction.Generate)
+                runCurrent()
+                model.onAction(RecoveryCodeSettingsAction.ConfirmAndEnable)
+                runCurrent()
+                draft.commitGate.complete(Unit)
+                runCurrent()
+
+                assertEquals(true, model.uiState.value.hasRecoveryCode)
+                assertEquals(RecoveryCodeDraftUiState.Committed, model.uiState.value.draft)
+            }
+        }.exceptionOrNull()
+
+        assertSame(fatal, actual)
+    }
+
+    @Test
     fun `failed confirmed commit after page exit closes draft without restoring disclosure`() = runTest {
         val commitGate = CompletableDeferred<Unit>()
         val draft = DeferredCommitDraft(
@@ -302,14 +353,18 @@ class RecoveryCodeSettingsViewModelTest {
     }
 
     private class DeferredCommitDraft(
-        private val commitGate: CompletableDeferred<Unit>,
+        val commitGate: CompletableDeferred<Unit>,
         private val commitResult: AuthenticationResult =
             AuthenticationResult.Success(AuthenticationMethod.RECOVERY_CODE),
+        private val commitFailure: Throwable? = null,
+        private val commitBeforeFailure: Boolean = false,
     ) : RecoveryCredentialDraft {
         override val id = RecoveryCredentialId("test-draft")
         var commitCalls = 0
             private set
         var closeCalls = 0
+            private set
+        var durableCommit = false
             private set
 
         override fun reveal() = "recovery-code".toCharArray()
@@ -317,8 +372,15 @@ class RecoveryCodeSettingsViewModelTest {
         override suspend fun commit(): AuthenticationResult {
             commitCalls += 1
             commitGate.await()
+            commitFailure?.let {
+                durableCommit = commitBeforeFailure
+                throw it
+            }
+            durableCommit = commitResult is AuthenticationResult.Success
             return commitResult
         }
+
+        override val isCommitted: Boolean get() = durableCommit
 
         override fun close() {
             closeCalls += 1

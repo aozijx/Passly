@@ -1,26 +1,26 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.crypto.KeyDerivation
-import com.aozijx.passly.domain.access.model.EnvelopeType
-import com.aozijx.passly.domain.access.model.KdfAlgorithm
-import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
-import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
-import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
-import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.SessionLockRequest
-import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
+import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
+import com.aozijx.passly.security.dek.DekManager
 import com.github.f4b6a3.uuid.UuidCreator
-import kotlinx.coroutines.CancellationException
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -34,7 +34,7 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
     private val session: VaultSessionController,
     private val authenticationManager: AuthenticationManager,
     private val vaultBootstrapStore: VaultBootstrapStore,
-    private val hostRegistry: com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry,
+    private val hostRegistry: AuthenticationHostRegistry,
     private val rotateBiometricKey: RotateBiometricKeyUseCase,
     private val cryptoFactory: BiometricCryptoFactory,
     private val availabilityResolver: AuthenticationAvailabilityResolver
@@ -58,56 +58,56 @@ class DefaultAuthenticationMethodProvisioner @Inject constructor(
         val secret = SecretChars.take(password)
         val salt = KeyDerivation.generateSalt()
         return try {
-            val ownedKey = kdfRunner.execute(secret) { chars ->
-                OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt))
-            }
-            val rawKey = ownedKey.consume()
-            try {
-                val key = SecretKeySpec(rawKey, "AES")
-                if (dekManager.isUnlocked.value) {
-                    dekManager.rekeyWithKey(
-                        EnvelopeType.APP_PASSWORD,
-                        key,
-                        salt,
-                        KdfAlgorithm.ARGON2ID
-                    )
-                } else {
-                    dekManager.initializeWithKey(
-                        EnvelopeType.APP_PASSWORD,
-                        key,
-                        salt,
-                        KdfAlgorithm.ARGON2ID
-                    )
-                }
-                if (wasRecoveryMode) {
-                    finishRecoveryPasswordProvisioning(
-                        seal = {
-                            session.lock(
-                                SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
-                            )
-                        },
-                        refreshAvailability = authenticationManager::refreshAvailability
-                    )
-                } else {
-                    authenticationManager.refreshAvailability()
-                    session.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT)
-                }
-                AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
-            } finally {
-                rawKey.fill(0)
-                ownedKey.discard()
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Throwable) {
-            AuthenticationResult.Failure(
-                AuthenticationFailure(
-                    AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
-                    AuthenticationRequestId(correlationId),
-                )
+            runAppPasswordProvisioning(
+                store = vaultBootstrapStore,
+                salt = salt,
+                requestId = correlationId,
+                persist = {
+                    kdfRunner.execute(secret) { chars ->
+                        OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt))
+                    }.use { ownedKey ->
+                        val rawKey = ownedKey.consume()
+                        try {
+                            val key = SecretKeySpec(rawKey, "AES")
+                            if (dekManager.isUnlocked.value) {
+                                dekManager.rekeyWithKey(
+                                    EnvelopeType.APP_PASSWORD,
+                                    key,
+                                    salt,
+                                    KdfAlgorithm.ARGON2ID,
+                                )
+                            } else {
+                                dekManager.initializeWithKey(
+                                    EnvelopeType.APP_PASSWORD,
+                                    key,
+                                    salt,
+                                    KdfAlgorithm.ARGON2ID,
+                                )
+                            }
+                        } finally {
+                            rawKey.fill(0)
+                        }
+                    }
+                },
+                reconcileSession = {
+                    if (wasRecoveryMode) {
+                        finishRecoveryPasswordProvisioning(
+                            seal = {
+                                session.lock(
+                                    SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT),
+                                )
+                            },
+                            refreshAvailability = authenticationManager::refreshAvailability,
+                        )
+                    } else {
+                        authenticationManager.refreshAvailability()
+                        session.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT)
+                    }
+                },
             )
         } finally {
             secret.close()
+            salt.fill(0)
         }
     }
 
