@@ -186,11 +186,12 @@ security -> *.data.repository / *.data.local
 | Settings → Backup | `BackupOperationRoute` | Settings 持有页面和 SAF Activity Result launcher；Backup 内部存储实现不可导入 |
 | Settings → Database | `DatabaseResetRoute` | Settings 持有 Data Management 宿主；Sheet owner 出入时清理终态，但不取消 Resetting 中的确认操作 |
 | Settings → Autofill | `AutofillServiceStatusSource` | 仅观察服务启用状态的能力合同，Android 实现由 App 提供 |
-| Autofill/Settings → Shell theme | `PersistedAppTheme`、`LocalAppearanceSettings` | 系统 Activity 应用已持久化主题、Settings 读取已生效外观；主题仍待归位到应用级 owner |
 
 每一条登记都只允许指定源码文件中的指定包前缀；新增业务实现依赖或未经登记的页面集成会使 `verifyArchitecture` 失败。App composition root 连接 Feature 不算 Feature 之间的依赖。
 
 全局 `AppRoute` 与导航 callback 合同 `ShellNavigationContext` 由 `app.navigation` 拥有。Shell NavHost 使用该合同承载控制器，Vault/Settings 只定义并注册各自的 destination graph；它们不再导入 Shell presentation 包。全局图仍由 App 根组合连接。
+
+`AppTheme`、`PersistedAppTheme`、`LocalAppearanceSettings` 及主题设置状态 owner 由 `app.theme` 拥有；App 主入口和 Autofill 系统 Activity 使用同一主题组合，Settings 读取中立的当前外观 CompositionLocal。Shell 不再拥有跨应用使用的主题实现。
 
 Autofill 的 `AutofillFillActivity`、`AccessibilityFillActivity` 和 `CredentialResponseActivity` 是 Manifest 系统入口，分别持有 Android Activity 生命周期，并在 Activity 根组合 `AuthenticationHost`。这三个精确文件允许导入 `security.authentication.host`；Autofill ViewModel、Route 和其他 Feature 源码均受 `AUTOFILL_AUTH_HOST_ACTIVITY_OWNER` 限制，不能获得该宿主实现依赖。
 

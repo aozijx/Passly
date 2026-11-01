@@ -12,7 +12,7 @@ import androidx.fragment.app.FragmentActivity
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
-import com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme
+import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint

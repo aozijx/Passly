@@ -19,7 +19,7 @@ import com.aozijx.passly.feature.shell.presentation.AppShellSettingsState
 import com.aozijx.passly.feature.shell.presentation.AppShellViewModel
 import com.aozijx.passly.feature.shell.presentation.AppWindowPolicyEffects
 import com.aozijx.passly.feature.shell.presentation.windowPolicy
-import com.aozijx.passly.feature.shell.presentation.theme.AppTheme
+import com.aozijx.passly.app.theme.AppTheme
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
 import com.aozijx.passly.feature.unlock.presentation.AuthenticationRoute
 import com.aozijx.passly.security.authentication.host.AuthenticationHost

@@ -3,27 +3,6 @@ package passly
 internal object SourceBoundaryPolicy {
     val featureIntegrationAllowances = listOf(
         FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme"),
-            owner = "Autofill Activity theme host",
-            rationale = "System Activity owns the Compose host and applies the persisted app theme.",
-        ),
-        FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/autofill/presentation/credential/CredentialResponseActivity.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme"),
-            owner = "Autofill Activity theme host",
-            rationale = "System Activity owns the Compose host and applies the persisted app theme.",
-        ),
-        FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/autofill/presentation/legacy/AutofillFillActivity.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme"),
-            owner = "Autofill Activity theme host",
-            rationale = "System Activity owns the Compose host and applies the persisted app theme.",
-        ),
-        FeatureIntegrationAllowance(
             sourcePathContains = "/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt",
             targetFeature = "autofill",
             allowedImportPrefixes = setOf("com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource"),
@@ -43,13 +22,6 @@ internal object SourceBoundaryPolicy {
             allowedImportPrefixes = setOf("com.aozijx.passly.feature.database.presentation.reset.DatabaseResetRoute"),
             owner = "Settings data management host",
             rationale = "Settings owns the Data Management destination that presents database reset UI.",
-        ),
-        FeatureIntegrationAllowance(
-            sourcePathContains = "/feature/settings/presentation/main/navigation/core/AppearanceRoute.kt",
-            targetFeature = "shell",
-            allowedImportPrefixes = setOf("com.aozijx.passly.feature.shell.presentation.theme.LocalAppearanceSettings"),
-            owner = "Application theme composition",
-            rationale = "Settings reads the theme settings currently provided by the root theme composition.",
         ),
         FeatureIntegrationAllowance(
             sourcePathContains = "/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt",

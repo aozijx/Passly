@@ -8,7 +8,7 @@ import com.aozijx.passly.feature.settings.presentation.appearance.AppearanceSett
 import com.aozijx.passly.feature.settings.presentation.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.appearance.toAppearanceUiModel
 import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
-import com.aozijx.passly.feature.shell.presentation.theme.LocalAppearanceSettings
+import com.aozijx.passly.app.theme.LocalAppearanceSettings
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.AppearanceDetail

@@ -15,7 +15,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
-import com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme
+import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim

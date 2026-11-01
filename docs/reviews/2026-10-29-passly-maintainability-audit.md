@@ -503,3 +503,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 回归：Vault 导航与目的地映射现有测试继续使用同一 route 值，验证新增编辑目的地和 Settings/Trash 导航未变；架构门禁与 App 编译验证新的依赖方向。
 - 文档：包边界页更新跨 Feature 边清单和导航 owner。
 - 验证：`:app:testDebugUnitTest --tests "*VaultNavigationTest" --tests "*VaultEditorDestinationRegistryTest" verifyArchitecture --no-parallel --max-workers=1` 通过；`git diff --check` 通过。
+
+### 后续批次：主题组合与当前外观合同归 App 所有（2026-11-01）
+
+- 根因：主 App 入口之外，三个 Autofill 系统 Activity 需要已持久化主题；Settings 外观页也要读取当前实际生效主题。它们都依赖 `feature.shell.presentation.theme`，使 Shell Feature 充当应用主题 provider。
+- 修复：将 `AppTheme`、`PersistedAppTheme`、`LocalAppearanceSettings`、主题设置状态 ViewModel 和动画色板逻辑移到 `app.theme`；迁移 shape/动画单测和 Compose instrumentation source。PasslyApp、Autofill Activity 与 Settings 改用 App theme owner，删除 Autofill/Settings→Shell theme 例外登记。
+- 回归：原有 shape、animated color scheme 逻辑测试保持覆盖；App compile 与主题相关单测验证现有主题值/形状/颜色插值行为。
+- 文档：包边界页更新当前跨 Feature 边清单和主题 owner。
+- 验证：`:app:testDebugUnitTest --tests "*AppShapesTest" --tests "*AnimatedColorSchemeTest" verifyArchitecture --no-parallel --max-workers=1` 与 `:app:compileDebugAndroidTestKotlin` 通过；`git diff --check` 通过。未运行 Android Compose instrumentation。

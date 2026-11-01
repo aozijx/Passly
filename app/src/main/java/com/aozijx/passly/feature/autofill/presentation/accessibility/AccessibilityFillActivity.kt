@@ -12,7 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.toUiItem
-import com.aozijx.passly.feature.shell.presentation.theme.PersistedAppTheme
+import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint

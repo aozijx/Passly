@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.shell.presentation.theme
+package com.aozijx.passly.app.theme
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FiniteAnimationSpec

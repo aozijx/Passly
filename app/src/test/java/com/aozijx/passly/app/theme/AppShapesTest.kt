@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.shell.presentation.theme
+package com.aozijx.passly.app.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
