@@ -598,3 +598,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 清理：ViewModel 测试改用 `FakeBackupOperationGateway`，删除测试对 `DefaultBackupOperationGateway`、归档服务、StorageSupport 和授权实现的组装；ViewModel 字段与执行器测试名统一改用 Gateway/Default 实现语义，移除旧 Interactor 命名桥接。独立执行器测试继续直接验证临时归档密码缓冲在成功后擦零，避免 fixture 解耦时丢掉敏感值回归覆盖。
 - 门禁：`BACKUP_PRESENTATION_INTERNAL_DEPENDENCY` 扩大到整个 `feature/backup/presentation` 源树，包含 main 与 test；回归测试同时验证生产代码、测试代码拒绝 internal import，feature contract import 通过。
 - 验证：Backup ViewModel Access/Lifecycle 定向测试、`SourceBoundaryPolicyTest`、`verifyModuleBoundaries`、`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 数据库关闭失败的终态封存合同（2026-11-01）
+
+- 选择：数据库句柄关闭失败后，本进程永久保持 `SEALED`，直到进程重启。Runtime 返回明确的 `SessionSealResult.CloseFailed`，保留失败句柄状态并拒绝同进程重开，不重试 close，也不并行创建替代句柄。
+- 重置门槛：`VaultDatabaseResetController` 只在 seal 成功后删除 SQLite/SQLCipher 文件及托管资源；关闭失败时返回原错误，不删文件、不尝试 unlock。Security reset coordinator 根据 SEALED 状态撤销授权、清除敏感密钥并发布 Locked。
+- 回归：Runtime 覆盖关闭异常、取消、同进程重开拒绝与模拟进程重启；Data 覆盖 close failure 不触发数据库删除、资源删除或 unlock；Security 覆盖 reset 关闭失败后的认证锁定与授权撤销，并验证普通安全锁在清理后记录封存失败。
+- 验证：`:runtime:session:test --tests "*RuntimeSessionManagerTest"`、`:data:testDebugUnitTest --tests "*VaultDatabaseResetControllerTest"`、`:security:testDebugUnitTest --tests "*DatabaseSessionRetryCoordinatorTest" --tests "*VaultSessionIdleTimeoutTest"` 通过。fatal `Error` 的恢复与传播仍由 Task 25 后续子批次处理。

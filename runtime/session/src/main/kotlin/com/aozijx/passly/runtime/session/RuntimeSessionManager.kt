@@ -31,6 +31,7 @@ class RuntimeSessionManager<Handle : Any>(
     fun <T> observe(block: suspend Handle.() -> Flow<T>): Flow<T> = leaseGate.observe(block)
 
     suspend fun unlock(): SessionUnlockResult {
+        leaseGate.closeFailure()?.let { return SessionUnlockResult.OpenFailed(it) }
         if (leaseGate.resumeIfOpen()) return SessionUnlockResult.Success
 
         return withContext(ioDispatcher) {
@@ -51,5 +52,5 @@ class RuntimeSessionManager<Handle : Any>(
 
     suspend fun softLock() = leaseGate.softLock()
 
-    suspend fun seal(timeout: Duration = 5.seconds) = leaseGate.seal(timeout)
+    suspend fun seal(timeout: Duration = 5.seconds): SessionSealResult = leaseGate.seal(timeout)
 }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.time.Duration.Companion.milliseconds
@@ -97,7 +98,7 @@ class RuntimeSessionManagerTest {
     }
 
     @Test
-    fun `seal propagates close cancellation after discarding handle`() = runBlocking {
+    fun `seal propagates close cancellation and permanently rejects same-process reopen`() = runBlocking {
         val cancellation = CancellationException("resource close cancelled")
         val resource = FakeResource(closeFailure = cancellation)
         val manager = RuntimeSessionManager(
@@ -116,7 +117,12 @@ class RuntimeSessionManagerTest {
         assertTrue(caught is CancellationException)
         assertEquals(cancellation.message, caught?.message)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
-        assertTrue(resource.closed)
+        val reopen = manager.unlock()
+        assertTrue(reopen is SessionUnlockResult.OpenFailed)
+        assertTrue((reopen as SessionUnlockResult.OpenFailed).cause is CancellationException)
+        assertEquals(1, resource.openCount)
+        assertEquals(1, resource.closeAttempts)
+        assertTrue(!resource.closed)
     }
 
     @Test
@@ -291,7 +297,7 @@ class RuntimeSessionManagerTest {
     }
 
     @Test
-    fun `close failure is reported and handle is still discarded`() = runBlocking {
+    fun `close failure remains terminal until process restart`() = runBlocking {
         val failure = IllegalStateException("close failed")
         val events = mutableListOf<SessionTransitionEvent>()
         val resource = FakeResource(closeFailure = failure)
@@ -302,8 +308,12 @@ class RuntimeSessionManagerTest {
         )
         manager.unlock()
 
-        manager.seal()
+        val result = manager.seal()
 
+        assertTrue(result is SessionSealResult.CloseFailed)
+        val reportedFailure = (result as SessionSealResult.CloseFailed).cause
+        assertEquals(failure.javaClass, reportedFailure.javaClass)
+        assertEquals(failure.message, reportedFailure.message)
         val closeFailure = events.single { it.reason == SessionTransitionReason.CLOSE_FAILED }
         assertEquals(SecureSessionState.SEALED, closeFailure.fromState)
         assertEquals(SecureSessionState.SEALED, closeFailure.toState)
@@ -311,10 +321,17 @@ class RuntimeSessionManagerTest {
         assertEquals(failure.javaClass, closeFailure.error?.javaClass)
         assertEquals(failure.message, closeFailure.error?.message)
         assertEquals(SecureSessionState.SEALED, manager.lockState)
-        runCatching { manager.read { value } }
-            .onSuccess { error("failed close retained a readable handle") }
-            .onFailure { assertTrue(it is SessionLockedException) }
-        Unit
+        val reopen = manager.unlock()
+        assertTrue(reopen is SessionUnlockResult.OpenFailed)
+        assertSame(reportedFailure, (reopen as SessionUnlockResult.OpenFailed).cause)
+        assertEquals("same-process unlock must not open another handle", 1, resource.openCount)
+        assertEquals("same-process unlock must not retry close", 1, resource.closeAttempts)
+
+        val afterProcessRestart = RuntimeSessionManager(
+            resource = FakeResource(),
+            keySource = SessionKeySource { byteArrayOf(9) },
+        )
+        assertEquals(SessionUnlockResult.Success, afterProcessRestart.unlock())
     }
 
     @Test
@@ -354,8 +371,11 @@ class RuntimeSessionManagerTest {
     ) : SessionResource<FakeHandle> {
         var openedWith: ByteArray? = null
         var closed = false
+        var openCount = 0
+        var closeAttempts = 0
 
         override suspend fun open(key: ByteArray): FakeHandle {
+            openCount += 1
             openedWith = key.clone()
             openFailure?.let { throw it }
             cancelAfterOpen?.let { currentCoroutineContext().cancel(it) }
@@ -363,9 +383,10 @@ class RuntimeSessionManagerTest {
         }
 
         override suspend fun close(handle: FakeHandle) {
-            closed = true
+            closeAttempts += 1
             onClose()
             closeFailure?.let { throw it }
+            closed = true
         }
 
         override suspend fun <T> transaction(

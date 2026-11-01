@@ -27,5 +27,5 @@ interface DatabaseSessionLifecycle {
 
     suspend fun unlock(): Throwable?
     suspend fun softLock()
-    suspend fun seal()
+    suspend fun seal(): SessionSealResult
 }

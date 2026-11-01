@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.data.local.database.DatabaseSchema
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SessionSealResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -31,24 +32,34 @@ internal class VaultDatabaseResetController @Inject constructor(
             logger.inSpan(Operations.DatabaseReset) {
                 var resetError: Throwable? = null
                 var cancellation: CancellationException? = null
+                var reopenAllowed = true
                 try {
-                    databaseSession.seal()
-                    deleteDatabaseFiles()
-                    VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach(::deleteVaultFileDirectory)
+                    when (val sealResult = databaseSession.seal()) {
+                        SessionSealResult.Sealed -> {
+                            deleteDatabaseFiles()
+                            VaultResourcePaths.RESOURCE_DIRECTORY_NAMES.forEach(::deleteVaultFileDirectory)
+                        }
+                        is SessionSealResult.CloseFailed -> {
+                            resetError = sealResult.cause
+                            reopenAllowed = false
+                        }
+                    }
                 } catch (cancelled: CancellationException) {
                     cancellation = cancelled
                 } catch (error: Throwable) {
                     resetError = error
                 }
 
-                val reopenError = try {
-                    databaseSession.unlock()
-                } catch (cancelled: CancellationException) {
-                    cancellation = cancellation ?: cancelled
-                    null
-                } catch (error: Throwable) {
-                    error
-                }
+                val reopenError = if (reopenAllowed) {
+                    try {
+                        databaseSession.unlock()
+                    } catch (cancelled: CancellationException) {
+                        cancellation = cancellation ?: cancelled
+                        null
+                    } catch (error: Throwable) {
+                        error
+                    }
+                } else null
                 if (resetError != null && reopenError != null && reopenError !== resetError) {
                     resetError.addSuppressed(reopenError)
                 }

@@ -26,6 +26,7 @@ import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SessionSealResult
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.DekState
@@ -60,6 +61,72 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionIdleTimeoutTest {
+    @Test
+    fun `close failure during security lock is reported after fail closed cleanup`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val logger = RecordingLogger()
+            val closeFailure = IllegalStateException("database close failed")
+            val session = YieldingDatabaseSession(
+                sealResult = SessionSealResult.CloseFailed(closeFailure),
+            )
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                logger = logger,
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, logger.errorEvents.count { it == Events.Security.LockFailed })
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test
+    fun `failed reset close keeps authentication locked and revokes permits`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            var revoked = 0
+            val closeFailure = IllegalStateException("database close failed")
+            val session = YieldingDatabaseSession(
+                sealResult = SessionSealResult.CloseFailed(closeFailure),
+            )
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = session,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+                revokeAuthorization = { revoked++ },
+            )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val result = controller.withExclusiveDatabaseReset {
+                when (val sealed = session.seal()) {
+                    SessionSealResult.Sealed -> session.unlock()
+                    is SessionSealResult.CloseFailed -> sealed.cause
+                }
+            }
+
+            assertEquals(closeFailure, result)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(closeFailure, controller.databaseFailure.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, revoked)
+            assertEquals(0, session.unlockCalls)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     @Test
     fun `failed reset reopen publishes locked state and supports retry`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
@@ -589,6 +656,7 @@ class VaultSessionIdleTimeoutTest {
         lockOnBackground: MutableStateFlow<Boolean>,
         logger: RecordingLogger = RecordingLogger(),
         provisionInboxKey: suspend () -> Unit = {},
+        revokeAuthorization: () -> Unit = {},
     ): VaultSessionController {
         val bootstrap = EmptyVaultBootstrapStore()
         val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
@@ -597,7 +665,7 @@ class VaultSessionIdleTimeoutTest {
         return VaultSessionController(
             dekManager = dekManager,
             sensitiveDataKeyManager = sensitiveKeyManager,
-            authorizationPermitRevoker = { },
+            authorizationPermitRevoker = revokeAuthorization,
             sessionManager = databaseSession,
             vaultBootstrapStore = bootstrap,
             lockStateManager = lockState,
@@ -646,18 +714,21 @@ class VaultSessionIdleTimeoutTest {
         private val softLockFailure: Throwable? = null,
         private val pauseUnlock: Boolean = false,
         private val unlockFailure: Throwable? = null,
+        private val sealResult: SessionSealResult = SessionSealResult.Sealed,
         initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
     ) : DatabaseSessionLifecycle {
         override var lockState: SecureSessionState = initialLockState
         var unlockResultError: Throwable? = null
         var softLockCompleted = false
         var sealCount = 0
+        var unlockCalls = 0
         val sealStarted = CompletableDeferred<Unit>()
         val allowSealToFinish = CompletableDeferred<Unit>()
         val unlockStarted = CompletableDeferred<Unit>()
         val allowUnlockToFinish = CompletableDeferred<Unit>()
 
         override suspend fun unlock(): Throwable? {
+            unlockCalls += 1
             unlockStarted.complete(Unit)
             if (pauseUnlock) allowUnlockToFinish.await()
             unlockFailure?.let { throw it }
@@ -673,12 +744,13 @@ class VaultSessionIdleTimeoutTest {
             softLockFailure?.let { throw it }
         }
 
-        override suspend fun seal() {
+        override suspend fun seal(): SessionSealResult {
             sealStarted.complete(Unit)
             if (pauseSeal) allowSealToFinish.await()
             sealCount += 1
             lockState = SecureSessionState.SEALED
             sealFailure?.let { throw it }
+            return sealResult
         }
     }
 

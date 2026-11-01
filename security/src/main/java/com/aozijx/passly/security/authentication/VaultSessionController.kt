@@ -19,6 +19,7 @@ import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SessionSealResult
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.dek.DekUnlockResult
 import com.aozijx.passly.security.dek.DekManager
@@ -347,7 +348,11 @@ class VaultSessionController @Inject internal constructor(
                 timeoutMs = 5_000,
             ) {
                 try {
-                    sessionManager.seal()
+                    when (val result = sessionManager.seal()) {
+                        SessionSealResult.Sealed -> Unit
+                        is SessionSealResult.CloseFailed ->
+                            recordFailure(result.cause, Reasons.SessionSealFailed)
+                    }
                 } catch (cancelled: CancellationException) {
                     recordFailure(cancelled, Reasons.SessionSealFailed)
                 } catch (failure: Throwable) {
@@ -393,7 +398,11 @@ class VaultSessionController @Inject internal constructor(
                     // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
                     if (targetLevel == SecureSessionState.SEALED) {
                         try {
-                            sessionManager.seal()
+                            when (val result = sessionManager.seal()) {
+                                SessionSealResult.Sealed -> Unit
+                                is SessionSealResult.CloseFailed ->
+                                    recordFailure(result.cause, Reasons.SessionSealFailed)
+                            }
                         } catch (cancelled: CancellationException) {
                             cleanupCancellation = cancelled
                         } catch (failure: Throwable) {
@@ -421,7 +430,11 @@ class VaultSessionController @Inject internal constructor(
 
                         SecureSessionState.SEALED -> {
                             try {
-                                sessionManager.seal()
+                                when (val result = sessionManager.seal()) {
+                                    SessionSealResult.Sealed -> Unit
+                                    is SessionSealResult.CloseFailed ->
+                                        recordFailure(result.cause, Reasons.SessionSealFailed)
+                                }
                             } catch (cancelled: CancellationException) {
                                 cleanupCancellation = cancelled
                             } catch (failure: Throwable) {

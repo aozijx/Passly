@@ -36,6 +36,7 @@ internal class SessionLeaseGate<Handle : Any>(
     private val resourceMutex = Mutex()
 
     private var handle: Handle? = null
+    private var closeFailure: Throwable? = null
 
     suspend fun <T> read(block: suspend Handle.() -> T): T {
         val owner = acquireLease()
@@ -69,6 +70,7 @@ internal class SessionLeaseGate<Handle : Any>(
     }.flowOn(Dispatchers.IO)
 
     suspend fun resumeIfOpen(): Boolean = resourceMutex.withLock {
+        if (closeFailure != null) return false
         if (handle == null) return false
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
@@ -84,6 +86,7 @@ internal class SessionLeaseGate<Handle : Any>(
     }
 
     suspend fun open(key: ByteArray): SessionUnlockResult {
+        closeFailure()?.let { return SessionUnlockResult.OpenFailed(it) }
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
         var opened: Handle? = null
@@ -171,7 +174,7 @@ internal class SessionLeaseGate<Handle : Any>(
         )
     }
 
-    suspend fun seal(timeout: Duration) {
+    suspend fun seal(timeout: Duration): SessionSealResult {
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
         leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
@@ -195,7 +198,7 @@ internal class SessionLeaseGate<Handle : Any>(
             }
         }
 
-        close()
+        val closeError = close()
         emitTransition(
             startedAt,
             fromState,
@@ -204,17 +207,25 @@ internal class SessionLeaseGate<Handle : Any>(
             SessionLockType.SEALED,
             timeoutMs = timeout.inWholeMilliseconds,
         )
+        return closeError?.let(SessionSealResult::CloseFailed) ?: SessionSealResult.Sealed
     }
 
-    private suspend fun close() {
+    suspend fun closeFailure(): Throwable? = resourceMutex.withLock { closeFailure }
+
+    private suspend fun close(): Throwable? {
         val startedAt = elapsedRealtimeMs()
-        resourceMutex.withLock {
-            val current = handle ?: return
+        return resourceMutex.withLock {
+            closeFailure?.let { return@withLock it }
+            val current = handle ?: return@withLock null
             try {
                 withContext(ioDispatcher) { resource.close(current) }
+                handle = null
+                null
             } catch (cancelled: CancellationException) {
+                closeFailure = cancelled
                 throw cancelled
             } catch (error: Throwable) {
+                closeFailure = error
                 val state = mutableLockState.value
                 emitTransition(
                     startedAt,
@@ -224,8 +235,8 @@ internal class SessionLeaseGate<Handle : Any>(
                     if (state == SecureSessionState.SEALED) SessionLockType.SEALED else SessionLockType.NONE,
                     error = error,
                 )
-            } finally {
-                handle = null
+                if (error is Error) throw error
+                error
             }
         }
     }
