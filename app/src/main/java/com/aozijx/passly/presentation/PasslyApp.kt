@@ -20,6 +20,8 @@ import com.aozijx.passly.feature.shell.presentation.AppShellViewModel
 import com.aozijx.passly.feature.shell.presentation.AppWindowPolicyEffects
 import com.aozijx.passly.feature.shell.presentation.windowPolicy
 import com.aozijx.passly.feature.shell.presentation.theme.AppTheme
+import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
+import com.aozijx.passly.feature.unlock.presentation.AuthenticationRoute
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 
@@ -55,11 +57,13 @@ internal fun PasslyApp(
             ) {
                 AuthenticationHost(activity, authenticationHostRegistry, logger) {
                     AppShell(
-                        activity = activity,
                         uiState = shellState,
                         effects = shellViewModel.effects,
                         onAction = shellViewModel::onAction,
                         onCloseApp = activity::finishAffinity,
+                        vaultContent = { PasslyAppNavigation(activity) },
+                        recoveryContent = { onExit -> RecoveryModeRoute(onExit = onExit) },
+                        authenticationContent = { AuthenticationRoute() },
                     )
                 }
             }

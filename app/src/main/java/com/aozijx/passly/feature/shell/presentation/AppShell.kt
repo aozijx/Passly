@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.shell.presentation
 
 import android.widget.Toast
-import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
@@ -11,18 +10,18 @@ import androidx.compose.ui.platform.LocalView
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
 import com.aozijx.passly.feature.shell.presentation.ui.DatabaseErrorDialog
-import com.aozijx.passly.feature.unlock.presentation.AuthenticationRoute
 import kotlinx.coroutines.flow.Flow
 
 @Composable
 internal fun AppShell(
-    activity: FragmentActivity,
     uiState: AppShellUiState,
     effects: Flow<AppShellEffect>,
     onAction: (AppShellUiAction) -> Unit,
     onCloseApp: () -> Unit,
+    vaultContent: @Composable () -> Unit,
+    recoveryContent: @Composable (onExit: () -> Unit) -> Unit,
+    authenticationContent: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -55,12 +54,11 @@ internal fun AppShell(
                 )
             }
 
-            AppShellDestination.VAULT -> PasslyAppNavigation(activity)
-            AppShellDestination.RECOVERY -> RecoveryModeRoute(
-                onExit = { onAction(AppShellUiAction.ExitRecovery) },
-            )
-
-            AppShellDestination.AUTHENTICATION -> AuthenticationRoute()
+            AppShellDestination.VAULT -> vaultContent()
+            AppShellDestination.RECOVERY -> recoveryContent {
+                onAction(AppShellUiAction.ExitRecovery)
+            }
+            AppShellDestination.AUTHENTICATION -> authenticationContent()
         }
     }
 

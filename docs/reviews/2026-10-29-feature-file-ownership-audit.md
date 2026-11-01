@@ -100,3 +100,7 @@ Picker 的两个字符串资源仍留在 app 资源集中。组件实现与行�
 2026-10-29 的保留结论基于当时的双接口设计。复核后移除 `VaultDataChangeSignal`、`DataVaultDataChangeSignal` 与 `EntryDataRefreshNotifier`：`RoomEntryPagingStore.pages()` 已通过 `AppDatabaseSession.observeWhenReadable()` 观察 session 可读状态，数据库 reset 的 SEALED→UNLOCKED 转换会在同一个 query collector 中取消旧 Room Pager、发出空页并重建 Pager。独立 refresh signal 与 session state 重复表达同一次数据库替换，增加了一个 DI/adapter/collector 注册链，并使 reset 行为依赖两路通知协调。`VaultEntryPageSource` 与 `DataVaultEntryPageSource` 仍是必要的 app/Data 分层适配边界；普通写入由 Room invalidation 驱动。该复核不改变既有跨模块分页端口的保留结论。
 
 **验证范围：** `RoomObservationSessionTest` 使用真实 `AsyncPagingDataDiffer` 消费分页结果，检查 query generation 数、reset 前后 PagingData 发射次数以及过滤结果；Data session/paging 仪器测试、Vault query 测试与架构门禁的实际结果记录在维护审查中。该测试证明 Data 层 collector 行为，不单独证明 Activity 导航期间的 Compose collector 生命周期。
+
+### Shell 导航组合根归属复核（2026-11-01）
+
+全局 NavHost 装配与 Activity 范围的 OTP 导入 ViewModel 已从 `feature/shell/presentation` 移至根 `presentation` 组合入口。Shell `AppShell` 继续拥有安全目的地状态、错误页和宿主转换，只通过页面内容槽组合 Vault、Recovery 与 Authentication；它不再导入这些 Feature 的 Presentation。Vault/Settings 图仍由各自 Feature 注册，app 根负责连接。`verifyArchitecture` 与 `:app:compileDebugKotlin` 通过。

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.shell.presentation
+package com.aozijx.passly.presentation
 
 import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.Composable

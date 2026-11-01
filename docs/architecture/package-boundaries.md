@@ -24,6 +24,10 @@ DEK、字段派生密钥和信封原语当前位于 `:core` 的 `security.dek/se
 Database Reset。根 `presentation` 仅保留应用组合入口及其 Activity 宿主、跨业务展示组件和展示映射。`core` 的共享指
 跨业务使用的技术能力；包含业务语义的纯规则优先进入 Domain，不因被多个页面引用就放进 Core。
 
+根 `PasslyApp`/`PasslyAppNavigation` 组合入口负责注册 Vault 与 Settings 图，并持有 Activity 作用域的 OTP 导入
+ViewModel。Shell 持有安全目的地状态与宿主合同，由 app 根提供 Vault、Recovery 和 Authentication 页面内容；Shell
+不导入这些 Feature Presentation。各 Feature 仍负责自身图注册与页面状态。
+
 ## 强制规则
 
 ```text
