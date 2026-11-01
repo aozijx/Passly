@@ -52,6 +52,31 @@ class DefaultAppNoticeDispatcherTest {
     }
 
     @Test
+    fun mandatoryNoticeDoesNotWaitForOptionalSettingsSnapshot() = runBlocking {
+        var systemDeliveries = 0
+        val dispatcher = DefaultAppNoticeDispatcher(
+            router = DefaultNoticeRouter(),
+            deduplicator = DefaultNoticeDeduplicator { 1_000L },
+            codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
+            settingsProvider = MessageSettingsSnapshotProvider { MessageSettingsSnapshot.Loading },
+            visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
+            systemStateProvider = availableSystemState(),
+            sinks = setOf(sink(NoticeTarget.SYSTEM) {
+                systemDeliveries++
+                SinkResult.Delivered
+            }),
+        )
+
+        val receipt = dispatcher.dispatch(
+            newAppNotice(NoticeCode.SECURITY_ACTION_FAILED, eventId = "mandatory-settings-loading"),
+        )
+
+        assertEquals(1, systemDeliveries)
+        assertEquals(NoticeDispatchStatus.DELIVERED, receipt.status)
+        assertEquals(0, receipt.settingsVersion)
+    }
+
+    @Test
     fun systemFailureFallsBackToInAppAndReturnsReceipt() = runBlocking {
         var settingsReads = 0
         val delivered = mutableListOf<NoticeTarget>()

@@ -18,8 +18,10 @@ flowchart LR
     R --> A["AndroidSystemNotificationGateway"]
 ```
 
-`publish()` 只返回入队结果；需要确定投递结果的调用方使用 `dispatch()` 获得
-`NoticeDispatchReceipt`。Dispatcher 串行处理消息并在一次处理开始时原子读取设置版本，整条消息使用同一快照。
+`publish()` 只返回有界内存队列的入队结果；`Accepted` 表示本次运行中已排队，不保证投递或进程重启后恢复。
+通知是 best-effort：队列消费早于首个设置快照时，普通可选事件以 `SETTINGS_UNAVAILABLE` 抑制并丢弃，不无限等待、也不自动重放；
+需要确定投递结果的调用方使用 `dispatch()` 获得 `NoticeDispatchReceipt`。Dispatcher 串行处理消息并在一次处理开始时原子读取设置版本，
+整条消息使用同一快照。
 
 ## 判定顺序
 
@@ -30,7 +32,12 @@ flowchart LR
 5. `PREFER_*` 在首选目标不可用或投递失败时按策略回退；`SYSTEM_ONLY` 不回退。
 6. 投递完成后，至少一个目标成功才完成 eventId claim；所有目标失败时释放 claim，允许同一事件重试。
 
-强制消息只绕过产品总开关、topic 和最低等级，不绕过 Android 权限或系统 channel。
+强制消息只绕过产品总开关、topic 和最低等级，不依赖通知设置快照中的用户偏好；快照仍在加载或读取失败时，使用中性系统开关值继续路由，
+但不绕过 Android 权限或系统 channel。普通消息遇到 Loading 则抑制，不占用去重 claim。
+
+`DefaultMessageSettingsSnapshotProvider` 首次读取前为 Loading。设置 Flow 正常结束或抛出普通异常后都会清除旧 Ready 值为 Loading，并在固定 1 秒间隔后重新订阅；
+取消和 fatal `Error` 不映射为普通读取失败。恢复后的每次实际设置 emission 都生成新版本。Loading 期间普通通知仍按上述 best-effort 合同处理，
+不保留队列事件等待恢复。
 
 ## 事件注册表
 

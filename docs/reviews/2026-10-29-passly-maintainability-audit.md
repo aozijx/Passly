@@ -559,3 +559,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 所有权：等待请求带 page owner；真正离页会取消当前 owner 的请求，新的页面 owner 进入时也会使旧 owner 请求失效。迟到的旧 Route dispose 和旧 request 结果不会取消或完成新 owner 的请求。
 - 回归：ViewModel 用例覆盖配置重建后相同 request token 恢复并只写一次、旧 owner dispose 不取消新 owner 请求、真正离页使旧结果失效。现有 `PermissionRequestHostTest` 覆盖宿主替换后拒绝旧 launch/result 并释放 arbiter lease。
 - 文档：权限中心及通知设置文档更新配置重建/真离页合同。未连接 Android 设备；尚未运行真实 `AppCompatDelegate.setApplicationLocales()` Activity recreation 与系统授权弹窗组合验证，该 Compose/Activity Result 行为项仍待设备验收。
+
+### 后续批次：定义消息队列设置快照缺失与恢复合同（2026-11-01）
+
+- 合同：`AppNoticePublisher.publish() == Accepted` 只说明事件进入容量有限的内存队列，不保证最终投递；普通消息若在设置快照 Loading 时被消费则抑制并丢弃，不无限等待或重放。mandatory 消息绕过产品偏好快照，仍检查真实系统通知权限/channel 与路由能力。
+- 修复：`DefaultMessageSettingsSnapshotProvider` 在来源正常完成或抛普通异常时清除旧 Ready 为 Loading，并每 1 秒重新订阅；取消原样传播，fatal `Error` 不被转换为可恢复读取失败。
+- 回归：新测试覆盖“已发旧值、读取异常、立即清除旧策略、重新订阅恢复”；dispatcher 测试覆盖设置仍 Loading 时 mandatory 系统通知仍投递。既有普通通知 Loading 抑制测试保持通过。
+- 文档：消息中心记录 Accepted 的易失语义、普通与 mandatory 行为及 snapshot retry。消息事件真实异步队列的进程/路由组合回归仍待 Task 23 后续补齐。

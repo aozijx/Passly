@@ -20,6 +20,7 @@ import com.aozijx.passly.app.message.contract.NoticeTarget
 import com.aozijx.passly.app.message.contract.RouteReason
 import com.aozijx.passly.app.message.contract.SinkResult
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
+import com.aozijx.passly.domain.settings.model.MessageSettings
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -63,17 +64,23 @@ class DefaultAppNoticeDispatcher @Inject constructor(
         dispatchMutex.withLock { dispatchSerial(notice) }
 
     private suspend fun dispatchSerial(notice: AppNotice): NoticeDispatchReceipt {
+        val policy = codeRegistry.policyFor(notice.code)
         val settings = when (val snapshot = settingsProvider.current()) {
-            MessageSettingsSnapshot.Loading -> return receipt(
-                notice = notice,
-                settingsVersion = 0,
-                plan = NoticeRoutePlan.suppressed(RouteReason.SETTINGS_UNAVAILABLE),
-                results = emptyMap(),
-                status = NoticeDispatchStatus.SUPPRESSED,
-            )
+            MessageSettingsSnapshot.Loading -> {
+                if (!policy.mandatory) return receipt(
+                    notice = notice,
+                    settingsVersion = 0,
+                    plan = NoticeRoutePlan.suppressed(RouteReason.SETTINGS_UNAVAILABLE),
+                    results = emptyMap(),
+                    status = NoticeDispatchStatus.SUPPRESSED,
+                )
+                MessageSettingsSnapshot.Ready(
+                    version = 0,
+                    value = MessageSettings(systemNotificationsEnabled = true),
+                )
+            }
             is MessageSettingsSnapshot.Ready -> snapshot
         }
-        val policy = codeRegistry.policyFor(notice.code)
         val systemState = systemStateProvider.current().copy(
             userSettingEnabled = settings.value.systemNotificationsEnabled
         )
