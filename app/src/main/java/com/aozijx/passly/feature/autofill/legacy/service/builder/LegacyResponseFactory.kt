@@ -77,6 +77,7 @@ class LegacyResponseFactory @Inject constructor(
                 inlineRequest = inlineRequest,
             ),
         )
+        is AutofillDiscoveryOutcome.ResumeSelection -> unavailable(Reasons.UnknownFailure)
     }
 
     fun buildDataset(

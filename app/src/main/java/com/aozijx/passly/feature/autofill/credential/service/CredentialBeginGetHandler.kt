@@ -149,6 +149,11 @@ class CredentialBeginGetHandler @Inject constructor(
             }
         }
 
+        is AutofillDiscoveryOutcome.ResumeSelection -> {
+            flow.cancel(discovery.snapshot.id)
+            BeginGetCredentialResponse()
+        }
+
         is AutofillDiscoveryOutcome.NoCandidates -> {
             flow.cancel(discovery.snapshot.id)
             logUnavailable(Reasons.NoMatchingEntry)

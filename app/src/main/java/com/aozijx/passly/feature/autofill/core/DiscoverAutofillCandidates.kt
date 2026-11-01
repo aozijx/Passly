@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import com.aozijx.passly.domain.autofill.model.FieldRole
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.autofill.port.AutofillCandidateRepository
 import com.aozijx.passly.domain.autofill.port.FieldMatchStrategy
 import com.aozijx.passly.domain.autofill.port.MatchResult
@@ -40,6 +41,7 @@ class DiscoverAutofillCandidates @Inject constructor(
         request: AutofillRequest,
         interactionId: AutofillInteractionId? = null,
         classifiedRoles: Map<String, FieldRole>? = null,
+        directEntryId: EntryId? = null,
     ): AutofillDiscoveryOutcome {
         val policy = settingsSource.interaction.first().autofill
         if (!policy.enabled || !policy.supports(request.source)) {
@@ -61,6 +63,9 @@ class DiscoverAutofillCandidates @Inject constructor(
             ?: return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INTERACTION_NOT_FOUND)
         if (snapshot.scope != scope) {
             return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.SCOPE_MISMATCH)
+        }
+        if (directEntryId != null && snapshot.state == AutofillInteractionState.CandidatesReady) {
+            return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId)
         }
 
         val context = AutofillDiscoveryContext(

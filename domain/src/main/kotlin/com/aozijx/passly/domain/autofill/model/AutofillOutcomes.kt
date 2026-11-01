@@ -40,6 +40,11 @@ sealed interface AutofillDiscoveryOutcome {
         val context: AutofillDiscoveryContext,
     ) : AutofillDiscoveryOutcome
 
+    data class ResumeSelection(
+        val snapshot: AutofillInteractionSnapshot,
+        val entryId: EntryId,
+    ) : AutofillDiscoveryOutcome
+
     data class Failed(val failure: AutofillOperationFailure) : AutofillDiscoveryOutcome
 }
 

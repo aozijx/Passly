@@ -11,7 +11,6 @@ import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
-import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
@@ -20,7 +19,6 @@ import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
 import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
-import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -38,7 +36,6 @@ class AutofillFillViewModel @Inject constructor(
     private val discoverCandidates: DiscoverAutofillCandidates,
     private val resolveSelection: ResolveAutofillSelection,
     private val finishInteraction: FinishAutofillInteraction,
-    private val interactionStore: AutofillInteractionStore,
     private val logger: Logger,
     private val traceContinuations: TraceContinuationStore,
 ) : ViewModel() {
@@ -108,15 +105,10 @@ class AutofillFillViewModel @Inject constructor(
     }
 
     private suspend fun continueAuthorized(request: AutofillFillRequest) {
-        val snapshot = interactionStore.snapshot(request.interactionId)
-        if (request.directEntryId != null && snapshot?.state == AutofillInteractionState.CandidatesReady) {
-            resolve(request, request.directEntryId)
-            return
-        }
-
         val discoveryStartedAt = monotonicTimeMs()
         logger.log(LogStatements.Autofill.discoveryStarted())
         when (val discovery = discover(request)) {
+            is AutofillDiscoveryOutcome.ResumeSelection -> resolve(request, discovery.entryId)
             is AutofillDiscoveryOutcome.Candidates -> {
                 logger.log(
                     LogStatements.Autofill.discoveryCompleted(
@@ -153,6 +145,7 @@ class AutofillFillViewModel @Inject constructor(
             request = request.toDomainRequest(),
             interactionId = request.interactionId,
             classifiedRoles = request.roleMap(),
+            directEntryId = request.directEntryId,
         )
 
     private suspend fun returnDiscoveryResponse(

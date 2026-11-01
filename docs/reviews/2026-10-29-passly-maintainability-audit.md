@@ -546,3 +546,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 生命周期：成功 ack 将状态清回 `Initial`，释放 framework result、payload 和 receipt；callback 失败仍回滚 claim 并走取消兜底。无法由平台 factory 构造有效结果时取消 interaction 并返回平台取消结果。
 - 回归：Reducer 覆盖选中终态只保留语义凭据及 receipt、成功交付后清理结果/error；既有 `ActivityResultClaimTest`、`AutofillResultDeliveryTest` 覆盖单次 claim、失败重试与 lease barrier。现有 `LegacyResponseFactoryInstrumentedTest` 已编译；尚未运行设备测试，也未覆盖真实 Activity configuration recreation。
 - 验证：`:app:compileDebugAndroidTestKotlin`、定向 `AutofillFillReducerTest`/`ActivityResultClaimTest`/`AutofillResultDeliveryTest`、`verifyArchitecture` 与 `git diff --check` 通过。
+
+### 后续批次：将 Legacy Autofill direct-entry 续接分支归入候选发现 owner（2026-11-01）
+
+- 修复：`DiscoverAutofillCandidates` 在已存在 `CandidatesReady` interaction 且请求指定 direct entry 时返回语义 `ResumeSelection`，避免重新搜索；`AutofillFillViewModel` 不再依赖 `AutofillInteractionStore` 或读取状态枚举。普通候选发现路径不变。
+- 安全校验：续接结果仍交给 `ResolveAutofillSelection`，继续校验交互 scope/state 和目标条目是否属于已展示候选；Credential Manager 与 Legacy protocol adapter 对新增 outcome 都有显式处理。
+- 回归：新增用例先观察到旧签名拒绝 `directEntryId` 后失败，再验证已有候选被续接且 repository search 仍只调用一次。Activity configuration recreation 与平台回调生命周期覆盖仍是 Task 21 未完成项。

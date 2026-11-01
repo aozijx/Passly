@@ -33,6 +33,8 @@ Legacy 平台的认证结果按入口显式区分，不能复用一个含隐式�
 - 锁定发现入口是 `RESPONSE`，认证后返回重新构造的 `FillResponse`；
 - 单候选入口和底部候选选择器是 `DATASET`，选择后直接向 Android 返回所选 `Dataset` 并触发填充。
 
+认证后继续 Legacy Fill 时，已有 `CandidatesReady` interaction 且请求带有 direct entry ID 的续接分支由 `DiscoverAutofillCandidates` 返回语义 `ResumeSelection`；Presentation 不读取具体 interaction store，也不自行判断状态。后续仍调用 `ResolveAutofillSelection`，由其重新检查 scope、interaction 状态和条目是否属于已展示候选。非 direct-entry discovery 仍走普通候选搜索。
+
 Legacy Fill ViewModel 的终态只保留 discovery outcome 或选中凭据语义结果，不构造 Android `FillResponse`/`Dataset`。
 Activity-retained ViewModel 持有一次性结果 claim，使配置重建后未确认的终态仍可交付，而已交付结果不会重放；Activity
 使用当前 request 调用 `LegacyResponseFactory` 构造平台对象，并在 callback 成功后确认清除终态。凭据 payload 在交付前

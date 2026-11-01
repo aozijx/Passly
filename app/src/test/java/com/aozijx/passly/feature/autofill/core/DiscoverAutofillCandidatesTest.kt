@@ -113,6 +113,25 @@ class DiscoverAutofillCandidatesTest {
         assertEquals(setOf(EntryId("entry-1")), outcome.snapshot.presentedCandidateIds)
     }
 
+    @Test
+    fun directSelectionResumesExistingCandidatesWithoutSearchingAgain() = runBlocking {
+        val candidate = candidate("entry-1")
+        val fixture = fixture(candidates = listOf(candidate))
+        val first = fixture.operation(request()) as AutofillDiscoveryOutcome.Candidates
+
+        val resumed = fixture.operation(
+            request = request(),
+            interactionId = first.snapshot.id,
+            directEntryId = candidate.entry.id,
+        )
+
+        assertTrue(resumed is AutofillDiscoveryOutcome.ResumeSelection)
+        resumed as AutofillDiscoveryOutcome.ResumeSelection
+        assertEquals(first.snapshot.id, resumed.snapshot.id)
+        assertEquals(candidate.entry.id, resumed.entryId)
+        assertEquals(1, fixture.repository.searchCalls)
+    }
+
     private fun fixture(
         settings: AutofillSettings = AutofillSettings(requireAuthentication = false),
         hasCredentials: Boolean = true,
