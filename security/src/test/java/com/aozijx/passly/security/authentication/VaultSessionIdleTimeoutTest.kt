@@ -779,6 +779,38 @@ class VaultSessionIdleTimeoutTest {
         }
     }
 
+    @Test
+    fun `fatal soft lock failure escalates to sealed cleanup before propagating`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        Dispatchers.setMain(dispatcher)
+        try {
+            val fatal = AssertionError("database soft lock fatal")
+            val databaseSession = YieldingDatabaseSession(softLockFailure = fatal)
+            val controller = createController(
+                dispatcher = dispatcher,
+                databaseSession = databaseSession,
+                timeout = MutableStateFlow(1_000L),
+                lockOnBackground = MutableStateFlow(false),
+            )
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught = try {
+                controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+                null
+            } catch (error: AssertionError) {
+                error
+            }
+
+            assertSame(fatal, caught)
+            assertEquals(1, databaseSession.sealCount)
+            assertEquals(SecureSessionState.SEALED, databaseSession.lockState)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
     private fun createController(
         dispatcher: CoroutineDispatcher,
         databaseSession: DatabaseSessionLifecycle,

@@ -432,50 +432,46 @@ class VaultSessionController @Inject internal constructor(
                         } else {
                             request.reason.toLockLevel()
                         }
-                        if (!lockStateManager.state.shouldEscalateTo(targetLevel)) {
-                            // SEALED 状态仍需确保残留 DEK 被擦除。例如数据库打开失败时，
-                            // 当前锁状态尚未解锁，但认证执行器可能已暂存 DEK。
-                            if (targetLevel == SecureSessionState.SEALED) {
-                                cleanupFatal = combineFatal(
-                                    cleanupFatal,
-                                    sealDatabaseForLock(
-                                        onCancellation = { cleanupCancellation = it },
-                                        onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
-                                    ),
-                                )
-                                dekManager.lock()
-                                transition(AuthenticationState.Locked)
-                            }
-                        } else {
+                        val shouldEscalate = lockStateManager.state.shouldEscalateTo(targetLevel)
+                        if (shouldEscalate) {
                             transition(AuthenticationState.Locking(request.reason))
                             idleJob?.cancel()
                             idleJob = null
+                        }
 
-                            when (targetLevel) {
-                                SecureSessionState.SOFT_LOCKED -> {
-                                    try {
-                                        sessionManager.softLock()
-                                    } catch (cancelled: CancellationException) {
-                                        cleanupCancellation = cancelled
-                                    } catch (failure: Throwable) {
-                                        recordFailure(failure, Reasons.SessionSoftLockFailed)
-                                    }
-                                    lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
+                        when (targetLevel) {
+                            SecureSessionState.SOFT_LOCKED -> if (shouldEscalate) {
+                                try {
+                                    sessionManager.softLock()
+                                } catch (cancelled: CancellationException) {
+                                    cleanupCancellation = cancelled
+                                } catch (failure: Error) {
+                                    recordFailure(failure, Reasons.SessionSoftLockFailed)
+                                    cleanupFatal = combineFatal(cleanupFatal, failure)
+                                } catch (failure: Exception) {
+                                    recordFailure(failure, Reasons.SessionSoftLockFailed)
                                 }
-                                SecureSessionState.SEALED -> {
-                                    cleanupFatal = combineFatal(
-                                        cleanupFatal,
-                                        sealDatabaseForLock(
-                                            onCancellation = { cleanupCancellation = it },
-                                            onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
-                                        ),
-                                    )
-                                    dekManager.lock()
-                                    lockStateManager.mark(SecureSessionState.SEALED)
-                                }
-                                SecureSessionState.UNLOCKED -> Unit
+                                lockStateManager.mark(SecureSessionState.SOFT_LOCKED)
                             }
+                            SecureSessionState.SEALED -> Unit
+                            SecureSessionState.UNLOCKED -> Unit
+                        }
 
+                        // A previously sealed session may still have a staged DEK; fatal soft-lock
+                        // cleanup also escalates so no sensitive key remains available.
+                        if (targetLevel == SecureSessionState.SEALED || cleanupFatal != null) {
+                            cleanupFatal = combineFatal(
+                                cleanupFatal,
+                                sealDatabaseForLock(
+                                    onCancellation = { cleanupCancellation = it },
+                                    onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                ),
+                            )
+                            dekManager.lock()
+                            lockStateManager.mark(SecureSessionState.SEALED)
+                        }
+
+                        if (shouldEscalate || targetLevel == SecureSessionState.SEALED) {
                             transition(AuthenticationState.Locked)
                         }
                         cleanupFatal?.let {

@@ -611,5 +611,5 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 接口精简：封存 API 改为 Kotlin `Result<Unit>`，调用方通过 `fold`、`exceptionOrNull` 或 `onFailure` 处理结果；取消和 fatal `Error` 仍直接传播，不再维护自定义封闭结果层次。
 - Runtime：Session key source/resource open 的 `Error` 不再转换成 `KeyUnavailable/OpenFailed`；在清理已打开资源、擦除临时 key 后将原 fatal 传播到调用方。
 - Reset：文件操作、重开及 logger 的 fatal `Error` 不作为普通 reset failure 返回；先保持或恢复 SEALED，再原样传播 fatal，后续清理失败作为 suppressed。普通异常仍可返回，数据库 close failure 仍跳过删除和重开。
-- Security：Reset coordinator 捕获操作 fatal 后先封存会话、分别尝试撤权和清敏感 key、发布 Locked，再传播 fatal；普通 lock 即使撤权回调或 seal 返回 fatal，也继续敏感 key/DEK 收尾和 Locked 转换后传播。close failure 仍写 `DatabaseResourceCloseFailed` 和 `SessionSealFailed` 诊断。
+- Security：Reset coordinator 捕获操作 fatal 后先封存会话、分别尝试撤权和清敏感 key、发布 Locked，再传播 fatal；普通 lock 即使撤权回调、soft lock 或 seal 返回 fatal，也继续封存/清敏感 key/DEK 收尾和 Locked 转换后传播。close failure 仍写 `DatabaseResourceCloseFailed` 和 `SessionSealFailed` 诊断。
 - 验证：RuntimeSessionManagerTest、VaultDatabaseResetControllerTest、DatabaseSessionRetryCoordinatorTest、VaultSessionIdleTimeoutTest、`verifyArchitecture` 与 `git diff --check` 通过。`SensitiveDataKeyManager` 是具体 final 类，当前无法独立注入其 `clear()` 的 fatal；该单点 fatal 故障注入仍待测试 seam 方案，不影响实现对其 `Throwable` 的收尾处理。
