@@ -24,6 +24,7 @@ sealed interface DatabaseResetUiAction {
 }
 
 internal sealed interface DatabaseResetMutation {
+    data object PageBoundaryCrossed : DatabaseResetMutation
     data object ResetStarted : DatabaseResetMutation
     data object ResetCancelled : DatabaseResetMutation
     data object ResetCompleted : DatabaseResetMutation

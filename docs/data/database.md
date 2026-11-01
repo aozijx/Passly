@@ -137,6 +137,9 @@ Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 
 数据库封存时取消 Room 观察并发出空结果，重开后重新订阅，不依赖认证状态先发生一次虚假变化。Vault Paging
 直接随数据库 session state 重建 Pager，不再从重置控制器另发列表刷新事件。
 
+Database Reset Sheet 由其可见 Route owner 注册/退出。关闭 Sheet 或离开 Data Management 时，终态回到 `Idle`，
+因此重新打开后可再次提交；如果退出时状态为 `Resetting`，ViewModel scope 继续完成已确认的重置，不因 dismiss/锁定收尾而取消。仍在执行时重新进入会继续显示进行中；完成后再次打开则从新一轮 `Idle` 开始。
+
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |

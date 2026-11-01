@@ -19,6 +19,21 @@ class DatabaseResetViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DatabaseResetUiState())
     val uiState: StateFlow<DatabaseResetUiState> = _uiState.asStateFlow()
+    private var nextPageOwner = 0L
+    private var activePageOwner: Long? = null
+
+    fun onPageEntered(): Long {
+        val owner = ++nextPageOwner
+        activePageOwner = owner
+        mutate(DatabaseResetMutation.PageBoundaryCrossed)
+        return owner
+    }
+
+    fun onPageExited(owner: Long) {
+        if (activePageOwner != owner) return
+        activePageOwner = null
+        mutate(DatabaseResetMutation.PageBoundaryCrossed)
+    }
 
     fun onAction(action: DatabaseResetUiAction) {
         when (action) {

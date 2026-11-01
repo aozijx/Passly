@@ -14,15 +14,19 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.testing.MainDispatcherRule
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Rule
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DatabaseResetViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -61,6 +65,54 @@ class DatabaseResetViewModelTest {
 
         assertSame(DatabaseResetPhase.Completed, completed.phase)
         assertEquals(1, gateway.resetCount)
+    }
+
+    @Test
+    fun completedResetReturnsToIdleWhenTheSheetPageIsReentered() = runTest {
+        val gateway = RecordingDatabaseGateway()
+        val viewModel = viewModel(null, gateway)
+        val firstOwner = viewModel.onPageEntered()
+
+        viewModel.onAction(DatabaseResetUiAction.Reset)
+        viewModel.uiState.first { it.phase == DatabaseResetPhase.Completed }
+        viewModel.onPageExited(firstOwner)
+
+        assertSame(DatabaseResetPhase.Idle, viewModel.uiState.value.phase)
+        val secondOwner = viewModel.onPageEntered()
+        viewModel.onAction(DatabaseResetUiAction.Reset)
+        viewModel.uiState.first { it.phase == DatabaseResetPhase.Completed }
+        viewModel.onPageExited(secondOwner)
+
+        assertEquals(2, gateway.resetCount)
+    }
+
+    @Test
+    fun leavingWhileResettingDoesNotCancelTheResetAndReentryStartsFresh() = runTest {
+        val resetResult = CompletableDeferred<AppResult<Unit>>()
+        var resetCount = 0
+        val gateway = object : DatabaseResetGateway {
+            override suspend fun reset(): AppResult<Unit> {
+                resetCount++
+                return resetResult.await()
+            }
+        }
+        val viewModel = viewModel(null, gateway)
+        val firstOwner = viewModel.onPageEntered()
+
+        viewModel.onAction(DatabaseResetUiAction.Reset)
+        runCurrent()
+        assertSame(DatabaseResetPhase.Resetting, viewModel.uiState.value.phase)
+        viewModel.onPageExited(firstOwner)
+        assertSame(DatabaseResetPhase.Resetting, viewModel.uiState.value.phase)
+
+        resetResult.complete(AppResult.Success(Unit))
+        runCurrent()
+        assertSame(DatabaseResetPhase.Completed, viewModel.uiState.value.phase)
+
+        val secondOwner = viewModel.onPageEntered()
+        assertSame(DatabaseResetPhase.Idle, viewModel.uiState.value.phase)
+        viewModel.onPageExited(secondOwner)
+        assertEquals(1, resetCount)
     }
 
     private fun viewModel(

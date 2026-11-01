@@ -5,6 +5,11 @@ internal object DatabaseResetReducer {
         state: DatabaseResetUiState,
         mutation: DatabaseResetMutation,
     ): DatabaseResetUiState = when (mutation) {
+        DatabaseResetMutation.PageBoundaryCrossed -> if (state.phase == DatabaseResetPhase.Resetting) {
+            state
+        } else {
+            state.copy(phase = DatabaseResetPhase.Idle)
+        }
         DatabaseResetMutation.ResetStarted -> state.copy(phase = DatabaseResetPhase.Resetting)
         DatabaseResetMutation.ResetCancelled -> state.copy(phase = DatabaseResetPhase.Idle)
         DatabaseResetMutation.ResetCompleted -> state.copy(phase = DatabaseResetPhase.Completed)

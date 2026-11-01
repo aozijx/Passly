@@ -184,7 +184,7 @@ security -> *.data.repository / *.data.local
 | --- | --- | --- |
 | Vault → Scanner | OTP/Wi-Fi 编辑器和 Vault Route 的 Scanner UI 合同 | 对应 Vault Route 持有页面与扫描结果生命周期 |
 | Settings → Backup | `BackupOperationRoute` | Settings 持有页面和 SAF Activity Result launcher；Backup 内部存储实现不可导入 |
-| Settings → Database | `DatabaseResetRoute` | Settings 持有 Data Management 宿主；关闭重开后的 reset 状态合同仍待完成 |
+| Settings → Database | `DatabaseResetRoute` | Settings 持有 Data Management 宿主；Sheet owner 出入时清理终态，但不取消 Resetting 中的确认操作 |
 | Settings → Autofill | `AutofillServiceStatusSource` | 仅观察服务启用状态的能力合同，Android 实现由 App 提供 |
 | Vault/Settings → Shell navigation | `AppRoute`、`ShellNavigationContext` | App 导航合同；当前符号还在 Shell 包，后续需归位到中立 app navigation owner |
 | Autofill/Settings → Shell theme | `PersistedAppTheme`、`LocalAppearanceSettings` | 系统 Activity 应用已持久化主题、Settings 读取已生效外观；主题仍待归位到应用级 owner |

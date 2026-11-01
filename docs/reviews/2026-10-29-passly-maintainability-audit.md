@@ -479,3 +479,11 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - Owner 决定：Scanner Route 与 Backup/Database 页面保留宿主生命周期集成；Autofill 状态保留窄合同；当前导航与主题边界有明确 app owner 但源码包迁移尚待后续批次。Settings 重入数据库重置状态仍按 Task 18 独立待办，不视作已修复。
 - 回归：架构测试覆盖未登记业务导入拒绝、精确登记的 Scanner Route 导入允许、相同 source 下未登记 Route 仍拒绝、转义 FQN 也拒绝，以及所有登记项必须提供 owner/理由。
 - 验证：`:buildSrc:test`、`:app:compileDebugKotlin` 与 `verifyArchitecture` 通过；`git diff --check` 通过。
+
+### 后续批次：Database Reset Sheet 关闭与重入状态（2026-11-01）
+
+- 根因：`DatabaseResetViewModel` 由 Settings NavBackStackEntry 持有；条件移除 `DatabaseResetRoute` 不会销毁该 ViewModel。成功后 phase 留在 `Completed`，Sheet 禁用按钮，重新打开仍无法再次重置。
+- 修复：Route 生命周期向 ViewModel 注册一次性 page owner。离开时将终态收回 `Idle`；若仍为 `Resetting` 则保持并由 ViewModel scope 继续，不取消已确认的破坏性操作。执行期间重入保留进度，任务完成后新的 Sheet owner 会清理终态。
+- 回归：测试完成后关闭/重开可再次提交两次；挂起中的 reset 离页后仍保持 `Resetting`，完成后重入回 `Idle`，未重复执行或取消旧操作。
+- 文档：更新数据库重置生命周期和跨 Feature 集成 owner 合同。
+- 验证：`:app:testDebugUnitTest --tests "*DatabaseResetViewModelTest" --no-parallel --max-workers=1` 通过；`:app:compileDebugKotlin` 与 `verifyArchitecture` 通过；`git diff --check` 通过。
