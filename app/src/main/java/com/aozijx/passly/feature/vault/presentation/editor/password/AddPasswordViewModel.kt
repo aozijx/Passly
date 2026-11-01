@@ -126,7 +126,7 @@ class AddPasswordViewModel @Inject internal constructor(
                 )
             } catch (error: CancellationException) {
                 throw error
-            } catch (_: Throwable) {
+            } catch (_: Exception) {
                 // Keep the state retryable; reopening the picker triggers another load.
             }
         }

@@ -33,6 +33,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.Rule
@@ -187,6 +189,20 @@ class AddPasswordViewModelTest {
 
         assertEquals("com.example.mail", viewModel.uiState.value.form.associatedAppPackage)
         assertEquals("Mail", viewModel.uiState.value.availableApps.single().label)
+    }
+
+    @Test
+    fun `associated app picker propagates fatal errors`() {
+        val fatal = AssertionError("package catalog failed fatally")
+        val thrown = assertThrows(AssertionError::class.java) {
+            runTest {
+                val viewModel = viewModel(directory = directory { throw fatal })
+                viewModel.onAction(AddPasswordAction.LoadAssociatedApps)
+                runCurrent()
+            }
+        }
+
+        assertSame(fatal, thrown)
     }
 
     @Test

@@ -646,3 +646,9 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 修复：`AuthenticationMethodsState` 持有认证方式 StateFlow、刷新 Mutex 与 generation。每次请求立即获取 generation；较新的 refresh 使较旧的在途解析不能发布，Mutex 后续再按当前持久值解析。已持久消费恢复码时增加 state revision 并同步移除该方式，在途旧 resolver 不能把它重新发布。Manager 长期 scope 托管 refresh job；调用者取消仍立即收到取消，但已提交的最新状态同步继续运行；后台解析失败在独立 trace span 记录结构化 `VaultOperationFailed`，可恢复异常为 WARN 降级，fatal `Error` 为 ERROR。观察器普通异常作为 suppressed 保留；观察器取消/fatal Error 优先传播，并将原 resolver 错误作为 suppressed 保留。
 - 回归：`AuthenticationMethodsStateTest` 覆盖旧解析在新 refresh 请求后不发布、后续刷新最终发布最新结果、恢复码消费与旧解析交错、取消刷新释放 Mutex、取消 await 不会取消 manager-owned refresh、waiter 取消后解析失败仍进入 failure observer，以及 observer 普通异常/取消/fatal Error 的优先级。
 - 限制：初始化 refresh 与真实凭据提交路径的 Activity/manager 集成时序未独立构造测试；实际状态逻辑由同一 `AuthenticationMethodsState` 单测覆盖，Task 46 的全链路并发测试仍开放。
+
+### Login 应用选择器保留 fatal 错误（2026-11-02）
+
+- 修复：`AddPasswordViewModel.loadAssociatedApps()` 将失败边界从 `Throwable` 收窄为 `Exception`。目录普通异常仍保持未加载、可重新打开重试；`CancellationException` 继续传播，fatal `Error` 交由 ViewModel 协程异常边界处理。
+- 回归：`AddPasswordViewModelTest` 在 `viewModelScope` 内触发 `AssertionError`，验证错误不会被 selector 的恢复 catch 吞掉；RED 时旧 `catch(Throwable)` 没有向协程异常边界交付错误，收窄后可捕获到同一错误实例。
+- 验证：`:app:testDebugUnitTest verifyArchitecture` 与 `git diff --check` 通过。Detail picker 的普通查询失败 UI 状态仍是 Task 47 未完成项。
