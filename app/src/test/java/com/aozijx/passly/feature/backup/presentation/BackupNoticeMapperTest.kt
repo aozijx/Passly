@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.presentation
 
 import com.aozijx.passly.app.message.model.NoticeCode
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
-import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupOperation
+import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.app.message.model.ArgumentKey
 import com.aozijx.passly.app.message.model.ArgumentValue
 import org.junit.Assert.assertEquals

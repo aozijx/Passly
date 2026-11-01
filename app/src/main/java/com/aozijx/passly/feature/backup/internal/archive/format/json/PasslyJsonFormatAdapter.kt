@@ -8,7 +8,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import javax.inject.Inject
 import javax.inject.Singleton
 

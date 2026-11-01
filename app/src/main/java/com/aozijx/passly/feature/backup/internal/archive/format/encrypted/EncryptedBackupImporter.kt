@@ -9,7 +9,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 
 /**
  * 加密备份导入器。

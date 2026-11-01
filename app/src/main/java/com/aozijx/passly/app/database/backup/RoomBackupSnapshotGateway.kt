@@ -3,7 +3,7 @@ package com.aozijx.passly.app.database.backup
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotGateway
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.contract.ImportMode
 import javax.inject.Inject
 
 internal class RoomBackupSnapshotGateway @Inject constructor(

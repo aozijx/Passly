@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
 
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows

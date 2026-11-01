@@ -3,10 +3,10 @@ package com.aozijx.passly.feature.backup.presentation
 import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.ImportMode
+import com.aozijx.passly.feature.backup.contract.BackupOperation
 
 internal sealed interface BackupMutation {
     data object ExportOptionsOpened : BackupMutation

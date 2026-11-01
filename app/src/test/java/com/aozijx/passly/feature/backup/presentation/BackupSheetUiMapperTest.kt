@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.backup.presentation
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

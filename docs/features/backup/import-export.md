@@ -2,9 +2,10 @@
 
 状态：当前实现（代码核对：2026-10-29）。
 
-Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 feature/backup/presentation，协议、
-加密和归档文件 I/O 位于 `feature/backup/internal`；稳定键映射位于 `archive/mapper`，Room 快照及恢复文件事务位于
-`app/database/backup`。能力侧仅声明 `BackupSnapshotGateway` 合同；App 适配器的 Reader/Restorer 读取
+Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 `feature/backup/presentation`；Presentation 和执行器
+共享的格式选择、导入选项、操作请求/结果及 `BackupOperationGateway` 位于 `feature/backup/contract`。稳定 wire format ID
+只在内部映射，协议、加密和归档文件 I/O 位于 `feature/backup/internal`；稳定键映射位于 `archive/mapper`，Room 快照及
+恢复文件事务位于 `app/database/backup`。能力侧仅声明 `BackupSnapshotGateway` 合同；App 适配器的 Reader/Restorer 读取
 Data 实现，页面和普通 Backup 流程不导入 Data。
 
 | 格式 | 方向 | 资源 | 保密性 |

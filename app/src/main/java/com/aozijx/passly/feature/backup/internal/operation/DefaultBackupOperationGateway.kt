@@ -13,13 +13,18 @@ import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
+import com.aozijx.passly.feature.backup.contract.BackupExecutionResult
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupExportOperationRequest
+import com.aozijx.passly.feature.backup.contract.BackupImportOperationRequest
+import com.aozijx.passly.feature.backup.contract.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupOperationGateway
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
+import com.aozijx.passly.feature.backup.internal.model.toFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -28,17 +33,17 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /** Application use case boundary for backup flows; the ViewModel only dispatches state. */
-internal class BackupOperationInteractor @Inject constructor(
+internal class DefaultBackupOperationGateway @Inject constructor(
     private val settingsSource: BackupDirectorySettingsSource,
     private val backupService: BackupArchiveService,
     private val storageSupport: BackupStorageSupport,
     private val authorizationGate: AuthorizationGate,
     private val errorReporter: AppErrorReporter,
-) {
-    fun buildExportFileName(format: BackupExportFormat): String =
+) : BackupOperationGateway {
+    override fun buildExportFileName(format: BackupExportFormat): String =
         storageSupport.buildBackupFileName(format.extension)
 
-    suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
+    override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
         if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
         return storageSupport.checkDirectoryWritable(uri).fold(
             onSuccess = { BackupExecutionResult.DirectoryWritable },
@@ -57,7 +62,7 @@ internal class BackupOperationInteractor @Inject constructor(
         )
     }
 
-    suspend fun exportToConfiguredDirectory(
+    override suspend fun exportToConfiguredDirectory(
         request: BackupExportOperationRequest,
     ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
         val directoryUri = settingsSource.backupDirectoryUri.first()
@@ -74,7 +79,7 @@ internal class BackupOperationInteractor @Inject constructor(
         performExport(request, targetUri, deleteOnFailure = true)
     }
 
-    suspend fun exportToUri(
+    override suspend fun exportToUri(
         request: BackupExportOperationRequest,
         targetUri: String,
         deleteOnFailure: Boolean,
@@ -82,7 +87,7 @@ internal class BackupOperationInteractor @Inject constructor(
         performExport(request, targetUri, deleteOnFailure)
     }
 
-    suspend fun import(
+    override suspend fun import(
         request: BackupImportOperationRequest,
     ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_IMPORT) {
         performImport(request)
@@ -111,7 +116,7 @@ internal class BackupOperationInteractor @Inject constructor(
             when (val result = backupService.export(
                 BackupExportRequest(
                     targetUri = targetUri,
-                    format = request.format.formatId,
+                    format = request.format.toFormatId(),
                     password = password,
                     options = BackupExportOptions(
                         includeIcons = request.includeIcons && request.format.supportsResources,
@@ -178,18 +183,4 @@ internal class BackupOperationInteractor @Inject constructor(
 
     private suspend fun deleteFailedExport(targetUri: String): Boolean =
         storageSupport.deleteDocument(targetUri)
-}
-
-internal sealed interface BackupExecutionResult {
-    data object DirectoryWritable : BackupExecutionResult
-    data object ExportSucceeded : BackupExecutionResult
-    data class ImportSucceeded(val result: BackupImportResult) : BackupExecutionResult
-    data object Cancelled : BackupExecutionResult
-    data class Failure(val error: AppError) : BackupExecutionResult
-}
-
-internal enum class BackupOperation {
-    EXPORT,
-    IMPORT,
-    DIRECTORY_CHECK,
 }

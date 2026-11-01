@@ -12,6 +12,8 @@ import com.aozijx.passly.feature.backup.internal.archive.format.text.ReadableTex
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupExportStorageSupport
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
+import com.aozijx.passly.feature.backup.contract.BackupOperationGateway
+import com.aozijx.passly.feature.backup.internal.operation.DefaultBackupOperationGateway
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -22,6 +24,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class BackupModule {
+
+    @Binds
+    @Singleton
+    internal abstract fun bindBackupOperationGateway(
+        impl: DefaultBackupOperationGateway,
+    ): BackupOperationGateway
 
     @Binds
     @Singleton

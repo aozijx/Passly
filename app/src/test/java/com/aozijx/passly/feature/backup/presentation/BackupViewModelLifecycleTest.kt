@@ -17,9 +17,9 @@ import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
+import com.aozijx.passly.feature.backup.contract.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupOperation
+import com.aozijx.passly.feature.backup.internal.operation.DefaultBackupOperationGateway
 import com.aozijx.passly.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -124,7 +124,7 @@ class BackupViewModelLifecycleTest {
 
     private fun model(performImport: suspend (BackupImportRequest) -> AppResult<BackupImportResult>) =
         BackupViewModel(
-            backupOperationInteractor = BackupOperationInteractor(
+            backupOperationInteractor = DefaultBackupOperationGateway(
                 settingsSource = object : BackupDirectorySettingsSource {
                     override val backupDirectoryUri = flowOf(null)
                 },

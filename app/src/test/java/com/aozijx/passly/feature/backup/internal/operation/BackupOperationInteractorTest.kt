@@ -11,14 +11,17 @@ import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
+import com.aozijx.passly.feature.backup.contract.BackupExecutionResult
+import com.aozijx.passly.feature.backup.contract.BackupExportOperationRequest
+import com.aozijx.passly.feature.backup.contract.BackupImportOperationRequest
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.contract.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.ImportMode
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
@@ -46,7 +49,7 @@ class BackupOperationInteractorTest {
     fun `configured export resolves storage target inside authorization scope`() = runBlocking {
         val gate = RecordingAuthorizationGate()
         val storage = RecordingStorageSupport(gate)
-        val interactor = BackupOperationInteractor(
+        val interactor = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf("content://tree")
             },
@@ -69,7 +72,7 @@ class BackupOperationInteractorTest {
     @Test
     fun `directory check validates the configured tree through storage support`() = runBlocking {
         val storage = RecordingStorageSupport(RecordingAuthorizationGate())
-        val interactor = BackupOperationInteractor(
+        val interactor = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -93,7 +96,7 @@ class BackupOperationInteractorTest {
         val exportStarted = CompletableDeferred<Unit>()
         val finishExport = CompletableDeferred<Unit>()
         val target = "content://documents/export"
-        val interactor = BackupOperationInteractor(
+        val interactor = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -116,7 +119,7 @@ class BackupOperationInteractorTest {
     fun `cancelled import propagates cancellation instead of returning a failure`() = runTest {
         val gate = RecordingAuthorizationGate()
         val cancellation = java.util.concurrent.CancellationException("import cancelled")
-        val interactor = BackupOperationInteractor(
+        val interactor = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -151,7 +154,7 @@ class BackupOperationInteractorTest {
         val gate = RecordingAuthorizationGate()
         val storage = RecordingStorageSupport(gate).apply { deleteResult = false }
         val cancellation = CancellationException("export cancelled")
-        val interactor = BackupOperationInteractor(
+        val interactor = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf(null)
             },
@@ -181,7 +184,7 @@ class BackupOperationInteractorTest {
     fun `cancellation carried by storage results is not reported as a backup failure`() = runTest {
         val gate = RecordingAuthorizationGate()
         val storage = RecordingStorageSupport(gate)
-        val interactor = BackupOperationInteractor(
+        val interactor = DefaultBackupOperationGateway(
             settingsSource = object : BackupDirectorySettingsSource {
                 override val backupDirectoryUri = flowOf("content://tree")
             },

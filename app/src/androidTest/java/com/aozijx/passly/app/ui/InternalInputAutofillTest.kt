@@ -22,8 +22,8 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.presentation.ui.BackupImportOptionsContent
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordFormState

@@ -7,12 +7,12 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.operation.BackupExecutionResult
-import com.aozijx.passly.feature.backup.internal.operation.BackupExportOperationRequest
-import com.aozijx.passly.feature.backup.internal.operation.BackupImportOperationRequest
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupExecutionResult
+import com.aozijx.passly.feature.backup.contract.BackupExportOperationRequest
+import com.aozijx.passly.feature.backup.contract.BackupImportOperationRequest
+import com.aozijx.passly.feature.backup.contract.BackupOperation
+import com.aozijx.passly.feature.backup.contract.BackupOperationGateway
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 internal class BackupViewModel @Inject constructor(
-    private val backupOperationInteractor: BackupOperationInteractor,
+    private val backupOperationInteractor: BackupOperationGateway,
     private val secureSessionAccessState: SecureSessionAccessState,
 ) : ViewModel() {
 

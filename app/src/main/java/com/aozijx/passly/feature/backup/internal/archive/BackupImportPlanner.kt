@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.policy.EntryLinkPolicy
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.model.BackupCompatibilitySummary
 
 internal data class BackupImportPlan(

@@ -404,6 +404,12 @@ internal object SourceBoundaryPolicy {
             message = "backup feature imports settings-owned UI",
         ),
         SourceBoundaryRule(
+            id = "BACKUP_PRESENTATION_INTERNAL_DEPENDENCY",
+            sourcePathContains = "/src/main/java/com/aozijx/passly/feature/backup/presentation/",
+            forbiddenImportPrefixes = setOf("com.aozijx.passly.feature.backup.internal."),
+            message = "backup presentation imports an internal protocol or execution implementation",
+        ),
+        SourceBoundaryRule(
             id = "UNLOCK_FEATURE_PASSIVE_CONTENT",
             sourcePathContains = "/feature/unlock/presentation/AuthenticationScreen.kt",
             forbiddenContentMarkers = setOf("InputActionButton("),
@@ -507,7 +513,7 @@ internal object SourceBoundaryPolicy {
         ),
         SourceBoundaryRule(
             id = "BACKUP_SETTINGS_NARROW_PORT",
-            sourcePathContains = "/feature/backup/internal/operation/BackupOperationInteractor.kt",
+            sourcePathContains = "/feature/backup/internal/operation/DefaultBackupOperationGateway.kt",
             forbiddenImportPrefixes = setOf(
                 "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
             ),

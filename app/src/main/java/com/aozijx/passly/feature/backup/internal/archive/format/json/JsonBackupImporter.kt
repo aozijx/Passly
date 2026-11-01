@@ -9,7 +9,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.JsonBackupPackage
 import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 
 /**
  * JSON 备份导入器。

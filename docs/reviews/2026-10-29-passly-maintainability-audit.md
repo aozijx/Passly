@@ -585,3 +585,10 @@ The audit removed confirmed pass-through or unreferenced code, fixed reproduced 
 - 穷尽保证：归档注册表测试仍遍历所有 `EntryType` 验证稳定键可往返，并断言注册表支持集等于类型全集。新类型若没有归档映射，测试会失败；页面与协议各自保留正确 owner。
 - 授权边界：单文件 SAF URI 是短期操作句柄，字符串化保留 URI 标识；应用在收到 picker 授权后立即执行操作，不把它当作跨重启持久授权。默认备份目录仍使用单独持久化的 tree grant。
 - 待办：Presentation 仍直接引用 Backup 内部格式/策略/操作类型及 interactor；本批次只完成 URI 与注册表边界，没有通过重复模型或逐字段 mapper 搬层。模块门禁及剩余依赖仍需后续审查。
+
+### 后续批次：将 Backup Presentation 共享语义归入 Feature 合同（2026-11-01）
+
+- 修复：将导出格式、导入模式/策略、导入结果、执行请求/结果及操作类型归入 `feature.backup.contract`；`BackupViewModel` 只依赖 `BackupOperationGateway`，内部 `DefaultBackupOperationGateway` 直接实现端口并由 Hilt 绑定，没有增加转发实现。
+- 协议边界：Presentation 可见的 `BackupExportFormat` 不再暴露 wire format ID；唯一穷尽映射位于归档内部，测试校验 ENCRYPTED/JSON/TEXT 对应的稳定 ID。SAF URI 与 `EntryType` 默认覆盖沿用前批的 Route/注册表边界。
+- 架构门禁：`SourceBoundaryPolicy` 禁止 Backup 生产 Presentation 导入 `feature.backup.internal`；测试覆盖内部依赖拒绝与 feature contract 通过。app Room Snapshot Reader/Restorer 继续通过既有 app→Backup 归档映射集成，不搬入 Feature、不让 Feature 依赖 Data。
+- 验证：Backup JVM 测试、`SourceBoundaryPolicyTest`、`:app:compileDebugAndroidTestKotlin`、`verifyArchitecture` 与 `git diff --check` 通过。Android instrumentation 未运行。

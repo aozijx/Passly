@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.backup.presentation
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.ArgumentKey
 import com.aozijx.passly.app.message.model.ArgumentValue
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
+import com.aozijx.passly.feature.backup.contract.BackupOperation
 
 internal fun BackupNoticeEffect.toNoticeCode(): NoticeCode = when (this) {
     BackupNoticeEffect.DirectoryWritable -> NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED

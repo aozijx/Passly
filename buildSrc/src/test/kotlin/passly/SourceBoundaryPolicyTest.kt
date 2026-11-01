@@ -73,6 +73,25 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun backupPresentationUsesFeatureContractInsteadOfInternalImplementation() {
+        val path = "app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupViewModel.kt"
+        val violation = EditorSource(
+            path = path,
+            content = "import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor",
+        )
+        val contract = EditorSource(
+            path = path,
+            content = "import com.aozijx.passly.feature.backup.contract.BackupOperationGateway",
+        )
+
+        assertEquals(
+            "BACKUP_PRESENTATION_INTERNAL_DEPENDENCY",
+            SourceBoundaryVerifier.verify(listOf(violation), SourceBoundaryPolicy.generalRules).single().ruleId,
+        )
+        assertEquals(emptyList(), SourceBoundaryVerifier.verify(listOf(contract), SourceBoundaryPolicy.generalRules))
+    }
+
+    @Test
     fun verticalFeatureRootAllowsOwnedUiButPresentationRootStaysClassified() {
         val featureUi = EditorSource(
             path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/SettingsScreen.kt",
@@ -967,7 +986,7 @@ class SourceBoundaryPolicyTest {
                 content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
             ),
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/BackupOperationInteractor.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt",
                 content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
             ),
         )

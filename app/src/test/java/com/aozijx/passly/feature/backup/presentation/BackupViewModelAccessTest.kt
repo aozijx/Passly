@@ -13,12 +13,12 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperation
-import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor
+import com.aozijx.passly.feature.backup.contract.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupOperation
+import com.aozijx.passly.feature.backup.internal.operation.DefaultBackupOperationGateway
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -130,7 +130,7 @@ class BackupViewModelAccessTest {
         secureSessionAccessState = access,
     )
 
-    private fun interactor() = BackupOperationInteractor(
+    private fun interactor() = DefaultBackupOperationGateway(
         settingsSource = object : BackupDirectorySettingsSource {
             override val backupDirectoryUri = flowOf(null)
         },

@@ -15,7 +15,7 @@ import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshot
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
-import com.aozijx.passly.feature.backup.internal.model.BackupImportResult
+import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

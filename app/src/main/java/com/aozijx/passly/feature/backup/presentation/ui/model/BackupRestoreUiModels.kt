@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.presentation.ui.model
 
-import com.aozijx.passly.feature.backup.internal.model.BackupExportFormat
-import com.aozijx.passly.feature.backup.internal.model.BackupImportStrategy
-import com.aozijx.passly.feature.backup.internal.model.ImportMode
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.domain.entry.model.EntryType
 
 internal sealed interface BackupRestoreSheetUiState {
