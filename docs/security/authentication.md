@@ -153,8 +153,9 @@ stateDiagram-v2
 Route 在 STARTED 生命周期消费错误并按当前语言解析，不展示内部异常文本。
 
 Bootstrap 先写 PREPARED journal，再创建 candidate key/Envelope；单次更新切换 active binding 并登记旧 alias
-待清理。提交后删除旧 alias 失败只记录并留待 Reconciler 重试，不回滚新 binding。启动和认证成功后都会清理 orphan
-candidate 与 obsolete alias。
+待清理，该原子更新是 durable commit point。之后旧 alias 删除或 journal 清理失败不会回滚新 binding；调用结果仍为
+BIOMETRIC `Success`，并带 `BIOMETRIC_ROTATION_CLEANUP` pending-maintenance 标记。安全设置提示用户新策略已生效、旧密钥清理将重试，认证可用性按成功结果刷新。
+提交后的可恢复 cleanup 在 `NonCancellable` 中尝试；取消和 fatal `Error` 仍传播。
 
 同一 `RotateBiometricKeyUseCase` 串行执行轮换，避免共享 journal 被并发候选覆盖。
 `withBiometricRotationCandidate` 在正常结果、异常和协程取消退出时统一清理，清理在 `NonCancellable` 中执行。

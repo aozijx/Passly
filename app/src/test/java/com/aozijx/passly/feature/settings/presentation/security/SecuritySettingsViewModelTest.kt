@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.BiometricConfiguration
@@ -110,6 +111,29 @@ class SecuritySettingsViewModelTest {
             runCurrent()
 
             assertEquals(listOf(UiErrorMessage(R.string.notice_security_key_invalidated)), errors)
+        }
+
+    @Test
+    fun `committed biometric rotation reports deferred old-key cleanup as a notice`() =
+        runTest {
+            val fixture =
+                Fixture {
+                    AuthenticationResult.Success(
+                        method = AuthenticationMethod.BIOMETRIC,
+                        pendingMaintenance = AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP,
+                    )
+                }
+            val model = fixture.model()
+            val notices = mutableListOf<SecuritySettingsNotice>()
+            backgroundScope.launch { model.notices.toList(notices) }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            model.onAction(SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(false))
+            runCurrent()
+
+            assertEquals(listOf(SecuritySettingsNotice.BiometricRotationCleanupPending), notices)
+            assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
         }
 
     @Test

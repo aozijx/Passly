@@ -2,6 +2,7 @@ package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -82,14 +83,22 @@ class RotateBiometricKeyUseCase
                             binding = BiometricBinding(candidateAlias, invalidateOnEnrollment),
                             obsoleteAlias = oldAlias?.takeIf { it != candidateAlias },
                         )
-                        if (oldAlias != null &&
-                            oldAlias != candidateAlias &&
-                            cryptoFactory.deleteAlias(oldAlias)
-                        ) {
-                            vaultBootstrapStore.clearBiometricCleanupAlias(oldAlias)
-                        }
-                        vaultBootstrapStore.clearBiometricRotationJournal()
-                        AuthenticationResult.Success(com.aozijx.passly.domain.access.model.AuthenticationMethod.BIOMETRIC)
+                        val cleanup =
+                            finishCommittedBiometricRotation {
+                                if (oldAlias != null && oldAlias != candidateAlias) {
+                                    if (!cryptoFactory.deleteAlias(oldAlias)) return@finishCommittedBiometricRotation false
+                                    vaultBootstrapStore.clearBiometricCleanupAlias(oldAlias)
+                                }
+                                vaultBootstrapStore.clearBiometricRotationJournal()
+                                true
+                            }
+                        AuthenticationResult.Success(
+                            method = com.aozijx.passly.domain.access.model.AuthenticationMethod.BIOMETRIC,
+                            pendingMaintenance =
+                                AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP.takeIf {
+                                    cleanup == BiometricRotationCleanupOutcome.PENDING
+                                },
+                        )
                     }
 
                     is BiometricHostResult.Cancelled -> {

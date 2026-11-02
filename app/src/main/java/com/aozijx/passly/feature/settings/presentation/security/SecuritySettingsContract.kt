@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
+
 sealed interface SecuritySettingsUiState {
     data object Loading : SecuritySettingsUiState
 
@@ -28,4 +30,18 @@ sealed interface SecuritySettingsAction {
     data class SetInvalidateKeyOnBiometricChange(
         val enabled: Boolean,
     ) : SecuritySettingsAction
+}
+
+sealed interface SecuritySettingsNotice {
+    data object BiometricRotationCleanupPending : SecuritySettingsNotice
+}
+
+sealed interface SecuritySettingsEffect {
+    data class Error(
+        val message: UiErrorMessage,
+    ) : SecuritySettingsEffect
+
+    data class Notice(
+        val notice: SecuritySettingsNotice,
+    ) : SecuritySettingsEffect
 }

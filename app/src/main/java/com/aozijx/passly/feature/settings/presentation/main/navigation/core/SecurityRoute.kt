@@ -15,6 +15,7 @@ import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSetti
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsAction
+import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsNotice
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsUiState
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.security.rememberAppPasswordDialogCoordinator
@@ -41,6 +42,17 @@ internal fun SecurityRoute(onBack: (() -> Unit)?) {
         }
     }
     ObserveSettingsWriteErrors(securityViewModel.errors)
+    LaunchedEffect(securityViewModel, lifecycle, context) {
+        collectPageEffects(lifecycle, securityViewModel.notices) { notice ->
+            val message =
+                when (notice) {
+                    SecuritySettingsNotice.BiometricRotationCleanupPending -> {
+                        context.getString(com.aozijx.passly.R.string.settings_biometric_cleanup_pending)
+                    }
+                }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
     val securityState by securityViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordState by appPasswordViewModel.uiState.collectAsStateWithLifecycle()
     val appPasswordDialogs = rememberAppPasswordDialogCoordinator()

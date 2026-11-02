@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.BiometricConfiguration
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
@@ -22,6 +23,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -36,8 +39,9 @@ class SecuritySettingsViewModel
         private enum class AuthenticationWork { Idle, Running, Destroyed }
 
         private val authenticationWork = MutableStateFlow(AuthenticationWork.Idle)
-        private val pageEffects = PageEffects<UiErrorMessage>()
-        val errors = pageEffects.effects
+        private val pageEffects = PageEffects<SecuritySettingsEffect>()
+        val errors = pageEffects.effects.filterIsInstance<SecuritySettingsEffect.Error>().map { it.message }
+        val notices = pageEffects.effects.filterIsInstance<SecuritySettingsEffect.Notice>().map { it.notice }
 
         val uiState: StateFlow<SecuritySettingsUiState> =
             combine(
@@ -109,7 +113,16 @@ class SecuritySettingsViewModel
                     val result = change()
                     currentCoroutineContext().ensureActive()
                     when (result) {
-                        is AuthenticationResult.Success, is AuthenticationResult.Cancelled -> {
+                        is AuthenticationResult.Success -> {
+                            if (result.pendingMaintenance == AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP) {
+                                pageEffects.tryEmit(
+                                    owner,
+                                    SecuritySettingsEffect.Notice(SecuritySettingsNotice.BiometricRotationCleanupPending),
+                                )
+                            }
+                        }
+
+                        is AuthenticationResult.Cancelled -> {
                             Unit
                         }
 
@@ -161,7 +174,7 @@ class SecuritySettingsViewModel
             owner: Any,
             error: UiErrorMessage,
         ) {
-            pageEffects.tryEmit(owner, error)
+            pageEffects.tryEmit(owner, SecuritySettingsEffect.Error(error))
         }
 
         override fun onCleared() {

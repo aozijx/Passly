@@ -116,6 +116,7 @@
     <string name="settings_auth_current_password_incorrect">The current app password is incorrect. Enter it again.</string>
     <string name="settings_auth_last_method_required">Keep at least one unlock method</string>
     <string name="settings_auth_operation_failed">Password operation failed. Try again.</string>
+    <string name="settings_biometric_cleanup_pending">Biometric settings were updated; cleanup of the old key will be retried.</string>
     <plurals name="settings_duration_minutes"><item quantity="one">%d minute</item><item quantity="other">%d minutes</item></plurals>
     <string name="settings_duration_minutes_seconds" tools:ignore="PluralsCandidate">%1$d min %2$d sec</string>
     <plurals name="settings_duration_seconds"><item quantity="one">%d second</item><item quantity="other">%d seconds</item></plurals>

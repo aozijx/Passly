@@ -104,6 +104,7 @@ sealed interface AuthenticationResult {
     data class Success(
         val method: AuthenticationMethod,
         val reusedSession: Boolean = false,
+        val pendingMaintenance: AuthenticationPendingMaintenance? = null,
     ) : AuthenticationResult
 
     data class Cancelled(
@@ -114,6 +115,8 @@ sealed interface AuthenticationResult {
         val failure: AuthenticationFailure,
     ) : AuthenticationResult
 }
+
+enum class AuthenticationPendingMaintenance { BIOMETRIC_ROTATION_CLEANUP }
 
 enum class CancellationReason { USER, CALLER, SESSION_LOCKED }
 

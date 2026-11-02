@@ -355,12 +355,14 @@
 
 ## Task 59：闭合生物识别轮换的提交后恢复与启动对账
 
-- [ ] 将 `ProtoVaultBootstrapStore.commitBiometricRotation()` 成功视为不可回滚的 durable commit point。`RotateBiometricKeyUseCase` 在绑定/envelope 已原子切换后还删除旧 alias、清除 rotation journal；任一后置步骤抛异常会从 `withBiometricRotationCandidate()` 逸出，而 `DefaultAuthenticationMethodProvisioner.rotateBiometricPolicy()` 仅在拿到 `Success` 时刷新 availability。令调用结果明确反映“新绑定已提交、旧 alias/journal 尚待清理”，并按持久事实刷新派生认证状态，避免用户把已提交轮换当作未提交重试。
+- [x] 将 `ProtoVaultBootstrapStore.commitBiometricRotation()` 成功视为不可回滚的 durable commit point。`RotateBiometricKeyUseCase` 在绑定/envelope 已原子切换后还删除旧 alias、清除 rotation journal；后置 cleanup 失败现在仍返回带 `BIOMETRIC_ROTATION_CLEANUP` 标记的 BIOMETRIC Success，保留新 binding 并按 Success 刷新 availability；设置页提示新策略已生效、旧密钥清理会重试。
 - [ ] 收窄 `BiometricCryptoFactory.deleteAlias()` 的失败映射：Android Keystore 的可恢复 `Exception` 可保留为“删除失败、持久 cleanup/journal 留待重试”，fatal `Error` 在必要清理后必须传播。核对禁用、生物识别轮换候选回滚、旧 alias 清理与启动 reconciler 的所有调用方，确保失败时不清除尚需重试的持久标记，也不把 fatal 伪装成普通删除失败。
 - [ ] 为 `PasslyApplication.onCreate()` 启动的 `reconcileStartupState()` 定义协程失败 owner。当前 `SupervisorJob + Dispatchers.IO` 下直接 launch；普通 DataStore/Keystore 异常会成为未处理协程异常，缺少受控记录与后续重试/按需对账路径。普通可恢复异常应记录并保留持久 journal 供明确重试；取消继续传播；fatal `Error` 不得被当成恢复失败吞掉。确认对账未完成时，轮换/解锁功能能否安全继续以及 owner 如何再次触发，不能仅依赖“下次进程启动可能再试”。
 - [ ] 补安全状态行为覆盖：模拟 commit 前失败、commit 原子成功后旧 alias 删除失败、journal 清理失败、启动时 PREPARED/COMMITTED journal 与 cleanup alias 对账失败、DataStore 普通异常/取消/fatal Error；断言 binding/envelope 权威值、认证方式刷新、cleanup metadata 保留、错误可见性及重试终态一致。与 Task 45 的认证 UI 槽互斥及 Task 53 的 app-password/recovery 凭据提交合同分开，避免把不同 owner 合并成通用重试桥。
 
 **证据：** `ProtoVaultBootstrapStore.commitBiometricRotation()` 在一个 `DataStore.updateData` 中写入 BIOMETRIC envelope、active binding、旧 alias cleanup 列表和 `COMMITTED` journal，形成明确持久提交点。之后 `RotateBiometricKeyUseCase` 先尝试删除旧 alias，再清 journal；这些挂起调用任一抛错时，`withBiometricRotationCandidate()` 检查到 candidate 已是 active alias 会正确避免删除它，但仍把异常交给调用方。`DefaultAuthenticationMethodProvisioner.rotateBiometricPolicy()` 只有收到 `AuthenticationResult.Success` 才调用 `refreshAvailability()`，因此提交后清理异常会使本次调用异常退出且跳过派生状态刷新。`BiometricCryptoFactory.deleteAlias()` 用 Kotlin `runCatching` 将任意 `Throwable` 映射成 `false`；返回 false 会保留候选 journal/cleanup alias，但 fatal `Error` 也被隐藏。启动 `BiometricRotationReconciler` 遍历 PREPARED/COMMITTED journal 与 cleanup alias，然而 `PasslyApplication` 直接从 `SupervisorJob` scope launch 它，没有 catch/handler；DataStore 读取或更新的普通异常成为未处理协程异常。现有 `BiometricRotationCandidateTest` 覆盖失败时保留 PREPARED journal、提交后取消不删除 active candidate 与清理异常不覆盖原始错误，但没有覆盖 post-commit 正常异常结果、Keystore fatal、availability refresh、应用启动失败 owner 或 reconciler 重试合同。
+
+**Task 59 实施记录（2026-11-02，第一批）：** 新增 `AuthenticationResult.Success.pendingMaintenance`，区分持久轮换已提交与旧 alias/journal 清理待重试；post-commit cleanup 在 `NonCancellable` 中执行，普通 `Exception` 或 Keystore 返回删除失败映射为 pending，取消与 fatal Error 继续传播。Security Settings 使用页面绑定的 typed notice 提示该状态，认证可用性沿现有 Success 分支刷新。`BiometricRotationCommitCleanupTest` 覆盖成功、普通失败、取消与 fatal；`SecuritySettingsViewModelTest` 覆盖提示投递。接下来的批次仍须处理 Keystore 删除的 fatal 边界、清理日志、启动异常 owner 和显式重试。
 
 ## Task 60：诊断日志存储与导出的 best-effort 边界不得吞掉 fatal Error
 
