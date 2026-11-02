@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 
 import androidx.compose.runtime.Immutable
+
 @Immutable
 data class VaultTopBarUiState(
     val query: String,

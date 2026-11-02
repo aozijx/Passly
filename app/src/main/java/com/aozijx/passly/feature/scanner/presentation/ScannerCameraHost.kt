@@ -51,11 +51,12 @@ internal fun ScannerCameraHost(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember {
-        PreviewView(context).apply {
-            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+    val previewView =
+        remember {
+            PreviewView(context).apply {
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            }
         }
-    }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     val cameraSession = remember { ScannerCameraSession() }
@@ -63,12 +64,13 @@ internal fun ScannerCameraHost(
     val currentOnBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
     val currentOnPermissionDenied by rememberUpdatedState(onPermissionDenied)
     val currentOnFailure by rememberUpdatedState(onFailure)
-    val permissionHost = rememberPermissionRequestHost("scanner.camera") { permission, result ->
-        if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
-        val isGranted = result is PermissionRequestOutcome.Granted
-        hasPermission.value = isGranted
-        if (!isGranted) currentOnPermissionDenied()
-    }
+    val permissionHost =
+        rememberPermissionRequestHost("scanner.camera") { permission, result ->
+            if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
+            val isGranted = result is PermissionRequestOutcome.Granted
+            hasPermission.value = isGranted
+            if (!isGranted) currentOnPermissionDenied()
+        }
 
     LaunchedEffect(permissionHost) {
         val cameraPermission = permissionHost.status(RuntimePermission.CAMERA)
@@ -97,41 +99,44 @@ internal fun ScannerCameraHost(
                 if (disposed.get()) return@addListener
                 try {
                     val provider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().apply {
-                        surfaceProvider = previewView.surfaceProvider
-                    }
-                    val imageAnalysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .apply {
-                            setAnalyzer(cameraExecutor) { imageProxy ->
-                                val mediaImage = imageProxy.image
-                                if (mediaImage == null || disposed.get()) {
-                                    imageProxy.close()
-                                    return@setAnalyzer
-                                }
-                                try {
-                                    val image = InputImage.fromMediaImage(
-                                        mediaImage,
-                                        imageProxy.imageInfo.rotationDegrees,
-                                    )
-                                    barcodeScanner.process(image)
-                                        .addOnSuccessListener { barcodes ->
-                                            if (disposed.get()) return@addOnSuccessListener
-                                            barcodes.firstOrNull()?.rawValue?.let { value ->
-                                                currentOnBarcodeDetected(value)
-                                            }
-                                        }
-                                        .addOnFailureListener { error ->
-                                            if (!disposed.get()) currentOnFailure(error)
-                                        }
-                                        .addOnCompleteListener { imageProxy.close() }
-                                } catch (error: Exception) {
-                                    imageProxy.close()
-                                    if (!disposed.get()) currentOnFailure(error)
+                    val preview =
+                        Preview.Builder().build().apply {
+                            surfaceProvider = previewView.surfaceProvider
+                        }
+                    val imageAnalysis =
+                        ImageAnalysis
+                            .Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .apply {
+                                setAnalyzer(cameraExecutor) { imageProxy ->
+                                    val mediaImage = imageProxy.image
+                                    if (mediaImage == null || disposed.get()) {
+                                        imageProxy.close()
+                                        return@setAnalyzer
+                                    }
+                                    try {
+                                        val image =
+                                            InputImage.fromMediaImage(
+                                                mediaImage,
+                                                imageProxy.imageInfo.rotationDegrees,
+                                            )
+                                        barcodeScanner
+                                            .process(image)
+                                            .addOnSuccessListener { barcodes ->
+                                                if (disposed.get()) return@addOnSuccessListener
+                                                barcodes.firstOrNull()?.rawValue?.let { value ->
+                                                    currentOnBarcodeDetected(value)
+                                                }
+                                            }.addOnFailureListener { error ->
+                                                if (!disposed.get()) currentOnFailure(error)
+                                            }.addOnCompleteListener { imageProxy.close() }
+                                    } catch (error: Exception) {
+                                        imageProxy.close()
+                                        if (!disposed.get()) currentOnFailure(error)
+                                    }
                                 }
                             }
-                        }
 
                     cameraSession.provider = provider
                     cameraSession.imageAnalysis = imageAnalysis

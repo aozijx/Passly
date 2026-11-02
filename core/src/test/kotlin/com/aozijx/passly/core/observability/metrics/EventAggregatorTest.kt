@@ -50,10 +50,11 @@ class EventAggregatorTest {
     fun `snapshot callback cannot recursively aggregate logger self metrics`() {
         lateinit var aggregator: EventAggregator
         var callbacks = 0
-        aggregator = EventAggregator(capacity = 1, debugSamplePercent = 100) {
-            callbacks++
-            aggregator.record(record(event = EventKey("application.logger_metric")))
-        }
+        aggregator =
+            EventAggregator(capacity = 1, debugSamplePercent = 100) {
+                callbacks++
+                aggregator.record(record(event = EventKey("application.logger_metric")))
+            }
         aggregator.record(record(event = EventKey("application.first_metric")))
         aggregator.record(record(event = EventKey("application.second_metric")))
         assertEquals(1, callbacks)
@@ -88,20 +89,24 @@ class EventAggregatorTest {
         processSessionId = ProcessSessionId("process_123456"),
         secureSessionId = null,
         trace = TraceSnapshot(TraceId(trace), SpanId("span_123456789"), null),
-        fields = fields {
-            durationMs(LogFieldKeys.ElapsedMs, 7)
-            state?.let { (from, to) ->
-                enum(LogFieldKeys.FromState, TestState.valueOf(from))
-                enum(LogFieldKeys.ToState, TestState.valueOf(to))
-            }
-        },
-        error = if (failure) {
-            ErrorPayload(
-                ErrorCodes.Database.DatabaseSessionOpenFailed,
-                Reasons.SessionOpenFailed,
-                null,
-            )
-        } else null,
+        fields =
+            fields {
+                durationMs(LogFieldKeys.ElapsedMs, 7)
+                state?.let { (from, to) ->
+                    enum(LogFieldKeys.FromState, TestState.valueOf(from))
+                    enum(LogFieldKeys.ToState, TestState.valueOf(to))
+                }
+            },
+        error =
+            if (failure) {
+                ErrorPayload(
+                    ErrorCodes.Database.DatabaseSessionOpenFailed,
+                    Reasons.SessionOpenFailed,
+                    null,
+                )
+            } else {
+                null
+            },
     )
 
     private enum class TestState { SEALED, UNLOCKED }

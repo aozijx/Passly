@@ -5,8 +5,8 @@ import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.SetProperty
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -53,9 +53,11 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
             )
         }
 
-        val unknownAllowedModules = allowedEdges.get()
-            .flatMap { value -> value.split(EDGE_SEPARATOR, limit = 2) }
-            .toSet() - modules
+        val unknownAllowedModules =
+            allowedEdges
+                .get()
+                .flatMap { value -> value.split(EDGE_SEPARATOR, limit = 2) }
+                .toSet() - modules
         if (unknownAllowedModules.isNotEmpty()) {
             throw GradleException(
                 "Allowed edges reference missing modules: ${unknownAllowedModules.sorted()}",
@@ -74,10 +76,11 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
             throw GradleException("Cyclic project dependency: ${cycle.joinToString(" -> ")}")
         }
 
-        val missingRequiredEdges = missingRequiredEdges(
-            required = requiredEdges.get(),
-            actual = actualEdges.get(),
-        )
+        val missingRequiredEdges =
+            missingRequiredEdges(
+                required = requiredEdges.get(),
+                actual = actualEdges.get(),
+            )
         if (missingRequiredEdges.isNotEmpty()) {
             throw GradleException(
                 "Missing required direct project dependencies:\n${missingRequiredEdges.sorted().joinToString("\n")}",
@@ -85,12 +88,13 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
         }
 
         val root = sourceRoot.get().asFile.toPath()
-        val sources = sourceFiles.files.map { file ->
-            EditorSource(
-                path = root.relativize(file.toPath()).toString(),
-                content = file.readText(),
-            )
-        }
+        val sources =
+            sourceFiles.files.map { file ->
+                EditorSource(
+                    path = root.relativize(file.toPath()).toString(),
+                    content = file.readText(),
+                )
+            }
         val sourceViolations = EditorSourceBoundaryVerifier.verify(sources)
         if (sourceViolations.isNotEmpty()) {
             throw GradleException(
@@ -107,9 +111,10 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
     }
 
     private fun findCycle(edges: Set<String>): List<String>? {
-        val dependencies = edges
-            .map { value -> value.split(EDGE_SEPARATOR, limit = 2) }
-            .groupBy(keySelector = List<String>::first, valueTransform = List<String>::last)
+        val dependencies =
+            edges
+                .map { value -> value.split(EDGE_SEPARATOR, limit = 2) }
+                .groupBy(keySelector = List<String>::first, valueTransform = List<String>::last)
         val visited = mutableSetOf<String>()
         val active = mutableListOf<String>()
 
@@ -130,14 +135,20 @@ abstract class VerifyModuleBoundariesTask : DefaultTask() {
     }
 }
 
-internal fun missingRequiredEdges(required: Set<String>, actual: Set<String>): Set<String> =
-    required - actual
+internal fun missingRequiredEdges(
+    required: Set<String>,
+    actual: Set<String>,
+): Set<String> = required - actual
 
-internal fun missingPolicyModules(actual: Set<String>, policies: Set<String>): Set<String> =
-    actual - policies
+internal fun missingPolicyModules(
+    actual: Set<String>,
+    policies: Set<String>,
+): Set<String> = actual - policies
 
-internal fun stalePolicyModules(actual: Set<String>, policies: Set<String>): Set<String> =
-    policies - actual
+internal fun stalePolicyModules(
+    actual: Set<String>,
+    policies: Set<String>,
+): Set<String> = policies - actual
 
 internal fun architectureSourcePatterns(modules: Set<String>): Set<String> =
     modules.mapTo(linkedSetOf()) { module ->

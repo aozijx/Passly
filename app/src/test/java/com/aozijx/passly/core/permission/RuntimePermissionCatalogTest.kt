@@ -12,7 +12,7 @@ class RuntimePermissionCatalogTest {
     fun cameraPermissionMapsToAndroidCameraPermission() {
         assertEquals(
             Manifest.permission.CAMERA,
-            RuntimePermissionCatalog.androidName(RuntimePermission.CAMERA)
+            RuntimePermissionCatalog.androidName(RuntimePermission.CAMERA),
         )
     }
 
@@ -21,16 +21,15 @@ class RuntimePermissionCatalogTest {
         assertNull(
             RuntimePermissionCatalog.androidName(
                 RuntimePermission.POST_NOTIFICATIONS,
-                apiLevel = 32
-            )
+                apiLevel = 32,
+            ),
         )
         assertEquals(
             Manifest.permission.POST_NOTIFICATIONS,
             RuntimePermissionCatalog.androidName(
                 RuntimePermission.POST_NOTIFICATIONS,
-                apiLevel = 33
-            )
+                apiLevel = 33,
+            ),
         )
     }
-
 }

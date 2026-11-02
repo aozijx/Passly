@@ -9,7 +9,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppPasswordDialogCoordinatorTest {
-
     @Test
     fun `busy operation rejects dialog events`() {
         val coordinator = AppPasswordDialogCoordinator()
@@ -37,8 +36,9 @@ class AppPasswordDialogCoordinatorTest {
             coordinator.onEvent(AppPasswordDialogEvent.ConfirmChanged("long-enough-password")),
         )
         assertTrue(coordinator.model.isSetPasswordConfirmEnabled)
-        val setRequest = coordinator.onEvent(AppPasswordDialogEvent.ConfirmSet)
-            as AppPasswordChangeRequest.Set
+        val setRequest =
+            coordinator.onEvent(AppPasswordDialogEvent.ConfirmSet)
+                as AppPasswordChangeRequest.Set
         assertArrayEquals("long-enough-password".toCharArray(), setRequest.password)
         assertArrayEquals("long-enough-password".toCharArray(), setRequest.confirmation)
 

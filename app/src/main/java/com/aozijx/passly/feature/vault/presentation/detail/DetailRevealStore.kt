@@ -7,7 +7,10 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 internal class DetailRevealStore {
     private val values = mutableMapOf<FieldKey, SensitiveValue>()
 
-    fun replace(key: FieldKey, value: SensitiveValue?) {
+    fun replace(
+        key: FieldKey,
+        value: SensitiveValue?,
+    ) {
         val previous = if (value == null) values.remove(key) else values.put(key, value)
         if (previous !== value) previous?.wipe()
     }

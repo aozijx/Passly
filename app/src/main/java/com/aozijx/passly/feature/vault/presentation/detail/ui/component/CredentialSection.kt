@@ -24,7 +24,7 @@ fun CredentialSection(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         CredentialField(state.username, DetailFieldUiModel.USERNAME, onAction)
         CredentialField(state.password, DetailFieldUiModel.PASSWORD, onAction)
@@ -41,20 +41,24 @@ private fun CredentialField(
 
     val revealedValue = state.revealedValue?.useChars(::String)
     SensitiveFieldCard(
-        title = stringResource(
-            when (field) {
-                DetailFieldUiModel.USERNAME -> R.string.field_username
-                DetailFieldUiModel.PASSWORD -> R.string.password_label
-                else -> error("Unsupported credential field: $field")
-            },
-        ),
+        title =
+            stringResource(
+                when (field) {
+                    DetailFieldUiModel.USERNAME -> R.string.field_username
+                    DetailFieldUiModel.PASSWORD -> R.string.password_label
+                    else -> error("Unsupported credential field: $field")
+                },
+            ),
         isEditing = state.isEditing,
         editedValue = state.editedValue,
         revealedValue = revealedValue,
         onEditToggle = { editing ->
             onAction(
-                if (editing) DetailUiAction.StartFieldEdit(field, state.valueForEditing)
-                else DetailUiAction.CancelFieldEdit(field),
+                if (editing) {
+                    DetailUiAction.StartFieldEdit(field, state.valueForEditing)
+                } else {
+                    DetailUiAction.CancelFieldEdit(field)
+                },
             )
         },
         onValueChange = { onAction(DetailUiAction.UpdateFieldDraft(field, it)) },

@@ -60,24 +60,28 @@ fun AuthenticationScreen(
     val recoveryCode = state.recoveryCode.toUiString()
     val activeMethod = (state.verificationPhase as? UnlockVerificationPhase.Authenticating)?.method
     val verificationFailure = (state.verificationPhase as? UnlockVerificationPhase.Failed)?.failure
-    val biometricFailureMessage = verificationFailure
-        ?.takeIf { it.method == AuthenticationMethod.BIOMETRIC }
-        ?.message
-        ?.localized()
-    val appPasswordFailureMessage = verificationFailure
-        ?.takeIf { it.method == AuthenticationMethod.APP_PASSWORD }
-        ?.message
-        ?.localized(appPasswordLabel)
-    val recoveryCodeFailureMessage = verificationFailure
-        ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
-        ?.message
-        ?.localized(recoveryCodeLabel)
+    val biometricFailureMessage =
+        verificationFailure
+            ?.takeIf { it.method == AuthenticationMethod.BIOMETRIC }
+            ?.message
+            ?.localized()
+    val appPasswordFailureMessage =
+        verificationFailure
+            ?.takeIf { it.method == AuthenticationMethod.APP_PASSWORD }
+            ?.message
+            ?.localized(appPasswordLabel)
+    val recoveryCodeFailureMessage =
+        verificationFailure
+            ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
+            ?.message
+            ?.localized(recoveryCodeLabel)
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .background(MaterialTheme.colorScheme.surface),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .imePadding()
+                .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -87,13 +91,14 @@ fun AuthenticationScreen(
             Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clickable(
-                        interactionSource = lockIconInteractionSource,
-                        indication = null,
-                        onClick = { onAction(UnlockUiAction.LockIconClicked) },
-                    ),
+                modifier =
+                    Modifier
+                        .size(64.dp)
+                        .clickable(
+                            interactionSource = lockIconInteractionSource,
+                            indication = null,
+                            onClick = { onAction(UnlockUiAction.LockIconClicked) },
+                        ),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -106,11 +111,12 @@ fun AuthenticationScreen(
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .navigationBarsPadding()
-                .padding(bottom = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -133,11 +139,12 @@ fun AuthenticationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Fingerprint,
                     text = stringResource(R.string.auth_biometric_unlock),
-                    phase = if (activeMethod == AuthenticationMethod.BIOMETRIC) {
-                        ActionButtonPhase.InProgress
-                    } else {
-                        ActionButtonPhase.Idle
-                    },
+                    phase =
+                        if (activeMethod == AuthenticationMethod.BIOMETRIC) {
+                            ActionButtonPhase.InProgress
+                        } else {
+                            ActionButtonPhase.Idle
+                        },
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.BIOMETRIC,
                     onClick = { onAction(UnlockUiAction.BiometricClicked) },
                 )
@@ -146,24 +153,36 @@ fun AuthenticationScreen(
             if (AuthenticationMethod.APP_PASSWORD in state.availableMethods) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
-                    state = InputActionButtonState(
-                        value = appPassword,
-                        expanded = state.inputExpansion ==
-                            UnlockInputExpansion.Expanded(AuthenticationMethod.APP_PASSWORD),
-                        phase = when {
-                            activeMethod == AuthenticationMethod.APP_PASSWORD ->
-                                ActionButtonPhase.InProgress
-                            appPasswordFailureMessage != null -> ActionButtonPhase.Failed
-                            else -> ActionButtonPhase.Idle
-                        },
-                    ),
-                    config = InputActionButtonConfig(
-                        collapsedText = stringResource(R.string.auth_password_unlock),
-                        expandedText = stringResource(R.string.auth_password_verify),
-                        inputLabel = appPasswordLabel,
-                        errorText = appPasswordFailureMessage
-                            ?: stringResource(R.string.auth_error_failed),
-                    ),
+                    state =
+                        InputActionButtonState(
+                            value = appPassword,
+                            expanded =
+                                state.inputExpansion ==
+                                    UnlockInputExpansion.Expanded(AuthenticationMethod.APP_PASSWORD),
+                            phase =
+                                when {
+                                    activeMethod == AuthenticationMethod.APP_PASSWORD -> {
+                                        ActionButtonPhase.InProgress
+                                    }
+
+                                    appPasswordFailureMessage != null -> {
+                                        ActionButtonPhase.Failed
+                                    }
+
+                                    else -> {
+                                        ActionButtonPhase.Idle
+                                    }
+                                },
+                        ),
+                    config =
+                        InputActionButtonConfig(
+                            collapsedText = stringResource(R.string.auth_password_unlock),
+                            expandedText = stringResource(R.string.auth_password_verify),
+                            inputLabel = appPasswordLabel,
+                            errorText =
+                                appPasswordFailureMessage
+                                    ?: stringResource(R.string.auth_error_failed),
+                        ),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD,
                     onValueChange = { onAction(UnlockUiAction.AppPasswordChanged(it)) },
                     onExpandedChange = {
@@ -180,11 +199,12 @@ fun AuthenticationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
-                    phase = if (setup?.phase == UnlockPasswordSetupPhase.Saving) {
-                        ActionButtonPhase.InProgress
-                    } else {
-                        ActionButtonPhase.Idle
-                    },
+                    phase =
+                        if (setup?.phase == UnlockPasswordSetupPhase.Saving) {
+                            ActionButtonPhase.InProgress
+                        } else {
+                            ActionButtonPhase.Idle
+                        },
                     enabled = activeMethod == null && setup?.phase != UnlockPasswordSetupPhase.Saving,
                     onClick = { onAction(UnlockUiAction.SetPasswordClicked) },
                 )
@@ -201,25 +221,37 @@ fun AuthenticationScreen(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 InputActionButton(
-                    state = InputActionButtonState(
-                        value = recoveryCode,
-                        expanded = state.inputExpansion ==
-                            UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
-                        phase = when {
-                            activeMethod == AuthenticationMethod.RECOVERY_CODE ->
-                                ActionButtonPhase.InProgress
-                            recoveryCodeFailureMessage != null -> ActionButtonPhase.Failed
-                            else -> ActionButtonPhase.Idle
-                        },
-                    ),
-                    config = InputActionButtonConfig(
-                        icon = Icons.Default.Restore,
-                        collapsedText = stringResource(R.string.restore_access),
-                        expandedText = stringResource(R.string.recovery_code_verify),
-                        inputLabel = recoveryCodeLabel,
-                        errorText = recoveryCodeFailureMessage
-                            ?: stringResource(R.string.auth_error_failed),
-                    ),
+                    state =
+                        InputActionButtonState(
+                            value = recoveryCode,
+                            expanded =
+                                state.inputExpansion ==
+                                    UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
+                            phase =
+                                when {
+                                    activeMethod == AuthenticationMethod.RECOVERY_CODE -> {
+                                        ActionButtonPhase.InProgress
+                                    }
+
+                                    recoveryCodeFailureMessage != null -> {
+                                        ActionButtonPhase.Failed
+                                    }
+
+                                    else -> {
+                                        ActionButtonPhase.Idle
+                                    }
+                                },
+                        ),
+                    config =
+                        InputActionButtonConfig(
+                            icon = Icons.Default.Restore,
+                            collapsedText = stringResource(R.string.restore_access),
+                            expandedText = stringResource(R.string.recovery_code_verify),
+                            inputLabel = recoveryCodeLabel,
+                            errorText =
+                                recoveryCodeFailureMessage
+                                    ?: stringResource(R.string.auth_error_failed),
+                        ),
                     enabled = activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE,
                     onValueChange = { onAction(UnlockUiAction.RecoveryCodeChanged(it)) },
                     onExpandedChange = {
@@ -244,9 +276,10 @@ fun AuthenticationScreen(
             onConfirm = { onAction(UnlockUiAction.SetPasswordConfirmed) },
             onDismiss = { onAction(UnlockUiAction.DismissSetPasswordDialog) },
             isBusy = passwordSetup.phase == UnlockPasswordSetupPhase.Saving,
-            errorMessage = (passwordSetup.phase as? UnlockPasswordSetupPhase.Failed)
-                ?.message
-                ?.localized(),
+            errorMessage =
+                (passwordSetup.phase as? UnlockPasswordSetupPhase.Failed)
+                    ?.message
+                    ?.localized(),
         )
     }
 }
@@ -261,32 +294,46 @@ private fun SensitiveValue.toUiString(): String {
 }
 
 @Composable
-private fun UnlockFailureMessage.localized(
-    methodLabel: String? = null,
-): String = when (this) {
-    is UnlockFailureMessage.IncorrectCredential -> {
-        if (methodLabel != null && (remainingAttempts ?: 0) > 0) {
+private fun UnlockFailureMessage.localized(methodLabel: String? = null): String =
+    when (this) {
+        is UnlockFailureMessage.IncorrectCredential -> {
+            if (methodLabel != null && (remainingAttempts ?: 0) > 0) {
+                stringResource(
+                    R.string.auth_error_method_incorrect_attempts,
+                    methodLabel,
+                    remainingAttempts ?: 0,
+                )
+            } else if (methodLabel != null) {
+                stringResource(R.string.auth_error_method_incorrect, methodLabel)
+            } else {
+                stringResource(R.string.auth_error_failed)
+            }
+        }
+
+        is UnlockFailureMessage.RateLimited -> {
             stringResource(
-                R.string.auth_error_method_incorrect_attempts,
-                methodLabel,
-                remainingAttempts ?: 0,
+                R.string.auth_error_rate_limited,
+                retryAfterSeconds,
             )
-        } else if (methodLabel != null) {
-            stringResource(R.string.auth_error_method_incorrect, methodLabel)
-        } else {
+        }
+
+        UnlockFailureMessage.BiometricKeyInvalidated -> {
+            stringResource(R.string.notice_security_key_invalidated)
+        }
+
+        UnlockFailureMessage.PasswordTooShort -> {
+            stringResource(
+                R.string.auth_error_password_too_short,
+            )
+        }
+
+        UnlockFailureMessage.AppPasswordSetupFailed -> {
+            stringResource(
+                R.string.auth_error_app_password_setup_failed,
+            )
+        }
+
+        UnlockFailureMessage.Generic -> {
             stringResource(R.string.auth_error_failed)
         }
     }
-    is UnlockFailureMessage.RateLimited -> stringResource(
-        R.string.auth_error_rate_limited,
-        retryAfterSeconds,
-    )
-    UnlockFailureMessage.BiometricKeyInvalidated -> stringResource(R.string.notice_security_key_invalidated)
-    UnlockFailureMessage.PasswordTooShort -> stringResource(
-        R.string.auth_error_password_too_short,
-    )
-    UnlockFailureMessage.AppPasswordSetupFailed -> stringResource(
-        R.string.auth_error_app_password_setup_failed,
-    )
-    UnlockFailureMessage.Generic -> stringResource(R.string.auth_error_failed)
-}

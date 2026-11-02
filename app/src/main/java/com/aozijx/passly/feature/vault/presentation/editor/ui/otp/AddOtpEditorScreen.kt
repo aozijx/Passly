@@ -13,13 +13,13 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpCodeState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpSavePhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
 fun AddOtpEditorScreen(

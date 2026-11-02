@@ -5,8 +5,8 @@ import com.aozijx.passly.feature.settings.presentation.main.navigation.about.Abo
 import com.aozijx.passly.feature.settings.presentation.main.navigation.autofill.AutofillRoute
 import com.aozijx.passly.feature.settings.presentation.main.navigation.core.AppearanceRoute
 import com.aozijx.passly.feature.settings.presentation.main.navigation.core.InterfaceRoute
-import com.aozijx.passly.feature.settings.presentation.main.navigation.core.PrivacyRoute
 import com.aozijx.passly.feature.settings.presentation.main.navigation.core.PermissionsRoute
+import com.aozijx.passly.feature.settings.presentation.main.navigation.core.PrivacyRoute
 import com.aozijx.passly.feature.settings.presentation.main.navigation.core.RecoveryCodeRoute
 import com.aozijx.passly.feature.settings.presentation.main.navigation.core.SecurityRoute
 import com.aozijx.passly.feature.settings.presentation.main.navigation.data.BackupRoute
@@ -25,28 +25,70 @@ internal fun SettingsDetailRoute(
 ) {
     when (route) {
         null,
-        SettingsDestination.Main -> SettingsDetailPlaceholder()
-        SettingsDestination.Security -> SecurityRoute(onBack)
-        SettingsDestination.Privacy -> PrivacyRoute(onBack)
-        SettingsDestination.Permissions -> PermissionsRoute(
-            onOpenBackupSettings = {
-                onNavigateTo(SettingsDestination.BackupRestore)
-            },
-            onBack = onBack,
-        )
-        SettingsDestination.Appearance -> AppearanceRoute(onBack)
-        SettingsDestination.Interface -> InterfaceRoute(onBack)
-        SettingsDestination.Interaction -> InteractionRoute(onBack)
-        SettingsDestination.Autofill -> AutofillRoute(onBack)
-        SettingsDestination.DataManagement -> DataManagementRoute(
-            onOpenTrash = onOpenTrash,
-            onOpenDiagnostics = { onNavigateTo(SettingsDestination.Diagnostics) },
-            onBack = onBack,
-        )
-        SettingsDestination.BackupRestore -> BackupRoute(onBack)
-        SettingsDestination.RecoveryCode -> RecoveryCodeRoute(onBack)
-        SettingsDestination.About -> AboutRoute(onBack)
-        SettingsDestination.Diagnostics -> DiagnosticsRoute(onBack)
-        SettingsDestination.Notifications -> NotificationsRoute(onBack)
+        SettingsDestination.Main,
+        -> {
+            SettingsDetailPlaceholder()
+        }
+
+        SettingsDestination.Security -> {
+            SecurityRoute(onBack)
+        }
+
+        SettingsDestination.Privacy -> {
+            PrivacyRoute(onBack)
+        }
+
+        SettingsDestination.Permissions -> {
+            PermissionsRoute(
+                onOpenBackupSettings = {
+                    onNavigateTo(SettingsDestination.BackupRestore)
+                },
+                onBack = onBack,
+            )
+        }
+
+        SettingsDestination.Appearance -> {
+            AppearanceRoute(onBack)
+        }
+
+        SettingsDestination.Interface -> {
+            InterfaceRoute(onBack)
+        }
+
+        SettingsDestination.Interaction -> {
+            InteractionRoute(onBack)
+        }
+
+        SettingsDestination.Autofill -> {
+            AutofillRoute(onBack)
+        }
+
+        SettingsDestination.DataManagement -> {
+            DataManagementRoute(
+                onOpenTrash = onOpenTrash,
+                onOpenDiagnostics = { onNavigateTo(SettingsDestination.Diagnostics) },
+                onBack = onBack,
+            )
+        }
+
+        SettingsDestination.BackupRestore -> {
+            BackupRoute(onBack)
+        }
+
+        SettingsDestination.RecoveryCode -> {
+            RecoveryCodeRoute(onBack)
+        }
+
+        SettingsDestination.About -> {
+            AboutRoute(onBack)
+        }
+
+        SettingsDestination.Diagnostics -> {
+            DiagnosticsRoute(onBack)
+        }
+
+        SettingsDestination.Notifications -> {
+            NotificationsRoute(onBack)
+        }
     }
 }

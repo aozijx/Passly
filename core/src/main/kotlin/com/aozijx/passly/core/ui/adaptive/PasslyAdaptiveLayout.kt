@@ -9,12 +9,14 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.window.core.layout.WindowSizeClass
 
 enum class PasslyWindowWidth {
-    COMPACT, MEDIUM, EXPANDED
+    COMPACT,
+    MEDIUM,
+    EXPANDED,
 }
 
 @Immutable
 data class PasslyAdaptiveLayout(
-    val windowWidth: PasslyWindowWidth
+    val windowWidth: PasslyWindowWidth,
 ) {
     val isExpanded: Boolean
         get() = windowWidth == PasslyWindowWidth.EXPANDED
@@ -35,17 +37,18 @@ val LocalPasslyAdaptiveLayout = staticCompositionLocalOf { PasslyAdaptiveLayout.
 @Composable
 fun ProvidePasslyAdaptiveLayout(content: @Composable () -> Unit) {
     val windowSizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
-    val windowWidth = when {
-        windowSizeClass.isWidthAtLeastBreakpoint(
-            WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND
-        ) -> PasslyWindowWidth.EXPANDED
+    val windowWidth =
+        when {
+            windowSizeClass.isWidthAtLeastBreakpoint(
+                WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND,
+            ) -> PasslyWindowWidth.EXPANDED
 
-        windowSizeClass.isWidthAtLeastBreakpoint(
-            WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND
-        ) -> PasslyWindowWidth.MEDIUM
+            windowSizeClass.isWidthAtLeastBreakpoint(
+                WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
+            ) -> PasslyWindowWidth.MEDIUM
 
-        else -> PasslyWindowWidth.COMPACT
-    }
+            else -> PasslyWindowWidth.COMPACT
+        }
     val layout = remember(windowWidth) { PasslyAdaptiveLayout(windowWidth) }
 
     CompositionLocalProvider(LocalPasslyAdaptiveLayout provides layout, content = content)

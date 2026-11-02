@@ -11,13 +11,16 @@ internal class PasskeyEntryPayloadAdapter : EntryPayloadAdapter {
 
     override fun encode(credential: EntryCredential): SecretPayload {
         require(credential is PasskeyCredential) { "PASSKEY adapter requires PasskeyCredential" }
-        return SecretPayload(passkey = PasskeyCredentialPayload(
-            credentialId = credential.credentialId,
-            rpId = credential.rpId,
-            userHandle = credential.userHandle,
-            privateKeyReference = credential.privateKeyReference,
-            hardwareKeyInfo = credential.hardwareKeyInfo,
-        ))
+        return SecretPayload(
+            passkey =
+                PasskeyCredentialPayload(
+                    credentialId = credential.credentialId,
+                    rpId = credential.rpId,
+                    userHandle = credential.userHandle,
+                    privateKeyReference = credential.privateKeyReference,
+                    hardwareKeyInfo = credential.hardwareKeyInfo,
+                ),
+        )
     }
 
     override fun decode(payload: SecretPayload): EntryCredential {

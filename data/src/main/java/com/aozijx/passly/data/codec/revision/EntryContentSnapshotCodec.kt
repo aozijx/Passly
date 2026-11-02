@@ -1,23 +1,22 @@
 package com.aozijx.passly.data.codec.revision
 
+import com.aozijx.passly.core.crypto.FieldEncryptor
 import com.aozijx.passly.data.codec.DatabaseRecordAad
-import com.aozijx.passly.data.codec.entryRelationTypeFromStorageKey
-import com.aozijx.passly.data.codec.toStorageKey
-import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
-import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
-import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
 import com.aozijx.passly.data.codec.entry.payload.SummaryPayload
+import com.aozijx.passly.data.codec.entryRelationTypeFromStorageKey
 import com.aozijx.passly.data.codec.json.AppJson
+import com.aozijx.passly.data.codec.toStorageKey
+import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
+import com.aozijx.passly.data.mapper.entry.EntrySecretMapper
+import com.aozijx.passly.data.mapper.entry.toBundleSecret
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.core.crypto.FieldEncryptor
-import kotlinx.serialization.Serializable
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -27,24 +26,28 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.Serializable
 
 data class EntryContentSnapshot(
     val summaryJson: ByteArray,
     val secretJson: ByteArray,
     val relationsJson: ByteArray,
 ) {
-    fun toBytes(): ByteArray = ByteArrayOutputStream().also { output ->
-        DataOutputStream(output).use { data ->
-            listOf(summaryJson, secretJson, relationsJson).forEach { component ->
-                data.writeInt(component.size)
-                data.write(component)
-            }
-        }
-    }.toByteArray()
+    fun toBytes(): ByteArray =
+        ByteArrayOutputStream()
+            .also { output ->
+                DataOutputStream(output).use { data ->
+                    listOf(summaryJson, secretJson, relationsJson).forEach { component ->
+                        data.writeInt(component.size)
+                        data.write(component)
+                    }
+                }
+            }.toByteArray()
 
     companion object {
         fun fromBytes(bytes: ByteArray): EntryContentSnapshot {
             val input = DataInputStream(ByteArrayInputStream(bytes))
+
             fun readComponent(name: String): ByteArray {
                 val length = input.readInt()
                 require(length in 0..MAX_COMPONENT_BYTES && length <= input.available()) {
@@ -62,16 +65,20 @@ data class EntryContentSnapshot(
         private const val MAX_COMPONENT_BYTES = 4 * 1024 * 1024
     }
 
-    override fun equals(other: Any?): Boolean = other is EntryContentSnapshot &&
-        summaryJson.contentEquals(other.summaryJson) && secretJson.contentEquals(other.secretJson) &&
-        relationsJson.contentEquals(other.relationsJson)
+    override fun equals(other: Any?): Boolean =
+        other is EntryContentSnapshot &&
+            summaryJson.contentEquals(other.summaryJson) && secretJson.contentEquals(other.secretJson) &&
+            relationsJson.contentEquals(other.relationsJson)
 
-    override fun hashCode(): Int = 31 * (31 * summaryJson.contentHashCode() + secretJson.contentHashCode()) +
-        relationsJson.contentHashCode()
+    override fun hashCode(): Int =
+        31 * (31 * summaryJson.contentHashCode() + secretJson.contentHashCode()) +
+            relationsJson.contentHashCode()
 }
 
 @Serializable
-private data class EntryRelationsSnapshot(val links: List<EntryLinkSnapshot>)
+private data class EntryRelationsSnapshot(
+    val links: List<EntryLinkSnapshot>,
+)
 
 @Serializable
 private data class EntryLinkSnapshot(
@@ -90,89 +97,120 @@ data class DecodedEntryContentSnapshot(
 )
 
 @Singleton
-class EntryContentSnapshotCodec @Inject constructor(
-    private val fieldEncryptor: FieldEncryptor,
-) {
-    suspend fun encrypt(
-        summary: EntryProfile,
-        bundleSecret: EntrySecret,
-        entryId: String,
-        expectedType: EntryType,
-        links: List<EntryLink>,
-    ): ByteArray {
-        // Enforce the storage boundary here as well as at the writer call site. A future caller
-        // cannot accidentally duplicate high-sensitivity values into the general content blob.
-        val redactedSecret = bundleSecret.toBundleSecret()
-        val summaryJson = AppJson.encodeToString(
-            SummaryPayload.serializer(), EntryProfileMapper.toPayload(summary)
-        ).toByteArray()
-        val secretJson = AppJson.encodeToString(
-            SecretPayload.serializer(), EntrySecretMapper.toPayload(redactedSecret, expectedType)
-        ).toByteArray()
-        val relationsJson = AppJson.encodeToString(
-            EntryRelationsSnapshot.serializer(),
-            EntryRelationsSnapshot(links.map(EntryLink::toSnapshot)),
-        ).toByteArray()
-        val compressed = gzip(EntryContentSnapshot(summaryJson, secretJson, relationsJson).toBytes())
-        val encoded = FORMAT_PREFIX + Base64.getEncoder().encodeToString(compressed)
-        return fieldEncryptor.encrypt(encoded, DatabaseRecordAad.revision(entryId))
-    }
-
-    suspend fun decrypt(cipher: ByteArray, entryId: String, expectedType: EntryType): DecodedEntryContentSnapshot {
-        val encoded = fieldEncryptor.decrypt(cipher, DatabaseRecordAad.revision(entryId))
-        require(encoded.startsWith(FORMAT_PREFIX)) { "Unsupported entry content snapshot format" }
-        val snapshot = EntryContentSnapshot.fromBytes(
-            gunzip(Base64.getDecoder().decode(encoded.removePrefix(FORMAT_PREFIX)))
-        )
-        val summary = AppJson.decodeFromString(
-            SummaryPayload.serializer(), String(snapshot.summaryJson)
-        )
-        val secret = AppJson.decodeFromString(
-            SecretPayload.serializer(), String(snapshot.secretJson)
-        )
-        val relations = AppJson.decodeFromString(
-            EntryRelationsSnapshot.serializer(), String(snapshot.relationsJson)
-        )
-        return DecodedEntryContentSnapshot(
-            summary = EntryProfileMapper.toDomain(summary),
-            secret = EntrySecretMapper.toDomain(secret, expectedType),
-            links = relations.links.map(EntryLinkSnapshot::toDomain),
-        )
-    }
-
-    private fun gzip(bytes: ByteArray): ByteArray = ByteArrayOutputStream().also { output ->
-        GZIPOutputStream(output).use { it.write(bytes) }
-    }.toByteArray()
-
-    private fun gunzip(bytes: ByteArray): ByteArray = GZIPInputStream(ByteArrayInputStream(bytes)).use { input ->
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        var total = 0
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            total += read
-            require(total <= MAX_SNAPSHOT_BYTES) { "Entry content snapshot exceeds size limit" }
-            output.write(buffer, 0, read)
+class EntryContentSnapshotCodec
+    @Inject
+    constructor(
+        private val fieldEncryptor: FieldEncryptor,
+    ) {
+        suspend fun encrypt(
+            summary: EntryProfile,
+            bundleSecret: EntrySecret,
+            entryId: String,
+            expectedType: EntryType,
+            links: List<EntryLink>,
+        ): ByteArray {
+            // Enforce the storage boundary here as well as at the writer call site. A future caller
+            // cannot accidentally duplicate high-sensitivity values into the general content blob.
+            val redactedSecret = bundleSecret.toBundleSecret()
+            val summaryJson =
+                AppJson
+                    .encodeToString(
+                        SummaryPayload.serializer(),
+                        EntryProfileMapper.toPayload(summary),
+                    ).toByteArray()
+            val secretJson =
+                AppJson
+                    .encodeToString(
+                        SecretPayload.serializer(),
+                        EntrySecretMapper.toPayload(redactedSecret, expectedType),
+                    ).toByteArray()
+            val relationsJson =
+                AppJson
+                    .encodeToString(
+                        EntryRelationsSnapshot.serializer(),
+                        EntryRelationsSnapshot(links.map(EntryLink::toSnapshot)),
+                    ).toByteArray()
+            val compressed = gzip(EntryContentSnapshot(summaryJson, secretJson, relationsJson).toBytes())
+            val encoded = FORMAT_PREFIX + Base64.getEncoder().encodeToString(compressed)
+            return fieldEncryptor.encrypt(encoded, DatabaseRecordAad.revision(entryId))
         }
-        output.toByteArray()
+
+        suspend fun decrypt(
+            cipher: ByteArray,
+            entryId: String,
+            expectedType: EntryType,
+        ): DecodedEntryContentSnapshot {
+            val encoded = fieldEncryptor.decrypt(cipher, DatabaseRecordAad.revision(entryId))
+            require(encoded.startsWith(FORMAT_PREFIX)) { "Unsupported entry content snapshot format" }
+            val snapshot =
+                EntryContentSnapshot.fromBytes(
+                    gunzip(Base64.getDecoder().decode(encoded.removePrefix(FORMAT_PREFIX))),
+                )
+            val summary =
+                AppJson.decodeFromString(
+                    SummaryPayload.serializer(),
+                    String(snapshot.summaryJson),
+                )
+            val secret =
+                AppJson.decodeFromString(
+                    SecretPayload.serializer(),
+                    String(snapshot.secretJson),
+                )
+            val relations =
+                AppJson.decodeFromString(
+                    EntryRelationsSnapshot.serializer(),
+                    String(snapshot.relationsJson),
+                )
+            return DecodedEntryContentSnapshot(
+                summary = EntryProfileMapper.toDomain(summary),
+                secret = EntrySecretMapper.toDomain(secret, expectedType),
+                links = relations.links.map(EntryLinkSnapshot::toDomain),
+            )
+        }
+
+        private fun gzip(bytes: ByteArray): ByteArray =
+            ByteArrayOutputStream()
+                .also { output ->
+                    GZIPOutputStream(output).use { it.write(bytes) }
+                }.toByteArray()
+
+        private fun gunzip(bytes: ByteArray): ByteArray =
+            GZIPInputStream(ByteArrayInputStream(bytes)).use { input ->
+                val output = ByteArrayOutputStream()
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var total = 0
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    total += read
+                    require(total <= MAX_SNAPSHOT_BYTES) { "Entry content snapshot exceeds size limit" }
+                    output.write(buffer, 0, read)
+                }
+                output.toByteArray()
+            }
+
+        private companion object {
+            const val FORMAT_PREFIX = "content1:"
+            const val MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
+        }
     }
 
-    private companion object {
-        const val FORMAT_PREFIX = "content1:"
-        const val MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
-    }
-}
+private fun EntryLink.toSnapshot() =
+    EntryLinkSnapshot(
+        id.value,
+        sourceEntryId.value,
+        targetEntryId.value,
+        relationType.toStorageKey(),
+        createdAt,
+        updatedAt,
+    )
 
-private fun EntryLink.toSnapshot() = EntryLinkSnapshot(
-    id.value, sourceEntryId.value, targetEntryId.value, relationType.toStorageKey(), createdAt, updatedAt
-)
-
-private fun EntryLinkSnapshot.toDomain(): EntryLink = EntryLink.create(
-    id = EntryLinkId(id),
-    sourceEntryId = EntryId(sourceEntryId),
-    targetEntryId = EntryId(targetEntryId),
-    relationType = entryRelationTypeFromStorageKey(relationType),
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
+private fun EntryLinkSnapshot.toDomain(): EntryLink =
+    EntryLink.create(
+        id = EntryLinkId(id),
+        sourceEntryId = EntryId(sourceEntryId),
+        targetEntryId = EntryId(targetEntryId),
+        relationType = entryRelationTypeFromStorageKey(relationType),
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )

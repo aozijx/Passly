@@ -1,28 +1,33 @@
 package com.aozijx.passly.core.observability.privacy
 
 import com.aozijx.passly.core.observability.AppStackFrame
+import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
-import com.aozijx.passly.core.observability.ExceptionKind
 
 class ExceptionSnapshotFactory {
-    fun create(throwable: Throwable, kind: ExceptionKind = ExceptionKind.UNKNOWN): ExceptionSnapshot {
+    fun create(
+        throwable: Throwable,
+        kind: ExceptionKind = ExceptionKind.UNKNOWN,
+    ): ExceptionSnapshot {
         var foreignFrameCount = 0
-        val appFrames = buildList {
-            throwable.stackTrace.forEach { frame ->
-                if (size >= MAX_APP_FRAMES) return@forEach
+        val appFrames =
+            buildList {
+                throwable.stackTrace.forEach { frame ->
+                    if (size >= MAX_APP_FRAMES) return@forEach
 
-                normalize(frame)?.let(::add) ?: run { foreignFrameCount += 1 }
+                    normalize(frame)?.let(::add) ?: run { foreignFrameCount += 1 }
+                }
             }
-        }
 
-        val causeTypes = buildList {
-            var cause = throwable.cause
-            while (cause != null && size < MAX_CAUSE_TYPES) {
-                add(exceptionType(cause))
-                cause = cause.cause
+        val causeTypes =
+            buildList {
+                var cause = throwable.cause
+                while (cause != null && size < MAX_CAUSE_TYPES) {
+                    add(exceptionType(cause))
+                    cause = cause.cause
+                }
             }
-        }
 
         return ExceptionSnapshot(
             type = exceptionType(throwable),
@@ -38,16 +43,22 @@ class ExceptionSnapshotFactory {
         val sourceFile = frame.fileName ?: return null
         if (!sourceFile.matches(SOURCE_FILE_PATTERN)) return null
         if (!frame.methodName.matches(METHOD_NAME_PATTERN)) return null
-        val displayClassName = when {
-            frame.className.startsWith(PASSLY_PACKAGE_PREFIX) ->
-                frame.className.removePrefix(PASSLY_PACKAGE_PREFIX)
-                    .takeIf { it.matches(CLASS_NAME_PATTERN) }
+        val displayClassName =
+            when {
+                frame.className.startsWith(PASSLY_PACKAGE_PREFIX) -> {
+                    frame.className
+                        .removePrefix(PASSLY_PACKAGE_PREFIX)
+                        .takeIf { it.matches(CLASS_NAME_PATTERN) }
+                }
 
-            frame.className.matches(MINIFIED_CLASS_NAME_PATTERN) ->
-                sourceFile.substringBeforeLast('.')
+                frame.className.matches(MINIFIED_CLASS_NAME_PATTERN) -> {
+                    sourceFile.substringBeforeLast('.')
+                }
 
-            else -> null
-        } ?: return null
+                else -> {
+                    null
+                }
+            } ?: return null
         return AppStackFrame(
             "$displayClassName#${frame.methodName}($sourceFile:${frame.lineNumber})",
         )

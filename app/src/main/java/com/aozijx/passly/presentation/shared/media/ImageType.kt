@@ -6,5 +6,5 @@ package com.aozijx.passly.presentation.shared.media
 enum class ImageType {
     AVATAR,
     COVER,
-    SCREEN
+    SCREEN,
 }

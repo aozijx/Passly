@@ -12,12 +12,18 @@ class UiErrorLocalizationTest {
     fun sameErrorKeyResolvesUsingTheCurrentRenderingLanguage() {
         val base = InstrumentationRegistry.getInstrumentation().targetContext
         val error = DatabaseLocked().toUiErrorMessage()
-        val english = base.createConfigurationContext(Configuration(base.resources.configuration).apply {
-            setLocale(Locale.ENGLISH)
-        })
-        val chinese = base.createConfigurationContext(Configuration(base.resources.configuration).apply {
-            setLocale(Locale.SIMPLIFIED_CHINESE)
-        })
+        val english =
+            base.createConfigurationContext(
+                Configuration(base.resources.configuration).apply {
+                    setLocale(Locale.ENGLISH)
+                },
+            )
+        val chinese =
+            base.createConfigurationContext(
+                Configuration(base.resources.configuration).apply {
+                    setLocale(Locale.SIMPLIFIED_CHINESE)
+                },
+            )
         assertEquals("The database is locked. Unlock it first.", english.getString(error.resourceId))
         assertEquals("数据库已锁定，请先解锁", chinese.getString(error.resourceId))
     }

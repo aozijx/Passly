@@ -7,42 +7,54 @@ private val ENUM_PATTERN = Regex("^[A-Z][A-Z0-9_]{1,63}$")
 private val OPERATION_PATTERN = Regex("^[a-z][a-z0-9_]{2,126}$")
 
 @JvmInline
-value class EventKey(val value: String) {
+value class EventKey(
+    val value: String,
+) {
     init {
         require(value.length in 3..96 && EVENT_PATTERN.matches(value)) { "Invalid event key" }
     }
 }
 
 @JvmInline
-value class LogFieldKey(val value: String) {
+value class LogFieldKey(
+    val value: String,
+) {
     init {
         require(FIELD_PATTERN.matches(value)) { "Invalid log field key" }
     }
 }
 
 @JvmInline
-value class ErrorCode(val value: String) {
+value class ErrorCode(
+    val value: String,
+) {
     init {
         require(CODE_PATTERN.matches(value)) { "Invalid error code" }
     }
 }
 
 @JvmInline
-value class ReasonCode(val value: String) {
+value class ReasonCode(
+    val value: String,
+) {
     init {
         require(CODE_PATTERN.matches(value)) { "Invalid reason code" }
     }
 }
 
 @JvmInline
-value class OperationCode(val value: String) {
+value class OperationCode(
+    val value: String,
+) {
     init {
         require(OPERATION_PATTERN.matches(value)) { "Invalid operation code" }
     }
 }
 
 @JvmInline
-value class EnumName(val value: String) {
+value class EnumName(
+    val value: String,
+) {
     init {
         require(ENUM_PATTERN.matches(value)) { "Invalid enum name" }
     }
@@ -138,79 +150,80 @@ object Events {
         val EntryUpdateFailed = EventKey("vault.entry.update.failed")
     }
 
-    val All: Set<EventKey> = setOf(
-        Application.Error,
-        Application.PreviousProcessExit,
-        Application.TraceResumeUnavailable,
-        Application.BackgroundLockSkipped,
-        Application.UnhandledException,
-        Application.NativeLibraryLoadFailed,
-        Application.PackageIconUnavailable,
-        Application.ResourceCleanupFailed,
-        Application.DeviceLockCompleted,
-        Application.DeviceLockSkipped,
-        Application.DiagnosticsExportFailed,
-        Application.ScannedOtpInvalid,
-        Application.ScannerFailed,
-        Application.LogOverflow,
-        Database.Error,
-        Database.SessionTransition,
-        Database.SessionTransitionFailed,
-        Database.Opened,
-        Database.OpenFailed,
-        Database.ResetFailed,
-        Security.Error,
-        Security.LockStarted,
-        Security.LockCompleted,
-        Security.LockFailed,
-        Security.LockCancelled,
-        Security.AuthenticationStarted,
-        Security.AuthenticationCompleted,
-        Security.AuthenticationRejected,
-        Security.AuthenticationCancelled,
-        Security.AuthenticationFailed,
-        Security.BiometricPromptFailed,
-        Security.VaultInitialized,
-        Security.VaultUnlocked,
-        Security.VerificationTagCreated,
-        Security.EnvelopeRekeyed,
-        Security.VaultOperationFailed,
-        Security.VaultDeletionStarted,
-        Security.VaultDeleted,
-        Security.VaultLockStarted,
-        Security.VaultLocked,
-        Autofill.Error,
-        Autofill.DiscoveryStarted,
-        Autofill.DiscoveryCompleted,
-        Autofill.DiscoveryUnavailable,
-        Autofill.AuthenticationStarted,
-        Autofill.AuthenticationCompleted,
-        Autofill.ResultDeliveryStarted,
-        Autofill.ResultDelivered,
-        Autofill.ResultDeliveryFailed,
-        Autofill.SessionCloseStarted,
-        Autofill.SessionClosed,
-        Autofill.SessionCloseFailed,
-        Autofill.SaveStarted,
-        Autofill.SaveStaged,
-        Autofill.SaveCompleted,
-        Autofill.SaveFailed,
-        Autofill.ActionIgnored,
-        Autofill.PresentationSelected,
-        Autofill.FallbackStarted,
-        Autofill.FallbackUnavailable,
-        Autofill.FallbackDelivered,
-        Autofill.FallbackFailed,
-        Backup.Error,
-        Backup.ResourceCleanupFailed,
-        Vault.Error,
-        Vault.EntryCreateStarted,
-        Vault.EntryCreateCompleted,
-        Vault.EntryCreateFailed,
-        Vault.EntryUpdateStarted,
-        Vault.EntryUpdateCompleted,
-        Vault.EntryUpdateFailed,
-    )
+    val All: Set<EventKey> =
+        setOf(
+            Application.Error,
+            Application.PreviousProcessExit,
+            Application.TraceResumeUnavailable,
+            Application.BackgroundLockSkipped,
+            Application.UnhandledException,
+            Application.NativeLibraryLoadFailed,
+            Application.PackageIconUnavailable,
+            Application.ResourceCleanupFailed,
+            Application.DeviceLockCompleted,
+            Application.DeviceLockSkipped,
+            Application.DiagnosticsExportFailed,
+            Application.ScannedOtpInvalid,
+            Application.ScannerFailed,
+            Application.LogOverflow,
+            Database.Error,
+            Database.SessionTransition,
+            Database.SessionTransitionFailed,
+            Database.Opened,
+            Database.OpenFailed,
+            Database.ResetFailed,
+            Security.Error,
+            Security.LockStarted,
+            Security.LockCompleted,
+            Security.LockFailed,
+            Security.LockCancelled,
+            Security.AuthenticationStarted,
+            Security.AuthenticationCompleted,
+            Security.AuthenticationRejected,
+            Security.AuthenticationCancelled,
+            Security.AuthenticationFailed,
+            Security.BiometricPromptFailed,
+            Security.VaultInitialized,
+            Security.VaultUnlocked,
+            Security.VerificationTagCreated,
+            Security.EnvelopeRekeyed,
+            Security.VaultOperationFailed,
+            Security.VaultDeletionStarted,
+            Security.VaultDeleted,
+            Security.VaultLockStarted,
+            Security.VaultLocked,
+            Autofill.Error,
+            Autofill.DiscoveryStarted,
+            Autofill.DiscoveryCompleted,
+            Autofill.DiscoveryUnavailable,
+            Autofill.AuthenticationStarted,
+            Autofill.AuthenticationCompleted,
+            Autofill.ResultDeliveryStarted,
+            Autofill.ResultDelivered,
+            Autofill.ResultDeliveryFailed,
+            Autofill.SessionCloseStarted,
+            Autofill.SessionClosed,
+            Autofill.SessionCloseFailed,
+            Autofill.SaveStarted,
+            Autofill.SaveStaged,
+            Autofill.SaveCompleted,
+            Autofill.SaveFailed,
+            Autofill.ActionIgnored,
+            Autofill.PresentationSelected,
+            Autofill.FallbackStarted,
+            Autofill.FallbackUnavailable,
+            Autofill.FallbackDelivered,
+            Autofill.FallbackFailed,
+            Backup.Error,
+            Backup.ResourceCleanupFailed,
+            Vault.Error,
+            Vault.EntryCreateStarted,
+            Vault.EntryCreateCompleted,
+            Vault.EntryCreateFailed,
+            Vault.EntryUpdateStarted,
+            Vault.EntryUpdateCompleted,
+            Vault.EntryUpdateFailed,
+        )
 }
 
 object Operations {

@@ -24,33 +24,37 @@ import com.aozijx.passly.domain.entry.policy.type.WifiEntryDefinition
 
 /** Complete domain-owned field catalog used by create and edit flows. */
 object EntryTypeDefinitions {
-    private val definitions = buildEntryTypeDefinitionIndex(
-        definitions = listOf(
-            AccountEntryDefinition.definition,
-            LoginEntryDefinition.definition,
-            NoteEntryDefinition.definition,
-            BankCardEntryDefinition.definition,
-            IdCardEntryDefinition.definition,
-            PassportEntryDefinition.definition,
-            DriverLicenseEntryDefinition.definition,
-            SshKeyEntryDefinition.definition,
-            WifiEntryDefinition.definition,
-            PasskeyEntryDefinition.definition,
-            OtpEntryDefinition.definition,
-            DatabaseCredentialEntryDefinition.definition,
-            ServerCredentialEntryDefinition.definition,
-            ApiKeyEntryDefinition.definition,
-            CryptoWalletEntryDefinition.definition,
-            SeedPhraseEntryDefinition.definition,
-            RecoveryCodeEntryDefinition.definition,
-        ),
-        expectedTypes = EntryType.entries.toSet(),
-    )
+    private val definitions =
+        buildEntryTypeDefinitionIndex(
+            definitions =
+                listOf(
+                    AccountEntryDefinition.definition,
+                    LoginEntryDefinition.definition,
+                    NoteEntryDefinition.definition,
+                    BankCardEntryDefinition.definition,
+                    IdCardEntryDefinition.definition,
+                    PassportEntryDefinition.definition,
+                    DriverLicenseEntryDefinition.definition,
+                    SshKeyEntryDefinition.definition,
+                    WifiEntryDefinition.definition,
+                    PasskeyEntryDefinition.definition,
+                    OtpEntryDefinition.definition,
+                    DatabaseCredentialEntryDefinition.definition,
+                    ServerCredentialEntryDefinition.definition,
+                    ApiKeyEntryDefinition.definition,
+                    CryptoWalletEntryDefinition.definition,
+                    SeedPhraseEntryDefinition.definition,
+                    RecoveryCodeEntryDefinition.definition,
+                ),
+            expectedTypes = EntryType.entries.toSet(),
+        )
 
     val all: Collection<EntryTypeDefinition> get() = definitions.values
 
     operator fun get(type: EntryType): EntryTypeDefinition = definitions.getValue(type)
 
-    fun sensitiveStorageKey(type: EntryType, fieldKey: FieldKey): SensitiveFieldKey? =
-        definitions.getValue(type)[fieldKey]?.sensitiveFieldKey
+    fun sensitiveStorageKey(
+        type: EntryType,
+        fieldKey: FieldKey,
+    ): SensitiveFieldKey? = definitions.getValue(type)[fieldKey]?.sensitiveFieldKey
 }

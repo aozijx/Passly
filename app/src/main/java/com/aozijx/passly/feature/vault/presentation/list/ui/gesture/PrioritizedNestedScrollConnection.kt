@@ -13,7 +13,10 @@ internal class PrioritizedNestedScrollConnection(
     private val priority: NestedScrollConnection,
     private val secondary: NestedScrollConnection,
 ) : NestedScrollConnection {
-    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+    override fun onPreScroll(
+        available: Offset,
+        source: NestedScrollSource,
+    ): Offset {
         val priorityConsumed = priority.onPreScroll(available, source)
         val secondaryConsumed = secondary.onPreScroll(available - priorityConsumed, source)
         return priorityConsumed + secondaryConsumed
@@ -25,11 +28,12 @@ internal class PrioritizedNestedScrollConnection(
         source: NestedScrollSource,
     ): Offset {
         val priorityConsumed = priority.onPostScroll(consumed, available, source)
-        val secondaryConsumed = secondary.onPostScroll(
-            consumed = consumed + priorityConsumed,
-            available = available - priorityConsumed,
-            source = source,
-        )
+        val secondaryConsumed =
+            secondary.onPostScroll(
+                consumed = consumed + priorityConsumed,
+                available = available - priorityConsumed,
+                source = source,
+            )
         return priorityConsumed + secondaryConsumed
     }
 
@@ -39,12 +43,16 @@ internal class PrioritizedNestedScrollConnection(
         return priorityConsumed + secondaryConsumed
     }
 
-    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+    override suspend fun onPostFling(
+        consumed: Velocity,
+        available: Velocity,
+    ): Velocity {
         val priorityConsumed = priority.onPostFling(consumed, available)
-        val secondaryConsumed = secondary.onPostFling(
-            consumed = consumed + priorityConsumed,
-            available = available - priorityConsumed,
-        )
+        val secondaryConsumed =
+            secondary.onPostFling(
+                consumed = consumed + priorityConsumed,
+                available = available - priorityConsumed,
+            )
         return priorityConsumed + secondaryConsumed
     }
 }

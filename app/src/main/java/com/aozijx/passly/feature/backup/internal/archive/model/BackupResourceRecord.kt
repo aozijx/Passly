@@ -11,5 +11,5 @@ data class BackupResourceRecord(
     val mimeType: String? = null,
     val size: Long,
     val sha256: String,
-    val createdAt: Long? = null
+    val createdAt: Long? = null,
 )

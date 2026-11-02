@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AppLanguageTest {
-
     @Test
     fun localeTags_roundTripSupportedLanguages() {
         assertEquals("zh-CN", AppLanguage.ZH.applicationLocaleTags)

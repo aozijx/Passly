@@ -10,7 +10,7 @@ data class NoticeRoutingContext(
     val settings: MessageSettings,
     val settingsVersion: Long,
     val appVisibility: AppVisibility,
-    val systemNotificationState: SystemNotificationState
+    val systemNotificationState: SystemNotificationState,
 )
 
 enum class AppVisibility { FOREGROUND, BACKGROUND }
@@ -19,13 +19,14 @@ data class SystemNotificationState(
     val userSettingEnabled: Boolean,
     val runtimePermissionGranted: Boolean,
     val notificationsEnabledBySystem: Boolean,
-    val channelEnabled: Boolean
+    val channelEnabled: Boolean,
 ) {
     val available: Boolean
-        get() = userSettingEnabled &&
-            runtimePermissionGranted &&
-            notificationsEnabledBySystem &&
-            channelEnabled
+        get() =
+            userSettingEnabled &&
+                runtimePermissionGranted &&
+                notificationsEnabledBySystem &&
+                channelEnabled
 }
 
 sealed interface MessageSettingsSnapshot {

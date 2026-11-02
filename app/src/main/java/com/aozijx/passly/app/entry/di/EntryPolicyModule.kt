@@ -1,10 +1,10 @@
 package com.aozijx.passly.app.entry.di
 
 import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
-import dagger.Provides
+import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
@@ -15,7 +15,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object EntryPolicyModule {
-
     @Provides
     @Singleton
     fun provideEntryFieldReader(): EntryFieldReader = DefaultEntryFieldReader()

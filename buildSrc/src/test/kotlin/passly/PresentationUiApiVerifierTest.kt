@@ -7,20 +7,22 @@ class PresentationUiApiVerifierTest {
     @Test
     fun reportsVerticalFeatureUiComposableWhenBusinessParametersExceedThreshold() {
         val path = "app/src/main/java/com/example/feature/recovery/presentation/ui/RecoveryScreen.kt"
-        val signals = PresentationUiApiVerifier.inspect(
-            listOf(
-                EditorSource(
-                    path = path,
-                    content = """
-                        @Composable
-                        internal fun RecoveryScreen(
-                            one: String, two: String, three: String, four: String, five: String,
-                            six: String, seven: String, eight: String, nine: String,
-                        ) = Unit
-                    """.trimIndent(),
+        val signals =
+            PresentationUiApiVerifier.inspect(
+                listOf(
+                    EditorSource(
+                        path = path,
+                        content =
+                            """
+                            @Composable
+                            internal fun RecoveryScreen(
+                                one: String, two: String, three: String, four: String, five: String,
+                                six: String, seven: String, eight: String, nine: String,
+                            ) = Unit
+                            """.trimIndent(),
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(
             listOf("$path: RecoveryScreen has 9 business parameters (threshold 8)"),
@@ -31,20 +33,22 @@ class PresentationUiApiVerifierTest {
     @Test
     fun reportsSharedPresentationComposableWhenBusinessParametersExceedThreshold() {
         val path = "app/src/main/java/com/example/presentation/shared/component/SharedCard.kt"
-        val signals = PresentationUiApiVerifier.inspect(
-            listOf(
-                EditorSource(
-                    path = path,
-                    content = """
-                        @Composable
-                        internal fun SharedCard(
-                            one: String, two: String, three: String, four: String, five: String,
-                            six: String, seven: String, eight: String, nine: String,
-                        ) = Unit
-                    """.trimIndent(),
+        val signals =
+            PresentationUiApiVerifier.inspect(
+                listOf(
+                    EditorSource(
+                        path = path,
+                        content =
+                            """
+                            @Composable
+                            internal fun SharedCard(
+                                one: String, two: String, three: String, four: String, five: String,
+                                six: String, seven: String, eight: String, nine: String,
+                            ) = Unit
+                            """.trimIndent(),
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(
             listOf("$path: SharedCard has 9 business parameters (threshold 8)"),
@@ -54,29 +58,31 @@ class PresentationUiApiVerifierTest {
 
     @Test
     fun reportsNamedPresentationUiComposableWhenBusinessParametersExceedThreshold() {
-        val signals = PresentationUiApiVerifier.inspect(
-            listOf(
-                EditorSource(
-                    path = "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt",
-                    content = """
-                        @Composable
-                        internal fun SettingsContent(
-                            title: String,
-                            subtitle: String,
-                            enabled: Boolean,
-                            selected: Boolean,
-                            loading: Boolean,
-                            error: String?,
-                            count: Int,
-                            mode: String,
-                            onRetry: () -> Unit,
-                            modifier: Modifier = Modifier,
-                            content: @Composable () -> Unit = {},
-                        ) = Unit
-                    """.trimIndent(),
+        val signals =
+            PresentationUiApiVerifier.inspect(
+                listOf(
+                    EditorSource(
+                        path = "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt",
+                        content =
+                            """
+                            @Composable
+                            internal fun SettingsContent(
+                                title: String,
+                                subtitle: String,
+                                enabled: Boolean,
+                                selected: Boolean,
+                                loading: Boolean,
+                                error: String?,
+                                count: Int,
+                                mode: String,
+                                onRetry: () -> Unit,
+                                modifier: Modifier = Modifier,
+                                content: @Composable () -> Unit = {},
+                            ) = Unit
+                            """.trimIndent(),
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(
             listOf(
@@ -89,48 +95,52 @@ class PresentationUiApiVerifierTest {
 
     @Test
     fun ignoresPrivateComposablesAndExplicitComposePlumbing() {
-        val signals = PresentationUiApiVerifier.inspect(
-            listOf(
-                EditorSource(
-                    path = "app/src/main/java/com/example/presentation/ui/vault/VaultContent.kt",
-                    content = """
-                        @Composable
-                        private fun PrivateContent(
-                            one: String, two: String, three: String, four: String, five: String,
-                            six: String, seven: String, eight: String, nine: String,
-                        ) = Unit
+        val signals =
+            PresentationUiApiVerifier.inspect(
+                listOf(
+                    EditorSource(
+                        path = "app/src/main/java/com/example/presentation/ui/vault/VaultContent.kt",
+                        content =
+                            """
+                            @Composable
+                            private fun PrivateContent(
+                                one: String, two: String, three: String, four: String, five: String,
+                                six: String, seven: String, eight: String, nine: String,
+                            ) = Unit
 
-                        @Composable
-                        internal fun VaultContent(
-                            one: String, two: String, three: String, four: String,
-                            five: String, six: String, seven: String, eight: String,
-                            modifier: Modifier = Modifier,
-                            content: @Composable () -> Unit,
-                        ) = Unit
-                    """.trimIndent(),
+                            @Composable
+                            internal fun VaultContent(
+                                one: String, two: String, three: String, four: String,
+                                five: String, six: String, seven: String, eight: String,
+                                modifier: Modifier = Modifier,
+                                content: @Composable () -> Unit,
+                            ) = Unit
+                            """.trimIndent(),
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(emptyList(), signals)
     }
 
     @Test
     fun ignoresSourcesOutsidePresentationUi() {
-        val signals = PresentationUiApiVerifier.inspect(
-            listOf(
-                EditorSource(
-                    path = "app/src/main/java/com/example/feature/vault/presentation/VaultHost.kt",
-                    content = """
-                        @Composable
-                        internal fun VaultHost(
-                            one: String, two: String, three: String, four: String, five: String,
-                            six: String, seven: String, eight: String, nine: String,
-                        ) = Unit
-                    """.trimIndent(),
+        val signals =
+            PresentationUiApiVerifier.inspect(
+                listOf(
+                    EditorSource(
+                        path = "app/src/main/java/com/example/feature/vault/presentation/VaultHost.kt",
+                        content =
+                            """
+                            @Composable
+                            internal fun VaultHost(
+                                one: String, two: String, three: String, four: String, five: String,
+                                six: String, seven: String, eight: String, nine: String,
+                            ) = Unit
+                            """.trimIndent(),
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(emptyList(), signals)
     }

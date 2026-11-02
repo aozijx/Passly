@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -46,11 +46,12 @@ fun VaultFilterBar(
                         Text(
                             text = stringResource(R.string.tab_all),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (selectedFilters.isEmpty()) {
-                                FontWeight.SemiBold
-                            } else {
-                                FontWeight.Normal
-                            },
+                            fontWeight =
+                                if (selectedFilters.isEmpty()) {
+                                    FontWeight.SemiBold
+                                } else {
+                                    FontWeight.Normal
+                                },
                         )
                     },
                     leadingIcon = {

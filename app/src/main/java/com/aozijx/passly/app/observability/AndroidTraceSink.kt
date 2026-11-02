@@ -10,8 +10,16 @@ import com.aozijx.passly.core.observability.trace.TraceLifecycleSink
 
 internal interface AndroidTraceGateway {
     fun isEnabled(): Boolean
-    fun beginAsyncSection(name: String, cookie: Int)
-    fun endAsyncSection(name: String, cookie: Int)
+
+    fun beginAsyncSection(
+        name: String,
+        cookie: Int,
+    )
+
+    fun endAsyncSection(
+        name: String,
+        cookie: Int,
+    )
 }
 
 class AndroidTraceSink internal constructor(
@@ -25,14 +33,17 @@ class AndroidTraceSink internal constructor(
     override fun onSpanStarted(span: SpanStarted) {
         if (span.trace.spanId in active) return
         val name = TRACE_NAMES[span.operation] ?: return
-        val enabled = try {
-            gateway.isEnabled()
-        } catch (_: Exception) {
-            false
-        }
+        val enabled =
+            try {
+                gateway.isEnabled()
+            } catch (_: Exception) {
+                false
+            }
         if (!enabled) return
 
-        var cookie = span.trace.spanId.value.hashCode() xor cookieSeed
+        var cookie =
+            span.trace.spanId.value
+                .hashCode() xor cookieSeed
         while (cookie in activeCookies) cookie += 1
         try {
             gateway.beginAsyncSection(name, cookie)
@@ -54,26 +65,38 @@ class AndroidTraceSink internal constructor(
         }
     }
 
-    private data class ActiveTrace(val name: String, val cookie: Int)
+    private data class ActiveTrace(
+        val name: String,
+        val cookie: Int,
+    )
 
     private companion object {
-        val TRACE_NAMES: Map<OperationCode, String> = mapOf(
-            Operations.ApplicationStartup to "Passly/AppStartup",
-            Operations.ApplicationLifecycle to "Passly/AppLifecycle",
-            Operations.DatabaseSession to "Passly/DatabaseSession",
-            Operations.SecurityAuthentication to "Passly/Authentication",
-            Operations.SecurityLock to "Passly/SecurityLock",
-            Operations.AutofillLegacyRequest to "Passly/AutofillLegacy",
-            Operations.AutofillCredentialRequest to "Passly/AutofillCredential",
-            Operations.AutofillResultDelivery to "Passly/AutofillResult",
-            Operations.AutofillSessionClose to "Passly/AutofillClose",
-            Operations.DiagnosticsExport to "Passly/DiagnosticsExport",
-        )
+        val TRACE_NAMES: Map<OperationCode, String> =
+            mapOf(
+                Operations.ApplicationStartup to "Passly/AppStartup",
+                Operations.ApplicationLifecycle to "Passly/AppLifecycle",
+                Operations.DatabaseSession to "Passly/DatabaseSession",
+                Operations.SecurityAuthentication to "Passly/Authentication",
+                Operations.SecurityLock to "Passly/SecurityLock",
+                Operations.AutofillLegacyRequest to "Passly/AutofillLegacy",
+                Operations.AutofillCredentialRequest to "Passly/AutofillCredential",
+                Operations.AutofillResultDelivery to "Passly/AutofillResult",
+                Operations.AutofillSessionClose to "Passly/AutofillClose",
+                Operations.DiagnosticsExport to "Passly/DiagnosticsExport",
+            )
     }
 }
 
 private object PlatformAndroidTraceGateway : AndroidTraceGateway {
     override fun isEnabled(): Boolean = Trace.isEnabled()
-    override fun beginAsyncSection(name: String, cookie: Int) = Trace.beginAsyncSection(name, cookie)
-    override fun endAsyncSection(name: String, cookie: Int) = Trace.endAsyncSection(name, cookie)
+
+    override fun beginAsyncSection(
+        name: String,
+        cookie: Int,
+    ) = Trace.beginAsyncSection(name, cookie)
+
+    override fun endAsyncSection(
+        name: String,
+        cookie: Int,
+    ) = Trace.endAsyncSection(name, cookie)
 }

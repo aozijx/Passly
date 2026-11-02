@@ -6,11 +6,12 @@ internal class FabVisibilityGestureState(
     private var isVisible = true
 
     fun onScroll(deltaY: Float) {
-        val nextVisibility = when {
-            deltaY < -SCROLL_THRESHOLD -> false
-            deltaY > SCROLL_THRESHOLD -> true
-            else -> return
-        }
+        val nextVisibility =
+            when {
+                deltaY < -SCROLL_THRESHOLD -> false
+                deltaY > SCROLL_THRESHOLD -> true
+                else -> return
+            }
         if (nextVisibility == isVisible) return
 
         isVisible = nextVisibility

@@ -17,23 +17,27 @@ class DetailFaviconStateModelTest {
 
     @Test
     fun `processing failure and discard confirmation are explicit open states`() {
-        val opened = DetailFaviconEditorReducer.reduce(
-            DetailFaviconEditorState.Closed,
-            DetailMutation.FaviconEditorOpened(DetailFaviconSource.InferredDefault),
-        ) as DetailFaviconEditorState.Open
-        val processing = DetailFaviconEditorReducer.reduce(
-            opened,
-            DetailMutation.FaviconProcessingStarted,
-        ) as DetailFaviconEditorState.Open
-        val failed = DetailFaviconEditorReducer.reduce(
-            processing,
-            DetailMutation.FaviconProcessingFailed(DetailFaviconProcessingError.INVALID_IMAGE),
-        ) as DetailFaviconEditorState.Open
+        val opened =
+            DetailFaviconEditorReducer.reduce(
+                DetailFaviconEditorState.Closed,
+                DetailMutation.FaviconEditorOpened(DetailFaviconSource.InferredDefault),
+            ) as DetailFaviconEditorState.Open
+        val processing =
+            DetailFaviconEditorReducer.reduce(
+                opened,
+                DetailMutation.FaviconProcessingStarted,
+            ) as DetailFaviconEditorState.Open
+        val failed =
+            DetailFaviconEditorReducer.reduce(
+                processing,
+                DetailMutation.FaviconProcessingFailed(DetailFaviconProcessingError.INVALID_IMAGE),
+            ) as DetailFaviconEditorState.Open
         val dirty = failed.copy(source = DetailFaviconSource.BuiltIn("finance.bank", null))
-        val confirming = DetailFaviconEditorReducer.reduce(
-            dirty,
-            DetailMutation.FaviconEditorDismissRequested,
-        ) as DetailFaviconEditorState.Open
+        val confirming =
+            DetailFaviconEditorReducer.reduce(
+                dirty,
+                DetailMutation.FaviconEditorDismissRequested,
+            ) as DetailFaviconEditorState.Open
 
         assertEquals(DetailFaviconWorkState.Processing, processing.work)
         assertEquals(

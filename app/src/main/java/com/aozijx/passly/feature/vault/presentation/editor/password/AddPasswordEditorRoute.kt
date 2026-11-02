@@ -29,10 +29,11 @@ fun AddPasswordEditorRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_password_save_failed)
     val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
-    val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
-    )
+    val saveActionModifier =
+        Modifier.rememberAddEntryFabTransitionModifier(
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     LaunchedEffect(viewModel, editEntryId) {
         editEntryId?.let(viewModel::loadExistingEntry)

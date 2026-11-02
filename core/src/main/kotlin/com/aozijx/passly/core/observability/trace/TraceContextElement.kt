@@ -15,7 +15,10 @@ class TraceContextElement(
         return previous
     }
 
-    override fun restoreThreadContext(context: CoroutineContext, oldState: TraceContext?) {
+    override fun restoreThreadContext(
+        context: CoroutineContext,
+        oldState: TraceContext?,
+    ) {
         if (oldState == null) {
             CURRENT.remove()
         } else {

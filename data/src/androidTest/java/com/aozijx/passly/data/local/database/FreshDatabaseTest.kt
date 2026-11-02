@@ -9,13 +9,14 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class FreshDatabaseTest {
-
     @Test
     fun freshSchemaOpensAndRunsTransaction() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
-            .allowMainThreadQueries()
-            .build()
+        val database =
+            TestDatabaseFactory
+                .inMemoryDatabaseBuilder(context)
+                .allowMainThreadQueries()
+                .build()
 
         try {
             database.runInTransaction {

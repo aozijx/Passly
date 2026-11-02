@@ -11,19 +11,21 @@ data class AppPasswordPolicy(
         }
     }
 
-    fun validate(password: CharArray): Set<AppPasswordViolation> = buildSet {
-        if (password.size < minimumLength) add(AppPasswordViolation.TOO_SHORT)
+    fun validate(password: CharArray): Set<AppPasswordViolation> =
+        buildSet {
+            if (password.size < minimumLength) add(AppPasswordViolation.TOO_SHORT)
 
-        val groups = listOf(
-            password.any(Char::isLetter),
-            password.any(Char::isDigit),
-            password.any { !it.isLetterOrDigit() && !it.isWhitespace() },
-        ).count { it }
+            val groups =
+                listOf(
+                    password.any(Char::isLetter),
+                    password.any(Char::isDigit),
+                    password.any { !it.isLetterOrDigit() && !it.isWhitespace() },
+                ).count { it }
 
-        if (groups < minimumCharacterGroups) {
-            add(AppPasswordViolation.INSUFFICIENT_CHARACTER_VARIETY)
+            if (groups < minimumCharacterGroups) {
+                add(AppPasswordViolation.INSUFFICIENT_CHARACTER_VARIETY)
+            }
         }
-    }
 
     fun acceptsLength(length: Int): Boolean = length >= minimumLength
 

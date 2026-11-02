@@ -9,18 +9,20 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SharedPreferencesPermissionRequestHistory @Inject constructor(
-    @ApplicationContext context: Context
-) : PermissionRequestHistory {
-    private val preferences = context.getSharedPreferences(
-        "runtime_permission_history",
-        Context.MODE_PRIVATE
-    )
+class SharedPreferencesPermissionRequestHistory
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+    ) : PermissionRequestHistory {
+        private val preferences =
+            context.getSharedPreferences(
+                "runtime_permission_history",
+                Context.MODE_PRIVATE,
+            )
 
-    override fun wasRequested(permission: RuntimePermission): Boolean =
-        preferences.getBoolean(permission.name, false)
+        override fun wasRequested(permission: RuntimePermission): Boolean = preferences.getBoolean(permission.name, false)
 
-    override fun markRequested(permission: RuntimePermission) {
-        preferences.edit { putBoolean(permission.name, true) }
+        override fun markRequested(permission: RuntimePermission) {
+            preferences.edit { putBoolean(permission.name, true) }
+        }
     }
-}

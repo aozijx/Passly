@@ -11,28 +11,34 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import javax.inject.Inject
 
-internal class RevealRevisionFieldsUseCase @Inject constructor(
-    private val repository: EntryRevisionRepository,
-    private val authorizationGate: AuthorizationGate,
-) {
-    suspend operator fun invoke(
-        entryId: EntryId,
-        revisionId: EntryRevisionId,
-        keys: Set<SensitiveFieldKey>,
-    ): RevisionOperationResult<List<RevealedRevisionSensitiveField>> {
-        if (keys.isEmpty()) return RevisionOperationResult.Succeeded(emptyList())
-        val scope = AuthorizationScope.SensitiveRevision(
-            entryId = entryId,
-            revisionId = revisionId.value,
-            fieldKeys = keys,
-            action = SensitiveRevisionAccessAction.REVEAL,
-        )
-        return when (val result = authorizationGate.authorize(scope) { permit ->
-            repository.reveal(entryId, revisionId, keys, permit)
-        }) {
-            is AuthorizationResult.Allowed -> result.value.toRevisionOperationResult()
-            is AuthorizationResult.Denied -> RevisionOperationResult.AuthenticationDenied(result.failure)
-            AuthorizationResult.Cancelled -> RevisionOperationResult.Cancelled
+internal class RevealRevisionFieldsUseCase
+    @Inject
+    constructor(
+        private val repository: EntryRevisionRepository,
+        private val authorizationGate: AuthorizationGate,
+    ) {
+        suspend operator fun invoke(
+            entryId: EntryId,
+            revisionId: EntryRevisionId,
+            keys: Set<SensitiveFieldKey>,
+        ): RevisionOperationResult<List<RevealedRevisionSensitiveField>> {
+            if (keys.isEmpty()) return RevisionOperationResult.Succeeded(emptyList())
+            val scope =
+                AuthorizationScope.SensitiveRevision(
+                    entryId = entryId,
+                    revisionId = revisionId.value,
+                    fieldKeys = keys,
+                    action = SensitiveRevisionAccessAction.REVEAL,
+                )
+            return when (
+                val result =
+                    authorizationGate.authorize(scope) { permit ->
+                        repository.reveal(entryId, revisionId, keys, permit)
+                    }
+            ) {
+                is AuthorizationResult.Allowed -> result.value.toRevisionOperationResult()
+                is AuthorizationResult.Denied -> RevisionOperationResult.AuthenticationDenied(result.failure)
+                AuthorizationResult.Cancelled -> RevisionOperationResult.Cancelled
+            }
         }
     }
-}

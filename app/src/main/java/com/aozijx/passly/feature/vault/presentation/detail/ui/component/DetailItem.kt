@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
@@ -15,6 +14,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,9 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.core.ui.components.MaskedText
-import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun DetailItem(
@@ -43,7 +43,7 @@ fun DetailItem(
     maskStyle: MaskStyle = MaskStyle.DEFAULT,
     onCopy: () -> Unit,
     onEdit: (() -> Unit)?,
-    onReveal: (() -> Unit)? = null
+    onReveal: (() -> Unit)? = null,
 ) {
     val haptic = LocalHapticFeedback.current
     val editAction = onEdit?.takeIf { isRevealed }
@@ -52,74 +52,79 @@ fun DetailItem(
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        modifier = modifier
-            .padding(vertical = 4.dp)
-            .then(
-                if (editAction == null) {
-                    Modifier
-                } else {
-                    Modifier.combinedClickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            editAction()
-                        },
-                        onClick = {}
-                    )
-                }
-            )
+        modifier =
+            modifier
+                .padding(vertical = 4.dp)
+                .then(
+                    if (editAction == null) {
+                        Modifier
+                    } else {
+                        Modifier.combinedClickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                editAction()
+                            },
+                            onClick = {},
+                        )
+                    },
+                ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             MaskedText(
                 text = value,
                 isRevealed = isRevealed,
                 maskStyle = maskStyle,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.End,
             )
             IconButton(
                 onClick = onCopy,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
                     contentDescription = stringResource(R.string.copy),
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.outline
+                    tint = MaterialTheme.colorScheme.outline,
                 )
             }
             onReveal?.let {
                 IconButton(
                     onClick = it,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(36.dp),
                 ) {
                     Icon(
-                        imageVector = if (isRevealed) {
-                            Icons.Default.VisibilityOff
-                        } else {
-                            Icons.Default.Visibility
-                        },
-                        contentDescription = stringResource(
-                            if (isRevealed) R.string.hide_password else R.string.show_password
-                        ),
+                        imageVector =
+                            if (isRevealed) {
+                                Icons.Default.VisibilityOff
+                            } else {
+                                Icons.Default.Visibility
+                            },
+                        contentDescription =
+                            stringResource(
+                                if (isRevealed) R.string.hide_password else R.string.show_password,
+                            ),
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.outline
+                        tint = MaterialTheme.colorScheme.outline,
                     )
                 }
             }
@@ -129,7 +134,10 @@ fun DetailItem(
 
 @Composable
 fun EditTextField(
-    value: String, onValueChange: (String) -> Unit, label: String, onSave: () -> Unit
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    onSave: () -> Unit,
 ) {
     OutlinedTextField(
         value = value,
@@ -141,6 +149,6 @@ fun EditTextField(
                 Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
             }
         },
-        singleLine = true
+        singleLine = true,
     )
 }

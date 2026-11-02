@@ -19,32 +19,36 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 
-val LocalAppearanceSettings = staticCompositionLocalOf<AppearanceSettings> {
-    error("Appearance settings are unavailable outside AppTheme")
-}
+val LocalAppearanceSettings =
+    staticCompositionLocalOf<AppearanceSettings> {
+        error("Appearance settings are unavailable outside AppTheme")
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTheme(
     appearance: AppearanceSettings,
     appCornerRadiusDp: Float,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val motionScheme = remember { MotionScheme.expressive() }
-    val isDark = when (appearance.themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
-    val targetColorScheme = rememberAppColorScheme(
-        isDark = isDark,
-        dynamicColor = appearance.isDynamicColor,
-        themeKey = appearance.themeKey,
-    )
-    val colorScheme = rememberAnimatedColorScheme(
-        target = targetColorScheme,
-        animationSpec = motionScheme.defaultEffectsSpec(),
-    )
+    val isDark =
+        when (appearance.themeMode) {
+            ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+        }
+    val targetColorScheme =
+        rememberAppColorScheme(
+            isDark = isDark,
+            dynamicColor = appearance.isDynamicColor,
+            themeKey = appearance.themeKey,
+        )
+    val colorScheme =
+        rememberAnimatedColorScheme(
+            target = targetColorScheme,
+            animationSpec = motionScheme.defaultEffectsSpec(),
+        )
     val typography =
         if (appearance.fontFamily == FontFamilyMode.SYSTEM) SystemTypography else themeTypography()
     MaterialExpressiveTheme(
@@ -65,8 +69,9 @@ internal fun appShapes(cornerRadiusDp: Float): Shapes {
         medium = RoundedCornerShape((radius * 0.6f).dp),
         large = RoundedCornerShape((radius * 0.8f).dp),
         extraLarge = RoundedCornerShape(radius.dp),
-        largeIncreased = RoundedCornerShape(
-            (radius * 1.25f).coerceAtMost(AppCornerRadiusConstraints.MAX_DP).dp,
-        ),
+        largeIncreased =
+            RoundedCornerShape(
+                (radius * 1.25f).coerceAtMost(AppCornerRadiusConstraints.MAX_DP).dp,
+            ),
     )
 }

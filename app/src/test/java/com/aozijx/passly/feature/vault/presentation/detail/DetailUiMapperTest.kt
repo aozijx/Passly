@@ -7,17 +7,17 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.credential.CardCredential
-import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
+import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
-import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -28,24 +28,27 @@ import org.junit.Test
 class DetailUiMapperTest {
     @Test
     fun bankCardDoesNotUseProfileUsernameAsCardholder() {
-        val entry = Entry(
-            identity = EntryIdentity(id = EntryId("card"), type = EntryType.BANK_CARD, timestamps = EntryTimestamps(1L)),
-            profile = EntryProfile(title = "Card", username = "profile-user"),
-            secret = EntrySecret(credential = CardCredential()),
-        )
+        val entry =
+            Entry(
+                identity = EntryIdentity(id = EntryId("card"), type = EntryType.BANK_CARD, timestamps = EntryTimestamps(1L)),
+                profile = EntryProfile(title = "Card", username = "profile-user"),
+                secret = EntrySecret(credential = CardCredential()),
+            )
         val state = DetailUiState(entry = entry, sections = listOf(DetailSectionKey.BANK_CARD))
         val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
 
         assertNull(card.cardholder)
     }
+
     @Test
     fun headerMapperKeepsOnlyHeaderState() {
         val entry = noteEntry()
-        val state = DetailUiState(
-            entry = entry,
-            editedTitle = "Edited",
-            isEditingTitle = true,
-        )
+        val state =
+            DetailUiState(
+                entry = entry,
+                editedTitle = "Edited",
+                isEditingTitle = true,
+            )
 
         val ui = detailHeaderUiModel(entry, state)
 
@@ -57,10 +60,11 @@ class DetailUiMapperTest {
 
     @Test
     fun snapshotRefreshStateReachesDetailContent() {
-        val state = DetailUiState(
-            entry = noteEntry(),
-            snapshotState = DetailSnapshotState.RefreshFailedAfterRestore,
-        )
+        val state =
+            DetailUiState(
+                entry = noteEntry(),
+                snapshotState = DetailSnapshotState.RefreshFailedAfterRestore,
+            )
 
         assertEquals(
             DetailSnapshotState.RefreshFailedAfterRestore,
@@ -71,17 +75,19 @@ class DetailUiMapperTest {
     @Test
     fun contentMapperProjectsOnlySharedContentModels() {
         val entry = noteEntry()
-        val state = DetailUiState(
-            entry = entry,
-            relatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("related")))),
-            history = listOf(
-                EntryActivity(
-                    entryId = entry.id.value,
-                    activityType = ActivityType.AUTOFILL,
-                    createdAt = 3L,
-                )
-            ),
-        )
+        val state =
+            DetailUiState(
+                entry = entry,
+                relatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("related")))),
+                history =
+                    listOf(
+                        EntryActivity(
+                            entryId = entry.id.value,
+                            activityType = ActivityType.AUTOFILL,
+                            createdAt = 3L,
+                        ),
+                    ),
+            )
 
         val ui = detailContentUiModel(entry, state)
 
@@ -95,12 +101,13 @@ class DetailUiMapperTest {
 
     @Test
     fun otpMapperPreservesVolatileOtpState() {
-        val ui = detailOtpUiModel(
-            OtpCodeState.Ready(
-                code = "123456",
-                progress = 0.25f,
+        val ui =
+            detailOtpUiModel(
+                OtpCodeState.Ready(
+                    code = "123456",
+                    progress = 0.25f,
+                ),
             )
-        )
 
         require(ui is DetailOtpUiModel.Ready)
         assertEquals("123456", ui.code)
@@ -113,11 +120,12 @@ class DetailUiMapperTest {
         val scoped = source.asScopedSensitiveText()
         lateinit var borrowed: CharArray
 
-        val length = scoped.useChars {
-            borrowed = it
-            assertEquals("secret-value", String(it))
-            it.size
-        }
+        val length =
+            scoped.useChars {
+                borrowed = it
+                assertEquals("secret-value", String(it))
+                it.size
+            }
 
         assertEquals(12, length)
         assertEquals("***", scoped.toString())
@@ -129,15 +137,17 @@ class DetailUiMapperTest {
     @Test
     fun presentationMapperProjectsEditorOwnershipAndSaveProgress() {
         val entry = noteEntry()
-        val state = DetailUiState(
-            entry = entry,
-            fieldEdits = DetailFieldEditState().start(DetailDraftKey.Notes, "draft"),
-            saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
-        )
+        val state =
+            DetailUiState(
+                entry = entry,
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Notes, "draft"),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
+            )
 
-        val presentation = requireNotNull(
-            toDetailPresentationModel(state, null),
-        )
+        val presentation =
+            requireNotNull(
+                toDetailPresentationModel(state, null),
+            )
 
         assertTrue(presentation.content.notes.isEditing)
         assertEquals("draft", presentation.content.notes.editedNotes)
@@ -147,17 +157,19 @@ class DetailUiMapperTest {
 
     @Test
     fun presentationMapperProjectsOnlyRenderableSections() {
-        val state = DetailUiState(
-            entry = noteEntry(),
-            sections = listOf(
-                DetailSectionKey.CREDENTIAL,
-                DetailSectionKey.ENTRY_TYPE,
-                DetailSectionKey.ASSOCIATED_INFO,
-                DetailSectionKey.NOTES,
-                DetailSectionKey.METADATA,
-                DetailSectionKey.ACTIVITY,
-            ),
-        )
+        val state =
+            DetailUiState(
+                entry = noteEntry(),
+                sections =
+                    listOf(
+                        DetailSectionKey.CREDENTIAL,
+                        DetailSectionKey.ENTRY_TYPE,
+                        DetailSectionKey.ASSOCIATED_INFO,
+                        DetailSectionKey.NOTES,
+                        DetailSectionKey.METADATA,
+                        DetailSectionKey.ACTIVITY,
+                    ),
+            )
 
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
@@ -166,21 +178,25 @@ class DetailUiMapperTest {
 
     @Test
     fun `wifi presentation uses ssid as common title and common password field`() {
-        val entry = Entry(
-            identity = EntryIdentity(
-                id = EntryId("wifi"),
-                type = EntryType.WIFI,
-                timestamps = EntryTimestamps(1L),
-            ),
-            profile = EntryProfile(title = "Legacy title"),
-            secret = EntrySecret(
-                credential = WifiCredential(ssid = "Office", password = "wifi-secret"),
-            ),
-        )
-        val state = DetailUiState(
-            entry = entry,
-            sections = listOf(DetailSectionKey.CREDENTIAL),
-        )
+        val entry =
+            Entry(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("wifi"),
+                        type = EntryType.WIFI,
+                        timestamps = EntryTimestamps(1L),
+                    ),
+                profile = EntryProfile(title = "Legacy title"),
+                secret =
+                    EntrySecret(
+                        credential = WifiCredential(ssid = "Office", password = "wifi-secret"),
+                    ),
+            )
+        val state =
+            DetailUiState(
+                entry = entry,
+                sections = listOf(DetailSectionKey.CREDENTIAL),
+            )
 
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
@@ -192,31 +208,40 @@ class DetailUiMapperTest {
 
     @Test
     fun `bank card presentation keeps stored sensitive fields visible while locked`() {
-        val entry = Entry(
-            identity = EntryIdentity(
-                id = EntryId("bank-card"),
-                type = EntryType.BANK_CARD,
-                timestamps = EntryTimestamps(1L),
-            ),
-            profile = EntryProfile(title = "Daily card"),
-            secret = EntrySecret(
-                credential = CardCredential(
-                    cardHolder = "Alice",
-                    cardExpiry = "08/2030",
-                    issuingBank = "Bank", bankBranch = "Branch", cardProduct = "Product",
-                    currency = "CNY / USD", bankPhone = "+86 123456",
-                ),
-            ),
-        )
-        val state = DetailUiState(
-            entry = entry,
-            sections = listOf(DetailSectionKey.BANK_CARD),
-            sensitiveFieldKeys = setOf(
-                SensitiveFieldKey.CARD_NUMBER,
-                SensitiveFieldKey.CARD_CVV,
-                SensitiveFieldKey.CARD_PAYMENT_PIN,
-            ),
-        )
+        val entry =
+            Entry(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("bank-card"),
+                        type = EntryType.BANK_CARD,
+                        timestamps = EntryTimestamps(1L),
+                    ),
+                profile = EntryProfile(title = "Daily card"),
+                secret =
+                    EntrySecret(
+                        credential =
+                            CardCredential(
+                                cardHolder = "Alice",
+                                cardExpiry = "08/2030",
+                                issuingBank = "Bank",
+                                bankBranch = "Branch",
+                                cardProduct = "Product",
+                                currency = "CNY / USD",
+                                bankPhone = "+86 123456",
+                            ),
+                    ),
+            )
+        val state =
+            DetailUiState(
+                entry = entry,
+                sections = listOf(DetailSectionKey.BANK_CARD),
+                sensitiveFieldKeys =
+                    setOf(
+                        SensitiveFieldKey.CARD_NUMBER,
+                        SensitiveFieldKey.CARD_CVV,
+                        SensitiveFieldKey.CARD_PAYMENT_PIN,
+                    ),
+            )
 
         val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
 
@@ -234,13 +259,15 @@ class DetailUiMapperTest {
         assertTrue(card.canRevealMore)
     }
 
-    private fun noteEntry() = Entry(
-        identity = EntryIdentity(
-            id = EntryId("entry"),
-            type = EntryType.NOTE,
-            timestamps = EntryTimestamps(1L),
-        ),
-        profile = EntryProfile(title = "Example", username = "user", favorite = true),
-        secret = EntrySecret(notes = "note"),
-    )
+    private fun noteEntry() =
+        Entry(
+            identity =
+                EntryIdentity(
+                    id = EntryId("entry"),
+                    type = EntryType.NOTE,
+                    timestamps = EntryTimestamps(1L),
+                ),
+            profile = EntryProfile(title = "Example", username = "user", favorite = true),
+            secret = EntrySecret(notes = "note"),
+        )
 }

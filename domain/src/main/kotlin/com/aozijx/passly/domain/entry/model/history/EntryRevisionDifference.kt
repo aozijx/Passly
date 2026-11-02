@@ -7,32 +7,80 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 sealed interface RevisionFieldId {
     data object Title : RevisionFieldId
+
     data object Username : RevisionFieldId
+
     data object PrimaryUrl : RevisionFieldId
+
     data object Domains : RevisionFieldId
+
     data object ApplicationIds : RevisionFieldId
+
     data object Icon : RevisionFieldId
+
     data object Favorite : RevisionFieldId
+
     data object Tags : RevisionFieldId
+
     data object ExpiresAt : RevisionFieldId
-    data class CredentialField(val key: FieldKey) : RevisionFieldId
-    data class ProtectedField(val key: FieldKey) : RevisionFieldId
+
+    data class CredentialField(
+        val key: FieldKey,
+    ) : RevisionFieldId
+
+    data class ProtectedField(
+        val key: FieldKey,
+    ) : RevisionFieldId
+
     data object Notes : RevisionFieldId
-    data class CustomField(val position: Int, val name: String) : RevisionFieldId
-    data class ProtectedCustomField(val position: Int, val name: String) : RevisionFieldId
+
+    data class CustomField(
+        val position: Int,
+        val name: String,
+    ) : RevisionFieldId
+
+    data class ProtectedCustomField(
+        val position: Int,
+        val name: String,
+    ) : RevisionFieldId
+
     data object Links : RevisionFieldId
+
     data object Attachments : RevisionFieldId
-    data class Sensitive(val key: SensitiveFieldKey) : RevisionFieldId
+
+    data class Sensitive(
+        val key: SensitiveFieldKey,
+    ) : RevisionFieldId
 }
 
 sealed interface RevisionFieldValue {
-    data class Text(val value: String) : RevisionFieldValue
-    data class TextSet(val values: Set<String>) : RevisionFieldValue
-    data class Flag(val value: Boolean) : RevisionFieldValue
-    data class EpochMillis(val value: Long) : RevisionFieldValue
-    data class Icon(val value: EntryIcon) : RevisionFieldValue
-    data class Links(val values: List<EntryLink>) : RevisionFieldValue
-    data class AttachmentIds(val values: Set<String>) : RevisionFieldValue
+    data class Text(
+        val value: String,
+    ) : RevisionFieldValue
+
+    data class TextSet(
+        val values: Set<String>,
+    ) : RevisionFieldValue
+
+    data class Flag(
+        val value: Boolean,
+    ) : RevisionFieldValue
+
+    data class EpochMillis(
+        val value: Long,
+    ) : RevisionFieldValue
+
+    data class Icon(
+        val value: EntryIcon,
+    ) : RevisionFieldValue
+
+    data class Links(
+        val values: List<EntryLink>,
+    ) : RevisionFieldValue
+
+    data class AttachmentIds(
+        val values: Set<String>,
+    ) : RevisionFieldValue
 }
 
 enum class RevisionDifferenceKind { ADDED, REMOVED, CHANGED, UNCHANGED }

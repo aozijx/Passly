@@ -5,5 +5,8 @@ fun interface KdfOperation<T> {
 }
 
 interface KdfRunner : AutoCloseable {
-    suspend fun <T> execute(secret: SecretChars, operation: KdfOperation<T>): T
+    suspend fun <T> execute(
+        secret: SecretChars,
+        operation: KdfOperation<T>,
+    ): T
 }

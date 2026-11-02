@@ -9,7 +9,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DefaultNoticeDeduplicator internal constructor(
-    private val nowMs: () -> Long
+    private val nowMs: () -> Long,
 ) : NoticeDeduplicator {
     @Inject
     constructor() : this(SystemClock::elapsedRealtime)
@@ -17,32 +17,35 @@ class DefaultNoticeDeduplicator internal constructor(
     private data class EventClaim(
         val token: Long,
         val deadlineMs: Long,
-        val inFlight: Boolean
+        val inFlight: Boolean,
     )
 
     private val nextToken = AtomicLong(0)
-    private val eventClaims = object : LinkedHashMap<String, EventClaim>(
-        MAX_EVENT_IDS,
-        0.75f,
-        true
-    ) {
-        override fun removeEldestEntry(
-            eldest: MutableMap.MutableEntry<String, EventClaim>
-        ): Boolean = size > MAX_EVENT_IDS
-    }
+    private val eventClaims =
+        object : LinkedHashMap<String, EventClaim>(
+            MAX_EVENT_IDS,
+            0.75f,
+            true,
+        ) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, EventClaim>): Boolean = size > MAX_EVENT_IDS
+        }
 
     @Synchronized
-    override fun begin(eventId: String, ttlMs: Long): DeduplicationClaim {
+    override fun begin(
+        eventId: String,
+        ttlMs: Long,
+    ): DeduplicationClaim {
         require(eventId.isNotBlank())
         require(ttlMs > 0)
         evictExpired()
         if (eventClaims.containsKey(eventId)) return DeduplicationClaim.Duplicate
         val token = nextToken.incrementAndGet()
-        eventClaims[eventId] = EventClaim(
-            token = token,
-            deadlineMs = Long.MAX_VALUE,
-            inFlight = true
-        )
+        eventClaims[eventId] =
+            EventClaim(
+                token = token,
+                deadlineMs = Long.MAX_VALUE,
+                inFlight = true,
+            )
         return DeduplicationClaim.Acquired(eventId, token, ttlMs)
     }
 
@@ -50,10 +53,11 @@ class DefaultNoticeDeduplicator internal constructor(
     override fun complete(claim: DeduplicationClaim.Acquired) {
         val current = eventClaims[claim.eventId] ?: return
         if (current.token != claim.token) return
-        eventClaims[claim.eventId] = current.copy(
-            deadlineMs = safeDeadline(nowMs(), claim.ttlMs),
-            inFlight = false
-        )
+        eventClaims[claim.eventId] =
+            current.copy(
+                deadlineMs = safeDeadline(nowMs(), claim.ttlMs),
+                inFlight = false,
+            )
     }
 
     @Synchronized
@@ -71,8 +75,10 @@ class DefaultNoticeDeduplicator internal constructor(
         }
     }
 
-    private fun safeDeadline(now: Long, duration: Long): Long =
-        if (Long.MAX_VALUE - now < duration) Long.MAX_VALUE else now + duration
+    private fun safeDeadline(
+        now: Long,
+        duration: Long,
+    ): Long = if (Long.MAX_VALUE - now < duration) Long.MAX_VALUE else now + duration
 
     private companion object {
         const val MAX_EVENT_IDS = 1024

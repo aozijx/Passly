@@ -43,8 +43,8 @@ core/common/.../core/error/
     ErrorCodes.kt        -- 集中错误码常量
     DatabaseErrors.kt    -- 数据库错误子类
     CryptoErrors.kt      -- 密码学错误子类
-    BackupErrors.kt      -- 备份错误子类
-    FileErrors.kt        -- 文件错误子类
+    BackupFailed.kt      -- 备份错误子类
+    FileIOError.kt       -- 文件错误子类
     DomainErrors.kt      -- 领域层错误子类
   result/
     AppResult.kt         -- Success/Failure、map/fold、异常转换

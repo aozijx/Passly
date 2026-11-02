@@ -41,15 +41,16 @@ internal class ClipboardClearScheduler(
         clear: (String) -> Unit,
     ) {
         lateinit var scheduled: Job
-        scheduled = scope.launch(dispatcher, start = CoroutineStart.LAZY) {
-            delay(delayMillis)
-            synchronized(lock) {
-                if (pending === scheduled) {
-                    clear(ownershipToken)
-                    pending = null
+        scheduled =
+            scope.launch(dispatcher, start = CoroutineStart.LAZY) {
+                delay(delayMillis)
+                synchronized(lock) {
+                    if (pending === scheduled) {
+                        clear(ownershipToken)
+                        pending = null
+                    }
                 }
             }
-        }
         pending = scheduled
         scheduled.start()
     }

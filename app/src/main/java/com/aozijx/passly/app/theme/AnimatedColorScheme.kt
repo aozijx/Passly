@@ -15,17 +15,54 @@ import androidx.compose.ui.graphics.lerp
 
 internal fun ColorScheme.colorSchemeRoles(): List<Color> =
     listOf(
-        primary, onPrimary, primaryContainer, onPrimaryContainer, inversePrimary,
-        secondary, onSecondary, secondaryContainer, onSecondaryContainer,
-        tertiary, onTertiary, tertiaryContainer, onTertiaryContainer,
-        background, onBackground, surface, onSurface, surfaceVariant, onSurfaceVariant,
-        surfaceTint, inverseSurface, inverseOnSurface, error, onError, errorContainer,
-        onErrorContainer, outline, outlineVariant, scrim, surfaceBright, surfaceDim,
-        surfaceContainer, surfaceContainerHigh, surfaceContainerHighest,
-        surfaceContainerLow, surfaceContainerLowest, primaryFixed, primaryFixedDim,
-        onPrimaryFixed, onPrimaryFixedVariant, secondaryFixed, secondaryFixedDim,
-        onSecondaryFixed, onSecondaryFixedVariant, tertiaryFixed, tertiaryFixedDim,
-        onTertiaryFixed, onTertiaryFixedVariant,
+        primary,
+        onPrimary,
+        primaryContainer,
+        onPrimaryContainer,
+        inversePrimary,
+        secondary,
+        onSecondary,
+        secondaryContainer,
+        onSecondaryContainer,
+        tertiary,
+        onTertiary,
+        tertiaryContainer,
+        onTertiaryContainer,
+        background,
+        onBackground,
+        surface,
+        onSurface,
+        surfaceVariant,
+        onSurfaceVariant,
+        surfaceTint,
+        inverseSurface,
+        inverseOnSurface,
+        error,
+        onError,
+        errorContainer,
+        onErrorContainer,
+        outline,
+        outlineVariant,
+        scrim,
+        surfaceBright,
+        surfaceDim,
+        surfaceContainer,
+        surfaceContainerHigh,
+        surfaceContainerHighest,
+        surfaceContainerLow,
+        surfaceContainerLowest,
+        primaryFixed,
+        primaryFixedDim,
+        onPrimaryFixed,
+        onPrimaryFixedVariant,
+        secondaryFixed,
+        secondaryFixedDim,
+        onSecondaryFixed,
+        onSecondaryFixedVariant,
+        tertiaryFixed,
+        tertiaryFixedDim,
+        onTertiaryFixed,
+        onTertiaryFixedVariant,
     )
 
 internal fun ColorScheme.colorSchemeSignature(): List<Color> = colorSchemeRoles()
@@ -53,7 +90,11 @@ internal fun lerpColorScheme(
     val progress = fraction.coerceIn(0f, 1f)
     if (progress == 0f) return start
     if (progress == 1f) return stop
-    fun role(from: Color, to: Color) = when {
+
+    fun role(
+        from: Color,
+        to: Color,
+    ) = when {
         !from.isSpecified -> to
         !to.isSpecified -> from
         else -> lerp(from, to, progress)
@@ -93,36 +134,41 @@ internal fun lerpColorScheme(
         surfaceDim = role(start.surfaceDim, stop.surfaceDim),
         surfaceContainer = role(start.surfaceContainer, stop.surfaceContainer),
         surfaceContainerHigh = role(start.surfaceContainerHigh, stop.surfaceContainerHigh),
-        surfaceContainerHighest = role(
-            start.surfaceContainerHighest,
-            stop.surfaceContainerHighest,
-        ),
+        surfaceContainerHighest =
+            role(
+                start.surfaceContainerHighest,
+                stop.surfaceContainerHighest,
+            ),
         surfaceContainerLow = role(start.surfaceContainerLow, stop.surfaceContainerLow),
-        surfaceContainerLowest = role(
-            start.surfaceContainerLowest,
-            stop.surfaceContainerLowest,
-        ),
+        surfaceContainerLowest =
+            role(
+                start.surfaceContainerLowest,
+                stop.surfaceContainerLowest,
+            ),
         primaryFixed = role(start.primaryFixed, stop.primaryFixed),
         primaryFixedDim = role(start.primaryFixedDim, stop.primaryFixedDim),
         onPrimaryFixed = role(start.onPrimaryFixed, stop.onPrimaryFixed),
-        onPrimaryFixedVariant = role(
-            start.onPrimaryFixedVariant,
-            stop.onPrimaryFixedVariant,
-        ),
+        onPrimaryFixedVariant =
+            role(
+                start.onPrimaryFixedVariant,
+                stop.onPrimaryFixedVariant,
+            ),
         secondaryFixed = role(start.secondaryFixed, stop.secondaryFixed),
         secondaryFixedDim = role(start.secondaryFixedDim, stop.secondaryFixedDim),
         onSecondaryFixed = role(start.onSecondaryFixed, stop.onSecondaryFixed),
-        onSecondaryFixedVariant = role(
-            start.onSecondaryFixedVariant,
-            stop.onSecondaryFixedVariant,
-        ),
+        onSecondaryFixedVariant =
+            role(
+                start.onSecondaryFixedVariant,
+                stop.onSecondaryFixedVariant,
+            ),
         tertiaryFixed = role(start.tertiaryFixed, stop.tertiaryFixed),
         tertiaryFixedDim = role(start.tertiaryFixedDim, stop.tertiaryFixedDim),
         onTertiaryFixed = role(start.onTertiaryFixed, stop.onTertiaryFixed),
-        onTertiaryFixedVariant = role(
-            start.onTertiaryFixedVariant,
-            stop.onTertiaryFixedVariant,
-        ),
+        onTertiaryFixedVariant =
+            role(
+                start.onTertiaryFixedVariant,
+                stop.onTertiaryFixedVariant,
+            ),
     )
 }
 

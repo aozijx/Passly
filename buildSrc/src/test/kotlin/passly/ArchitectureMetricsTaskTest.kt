@@ -7,36 +7,37 @@ class ArchitectureMetricsTaskTest {
     @Test
     fun reportIsStableSortedAndSeparatesInvariantsFromReviewSignals() {
         val largeSource = (1..301).joinToString("\n") { "line$it" }
-        val sources = listOf(
-            source(
-                "domain/src/main/kotlin/com/example/DomainThing.kt",
-                "import android.content.Context",
-            ),
-            source(
-                "app/src/main/java/com/example/feature/vault/presentation/VaultViewModel.kt",
-                """
+        val sources =
+            listOf(
+                source(
+                    "domain/src/main/kotlin/com/example/DomainThing.kt",
+                    "import android.content.Context",
+                ),
+                source(
+                    "app/src/main/java/com/example/feature/vault/presentation/VaultViewModel.kt",
+                    """
                     import com.example.data.SecretStore
                     import com.example.presentation.navigation.data.SettingsRoute
                     class VaultViewModel
-                """.trimIndent(),
-            ),
-            source(
-                "app/src/test/java/com/example/feature/vault/presentation/VaultViewModelTest.kt",
-                "class VaultViewModelTest",
-            ),
-            source(
-                "app/src/main/java/com/example/feature/settings/presentation/SettingsReducer.kt",
-                "object SettingsReducer { fun reduce(value: Int) = helper(value) }",
-            ),
-            source(
-                "app/src/main/java/com/aozijx/passly/core/Legacy.kt",
-                "class Legacy",
-            ),
-            source(
-                "app/src/main/java/com/example/feature/vault/presentation/VaultScreen.kt",
-                largeSource,
-            ),
-        )
+                    """.trimIndent(),
+                ),
+                source(
+                    "app/src/test/java/com/example/feature/vault/presentation/VaultViewModelTest.kt",
+                    "class VaultViewModelTest",
+                ),
+                source(
+                    "app/src/main/java/com/example/feature/settings/presentation/SettingsReducer.kt",
+                    "object SettingsReducer { fun reduce(value: Int) = helper(value) }",
+                ),
+                source(
+                    "app/src/main/java/com/aozijx/passly/core/Legacy.kt",
+                    "class Legacy",
+                ),
+                source(
+                    "app/src/main/java/com/example/feature/vault/presentation/VaultScreen.kt",
+                    largeSource,
+                ),
+            )
 
         val report = ArchitectureMetrics.analyze(sources).render()
 
@@ -63,14 +64,15 @@ class ArchitectureMetricsTaskTest {
 
     @Test
     fun viewModelWithoutMatchingFocusedTestIsReported() {
-        val report = ArchitectureMetrics.analyze(
-            listOf(
-                source(
-                    "app/src/main/java/com/example/feature/detail/presentation/DetailViewModel.kt",
-                    "class DetailViewModel",
+        val report =
+            ArchitectureMetrics.analyze(
+                listOf(
+                    source(
+                        "app/src/main/java/com/example/feature/detail/presentation/DetailViewModel.kt",
+                        "class DetailViewModel",
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(
             listOf(
@@ -82,17 +84,21 @@ class ArchitectureMetricsTaskTest {
 
     @Test
     fun detailFeatureUiIsNotReportedAsMisplacedPassiveUi() {
-        val report = ArchitectureMetrics.analyze(
-            listOf(
-                source(
-                    "app/src/main/java/com/example/feature/vault/presentation/detail/ui/DetailScreen.kt",
-                    "@Composable fun DetailScreen() = Unit",
+        val report =
+            ArchitectureMetrics.analyze(
+                listOf(
+                    source(
+                        "app/src/main/java/com/example/feature/vault/presentation/detail/ui/DetailScreen.kt",
+                        "@Composable fun DetailScreen() = Unit",
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(emptyList(), report.reviewSignals)
     }
 
-    private fun source(path: String, content: String) = EditorSource(path, content)
+    private fun source(
+        path: String,
+        content: String,
+    ) = EditorSource(path, content)
 }

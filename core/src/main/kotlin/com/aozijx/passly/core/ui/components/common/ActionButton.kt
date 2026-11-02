@@ -32,60 +32,72 @@ fun ActionButton(
     resultText: String = "Success",
     enabled: Boolean = true,
     content: @Composable (() -> Unit)? = null,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     FilledTonalButton(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(46.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(46.dp),
         onClick = onClick,
         enabled = enabled && phase == ActionButtonPhase.Idle,
         shape = MaterialTheme.shapes.extraLarge,
-        colors = if (containerColor != null) {
-            ButtonDefaults.filledTonalButtonColors(containerColor = containerColor)
-        } else {
-            ButtonDefaults.filledTonalButtonColors()
-        }
+        colors =
+            if (containerColor != null) {
+                ButtonDefaults.filledTonalButtonColors(containerColor = containerColor)
+            } else {
+                ButtonDefaults.filledTonalButtonColors()
+            },
     ) {
         AnimatedContent(
-            targetState = ActionButtonVisualState(
-                phase = phase,
-                icon = icon,
-                text = if (phase == ActionButtonPhase.Succeeded ||
-                    phase == ActionButtonPhase.Failed
-                ) {
-                    resultText
-                } else {
-                    text
-                },
-            ),
+            targetState =
+                ActionButtonVisualState(
+                    phase = phase,
+                    icon = icon,
+                    text =
+                        if (phase == ActionButtonPhase.Succeeded ||
+                            phase == ActionButtonPhase.Failed
+                        ) {
+                            resultText
+                        } else {
+                            text
+                        },
+                ),
             transitionSpec = { fadeIn() togetherWith fadeOut() },
-            label = "ActionButtonContent"
+            label = "ActionButtonContent",
         ) { state ->
             when (state.phase) {
                 ActionButtonPhase.InProgress -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
-                ActionButtonPhase.Idle -> if (content != null) {
-                    content()
-                } else {
-                    ActionButtonLabel(state.icon, state.text)
+                ActionButtonPhase.Idle -> {
+                    if (content != null) {
+                        content()
+                    } else {
+                        ActionButtonLabel(state.icon, state.text)
+                    }
                 }
 
                 ActionButtonPhase.Succeeded,
-                ActionButtonPhase.Failed -> ActionButtonLabel(state.icon, state.text)
+                ActionButtonPhase.Failed,
+                -> {
+                    ActionButtonLabel(state.icon, state.text)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ActionButtonLabel(icon: ImageVector?, text: String) {
+private fun ActionButtonLabel(
+    icon: ImageVector?,
+    text: String,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         icon?.let {
             Icon(
@@ -105,7 +117,7 @@ private fun ActionButtonLabel(icon: ImageVector?, text: String) {
 private data class ActionButtonVisualState(
     val phase: ActionButtonPhase,
     val icon: ImageVector?,
-    val text: String
+    val text: String,
 )
 
 enum class ActionButtonPhase {

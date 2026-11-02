@@ -9,7 +9,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 
 @Dao
 interface EntryCommandDao {
-
     // === Strict Insert (fail on duplicate PK) ===
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -17,7 +16,8 @@ interface EntryCommandDao {
 
     // === Optimistic Lock Update ===
 
-    @Query("""
+    @Query(
+        """
         UPDATE entries SET
             title = :title,
             username = :username,
@@ -35,7 +35,8 @@ interface EntryCommandDao {
             version = version + 1,
             updatedAt = :updatedAt
         WHERE entryId = :entryId AND version = :expectedVersion
-    """)
+    """,
+    )
     suspend fun optimisticUpdate(
         entryId: String,
         expectedVersion: Int,
@@ -52,7 +53,7 @@ interface EntryCommandDao {
         expiresAt: Long?,
         capabilityFlags: Int,
         otpType: OtpType?,
-        updatedAt: Long
+        updatedAt: Long,
     ): Int
 
     @Query("UPDATE entries SET version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
@@ -64,18 +65,26 @@ interface EntryCommandDao {
 
     // === Optimistic Lock Soft Delete ===
 
-    @Query("UPDATE entries SET deletedAt = :deletedAt, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion")
+    @Query(
+        "UPDATE entries SET deletedAt = :deletedAt, version = version + 1, updatedAt = :updatedAt WHERE entryId = :entryId AND version = :expectedVersion",
+    )
     suspend fun optimisticSoftDelete(
         entryId: String,
         expectedVersion: Int,
         deletedAt: Long,
-        updatedAt: Long
+        updatedAt: Long,
     ): Int
 
     // === Optimistic Lock Restore ===
 
-    @Query("UPDATE entries SET deletedAt = NULL, version = version + 1, updatedAt = :now WHERE entryId = :entryId AND version = :expectedVersion AND deletedAt IS NOT NULL")
-    suspend fun restoreOptimistic(entryId: String, expectedVersion: Int, now: Long): Int
+    @Query(
+        "UPDATE entries SET deletedAt = NULL, version = version + 1, updatedAt = :now WHERE entryId = :entryId AND version = :expectedVersion AND deletedAt IS NOT NULL",
+    )
+    suspend fun restoreOptimistic(
+        entryId: String,
+        expectedVersion: Int,
+        now: Long,
+    ): Int
 
     // === Hard Delete ===
 
@@ -83,7 +92,10 @@ interface EntryCommandDao {
     suspend fun deleteById(entryId: String): Int
 
     @Query("DELETE FROM entries WHERE entryId = :entryId AND version = :expectedVersion AND deletedAt IS NOT NULL")
-    suspend fun deleteDeletedOptimistic(entryId: String, expectedVersion: Int): Int
+    suspend fun deleteDeletedOptimistic(
+        entryId: String,
+        expectedVersion: Int,
+    ): Int
 
     @Query("DELETE FROM entries WHERE deletedAt IS NOT NULL")
     suspend fun deleteAllDeleted(): Int
@@ -92,6 +104,8 @@ interface EntryCommandDao {
     suspend fun purgeDeleted(before: Long): Int
 
     @Query("UPDATE entries SET capabilityFlags = capabilityFlags & :retainedMask WHERE entryId = :entryId")
-    suspend fun retainCapabilities(entryId: String, retainedMask: Int): Int
-
+    suspend fun retainCapabilities(
+        entryId: String,
+        retainedMask: Int,
+    ): Int
 }

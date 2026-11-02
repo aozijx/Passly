@@ -56,7 +56,8 @@ data class EntryTypeDefinition(
     fun supports(key: FieldKey): Boolean = get(key) != null
 
     val requiredFields: Set<FieldKey>
-        get() = fields
-            .filter(EntryFieldDefinition::required)
-            .mapTo(linkedSetOf(), EntryFieldDefinition::key)
+        get() =
+            fields
+                .filter(EntryFieldDefinition::required)
+                .mapTo(linkedSetOf(), EntryFieldDefinition::key)
 }

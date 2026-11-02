@@ -1,9 +1,9 @@
 package com.aozijx.passly.core.observability.privacy
 
-import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.ErrorPayload
-import com.aozijx.passly.core.observability.ExceptionMapper
+import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.ExceptionMapper
 import com.aozijx.passly.core.observability.IdentifierNamespace
 import com.aozijx.passly.core.observability.LogFieldKey
 import com.aozijx.passly.core.observability.LogFieldKeys
@@ -48,11 +48,16 @@ sealed interface SanitizationResult {
         val droppedFieldCount: Int,
     ) : SanitizationResult
 
-    data class Rejected(val violation: ContractViolation) : SanitizationResult
+    data class Rejected(
+        val violation: ContractViolation,
+    ) : SanitizationResult
 }
 
 fun interface LogSanitizer {
-    fun sanitize(event: PendingLogEvent, context: SanitizationContext): SanitizationResult
+    fun sanitize(
+        event: PendingLogEvent,
+        context: SanitizationContext,
+    ): SanitizationResult
 }
 
 class PrivacyPolicy(
@@ -70,8 +75,9 @@ class PrivacyPolicy(
         var droppedFieldCount = 0
         val safeFields = linkedMapOf<LogFieldKey, LogValue>()
         for ((key, value) in event.fields.values) {
-            val expectedKind = SAFE_FIELD_CATALOG[key]
-                ?: return violation(ContractViolation.FIELD_NOT_REGISTERED)
+            val expectedKind =
+                SAFE_FIELD_CATALOG[key]
+                    ?: return violation(ContractViolation.FIELD_NOT_REGISTERED)
             if (kindOf(value) != expectedKind) {
                 return violation(
                     if (value is LogValue.HashedIdentifierValue) {
@@ -87,16 +93,19 @@ class PrivacyPolicy(
                     if (value.value < 0) return violation(ContractViolation.INVALID_FIELD_VALUE)
                     safeFields[key] = value
                 }
+
                 is LogValue.DurationMs -> {
                     if (value.value < 0) return violation(ContractViolation.INVALID_FIELD_VALUE)
                     safeFields[key] = value
                 }
+
                 is LogValue.Ratio -> {
                     if (!value.value.isFinite() || value.value !in 0.0..1.0) {
                         return violation(ContractViolation.INVALID_FIELD_VALUE)
                     }
                     safeFields[key] = value
                 }
+
                 is LogValue.HashedIdentifierInput -> {
                     if (value.namespace != expectedKind.identifierNamespace) {
                         return violation(ContractViolation.FIELD_TYPE_MISMATCH)
@@ -104,90 +113,137 @@ class PrivacyPolicy(
                     if (!isValidIdentifierInput(value.rawValue)) {
                         return violation(ContractViolation.INVALID_IDENTIFIER_VALUE)
                     }
-                    val hashed = try {
-                        identifierHasher.hash(value.namespace, value.rawValue)
-                    } catch (_: Exception) {
-                        null
-                    }
+                    val hashed =
+                        try {
+                            identifierHasher.hash(value.namespace, value.rawValue)
+                        } catch (_: Exception) {
+                            null
+                        }
                     if (hashed == null) {
                         droppedFieldCount += 1
                     } else {
                         safeFields[key] = LogValue.HashedIdentifierValue(hashed)
                     }
                 }
-                is LogValue.HashedIdentifierValue ->
+
+                is LogValue.HashedIdentifierValue -> {
                     return violation(ContractViolation.PREHASHED_IDENTIFIER_NOT_ALLOWED)
-                else -> safeFields[key] = value
+                }
+
+                else -> {
+                    safeFields[key] = value
+                }
             }
         }
 
         val pendingError = event.error
-        val safeError = pendingError?.let {
-            ErrorPayload(
-                errorCode = it.errorCode,
-                reason = it.reason,
-                exception = it.throwable?.let { throwable ->
-                    exceptionSnapshotFactory.create(
-                        throwable = throwable,
-                        kind = ExceptionMapper.map(it.errorCode, it.reason, throwable),
-                    )
-                },
-            )
-        }
+        val safeError =
+            pendingError?.let {
+                ErrorPayload(
+                    errorCode = it.errorCode,
+                    reason = it.reason,
+                    exception =
+                        it.throwable?.let { throwable ->
+                            exceptionSnapshotFactory.create(
+                                throwable = throwable,
+                                kind = ExceptionMapper.map(it.errorCode, it.reason, throwable),
+                            )
+                        },
+                )
+            }
         return SanitizationResult.Accepted(
-            record = SanitizedLogRecord(
-                eventId = context.eventId,
-                timestampMs = context.timestampMs,
-                elapsedRealtimeMs = context.elapsedRealtimeMs,
-                level = event.level,
-                category = event.event.category(),
-                event = event.event,
-                processSessionId = context.processSessionId,
-                secureSessionId = context.secureSessionId,
-                trace = context.trace,
-                fields = LogFields.sanitized(safeFields),
-                error = safeError,
-            ),
+            record =
+                SanitizedLogRecord(
+                    eventId = context.eventId,
+                    timestampMs = context.timestampMs,
+                    elapsedRealtimeMs = context.elapsedRealtimeMs,
+                    level = event.level,
+                    category = event.event.category(),
+                    event = event.event,
+                    processSessionId = context.processSessionId,
+                    secureSessionId = context.secureSessionId,
+                    trace = context.trace,
+                    fields = LogFields.sanitized(safeFields),
+                    error = safeError,
+                ),
             droppedFieldCount = droppedFieldCount,
         )
     }
 
-    private fun validateErrorContract(event: PendingLogEvent): ContractViolation? = when (event.level) {
-        LogLevel.DEBUG, LogLevel.INFO ->
-            ContractViolation.INVALID_ERROR_CONTRACT.takeIf { event.error != null }
-        LogLevel.WARN ->
-            ContractViolation.INVALID_ERROR_CONTRACT.takeIf { event.error == null }
-        LogLevel.ERROR, LogLevel.FATAL ->
-            ContractViolation.INVALID_ERROR_CONTRACT.takeIf {
-                event.error == null || event.error.throwable == null
+    private fun validateErrorContract(event: PendingLogEvent): ContractViolation? =
+        when (event.level) {
+            LogLevel.DEBUG, LogLevel.INFO -> {
+                ContractViolation.INVALID_ERROR_CONTRACT.takeIf { event.error != null }
             }
-    }
 
-    private fun violation(violation: ContractViolation): SanitizationResult = when (violationBehavior) {
-        ContractViolationBehavior.THROW -> throw LogContractViolation(violation)
-        ContractViolationBehavior.REJECT -> SanitizationResult.Rejected(violation)
-    }
+            LogLevel.WARN -> {
+                ContractViolation.INVALID_ERROR_CONTRACT.takeIf { event.error == null }
+            }
 
-    private fun kindOf(value: LogValue): FieldKind = when (value) {
-        is LogValue.Count -> FieldKind.COUNT
-        is LogValue.DurationMs -> FieldKind.DURATION
-        is LogValue.Ratio -> FieldKind.RATIO
-        is LogValue.BooleanValue -> FieldKind.BOOLEAN
-        is LogValue.EnumValue -> FieldKind.ENUM
-        is LogValue.ErrorCodeValue -> FieldKind.ERROR_CODE
-        is LogValue.ReasonCodeValue -> FieldKind.REASON
-        is LogValue.OperationCodeValue -> FieldKind.OPERATION
-        is LogValue.HashedIdentifierInput -> when (value.namespace) {
-            IdentifierNamespace.TARGET_PACKAGE -> FieldKind.HASHED_TARGET_PACKAGE
-            IdentifierNamespace.BROWSER_PACKAGE -> FieldKind.HASHED_BROWSER_PACKAGE
+            LogLevel.ERROR, LogLevel.FATAL -> {
+                ContractViolation.INVALID_ERROR_CONTRACT.takeIf {
+                    event.error == null || event.error.throwable == null
+                }
+            }
         }
-        is LogValue.HashedIdentifierValue -> FieldKind.PREHASHED_IDENTIFIER
-    }
 
-    private fun isValidIdentifierInput(value: String): Boolean =
-        value.length <= 255 && TARGET_PACKAGE_PATTERN.matches(value)
+    private fun violation(violation: ContractViolation): SanitizationResult =
+        when (violationBehavior) {
+            ContractViolationBehavior.THROW -> throw LogContractViolation(violation)
+            ContractViolationBehavior.REJECT -> SanitizationResult.Rejected(violation)
+        }
 
-    private enum class FieldKind(val identifierNamespace: IdentifierNamespace? = null) {
+    private fun kindOf(value: LogValue): FieldKind =
+        when (value) {
+            is LogValue.Count -> {
+                FieldKind.COUNT
+            }
+
+            is LogValue.DurationMs -> {
+                FieldKind.DURATION
+            }
+
+            is LogValue.Ratio -> {
+                FieldKind.RATIO
+            }
+
+            is LogValue.BooleanValue -> {
+                FieldKind.BOOLEAN
+            }
+
+            is LogValue.EnumValue -> {
+                FieldKind.ENUM
+            }
+
+            is LogValue.ErrorCodeValue -> {
+                FieldKind.ERROR_CODE
+            }
+
+            is LogValue.ReasonCodeValue -> {
+                FieldKind.REASON
+            }
+
+            is LogValue.OperationCodeValue -> {
+                FieldKind.OPERATION
+            }
+
+            is LogValue.HashedIdentifierInput -> {
+                when (value.namespace) {
+                    IdentifierNamespace.TARGET_PACKAGE -> FieldKind.HASHED_TARGET_PACKAGE
+                    IdentifierNamespace.BROWSER_PACKAGE -> FieldKind.HASHED_BROWSER_PACKAGE
+                }
+            }
+
+            is LogValue.HashedIdentifierValue -> {
+                FieldKind.PREHASHED_IDENTIFIER
+            }
+        }
+
+    private fun isValidIdentifierInput(value: String): Boolean = value.length <= 255 && TARGET_PACKAGE_PATTERN.matches(value)
+
+    private enum class FieldKind(
+        val identifierNamespace: IdentifierNamespace? = null,
+    ) {
         COUNT,
         DURATION,
         RATIO,
@@ -205,42 +261,43 @@ class PrivacyPolicy(
         val TARGET_PACKAGE_PATTERN =
             Regex("^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$")
 
-        val SAFE_FIELD_CATALOG = mapOf(
-            LogFieldKeys.RetryCount to FieldKind.COUNT,
-            LogFieldKeys.ElapsedMs to FieldKind.DURATION,
-            LogFieldKeys.TargetPackage to FieldKind.HASHED_TARGET_PACKAGE,
-            LogFieldKeys.BrowserPackage to FieldKind.HASHED_BROWSER_PACKAGE,
-            LogFieldKeys.FromState to FieldKind.ENUM,
-            LogFieldKeys.ToState to FieldKind.ENUM,
-            LogFieldKeys.LockType to FieldKind.ENUM,
-            LogFieldKeys.Reason to FieldKind.REASON,
-            LogFieldKeys.Owner to FieldKind.ENUM,
-            LogFieldKeys.TimeoutMs to FieldKind.DURATION,
-            LogFieldKeys.ActiveLeaseCount to FieldKind.COUNT,
-            LogFieldKeys.LockReason to FieldKind.REASON,
-            LogFieldKeys.Trigger to FieldKind.ENUM,
-            LogFieldKeys.Result to FieldKind.ENUM,
-            LogFieldKeys.AuthenticationMethod to FieldKind.ENUM,
-            LogFieldKeys.AuthenticationPurpose to FieldKind.ENUM,
-            LogFieldKeys.ExitStatus to FieldKind.COUNT,
-            LogFieldKeys.ExitReason to FieldKind.ENUM,
-            LogFieldKeys.Importance to FieldKind.ENUM,
-            LogFieldKeys.PssKb to FieldKind.COUNT,
-            LogFieldKeys.RssKb to FieldKind.COUNT,
-            LogFieldKeys.Source to FieldKind.ENUM,
-            LogFieldKeys.ErrorLayer to FieldKind.ENUM,
-            LogFieldKeys.Severity to FieldKind.ENUM,
-            LogFieldKeys.Recoverable to FieldKind.BOOLEAN,
-            LogFieldKeys.Operation to FieldKind.OPERATION,
-            LogFieldKeys.ClearTask to FieldKind.BOOLEAN,
-            LogFieldKeys.DroppedDebugCount to FieldKind.COUNT,
-            LogFieldKeys.DroppedInfoCount to FieldKind.COUNT,
-            LogFieldKeys.DroppedWarnCount to FieldKind.COUNT,
-            LogFieldKeys.DroppedErrorCount to FieldKind.COUNT,
-            LogFieldKeys.DroppedFatalCount to FieldKind.COUNT,
-            LogFieldKeys.EntryType to FieldKind.ENUM,
-            LogFieldKeys.Presentation to FieldKind.ENUM,
-            LogFieldKeys.InlineAvailable to FieldKind.BOOLEAN,
-        )
+        val SAFE_FIELD_CATALOG =
+            mapOf(
+                LogFieldKeys.RetryCount to FieldKind.COUNT,
+                LogFieldKeys.ElapsedMs to FieldKind.DURATION,
+                LogFieldKeys.TargetPackage to FieldKind.HASHED_TARGET_PACKAGE,
+                LogFieldKeys.BrowserPackage to FieldKind.HASHED_BROWSER_PACKAGE,
+                LogFieldKeys.FromState to FieldKind.ENUM,
+                LogFieldKeys.ToState to FieldKind.ENUM,
+                LogFieldKeys.LockType to FieldKind.ENUM,
+                LogFieldKeys.Reason to FieldKind.REASON,
+                LogFieldKeys.Owner to FieldKind.ENUM,
+                LogFieldKeys.TimeoutMs to FieldKind.DURATION,
+                LogFieldKeys.ActiveLeaseCount to FieldKind.COUNT,
+                LogFieldKeys.LockReason to FieldKind.REASON,
+                LogFieldKeys.Trigger to FieldKind.ENUM,
+                LogFieldKeys.Result to FieldKind.ENUM,
+                LogFieldKeys.AuthenticationMethod to FieldKind.ENUM,
+                LogFieldKeys.AuthenticationPurpose to FieldKind.ENUM,
+                LogFieldKeys.ExitStatus to FieldKind.COUNT,
+                LogFieldKeys.ExitReason to FieldKind.ENUM,
+                LogFieldKeys.Importance to FieldKind.ENUM,
+                LogFieldKeys.PssKb to FieldKind.COUNT,
+                LogFieldKeys.RssKb to FieldKind.COUNT,
+                LogFieldKeys.Source to FieldKind.ENUM,
+                LogFieldKeys.ErrorLayer to FieldKind.ENUM,
+                LogFieldKeys.Severity to FieldKind.ENUM,
+                LogFieldKeys.Recoverable to FieldKind.BOOLEAN,
+                LogFieldKeys.Operation to FieldKind.OPERATION,
+                LogFieldKeys.ClearTask to FieldKind.BOOLEAN,
+                LogFieldKeys.DroppedDebugCount to FieldKind.COUNT,
+                LogFieldKeys.DroppedInfoCount to FieldKind.COUNT,
+                LogFieldKeys.DroppedWarnCount to FieldKind.COUNT,
+                LogFieldKeys.DroppedErrorCount to FieldKind.COUNT,
+                LogFieldKeys.DroppedFatalCount to FieldKind.COUNT,
+                LogFieldKeys.EntryType to FieldKind.ENUM,
+                LogFieldKeys.Presentation to FieldKind.ENUM,
+                LogFieldKeys.InlineAvailable to FieldKind.BOOLEAN,
+            )
     }
 }

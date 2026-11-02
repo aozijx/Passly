@@ -5,12 +5,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailTagNormalizerTest {
-
     @Test
     fun normalizeSplitsCommaAndNewlineAndRemovesBlanks() {
-        val result = DetailTagNormalizer.normalize(
-            listOf(" Work, Personal\n\nFinance ", "Travel"),
-        )
+        val result =
+            DetailTagNormalizer.normalize(
+                listOf(" Work, Personal\n\nFinance ", "Travel"),
+            )
 
         assertEquals(
             linkedSetOf("Finance", "Personal", "Travel", "Work"),
@@ -20,9 +20,10 @@ class DetailTagNormalizerTest {
 
     @Test
     fun normalizeDeduplicatesIgnoringCaseAndPreservesFirstSpelling() {
-        val result = DetailTagNormalizer.normalize(
-            listOf("Passly", "passly", "PASSLY", "Work"),
-        )
+        val result =
+            DetailTagNormalizer.normalize(
+                listOf("Passly", "passly", "PASSLY", "Work"),
+            )
 
         assertEquals(
             linkedSetOf("Passly", "Work"),
@@ -61,22 +62,24 @@ class DetailTagNormalizerTest {
 
     @Test
     fun suggestionsMatchPrefixIgnoringCaseAndExcludeSelectedTags() {
-        val suggestions = DetailTagNormalizer.suggestions(
-            existingTags = setOf("Personal", "passkey", "Password", "Work"),
-            prefix = "PAS",
-            selectedTags = setOf("PASSKEY"),
-        )
+        val suggestions =
+            DetailTagNormalizer.suggestions(
+                existingTags = setOf("Personal", "passkey", "Password", "Work"),
+                prefix = "PAS",
+                selectedTags = setOf("PASSKEY"),
+            )
 
         assertEquals(listOf("Password"), suggestions)
     }
 
     @Test
     fun emptyPrefixHasNoSuggestions() {
-        val suggestions = DetailTagNormalizer.suggestions(
-            existingTags = setOf("Personal", "Work"),
-            prefix = "  ",
-            selectedTags = emptySet(),
-        )
+        val suggestions =
+            DetailTagNormalizer.suggestions(
+                existingTags = setOf("Personal", "Work"),
+                prefix = "  ",
+                selectedTags = emptySet(),
+            )
 
         assertTrue(suggestions.isEmpty())
     }

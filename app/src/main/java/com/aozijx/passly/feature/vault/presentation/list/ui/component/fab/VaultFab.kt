@@ -49,8 +49,8 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.icon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
 import com.aozijx.passly.feature.vault.presentation.ui.ADD_ENTRY_FAB_SHARED_KEY
 import com.aozijx.passly.feature.vault.presentation.ui.AddEntryFabVisualOverflow
-import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
 
 private const val FAB_MENU_STAGGER_MILLIS = 45
 
@@ -60,7 +60,7 @@ fun VaultFab(
     onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    isVisible: Boolean = true
+    isVisible: Boolean = true,
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
@@ -70,18 +70,19 @@ fun VaultFab(
     val rotation by animateFloatAsState(
         targetValue = if (showFabMenu) 45f else 0f,
         animationSpec = motionScheme.defaultSpatialSpec(),
-        label = "fabRotation"
+        label = "fabRotation",
     )
 
     val fabMenuOptions = VaultAddTypeUiModel.fabMenuOptions.filter(creationOptions::contains)
-    val sharedFabModifier = with(sharedTransitionScope) {
-        Modifier.sharedBounds(
-            sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
-            animatedVisibilityScope = animatedVisibilityScope,
-            resizeMode = RemeasureToBounds,
-            clipInOverlayDuringTransition = SharedTransitionOverlayClip.None
-        )
-    }
+    val sharedFabModifier =
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
+                animatedVisibilityScope = animatedVisibilityScope,
+                resizeMode = RemeasureToBounds,
+                clipInOverlayDuringTransition = SharedTransitionOverlayClip.None,
+            )
+        }
 
     LaunchedEffect(isVisible) {
         if (!isVisible) showFabMenu = false
@@ -97,28 +98,31 @@ fun VaultFab(
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+        enter =
+            fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
                 slideInVertically(
                     animationSpec = motionScheme.defaultSpatialSpec(),
-                    initialOffsetY = { it / 4 }
+                    initialOffsetY = { it / 4 },
                 ),
-        exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
+        exit =
+            fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
                 slideOutVertically(
                     animationSpec = motionScheme.defaultSpatialSpec(),
-                    targetOffsetY = { it / 4 }
-                )
+                    targetOffsetY = { it / 4 },
+                ),
     ) {
         Column(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .navigationBarsPadding()
-                .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 16.dp)
+            modifier =
+                Modifier
+                    .navigationBarsPadding()
+                    .padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 16.dp),
         ) {
             AnimatedVisibility(
                 visible = showFabMenu,
                 enter = EnterTransition.None,
-                exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec())
+                exit = fadeOut(animationSpec = motionScheme.fastEffectsSpec()),
             ) {
                 Column(horizontalAlignment = Alignment.End) {
                     val itemCount = fabMenuOptions.size + 1
@@ -126,7 +130,7 @@ fun VaultFab(
                     StaggeredFabMenuItem(
                         visible = showFabMenu,
                         index = 0,
-                        itemCount = itemCount
+                        itemCount = itemCount,
                     ) { enabled ->
                         FabMenuChip(
                             label = stringResource(R.string.more),
@@ -135,14 +139,14 @@ fun VaultFab(
                             onClick = {
                                 showFabMenu = false
                                 showAddEntryBottomSheet = true
-                            }
+                            },
                         )
                     }
                     fabMenuOptions.forEachIndexed { index, type ->
                         StaggeredFabMenuItem(
                             visible = showFabMenu,
                             index = index + 1,
-                            itemCount = itemCount
+                            itemCount = itemCount,
                         ) { enabled ->
                             FabMenuChip(
                                 label = stringResource(type.labelRes),
@@ -151,7 +155,7 @@ fun VaultFab(
                                 onClick = {
                                     showFabMenu = false
                                     onAddTypeSelected(type)
-                                }
+                                },
                             )
                         }
                     }
@@ -160,21 +164,21 @@ fun VaultFab(
 
             FloatingActionButton(
                 onClick = { showFabMenu = !showFabMenu },
-                modifier = Modifier
-                    .withSharedTransitionVisualOverflow(
-                        sharedModifier = sharedFabModifier,
-                        visualOverflow = AddEntryFabVisualOverflow
-                    )
-                    .size(56.dp),
+                modifier =
+                    Modifier
+                        .withSharedTransitionVisualOverflow(
+                            sharedModifier = sharedFabModifier,
+                            visualOverflow = AddEntryFabVisualOverflow,
+                        ).size(56.dp),
                 shape = MaterialTheme.shapes.extraLarge,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = stringResource(R.string.add),
-                    modifier = Modifier.rotate(rotation)
+                    modifier = Modifier.rotate(rotation),
                 )
             }
         }
@@ -188,7 +192,7 @@ fun VaultFab(
                 showFabMenu = false
                 pendingSheetSelection = type
                 showAddEntryBottomSheet = false
-            }
+            },
         )
     }
 }
@@ -198,7 +202,7 @@ private fun StaggeredFabMenuItem(
     visible: Boolean,
     index: Int,
     itemCount: Int,
-    content: @Composable (enabled: Boolean) -> Unit
+    content: @Composable (enabled: Boolean) -> Unit,
 ) {
     val motionScheme = MaterialTheme.motionScheme
     var itemVisible by remember { mutableStateOf(false) }
@@ -212,25 +216,25 @@ private fun StaggeredFabMenuItem(
     val alpha by animateFloatAsState(
         targetValue = if (itemVisible) 1f else 0f,
         animationSpec = motionScheme.fastEffectsSpec(),
-        label = "fabMenuItemAlpha"
+        label = "fabMenuItemAlpha",
     )
     val horizontalOffsetFraction by animateFloatAsState(
         targetValue = if (itemVisible) 0f else 0.5f,
         animationSpec = motionScheme.defaultSpatialSpec(),
-        label = "fabMenuItemOffset"
+        label = "fabMenuItemOffset",
     )
     val interactionEnabled = visible && itemVisible
 
     Box(
-        modifier = Modifier
-            .graphicsLayer {
-                this.alpha = alpha
-                translationX = size.width * horizontalOffsetFraction
-            }
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .then(
-                if (interactionEnabled) Modifier else Modifier.clearAndSetSemantics { }
-            )
+        modifier =
+            Modifier
+                .graphicsLayer {
+                    this.alpha = alpha
+                    translationX = size.width * horizontalOffsetFraction
+                }.padding(horizontal = 8.dp, vertical = 4.dp)
+                .then(
+                    if (interactionEnabled) Modifier else Modifier.clearAndSetSemantics { },
+                ),
     ) {
         content(interactionEnabled)
     }
@@ -241,7 +245,7 @@ private fun FabMenuChip(
     label: String,
     icon: ImageVector,
     enabled: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Surface(
         onClick = onClick,
@@ -249,23 +253,23 @@ private fun FabMenuChip(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        shadowElevation = 4.dp
+        shadowElevation = 4.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

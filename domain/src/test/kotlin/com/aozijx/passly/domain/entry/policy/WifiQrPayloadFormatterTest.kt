@@ -8,9 +8,10 @@ import org.junit.Test
 class WifiQrPayloadFormatterTest {
     @Test
     fun `personal network escapes separators and preserves hidden flag`() {
-        val result = WifiQrPayloadFormatter.format(
-            WifiQrPayload("Office;West", "pa\\ss:word", WifiSecurityType.WpaPersonal, true),
-        )
+        val result =
+            WifiQrPayloadFormatter.format(
+                WifiQrPayload("Office;West", "pa\\ss:word", WifiSecurityType.WpaPersonal, true),
+            )
 
         assertEquals(
             WifiQrFormatResult.Formatted("""WIFI:T:WPA;S:Office\;West;P:pa\\ss\:word;H:true;;"""),
@@ -40,12 +41,13 @@ class WifiQrPayloadFormatterTest {
 
     @Test
     fun `special characters unicode and field-like input round trip`() {
-        val payload = WifiQrPayload(
-            ssid = "办公室\\\";T:nopass;,:",
-            password = "pa\\\";ss,word:",
-            securityType = WifiSecurityType.WpaPersonal,
-            isHidden = true,
-        )
+        val payload =
+            WifiQrPayload(
+                ssid = "办公室\\\";T:nopass;,:",
+                password = "pa\\\";ss,word:",
+                securityType = WifiSecurityType.WpaPersonal,
+                isHidden = true,
+            )
         val result = WifiQrPayloadFormatter.format(payload)
         assertTrue(result is WifiQrFormatResult.Formatted)
 

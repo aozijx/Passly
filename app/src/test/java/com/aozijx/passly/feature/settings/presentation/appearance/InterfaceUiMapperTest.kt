@@ -7,13 +7,15 @@ import org.junit.Test
 class InterfaceUiMapperTest {
     @Test
     fun `ready preferences map to the interface screen`() {
-        val model = InterfaceSettingsUiState.Ready(
-            hideSystemBars = true,
-            collapseTopBarOnScroll = false,
-            collapseQuickFilterBarOnScroll = true,
-            appCornerRadiusDp = 24f,
-            entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
-        ).toInterfaceUiModel()
+        val model =
+            InterfaceSettingsUiState
+                .Ready(
+                    hideSystemBars = true,
+                    collapseTopBarOnScroll = false,
+                    collapseQuickFilterBarOnScroll = true,
+                    appCornerRadiusDp = 24f,
+                    entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+                ).toInterfaceUiModel()
 
         assertEquals(true, model.hideSystemBars)
         assertEquals(false, model.collapseTopBarOnScroll)

@@ -16,7 +16,7 @@ fun PasslyMarkdownDocument(
     content: String?,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
-    emptyContent: (@Composable () -> Unit)? = null
+    emptyContent: (@Composable () -> Unit)? = null,
 ) {
     val normalizedContent = normalizeMarkdownDocument(content)
 

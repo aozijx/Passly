@@ -24,22 +24,23 @@ internal data class ArchitectureMetricsReport(
     val invariantImportCounts: Map<String, Int>,
     val reviewSignals: List<String>,
 ) {
-    fun render(): String = buildString {
-        appendLine("Kotlin files by module/source-set:")
-        moduleFileCounts.toSortedMap().forEach { (module, count) ->
-            appendLine("  $module main=${count.production} test=${count.test}")
-        }
-        appendLine("Major App ownership areas:")
-        appOwnershipCounts.toSortedMap().forEach { (area, count) ->
-            appendLine("  $area=$count")
-        }
-        appendLine("Direct import invariants:")
-        invariantImportCounts.toSortedMap().forEach { (edge, count) ->
-            appendLine("  $edge=$count")
-        }
-        appendLine("Review signals:")
-        reviewSignals.sorted().forEach { appendLine("  $it") }
-    }.trimEnd()
+    fun render(): String =
+        buildString {
+            appendLine("Kotlin files by module/source-set:")
+            moduleFileCounts.toSortedMap().forEach { (module, count) ->
+                appendLine("  $module main=${count.production} test=${count.test}")
+            }
+            appendLine("Major App ownership areas:")
+            appOwnershipCounts.toSortedMap().forEach { (area, count) ->
+                appendLine("  $area=$count")
+            }
+            appendLine("Direct import invariants:")
+            invariantImportCounts.toSortedMap().forEach { (edge, count) ->
+                appendLine("  $edge=$count")
+            }
+            appendLine("Review signals:")
+            reviewSignals.sorted().forEach { appendLine("  $it") }
+        }.trimEnd()
 }
 
 internal object ArchitectureMetrics {
@@ -48,80 +49,94 @@ internal object ArchitectureMetrics {
 
     fun analyze(sources: List<EditorSource>): ArchitectureMetricsReport {
         val normalized = sources.map { it.copy(path = it.path.replace('\\', '/')) }
-        val moduleCounts = normalized.groupBy { moduleOf(it.path) }
-            .mapValues { (_, files) ->
-                ModuleFileCount(
-                    production = files.count { !it.path.isTestSource() },
-                    test = files.count { it.path.isTestSource() },
-                )
-            }
+        val moduleCounts =
+            normalized
+                .groupBy { moduleOf(it.path) }
+                .mapValues { (_, files) ->
+                    ModuleFileCount(
+                        production = files.count { !it.path.isTestSource() },
+                        test = files.count { it.path.isTestSource() },
+                    )
+                }
         val production = normalized.filterNot { it.path.isTestSource() }
-        val appOwnership = production.asSequence()
-            .filter { it.path.startsWith("app/src/") }
-            .mapNotNull { source -> appOwnershipOf(source.path) }
-            .groupingBy(String::toString)
-            .eachCount()
-        val imports = production.associateWith { source ->
-            source.content.lineSequence()
-                .map(String::trim)
-                .filter { it.startsWith("import ") }
-                .map { it.removePrefix("import ").substringBefore(" as ") }
-                .toList()
-        }
-        val invariantCounts = sortedMapOf(
-            "data->app/feature/presentation" to imports.countImports(
-                owner = { it.startsWith("data/src/") },
-                forbidden = { imported ->
-                    listOf("app", "feature", "presentation")
-                        .any { layer -> imported.isProjectLayerImport(layer) }
-                },
-            ),
-            "domain->android" to imports.countImports(
-                owner = { it.startsWith("domain/src/") },
-                forbidden = { it.startsWith("android.") || it.startsWith("androidx.") },
-            ),
-            "feature->presentation" to imports.countImports(
-                owner = { "/feature/" in it && "/presentation/" !in it },
-                forbidden = { it.isProjectLayerImport("presentation") || it.isFeaturePresentationImport() },
-            ),
-            "presentation->data" to imports.countImports(
-                owner = { "/presentation/" in it },
-                forbidden = { it.isProjectLayerImport("data") },
-            ),
-        )
-
-        val testFileNames = normalized.filter { it.path.isTestSource() }
-            .mapTo(hashSetOf()) { it.path.substringAfterLast('/').lowercase() }
-        val signals = buildList {
-            production.forEach { source ->
-                val fileName = source.path.substringAfterLast('/')
-                val lineCount = source.content.lineSequence().count()
-                if (lineCount > LARGE_FILE_LINES) {
-                    add("${source.path}: $lineCount lines")
-                }
-                if (fileName.endsWith("ViewModel.kt")) {
-                    val flowStem = fileName.removeSuffix("ViewModel.kt").lowercase()
-                    if (testFileNames.none { it.startsWith(flowStem) }) {
-                        add("${source.path}: ViewModel without focused test")
-                    }
-                }
-                if (
-                    fileName.endsWith("Reducer.kt") &&
-                    Regex("\\bfun\\s+").findAll(source.content).count() == 1 &&
-                    !Regex("\\bwhen\\s*\\(").containsMatchIn(source.content)
-                ) {
-                    add("${source.path}: trivial reducer")
-                }
-                composableParameterCounts(source.content)
-                    .filter { it > COMPOSABLE_PARAMETER_THRESHOLD }
-                    .forEach { parameterCount ->
-                        add(
-                            "${source.path}: composable has $parameterCount parameters " +
-                                "(threshold $COMPOSABLE_PARAMETER_THRESHOLD)",
-                        )
-                    }
+        val appOwnership =
+            production
+                .asSequence()
+                .filter { it.path.startsWith("app/src/") }
+                .mapNotNull { source -> appOwnershipOf(source.path) }
+                .groupingBy(String::toString)
+                .eachCount()
+        val imports =
+            production.associateWith { source ->
+                source.content
+                    .lineSequence()
+                    .map(String::trim)
+                    .filter { it.startsWith("import ") }
+                    .map { it.removePrefix("import ").substringBefore(" as ") }
+                    .toList()
             }
-        }.sorted()
+        val invariantCounts =
+            sortedMapOf(
+                "data->app/feature/presentation" to
+                    imports.countImports(
+                        owner = { it.startsWith("data/src/") },
+                        forbidden = { imported ->
+                            listOf("app", "feature", "presentation")
+                                .any { layer -> imported.isProjectLayerImport(layer) }
+                        },
+                    ),
+                "domain->android" to
+                    imports.countImports(
+                        owner = { it.startsWith("domain/src/") },
+                        forbidden = { it.startsWith("android.") || it.startsWith("androidx.") },
+                    ),
+                "feature->presentation" to
+                    imports.countImports(
+                        owner = { "/feature/" in it && "/presentation/" !in it },
+                        forbidden = { it.isProjectLayerImport("presentation") || it.isFeaturePresentationImport() },
+                    ),
+                "presentation->data" to
+                    imports.countImports(
+                        owner = { "/presentation/" in it },
+                        forbidden = { it.isProjectLayerImport("data") },
+                    ),
+            )
+
+        val testFileNames =
+            normalized
+                .filter { it.path.isTestSource() }
+                .mapTo(hashSetOf()) { it.path.substringAfterLast('/').lowercase() }
+        val signals =
+            buildList {
+                production.forEach { source ->
+                    val fileName = source.path.substringAfterLast('/')
+                    val lineCount = source.content.lineSequence().count()
+                    if (lineCount > LARGE_FILE_LINES) {
+                        add("${source.path}: $lineCount lines")
+                    }
+                    if (fileName.endsWith("ViewModel.kt")) {
+                        val flowStem = fileName.removeSuffix("ViewModel.kt").lowercase()
+                        if (testFileNames.none { it.startsWith(flowStem) }) {
+                            add("${source.path}: ViewModel without focused test")
+                        }
+                    }
+                    if (
+                        fileName.endsWith("Reducer.kt") &&
+                        Regex("\\bfun\\s+").findAll(source.content).count() == 1 &&
+                        !Regex("\\bwhen\\s*\\(").containsMatchIn(source.content)
+                    ) {
+                        add("${source.path}: trivial reducer")
+                    }
+                    composableParameterCounts(source.content)
+                        .filter { it > COMPOSABLE_PARAMETER_THRESHOLD }
+                        .forEach { parameterCount ->
+                            add(
+                                "${source.path}: composable has $parameterCount parameters " +
+                                    "(threshold $COMPOSABLE_PARAMETER_THRESHOLD)",
+                            )
+                        }
+                }
+            }.sorted()
 
         return ArchitectureMetricsReport(
             moduleFileCounts = moduleCounts,
@@ -131,33 +146,36 @@ internal object ArchitectureMetrics {
         )
     }
 
-    private fun moduleOf(path: String): String = when {
-        path.startsWith("core/common/") -> ":core:common"
-        path.startsWith("runtime/session/") -> ":runtime:session"
-        else -> ":${path.substringBefore('/')}"
-    }
+    private fun moduleOf(path: String): String =
+        when {
+            path.startsWith("core/common/") -> ":core:common"
+            path.startsWith("runtime/session/") -> ":runtime:session"
+            else -> ":${path.substringBefore('/')}"
+        }
 
-    private fun appOwnershipOf(path: String): String? = when {
-        "/com/aozijx/passly/core/" in path -> "app-local-core"
-        "/feature/" in path && "/presentation/" in path -> "feature.presentation"
-        "/presentation/mapping/" in path -> "presentation.mapping"
-        "/presentation/shared/" in path -> "presentation.shared"
-        "/presentation/ui/" in path -> "presentation.ui"
-        "/feature/" in path -> "feature"
-        "/security/" in path -> "security"
-        "/app/" in path -> "app"
-        else -> "other"
-    }
+    private fun appOwnershipOf(path: String): String? =
+        when {
+            "/com/aozijx/passly/core/" in path -> "app-local-core"
+            "/feature/" in path && "/presentation/" in path -> "feature.presentation"
+            "/presentation/mapping/" in path -> "presentation.mapping"
+            "/presentation/shared/" in path -> "presentation.shared"
+            "/presentation/ui/" in path -> "presentation.ui"
+            "/feature/" in path -> "feature"
+            "/security/" in path -> "security"
+            "/app/" in path -> "app"
+            else -> "other"
+        }
 
-    private fun String.isTestSource(): Boolean =
-        "/src/test/" in this || "/src/androidTest/" in this
+    private fun String.isTestSource(): Boolean = "/src/test/" in this || "/src/androidTest/" in this
 
     private fun Map<EditorSource, List<String>>.countImports(
         owner: (String) -> Boolean,
         forbidden: (String) -> Boolean,
-    ): Int = entries.asSequence()
-        .filter { owner(it.key.path) }
-        .sumOf { (_, imports) -> imports.count(forbidden) }
+    ): Int =
+        entries
+            .asSequence()
+            .filter { owner(it.key.path) }
+            .sumOf { (_, imports) -> imports.count(forbidden) }
 
     private fun String.isProjectLayerImport(layer: String): Boolean =
         startsWith("com.aozijx.passly.$layer.") || startsWith("com.example.$layer.")
@@ -186,7 +204,10 @@ internal object ArchitectureMetrics {
         return counts
     }
 
-    private fun matchingParenthesis(content: String, open: Int): Int {
+    private fun matchingParenthesis(
+        content: String,
+        open: Int,
+    ): Int {
         var depth = 0
         for (index in open until content.length) {
             when (content[index]) {
@@ -226,14 +247,15 @@ abstract class ArchitectureMetricsTask : DefaultTask() {
     @TaskAction
     fun report() {
         val root = sourceRoot.get().asFile.toPath()
-        val metrics = ArchitectureMetrics.analyze(
-            sourceFiles.files.map { file ->
-                EditorSource(
-                    path = root.relativize(file.toPath()).toString(),
-                    content = file.readText(),
-                )
-            },
-        )
+        val metrics =
+            ArchitectureMetrics.analyze(
+                sourceFiles.files.map { file ->
+                    EditorSource(
+                        path = root.relativize(file.toPath()).toString(),
+                        content = file.readText(),
+                    )
+                },
+            )
         val rendered = metrics.render()
         val reportFile: File = outputReport.get().asFile
         reportFile.parentFile.mkdirs()

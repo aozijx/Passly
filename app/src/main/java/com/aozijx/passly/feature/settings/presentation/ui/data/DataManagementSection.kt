@@ -19,22 +19,23 @@ internal fun DataManagementSection(
     SettingsSection {
         SettingsSectionTitle(text = stringResource(R.string.settings_data_storage))
         SegmentedSettingsGroup(
-            items = listOf(
-                navigationSettingsGroupItem(
-                    key = "data.trash",
-                    icon = Icons.Default.DeleteSweep,
-                    title = stringResource(R.string.settings_trash_title),
-                    subtitle = stringResource(R.string.settings_trash_description),
-                    onClick = onOpenTrash,
+            items =
+                listOf(
+                    navigationSettingsGroupItem(
+                        key = "data.trash",
+                        icon = Icons.Default.DeleteSweep,
+                        title = stringResource(R.string.settings_trash_title),
+                        subtitle = stringResource(R.string.settings_trash_description),
+                        onClick = onOpenTrash,
+                    ),
+                    navigationSettingsGroupItem(
+                        key = "data.database_reset",
+                        icon = Icons.Default.DeleteForever,
+                        title = stringResource(R.string.settings_database_reset_title),
+                        subtitle = stringResource(R.string.settings_database_reset_summary),
+                        onClick = onOpenDatabaseReset,
+                    ),
                 ),
-                navigationSettingsGroupItem(
-                    key = "data.database_reset",
-                    icon = Icons.Default.DeleteForever,
-                    title = stringResource(R.string.settings_database_reset_title),
-                    subtitle = stringResource(R.string.settings_database_reset_summary),
-                    onClick = onOpenDatabaseReset,
-                ),
-            ),
         )
     }
 }

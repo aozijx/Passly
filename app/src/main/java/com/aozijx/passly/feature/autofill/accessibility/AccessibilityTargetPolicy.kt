@@ -10,7 +10,8 @@ internal object AccessibilityTargetPolicy {
         currentPackage: String,
         currentWindowId: Int,
         nowMs: Long,
-    ): Boolean = expectedPackage == currentPackage &&
-        expectedWindowId == currentWindowId &&
-        nowMs - capturedAtMs in 0..MAX_AGE_MS
+    ): Boolean =
+        expectedPackage == currentPackage &&
+            expectedWindowId == currentWindowId &&
+            nowMs - capturedAtMs in 0..MAX_AGE_MS
 }

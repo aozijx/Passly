@@ -6,8 +6,8 @@ import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
-import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.contract.BackupOperation
+import com.aozijx.passly.feature.backup.contract.ImportMode
 
 internal data class BackupUiState(
     val workflow: BackupWorkflow = BackupWorkflow.Idle,
@@ -15,11 +15,25 @@ internal data class BackupUiState(
 
 internal sealed interface BackupWorkflow {
     data object Idle : BackupWorkflow
+
     data object FormatPicker : BackupWorkflow
-    data class ConfigureExport(val options: BackupExportOptions) : BackupWorkflow
-    data class AwaitingExportTarget(val options: BackupExportOptions) : BackupWorkflow
-    data class ConfigureImport(val options: BackupImportOptions) : BackupWorkflow
-    data class Executing(val operation: BackupOperation) : BackupWorkflow
+
+    data class ConfigureExport(
+        val options: BackupExportOptions,
+    ) : BackupWorkflow
+
+    data class AwaitingExportTarget(
+        val options: BackupExportOptions,
+    ) : BackupWorkflow
+
+    data class ConfigureImport(
+        val options: BackupImportOptions,
+    ) : BackupWorkflow
+
+    data class Executing(
+        val operation: BackupOperation,
+    ) : BackupWorkflow
+
     data class Failed(
         val operation: BackupOperation,
         val error: AppError,
@@ -36,8 +50,9 @@ internal data class BackupExportOptions(
     val includedEntryTypes: Set<EntryType> = EntryType.entries.toSet(),
 ) {
     val canSubmit: Boolean
-        get() = includedEntryTypes.isNotEmpty() &&
-            (!format.requiresPassword || !password.isEmpty)
+        get() =
+            includedEntryTypes.isNotEmpty() &&
+                (!format.requiresPassword || !password.isEmpty)
 }
 
 internal data class BackupImportOptions(
@@ -47,12 +62,17 @@ internal data class BackupImportOptions(
     val strategy: BackupImportStrategy = BackupImportStrategy.COMPATIBLE,
 )
 
-internal fun BackupWorkflow.password(): SensitiveValue = when (this) {
-    is BackupWorkflow.ConfigureExport -> options.password
-    is BackupWorkflow.AwaitingExportTarget -> options.password
-    is BackupWorkflow.ConfigureImport -> options.password
-    BackupWorkflow.Idle,
-    BackupWorkflow.FormatPicker,
-    is BackupWorkflow.Executing,
-    is BackupWorkflow.Failed -> EmptySensitiveValue
-}
+internal fun BackupWorkflow.password(): SensitiveValue =
+    when (this) {
+        is BackupWorkflow.ConfigureExport -> options.password
+
+        is BackupWorkflow.AwaitingExportTarget -> options.password
+
+        is BackupWorkflow.ConfigureImport -> options.password
+
+        BackupWorkflow.Idle,
+        BackupWorkflow.FormatPicker,
+        is BackupWorkflow.Executing,
+        is BackupWorkflow.Failed,
+        -> EmptySensitiveValue
+    }

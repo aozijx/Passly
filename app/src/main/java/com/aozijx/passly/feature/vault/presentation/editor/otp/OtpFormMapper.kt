@@ -1,19 +1,18 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
-import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
-
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
-import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
-import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
-import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
+import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
+import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
+import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
 
 fun OtpFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.OTP]
@@ -48,11 +47,17 @@ private fun EntryDraft.withOptionalText(
     definition: EntryTypeDefinition,
     key: FieldKey,
     rawValue: String,
-): EntryDraft = rawValue.trim().takeIf(String::isNotEmpty)
-    ?.let { withValue(definition, key, EntryDraftValue.Text(it)) }
-    ?: this
+): EntryDraft =
+    rawValue
+        .trim()
+        .takeIf(String::isNotEmpty)
+        ?.let { withValue(definition, key, EntryDraftValue.Text(it)) }
+        ?: this
 
-private fun EntryDraft.withTags(definition: EntryTypeDefinition, rawTags: String): EntryDraft {
+private fun EntryDraft.withTags(
+    definition: EntryTypeDefinition,
+    rawTags: String,
+): EntryDraft {
     val values = parseRawTags(rawTags)
     return if (values.isEmpty()) this else withValue(definition, FieldKey.TAGS, EntryDraftValue.TextList(values))
 }

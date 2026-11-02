@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.otp
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,14 +27,14 @@ fun <T> DropdownSelector(
     label: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    optionToString: (T) -> String = { it.toString() }
+    optionToString: (T) -> String = { it.toString() },
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { if (enabled) expanded = it },
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
             value = optionToString(value),
@@ -45,14 +45,16 @@ fun <T> DropdownSelector(
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
-            modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth().excludeFromAutofill()
+            modifier =
+                Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth()
+                    .excludeFromAutofill(),
         )
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -60,7 +62,7 @@ fun <T> DropdownSelector(
                     onClick = {
                         onValueChange(option)
                         expanded = false
-                    }
+                    },
                 )
             }
         }

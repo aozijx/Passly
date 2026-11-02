@@ -11,7 +11,16 @@ interface MessageSettingsSource {
 
 interface MessageSettingsRepository : MessageSettingsSource {
     suspend fun setOptionalMessagesEnabled(enabled: Boolean)
+
     suspend fun setSystemNotificationsEnabled(enabled: Boolean)
-    suspend fun setTopicEnabled(topic: MessageTopic, enabled: Boolean)
-    suspend fun setTopicMinimumLevel(topic: MessageTopic, level: MessageLevel)
+
+    suspend fun setTopicEnabled(
+        topic: MessageTopic,
+        enabled: Boolean,
+    )
+
+    suspend fun setTopicMinimumLevel(
+        topic: MessageTopic,
+        level: MessageLevel,
+    )
 }

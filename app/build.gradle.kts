@@ -8,42 +8,56 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
-val generateErrorCatalogSources = rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
-    "generateErrorCatalogSources",
-)
+val generateErrorCatalogSources =
+    rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
+        "generateErrorCatalogSources",
+    )
 // Release 签名优先读取环境变量，其次读取本地未跟踪 keystore.properties
-val keystoreProperties = Properties().apply {
-    val keystoreFile = rootProject.file("keystore.properties")
-    if (keystoreFile.exists()) {
-        load(FileInputStream(keystoreFile))
+val keystoreProperties =
+    Properties().apply {
+        val keystoreFile = rootProject.file("keystore.properties")
+        if (keystoreFile.exists()) {
+            load(FileInputStream(keystoreFile))
+        }
     }
-}
 
-fun resolveSigningValue(envName: String, propertyName: String): String? {
-    return System.getenv(envName)?.takeIf { it.isNotBlank() }
+fun resolveSigningValue(
+    envName: String,
+    propertyName: String,
+): String? =
+    System.getenv(envName)?.takeIf { it.isNotBlank() }
         ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
-}
 
 val signingStoreFilePath = resolveSigningValue("SIGNING_STORE_FILE", "signing.store.file")
 val signingStorePassword = resolveSigningValue("SIGNING_STORE_PASSWORD", "signing.store.password")
 val signingKeyAlias = resolveSigningValue("SIGNING_KEY_ALIAS", "signing.key.alias")
 val signingKeyPassword = resolveSigningValue("SIGNING_KEY_PASSWORD", "signing.key.password")
-val hasReleaseSigningConfig = listOf(
-    signingStoreFilePath,
-    signingStorePassword,
-    signingKeyAlias,
-    signingKeyPassword
-).all { !it.isNullOrBlank() }
+val hasReleaseSigningConfig =
+    listOf(
+        signingStoreFilePath,
+        signingStorePassword,
+        signingKeyAlias,
+        signingKeyPassword,
+    ).all { !it.isNullOrBlank() }
 
 // Android 配置
 android {
     namespace = "com.aozijx.passly"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
+    compileSdk =
+        libs.versions.androidCompileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "com.aozijx.passly"
-        minSdk = libs.versions.androidMinSdk.get().toInt()
-        targetSdk = libs.versions.androidTargetSdk.get().toInt()
+        minSdk =
+            libs.versions.androidMinSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.androidTargetSdk
+                .get()
+                .toInt()
         versionCode = 8
         versionName = "0.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -68,16 +82,18 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = true          // 启用 R8 代码压缩
-            isShrinkResources = true        // 启用资源压缩
+            isMinifyEnabled = true // 启用 R8 代码压缩
+            isShrinkResources = true // 启用资源压缩
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
             )
-            signingConfig = if (hasReleaseSigningConfig) {
-                signingConfigs.getByName("release")
-            } else {
-                null
-            }
+            signingConfig =
+                if (hasReleaseSigningConfig) {
+                    signingConfigs.getByName("release")
+                } else {
+                    null
+                }
         }
 
         getByName("debug") {
@@ -93,7 +109,6 @@ android {
         buildConfig = true
     }
 
-
     splits {
         abi {
             isEnable = true
@@ -104,12 +119,13 @@ android {
     }
 
     lint {
-        disable += setOf(
-            "AndroidGradlePluginVersion",
+        disable +=
+            setOf(
+                "AndroidGradlePluginVersion",
 //            "GradleDependency",
 //            "NewerVersionAvailable",
-            "OldTargetApi"
-        )
+                "OldTargetApi",
+            )
     }
 }
 
@@ -122,7 +138,11 @@ androidComponents.onVariants { variant ->
 
 // Kotlin 配置
 kotlin {
-    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
+    jvmToolchain(
+        libs.versions.jvmToolchain
+            .get()
+            .toInt(),
+    )
 }
 
 dependencies {

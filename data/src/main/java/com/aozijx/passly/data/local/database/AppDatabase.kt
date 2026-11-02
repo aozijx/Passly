@@ -43,10 +43,10 @@ import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
         EntryActivityEntity::class,
         AttachmentResourceEntity::class,
         AttachmentRefEntity::class,
-        RevisionAttachmentRefEntity::class
+        RevisionAttachmentRefEntity::class,
     ],
     version = DatabaseSchema.VERSION,
-    exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA
+    exportSchema = BuildConfig.EXPORT_ROOM_SCHEMA,
 )
 @TypeConverters(
     EntryTypeConverter::class,
@@ -56,21 +56,35 @@ import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
     StringSetConverter::class,
 )
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun entryQueryDao(): EntryQueryDao
+
     abstract fun entryCommandDao(): EntryCommandDao
+
     abstract fun secretFieldQueryDao(): SecretFieldQueryDao
+
     abstract fun secretFieldCommandDao(): SecretFieldCommandDao
+
     abstract fun entryLinkQueryDao(): EntryLinkQueryDao
+
     abstract fun entryLinkCommandDao(): EntryLinkCommandDao
+
     abstract fun entryRevisionQueryDao(): EntryRevisionQueryDao
+
     abstract fun entryRevisionCommandDao(): EntryRevisionCommandDao
+
     abstract fun entryActivityQueryDao(): EntryActivityQueryDao
+
     abstract fun entryActivityCommandDao(): EntryActivityCommandDao
+
     abstract fun entryActivityAnalyticsDao(): EntryActivityAnalyticsDao
+
     abstract fun attachmentRefQueryDao(): AttachmentRefQueryDao
+
     abstract fun attachmentRefCommandDao(): AttachmentRefCommandDao
+
     abstract fun attachmentResourceDao(): AttachmentResourceDao
+
     abstract fun revisionAttachmentRefDao(): RevisionAttachmentRefDao
+
     abstract fun databaseMaintenanceDao(): DatabaseMaintenanceDao
 }

@@ -9,15 +9,16 @@ class VaultSearchStateHolderTest {
     @Test
     fun `unexpected platform focus does not activate search`() {
         var searchActive = false
-        val holder = VaultSearchStateHolder(
-            initialState = VaultSearchState.initial(searchActive, ""),
-            initialSearchActive = searchActive,
-            currentQuery = { "" },
-            currentSearchActive = { searchActive },
-            onQueryChange = {},
-            onSearchActiveChange = { searchActive = it },
-            onExpandBars = {},
-        )
+        val holder =
+            VaultSearchStateHolder(
+                initialState = VaultSearchState.initial(searchActive, ""),
+                initialSearchActive = searchActive,
+                currentQuery = { "" },
+                currentSearchActive = { searchActive },
+                onQueryChange = {},
+                onSearchActiveChange = { searchActive = it },
+                onExpandBars = {},
+            )
 
         holder.focusChanged(true)
 
@@ -30,15 +31,16 @@ class VaultSearchStateHolderTest {
         var query = "mail"
         var searchActive = true
         var barsExpanded = false
-        val holder = VaultSearchStateHolder(
-            initialState = VaultSearchState.initial(searchActive, query),
-            initialSearchActive = searchActive,
-            currentQuery = { query },
-            currentSearchActive = { searchActive },
-            onQueryChange = { query = it },
-            onSearchActiveChange = { searchActive = it },
-            onExpandBars = { barsExpanded = true },
-        )
+        val holder =
+            VaultSearchStateHolder(
+                initialState = VaultSearchState.initial(searchActive, query),
+                initialSearchActive = searchActive,
+                currentQuery = { query },
+                currentSearchActive = { searchActive },
+                onQueryChange = { query = it },
+                onSearchActiveChange = { searchActive = it },
+                onExpandBars = { barsExpanded = true },
+            )
 
         holder.clear()
 
@@ -51,15 +53,16 @@ class VaultSearchStateHolderTest {
     @Test
     fun `losing focus after empty edit deactivates search`() {
         var searchActive = false
-        val holder = VaultSearchStateHolder(
-            initialState = VaultSearchState.initial(searchActive, ""),
-            initialSearchActive = searchActive,
-            currentQuery = { "" },
-            currentSearchActive = { searchActive },
-            onQueryChange = {},
-            onSearchActiveChange = { searchActive = it },
-            onExpandBars = {},
-        )
+        val holder =
+            VaultSearchStateHolder(
+                initialState = VaultSearchState.initial(searchActive, ""),
+                initialSearchActive = searchActive,
+                currentQuery = { "" },
+                currentSearchActive = { searchActive },
+                onQueryChange = {},
+                onSearchActiveChange = { searchActive = it },
+                onExpandBars = {},
+            )
 
         holder.request()
         holder.focusChanged(true)

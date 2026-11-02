@@ -8,7 +8,6 @@ data class ClipboardClearPolicy(
         const val DEFAULT_DELAY_SECONDS: Int = 30
         val ALLOWED_DELAY_SECONDS: Set<Int> = linkedSetOf(15, 30, 60, 120)
 
-        fun normalizeDelaySeconds(value: Int): Int =
-            value.takeIf(ALLOWED_DELAY_SECONDS::contains) ?: DEFAULT_DELAY_SECONDS
+        fun normalizeDelaySeconds(value: Int): Int = value.takeIf(ALLOWED_DELAY_SECONDS::contains) ?: DEFAULT_DELAY_SECONDS
     }
 }

@@ -3,7 +3,7 @@ package com.aozijx.passly.presentation.shared.media
 fun isRemoteImagePath(path: String?): Boolean {
     val value = path?.trim().orEmpty()
     return value.startsWith("http://", ignoreCase = true) ||
-            value.startsWith("https://", ignoreCase = true)
+        value.startsWith("https://", ignoreCase = true)
 }
 
 fun toLocalIconImageModel(path: String?): String? {

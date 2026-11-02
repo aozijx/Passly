@@ -8,28 +8,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsAction
+import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsViewModel
-import com.aozijx.passly.feature.settings.presentation.security.toAppPasswordMessage
-import com.aozijx.passly.feature.settings.presentation.security.rememberAppPasswordDialogCoordinator
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsUiState
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsViewModel
+import com.aozijx.passly.feature.settings.presentation.security.rememberAppPasswordDialogCoordinator
+import com.aozijx.passly.feature.settings.presentation.security.toAppPasswordMessage
 import com.aozijx.passly.feature.settings.presentation.security.toSecuritySettingsUiModel
-import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
-import com.aozijx.passly.feature.settings.presentation.ui.security.AppPasswordDialogs
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import com.aozijx.passly.feature.settings.presentation.ui.security.AppPasswordDialogs
 import com.aozijx.passly.feature.settings.presentation.ui.security.SecurityDetail
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @Composable
-internal fun SecurityRoute(
-    onBack: (() -> Unit)?,
-) {
+internal fun SecurityRoute(onBack: (() -> Unit)?) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val securityViewModel: SecuritySettingsViewModel = hiltViewModel()
@@ -52,12 +50,18 @@ internal fun SecurityRoute(
             when (effect) {
                 AppPasswordSettingsEffect.AppPasswordSet,
                 AppPasswordSettingsEffect.AppPasswordChanged,
-                AppPasswordSettingsEffect.AppPasswordDisabled ->
+                AppPasswordSettingsEffect.AppPasswordDisabled,
+                -> {
                     appPasswordDialogs.onAppPasswordOperationSucceeded()
+                }
+
                 is AppPasswordSettingsEffect.AppPasswordEntryAuthorized -> {
                     appPasswordDialogs.onAppPasswordEntryAuthorized(effect.alreadyEnabled)
                 }
-                else -> Unit
+
+                else -> {
+                    Unit
+                }
             }
             effect.toAppPasswordMessage(context)?.let { message ->
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -70,49 +74,57 @@ internal fun SecurityRoute(
         onBack = onBack,
     ) {
         when (val state = securityState) {
-            SecuritySettingsUiState.Loading -> Unit
-            is SecuritySettingsUiState.Ready -> item {
-                SecurityDetail(
-                    state = state.toSecuritySettingsUiModel(
-                        isAppPasswordEnabled = appPasswordState.isAppPasswordEnabled,
-                    ),
-                    onLockTimeoutChange = {
-                        securityViewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
-                    },
-                    onAppPasswordClick = {
-                        appPasswordViewModel.onAction(AppPasswordSettingsAction.RequestAppPasswordEntry)
-                    },
-                    onBiometricEnabledChange = { enabled ->
-                        securityViewModel.onAction(
-                            SecuritySettingsAction.SetBiometricEnabled(enabled),
-                        )
-                    },
-                    onInvalidateKeyOnBioChangeToggle = { enabled ->
-                        securityViewModel.onAction(
-                            SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(enabled),
-                        )
-                    },
-                    onLockOnBackgroundChange = {
-                        securityViewModel.onAction(SecuritySettingsAction.ToggleLockOnBackground(it))
-                    },
-                )
+            SecuritySettingsUiState.Loading -> {
+                Unit
+            }
+
+            is SecuritySettingsUiState.Ready -> {
+                item {
+                    SecurityDetail(
+                        state =
+                            state.toSecuritySettingsUiModel(
+                                isAppPasswordEnabled = appPasswordState.isAppPasswordEnabled,
+                            ),
+                        onLockTimeoutChange = {
+                            securityViewModel.onAction(SecuritySettingsAction.SetLockTimeout(it))
+                        },
+                        onAppPasswordClick = {
+                            appPasswordViewModel.onAction(AppPasswordSettingsAction.RequestAppPasswordEntry)
+                        },
+                        onBiometricEnabledChange = { enabled ->
+                            securityViewModel.onAction(
+                                SecuritySettingsAction.SetBiometricEnabled(enabled),
+                            )
+                        },
+                        onInvalidateKeyOnBioChangeToggle = { enabled ->
+                            securityViewModel.onAction(
+                                SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(enabled),
+                            )
+                        },
+                        onLockOnBackgroundChange = {
+                            securityViewModel.onAction(SecuritySettingsAction.ToggleLockOnBackground(it))
+                        },
+                    )
+                }
             }
         }
     }
 
     AppPasswordDialogs(
-        state = appPasswordDialogs.model.copy(
-            isBusy = appPasswordState.isOperationInProgress,
-        ),
-        onEvent = { event ->
-            appPasswordDialogs.onEvent(
-                event = event,
+        state =
+            appPasswordDialogs.model.copy(
                 isBusy = appPasswordState.isOperationInProgress,
-            )?.let { request ->
-                appPasswordViewModel.onAction(
-                    AppPasswordSettingsAction.SubmitChange(request),
-                )
-            }
+            ),
+        onEvent = { event ->
+            appPasswordDialogs
+                .onEvent(
+                    event = event,
+                    isBusy = appPasswordState.isOperationInProgress,
+                )?.let { request ->
+                    appPasswordViewModel.onAction(
+                        AppPasswordSettingsAction.SubmitChange(request),
+                    )
+                }
         },
     )
 }

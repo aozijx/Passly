@@ -6,20 +6,24 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.data.local.database.port.DatabaseResetController
 import com.aozijx.passly.domain.access.port.DatabaseResetSessionCoordinator
 import com.aozijx.passly.feature.database.reset.DatabaseResetGateway
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Singleton
-class DatabaseResetGatewayAdapter @Inject constructor(
-    private val controller: DatabaseResetController,
-    private val sessionCoordinator: DatabaseResetSessionCoordinator,
-) : DatabaseResetGateway {
-    override suspend fun reset(): AppResult<Unit> = sessionCoordinator.withExclusiveDatabaseReset {
-        withContext(Dispatchers.IO) { controller.reset() }
-    }.let { error ->
-        error?.let { AppResult.Failure(AppError.fromThrowable(it)) }
-            ?: AppResult.Success(Unit)
+class DatabaseResetGatewayAdapter
+    @Inject
+    constructor(
+        private val controller: DatabaseResetController,
+        private val sessionCoordinator: DatabaseResetSessionCoordinator,
+    ) : DatabaseResetGateway {
+        override suspend fun reset(): AppResult<Unit> =
+            sessionCoordinator
+                .withExclusiveDatabaseReset {
+                    withContext(Dispatchers.IO) { controller.reset() }
+                }.let { error ->
+                    error?.let { AppResult.Failure(AppError.fromThrowable(it)) }
+                        ?: AppResult.Success(Unit)
+                }
     }
-}

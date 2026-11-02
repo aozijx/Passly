@@ -11,6 +11,7 @@ class CardNumberValidatorTest {
             assertTrue(CardNumberValidator.validate(number) is CardNumberValidationResult.Invalid)
         }
     }
+
     @Test
     fun `mastercard two series includes prefixes ending in zero and both boundaries`() {
         listOf(

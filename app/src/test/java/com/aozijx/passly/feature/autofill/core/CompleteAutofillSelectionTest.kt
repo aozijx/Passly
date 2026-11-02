@@ -18,54 +18,61 @@ import org.junit.Test
 
 class CompleteAutofillSelectionTest {
     @Test
-    fun `successful fill records usage and closes its temporary unlock`() = runBlocking {
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val interaction = store.create(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        val activityRecorder = RecordingActivityRecorder {
-            assertEquals(null, lockController.reason)
+    fun `successful fill records usage and closes its temporary unlock`() =
+        runBlocking {
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val activityRecorder =
+                RecordingActivityRecorder {
+                    assertEquals(null, lockController.reason)
+                }
+            val operation =
+                CompleteAutofillSelection(
+                    activityRecorder = activityRecorder,
+                    finishInteraction = FinishAutofillInteraction(store, lease),
+                )
+
+            operation(interaction.id, EntryId("entry-1"))
+
+            assertEquals("entry-1", activityRecorder.recordedEntryId)
+            assertEquals(ActivityType.AUTOFILL, activityRecorder.recordedType)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
         }
-        val operation = CompleteAutofillSelection(
-            activityRecorder = activityRecorder,
-            finishInteraction = FinishAutofillInteraction(store, lease),
-        )
-
-        operation(interaction.id, EntryId("entry-1"))
-
-        assertEquals("entry-1", activityRecorder.recordedEntryId)
-        assertEquals(ActivityType.AUTOFILL, activityRecorder.recordedType)
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
-        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-    }
 
     @Test
-    fun `duplicate delivery receipt records usage only once`() = runBlocking {
-        val store = AutofillInteractionStore()
-        val lease = AutofillUnlockLease(RecordingLockController())
-        val interaction = store.create(
-            source = AutofillInteractionSource.CREDENTIAL_MANAGER,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        val activityRecorder = RecordingActivityRecorder()
-        val operation = CompleteAutofillSelection(
-            activityRecorder = activityRecorder,
-            finishInteraction = FinishAutofillInteraction(store, lease),
-        )
+    fun `duplicate delivery receipt records usage only once`() =
+        runBlocking {
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(RecordingLockController())
+            val interaction =
+                store.create(
+                    source = AutofillInteractionSource.CREDENTIAL_MANAGER,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val activityRecorder = RecordingActivityRecorder()
+            val operation =
+                CompleteAutofillSelection(
+                    activityRecorder = activityRecorder,
+                    finishInteraction = FinishAutofillInteraction(store, lease),
+                )
 
-        operation(interaction.id, EntryId("entry-1"))
-        operation(interaction.id, EntryId("entry-1"))
+            operation(interaction.id, EntryId("entry-1"))
+            operation(interaction.id, EntryId("entry-1"))
 
-        assertEquals(1, activityRecorder.recordCount)
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
-    }
+            assertEquals(1, activityRecorder.recordCount)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+        }
 
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
@@ -82,7 +89,10 @@ class CompleteAutofillSelectionTest {
         var recordedType: ActivityType? = null
         var recordCount = 0
 
-        override suspend fun recordUsage(entryId: String, type: ActivityType): AppResult<Unit> {
+        override suspend fun recordUsage(
+            entryId: String,
+            type: ActivityType,
+        ): AppResult<Unit> {
             onRecord()
             recordedEntryId = entryId
             recordedType = type
@@ -91,6 +101,7 @@ class CompleteAutofillSelectionTest {
         }
 
         override suspend fun deleteByEntryId(entryId: String) = Unit
+
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 }

@@ -21,7 +21,11 @@ class DetailRevisionRevealStoreTest {
     private class RecordingSensitiveValue : SensitiveValue {
         var wiped = false
         override val isEmpty: Boolean = false
+
         override fun toCharArray() = charArrayOf('x')
-        override fun wipe() { wiped = true }
+
+        override fun wipe() {
+            wiped = true
+        }
     }
 }

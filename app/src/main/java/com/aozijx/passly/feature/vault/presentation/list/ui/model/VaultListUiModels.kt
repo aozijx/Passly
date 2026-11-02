@@ -28,13 +28,20 @@ enum class VaultOtpKindUiModel { STANDARD, STEAM }
 @Immutable
 sealed interface VaultOtpUiState {
     data object Pending : VaultOtpUiState
-    data class Ready(val code: String, val progress: Float) : VaultOtpUiState
+
+    data class Ready(
+        val code: String,
+        val progress: Float,
+    ) : VaultOtpUiState
+
     data object Failed : VaultOtpUiState
 }
 
 interface VaultOtpStateProvider {
     fun state(entryId: String): Flow<VaultOtpUiState?>
+
     fun subscribe(entryId: String)
+
     fun unsubscribe(entryId: String)
 }
 
@@ -46,20 +53,30 @@ data class VaultSortUiModel(
     fun toggled() = copy(descending = !descending)
 
     companion object {
-        val presets = listOf(
-            VaultSortUiModel(VaultSortOptionUiModel.CREATED_AT, true),
-            VaultSortUiModel(VaultSortOptionUiModel.TITLE, false),
-            VaultSortUiModel(VaultSortOptionUiModel.UPDATED_AT, true),
-            VaultSortUiModel(VaultSortOptionUiModel.LAST_USED_AT, true),
-            VaultSortUiModel(VaultSortOptionUiModel.USAGE_FREQUENCY, true),
-        )
+        val presets =
+            listOf(
+                VaultSortUiModel(VaultSortOptionUiModel.CREATED_AT, true),
+                VaultSortUiModel(VaultSortOptionUiModel.TITLE, false),
+                VaultSortUiModel(VaultSortOptionUiModel.UPDATED_AT, true),
+                VaultSortUiModel(VaultSortOptionUiModel.LAST_USED_AT, true),
+                VaultSortUiModel(VaultSortOptionUiModel.USAGE_FREQUENCY, true),
+            )
     }
 }
 
 enum class VaultSortOptionUiModel { TITLE, CREATED_AT, UPDATED_AT, LAST_USED_AT, USAGE_FREQUENCY }
 
 enum class VaultAddTypeUiModel {
-    PASSWORD, TOTP, BANK_CARD, WIFI, SSH_KEY, ID_CARD, SEED_PHRASE, PASSKEY, RECOVERY_CODE;
+    PASSWORD,
+    TOTP,
+    BANK_CARD,
+    WIFI,
+    SSH_KEY,
+    ID_CARD,
+    SEED_PHRASE,
+    PASSKEY,
+    RECOVERY_CODE,
+    ;
 
     companion object {
         val fabMenuOptions = listOf(TOTP, PASSWORD)

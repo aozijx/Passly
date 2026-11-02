@@ -40,8 +40,12 @@ class DiagnosticsExportFileRetentionTest {
         assertTrue(DiagnosticsExportFileRetention.staleFiles(null, nowMs = 1_700_000_000_000L).isEmpty())
     }
 
-    private fun file(name: String, modifiedAt: Long): File = File(cacheDirectory, name).apply {
-        writeText("export")
-        check(setLastModified(modifiedAt))
-    }
+    private fun file(
+        name: String,
+        modifiedAt: Long,
+    ): File =
+        File(cacheDirectory, name).apply {
+            writeText("export")
+            check(setLastModified(modifiedAt))
+        }
 }

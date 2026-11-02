@@ -11,16 +11,17 @@ internal suspend fun withBiometricRotationCandidate(
     deleteAlias: (String) -> Boolean,
     operation: suspend () -> AuthenticationResult,
 ): AuthenticationResult {
-    val result = try {
-        operation()
-    } catch (error: Throwable) {
+    val result =
         try {
-            discardUncommittedCandidate(store, candidateAlias, deleteAlias)
-        } catch (cleanup: Throwable) {
-            if (cleanup !== error) error.addSuppressed(cleanup)
+            operation()
+        } catch (error: Throwable) {
+            try {
+                discardUncommittedCandidate(store, candidateAlias, deleteAlias)
+            } catch (cleanup: Throwable) {
+                if (cleanup !== error) error.addSuppressed(cleanup)
+            }
+            throw error
         }
-        throw error
-    }
     discardUncommittedCandidate(store, candidateAlias, deleteAlias)
     return result
 }

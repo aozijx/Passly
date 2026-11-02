@@ -11,21 +11,24 @@ internal class CardEntryPayloadAdapter : EntryPayloadAdapter {
 
     override fun encode(credential: EntryCredential): SecretPayload {
         require(credential is CardCredential) { "CARD adapter requires CardCredential" }
-        return SecretPayload(card = CardCredentialPayload(
-            cardType = credential.cardType,
-            cardNumber = credential.cardNumber,
-            cardExpiry = credential.cardExpiry,
-            cardCvv = credential.cardCvv,
-            cardHolder = credential.cardHolder,
-            paymentPin = credential.paymentPin,
-            paymentPlatform = credential.paymentPlatform,
-            billingAddress = credential.billingAddress,
-            issuingBank = credential.issuingBank,
-            bankBranch = credential.bankBranch,
-            cardProduct = credential.cardProduct,
-            currency = credential.currency,
-            bankPhone = credential.bankPhone,
-        ))
+        return SecretPayload(
+            card =
+                CardCredentialPayload(
+                    cardType = credential.cardType,
+                    cardNumber = credential.cardNumber,
+                    cardExpiry = credential.cardExpiry,
+                    cardCvv = credential.cardCvv,
+                    cardHolder = credential.cardHolder,
+                    paymentPin = credential.paymentPin,
+                    paymentPlatform = credential.paymentPlatform,
+                    billingAddress = credential.billingAddress,
+                    issuingBank = credential.issuingBank,
+                    bankBranch = credential.bankBranch,
+                    cardProduct = credential.cardProduct,
+                    currency = credential.currency,
+                    bankPhone = credential.bankPhone,
+                ),
+        )
     }
 
     override fun decode(payload: SecretPayload): EntryCredential {

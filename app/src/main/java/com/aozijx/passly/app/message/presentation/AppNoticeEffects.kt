@@ -13,11 +13,12 @@ internal fun AppNoticeEffects() {
 
     LaunchedEffect(viewModel, context) {
         viewModel.toastMessages.collect { message ->
-            Toast.makeText(
-                context,
-                message.text,
-                if (message.longDuration) Toast.LENGTH_LONG else Toast.LENGTH_SHORT,
-            ).show()
+            Toast
+                .makeText(
+                    context,
+                    message.text,
+                    if (message.longDuration) Toast.LENGTH_LONG else Toast.LENGTH_SHORT,
+                ).show()
         }
     }
 }

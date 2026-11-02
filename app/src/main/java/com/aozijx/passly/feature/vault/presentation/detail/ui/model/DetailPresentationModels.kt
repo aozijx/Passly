@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
+import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
-import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
@@ -74,7 +74,11 @@ data class DetailRevisionDifferenceUiModel(
 
 sealed interface DetailRevisionSheetUiModel {
     data object Hidden : DetailRevisionSheetUiModel
-    data class ListPage(val content: DetailRevisionListUiState) : DetailRevisionSheetUiModel
+
+    data class ListPage(
+        val content: DetailRevisionListUiState,
+    ) : DetailRevisionSheetUiModel
+
     data class ComparisonPage(
         val revisionId: String,
         val content: DetailRevisionComparisonUiState,
@@ -83,16 +87,22 @@ sealed interface DetailRevisionSheetUiModel {
 
 sealed interface DetailRevisionListUiState {
     data object Loading : DetailRevisionListUiState
-    data class Ready(val revisions: List<DetailRevisionItemUiModel>) : DetailRevisionListUiState
+
+    data class Ready(
+        val revisions: List<DetailRevisionItemUiModel>,
+    ) : DetailRevisionListUiState
+
     data object Failed : DetailRevisionListUiState
 }
 
 sealed interface DetailRevisionComparisonUiState {
     data object Loading : DetailRevisionComparisonUiState
+
     data class Ready(
         val differences: List<DetailRevisionDifferenceUiModel>,
         val restore: DetailRevisionRestoreUiState,
     ) : DetailRevisionComparisonUiState
+
     data object Failed : DetailRevisionComparisonUiState
 }
 

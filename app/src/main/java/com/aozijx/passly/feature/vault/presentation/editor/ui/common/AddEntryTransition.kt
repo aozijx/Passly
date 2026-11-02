@@ -15,14 +15,15 @@ fun Modifier.rememberAddEntryFabTransitionModifier(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ): Modifier {
-    val sharedModifier = with(sharedTransitionScope) {
-        Modifier.sharedBounds(
-            sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
-            animatedVisibilityScope = animatedVisibilityScope,
-            resizeMode = RemeasureToBounds,
-            clipInOverlayDuringTransition = SharedTransitionOverlayClip.None,
-        )
-    }
+    val sharedModifier =
+        with(sharedTransitionScope) {
+            Modifier.sharedBounds(
+                sharedContentState = rememberSharedContentState(ADD_ENTRY_FAB_SHARED_KEY),
+                animatedVisibilityScope = animatedVisibilityScope,
+                resizeMode = RemeasureToBounds,
+                clipInOverlayDuringTransition = SharedTransitionOverlayClip.None,
+            )
+        }
     return withSharedTransitionVisualOverflow(
         sharedModifier = sharedModifier,
         visualOverflow = AddEntryFabVisualOverflow,

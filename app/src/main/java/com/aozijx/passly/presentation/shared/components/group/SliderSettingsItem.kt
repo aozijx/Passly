@@ -32,66 +32,70 @@ fun sliderSettingsGroupItem(
     valueRange: ClosedFloatingPointRange<Float>,
     steps: Int,
     onValueChange: (Float) -> Unit,
-    onValueChangeFinished: () -> Unit
-): SegmentedSettingsItem = SegmentedSettingsItem(key = key) { shapes ->
-    val boundedValue = value.coerceIn(valueRange)
-    val sliderState = rememberSliderState(
-        value = boundedValue,
-        steps = steps,
-        trackRange = valueRange,
-    )
-    LaunchedEffect(boundedValue) {
-        sliderState.value = boundedValue
-    }
+    onValueChangeFinished: () -> Unit,
+): SegmentedSettingsItem =
+    SegmentedSettingsItem(key = key) { shapes ->
+        val boundedValue = value.coerceIn(valueRange)
+        val sliderState =
+            rememberSliderState(
+                value = boundedValue,
+                steps = steps,
+                trackRange = valueRange,
+            )
+        LaunchedEffect(boundedValue) {
+            sliderState.value = boundedValue
+        }
 
-    SegmentedListItem(
-        shapes = shapes,
-        colors = settingsSegmentedColors(),
-        enabled = enabled,
-        content = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    icon.asLeadingContent()?.let { leadingContent ->
-                        leadingContent()
-                        Spacer(modifier = Modifier.size(16.dp))
+        SegmentedListItem(
+            shapes = shapes,
+            colors = settingsSegmentedColors(),
+            enabled = enabled,
+            content = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        icon.asLeadingContent()?.let { leadingContent ->
+                            leadingContent()
+                            Spacer(modifier = Modifier.size(16.dp))
+                        }
+                        Text(
+                            text = title,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = valueLabel,
+                            style = MaterialTheme.typography.labelLarge,
+                            color =
+                                if (enabled) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
-                    Text(
-                        text = title,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = valueLabel,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (enabled) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                    subtitle?.let {
+                        Text(
+                            text = it,
+                            modifier =
+                                Modifier.padding(
+                                    start = if (icon != null) 40.dp else 0.dp,
+                                ),
+                        )
+                    }
+                    Slider(
+                        state = sliderState,
+                        onValueChange = { updatedValue ->
+                            sliderState.value = updatedValue
+                            onValueChange(updatedValue)
                         },
-                        fontWeight = FontWeight.SemiBold,
+                        onValueChangeFinished = onValueChangeFinished,
+                        enabled = enabled,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                subtitle?.let {
-                    Text(
-                        text = it,
-                        modifier = Modifier.padding(
-                            start = if (icon != null) 40.dp else 0.dp
-                        ),
-                    )
-                }
-                Slider(
-                    state = sliderState,
-                    onValueChange = { updatedValue ->
-                        sliderState.value = updatedValue
-                        onValueChange(updatedValue)
-                    },
-                    onValueChangeFinished = onValueChangeFinished,
-                    enabled = enabled,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-    )
-}
+            },
+        )
+    }

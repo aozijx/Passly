@@ -1,19 +1,19 @@
 package com.aozijx.passly.app.database.backup
 
+import java.nio.file.Files
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.nio.file.Files
 
 class RestoreFileJournalTest {
-
     @Test
     fun rollback_restoresPreviousFileAndRemovesNewFile() {
         val root = Files.createTempDirectory("passly-restore-journal").toFile()
         try {
-            val existing = root.resolve("existing.enc").apply {
-                writeBytes("old".toByteArray())
-            }
+            val existing =
+                root.resolve("existing.enc").apply {
+                    writeBytes("old".toByteArray())
+                }
             val created = root.resolve("created.enc")
             val journal = RestoreFileJournal()
 
@@ -33,9 +33,10 @@ class RestoreFileJournalTest {
     fun commit_keepsReplacementAndDeletesJournalFiles() {
         val root = Files.createTempDirectory("passly-restore-journal").toFile()
         try {
-            val target = root.resolve("attachment.enc").apply {
-                writeBytes("old".toByteArray())
-            }
+            val target =
+                root.resolve("attachment.enc").apply {
+                    writeBytes("old".toByteArray())
+                }
             val journal = RestoreFileJournal()
 
             journal.replace(target, "new".toByteArray())

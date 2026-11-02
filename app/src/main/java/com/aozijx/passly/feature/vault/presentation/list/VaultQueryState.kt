@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.model.entryTypes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -23,13 +23,14 @@ internal data class VaultQueryState(
     val entryTypes: Set<EntryType> = emptySet(),
     val hierarchyMode: EntryHierarchyDisplayMode,
 ) {
-    fun toEntryListQuery() = EntryListQuery(
-        searchText = searchText,
-        entryTypes = entryTypes,
-        category = category,
-        sort = sort,
-        hierarchyMode = hierarchyMode.takeIf { entryTypes.isEmpty() },
-    )
+    fun toEntryListQuery() =
+        EntryListQuery(
+            searchText = searchText,
+            entryTypes = entryTypes,
+            category = category,
+            sort = sort,
+            hierarchyMode = hierarchyMode.takeIf { entryTypes.isEmpty() },
+        )
 
     companion object {
         fun create(
@@ -49,32 +50,32 @@ internal data class VaultQueryState(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal fun <T> Flow<VaultQueryState>.switchQueryGenerations(
-    load: (EntryListQuery) -> Flow<T>,
-): Flow<T> = map(VaultQueryState::toEntryListQuery)
-    .distinctUntilChanged()
-    .flatMapLatest(load)
+internal fun <T> Flow<VaultQueryState>.switchQueryGenerations(load: (EntryListQuery) -> Flow<T>): Flow<T> =
+    map(VaultQueryState::toEntryListQuery)
+        .distinctUntilChanged()
+        .flatMapLatest(load)
 
 @OptIn(FlowPreview::class)
 internal fun buildVaultQueryStates(
     uiStates: Flow<VaultUiState>,
     hierarchyModes: Flow<EntryHierarchyDisplayMode>,
 ): Flow<VaultQueryState> {
-    val effectiveSearch = uiStates
-        .map { state -> state.searchQuery.trim() }
-        .distinctUntilChanged()
-        .debounce(SEARCH_DEBOUNCE_MILLIS)
-        .distinctUntilChanged()
-    val selection = uiStates
-        .mapNotNull { state ->
-            val sort = state.selectedSort ?: return@mapNotNull null
-            VaultQuerySelection(
-                state.selectedCategory,
-                sort,
-                state.selectedFilters.flatMap { it.entryTypes }.toSet(),
-            )
-        }
-        .distinctUntilChanged()
+    val effectiveSearch =
+        uiStates
+            .map { state -> state.searchQuery.trim() }
+            .distinctUntilChanged()
+            .debounce(SEARCH_DEBOUNCE_MILLIS)
+            .distinctUntilChanged()
+    val selection =
+        uiStates
+            .mapNotNull { state ->
+                val sort = state.selectedSort ?: return@mapNotNull null
+                VaultQuerySelection(
+                    state.selectedCategory,
+                    sort,
+                    state.selectedFilters.flatMap { it.entryTypes }.toSet(),
+                )
+            }.distinctUntilChanged()
 
     return combine(
         effectiveSearch,

@@ -38,15 +38,16 @@ fun VaultItemIcon(
     iconName = iconName,
     iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,
-    classificationInput = EntryClassificationInput(
-        entryType = entryType,
-        title = title,
-        username = username,
-        urls = setOfNotNull(associatedDomain),
-        domains = setOfNotNull(associatedDomain),
-        packageNames = setOfNotNull(associatedAppPackage),
-        appNames = setOfNotNull(title.takeIf { associatedAppPackage != null && associatedDomain == null }),
-    ),
+    classificationInput =
+        EntryClassificationInput(
+            entryType = entryType,
+            title = title,
+            username = username,
+            urls = setOfNotNull(associatedDomain),
+            domains = setOfNotNull(associatedDomain),
+            packageNames = setOfNotNull(associatedAppPackage),
+            appNames = setOfNotNull(title.takeIf { associatedAppPackage != null && associatedDomain == null }),
+        ),
     iconColor = iconColor,
     tint = MaterialTheme.colorScheme.onSecondaryContainer,
 )
@@ -62,41 +63,47 @@ private fun VaultItemIcon(
     tint: Color,
 ) {
     val appIconBitmap = rememberInstalledAppIconBitmap(associatedAppPackage)
-    val appIconPainter = remember(appIconBitmap) {
-        appIconBitmap?.let(::BitmapPainter)
-    }
-    val explicitIconVector = remember(iconName) {
-        iconName
-            ?.takeIf { it.isNotBlank() }
-            ?.let(VaultIcons::getIconByName)
-    }
-    val visualCategory = remember(classificationInput) {
-        EntryVisualCategoryClassifier.classify(classificationInput)
-    }
+    val appIconPainter =
+        remember(appIconBitmap) {
+            appIconBitmap?.let(::BitmapPainter)
+        }
+    val explicitIconVector =
+        remember(iconName) {
+            iconName
+                ?.takeIf { it.isNotBlank() }
+                ?.let(VaultIcons::getIconByName)
+        }
+    val visualCategory =
+        remember(classificationInput) {
+            EntryVisualCategoryClassifier.classify(classificationInput)
+        }
     val fallbackIconVector = explicitIconVector ?: VaultIcons.getIconByCategory(visualCategory)
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
     val customModel = remember(iconCustomPath) { toLocalIconImageModel(iconCustomPath) }
-    val resolvedTint = if (explicitIconVector != null && customModel == null) {
-        iconColorForStorageToken(iconColor, tint)
-    } else {
-        tint
-    }
+    val resolvedTint =
+        if (explicitIconVector != null && customModel == null) {
+            iconColorForStorageToken(iconColor, tint)
+        } else {
+            tint
+        }
     Box(
-        modifier = modifier.size(36.dp), contentAlignment = Alignment.Center
+        modifier = modifier.size(36.dp),
+        contentAlignment = Alignment.Center,
     ) {
         when {
             customModel != null -> {
                 AsyncImage(
                     model = customModel,
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
                     contentScale = ContentScale.Fit,
                     placeholder = placeholderPainter,
-                    error = placeholderPainter
+                    error = placeholderPainter,
                 )
             }
 
@@ -104,10 +111,11 @@ private fun VaultItemIcon(
                 Image(
                     painter = appIconPainter,
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Fit
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                    contentScale = ContentScale.Fit,
                 )
             }
 
@@ -116,7 +124,7 @@ private fun VaultItemIcon(
                     imageVector = fallbackIconVector,
                     contentDescription = null,
                     tint = resolvedTint,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }

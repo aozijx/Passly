@@ -1,13 +1,15 @@
 package com.aozijx.passly.feature.backup.presentation.ui.model
 
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.ImportMode
-import com.aozijx.passly.domain.entry.model.EntryType
 
 internal sealed interface BackupRestoreSheetUiState {
     data object Hidden : BackupRestoreSheetUiState
+
     data object FormatPicker : BackupRestoreSheetUiState
+
     data class ExportOptions(
         val configuredDirectoryLabel: String?,
         val password: String,
@@ -18,6 +20,7 @@ internal sealed interface BackupRestoreSheetUiState {
         val includedEntryTypes: Set<EntryType>,
         val canSubmit: Boolean,
     ) : BackupRestoreSheetUiState
+
     data class ImportOptions(
         val password: String,
         val mode: ImportMode,

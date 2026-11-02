@@ -23,19 +23,19 @@ fun EmptyVaultPlaceholder() {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             Icons.Default.Lock,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.secondaryContainer
+            tint = MaterialTheme.colorScheme.secondaryContainer,
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.vault_empty_placeholder),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.outline
+            color = MaterialTheme.colorScheme.outline,
         )
     }
 }

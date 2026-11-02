@@ -9,5 +9,6 @@ fun interface PermissionStatusReader {
 
 interface PermissionRequestHistory {
     fun wasRequested(permission: RuntimePermission): Boolean
+
     fun markRequested(permission: RuntimePermission)
 }

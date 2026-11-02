@@ -4,25 +4,25 @@ import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationManager
-import com.aozijx.passly.domain.access.port.AuthenticationRequester
-import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.DatabaseResetSessionCoordinator
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
 import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
-import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
 import com.aozijx.passly.security.authentication.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
 import com.aozijx.passly.security.authentication.DefaultRecoveryCredentialGenerator
-import com.aozijx.passly.security.authentication.RecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.KdfRunner
+import com.aozijx.passly.security.authentication.RecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.SingleThreadKdfRunner
 import com.aozijx.passly.security.authentication.VaultSessionController
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioner
@@ -42,98 +42,67 @@ import javax.inject.Singleton
 internal abstract class AuthenticationModule {
     @Binds
     @Singleton
-    abstract fun bindAutofillInboxKeyProvisioning(
-        implementation: AutofillInboxKeyProvisioner,
-    ): AutofillInboxKeyProvisioning
+    abstract fun bindAutofillInboxKeyProvisioning(implementation: AutofillInboxKeyProvisioner): AutofillInboxKeyProvisioning
 
     @Binds
     @Singleton
-    abstract fun bindAutofillInboxQueue(
-        implementation: AutofillInboxQueueWriter,
-    ): AutofillInboxQueue
+    abstract fun bindAutofillInboxQueue(implementation: AutofillInboxQueueWriter): AutofillInboxQueue
 
     @Binds
     @Singleton
-    abstract fun bindAuthenticationRuntimeMaintenance(
-        impl: BiometricRotationReconciler,
-    ): AuthenticationRuntimeMaintenance
+    abstract fun bindAuthenticationRuntimeMaintenance(impl: BiometricRotationReconciler): AuthenticationRuntimeMaintenance
 
     @Binds
     @Singleton
-    abstract fun bindAuthenticationRequester(
-        impl: DefaultAuthenticationManager,
-    ): AuthenticationRequester
+    abstract fun bindAuthenticationRequester(impl: DefaultAuthenticationManager): AuthenticationRequester
 
     @Binds
     @Singleton
-    abstract fun bindAuthenticationManager(
-        impl: DefaultAuthenticationManager,
-    ): AuthenticationManager
+    abstract fun bindAuthenticationManager(impl: DefaultAuthenticationManager): AuthenticationManager
 
     @Binds
     @Singleton
-    abstract fun bindSessionLockController(
-        impl: DefaultAuthenticationManager,
-    ): SessionLockController
+    abstract fun bindSessionLockController(impl: DefaultAuthenticationManager): SessionLockController
 
     @Binds
     @Singleton
-    abstract fun bindAuthenticationMethodAvailability(
-        impl: DefaultAuthenticationManager,
-    ): AuthenticationMethodAvailability
+    abstract fun bindAuthenticationMethodAvailability(impl: DefaultAuthenticationManager): AuthenticationMethodAvailability
 
     @Binds
     @Singleton
-    abstract fun bindAuthenticationMethodProvisioner(
-        impl: DefaultAuthenticationMethodProvisioner,
-    ): AuthenticationMethodProvisioner
+    abstract fun bindAuthenticationMethodProvisioner(impl: DefaultAuthenticationMethodProvisioner): AuthenticationMethodProvisioner
 
     @Binds
     @Singleton
-    abstract fun bindRecoveryCredentialFactory(
-        impl: DefaultRecoveryCodeDraftFactory,
-    ): RecoveryCredentialFactory
+    abstract fun bindRecoveryCredentialFactory(impl: DefaultRecoveryCodeDraftFactory): RecoveryCredentialFactory
 
     @Binds
     @Singleton
-    abstract fun bindRecoveryCredentialGenerator(
-        impl: DefaultRecoveryCredentialGenerator,
-    ): RecoveryCredentialGenerator
+    abstract fun bindRecoveryCredentialGenerator(impl: DefaultRecoveryCredentialGenerator): RecoveryCredentialGenerator
 
     @Binds
     @Singleton
-    abstract fun bindSecureSessionAccessState(
-        impl: VaultSessionController,
-    ): SecureSessionAccessState
+    abstract fun bindSecureSessionAccessState(impl: VaultSessionController): SecureSessionAccessState
 
     @Binds
     @Singleton
-    abstract fun bindSessionActivityReporter(
-        impl: VaultSessionController,
-    ): SessionActivityReporter
+    abstract fun bindSessionActivityReporter(impl: VaultSessionController): SessionActivityReporter
 
     @Binds
     @Singleton
-    abstract fun bindSessionVisibilityController(
-        impl: VaultSessionController,
-    ): SessionVisibilityController
+    abstract fun bindSessionVisibilityController(impl: VaultSessionController): SessionVisibilityController
 
     @Binds
     @Singleton
-    abstract fun bindDatabaseSessionFailureState(
-        impl: VaultSessionController,
-    ): DatabaseSessionFailureState
-    @Binds
-    @Singleton
-    abstract fun bindDatabaseSessionRecovery(
-        impl: VaultSessionController,
-    ): DatabaseSessionRecovery
+    abstract fun bindDatabaseSessionFailureState(impl: VaultSessionController): DatabaseSessionFailureState
 
     @Binds
     @Singleton
-    abstract fun bindDatabaseResetSessionCoordinator(
-        impl: VaultSessionController,
-    ): DatabaseResetSessionCoordinator
+    abstract fun bindDatabaseSessionRecovery(impl: VaultSessionController): DatabaseSessionRecovery
+
+    @Binds
+    @Singleton
+    abstract fun bindDatabaseResetSessionCoordinator(impl: VaultSessionController): DatabaseResetSessionCoordinator
 
     companion object {
         @Provides

@@ -17,20 +17,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
+import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.list.action.VaultCopyRequest
 import com.aozijx.passly.feature.vault.presentation.list.action.handleSwipeAction
 import com.aozijx.passly.feature.vault.presentation.list.action.resolveCopyRequest
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiState
-import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
+import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultScreen
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
@@ -66,32 +66,38 @@ internal fun VaultRoute(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayState by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
-    val vaultDisplayConfig = when (val state = vaultDisplayState) {
-        VaultDisplayUiState.Loading -> return
-        is VaultDisplayUiState.Ready -> state
-    }
+    val vaultDisplayConfig =
+        when (val state = vaultDisplayState) {
+            VaultDisplayUiState.Loading -> return
+            is VaultDisplayUiState.Ready -> state
+        }
 
-    val display = remember(vaultDisplayConfig) {
-        VaultListDisplayUiModel(
-            cardPresentations = vaultDisplayConfig.style.entryCardPresentations.map {
-                it.toUiModel()
-            },
-            swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
-            swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
-            isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
-            isPullToSearchEnabled = vaultDisplayConfig.interaction.isPullToSearchEnabled,
-            collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-            collapseQuickFilterBarOnScroll =
-                vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
-            hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
-        )
-    }
+    val display =
+        remember(vaultDisplayConfig) {
+            VaultListDisplayUiModel(
+                cardPresentations =
+                    vaultDisplayConfig.style.entryCardPresentations.map {
+                        it.toUiModel()
+                    },
+                swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
+                swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
+                isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
+                isPullToSearchEnabled = vaultDisplayConfig.interaction.isPullToSearchEnabled,
+                collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
+                collapseQuickFilterBarOnScroll =
+                    vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
+                hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
+            )
+        }
     val renderState = uiState.toUiModel(display) ?: return
     val onItemAction: (VaultListItemAction) -> Unit = { action ->
         when (action) {
-            is VaultListItemAction.Clicked -> navigation.navigate(
-                VaultDestinationRequest.OpenDetail(action.item.id),
-            )
+            is VaultListItemAction.Clicked -> {
+                navigation.navigate(
+                    VaultDestinationRequest.OpenDetail(action.item.id),
+                )
+            }
+
             is VaultListItemAction.Swiped -> {
                 val item = action.item
                 handleSwipeAction(
@@ -102,28 +108,33 @@ internal fun VaultRoute(
                     },
                     onCopy = { fieldKey ->
                         when (val request = resolveCopyRequest(item, fieldKey)) {
-                            is VaultCopyRequest.Field -> vaultViewModel.onAction(
-                                VaultUiAction.CopyField(
-                                    entryId = request.entryId,
-                                    entryType = request.entryType,
-                                    fieldKey = request.fieldKey,
-                                ),
-                            )
+                            is VaultCopyRequest.Field -> {
+                                vaultViewModel.onAction(
+                                    VaultUiAction.CopyField(
+                                        entryId = request.entryId,
+                                        entryType = request.entryType,
+                                        fieldKey = request.fieldKey,
+                                    ),
+                                )
+                            }
 
-                            is VaultCopyRequest.Otp -> vaultViewModel.onAction(
-                                VaultUiAction.CopyOtp(request.entryId),
-                            )
+                            is VaultCopyRequest.Otp -> {
+                                vaultViewModel.onAction(
+                                    VaultUiAction.CopyOtp(request.entryId),
+                                )
+                            }
                         }
                     },
                 )
             }
         }
     }
-    val otpStateProvider = rememberVaultOtpStateProvider(
-        states = vaultViewModel.totpStatesFlow,
-        onSubscribe = vaultViewModel::subscribeVisibleOtp,
-        onUnsubscribe = vaultViewModel::unsubscribeVisibleOtp,
-    )
+    val otpStateProvider =
+        rememberVaultOtpStateProvider(
+            states = vaultViewModel.totpStatesFlow,
+            onSubscribe = vaultViewModel::subscribeVisibleOtp,
+            onUnsubscribe = vaultViewModel::unsubscribeVisibleOtp,
+        )
 
     VaultSystemBarsEffect(
         scrollBehavior = scrollBehavior,
@@ -133,14 +144,22 @@ internal fun VaultRoute(
     val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
     LaunchedEffect(vaultViewModel, lifecycle, context, resources, totpLabel, fieldCopiedFormat) {
         collectPageEffects(lifecycle, vaultViewModel.effects) { effect ->
-            val message = when (effect) {
-                is VaultEffect.ShowError -> resources.getString(effect.message.resourceId)
-                is VaultEffect.FieldCopied -> fieldCopiedFormat.format(
-                    resources.getString(effect.fieldKey.copyLabelRes()),
-                )
+            val message =
+                when (effect) {
+                    is VaultEffect.ShowError -> {
+                        resources.getString(effect.message.resourceId)
+                    }
 
-                VaultEffect.OtpCopied -> fieldCopiedFormat.format(totpLabel)
-            }
+                    is VaultEffect.FieldCopied -> {
+                        fieldCopiedFormat.format(
+                            resources.getString(effect.fieldKey.copyLabelRes()),
+                        )
+                    }
+
+                    VaultEffect.OtpCopied -> {
+                        fieldCopiedFormat.format(totpLabel)
+                    }
+                }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -156,7 +175,10 @@ internal fun VaultRoute(
         onAction = vaultViewModel::onAction,
         onRouteRequest = { request ->
             when (request) {
-                VaultRouteRequest.OpenScanner -> overlay = VaultOverlay.Scanner
+                VaultRouteRequest.OpenScanner -> {
+                    overlay = VaultOverlay.Scanner
+                }
+
                 VaultRouteRequest.OpenSettings -> {
                     navigation.navigate(VaultDestinationRequest.OpenSettings)
                 }
@@ -168,32 +190,41 @@ internal fun VaultRoute(
     )
 
     when (overlay) {
-        VaultOverlay.None -> Unit
-        VaultOverlay.Scanner -> ScannerRoute(
-            purpose = ScannerPurpose.General,
-            onImport = { scannerImport ->
-                when (scannerImport) {
-                    is ScannerImport.Otp -> {
-                        if (scannedOtpImportViewModel.importScannedOtp(scannerImport.config)) {
-                            ScannerImportHandlingResult.Applied
-                        } else {
-                            ScannerImportHandlingResult.Rejected
+        VaultOverlay.None -> {
+            Unit
+        }
+
+        VaultOverlay.Scanner -> {
+            ScannerRoute(
+                purpose = ScannerPurpose.General,
+                onImport = { scannerImport ->
+                    when (scannerImport) {
+                        is ScannerImport.Otp -> {
+                            if (scannedOtpImportViewModel.importScannedOtp(scannerImport.config)) {
+                                ScannerImportHandlingResult.Applied
+                            } else {
+                                ScannerImportHandlingResult.Rejected
+                            }
+                        }
+
+                        is ScannerImport.Wifi -> {
+                            when (
+                                navigation.navigate(
+                                    VaultDestinationRequest.EditScannedWifi(scannerImport.payload),
+                                )
+                            ) {
+                                VaultNavigationResult.Navigated -> ScannerImportHandlingResult.Applied
+
+                                VaultNavigationResult.UnsupportedDestination,
+                                VaultNavigationResult.AccessDenied,
+                                -> ScannerImportHandlingResult.Rejected
+                            }
                         }
                     }
-                    is ScannerImport.Wifi -> when (
-                        navigation.navigate(
-                            VaultDestinationRequest.EditScannedWifi(scannerImport.payload),
-                        )
-                    ) {
-                        VaultNavigationResult.Navigated -> ScannerImportHandlingResult.Applied
-                        VaultNavigationResult.UnsupportedDestination,
-                        VaultNavigationResult.AccessDenied,
-                        -> ScannerImportHandlingResult.Rejected
-                    }
-                }
-            },
-            onDismiss = { overlay = VaultOverlay.None },
-        )
+                },
+                onDismiss = { overlay = VaultOverlay.None },
+            )
+        }
     }
 }
 

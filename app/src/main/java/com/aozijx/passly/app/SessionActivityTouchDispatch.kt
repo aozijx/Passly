@@ -7,7 +7,10 @@ import com.aozijx.passly.domain.access.port.SessionActivityReporter
 internal class SessionActivityTouchDispatch(
     private val sessionActivityReporter: SessionActivityReporter,
 ) {
-    fun deliver(actionMasked: Int, deliverToContent: () -> Boolean): Boolean {
+    fun deliver(
+        actionMasked: Int,
+        deliverToContent: () -> Boolean,
+    ): Boolean {
         if (actionMasked == MotionEvent.ACTION_DOWN) {
             sessionActivityReporter.onUserInteraction()
         }

@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
-import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -9,10 +9,11 @@ import org.junit.Test
 class TrashReducerTest {
     @Test
     fun `entry operation clears error and owns busy entry`() {
-        val started = TrashReducer.reduce(
-            TrashUiState(operation = TrashOperationState.Failed(UiErrorMessage(R.string.trash_error_command))),
-            TrashMutation.EntryActionStarted("entry-1"),
-        )
+        val started =
+            TrashReducer.reduce(
+                TrashUiState(operation = TrashOperationState.Failed(UiErrorMessage(R.string.trash_error_command))),
+                TrashMutation.EntryActionStarted("entry-1"),
+            )
         val finished = TrashReducer.reduce(started, TrashMutation.EntryActionFinished)
 
         assertEquals(TrashOperationState.Entry("entry-1"), started.operation)

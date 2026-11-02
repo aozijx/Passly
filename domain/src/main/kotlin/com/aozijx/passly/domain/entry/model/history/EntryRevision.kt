@@ -3,13 +3,15 @@ package com.aozijx.passly.domain.entry.model.history
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 @JvmInline
-value class EntryRevisionId(val value: String) {
+value class EntryRevisionId(
+    val value: String,
+) {
     init {
         require(value.isNotBlank()) { "Entry revision ID cannot be blank" }
     }

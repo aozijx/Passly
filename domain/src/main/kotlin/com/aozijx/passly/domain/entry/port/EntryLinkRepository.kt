@@ -8,9 +8,14 @@ import kotlinx.coroutines.flow.Flow
 
 interface EntryLinkRepository {
     fun observeAll(): Flow<List<EntryLink>>
+
     fun observeLinks(entryId: EntryId): Flow<List<EntryLink>>
+
     suspend fun getAll(): List<EntryLink>
+
     suspend fun getLinks(entryId: EntryId): List<EntryLink>
+
     suspend fun upsert(link: EntryLink): AppResult<Unit>
+
     suspend fun delete(linkId: EntryLinkId): AppResult<Unit>
 }

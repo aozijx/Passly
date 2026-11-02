@@ -32,28 +32,31 @@ interface VaultCardStyleComponent {
 }
 
 internal object CardStylePreviewFixtures {
-    val defaultEntry = previewEntry(
-        id = "-100",
-        title = "示例账号",
-        username = "demo_user",
-        associatedDomain = "example.com",
-    )
+    val defaultEntry =
+        previewEntry(
+            id = "-100",
+            title = "示例账号",
+            username = "demo_user",
+            associatedDomain = "example.com",
+        )
 
-    val passwordEntry = previewEntry(
-        id = "-101",
-        title = "我的邮箱",
-        username = "me@example.com",
-        associatedDomain = "example.com",
-        hasPassword = true,
-    )
+    val passwordEntry =
+        previewEntry(
+            id = "-101",
+            title = "我的邮箱",
+            username = "me@example.com",
+            associatedDomain = "example.com",
+            hasPassword = true,
+        )
 
-    val totpEntry = previewEntry(
-        id = "-102",
-        title = "示例二步验证",
-        username = "totp_user",
-        hasOtp = true,
-        otpKind = VaultOtpKindUiModel.STANDARD,
-    )
+    val totpEntry =
+        previewEntry(
+            id = "-102",
+            title = "示例二步验证",
+            username = "totp_user",
+            hasOtp = true,
+            otpKind = VaultOtpKindUiModel.STANDARD,
+        )
 
     private fun previewEntry(
         id: String,

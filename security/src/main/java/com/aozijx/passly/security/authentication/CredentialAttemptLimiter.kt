@@ -9,7 +9,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CredentialAttemptLimiter internal constructor(
-    private val clock: () -> Long
+    private val clock: () -> Long,
 ) {
     @Inject
     constructor() : this(System::currentTimeMillis)
@@ -19,7 +19,7 @@ class CredentialAttemptLimiter internal constructor(
     @Synchronized
     fun beforeAttempt(
         method: AuthenticationMethod,
-        request: AuthenticationRequest
+        request: AuthenticationRequest,
     ): AuthenticationFailure? {
         val state = states[method] ?: return null
         val now = clock()
@@ -34,18 +34,20 @@ class CredentialAttemptLimiter internal constructor(
     @Synchronized
     fun recordIncorrect(
         method: AuthenticationMethod,
-        request: AuthenticationRequest
+        request: AuthenticationRequest,
     ): AuthenticationFailure {
         val previous = states[method]
         val now = clock()
-        val lockedOutExpired = previous != null &&
-            previous.lockedUntilMs > 0L &&
-            previous.lockedUntilMs <= now
-        val attempts = if (previous == null || lockedOutExpired) {
-            1
-        } else {
-            previous.attemptCount + 1
-        }.coerceAtMost(MAX_ATTEMPTS)
+        val lockedOutExpired =
+            previous != null &&
+                previous.lockedUntilMs > 0L &&
+                previous.lockedUntilMs <= now
+        val attempts =
+            if (previous == null || lockedOutExpired) {
+                1
+            } else {
+                previous.attemptCount + 1
+            }.coerceAtMost(MAX_ATTEMPTS)
         val lockedUntil = if (attempts >= MAX_ATTEMPTS) now + LOCKOUT_MS else 0L
         val state = AttemptState(attemptCount = attempts, lockedUntilMs = lockedUntil)
         states[method] = state
@@ -56,10 +58,11 @@ class CredentialAttemptLimiter internal constructor(
                 code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
                 requestId = request.id,
                 method = method,
-                attempts = com.aozijx.passly.domain.access.model.AttemptStatus(
-                    used = attempts,
-                    limit = MAX_ATTEMPTS,
-                ),
+                attempts =
+                    com.aozijx.passly.domain.access.model.AttemptStatus(
+                        used = attempts,
+                        limit = MAX_ATTEMPTS,
+                    ),
             )
         }
     }
@@ -73,21 +76,22 @@ class CredentialAttemptLimiter internal constructor(
         method: AuthenticationMethod,
         request: AuthenticationRequest,
         state: AttemptState,
-        nowMs: Long
+        nowMs: Long,
     ) = AuthenticationFailure(
         code = AuthenticationFailureCode.RATE_LIMITED,
         requestId = request.id,
         method = method,
-        attempts = com.aozijx.passly.domain.access.model.AttemptStatus(
-            used = state.attemptCount,
-            limit = MAX_ATTEMPTS,
-        ),
-        retryAfterMs = (state.lockedUntilMs - nowMs).coerceAtLeast(0L)
+        attempts =
+            com.aozijx.passly.domain.access.model.AttemptStatus(
+                used = state.attemptCount,
+                limit = MAX_ATTEMPTS,
+            ),
+        retryAfterMs = (state.lockedUntilMs - nowMs).coerceAtLeast(0L),
     )
 
     private data class AttemptState(
         val attemptCount: Int,
-        val lockedUntilMs: Long
+        val lockedUntilMs: Long,
     )
 
     companion object {

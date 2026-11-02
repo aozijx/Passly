@@ -12,44 +12,55 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class AndroidBackupFileStore @Inject constructor(
-    @param:ApplicationContext private val context: Context
-) : BackupFileStore {
+internal class AndroidBackupFileStore
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : BackupFileStore {
+        private fun openInputStream(uri: String): InputStream {
+            val parsed = uri.toUri()
+            return try {
+                context.contentResolver.openInputStream(parsed)
+                    ?: throw BackupFailed()
+            } catch (_: SecurityException) {
+                throw BackupFailed()
+            } catch (_: FileNotFoundException) {
+                throw BackupFailed()
+            }
+        }
 
-    private fun openInputStream(uri: String): InputStream {
-        val parsed = uri.toUri()
-        return try {
-            context.contentResolver.openInputStream(parsed)
-                ?: throw BackupFailed()
-        } catch (_: SecurityException) {
-            throw BackupFailed()
-        } catch (_: FileNotFoundException) {
-            throw BackupFailed()
+        private fun openOutputStream(uri: String): OutputStream {
+            val parsed = uri.toUri()
+            return try {
+                context.contentResolver.openOutputStream(parsed, "rwt")
+                    ?: throw BackupFailed()
+            } catch (_: SecurityException) {
+                throw BackupFailed()
+            } catch (_: FileNotFoundException) {
+                throw BackupFailed()
+            }
+        }
+
+        override fun writeBytes(
+            uri: String,
+            data: ByteArray,
+        ) {
+            openOutputStream(uri).use {
+                it.write(data)
+                it.flush()
+            }
+        }
+
+        override fun readBytesSafely(
+            uri: String,
+            maxBytes: Long,
+        ): ByteArray {
+            val stream = openInputStream(uri)
+            return stream.use { input ->
+                val limited =
+                    com.aozijx.passly.feature.backup.internal.archive.io
+                        .LimitedInputStream(input, maxBytes)
+                limited.readBytes()
+            }
         }
     }
-
-    private fun openOutputStream(uri: String): OutputStream {
-        val parsed = uri.toUri()
-        return try {
-            context.contentResolver.openOutputStream(parsed, "rwt")
-                ?: throw BackupFailed()
-        } catch (_: SecurityException) {
-            throw BackupFailed()
-        } catch (_: FileNotFoundException) {
-            throw BackupFailed()
-        }
-    }
-
-    override fun writeBytes(uri: String, data: ByteArray) {
-        openOutputStream(uri).use { it.write(data); it.flush() }
-    }
-
-    override fun readBytesSafely(uri: String, maxBytes: Long): ByteArray {
-        val stream = openInputStream(uri)
-        return stream.use { input ->
-            val limited = com.aozijx.passly.feature.backup.internal.archive.io.LimitedInputStream(input, maxBytes)
-            limited.readBytes()
-        }
-    }
-
-}

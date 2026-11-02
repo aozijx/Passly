@@ -7,7 +7,7 @@ data class ResolvedNotice(
     val eventId: String,
     val title: String,
     val text: String,
-    val level: NoticeLevel
+    val level: NoticeLevel,
 )
 
 fun interface NoticeTextResolver {

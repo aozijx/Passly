@@ -16,14 +16,14 @@ class SensitiveRevisionRestorePolicyTest {
                 authorizedFields = historical,
                 currentFields = current,
                 historicalFields = historical,
-            )
+            ),
         )
         assertTrue(
             SensitiveRevisionRestorePolicy.isExactAuthorization(
                 authorizedFields = current + historical,
                 currentFields = current,
                 historicalFields = historical,
-            )
+            ),
         )
     }
 
@@ -34,7 +34,7 @@ class SensitiveRevisionRestorePolicyTest {
                 authorizedFields = emptySet(),
                 currentFields = emptySet(),
                 historicalFields = emptySet(),
-            )
+            ),
         )
     }
 }

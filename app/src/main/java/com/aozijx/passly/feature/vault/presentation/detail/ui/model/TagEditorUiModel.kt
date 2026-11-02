@@ -18,6 +18,7 @@ sealed interface DetailTagEditorUiModel {
 
 sealed interface TagEditorOverlayUiState {
     data object None : TagEditorOverlayUiState
+
     data object ConfirmDiscard : TagEditorOverlayUiState
 }
 

@@ -20,65 +20,76 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class RoomAutofillCredentialResolver @Inject constructor(
-    private val databaseSession: AppDatabaseSession,
-    private val sessionState: SecureSessionAccessState,
-    private val secretFieldStore: SecretFieldStore,
-) : AutofillCredentialResolver {
-    override suspend fun resolve(
-        selection: AutofillCredentialSelection,
-    ): AutofillCredentialResolution {
-        if (!sessionState.hasAutofillSessionAccess()) {
-            return AutofillCredentialResolution.NotFound
-        }
-        return databaseSession.query {
-            val entity = entryQueryDao().getById(selection.entryId.value)
-            if (entity == null || entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
-                return@query resolveAutofillCredential(entity, password = null, otpCode = null)
+internal class RoomAutofillCredentialResolver
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+        private val sessionState: SecureSessionAccessState,
+        private val secretFieldStore: SecretFieldStore,
+    ) : AutofillCredentialResolver {
+        override suspend fun resolve(selection: AutofillCredentialSelection): AutofillCredentialResolution {
+            if (!sessionState.hasAutofillSessionAccess()) {
+                return AutofillCredentialResolution.NotFound
             }
-            val password = secretFieldStore.readField(
-                db = this,
-                entryId = entity.entryId,
-                key = SensitiveFieldKey.PASSWORD,
-            )
-            val otpCode = if (selection.includeOtp) {
-                val otpEntryId = findLinkedOtpEntryId(
-                    loginEntryId = entity.entryId,
-                    links = entryLinkQueryDao().getByEntryId(entity.entryId),
-                )
-                otpEntryId?.let { linkedEntryId ->
-                    val otpEntity = entryQueryDao().getById(linkedEntryId)
-                    if (
-                        otpEntity == null ||
-                        otpEntity.deletedAt != null ||
-                        otpEntity.entryType != EntryType.OTP
-                    ) {
-                        return@let null
-                    }
-                    val config = secretFieldStore.readBundle(
-                        this, linkedEntryId, otpEntity.entryType,
-                    ).otp?.config
-                    val secret = secretFieldStore.readField(
-                        db = this,
-                        entryId = linkedEntryId,
-                        key = SensitiveFieldKey.OTP_SECRET,
-                    )
-                    generateAutofillOtpCode(true, config, secret)
+            return databaseSession.query {
+                val entity = entryQueryDao().getById(selection.entryId.value)
+                if (entity == null || entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
+                    return@query resolveAutofillCredential(entity, password = null, otpCode = null)
                 }
-            } else {
-                null
+                val password =
+                    secretFieldStore.readField(
+                        db = this,
+                        entryId = entity.entryId,
+                        key = SensitiveFieldKey.PASSWORD,
+                    )
+                val otpCode =
+                    if (selection.includeOtp) {
+                        val otpEntryId =
+                            findLinkedOtpEntryId(
+                                loginEntryId = entity.entryId,
+                                links = entryLinkQueryDao().getByEntryId(entity.entryId),
+                            )
+                        otpEntryId?.let { linkedEntryId ->
+                            val otpEntity = entryQueryDao().getById(linkedEntryId)
+                            if (
+                                otpEntity == null ||
+                                otpEntity.deletedAt != null ||
+                                otpEntity.entryType != EntryType.OTP
+                            ) {
+                                return@let null
+                            }
+                            val config =
+                                secretFieldStore
+                                    .readBundle(
+                                        this,
+                                        linkedEntryId,
+                                        otpEntity.entryType,
+                                    ).otp
+                                    ?.config
+                            val secret =
+                                secretFieldStore.readField(
+                                    db = this,
+                                    entryId = linkedEntryId,
+                                    key = SensitiveFieldKey.OTP_SECRET,
+                                )
+                            generateAutofillOtpCode(true, config, secret)
+                        }
+                    } else {
+                        null
+                    }
+                resolveAutofillCredential(entity, password = password, otpCode = otpCode)
             }
-            resolveAutofillCredential(entity, password = password, otpCode = otpCode)
         }
     }
-}
 
 internal fun findLinkedOtpEntryId(
     loginEntryId: String,
     links: List<EntryLinkEntity>,
-): String? = links.firstOrNull {
-    it.relationType == EntryRelationType.OTP_FOR && it.targetEntryId == loginEntryId
-}?.sourceEntryId
+): String? =
+    links
+        .firstOrNull {
+            it.relationType == EntryRelationType.OTP_FOR && it.targetEntryId == loginEntryId
+        }?.sourceEntryId
 
 internal fun generateAutofillOtpCode(
     includeOtp: Boolean,
@@ -88,10 +99,11 @@ internal fun generateAutofillOtpCode(
 ): String? {
     if (!includeOtp || config == null || secret.isNullOrBlank()) return null
     return when (
-        val result = OtpGenerator.generate(
-            config = config.copy(secret = secret),
-            timestamp = timestampSeconds,
-        )
+        val result =
+            OtpGenerator.generate(
+                config = config.copy(secret = secret),
+                timestamp = timestampSeconds,
+            )
     ) {
         is OtpResult.Success -> result.code
         is OtpResult.Failure -> null

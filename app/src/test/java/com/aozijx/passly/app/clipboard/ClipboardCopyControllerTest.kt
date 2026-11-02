@@ -18,65 +18,73 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClipboardCopyControllerTest {
-
     @Test
-    fun `enabled policy schedules configured delay`() = runTest {
-        val clipboard = RecordingClipboard()
-        val controller = ClipboardCopyController(
-            settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 60)),
-            secureClipboard = clipboard,
-        )
+    fun `enabled policy schedules configured delay`() =
+        runTest {
+            val clipboard = RecordingClipboard()
+            val controller =
+                ClipboardCopyController(
+                    settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 60)),
+                    secureClipboard = clipboard,
+                )
 
-        controller.writeSensitive("secret")
+            controller.writeSensitive("secret")
 
-        assertEquals("secret" to 60, clipboard.lastCopy)
-    }
-
-    @Test
-    fun `disabled policy copies without scheduling clear`() = runTest {
-        val clipboard = RecordingClipboard()
-        val controller = ClipboardCopyController(
-            settingsSource = FakeSecuritySettingsSource(policy(enabled = false, delay = 15)),
-            secureClipboard = clipboard,
-        )
-
-        controller.writeSensitive("secret")
-
-        assertEquals("secret" to null, clipboard.lastCopy)
-    }
-
-    @Test
-    fun `conditional copy rechecks caller state after loading clipboard policy`() = runTest {
-        val policyReadStarted = CompletableDeferred<Unit>()
-        val providePolicy = CompletableDeferred<SecuritySettings>()
-        val source = object : SecuritySettingsSource {
-            override val security: Flow<SecuritySettings> = flow {
-                policyReadStarted.complete(Unit)
-                emit(providePolicy.await())
-            }
+            assertEquals("secret" to 60, clipboard.lastCopy)
         }
-        val clipboard = RecordingClipboard()
-        val controller = ClipboardCopyController(source, clipboard)
-        var canWrite = true
-        val pendingCopy = async {
-            controller.writeSensitiveIf("secret") { canWrite }
+
+    @Test
+    fun `disabled policy copies without scheduling clear`() =
+        runTest {
+            val clipboard = RecordingClipboard()
+            val controller =
+                ClipboardCopyController(
+                    settingsSource = FakeSecuritySettingsSource(policy(enabled = false, delay = 15)),
+                    secureClipboard = clipboard,
+                )
+
+            controller.writeSensitive("secret")
+
+            assertEquals("secret" to null, clipboard.lastCopy)
         }
-        policyReadStarted.await()
 
-        canWrite = false
-        providePolicy.complete(policy(enabled = true, delay = 60))
+    @Test
+    fun `conditional copy rechecks caller state after loading clipboard policy`() =
+        runTest {
+            val policyReadStarted = CompletableDeferred<Unit>()
+            val providePolicy = CompletableDeferred<SecuritySettings>()
+            val source =
+                object : SecuritySettingsSource {
+                    override val security: Flow<SecuritySettings> =
+                        flow {
+                            policyReadStarted.complete(Unit)
+                            emit(providePolicy.await())
+                        }
+                }
+            val clipboard = RecordingClipboard()
+            val controller = ClipboardCopyController(source, clipboard)
+            var canWrite = true
+            val pendingCopy =
+                async {
+                    controller.writeSensitiveIf("secret") { canWrite }
+                }
+            policyReadStarted.await()
 
-        assertFalse(pendingCopy.await())
-        assertNull(clipboard.lastCopy)
-    }
+            canWrite = false
+            providePolicy.complete(policy(enabled = true, delay = 60))
+
+            assertFalse(pendingCopy.await())
+            assertNull(clipboard.lastCopy)
+        }
 
     @Test
     fun `owned clipboard clear reports success`() {
         val clipboard = RecordingClipboard(ClipboardClearResult.Cleared)
-        val controller = ClipboardCopyController(
-            settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 30)),
-            secureClipboard = clipboard,
-        )
+        val controller =
+            ClipboardCopyController(
+                settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 30)),
+                secureClipboard = clipboard,
+            )
 
         assertTrue(controller.clearOwned())
     }
@@ -84,18 +92,25 @@ class ClipboardCopyControllerTest {
     @Test
     fun `unowned clipboard clear reports no change`() {
         val clipboard = RecordingClipboard(ClipboardClearResult.NotOwned)
-        val controller = ClipboardCopyController(
-            settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 30)),
-            secureClipboard = clipboard,
-        )
+        val controller =
+            ClipboardCopyController(
+                settingsSource = FakeSecuritySettingsSource(policy(enabled = true, delay = 30)),
+                secureClipboard = clipboard,
+            )
 
         assertFalse(controller.clearOwned())
     }
-    private fun policy(enabled: Boolean, delay: Int) = SecuritySettings(
+
+    private fun policy(
+        enabled: Boolean,
+        delay: Int,
+    ) = SecuritySettings(
         clipboardClearPolicy = ClipboardClearPolicy(enabled, delay),
     )
 
-    private class FakeSecuritySettingsSource(settings: SecuritySettings) : SecuritySettingsSource {
+    private class FakeSecuritySettingsSource(
+        settings: SecuritySettings,
+    ) : SecuritySettingsSource {
         override val security: Flow<SecuritySettings> = flowOf(settings)
     }
 
@@ -104,7 +119,10 @@ class ClipboardCopyControllerTest {
     ) : SecureClipboard {
         var lastCopy: Pair<String, Int?>? = null
 
-        override fun copySensitive(text: String, clearAfterSeconds: Int?) {
+        override fun copySensitive(
+            text: String,
+            clearAfterSeconds: Int?,
+        ) {
             lastCopy = text to clearAfterSeconds
         }
 

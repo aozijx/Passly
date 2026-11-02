@@ -18,7 +18,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AnimatedColorSchemeComposeTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -45,13 +44,14 @@ class AnimatedColorSchemeComposeTest {
         }
 
         composeRule.mainClock.advanceTimeBy(400)
-        val beforeReturn = composeRule.runOnIdle {
-            observed.get().primary.also { color ->
-                assertNotEquals(first.primary, color)
-                assertNotEquals(second.primary, color)
-                target.value = first
+        val beforeReturn =
+            composeRule.runOnIdle {
+                observed.get().primary.also { color ->
+                    assertNotEquals(first.primary, color)
+                    assertNotEquals(second.primary, color)
+                    target.value = first
+                }
             }
-        }
 
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.runOnIdle {
@@ -64,13 +64,14 @@ class AnimatedColorSchemeComposeTest {
         }
 
         composeRule.mainClock.advanceTimeBy(400)
-        val beforeRetarget = composeRule.runOnIdle {
-            observed.get().primary.also { color ->
-                assertNotEquals(first.primary, color)
-                assertNotEquals(second.primary, color)
-                target.value = third
+        val beforeRetarget =
+            composeRule.runOnIdle {
+                observed.get().primary.also { color ->
+                    assertNotEquals(first.primary, color)
+                    assertNotEquals(second.primary, color)
+                    target.value = third
+                }
             }
-        }
 
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.runOnIdle {
@@ -84,7 +85,11 @@ class AnimatedColorSchemeComposeTest {
         }
     }
 
-    private fun assertColorNear(expected: Color, actual: Color, tolerance: Float) {
+    private fun assertColorNear(
+        expected: Color,
+        actual: Color,
+        tolerance: Float,
+    ) {
         val midpoint = lerp(expected, actual, 0.5f)
         assertEquals(expected.red, midpoint.red, tolerance)
         assertEquals(expected.green, midpoint.green, tolerance)

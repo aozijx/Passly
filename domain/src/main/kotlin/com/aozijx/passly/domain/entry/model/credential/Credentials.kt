@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 
 data class LoginCredential(
     val email: String? = null,
-    val password: String? = null
+    val password: String? = null,
 ) : EntryCredential {
     override val kind: EntryCredentialKind = EntryCredentialKind.LOGIN
 }
@@ -32,7 +32,7 @@ data class IdentityCredential(
     val securityQuestion: String? = null,
     val securityAnswer: String? = null,
     val seedPhrase: String? = null,
-    val recoveryCodes: List<String> = emptyList()
+    val recoveryCodes: List<String> = emptyList(),
 ) : EntryCredential {
     override val kind: EntryCredentialKind = EntryCredentialKind.IDENTITY
 }
@@ -40,7 +40,7 @@ data class IdentityCredential(
 data class SshCredential(
     val privateKey: String? = null,
     val publicKey: String? = null,
-    val passphrase: String? = null
+    val passphrase: String? = null,
 ) : EntryCredential {
     override val kind: EntryCredentialKind = EntryCredentialKind.SSH
 }
@@ -49,7 +49,7 @@ data class WifiCredential(
     val ssid: String,
     val password: String? = null,
     val securityType: WifiSecurityType = WifiSecurityType.WpaPersonal,
-    val isHidden: Boolean = false
+    val isHidden: Boolean = false,
 ) : EntryCredential {
     init {
         require(ssid.isNotBlank()) { "Wi-Fi SSID cannot be blank" }
@@ -63,13 +63,13 @@ data class PasskeyCredential(
     val rpId: String? = null,
     val userHandle: String? = null,
     val privateKeyReference: String? = null,
-    val hardwareKeyInfo: String? = null
+    val hardwareKeyInfo: String? = null,
 ) : EntryCredential {
     override val kind: EntryCredentialKind = EntryCredentialKind.PASSKEY
 }
 
 data class OtpCredential(
-    val config: OtpConfig
+    val config: OtpConfig,
 ) : EntryCredential {
     override val kind: EntryCredentialKind = EntryCredentialKind.OTP
 }

@@ -27,10 +27,11 @@ data class DiagnosticsUiState(
         listOfNotNull(traceId, event, errorCode, exceptionKind, exceptionType)
             .any { it.contains(query, ignoreCase = true) }
 
-    private fun DiagnosticsLogLine.matchesSelectedLevel(): Boolean = when (level) {
-        LogLevel.FATAL -> LogLevel.ERROR in selectedLevels
-        else -> level in selectedLevels
-    }
+    private fun DiagnosticsLogLine.matchesSelectedLevel(): Boolean =
+        when (level) {
+            LogLevel.FATAL -> LogLevel.ERROR in selectedLevels
+            else -> level in selectedLevels
+        }
 
     companion object {
         val DEFAULT_VISIBLE_LEVELS = setOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR)
@@ -39,24 +40,48 @@ data class DiagnosticsUiState(
 
 sealed interface DiagnosticsAction {
     data object Refresh : DiagnosticsAction
-    data class ToggleLevel(val level: LogLevel) : DiagnosticsAction
-    data class SearchChanged(val query: String) : DiagnosticsAction
-    data class CopyRow(val line: DiagnosticsLogLine) : DiagnosticsAction
-    data class CopyTrace(val traceId: String) : DiagnosticsAction
-    data class RequestExport(val action: ExportAction) : DiagnosticsAction
+
+    data class ToggleLevel(
+        val level: LogLevel,
+    ) : DiagnosticsAction
+
+    data class SearchChanged(
+        val query: String,
+    ) : DiagnosticsAction
+
+    data class CopyRow(
+        val line: DiagnosticsLogLine,
+    ) : DiagnosticsAction
+
+    data class CopyTrace(
+        val traceId: String,
+    ) : DiagnosticsAction
+
+    data class RequestExport(
+        val action: ExportAction,
+    ) : DiagnosticsAction
+
     data object DismissFormatSheet : DiagnosticsAction
-    data class SelectFormat(val format: LogFormat) : DiagnosticsAction
+
+    data class SelectFormat(
+        val format: LogFormat,
+    ) : DiagnosticsAction
+
     data class SaveToDocument(
         val uri: String,
         val pageOwner: Any,
         val requestId: String,
     ) : DiagnosticsAction
+
     data class SaveDocumentCancelled(
         val pageOwner: Any,
         val requestId: String,
     ) : DiagnosticsAction
+
     data object RequestClear : DiagnosticsAction
+
     data object DismissClear : DiagnosticsAction
+
     data object ConfirmClear : DiagnosticsAction
 }
 
@@ -69,6 +94,8 @@ sealed interface DiagnosticsEffect {
     ) : DiagnosticsEffect
 
     data object SaveCompleted : DiagnosticsEffect
+
     data object ExportFailed : DiagnosticsEffect
+
     data object ClearFailed : DiagnosticsEffect
 }

@@ -34,37 +34,36 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TotpCard(
     currentState: DetailOtpUiModel?,
     showProgress: Boolean = true,
     onQrClick: () -> Unit,
-    onCodeClick: (() -> Unit)? = null
+    onCodeClick: (() -> Unit)? = null,
 ) {
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.vault_detail_totp_label),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.outline,
             )
             IconButton(
                 onClick = {
                     onQrClick()
                 },
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(24.dp),
             ) {
                 Icon(
-                    Icons.Default.QrCode, contentDescription = stringResource(R.string.vault_show_otp_qr),
+                    Icons.Default.QrCode,
+                    contentDescription = stringResource(R.string.vault_show_otp_qr),
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
             }
         }
@@ -75,44 +74,49 @@ fun TotpCard(
             onClick = { onCodeClick?.invoke() },
             modifier = Modifier.fillMaxWidth(),
             enabled = onCodeClick != null,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                    alpha = 0.2f
-                )
-            ),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.primaryContainer.copy(
+                            alpha = 0.2f,
+                        ),
+                ),
             shape = MaterialTheme.shapes.large,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
         ) {
             val readyState = currentState as? DetailOtpUiModel.Ready
             val code = readyState?.code
             val progress = readyState?.progress ?: 0f
 
-            val displayText = remember(code) {
-                code?.chunked(3)?.joinToString(" ") ?: "------"
-            }
+            val displayText =
+                remember(code) {
+                    code?.chunked(3)?.joinToString(" ") ?: "------"
+                }
 
             val animatedProgress by animateFloatAsState(
                 targetValue = progress,
-                label = "otp_progress"
+                label = "otp_progress",
             )
 
-            val codeStyle = MaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 3.sp,
-                fontFamily = FontFamily.Monospace
-            )
+            val codeStyle =
+                MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 3.sp,
+                    fontFamily = FontFamily.Monospace,
+                )
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (showProgress) {
                     TotpCircularWavyProgressIndicator(
                         progress = animatedProgress,
                         isExpiring = progress < 0.2f,
-                        modifier = Modifier.size(42.dp)
+                        modifier = Modifier.size(42.dp),
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -121,7 +125,7 @@ fun TotpCard(
                     text = displayText,
                     style = codeStyle,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.wrapContentWidth()
+                    modifier = Modifier.wrapContentWidth(),
                 )
             }
         }
@@ -132,17 +136,18 @@ fun TotpCard(
 private fun TotpCircularWavyProgressIndicator(
     progress: Float,
     isExpiring: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val progressColor = if (isExpiring) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.primary
-    }
+    val progressColor =
+        if (isExpiring) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
     CircularWavyProgressIndicator(
         progress = { progress.coerceIn(0f, 1f) },
         modifier = modifier,
         color = progressColor,
-        trackColor = MaterialTheme.colorScheme.surfaceVariant
+        trackColor = MaterialTheme.colorScheme.surfaceVariant,
     )
 }

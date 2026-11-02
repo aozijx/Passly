@@ -12,7 +12,9 @@ sealed interface DekState {
     data object Locked : DekState
 
     /** DEK 已加载到内存，Vault 可访问 */
-    class Unlocked(val dek: ByteArray) : DekState
+    class Unlocked(
+        val dek: ByteArray,
+    ) : DekState
 
     /** 锁定进行中，DEK 正在擦除 */
     data object Locking : DekState

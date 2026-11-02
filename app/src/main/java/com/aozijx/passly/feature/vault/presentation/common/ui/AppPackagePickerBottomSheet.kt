@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.common.ui
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +21,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,32 +53,38 @@ fun AppPackagePickerBottomSheet(
     onDismiss: () -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
-    val filtered = remember(apps, query) {
-        val normalized = query.trim()
-        if (normalized.isEmpty()) apps else apps.filter {
-            it.label.contains(normalized, ignoreCase = true) ||
-                it.packageName.contains(normalized, ignoreCase = true)
+    val filtered =
+        remember(apps, query) {
+            val normalized = query.trim()
+            if (normalized.isEmpty()) {
+                apps
+            } else {
+                apps.filter {
+                    it.label.contains(normalized, ignoreCase = true) ||
+                        it.packageName.contains(normalized, ignoreCase = true)
+                }
+            }
         }
-    }
 
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = stringResource(R.string.app_package_picker_title),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             OutlinedTextField(
@@ -101,15 +107,16 @@ fun AppPackagePickerBottomSheet(
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(filtered, key = { it.packageName }) { app ->
                     val icon = appIcon(app.packageName)
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(app) }
-                            .padding(vertical = 8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect(app) }
+                                .padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -117,9 +124,10 @@ fun AppPackagePickerBottomSheet(
                             Image(
                                 bitmap = icon,
                                 contentDescription = null,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape),
+                                modifier =
+                                    Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape),
                             )
                         } else {
                             Spacer(modifier = Modifier.size(40.dp))

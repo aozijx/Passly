@@ -6,12 +6,24 @@ import kotlin.math.ln
 import kotlin.math.roundToInt
 
 object PasswordStrengthEvaluator {
-
-    private val WEAK_PATTERNS = setOf(
-        "123456", "password", "123456789", "12345", "12345678",
-        "qwerty", "abc123", "111111", "123123", "admin",
-        "letmein", "welcome", "monkey", "dragon", "master",
-    )
+    private val WEAK_PATTERNS =
+        setOf(
+            "123456",
+            "password",
+            "123456789",
+            "12345",
+            "12345678",
+            "qwerty",
+            "abc123",
+            "111111",
+            "123123",
+            "admin",
+            "letmein",
+            "welcome",
+            "monkey",
+            "dragon",
+            "master",
+        )
 
     fun evaluate(password: String): PasswordStrengthResult {
         val trimmed = password.trim()
@@ -33,12 +45,11 @@ object PasswordStrengthEvaluator {
         return WEAK_PATTERNS.any { lower.contains(it) }
     }
 
-    private fun lengthScore(length: Int): Int {
-        return when {
+    private fun lengthScore(length: Int): Int =
+        when {
             length <= 12 -> (length * 4).coerceAtMost(48)
             else -> (48 + (length - 12) * 2).coerceAtMost(60)
         }
-    }
 
     private fun charPoolSize(password: String): Int {
         var pool = 0
@@ -49,7 +60,10 @@ object PasswordStrengthEvaluator {
         return pool.coerceAtLeast(1)
     }
 
-    private fun entropyScore(length: Int, poolSize: Int): Int {
+    private fun entropyScore(
+        length: Int,
+        poolSize: Int,
+    ): Int {
         val bits = length * (ln(poolSize.toDouble()) / ln(2.0))
         return (bits / 2.0).roundToInt().coerceIn(0, 52)
     }
@@ -61,7 +75,10 @@ object PasswordStrengthEvaluator {
         return penalty
     }
 
-    private fun hasSequential(password: String, length: Int = 4): Boolean {
+    private fun hasSequential(
+        password: String,
+        length: Int = 4,
+    ): Boolean {
         val lower = password.lowercase()
         if (lower.length < length) return false
         for (i in 0..lower.length - length) {
@@ -90,7 +107,10 @@ object PasswordStrengthEvaluator {
         return false
     }
 
-    private fun hasRepeatedChar(password: String, length: Int): Boolean {
+    private fun hasRepeatedChar(
+        password: String,
+        length: Int,
+    ): Boolean {
         if (password.length < length) return false
         var count = 1
         for (i in 1 until password.length) {
@@ -104,13 +124,12 @@ object PasswordStrengthEvaluator {
         return false
     }
 
-    private fun levelOf(score: Int): PasswordStrengthLevel {
-        return when (score) {
+    private fun levelOf(score: Int): PasswordStrengthLevel =
+        when (score) {
             in 0..29 -> PasswordStrengthLevel.VERY_WEAK
             in 30..49 -> PasswordStrengthLevel.WEAK
             in 50..69 -> PasswordStrengthLevel.MEDIUM
             in 70..84 -> PasswordStrengthLevel.GOOD
             else -> PasswordStrengthLevel.STRONG
         }
-    }
 }

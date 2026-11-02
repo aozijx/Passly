@@ -31,18 +31,29 @@ class SensitiveFieldVisibilityTest {
         compose.setContent {
             var visible by remember { mutableStateOf(false) }
             SensitiveFieldVisibilityButton(
-                fieldLabelRes = R.string.card_cvv, visible = visible, onVisibilityChanged = { visible = it },
+                fieldLabelRes = R.string.card_cvv,
+                visible = visible,
+                onVisibilityChanged = { visible = it },
             )
         }
-        compose.onNodeWithContentDescription(context.getString(R.string.vault_editor_show_field, label))
+        compose
+            .onNodeWithContentDescription(context.getString(R.string.vault_editor_show_field, label))
             .assertIsOff()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-                context.getString(R.string.vault_editor_field_hidden)))
-            .performClick()
-        compose.onNodeWithContentDescription(context.getString(R.string.vault_editor_hide_field, label))
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    context.getString(R.string.vault_editor_field_hidden),
+                ),
+            ).performClick()
+        compose
+            .onNodeWithContentDescription(context.getString(R.string.vault_editor_hide_field, label))
             .assertIsOn()
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
-                context.getString(R.string.vault_editor_field_visible)))
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    context.getString(R.string.vault_editor_field_visible),
+                ),
+            )
     }
 
     @Test
@@ -50,14 +61,20 @@ class SensitiveFieldVisibilityTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         compose.setContent {
             AddBankCardEditorScreen(
-                state = AddBankCardUiState(), onAction = {}, onBack = {},
+                state = AddBankCardUiState(),
+                onAction = {},
+                onBack = {},
                 snackbarHostState = remember { SnackbarHostState() },
             )
         }
         for (field in listOf(R.string.card_number, R.string.payment_pin, R.string.card_cvv)) {
-            compose.onNodeWithContentDescription(context.getString(
-                R.string.vault_editor_show_field, context.getString(field),
-            )).assertIsOff()
+            compose
+                .onNodeWithContentDescription(
+                    context.getString(
+                        R.string.vault_editor_show_field,
+                        context.getString(field),
+                    ),
+                ).assertIsOff()
         }
     }
 }

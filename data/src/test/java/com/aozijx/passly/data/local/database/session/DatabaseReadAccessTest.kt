@@ -13,20 +13,21 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class DatabaseReadAccessTest {
     @Test
-    fun `read access follows both authorization and database session availability`() = runTest {
-        val authorized = MutableStateFlow(true)
-        val databaseState = MutableStateFlow(SecureSessionState.UNLOCKED)
-        val observed = mutableListOf<Boolean>()
+    fun `read access follows both authorization and database session availability`() =
+        runTest {
+            val authorized = MutableStateFlow(true)
+            val databaseState = MutableStateFlow(SecureSessionState.UNLOCKED)
+            val observed = mutableListOf<Boolean>()
 
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            observeDatabaseReadAccess(authorized, databaseState).toList(observed)
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                observeDatabaseReadAccess(authorized, databaseState).toList(observed)
+            }
+
+            databaseState.value = SecureSessionState.SEALED
+            databaseState.value = SecureSessionState.UNLOCKED
+            authorized.value = false
+            databaseState.value = SecureSessionState.UNLOCKED
+
+            assertEquals(listOf(true, false, true, false), observed)
         }
-
-        databaseState.value = SecureSessionState.SEALED
-        databaseState.value = SecureSessionState.UNLOCKED
-        authorized.value = false
-        databaseState.value = SecureSessionState.UNLOCKED
-
-        assertEquals(listOf(true, false, true, false), observed)
-    }
 }

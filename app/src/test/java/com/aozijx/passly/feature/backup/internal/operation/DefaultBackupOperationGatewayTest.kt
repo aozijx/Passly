@@ -24,11 +24,11 @@ import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageS
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
 import java.io.IOException
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -47,208 +47,230 @@ class DefaultBackupOperationGatewayTest {
     }
 
     @Test
-    fun `import wipes its temporary archive password buffer after success`() = runBlocking {
-        val gate = RecordingAuthorizationGate()
-        val storage = RecordingStorageSupport(gate)
-        val archivePassword = CompletableDeferred<CharArray>()
-        val archiveService = object : BackupArchiveService by UnusedBackupService {
-            override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
-                archivePassword.complete(requireNotNull(request.password))
-                return AppResult.success(
-                    BackupImportResult(
-                        importedEntryCount = 1,
-                        existingEntryCount = 0,
-                        skippedEntryCount = 0,
-                        ignoredFieldCount = 0,
-                        prunedLinkCount = 0,
-                        prunedResourceCount = 0,
+    fun `import wipes its temporary archive password buffer after success`() =
+        runBlocking {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate)
+            val archivePassword = CompletableDeferred<CharArray>()
+            val archiveService =
+                object : BackupArchiveService by UnusedBackupService {
+                    override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
+                        archivePassword.complete(requireNotNull(request.password))
+                        return AppResult.success(
+                            BackupImportResult(
+                                importedEntryCount = 1,
+                                existingEntryCount = 0,
+                                skippedEntryCount = 0,
+                                ignoredFieldCount = 0,
+                                prunedLinkCount = 0,
+                                prunedResourceCount = 0,
+                            ),
+                        )
+                    }
+                }
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService = archiveService,
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+            val ownedPassword = OwnedChars.fromString("secret")
+
+            val result =
+                gateway.import(
+                    BackupImportOperationRequest(
+                        sourceUri = "content://documents/import",
+                        password = ownedPassword,
+                        mode = ImportMode.APPEND,
+                        strategy = BackupImportStrategy.STRICT,
                     ),
                 )
-            }
+
+            assertTrue(result is BackupExecutionResult.ImportSucceeded)
+            assertTrue(archivePassword.await().all { it == '\u0000' })
+            assertTrue("the caller retains and clears its own value", !ownedPassword.isWiped)
+            ownedPassword.wipe()
         }
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf(null)
-            },
-            backupService = archiveService,
-            storageSupport = storage,
-            authorizationGate = gate,
-            errorReporter = NoopErrorReporter,
-        )
-        val ownedPassword = OwnedChars.fromString("secret")
-
-        val result = gateway.import(
-            BackupImportOperationRequest(
-                sourceUri = "content://documents/import",
-                password = ownedPassword,
-                mode = ImportMode.APPEND,
-                strategy = BackupImportStrategy.STRICT,
-            ),
-        )
-
-        assertTrue(result is BackupExecutionResult.ImportSucceeded)
-        assertTrue(archivePassword.await().all { it == '\u0000' })
-        assertTrue("the caller retains and clears its own value", !ownedPassword.isWiped)
-        ownedPassword.wipe()
-    }
 
     @Test
-    fun `configured export resolves storage target inside authorization scope`() = runBlocking {
-        val gate = RecordingAuthorizationGate()
-        val storage = RecordingStorageSupport(gate)
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf("content://tree")
-            },
-            backupService = UnusedBackupService,
-            storageSupport = storage,
-            authorizationGate = gate,
-            errorReporter = NoopErrorReporter,
-        )
+    fun `configured export resolves storage target inside authorization scope`() =
+        runBlocking {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate)
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf("content://tree")
+                        },
+                    backupService = UnusedBackupService,
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
 
-        val result = gateway.exportToConfiguredDirectory(exportRequest())
+            val result = gateway.exportToConfiguredDirectory(exportRequest())
 
-        assertTrue(result is BackupExecutionResult.Failure)
-        assertEquals(
-            AuthorizationScope.Global(AuthenticationPurpose.BACKUP_EXPORT),
-            gate.scope,
-        )
-        assertTrue(storage.createdInsideAuthorization)
-    }
-
-    @Test
-    fun `directory check validates the configured tree through storage support`() = runBlocking {
-        val storage = RecordingStorageSupport(RecordingAuthorizationGate())
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf(null)
-            },
-            backupService = UnusedBackupService,
-            storageSupport = storage,
-            authorizationGate = RecordingAuthorizationGate(),
-            errorReporter = NoopErrorReporter,
-        )
-
-        assertEquals(
-            BackupExecutionResult.DirectoryWritable,
-            gateway.checkDirectoryWritable("content://documents/tree/backup"),
-        )
-        assertEquals("content://documents/tree/backup", storage.checkedDirectoryUri)
-    }
-
-    @Test
-    fun `cancelled export deletes partial document and propagates cancellation`() = runTest {
-        val gate = RecordingAuthorizationGate()
-        val storage = RecordingStorageSupport(gate)
-        val exportStarted = CompletableDeferred<Unit>()
-        val finishExport = CompletableDeferred<Unit>()
-        val target = "content://documents/export"
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf(null)
-            },
-            backupService = AwaitingExportService(exportStarted, finishExport),
-            storageSupport = storage,
-            authorizationGate = gate,
-            errorReporter = NoopErrorReporter,
-        )
-
-        val export = async {
-            gateway.exportToUri(exportRequest(), target, deleteOnFailure = true)
-        }
-        exportStarted.await()
-        export.cancelAndJoin()
-
-        assertEquals(listOf(target), storage.deletedUris)
-    }
-
-    @Test
-    fun `cancelled import propagates cancellation instead of returning a failure`() = runTest {
-        val gate = RecordingAuthorizationGate()
-        val cancellation = java.util.concurrent.CancellationException("import cancelled")
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf(null)
-            },
-            backupService = object : BackupArchiveService by UnusedBackupService {
-                override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
-                    throw cancellation
-                }
-            },
-            storageSupport = RecordingStorageSupport(gate),
-            authorizationGate = gate,
-            errorReporter = NoopErrorReporter,
-        )
-
-        var propagated = false
-        try {
-            gateway.import(
-                BackupImportOperationRequest(
-                    sourceUri = "content://documents/import",
-                    password = EmptySensitiveValue,
-                    mode = ImportMode.APPEND,
-                    strategy = BackupImportStrategy.STRICT,
-                ),
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertEquals(
+                AuthorizationScope.Global(AuthenticationPurpose.BACKUP_EXPORT),
+                gate.scope,
             )
-        } catch (failure: java.util.concurrent.CancellationException) {
-            propagated = failure === cancellation
+            assertTrue(storage.createdInsideAuthorization)
         }
-        assertTrue("import cancellation must propagate", propagated)
-    }
 
     @Test
-    fun `failed partial export cleanup is attached to the original cancellation`() = runTest {
-        val gate = RecordingAuthorizationGate()
-        val storage = RecordingStorageSupport(gate).apply { deleteResult = false }
-        val cancellation = CancellationException("export cancelled")
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf(null)
-            },
-            backupService = object : BackupArchiveService by UnusedBackupService {
-                override suspend fun export(request: BackupExportRequest): AppResult<Unit> {
-                    throw cancellation
+    fun `directory check validates the configured tree through storage support`() =
+        runBlocking {
+            val storage = RecordingStorageSupport(RecordingAuthorizationGate())
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService = UnusedBackupService,
+                    storageSupport = storage,
+                    authorizationGate = RecordingAuthorizationGate(),
+                    errorReporter = noopErrorReporter,
+                )
+
+            assertEquals(
+                BackupExecutionResult.DirectoryWritable,
+                gateway.checkDirectoryWritable("content://documents/tree/backup"),
+            )
+            assertEquals("content://documents/tree/backup", storage.checkedDirectoryUri)
+        }
+
+    @Test
+    fun `cancelled export deletes partial document and propagates cancellation`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate)
+            val exportStarted = CompletableDeferred<Unit>()
+            val finishExport = CompletableDeferred<Unit>()
+            val target = "content://documents/export"
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService = AwaitingExportService(exportStarted, finishExport),
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val export =
+                async {
+                    gateway.exportToUri(exportRequest(), target, deleteOnFailure = true)
                 }
-            },
-            storageSupport = storage,
-            authorizationGate = gate,
-            errorReporter = NoopErrorReporter,
-        )
+            exportStarted.await()
+            export.cancelAndJoin()
 
-        var propagated = false
-        try {
-            gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
-        } catch (failure: CancellationException) {
-            propagated = failure === cancellation
+            assertEquals(listOf(target), storage.deletedUris)
         }
 
-        assertTrue("original cancellation must propagate", propagated)
-        assertEquals(1, cancellation.suppressed.size)
-        assertTrue(cancellation.suppressed.single() is IOException)
-    }
+    @Test
+    fun `cancelled import propagates cancellation instead of returning a failure`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val cancellation = java.util.concurrent.CancellationException("import cancelled")
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> = throw cancellation
+                        },
+                    storageSupport = RecordingStorageSupport(gate),
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            var propagated = false
+            try {
+                gateway.import(
+                    BackupImportOperationRequest(
+                        sourceUri = "content://documents/import",
+                        password = EmptySensitiveValue,
+                        mode = ImportMode.APPEND,
+                        strategy = BackupImportStrategy.STRICT,
+                    ),
+                )
+            } catch (failure: java.util.concurrent.CancellationException) {
+                propagated = failure === cancellation
+            }
+            assertTrue("import cancellation must propagate", propagated)
+        }
 
     @Test
-    fun `cancellation carried by storage results is not reported as a backup failure`() = runTest {
-        val gate = RecordingAuthorizationGate()
-        val storage = RecordingStorageSupport(gate)
-        val gateway = DefaultBackupOperationGateway(
-            settingsSource = object : BackupDirectorySettingsSource {
-                override val backupDirectoryUri = flowOf("content://tree")
-            },
-            backupService = UnusedBackupService,
-            storageSupport = storage,
-            authorizationGate = gate,
-            errorReporter = NoopErrorReporter,
-        )
+    fun `failed partial export cleanup is attached to the original cancellation`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate).apply { deleteResult = false }
+            val cancellation = CancellationException("export cancelled")
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = throw cancellation
+                        },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
 
-        val targetCancellation = CancellationException("target cancelled")
-        storage.targetFailure = targetCancellation
-        assertCancellation(targetCancellation) { gateway.exportToConfiguredDirectory(exportRequest()) }
+            var propagated = false
+            try {
+                gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+            } catch (failure: CancellationException) {
+                propagated = failure === cancellation
+            }
 
-        val directoryCancellation = CancellationException("directory check cancelled")
-        storage.directoryCheckFailure = directoryCancellation
-        assertCancellation(directoryCancellation) { gateway.checkDirectoryWritable("content://tree") }
-    }
+            assertTrue("original cancellation must propagate", propagated)
+            assertEquals(1, cancellation.suppressed.size)
+            assertTrue(cancellation.suppressed.single() is IOException)
+        }
+
+    @Test
+    fun `cancellation carried by storage results is not reported as a backup failure`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate)
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf("content://tree")
+                        },
+                    backupService = UnusedBackupService,
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val targetCancellation = CancellationException("target cancelled")
+            storage.targetFailure = targetCancellation
+            assertCancellation(targetCancellation) { gateway.exportToConfiguredDirectory(exportRequest()) }
+
+            val directoryCancellation = CancellationException("directory check cancelled")
+            storage.directoryCheckFailure = directoryCancellation
+            assertCancellation(directoryCancellation) { gateway.checkDirectoryWritable("content://tree") }
+        }
 
     private suspend fun assertCancellation(
         expected: CancellationException,
@@ -263,15 +285,16 @@ class DefaultBackupOperationGatewayTest {
         assertTrue("cancellation must propagate", propagated)
     }
 
-    private fun exportRequest() = BackupExportOperationRequest(
-        format = BackupExportFormat.JSON,
-        includeIcons = true,
-        includeAttachments = false,
-        includeDeleted = true,
-        includedEntryTypes = setOf(EntryType.LOGIN),
-        password = EmptySensitiveValue,
-        fileName = "backup.json",
-    )
+    private fun exportRequest() =
+        BackupExportOperationRequest(
+            format = BackupExportFormat.JSON,
+            includeIcons = true,
+            includeAttachments = false,
+            includeDeleted = true,
+            includedEntryTypes = setOf(EntryType.LOGIN),
+            password = EmptySensitiveValue,
+            fileName = "backup.json",
+        )
 
     private class RecordingAuthorizationGate : AuthorizationGate {
         var inside = false
@@ -302,8 +325,10 @@ class DefaultBackupOperationGatewayTest {
         var directoryCheckFailure: Throwable? = null
         var deleteResult = true
 
-        override fun buildBackupFileName(extension: String, timestamp: Long): String =
-            "backup.$extension"
+        override fun buildBackupFileName(
+            extension: String,
+            timestamp: Long,
+        ): String = "backup.$extension"
 
         override suspend fun createNamedExportTarget(
             directoryTreeUri: String,
@@ -328,12 +353,9 @@ class DefaultBackupOperationGatewayTest {
     }
 
     private object UnusedBackupService : BackupArchiveService {
-        override suspend fun export(request: BackupExportRequest): AppResult<Unit> =
-            error("Export should not run")
+        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = error("Export should not run")
 
-        override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> =
-            error("Import should not run")
-
+        override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> = error("Import should not run")
     }
 
     private class AwaitingExportService(
@@ -347,5 +369,5 @@ class DefaultBackupOperationGatewayTest {
         }
     }
 
-    private val NoopErrorReporter = AppErrorReporter { _, _ -> Unit }
+    private val noopErrorReporter = AppErrorReporter { _, _ -> Unit }
 }

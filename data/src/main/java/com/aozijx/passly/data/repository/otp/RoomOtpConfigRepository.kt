@@ -11,24 +11,25 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class RoomOtpConfigRepository @Inject constructor(
-    private val databaseSession: AppDatabaseSession,
-    private val sessionState: SecureSessionAccessState,
-    private val secretFieldStore: SecretFieldStore,
-    private val hotpCodeConsumption: HotpCodeConsumptionTransaction,
-) : OtpConfigRepository {
+internal class RoomOtpConfigRepository
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+        private val sessionState: SecureSessionAccessState,
+        private val secretFieldStore: SecretFieldStore,
+        private val hotpCodeConsumption: HotpCodeConsumptionTransaction,
+    ) : OtpConfigRepository {
+        override suspend fun getConfig(entryId: String): OtpConfig? {
+            if (!sessionState.hasFullSecureSessionAccess()) return null
+            return databaseSession.query {
+                secretFieldStore.readOtpConfig(this, entryId)
+            }
+        }
 
-    override suspend fun getConfig(entryId: String): OtpConfig? {
-        if (!sessionState.hasFullSecureSessionAccess()) return null
-        return databaseSession.query {
-            secretFieldStore.readOtpConfig(this, entryId)
+        override suspend fun consumeHotpCode(entryId: String): OtpResult {
+            if (!sessionState.hasFullSecureSessionAccess()) {
+                return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            }
+            return databaseSession.transaction { hotpCodeConsumption.consume(this, entryId) }
         }
     }
-
-    override suspend fun consumeHotpCode(entryId: String): OtpResult {
-        if (!sessionState.hasFullSecureSessionAccess()) {
-            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        }
-        return databaseSession.transaction { hotpCodeConsumption.consume(this, entryId) }
-    }
-}

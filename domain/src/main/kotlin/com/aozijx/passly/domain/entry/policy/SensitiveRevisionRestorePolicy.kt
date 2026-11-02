@@ -7,10 +7,11 @@ object SensitiveRevisionRestorePolicy {
     fun affectedFields(
         currentFields: Set<SensitiveFieldKey>,
         historicalFields: Set<SensitiveFieldKey>,
-    ): Set<SensitiveFieldKey> = buildSet {
-        addAll(currentFields)
-        addAll(historicalFields)
-    }
+    ): Set<SensitiveFieldKey> =
+        buildSet {
+            addAll(currentFields)
+            addAll(historicalFields)
+        }
 
     fun isExactAuthorization(
         authorizedFields: Set<SensitiveFieldKey>,

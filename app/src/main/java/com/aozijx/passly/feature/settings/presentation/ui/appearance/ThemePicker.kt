@@ -43,21 +43,22 @@ fun ThemePicker(
     selectedThemeKey: String,
     sheetState: SheetState,
     onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss, sheetState = sheetState
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         ) {
             item {
                 Text(
                     text = stringResource(R.string.settings_theme_scheme_select_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 12.dp),
                 )
             }
 
@@ -66,29 +67,30 @@ fun ThemePicker(
                 val previewColors = scheme.resolveSeedColors()
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onSelect(scheme.key) }
-                        .padding(vertical = 10.dp, horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onSelect(scheme.key) }
+                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     ThemeColorPreviewCard(colors = previewColors)
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = stringResource(scheme.nameRes),
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
 
-                    RadioButton(
-                        selected = isSelected, onClick = { onSelect(scheme.key) })
+                    RadioButton(selected = isSelected, onClick = { onSelect(scheme.key) })
                 }
 
                 if (index < AppThemeSchemes.all.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 4.dp),
                         thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                     )
                 }
             }
@@ -106,59 +108,66 @@ private fun ThemeColorPreviewCard(colors: List<Color>) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
-        modifier = Modifier
-            .size(width = 80.dp, height = 56.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(surfaceColor)
+        modifier =
+            Modifier
+                .size(width = 80.dp, height = 56.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(surfaceColor),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
         ) {
             colors.forEach { color ->
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(color)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(color),
                 )
             }
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, top = 16.dp, end = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, top = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 colors.forEach { color ->
                     Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(color.copy(alpha = 0.72f))
+                        modifier =
+                            Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(color.copy(alpha = 0.72f)),
                     )
                 }
             }
 
             Column {
                 Box(
-                    modifier = Modifier
-                        .width(32.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(onSurfaceColor.copy(alpha = 0.3f))
+                    modifier =
+                        Modifier
+                            .width(32.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(onSurfaceColor.copy(alpha = 0.3f)),
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Box(
-                    modifier = Modifier
-                        .width(24.dp)
-                        .height(3.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(onSurfaceColor.copy(alpha = 0.15f))
+                    modifier =
+                        Modifier
+                            .width(24.dp)
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(onSurfaceColor.copy(alpha = 0.15f)),
                 )
             }
         }

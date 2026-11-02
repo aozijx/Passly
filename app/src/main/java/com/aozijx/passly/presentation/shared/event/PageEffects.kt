@@ -11,7 +11,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 
 /** Delivers one-shot effects only to the page visit that produced them. */
 internal class PageEffects<Effect : Any> {
-    private data class Delivery<Effect>(val owner: Any, val effect: Effect)
+    private data class Delivery<Effect>(
+        val owner: Any,
+        val effect: Effect,
+    )
 
     private val channel = Channel<Delivery<Effect>>(Channel.BUFFERED)
     private var activeOwner: Any? = null
@@ -19,9 +22,11 @@ internal class PageEffects<Effect : Any> {
     val currentOwner: Any?
         get() = activeOwner
 
-    val effects: Flow<Effect> = channel.receiveAsFlow()
-        .filter { activeOwner === it.owner }
-        .map { it.effect }
+    val effects: Flow<Effect> =
+        channel
+            .receiveAsFlow()
+            .filter { activeOwner === it.owner }
+            .map { it.effect }
 
     fun enter(owner: Any = Any()): Any {
         activeOwner = owner
@@ -39,10 +44,15 @@ internal class PageEffects<Effect : Any> {
         return tryEmit(owner, effect)
     }
 
-    fun tryEmit(owner: Any, effect: Effect): Boolean =
-        isActive(owner) && channel.trySend(Delivery(owner, effect)).isSuccess
+    fun tryEmit(
+        owner: Any,
+        effect: Effect,
+    ): Boolean = isActive(owner) && channel.trySend(Delivery(owner, effect)).isSuccess
 
-    suspend fun send(owner: Any, effect: Effect) {
+    suspend fun send(
+        owner: Any,
+        effect: Effect,
+    ) {
         if (isActive(owner)) channel.send(Delivery(owner, effect))
     }
 }

@@ -1,5 +1,14 @@
 plugins {
     `kotlin-dsl`
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
+}
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    version.set("1.8.0")
+}
+
+tasks.named("check") {
+    dependsOn("ktlintCheck")
 }
 
 repositories {

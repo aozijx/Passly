@@ -14,7 +14,10 @@ class TraceContext internal constructor(
 ) : TraceScope {
     fun snapshot(): TraceSnapshot = TraceSnapshot(traceId, spanId, parentSpanId)
 
-    internal fun child(childSpanId: SpanId, childOperation: OperationCode): TraceContext =
+    internal fun child(
+        childSpanId: SpanId,
+        childOperation: OperationCode,
+    ): TraceContext =
         TraceContext(
             traceId = traceId,
             spanId = childSpanId,
@@ -29,24 +32,26 @@ class TraceContext internal constructor(
             traceId: TraceId,
             spanId: SpanId,
             operation: OperationCode,
-        ): TraceContext = TraceContext(
-            traceId = traceId,
-            spanId = spanId,
-            parentSpanId = null,
-            operation = operation,
-        )
+        ): TraceContext =
+            TraceContext(
+                traceId = traceId,
+                spanId = spanId,
+                parentSpanId = null,
+                operation = operation,
+            )
 
         internal fun resumed(
             traceId: TraceId,
             spanId: SpanId,
             parentSpanId: SpanId?,
             operation: OperationCode,
-        ): TraceContext = TraceContext(
-            traceId = traceId,
-            spanId = spanId,
-            parentSpanId = parentSpanId,
-            operation = operation,
-        )
+        ): TraceContext =
+            TraceContext(
+                traceId = traceId,
+                spanId = spanId,
+                parentSpanId = parentSpanId,
+                operation = operation,
+            )
     }
 }
 
@@ -67,5 +72,6 @@ data class SpanCompleted(
 
 interface TraceLifecycleSink {
     fun onSpanStarted(span: SpanStarted)
+
     fun onSpanCompleted(span: SpanCompleted)
 }

@@ -11,12 +11,14 @@ import org.junit.Test
 class AuthenticationCredentialSnapshotMappingTest {
     @Test
     fun `snapshot only exposes authentication methods present in the same bootstrap value`() {
-        val data = BootstrapData.newBuilder()
-            .addEnvelopes(envelope(EnvelopeType.BIOMETRIC))
-            .addEnvelopes(envelope(EnvelopeType.APP_PASSWORD))
-            .addEnvelopes(envelope(EnvelopeType.RECOVERY))
-            .setBiometricBinding(BiometricBinding.newBuilder().setActiveAlias("active"))
-            .build()
+        val data =
+            BootstrapData
+                .newBuilder()
+                .addEnvelopes(envelope(EnvelopeType.BIOMETRIC))
+                .addEnvelopes(envelope(EnvelopeType.APP_PASSWORD))
+                .addEnvelopes(envelope(EnvelopeType.RECOVERY))
+                .setBiometricBinding(BiometricBinding.newBuilder().setActiveAlias("active"))
+                .build()
 
         assertEquals(
             AuthenticationCredentialSnapshot(
@@ -30,16 +32,22 @@ class AuthenticationCredentialSnapshotMappingTest {
 
     @Test
     fun `biometric requires both envelope and nonblank binding in the snapshot`() {
-        val withEnvelopeOnly = BootstrapData.newBuilder()
-            .addEnvelopes(envelope(EnvelopeType.BIOMETRIC))
-            .build()
-        val withBindingOnly = BootstrapData.newBuilder()
-            .setBiometricBinding(BiometricBinding.newBuilder().setActiveAlias("active"))
-            .build()
-        val withBlankBinding = BootstrapData.newBuilder()
-            .addEnvelopes(envelope(EnvelopeType.BIOMETRIC))
-            .setBiometricBinding(BiometricBinding.getDefaultInstance())
-            .build()
+        val withEnvelopeOnly =
+            BootstrapData
+                .newBuilder()
+                .addEnvelopes(envelope(EnvelopeType.BIOMETRIC))
+                .build()
+        val withBindingOnly =
+            BootstrapData
+                .newBuilder()
+                .setBiometricBinding(BiometricBinding.newBuilder().setActiveAlias("active"))
+                .build()
+        val withBlankBinding =
+            BootstrapData
+                .newBuilder()
+                .addEnvelopes(envelope(EnvelopeType.BIOMETRIC))
+                .setBiometricBinding(BiometricBinding.getDefaultInstance())
+                .build()
 
         listOf(withEnvelopeOnly, withBindingOnly, withBlankBinding).forEach { data ->
             assertEquals(

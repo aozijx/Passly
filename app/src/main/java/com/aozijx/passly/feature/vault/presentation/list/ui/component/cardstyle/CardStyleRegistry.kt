@@ -8,11 +8,12 @@ object CardStyleRegistry {
      * Extension point: a new card appearance only needs one registration here.
      * The component owns its key, capability check, real content and preview.
      */
-    private val registrations = listOf(
-        DefaultVaultCardStyle,
-        PasswordVaultCardStyle,
-        TotpVaultCardStyle,
-    )
+    private val registrations =
+        listOf(
+            DefaultVaultCardStyle,
+            PasswordVaultCardStyle,
+            TotpVaultCardStyle,
+        )
 
     private val defaultStyle = registrations.first()
     private val registrationsByKey = registrations.associateBy { it.key.normalizedStyleKey() }
@@ -42,11 +43,13 @@ object CardStyleRegistry {
         entry: VaultListItemUiModel,
         presentations: List<VaultCardPresentationUiModel>,
     ): VaultCardStyleComponent {
-        val presentation = presentations.firstOrNull {
-            it.entryTypeKey.equals(entry.entryType.name, ignoreCase = true)
-        }
-        val requested = registrationsByKey[presentation?.variantKey.normalizedStyleKey()]
-            ?: defaultStyle
+        val presentation =
+            presentations.firstOrNull {
+                it.entryTypeKey.equals(entry.entryType.name, ignoreCase = true)
+            }
+        val requested =
+            registrationsByKey[presentation?.variantKey.normalizedStyleKey()]
+                ?: defaultStyle
         return requested.takeIf { it.supports(entry) } ?: defaultStyle
     }
 

@@ -15,43 +15,54 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
 sealed interface BarcodeImageResult {
-    data class Decoded(val rawValue: String) : BarcodeImageResult
+    data class Decoded(
+        val rawValue: String,
+    ) : BarcodeImageResult
+
     data object NoBarcode : BarcodeImageResult
-    data class Failed(val error: Throwable) : BarcodeImageResult
+
+    data class Failed(
+        val error: Throwable,
+    ) : BarcodeImageResult
 }
 
-class BarcodeImageDecoder @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-) {
-    suspend fun decode(ref: ImageRef): BarcodeImageResult = withContext(Dispatchers.IO) {
-        try {
-            val image = InputImage.fromFilePath(context, ref.value.toUri())
-            currentCoroutineContext().ensureActive()
-            suspendCancellableCoroutine<BarcodeImageResult> { continuation ->
-                val scanner = BarcodeScanning.getClient()
+class BarcodeImageDecoder
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) {
+        suspend fun decode(ref: ImageRef): BarcodeImageResult =
+            withContext(Dispatchers.IO) {
                 try {
-                    scanner.process(image).addOnCompleteListener { task ->
-                        // Native processing can outlive cancellation; always release its client.
-                        scanner.close()
-                        if (!continuation.isActive) return@addOnCompleteListener
-                        val result = if (task.isSuccessful) {
-                            task.result.firstNotNullOfOrNull { barcode ->
-                                barcode.rawValue?.takeIf(String::isNotBlank)
-                            }?.let(BarcodeImageResult::Decoded) ?: BarcodeImageResult.NoBarcode
-                        } else {
-                            BarcodeImageResult.Failed(task.exception ?: IllegalStateException("Barcode decoding failed"))
+                    val image = InputImage.fromFilePath(context, ref.value.toUri())
+                    currentCoroutineContext().ensureActive()
+                    suspendCancellableCoroutine<BarcodeImageResult> { continuation ->
+                        val scanner = BarcodeScanning.getClient()
+                        try {
+                            scanner.process(image).addOnCompleteListener { task ->
+                                // Native processing can outlive cancellation; always release its client.
+                                scanner.close()
+                                if (!continuation.isActive) return@addOnCompleteListener
+                                val result =
+                                    if (task.isSuccessful) {
+                                        task.result
+                                            .firstNotNullOfOrNull { barcode ->
+                                                barcode.rawValue?.takeIf(String::isNotBlank)
+                                            }?.let(BarcodeImageResult::Decoded) ?: BarcodeImageResult.NoBarcode
+                                    } else {
+                                        BarcodeImageResult.Failed(task.exception ?: IllegalStateException("Barcode decoding failed"))
+                                    }
+                                continuation.resume(result)
+                            }
+                        } catch (error: Exception) {
+                            scanner.close()
+                            if (continuation.isActive) continuation.resume(BarcodeImageResult.Failed(error))
                         }
-                        continuation.resume(result)
                     }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (error: Exception) {
-                    scanner.close()
-                    if (continuation.isActive) continuation.resume(BarcodeImageResult.Failed(error))
+                    BarcodeImageResult.Failed(error)
                 }
             }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            BarcodeImageResult.Failed(error)
-        }
     }
-}

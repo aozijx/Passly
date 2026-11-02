@@ -11,22 +11,23 @@ class SensitiveRevisionSnapshotCodecTest {
 
     @Test
     fun `cipher snapshots round trip without plaintext decryption`() {
-        val fields = listOf(
-            EntrySecretFieldEntity(
-                entryId = "entry-1",
-                fieldKey = SensitiveFieldKey.CARD_CVV.name,
-                valueCipher = byteArrayOf(3, 1, 4, 1, 5),
-                keyVersion = 2,
-                updatedAt = 10L,
-            ),
-            EntrySecretFieldEntity(
-                entryId = "entry-1",
-                fieldKey = SensitiveFieldKey.CARD_NUMBER.name,
-                valueCipher = byteArrayOf(9, 2, 6, 5),
-                keyVersion = 1,
-                updatedAt = 11L,
-            ),
-        )
+        val fields =
+            listOf(
+                EntrySecretFieldEntity(
+                    entryId = "entry-1",
+                    fieldKey = SensitiveFieldKey.CARD_CVV.name,
+                    valueCipher = byteArrayOf(3, 1, 4, 1, 5),
+                    keyVersion = 2,
+                    updatedAt = 10L,
+                ),
+                EntrySecretFieldEntity(
+                    entryId = "entry-1",
+                    fieldKey = SensitiveFieldKey.CARD_NUMBER.name,
+                    valueCipher = byteArrayOf(9, 2, 6, 5),
+                    keyVersion = 1,
+                    updatedAt = 11L,
+                ),
+            )
 
         val decoded = codec.decode(codec.encode(fields))
 
@@ -40,17 +41,18 @@ class SensitiveRevisionSnapshotCodecTest {
 
     @Test
     fun `field presence can be decoded without returning ciphertext values`() {
-        val encoded = codec.encode(
-            listOf(
-                EntrySecretFieldEntity(
-                    entryId = "entry-1",
-                    fieldKey = SensitiveFieldKey.PASSWORD.name,
-                    valueCipher = byteArrayOf(1, 2, 3),
-                    keyVersion = 1,
-                    updatedAt = 10L,
+        val encoded =
+            codec.encode(
+                listOf(
+                    EntrySecretFieldEntity(
+                        entryId = "entry-1",
+                        fieldKey = SensitiveFieldKey.PASSWORD.name,
+                        valueCipher = byteArrayOf(1, 2, 3),
+                        keyVersion = 1,
+                        updatedAt = 10L,
+                    ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(setOf(SensitiveFieldKey.PASSWORD), codec.decodeKeys(encoded))
     }

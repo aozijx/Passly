@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -52,7 +51,7 @@ fun AddEntryScaffold(
     modifier: Modifier = Modifier,
     saveActionModifier: Modifier = Modifier,
     isLoading: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -91,27 +90,29 @@ fun AddEntryScaffold(
                 modifier = saveActionModifier,
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { contentPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding)
-                .imePadding(),
-            contentAlignment = Alignment.TopCenter
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding)
+                    .imePadding(),
+            contentAlignment = Alignment.TopCenter,
         ) {
             if (isLoading) {
                 CircularProgressIndicator()
             } else {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 720.dp)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp, vertical = 20.dp)
-                        .padding(bottom = 72.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 720.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 24.dp, vertical = 20.dp)
+                            .padding(bottom = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    content = content
+                    content = content,
                 )
             }
         }
@@ -135,7 +136,7 @@ private fun SaveEntryFab(
             if (isSaving) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
                 )
             } else {
                 Icon(Icons.Default.Check, contentDescription = null)
@@ -144,7 +145,8 @@ private fun SaveEntryFab(
         expanded = !isSaving,
         enabled = enabled,
         labelVisible = labelVisible,
-        modifier = modifier
-            .then(if (enabled) Modifier else Modifier.semantics { disabled() })
+        modifier =
+            modifier
+                .then(if (enabled) Modifier else Modifier.semantics { disabled() }),
     )
 }

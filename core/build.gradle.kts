@@ -5,22 +5,28 @@ plugins {
     alias(libs.plugins.hilt.android)
 }
 
-val generateErrorCatalogSources = rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
-    "generateErrorCatalogSources",
-)
+val generateErrorCatalogSources =
+    rootProject.tasks.named<passly.GenerateErrorCatalogTask>(
+        "generateErrorCatalogSources",
+    )
 
 android {
     namespace = "com.aozijx.passly.core"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
+    compileSdk =
+        libs.versions.androidCompileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.androidMinSdk.get().toInt()
+        minSdk =
+            libs.versions.androidMinSdk
+                .get()
+                .toInt()
     }
 
     buildFeatures {
         compose = true
     }
-
 }
 
 androidComponents.onVariants { variant ->
@@ -31,7 +37,11 @@ androidComponents.onVariants { variant ->
 }
 
 kotlin {
-    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
+    jvmToolchain(
+        libs.versions.jvmToolchain
+            .get()
+            .toInt(),
+    )
 }
 
 dependencies {

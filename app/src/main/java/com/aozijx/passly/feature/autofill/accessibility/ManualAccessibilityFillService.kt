@@ -17,54 +17,63 @@ import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
+import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class ManualAccessibilityFillService : AccessibilityService() {
     @Inject lateinit var sessions: AccessibilityFillSessionStore
+
     @Inject lateinit var finishInteraction: FinishAutofillInteraction
+
     @Inject lateinit var logger: Logger
+
     @Inject lateinit var traceContinuations: TraceContinuationStore
+
     @Inject lateinit var resultDelivery: AutofillResultDelivery
+
     @Inject lateinit var launchTarget: AutofillLaunchTarget
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var floatingButton: View? = null
-    private val buttonCallback = object : AccessibilityButtonController.AccessibilityButtonCallback() {
-        override fun onClicked(controller: AccessibilityButtonController) = requestFill()
-    }
+    private val buttonCallback =
+        object : AccessibilityButtonController.AccessibilityButtonCallback() {
+            override fun onClicked(controller: AccessibilityButtonController) = requestFill()
+        }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         sessions.bind(this, ::onDeliveryExpired)
         accessibilityButtonController.registerAccessibilityButtonCallback(buttonCallback)
-        val button = Button(this).apply {
-            text = getString(R.string.accessibility_fill_button)
-            contentDescription = getString(R.string.accessibility_fill_button_description)
-            setOnClickListener { requestFill() }
-        }
+        val button =
+            Button(this).apply {
+                text = getString(R.string.accessibility_fill_button)
+                contentDescription = getString(R.string.accessibility_fill_button_description)
+                setOnClickListener { requestFill() }
+            }
         val size = (56 * resources.displayMetrics.density).toInt()
-        val parameters = WindowManager.LayoutParams(
-            size,
-            size,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT,
-        ).apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL }
+        val parameters =
+            WindowManager
+                .LayoutParams(
+                    size,
+                    size,
+                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                    PixelFormat.TRANSLUCENT,
+                ).apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL }
         try {
             getSystemService(WindowManager::class.java).addView(button, parameters)
             floatingButton = button
@@ -78,21 +87,23 @@ class ManualAccessibilityFillService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        floatingButton?.visibility = if (rootInActiveWindow?.packageName?.toString() == packageName) {
-            View.GONE
-        } else {
-            View.VISIBLE
-        }
+        floatingButton?.visibility =
+            if (rootInActiveWindow?.packageName?.toString() == packageName) {
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
         val claim = sessions.claimWhenTargetActive() ?: return
         scope.launch {
             traceContinuations.continueOrRoot(
                 claim.receipt.interactionId.value,
                 Operations.AutofillAccessibilityRequest,
             ) {
-                val fields = LogStatements.Autofill.context(
-                    AutofillInteractionSource.ACCESSIBILITY,
-                    claim.targetPackage,
-                )
+                val fields =
+                    LogStatements.Autofill.context(
+                        AutofillInteractionSource.ACCESSIBILITY,
+                        claim.targetPackage,
+                    )
                 try {
                     resultDelivery.commitResult(claim.receipt) {
                         check(claim.commit()) { "Accessibility target is unavailable" }
@@ -127,11 +138,14 @@ class ManualAccessibilityFillService : AccessibilityService() {
 
     private fun requestFill() {
         when (val captured = sessions.capture()) {
-            AccessibilityCapture.Unavailable -> scope.launch {
-                logger.withRootTrace(Operations.AutofillAccessibilityRequest) {
-                    logger.log(LogStatements.Autofill.fallbackUnavailable(Reasons.NoFillableFields))
+            AccessibilityCapture.Unavailable -> {
+                scope.launch {
+                    logger.withRootTrace(Operations.AutofillAccessibilityRequest) {
+                        logger.log(LogStatements.Autofill.fallbackUnavailable(Reasons.NoFillableFields))
+                    }
                 }
             }
+
             is AccessibilityCapture.Ready -> {
                 launchAccessibilityFill(
                     scope = scope,
@@ -145,20 +159,27 @@ class ManualAccessibilityFillService : AccessibilityService() {
                     },
                 ) {
                     logger.withRootTrace(Operations.AutofillAccessibilityRequest) {
-                        logger.log(LogStatements.Autofill.fallbackStarted(
-                            LogStatements.Autofill.context(
-                                AutofillInteractionSource.ACCESSIBILITY,
-                                captured.request.packageName,
+                        logger.log(
+                            LogStatements.Autofill.fallbackStarted(
+                                LogStatements.Autofill.context(
+                                    AutofillInteractionSource.ACCESSIBILITY,
+                                    captured.request.packageName,
+                                ),
                             ),
-                        ))
+                        )
                         traceContinuations.capture(captured.token)
                         withContext(Dispatchers.Main) {
-                            startActivity(launchTarget.accessibilityFillIntent(
-                                this@ManualAccessibilityFillService,
-                            ).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-                            })
+                            startActivity(
+                                launchTarget
+                                    .accessibilityFillIntent(
+                                        this@ManualAccessibilityFillService,
+                                    ).apply {
+                                        addFlags(
+                                            Intent.FLAG_ACTIVITY_NEW_TASK or
+                                                Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS,
+                                        )
+                                    },
+                            )
                         }
                     }
                 }

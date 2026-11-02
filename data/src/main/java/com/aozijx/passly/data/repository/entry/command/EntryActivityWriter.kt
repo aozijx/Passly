@@ -14,23 +14,23 @@ import javax.inject.Singleton
  * 封装条目活动记录的写入，供各 Command Executor 在事务内调用。
  */
 @Singleton
-internal class EntryActivityWriter @Inject constructor() {
-
-    /**
-     * 记录一条活动。
-     */
-    suspend fun recordActivity(
-        db: AppDatabase,
-        entryId: String,
-        activityType: ActivityType,
-        now: Long,
-        context: EntryActivityContext = EntryActivityContext.Lifecycle,
-    ) {
-        with(db) {
-            entryActivityCommandDao().insertIdempotent(
-                EntryActivity(entryId = entryId, activityType = activityType, context = context, createdAt = now).toEntity()
-            )
+internal class EntryActivityWriter
+    @Inject
+    constructor() {
+        /**
+         * 记录一条活动。
+         */
+        suspend fun recordActivity(
+            db: AppDatabase,
+            entryId: String,
+            activityType: ActivityType,
+            now: Long,
+            context: EntryActivityContext = EntryActivityContext.Lifecycle,
+        ) {
+            with(db) {
+                entryActivityCommandDao().insertIdempotent(
+                    EntryActivity(entryId = entryId, activityType = activityType, context = context, createdAt = now).toEntity(),
+                )
+            }
         }
     }
-
-}

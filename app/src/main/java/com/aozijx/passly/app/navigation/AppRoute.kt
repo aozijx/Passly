@@ -10,8 +10,9 @@ package com.aozijx.passly.app.navigation
  *  Detail   — 条目详情全屏页，携带 entryId 参数
  *  Settings — 设置页
  */
-sealed class AppRoute(val route: String) {
-
+sealed class AppRoute(
+    val route: String,
+) {
     data object VaultGraph : AppRoute("vault_graph")
 
     data object Vault : AppRoute("vault")
@@ -44,6 +45,7 @@ sealed class AppRoute(val route: String) {
 
     data object AddWifiFromSeed : AppRoute("vault/add/wifi/from-seed/{seedToken}") {
         const val ARG_SEED_TOKEN = "seedToken"
+
         fun createRoute(token: String) = "vault/add/wifi/from-seed/$token"
     }
 
@@ -51,6 +53,7 @@ sealed class AppRoute(val route: String) {
 
     data object Detail : AppRoute("detail/{entryId}") {
         const val ARG_ENTRY_ID = "entryId"
+
         fun createRoute(entryId: String) = "detail/$entryId"
     }
 }

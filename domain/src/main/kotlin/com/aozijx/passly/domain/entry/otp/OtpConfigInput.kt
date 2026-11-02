@@ -27,34 +27,48 @@ data class OtpConfigInput(
         val parsedCounter = if (type == OtpType.HOTP) counter.trim().toLongOrNull() else null
         val invalid = OtpConfigValidation.validateParameters(type, algorithm, parsedDigits, parsedPeriod, parsedCounter)
 
-        val normalizedSecret = try {
-            when (encoding) {
-                OtpSecretEncoding.BASE32 -> OtpSecretCodec.canonicalBase32(
-                    secret.filterNot(Char::isWhitespace), encoding,
-                )
-                OtpSecretEncoding.BASE64 -> secret.trim().also { OtpSecretCodec.decode(it, encoding).fill(0) }
+        val normalizedSecret =
+            try {
+                when (encoding) {
+                    OtpSecretEncoding.BASE32 -> {
+                        OtpSecretCodec.canonicalBase32(
+                            secret.filterNot(Char::isWhitespace),
+                            encoding,
+                        )
+                    }
+
+                    OtpSecretEncoding.BASE64 -> {
+                        secret.trim().also { OtpSecretCodec.decode(it, encoding).fill(0) }
+                    }
+                }
+            } catch (_: OtpGenerationError) {
+                return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
             }
-        } catch (_: OtpGenerationError) {
-            return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
-        }
         if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)
-        return OtpConfigInputResult.Valid(OtpConfig(
-            type = type,
-            secret = normalizedSecret,
-            algorithm = algorithm,
-            digits = requireNotNull(parsedDigits),
-            periodSeconds = parsedPeriod,
-            counter = parsedCounter,
-            encoding = encoding,
-            issuer = issuer.trim().takeIf(String::isNotEmpty),
-            accountName = accountName.trim().takeIf(String::isNotEmpty),
-        ))
+        return OtpConfigInputResult.Valid(
+            OtpConfig(
+                type = type,
+                secret = normalizedSecret,
+                algorithm = algorithm,
+                digits = requireNotNull(parsedDigits),
+                periodSeconds = parsedPeriod,
+                counter = parsedCounter,
+                encoding = encoding,
+                issuer = issuer.trim().takeIf(String::isNotEmpty),
+                accountName = accountName.trim().takeIf(String::isNotEmpty),
+            ),
+        )
     }
 }
 
 sealed interface OtpConfigInputResult {
-    data class Valid(val config: OtpConfig) : OtpConfigInputResult {
+    data class Valid(
+        val config: OtpConfig,
+    ) : OtpConfigInputResult {
         override fun toString() = "Valid(***)"
     }
-    data class Invalid(val fields: Set<FieldKey>) : OtpConfigInputResult
+
+    data class Invalid(
+        val fields: Set<FieldKey>,
+    ) : OtpConfigInputResult
 }

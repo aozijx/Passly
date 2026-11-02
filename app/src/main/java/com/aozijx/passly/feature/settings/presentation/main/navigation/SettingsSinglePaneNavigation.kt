@@ -23,7 +23,9 @@ internal enum class SettingsSinglePanePage {
     Detail,
 }
 
-internal enum class SettingsSinglePaneTargetLayer(val zIndex: Float) {
+internal enum class SettingsSinglePaneTargetLayer(
+    val zIndex: Float,
+) {
     Background(-1f),
     Default(0f),
     Foreground(1f),
@@ -32,11 +34,12 @@ internal enum class SettingsSinglePaneTargetLayer(val zIndex: Float) {
 internal fun resolveSettingsSinglePaneTargetLayer(
     initial: SettingsSinglePanePage,
     target: SettingsSinglePanePage,
-): SettingsSinglePaneTargetLayer = when {
-    initial == target -> SettingsSinglePaneTargetLayer.Default
-    target == SettingsSinglePanePage.Detail -> SettingsSinglePaneTargetLayer.Foreground
-    else -> SettingsSinglePaneTargetLayer.Background
-}
+): SettingsSinglePaneTargetLayer =
+    when {
+        initial == target -> SettingsSinglePaneTargetLayer.Default
+        target == SettingsSinglePanePage.Detail -> SettingsSinglePaneTargetLayer.Foreground
+        else -> SettingsSinglePaneTargetLayer.Background
+    }
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -80,38 +83,48 @@ internal fun SettingsSinglePane(
         transitionSpec = {
             val layer = resolveSettingsSinglePaneTargetLayer(initialState, targetState)
             when {
-                initialState == targetState -> ContentTransform(
-                    targetContentEnter = EnterTransition.None,
-                    initialContentExit = ExitTransition.None,
-                    targetContentZIndex = layer.zIndex,
-                    sizeTransform = null,
-                )
+                initialState == targetState -> {
+                    ContentTransform(
+                        targetContentEnter = EnterTransition.None,
+                        initialContentExit = ExitTransition.None,
+                        targetContentZIndex = layer.zIndex,
+                        sizeTransform = null,
+                    )
+                }
 
-                targetState == SettingsSinglePanePage.Detail -> ContentTransform(
-                    targetContentEnter = slideInHorizontally(
-                        initialOffsetX = { it },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    initialContentExit = slideOutHorizontally(
-                        targetOffsetX = { -it / 4 },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    targetContentZIndex = layer.zIndex,
-                    sizeTransform = null,
-                )
+                targetState == SettingsSinglePanePage.Detail -> {
+                    ContentTransform(
+                        targetContentEnter =
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = motionScheme.defaultSpatialSpec(),
+                            ),
+                        initialContentExit =
+                            slideOutHorizontally(
+                                targetOffsetX = { -it / 4 },
+                                animationSpec = motionScheme.defaultSpatialSpec(),
+                            ),
+                        targetContentZIndex = layer.zIndex,
+                        sizeTransform = null,
+                    )
+                }
 
-                else -> ContentTransform(
-                    targetContentEnter = slideInHorizontally(
-                        initialOffsetX = { -it / 4 },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    initialContentExit = slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                    ),
-                    targetContentZIndex = layer.zIndex,
-                    sizeTransform = null,
-                )
+                else -> {
+                    ContentTransform(
+                        targetContentEnter =
+                            slideInHorizontally(
+                                initialOffsetX = { -it / 4 },
+                                animationSpec = motionScheme.defaultSpatialSpec(),
+                            ),
+                        initialContentExit =
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = motionScheme.defaultSpatialSpec(),
+                            ),
+                        targetContentZIndex = layer.zIndex,
+                        sizeTransform = null,
+                    )
+                }
             }
         },
     ) { page ->

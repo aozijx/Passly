@@ -32,10 +32,19 @@ class SettingsDestinationTest {
         assertTrue(SettingsDestination.Main !in routes)
         assertEquals(
             setOf(
-                "settings/security", "settings/privacy", "settings/permissions", "settings/appearance",
-                "settings/interface", "settings/interaction", "settings/autofill",
-                "settings/data", "settings/backup_restore", "settings/notifications",
-                "settings/recovery_code", "settings/about", "settings/diagnostics",
+                "settings/security",
+                "settings/privacy",
+                "settings/permissions",
+                "settings/appearance",
+                "settings/interface",
+                "settings/interaction",
+                "settings/autofill",
+                "settings/data",
+                "settings/backup_restore",
+                "settings/notifications",
+                "settings/recovery_code",
+                "settings/about",
+                "settings/diagnostics",
             ),
             routes.map(SettingsDestination::route).toSet(),
         )
@@ -43,9 +52,10 @@ class SettingsDestinationTest {
 
     @Test
     fun permissionsFollowPrivacyInSecuritySection() {
-        val securityGroups = SettingsGroup.entries.filter {
-            it.sectionTitleRes == com.aozijx.passly.R.string.settings_section_security
-        }
+        val securityGroups =
+            SettingsGroup.entries.filter {
+                it.sectionTitleRes == com.aozijx.passly.R.string.settings_section_security
+            }
 
         assertEquals(
             listOf(SettingsGroup.SECURITY, SettingsGroup.PRIVACY, SettingsGroup.PERMISSIONS),

@@ -8,13 +8,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AppShellDestinationTest {
-
     @Test
     fun `database failure takes precedence over session destinations`() {
-        val state = AppShellUiState(
-            sessionMode = AppShellSessionMode.VAULT,
-            databaseState = AppShellDatabaseState.Failed(IllegalStateException("broken")),
-        )
+        val state =
+            AppShellUiState(
+                sessionMode = AppShellSessionMode.VAULT,
+                databaseState = AppShellDatabaseState.Failed(IllegalStateException("broken")),
+            )
 
         assertEquals(AppShellDestination.DATABASE_ERROR, state.destination)
     }
@@ -38,14 +38,15 @@ class AppShellDestinationTest {
     @Test
     fun `authentication state maps exhaustively to one shell session mode`() {
         val requestId = AuthenticationRequestId("request")
-        val authenticationStates = listOf(
-            AuthenticationState.Locked,
-            AuthenticationState.AwaitingHost(requestId),
-            AuthenticationState.Authenticating(requestId, AuthenticationMethod.APP_PASSWORD),
-            AuthenticationState.Unlocking(requestId),
-            AuthenticationState.Locking(LockReason.USER),
-            AuthenticationState.AutofillAuthenticated(authenticatedAtMs = 1L),
-        )
+        val authenticationStates =
+            listOf(
+                AuthenticationState.Locked,
+                AuthenticationState.AwaitingHost(requestId),
+                AuthenticationState.Authenticating(requestId, AuthenticationMethod.APP_PASSWORD),
+                AuthenticationState.Unlocking(requestId),
+                AuthenticationState.Locking(LockReason.USER),
+                AuthenticationState.AutofillAuthenticated(authenticatedAtMs = 1L),
+            )
 
         authenticationStates.forEach { state ->
             assertEquals(AppShellSessionMode.AUTHENTICATION, state.toAppShellSessionMode())

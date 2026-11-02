@@ -9,7 +9,7 @@ import java.io.InputStream
  */
 class LimitedInputStream(
     input: InputStream,
-    private val maxBytes: Long
+    private val maxBytes: Long,
 ) : FilterInputStream(input) {
     private var totalRead: Long = 0
 
@@ -22,7 +22,11 @@ class LimitedInputStream(
         return result
     }
 
-    override fun read(b: ByteArray, off: Int, len: Int): Int {
+    override fun read(
+        b: ByteArray,
+        off: Int,
+        len: Int,
+    ): Int {
         val remaining = maxBytes - totalRead
         val allowed = minOf(len.toLong(), remaining + 1).coerceAtLeast(1).toInt()
         val result = super.read(b, off, allowed)

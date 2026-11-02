@@ -6,14 +6,15 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.github.f4b6a3.uuid.UuidCreator
 
 @JvmInline
-value class AutofillInteractionId(val value: String) {
+value class AutofillInteractionId(
+    val value: String,
+) {
     init {
         require(value.isNotBlank()) { "Autofill interaction ID cannot be blank" }
     }
 
     companion object {
-        fun new(): AutofillInteractionId =
-            AutofillInteractionId(UuidCreator.getTimeOrderedEpoch().toString())
+        fun new(): AutofillInteractionId = AutofillInteractionId(UuidCreator.getTimeOrderedEpoch().toString())
     }
 }
 
@@ -26,14 +27,26 @@ enum class AutofillInteractionSource {
 
 sealed interface AutofillInteractionState {
     data object RequiresUnlock : AutofillInteractionState
+
     data object Authenticating : AutofillInteractionState
+
     data object Authorized : AutofillInteractionState
+
     data object CandidatesReady : AutofillInteractionState
-    data class ResolvingSelection(val entryId: EntryId) : AutofillInteractionState
+
+    data class ResolvingSelection(
+        val entryId: EntryId,
+    ) : AutofillInteractionState
+
     data object Completed : AutofillInteractionState
+
     data object Cancelled : AutofillInteractionState
+
     data object Expired : AutofillInteractionState
-    data class Failed(val failure: AuthenticationFailure) : AutofillInteractionState
+
+    data class Failed(
+        val failure: AuthenticationFailure,
+    ) : AutofillInteractionState
 }
 
 data class AutofillInteractionSnapshot(
@@ -52,12 +65,20 @@ enum class AutofillInteractionRejection {
 }
 
 sealed interface AutofillInteractionUpdate {
-    data class Updated(val snapshot: AutofillInteractionSnapshot) : AutofillInteractionUpdate
-    data class Rejected(val reason: AutofillInteractionRejection) : AutofillInteractionUpdate
+    data class Updated(
+        val snapshot: AutofillInteractionSnapshot,
+    ) : AutofillInteractionUpdate
+
+    data class Rejected(
+        val reason: AutofillInteractionRejection,
+    ) : AutofillInteractionUpdate
 }
 
 sealed interface AutofillAuthorizationOutcome {
-    data class Authorized(val snapshot: AutofillInteractionSnapshot) : AutofillAuthorizationOutcome
+    data class Authorized(
+        val snapshot: AutofillInteractionSnapshot,
+    ) : AutofillAuthorizationOutcome
+
     data class Cancelled(
         val snapshot: AutofillInteractionSnapshot,
         val reason: CancellationReason,
@@ -68,5 +89,7 @@ sealed interface AutofillAuthorizationOutcome {
         val failure: AuthenticationFailure,
     ) : AutofillAuthorizationOutcome
 
-    data class Rejected(val reason: AutofillInteractionRejection) : AutofillAuthorizationOutcome
+    data class Rejected(
+        val reason: AutofillInteractionRejection,
+    ) : AutofillAuthorizationOutcome
 }

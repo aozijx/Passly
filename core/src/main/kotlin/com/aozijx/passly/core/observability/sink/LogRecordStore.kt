@@ -30,16 +30,36 @@ enum class LogClearResult {
     Failed,
 }
 
-interface LogRecordStore : LogSink, AutoCloseable {
+interface LogRecordStore :
+    LogSink,
+    AutoCloseable {
     fun write(record: SanitizedLogRecord)
+
     override fun emit(record: SanitizedLogRecord) = write(record)
-    fun readPage(cursor: LogRecordCursor?, limit: Int): LogRecordPage
-    fun readBetween(startTimestampMs: Long, endTimestampMs: Long, limit: Int): List<SanitizedLogRecord>
+
+    fun readPage(
+        cursor: LogRecordCursor?,
+        limit: Int,
+    ): LogRecordPage
+
+    fun readBetween(
+        startTimestampMs: Long,
+        endTimestampMs: Long,
+        limit: Int,
+    ): List<SanitizedLogRecord>
+
     fun flush(timeoutMs: Long): Boolean
+
     fun storageBytes(): Long
+
     fun drainDroppedCounts(): LogDropCounts
+
     fun clear(): LogClearResult
-    fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean
+
+    fun crashEmergencyWrite(
+        record: SanitizedLogRecord,
+        timeoutMs: Long,
+    ): Boolean
 }
 
 fun interface LogRecordStoreFactory {

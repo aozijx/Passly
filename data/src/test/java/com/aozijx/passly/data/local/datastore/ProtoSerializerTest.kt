@@ -10,17 +10,16 @@ import com.aozijx.passly.data.preferences.proto.SecurityPreferences
 import com.aozijx.passly.data.preferences.proto.SortDirectionPreference
 import com.aozijx.passly.data.preferences.proto.SwipeActionPreference
 import com.aozijx.passly.data.preferences.proto.VaultSortFieldPreference
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 
 class ProtoSerializerTest {
-
     @Test
     fun appPreferences_defaultInstanceOwnsPersistedBehavior() {
         val defaults = AppPreferences.getDefaultInstance()
@@ -75,42 +74,48 @@ class ProtoSerializerTest {
     }
 
     @Test
-    fun appPreferences_roundTripPreservesAppValues() = runBlocking {
-        val preferences = AppPreferences.newBuilder()
-            .setAppearance(
-                AppearancePreferences.newBuilder()
-                    .setDynamicColorEnabled(false)
-                    .setThemeKey("oled")
-                    .build(),
-            )
-            .build()
-        val output = ByteArrayOutputStream()
+    fun appPreferences_roundTripPreservesAppValues() =
+        runBlocking {
+            val preferences =
+                AppPreferences
+                    .newBuilder()
+                    .setAppearance(
+                        AppearancePreferences
+                            .newBuilder()
+                            .setDynamicColorEnabled(false)
+                            .setThemeKey("oled")
+                            .build(),
+                    ).build()
+            val output = ByteArrayOutputStream()
 
-        AppPreferencesSerializer.writeTo(preferences, output)
-        val decoded = AppPreferencesSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
+            AppPreferencesSerializer.writeTo(preferences, output)
+            val decoded = AppPreferencesSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
 
-        assertEquals(preferences, decoded)
-        assertFalse(decoded.appearance.dynamicColorEnabled)
-        assertEquals("oled", decoded.appearance.themeKey)
-    }
+            assertEquals(preferences, decoded)
+            assertFalse(decoded.appearance.dynamicColorEnabled)
+            assertEquals("oled", decoded.appearance.themeKey)
+        }
 
     @Test
-    fun securityPreferences_roundTripPreservesSecurityValues() = runBlocking {
-        val preferences = SecurityPreferences.newBuilder()
-            .setLockOnBackground(true)
-            .setLockTimeoutMs(45_000L)
-            .setClipboardClearDelaySeconds(15)
-            .build()
-        val output = ByteArrayOutputStream()
+    fun securityPreferences_roundTripPreservesSecurityValues() =
+        runBlocking {
+            val preferences =
+                SecurityPreferences
+                    .newBuilder()
+                    .setLockOnBackground(true)
+                    .setLockTimeoutMs(45_000L)
+                    .setClipboardClearDelaySeconds(15)
+                    .build()
+            val output = ByteArrayOutputStream()
 
-        SecurityPreferencesSerializer.writeTo(preferences, output)
-        val decoded = SecurityPreferencesSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
+            SecurityPreferencesSerializer.writeTo(preferences, output)
+            val decoded = SecurityPreferencesSerializer.readFrom(ByteArrayInputStream(output.toByteArray()))
 
-        assertEquals(preferences, decoded)
-        assertTrue(decoded.lockOnBackground)
-        assertEquals(45_000L, decoded.lockTimeoutMs)
-        assertEquals(15, decoded.clipboardClearDelaySeconds)
-    }
+            assertEquals(preferences, decoded)
+            assertTrue(decoded.lockOnBackground)
+            assertEquals(45_000L, decoded.lockTimeoutMs)
+            assertEquals(15, decoded.clipboardClearDelaySeconds)
+        }
 
     @Test
     fun preferenceSerializers_rejectCorruptProto() {

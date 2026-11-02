@@ -7,7 +7,9 @@ package com.aozijx.passly.feature.backup.internal.model
  * formats without changing the backup service contract.
  */
 @JvmInline
-value class BackupFormatId(val value: String) {
+value class BackupFormatId(
+    val value: String,
+) {
     init {
         require(value.matches(Regex("[a-z0-9][a-z0-9._-]{1,63}"))) {
             "Invalid backup format id: $value"

@@ -40,3 +40,12 @@
 
 更完整的状态架构见[状态管理规范](architecture-and-state.md)，UI API 见[Compose 规范](compose-ui.md)，长期边界见
 [维护边界](maintenance-boundaries.md)。
+
+## 自动格式检查
+
+仓库通过 KtLint Gradle 插件 `14.2.0` 固定调用 KtLint `1.8.0`。根目录 `.editorconfig` 统一规定四空格缩进、
+尾逗号、import 排序、文件名与包名规则；`ktlintCheckAll` 覆盖各 Gradle 模块、Gradle Kotlin 脚本和 `buildSrc`。
+`check` 只运行只读检查，格式化必须显式调用 `ktlintFormatAll`。格式修正独立于行为改动；例外仅在具体
+Kotlin 声明上用窄范围 `@Suppress("ktlint:standard:<rule>")`，并在代码附近说明保留理由，不创建全仓 baseline。
+通配 import 仍按字母顺序检查，但不强制展开；仓库 Kotlin 规范只要求排序，保持现有 import 使用方式可以避免
+格式接入带来大量与规则目标无关的 import 改写。

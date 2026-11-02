@@ -12,24 +12,25 @@ import kotlinx.coroutines.withContext
  */
 internal suspend fun consumeRecoveryCodeOrRollback(
     consume: suspend () -> Unit,
-    rollback: suspend () -> Unit
-): Boolean = try {
-    consume()
-    true
-} catch (cancelled: CancellationException) {
-    withContext(NonCancellable) { rollback() }
-    throw cancelled
-} catch (_: Throwable) {
-    withContext(NonCancellable) { rollback() }
-    false
-}
+    rollback: suspend () -> Unit,
+): Boolean =
+    try {
+        consume()
+        true
+    } catch (cancelled: CancellationException) {
+        withContext(NonCancellable) { rollback() }
+        throw cancelled
+    } catch (_: Throwable) {
+        withContext(NonCancellable) { rollback() }
+        false
+    }
 
 /**
  * A rebuilt primary password ends a recovery session before refreshing derived availability.
  */
 internal suspend fun finishRecoveryPasswordProvisioning(
     seal: suspend () -> Unit,
-    refreshAvailability: suspend () -> Unit
+    refreshAvailability: suspend () -> Unit,
 ) {
     withContext(NonCancellable) { seal() }
     try {

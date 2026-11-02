@@ -11,12 +11,8 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 internal abstract class BackupDirectoryAccessModule {
     @Binds
-    abstract fun bindBackupDirectoryAccess(
-        implementation: AndroidBackupDirectoryAccess,
-    ): BackupDirectoryAccess
+    abstract fun bindBackupDirectoryAccess(implementation: AndroidBackupDirectoryAccess): BackupDirectoryAccess
 
     @Binds
-    abstract fun bindBackupDirectoryStatusReader(
-        implementation: AndroidBackupDirectoryAccess,
-    ): BackupDirectoryStatusReader
+    abstract fun bindBackupDirectoryStatusReader(implementation: AndroidBackupDirectoryAccess): BackupDirectoryStatusReader
 }

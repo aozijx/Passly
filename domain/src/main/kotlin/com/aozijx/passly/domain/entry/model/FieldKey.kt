@@ -58,5 +58,5 @@ enum class FieldKey {
 
     WIFI_SSID,
     WIFI_SECURITY,
-    WIFI_HIDDEN
+    WIFI_HIDDEN,
 }

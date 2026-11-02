@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 interface AuthenticationMethodProvisioner {
     /** Authorizes entry into app-password management with its exact security purpose. */
     suspend fun authorizeAppPasswordManagement(): AuthenticationResult
+
     /**
      * 调用方将 [password] 的所有权转移给实现；返回前数组会被清零。
      *
@@ -17,10 +18,11 @@ interface AuthenticationMethodProvisioner {
      */
     suspend fun changeAppPassword(
         currentPassword: CharArray,
-        newPassword: CharArray
+        newPassword: CharArray,
     ): AuthenticationResult
 
     suspend fun disableAppPassword(): AuthenticationResult
+
     suspend fun disableBiometric(): AuthenticationResult
 
     /**
@@ -28,6 +30,7 @@ interface AuthenticationMethodProvisioner {
      * 调用方不应在此之前重复要求应用密码或其他认证。
      */
     suspend fun rotateBiometricPolicy(invalidateOnEnrollment: Boolean): AuthenticationResult
+
     suspend fun hasRecoveryCode(): Boolean
 
     /**

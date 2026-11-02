@@ -15,30 +15,33 @@ import javax.inject.Singleton
  * Credential Entry Factory: Builds entry objects for Credential Manager.
  */
 @Singleton
-class CredentialEntryFactory @Inject constructor(
-    private val pendingIntentFactory: CredentialPendingIntentFactory,
-) {
-
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    fun buildPasswordEntry(
-        context: Context,
-        interactionId: AutofillInteractionId,
-        candidate: AutofillCandidateSummary,
-        option: BeginGetPasswordOption,
-    ): PasswordCredentialEntry = PasswordCredentialEntry.Builder(
-        context = context,
-        username = candidate.entry.username,
-        pendingIntent = pendingIntentFactory.createPasswordGetPendingIntent(
-            context = context,
-            interactionId = interactionId,
-            entryId = candidate.entry.id,
-        ),
-        beginGetPasswordOption = option,
-    )
-        .setDisplayName(candidate.entry.title)
-        .setIcon(Icon.createWithResource(context, android.R.drawable.ic_lock_lock))
-        .setLastUsedTime(null)
-        .setAutoSelectAllowed(false)
-        .setDefaultIconPreferredAsSingleProvider(false)
-        .build()
-}
+class CredentialEntryFactory
+    @Inject
+    constructor(
+        private val pendingIntentFactory: CredentialPendingIntentFactory,
+    ) {
+        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        fun buildPasswordEntry(
+            context: Context,
+            interactionId: AutofillInteractionId,
+            candidate: AutofillCandidateSummary,
+            option: BeginGetPasswordOption,
+        ): PasswordCredentialEntry =
+            PasswordCredentialEntry
+                .Builder(
+                    context = context,
+                    username = candidate.entry.username,
+                    pendingIntent =
+                        pendingIntentFactory.createPasswordGetPendingIntent(
+                            context = context,
+                            interactionId = interactionId,
+                            entryId = candidate.entry.id,
+                        ),
+                    beginGetPasswordOption = option,
+                ).setDisplayName(candidate.entry.title)
+                .setIcon(Icon.createWithResource(context, android.R.drawable.ic_lock_lock))
+                .setLastUsedTime(null)
+                .setAutoSelectAllowed(false)
+                .setDefaultIconPreferredAsSingleProvider(false)
+                .build()
+    }

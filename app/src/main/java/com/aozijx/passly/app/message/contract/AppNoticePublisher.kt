@@ -8,5 +8,6 @@ fun interface AppNoticePublisher {
 
 sealed interface NoticeEnqueueResult {
     data object Accepted : NoticeEnqueueResult
+
     data object QueueFull : NoticeEnqueueResult
 }

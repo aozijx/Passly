@@ -1,7 +1,5 @@
 package com.aozijx.passly.data.repository.entry
 
-import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
-
 import android.content.Context
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
@@ -16,13 +14,14 @@ import com.aozijx.passly.data.local.database.TestDatabaseFactory
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
-import com.aozijx.passly.data.repository.entry.command.EntryRevisionHistoryRebuilder
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
+import com.aozijx.passly.data.repository.entry.command.EntryRevisionHistoryRebuilder
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -41,12 +40,15 @@ class EntryRevisionHistoryRebuilderTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
-            .allowMainThreadQueries()
-            .build()
-        fieldKeyManager = FieldKeyManager().apply {
-            deriveAndSet(ByteArray(32) { (it + 17).toByte() })
-        }
+        database =
+            TestDatabaseFactory
+                .inMemoryDatabaseBuilder(context)
+                .allowMainThreadQueries()
+                .build()
+        fieldKeyManager =
+            FieldKeyManager().apply {
+                deriveAndSet(ByteArray(32) { (it + 17).toByte() })
+            }
         val fieldEncryptor = FieldEncryptor(fieldKeyManager, AesGcmCryptoEngine())
         contentCodec = EntryContentSnapshotCodec(fieldEncryptor)
         bundleCodec = SecretBundleCodec(fieldEncryptor)
@@ -59,34 +61,47 @@ class EntryRevisionHistoryRebuilderTest {
     }
 
     @Test
-    fun reset_discardsEveryRevisionAndRebuildsVersionOneBaselines() = runBlocking {
-        seedEntry(ENTRY_ONE, version = 8, title = "First", notes = "first note")
-        seedEntry(
-            ENTRY_TWO,
-            version = 3,
-            title = "Deleted",
-            notes = "deleted note",
-            deletedAt = 40L,
-        )
-        seedObsoleteRevision(ENTRY_ONE, version = 7)
-        seedObsoleteRevision(ENTRY_TWO, version = 2)
-        val rebuilder = EntryRevisionHistoryRebuilder(
-            revisionWriter = EntryRevisionWriter(contentCodec, SensitiveRevisionSnapshotCodec(), EntryIconResourceCleaner { }, EntryActivityWriter()),
-            bundleCodec = bundleCodec,
-        )
+    fun reset_discardsEveryRevisionAndRebuildsVersionOneBaselines() =
+        runBlocking {
+            seedEntry(ENTRY_ONE, version = 8, title = "First", notes = "first note")
+            seedEntry(
+                ENTRY_TWO,
+                version = 3,
+                title = "Deleted",
+                notes = "deleted note",
+                deletedAt = 40L,
+            )
+            seedObsoleteRevision(ENTRY_ONE, version = 7)
+            seedObsoleteRevision(ENTRY_TWO, version = 2)
+            val rebuilder =
+                EntryRevisionHistoryRebuilder(
+                    revisionWriter =
+                        EntryRevisionWriter(
+                            contentCodec,
+                            SensitiveRevisionSnapshotCodec(),
+                            EntryIconResourceCleaner { },
+                            EntryActivityWriter(),
+                        ),
+                    bundleCodec = bundleCodec,
+                )
 
-        database.withTransaction {
-            rebuilder.rebuildInTransaction(database, now = 100L)
+            database.withTransaction {
+                rebuilder.rebuildInTransaction(database, now = 100L)
+            }
+
+            assertEquals(8, database.entryQueryDao().getById(ENTRY_ONE)?.version)
+            assertEquals(3, database.entryQueryDao().getById(ENTRY_TWO)?.version)
+            assertBaseline(ENTRY_ONE, version = 8, title = "First", notes = "first note")
+            assertBaseline(ENTRY_TWO, version = 3, title = "Deleted", notes = "deleted note")
+            assertEquals(2, database.entryRevisionQueryDao().countAll())
         }
 
-        assertEquals(8, database.entryQueryDao().getById(ENTRY_ONE)?.version)
-        assertEquals(3, database.entryQueryDao().getById(ENTRY_TWO)?.version)
-        assertBaseline(ENTRY_ONE, version = 8, title = "First", notes = "first note")
-        assertBaseline(ENTRY_TWO, version = 3, title = "Deleted", notes = "deleted note")
-        assertEquals(2, database.entryRevisionQueryDao().countAll())
-    }
-
-    private suspend fun assertBaseline(entryId: String, version: Int, title: String, notes: String) {
+    private suspend fun assertBaseline(
+        entryId: String,
+        version: Int,
+        title: String,
+        notes: String,
+    ) {
         val revisions = database.entryRevisionQueryDao().getByEntryId(entryId)
         assertEquals(1, revisions.size)
         val revision = revisions.single()
@@ -120,14 +135,15 @@ class EntryRevisionHistoryRebuilderTest {
                 EntrySecretFieldEntity(
                     entryId = entryId,
                     fieldKey = SecretBundleCodec.FIELD_KEY,
-                    valueCipher = bundleCodec.encrypt(
-                        EntrySecret(
-                            credential = LoginCredential(),
-                            notes = notes,
+                    valueCipher =
+                        bundleCodec.encrypt(
+                            EntrySecret(
+                                credential = LoginCredential(),
+                                notes = notes,
+                            ),
+                            entryId,
+                            EntryType.LOGIN,
                         ),
-                        entryId,
-                        EntryType.LOGIN,
-                    ),
                     keyVersion = 1,
                     updatedAt = 2L,
                 ),
@@ -135,7 +151,10 @@ class EntryRevisionHistoryRebuilderTest {
         )
     }
 
-    private suspend fun seedObsoleteRevision(entryId: String, version: Int) {
+    private suspend fun seedObsoleteRevision(
+        entryId: String,
+        version: Int,
+    ) {
         database.entryRevisionCommandDao().insertStrict(
             EntryRevisionEntity(
                 revisionId = "revision-$entryId",

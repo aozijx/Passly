@@ -19,18 +19,19 @@ class VaultOtpSubscriptionEffectTest {
         val showEntry = mutableStateOf(true)
         val enabled = mutableStateOf(false)
         val events = mutableListOf<String>()
-        val provider = object : VaultOtpStateProvider {
-            override fun state(entryId: String): Flow<VaultOtpUiState?> =
-                flowOf(VaultOtpUiState.Ready(code = "123456", progress = 0.5f))
+        val provider =
+            object : VaultOtpStateProvider {
+                override fun state(entryId: String): Flow<VaultOtpUiState?> =
+                    flowOf(VaultOtpUiState.Ready(code = "123456", progress = 0.5f))
 
-            override fun subscribe(entryId: String) {
-                events += "subscribe:$entryId"
-            }
+                override fun subscribe(entryId: String) {
+                    events += "subscribe:$entryId"
+                }
 
-            override fun unsubscribe(entryId: String) {
-                events += "unsubscribe:$entryId"
+                override fun unsubscribe(entryId: String) {
+                    events += "unsubscribe:$entryId"
+                }
             }
-        }
 
         composeRule.setContent {
             if (showEntry.value) observeVaultOtpState("otp-1", provider, enabled = enabled.value)

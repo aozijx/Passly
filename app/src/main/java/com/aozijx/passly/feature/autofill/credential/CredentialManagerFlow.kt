@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill.credential
 
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -13,7 +14,6 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
@@ -52,8 +52,11 @@ sealed interface CredentialManagerPasswordResult {
 
 sealed interface CredentialManagerCreateResult {
     data object Saved : CredentialManagerCreateResult
+
     data object Queued : CredentialManagerCreateResult
+
     data object NotSaved : CredentialManagerCreateResult
+
     data class NotAuthorized(
         val authorization: AutofillAuthorizationOutcome,
     ) : CredentialManagerCreateResult
@@ -67,168 +70,184 @@ sealed interface CredentialManagerCreateResult {
  * candidate IDs that were actually presented to the system picker.
  */
 @Singleton
-class CredentialManagerFlow @Inject constructor(
-    private val discoverCandidates: DiscoverAutofillCandidates,
-    private val startInteraction: StartAutofillInteraction,
-    private val authorizeInteraction: AuthorizeAutofillInteraction,
-    private val resolveSelection: ResolveAutofillSelection,
-    private val saveCredential: SaveAutofillCredential,
-    private val finishInteraction: FinishAutofillInteraction,
-    private val interactionStore: AutofillInteractionStore,
-    private val settingsSource: InteractionSettingsSource,
-    private val secureSessionAccessState: SecureSessionAccessState,
-    private val inboxQueue: AutofillInboxQueue,
-) {
-    suspend fun beginGet(request: AutofillRequest): AutofillDiscoveryOutcome =
-        discoverCandidates(request)
-
-    suspend fun unlockAndRediscover(
-        interactionId: AutofillInteractionId,
-        request: AutofillRequest,
-    ): CredentialManagerUnlockResult = when (
-        val authorization = authorizeInteraction(interactionId)
+class CredentialManagerFlow
+    @Inject
+    constructor(
+        private val discoverCandidates: DiscoverAutofillCandidates,
+        private val startInteraction: StartAutofillInteraction,
+        private val authorizeInteraction: AuthorizeAutofillInteraction,
+        private val resolveSelection: ResolveAutofillSelection,
+        private val saveCredential: SaveAutofillCredential,
+        private val finishInteraction: FinishAutofillInteraction,
+        private val interactionStore: AutofillInteractionStore,
+        private val settingsSource: InteractionSettingsSource,
+        private val secureSessionAccessState: SecureSessionAccessState,
+        private val inboxQueue: AutofillInboxQueue,
     ) {
-        is AutofillAuthorizationOutcome.Authorized -> CredentialManagerUnlockResult.Rediscovered(
-            discoverCandidates(request, interactionId),
-        )
+        suspend fun beginGet(request: AutofillRequest): AutofillDiscoveryOutcome = discoverCandidates(request)
 
-        is AutofillAuthorizationOutcome.Cancelled,
-        is AutofillAuthorizationOutcome.Failed,
-        is AutofillAuthorizationOutcome.Rejected,
-        -> CredentialManagerUnlockResult.NotAuthorized(authorization)
-    }
-
-    suspend fun selectPassword(
-        interactionId: AutofillInteractionId,
-        scope: AutofillGrantContext,
-        entryId: EntryId,
-        allowedUserIds: Set<String> = emptySet(),
-    ): CredentialManagerPasswordResult {
-        var completed = false
-        return try {
+        suspend fun unlockAndRediscover(
+            interactionId: AutofillInteractionId,
+            request: AutofillRequest,
+        ): CredentialManagerUnlockResult =
             when (
-                val selection = resolveSelection(
-                    interactionId = interactionId,
-                    scope = scope,
-                    entryId = entryId,
-                    includeOtp = false,
-                )
+                val authorization = authorizeInteraction(interactionId)
             ) {
-                is AutofillSelectionOutcome.Filled -> {
-                    val payload = selection.payload
-                    if (
-                        payload.username.isBlank() ||
-                        payload.password.isBlank() ||
-                        (allowedUserIds.isNotEmpty() && payload.username !in allowedUserIds)
-                    ) {
-                        CredentialManagerPasswordResult.NotAvailable
-                    } else {
-                        CredentialManagerPasswordResult.Success(
-                            username = payload.username,
-                            password = payload.password,
-                            receipt = AutofillSelectionReceipt(interactionId, payload.entryId),
+                is AutofillAuthorizationOutcome.Authorized -> {
+                    CredentialManagerUnlockResult.Rediscovered(
+                        discoverCandidates(request, interactionId),
+                    )
+                }
+
+                is AutofillAuthorizationOutcome.Cancelled,
+                is AutofillAuthorizationOutcome.Failed,
+                is AutofillAuthorizationOutcome.Rejected,
+                -> {
+                    CredentialManagerUnlockResult.NotAuthorized(authorization)
+                }
+            }
+
+        suspend fun selectPassword(
+            interactionId: AutofillInteractionId,
+            scope: AutofillGrantContext,
+            entryId: EntryId,
+            allowedUserIds: Set<String> = emptySet(),
+        ): CredentialManagerPasswordResult {
+            var completed = false
+            return try {
+                when (
+                    val selection =
+                        resolveSelection(
+                            interactionId = interactionId,
+                            scope = scope,
+                            entryId = entryId,
+                            includeOtp = false,
                         )
-                            .also { completed = true }
+                ) {
+                    is AutofillSelectionOutcome.Filled -> {
+                        val payload = selection.payload
+                        if (
+                            payload.username.isBlank() ||
+                            payload.password.isBlank() ||
+                            (allowedUserIds.isNotEmpty() && payload.username !in allowedUserIds)
+                        ) {
+                            CredentialManagerPasswordResult.NotAvailable
+                        } else {
+                            CredentialManagerPasswordResult
+                                .Success(
+                                    username = payload.username,
+                                    password = payload.password,
+                                    receipt = AutofillSelectionReceipt(interactionId, payload.entryId),
+                                ).also { completed = true }
+                        }
+                    }
+
+                    AutofillSelectionOutcome.Cancelled,
+                    AutofillSelectionOutcome.Unauthorized,
+                    AutofillSelectionOutcome.CandidateUnavailable,
+                    AutofillSelectionOutcome.ScopeMismatch,
+                    is AutofillSelectionOutcome.Rejected,
+                    is AutofillSelectionOutcome.Failed,
+                    -> {
+                        CredentialManagerPasswordResult.NotAvailable
                     }
                 }
-
-                AutofillSelectionOutcome.Cancelled,
-                AutofillSelectionOutcome.Unauthorized,
-                AutofillSelectionOutcome.CandidateUnavailable,
-                AutofillSelectionOutcome.ScopeMismatch,
-                is AutofillSelectionOutcome.Rejected,
-                is AutofillSelectionOutcome.Failed,
-                -> CredentialManagerPasswordResult.NotAvailable
-            }
-        } finally {
-            withContext(NonCancellable) {
-                if (!completed) {
-                    finishInteraction.cancel(interactionId)
-                }
-            }
-        }
-    }
-
-    suspend fun beginCreate(scope: AutofillGrantContext): AutofillInteractionSnapshot =
-        startInteraction(
-            source = AutofillInteractionSource.CREDENTIAL_MANAGER,
-            scope = scope,
-            // Credential creation is already an explicit system-confirmed action.
-            // It only authenticates when the Vault itself is locked.
-            requireAuthentication = false,
-        )
-
-    suspend fun createPassword(
-        interactionId: AutofillInteractionId,
-        scope: AutofillGrantContext,
-        username: String,
-        password: String,
-    ): CredentialManagerCreateResult {
-        val policy = settingsSource.interaction.first().autofill
-        if (!policy.enabled || !policy.credentialManagerEnabled) {
-            finishInteraction.cancel(interactionId)
-            return CredentialManagerCreateResult.NotSaved
-        }
-        val snapshot = interactionStore.snapshot(interactionId)
-        if (
-            snapshot == null ||
-            snapshot.source != AutofillInteractionSource.CREDENTIAL_MANAGER ||
-            snapshot.scope != scope.normalized()
-        ) {
-            finishInteraction.cancel(interactionId)
-            return CredentialManagerCreateResult.NotSaved
-        }
-
-        val draft = AutofillSaveDraft(
-            packageName = scope.packageName,
-            webDomain = scope.webDomain,
-            pageTitle = null,
-            username = username,
-            password = password,
-        )
-        if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-            when (inboxQueue.enqueue(AutofillInboxSource.CREDENTIAL_MANAGER, draft)) {
-                AutofillInboxEnqueueOutcome.Queued -> {
-                    withContext(NonCancellable) { finishInteraction.complete(interactionId) }
-                    return CredentialManagerCreateResult.Queued
-                }
-                AutofillInboxEnqueueOutcome.Full,
-                AutofillInboxEnqueueOutcome.Failed,
-                AutofillInboxEnqueueOutcome.NotProvisioned,
-                -> {
-                    withContext(NonCancellable) { finishInteraction.cancel(interactionId) }
-                    return CredentialManagerCreateResult.NotSaved
+            } finally {
+                withContext(NonCancellable) {
+                    if (!completed) {
+                        finishInteraction.cancel(interactionId)
+                    }
                 }
             }
         }
 
-        val authorization = authorizeInteraction(interactionId)
-        if (authorization !is AutofillAuthorizationOutcome.Authorized) {
-            return CredentialManagerCreateResult.NotAuthorized(authorization)
-        }
-        var completed = false
-        return try {
-            when (
-                saveCredential(draft)
+        suspend fun beginCreate(scope: AutofillGrantContext): AutofillInteractionSnapshot =
+            startInteraction(
+                source = AutofillInteractionSource.CREDENTIAL_MANAGER,
+                scope = scope,
+                // Credential creation is already an explicit system-confirmed action.
+                // It only authenticates when the Vault itself is locked.
+                requireAuthentication = false,
+            )
+
+        suspend fun createPassword(
+            interactionId: AutofillInteractionId,
+            scope: AutofillGrantContext,
+            username: String,
+            password: String,
+        ): CredentialManagerCreateResult {
+            val policy = settingsSource.interaction.first().autofill
+            if (!policy.enabled || !policy.credentialManagerEnabled) {
+                finishInteraction.cancel(interactionId)
+                return CredentialManagerCreateResult.NotSaved
+            }
+            val snapshot = interactionStore.snapshot(interactionId)
+            if (
+                snapshot == null ||
+                snapshot.source != AutofillInteractionSource.CREDENTIAL_MANAGER ||
+                snapshot.scope != scope.normalized()
             ) {
-                is AutofillSaveOutcome.Saved -> CredentialManagerCreateResult.Saved
-                    .also { completed = true }
-                AutofillSaveOutcome.InvalidDraft,
-                is AutofillSaveOutcome.Failed,
-                -> CredentialManagerCreateResult.NotSaved
+                finishInteraction.cancel(interactionId)
+                return CredentialManagerCreateResult.NotSaved
             }
-        } finally {
-            withContext(NonCancellable) {
-                if (completed) {
-                    finishInteraction.complete(interactionId)
-                } else {
-                    finishInteraction.cancel(interactionId)
+
+            val draft =
+                AutofillSaveDraft(
+                    packageName = scope.packageName,
+                    webDomain = scope.webDomain,
+                    pageTitle = null,
+                    username = username,
+                    password = password,
+                )
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
+                when (inboxQueue.enqueue(AutofillInboxSource.CREDENTIAL_MANAGER, draft)) {
+                    AutofillInboxEnqueueOutcome.Queued -> {
+                        withContext(NonCancellable) { finishInteraction.complete(interactionId) }
+                        return CredentialManagerCreateResult.Queued
+                    }
+
+                    AutofillInboxEnqueueOutcome.Full,
+                    AutofillInboxEnqueueOutcome.Failed,
+                    AutofillInboxEnqueueOutcome.NotProvisioned,
+                    -> {
+                        withContext(NonCancellable) { finishInteraction.cancel(interactionId) }
+                        return CredentialManagerCreateResult.NotSaved
+                    }
+                }
+            }
+
+            val authorization = authorizeInteraction(interactionId)
+            if (authorization !is AutofillAuthorizationOutcome.Authorized) {
+                return CredentialManagerCreateResult.NotAuthorized(authorization)
+            }
+            var completed = false
+            return try {
+                when (
+                    saveCredential(draft)
+                ) {
+                    is AutofillSaveOutcome.Saved -> {
+                        CredentialManagerCreateResult.Saved
+                            .also { completed = true }
+                    }
+
+                    AutofillSaveOutcome.InvalidDraft,
+                    is AutofillSaveOutcome.Failed,
+                    -> {
+                        CredentialManagerCreateResult.NotSaved
+                    }
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    if (completed) {
+                        finishInteraction.complete(interactionId)
+                    } else {
+                        finishInteraction.cancel(interactionId)
+                    }
                 }
             }
         }
-    }
 
-    suspend fun cancel(interactionId: AutofillInteractionId) {
-        finishInteraction.cancel(interactionId)
+        suspend fun cancel(interactionId: AutofillInteractionId) {
+            finishInteraction.cancel(interactionId)
+        }
     }
-}

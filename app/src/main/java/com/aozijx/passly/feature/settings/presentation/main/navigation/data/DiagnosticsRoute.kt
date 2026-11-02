@@ -35,6 +35,7 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     val exportFailed = stringResource(R.string.settings_log_export_failed)
     val saveCompleted = stringResource(R.string.settings_log_save_completed)
     val clearFailed = stringResource(R.string.settings_log_clear_failed)
+
     fun onDocumentPicked(uri: Uri?) {
         val owner = pageOwner.value
         val requestId = documentRequestId
@@ -43,15 +44,18 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
             viewModel.onDocumentSelected(owner, requestId, uri?.toString())
         }
     }
-    val jsonlPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(LogFormat.JSONL.mimeType),
-    ) { uri -> onDocumentPicked(uri) }
-    val tsvPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(LogFormat.TSV.mimeType),
-    ) { uri -> onDocumentPicked(uri) }
-    val zipPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(LogFormat.ZIP.mimeType),
-    ) { uri -> onDocumentPicked(uri) }
+    val jsonlPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument(LogFormat.JSONL.mimeType),
+        ) { uri -> onDocumentPicked(uri) }
+    val tsvPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument(LogFormat.TSV.mimeType),
+        ) { uri -> onDocumentPicked(uri) }
+    val zipPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument(LogFormat.ZIP.mimeType),
+        ) { uri -> onDocumentPicked(uri) }
 
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
@@ -73,12 +77,18 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
                         LogFormat.ZIP -> zipPicker.launch(effect.fileName)
                     }
                 }
-                DiagnosticsEffect.SaveCompleted ->
+
+                DiagnosticsEffect.SaveCompleted -> {
                     Toast.makeText(context, saveCompleted, Toast.LENGTH_SHORT).show()
-                DiagnosticsEffect.ExportFailed ->
+                }
+
+                DiagnosticsEffect.ExportFailed -> {
                     Toast.makeText(context, exportFailed, Toast.LENGTH_SHORT).show()
-                DiagnosticsEffect.ClearFailed ->
+                }
+
+                DiagnosticsEffect.ClearFailed -> {
                     Toast.makeText(context, clearFailed, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -90,7 +100,11 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     )
 }
 
-private fun DiagnosticsViewModel.onDocumentSelected(owner: Any, requestId: String, uri: String?) {
+private fun DiagnosticsViewModel.onDocumentSelected(
+    owner: Any,
+    requestId: String,
+    uri: String?,
+) {
     onAction(
         uri?.let { DiagnosticsAction.SaveToDocument(it, owner, requestId) }
             ?: DiagnosticsAction.SaveDocumentCancelled(owner, requestId),

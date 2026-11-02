@@ -8,11 +8,20 @@ import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 sealed interface UnlockFailureMessage {
-    data class IncorrectCredential(val remainingAttempts: Int?) : UnlockFailureMessage
-    data class RateLimited(val retryAfterSeconds: Long) : UnlockFailureMessage
+    data class IncorrectCredential(
+        val remainingAttempts: Int?,
+    ) : UnlockFailureMessage
+
+    data class RateLimited(
+        val retryAfterSeconds: Long,
+    ) : UnlockFailureMessage
+
     data object BiometricKeyInvalidated : UnlockFailureMessage
+
     data object PasswordTooShort : UnlockFailureMessage
+
     data object AppPasswordSetupFailed : UnlockFailureMessage
+
     data object Generic : UnlockFailureMessage
 }
 
@@ -23,17 +32,27 @@ data class UnlockVerificationFailure(
 
 sealed interface UnlockInputExpansion {
     data object Collapsed : UnlockInputExpansion
-    data class Expanded(val method: AuthenticationMethod) : UnlockInputExpansion
+
+    data class Expanded(
+        val method: AuthenticationMethod,
+    ) : UnlockInputExpansion
 }
 
 sealed interface UnlockVerificationPhase {
     data object Idle : UnlockVerificationPhase
-    data class Authenticating(val method: AuthenticationMethod) : UnlockVerificationPhase
-    data class Failed(val failure: UnlockVerificationFailure) : UnlockVerificationPhase
+
+    data class Authenticating(
+        val method: AuthenticationMethod,
+    ) : UnlockVerificationPhase
+
+    data class Failed(
+        val failure: UnlockVerificationFailure,
+    ) : UnlockVerificationPhase
 }
 
 sealed interface UnlockPasswordSetup {
     data object Closed : UnlockPasswordSetup
+
     data class Editing(
         val newPassword: SensitiveValue = EmptySensitiveValue,
         val confirmPassword: SensitiveValue = EmptySensitiveValue,
@@ -43,8 +62,12 @@ sealed interface UnlockPasswordSetup {
 
 sealed interface UnlockPasswordSetupPhase {
     data object Idle : UnlockPasswordSetupPhase
+
     data object Saving : UnlockPasswordSetupPhase
-    data class Failed(val message: UnlockFailureMessage) : UnlockPasswordSetupPhase
+
+    data class Failed(
+        val message: UnlockFailureMessage,
+    ) : UnlockPasswordSetupPhase
 }
 
 data class UnlockUiState(

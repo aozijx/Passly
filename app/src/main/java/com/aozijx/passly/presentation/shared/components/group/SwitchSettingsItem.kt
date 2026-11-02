@@ -27,59 +27,62 @@ fun switchSettingsGroupItem(
     title: String,
     subtitle: String? = null,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-): SegmentedSettingsItem = SegmentedSettingsItem(key = key, visible = visible) { shapes ->
-    SegmentedListItem(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        shapes = shapes.withStableSelectionShape(),
-        colors = settingsSegmentedColors(
-            selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        enabled = enabled,
-        verticalAlignment = Alignment.CenterVertically,
-        leadingContent = icon.asLeadingContent(reserveLeadingIconSpace),
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = null,
-                enabled = enabled,
-                thumbContent =
-                    if (checked) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(SwitchDefaults.IconSize),
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    checkedIconColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    onCheckedChange: (Boolean) -> Unit,
+): SegmentedSettingsItem =
+    SegmentedSettingsItem(key = key, visible = visible) { shapes ->
+        SegmentedListItem(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            shapes = shapes.withStableSelectionShape(),
+            colors =
+                settingsSegmentedColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 ),
-            )
-        },
-        supportingContent = subtitle?.let { value ->
-            {
-                Text(
-                    text = value,
+            enabled = enabled,
+            verticalAlignment = Alignment.CenterVertically,
+            leadingContent = icon.asLeadingContent(reserveLeadingIconSpace),
+            trailingContent = {
+                Switch(
+                    checked = checked,
+                    onCheckedChange = null,
+                    enabled = enabled,
+                    thumbContent =
+                        if (checked) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                    colors =
+                        SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            checkedIconColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            uncheckedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        ),
                 )
-            }
-        },
-        content = {
-            Text(
-                text = title,
-            )
-        },
-    )
-}
+            },
+            supportingContent =
+                subtitle?.let { value ->
+                    {
+                        Text(
+                            text = value,
+                        )
+                    }
+                },
+            content = {
+                Text(
+                    text = title,
+                )
+            },
+        )
+    }
 
-internal fun ListItemShapes.withStableSelectionShape(): ListItemShapes =
-    copy(selectedShape = shape)
+internal fun ListItemShapes.withStableSelectionShape(): ListItemShapes = copy(selectedShape = shape)

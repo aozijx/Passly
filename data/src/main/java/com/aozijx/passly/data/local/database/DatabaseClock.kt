@@ -4,6 +4,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class DatabaseClock @Inject constructor() {
-    fun now(): Long = System.currentTimeMillis()
-}
+internal class DatabaseClock
+    @Inject
+    constructor() {
+        fun now(): Long = System.currentTimeMillis()
+    }

@@ -13,5 +13,6 @@ internal class CrashRecordCaptureSink : LogSink {
     }
 
     fun clear() = captured.remove()
+
     fun take(): SanitizedLogRecord? = captured.get().also { captured.remove() }
 }

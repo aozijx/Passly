@@ -1,12 +1,16 @@
 package com.aozijx.passly.feature.backup.internal.archive.snapshot
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.contract.ImportMode
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 
 internal interface BackupSnapshotGateway {
     suspend fun read(options: BackupSnapshotReadOptions): BackupBundle
-    suspend fun restore(bundle: BackupBundle, mode: ImportMode): BackupRestoreResult
+
+    suspend fun restore(
+        bundle: BackupBundle,
+        mode: ImportMode,
+    ): BackupRestoreResult
 }
 
 internal data class BackupRestoreResult(

@@ -9,12 +9,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class RoomAutofillEntryWriter @Inject constructor(
-    private val createEntryExecutor: CreateEntryExecutor,
-) : AutofillEntryWriter {
-    override suspend fun create(entry: Entry): AppResult<EntryId> =
-        createEntryExecutor.executeForAutofill(entry)
+internal class RoomAutofillEntryWriter
+    @Inject
+    constructor(
+        private val createEntryExecutor: CreateEntryExecutor,
+    ) : AutofillEntryWriter {
+        override suspend fun create(entry: Entry): AppResult<EntryId> = createEntryExecutor.executeForAutofill(entry)
 
-    override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> =
-        createEntryExecutor.executeForInbox(entry)
-}
+        override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> = createEntryExecutor.executeForInbox(entry)
+    }

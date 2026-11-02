@@ -29,29 +29,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 
-private val SWIPE_ACTIONS = listOf(
-    SwipeActionType.DISABLED,
-    SwipeActionType.DELETE,
-    SwipeActionType.COPY_PASSWORD,
-    SwipeActionType.COPY_USERNAME
-)
+private val SWIPE_ACTIONS =
+    listOf(
+        SwipeActionType.DISABLED,
+        SwipeActionType.DELETE,
+        SwipeActionType.COPY_PASSWORD,
+        SwipeActionType.COPY_USERNAME,
+    )
 
-private fun SwipeActionType.icon(): ImageVector = when (this) {
-    SwipeActionType.DISABLED -> Icons.Default.Block
-    SwipeActionType.DELETE -> Icons.Default.Delete
-    SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
-    SwipeActionType.COPY_USERNAME -> Icons.Default.Person
-}
+private fun SwipeActionType.icon(): ImageVector =
+    when (this) {
+        SwipeActionType.DISABLED -> Icons.Default.Block
+        SwipeActionType.DELETE -> Icons.Default.Delete
+        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
+        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+    }
 
 @Composable
 internal fun SwipeActionSelectDialog(
     title: String,
     currentAction: SwipeActionType,
     onActionSelected: (SwipeActionType) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -61,33 +63,36 @@ internal fun SwipeActionSelectDialog(
             Column(modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp)) {
                 SWIPE_ACTIONS.forEach { action ->
                     val isSelected = action == currentAction
-                    val selectedBackground = when (action) {
-                        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
-                        SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
-                        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
-                    }
-                    val selectedContentColor = when (action) {
-                        SwipeActionType.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
-                        SwipeActionType.DELETE -> MaterialTheme.colorScheme.onErrorContainer
-                        SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
-                    }
+                    val selectedBackground =
+                        when (action) {
+                            SwipeActionType.DISABLED -> MaterialTheme.colorScheme.surfaceVariant
+                            SwipeActionType.DELETE -> MaterialTheme.colorScheme.errorContainer
+                            SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.secondaryContainer
+                        }
+                    val selectedContentColor =
+                        when (action) {
+                            SwipeActionType.DISABLED -> MaterialTheme.colorScheme.onSurfaceVariant
+                            SwipeActionType.DELETE -> MaterialTheme.colorScheme.onErrorContainer
+                            SwipeActionType.COPY_PASSWORD, SwipeActionType.COPY_USERNAME -> MaterialTheme.colorScheme.onSecondaryContainer
+                        }
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = if (isSelected) selectedBackground else Color.Transparent,
-                                shape = MaterialTheme.shapes.extraLarge
-                            )
-                            .clickable { onActionSelected(action) }
-                            .padding(vertical = 8.dp, horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = if (isSelected) selectedBackground else Color.Transparent,
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                ).clickable { onActionSelected(action) }
+                                .padding(vertical = 8.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         RadioButton(selected = isSelected, onClick = { onActionSelected(action) })
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             imageVector = action.icon(),
                             contentDescription = null,
                             tint = if (isSelected) selectedContentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         MenuOptionText(
@@ -95,7 +100,7 @@ internal fun SwipeActionSelectDialog(
                             selected = isSelected,
                             style = MaterialTheme.typography.bodyLarge,
                             selectedColor = selectedContentColor,
-                            unselectedColor = MaterialTheme.colorScheme.onSurface
+                            unselectedColor = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -105,6 +110,6 @@ internal fun SwipeActionSelectDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
-        shape = MaterialTheme.shapes.extraLarge
+        shape = MaterialTheme.shapes.extraLarge,
     )
 }

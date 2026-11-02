@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +22,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailNotesUiModel
 
@@ -46,7 +46,7 @@ fun NotesSection(
         if (model.isEditing) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedTextField(
                     value = model.editedNotes,
@@ -56,13 +56,13 @@ fun NotesSection(
                     singleLine = false,
                     minLines = 3,
                     maxLines = 10,
-                    placeholder = { Text(addNotesPlaceholder) }
+                    placeholder = { Text(addNotesPlaceholder) },
                 )
                 TextButton(
                     onClick = {
                         onNotesSaved(model.editedNotes)
                     },
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.End),
                 ) {
                     Icon(Icons.Default.Check, null)
                     Spacer(Modifier.width(4.dp))
@@ -71,13 +71,13 @@ fun NotesSection(
             }
         } else {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .combinedClickable(
-                        onLongClick = startEditing,
-                        onClick = { /* 不做任何事，只有长按触发 */ }
-                    )
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .combinedClickable(
+                            onLongClick = startEditing,
+                            onClick = { /* 不做任何事，只有长按触发 */ },
+                        ).padding(16.dp),
             ) {
                 PasslyMarkdownDocument(
                     content = model.notes,
@@ -85,7 +85,7 @@ fun NotesSection(
                     onLongClick = startEditing,
                     emptyContent = {
                         Text(text = noNotesLabel, style = MaterialTheme.typography.bodyMedium)
-                    }
+                    },
                 )
             }
         }

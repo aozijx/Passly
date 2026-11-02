@@ -23,7 +23,10 @@ class VaultSearchStateHolder internal constructor(
 
     private var wasSearchActive = initialSearchActive
 
-    fun synchronize(searchActive: Boolean, query: String) {
+    fun synchronize(
+        searchActive: Boolean,
+        query: String,
+    ) {
         val searchExited = wasSearchActive && !searchActive
         uiState = uiState.synchronize(searchActive, query)
         if (searchExited || uiState.isEditing) onExpandBars()

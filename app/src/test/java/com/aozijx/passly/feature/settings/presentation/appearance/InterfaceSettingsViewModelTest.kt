@@ -32,84 +32,104 @@ class InterfaceSettingsViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
-    fun `all interface writes report storage failures and retain repository state`() = runTest {
-        val repository = Repository { throw IOException("synthetic private diagnostic") }
-        val model = InterfaceSettingsViewModel(repository, repository)
-        model.onPageEntered()
-        val errors = mutableListOf<UiErrorMessage>()
-        backgroundScope.launch { model.errors.toList(errors) }
-        backgroundScope.launch { model.uiState.toList() }
-        runCurrent()
-        val before = model.uiState.value
-        val actions = listOf(
-            InterfaceSettingsAction.SetHideSystemBars(true),
-            InterfaceSettingsAction.SetTopBarCollapsible(true),
-            InterfaceSettingsAction.SetQuickFilterBarCollapsible(true),
-            InterfaceSettingsAction.SetAppCornerRadius(24f),
-            InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED),
-        )
-        actions.forEach(model::onAction)
-        runCurrent()
-        assertEquals(List(actions.size) { UiErrorMessage(R.string.ui_error_file_io) }, errors)
-        assertEquals(before, model.uiState.value)
-    }
-
-    @Test
-    fun `hierarchy selection follows repository emissions and success stays silent`() = runTest {
-        val stored = CompletableDeferred<Unit>()
-        val repository = Repository { stored.await() }
-        val model = InterfaceSettingsViewModel(repository, repository)
-        model.onPageEntered()
-        val errors = mutableListOf<UiErrorMessage>()
-        backgroundScope.launch { model.errors.toList(errors) }
-        backgroundScope.launch { model.uiState.toList() }
-        runCurrent()
-        val before = model.uiState.value
-        model.onAction(InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED))
-        runCurrent()
-        assertEquals(before, model.uiState.value)
-        stored.complete(Unit)
-        runCurrent()
-        assertEquals(before, model.uiState.value)
-        repository.libraryViewSettings.value = repository.libraryViewSettings.value.copy(
-            entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
-        )
-        runCurrent()
-        assertEquals(EntryHierarchyDisplayMode.EXPANDED,
-            (model.uiState.value as InterfaceSettingsUiState.Ready).entryHierarchyDisplayMode)
-        assertEquals(emptyList<UiErrorMessage>(), errors)
-    }
-
-    @Test
-    fun `destroyed page rejects late write failure`() = runTest {
-        val release = CompletableDeferred<Unit>()
-        val repository = Repository {
-            withContext(NonCancellable) { release.await() }
-            throw IOException("synthetic late failure")
+    fun `all interface writes report storage failures and retain repository state`() =
+        runTest {
+            val repository = Repository { throw IOException("synthetic private diagnostic") }
+            val model = InterfaceSettingsViewModel(repository, repository)
+            model.onPageEntered()
+            val errors = mutableListOf<UiErrorMessage>()
+            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.uiState.toList() }
+            runCurrent()
+            val before = model.uiState.value
+            val actions =
+                listOf(
+                    InterfaceSettingsAction.SetHideSystemBars(true),
+                    InterfaceSettingsAction.SetTopBarCollapsible(true),
+                    InterfaceSettingsAction.SetQuickFilterBarCollapsible(true),
+                    InterfaceSettingsAction.SetAppCornerRadius(24f),
+                    InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED),
+                )
+            actions.forEach(model::onAction)
+            runCurrent()
+            assertEquals(List(actions.size) { UiErrorMessage(R.string.ui_error_file_io) }, errors)
+            assertEquals(before, model.uiState.value)
         }
-        val model = InterfaceSettingsViewModel(repository, repository)
-        model.onPageEntered()
-        val errors = mutableListOf<UiErrorMessage>()
-        backgroundScope.launch { model.errors.toList(errors) }
-        model.onAction(InterfaceSettingsAction.SetHideSystemBars(true))
-        runCurrent()
-        ViewModelStore().apply { put("interface", model); clear() }
-        release.complete(Unit)
-        runCurrent()
-        assertEquals(emptyList<UiErrorMessage>(), errors)
-    }
 
-    private class Repository(private val save: suspend () -> Unit) :
-        InterfaceSettingsRepository, LibraryViewSettingsRepository {
+    @Test
+    fun `hierarchy selection follows repository emissions and success stays silent`() =
+        runTest {
+            val stored = CompletableDeferred<Unit>()
+            val repository = Repository { stored.await() }
+            val model = InterfaceSettingsViewModel(repository, repository)
+            model.onPageEntered()
+            val errors = mutableListOf<UiErrorMessage>()
+            backgroundScope.launch { model.errors.toList(errors) }
+            backgroundScope.launch { model.uiState.toList() }
+            runCurrent()
+            val before = model.uiState.value
+            model.onAction(InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED))
+            runCurrent()
+            assertEquals(before, model.uiState.value)
+            stored.complete(Unit)
+            runCurrent()
+            assertEquals(before, model.uiState.value)
+            repository.libraryViewSettings.value =
+                repository.libraryViewSettings.value.copy(
+                    entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+                )
+            runCurrent()
+            assertEquals(
+                EntryHierarchyDisplayMode.EXPANDED,
+                (model.uiState.value as InterfaceSettingsUiState.Ready).entryHierarchyDisplayMode,
+            )
+            assertEquals(emptyList<UiErrorMessage>(), errors)
+        }
+
+    @Test
+    fun `destroyed page rejects late write failure`() =
+        runTest {
+            val release = CompletableDeferred<Unit>()
+            val repository =
+                Repository {
+                    withContext(NonCancellable) { release.await() }
+                    throw IOException("synthetic late failure")
+                }
+            val model = InterfaceSettingsViewModel(repository, repository)
+            model.onPageEntered()
+            val errors = mutableListOf<UiErrorMessage>()
+            backgroundScope.launch { model.errors.toList(errors) }
+            model.onAction(InterfaceSettingsAction.SetHideSystemBars(true))
+            runCurrent()
+            ViewModelStore().apply {
+                put("interface", model)
+                clear()
+            }
+            release.complete(Unit)
+            runCurrent()
+            assertEquals(emptyList<UiErrorMessage>(), errors)
+        }
+
+    private class Repository(
+        private val save: suspend () -> Unit,
+    ) : InterfaceSettingsRepository,
+        LibraryViewSettingsRepository {
         override val interfaceSettings = MutableStateFlow(InterfaceSettings())
-        override val libraryViewSettings = MutableStateFlow(
-            LibraryViewSettings(EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)),
-        )
+        override val libraryViewSettings =
+            MutableStateFlow(
+                LibraryViewSettings(EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)),
+            )
+
         override suspend fun setHideSystemBars(enabled: Boolean) = save()
+
         override suspend fun setTopBarCollapsible(enabled: Boolean) = save()
+
         override suspend fun setQuickFilterBarCollapsible(enabled: Boolean) = save()
+
         override suspend fun setAppCornerRadius(radiusDp: Float) = save()
+
         override suspend fun setSort(sort: EntrySort) = Unit
+
         override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) = save()
     }
 }

@@ -10,7 +10,6 @@ import java.io.File
  * 禁止在业务代码中硬编码 "attachments"、"vault_images" 等字符串。
  */
 object VaultResourcePaths {
-
     const val ATTACHMENTS = "attachments"
     const val VAULT_IMAGES = "vault_images"
     const val VAULT_IMAGES_STAGING = ".staging"
@@ -19,10 +18,10 @@ object VaultResourcePaths {
     val RESOURCE_DIRECTORY_NAMES = listOf(ATTACHMENTS, VAULT_IMAGES)
 
     fun attachmentDir(context: Context): File = File(context.filesDir, ATTACHMENTS)
-    fun vaultImagesDir(context: Context): File = File(context.filesDir, VAULT_IMAGES)
-    fun vaultImagesStagingDir(context: Context): File =
-        File(vaultImagesDir(context), VAULT_IMAGES_STAGING)
 
-    fun resourceDirectories(context: Context): List<File> =
-        RESOURCE_DIRECTORY_NAMES.map { File(context.filesDir, it) }
+    fun vaultImagesDir(context: Context): File = File(context.filesDir, VAULT_IMAGES)
+
+    fun vaultImagesStagingDir(context: Context): File = File(vaultImagesDir(context), VAULT_IMAGES_STAGING)
+
+    fun resourceDirectories(context: Context): List<File> = RESOURCE_DIRECTORY_NAMES.map { File(context.filesDir, it) }
 }

@@ -48,19 +48,20 @@ class FaviconImageDownloader internal constructor(
     @Inject
     constructor(urlPolicy: FaviconUrlPolicy) : this(urlPolicy, OkHttpTransport)
 
-    suspend fun download(value: String): ByteArray = withContext(Dispatchers.IO) {
-        try {
-            downloadBlocking(value)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: FaviconUrlException) {
-            throw error
-        } catch (error: FaviconDownloadException) {
-            throw error
-        } catch (_: Exception) {
-            throw FaviconDownloadException(FaviconDownloadFailure.NETWORK)
+    suspend fun download(value: String): ByteArray =
+        withContext(Dispatchers.IO) {
+            try {
+                downloadBlocking(value)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: FaviconUrlException) {
+                throw error
+            } catch (error: FaviconDownloadException) {
+                throw error
+            } catch (_: Exception) {
+                throw FaviconDownloadException(FaviconDownloadFailure.NETWORK)
+            }
         }
-    }
 
     private fun downloadBlocking(value: String): ByteArray {
         var current = urlPolicy.validate(value)
@@ -70,14 +71,18 @@ class FaviconImageDownloader internal constructor(
                     if (redirectIndex >= MAX_REDIRECTS) {
                         throw FaviconDownloadException(FaviconDownloadFailure.TOO_MANY_REDIRECTS)
                     }
-                    val location = response.redirectLocation
-                        ?: throw FaviconDownloadException(FaviconDownloadFailure.INVALID_REDIRECT)
+                    val location =
+                        response.redirectLocation
+                            ?: throw FaviconDownloadException(FaviconDownloadFailure.INVALID_REDIRECT)
                     current = urlPolicy.resolveRedirect(current.uri, location)
                 } else {
                     if (response.statusCode !in 200..299) {
                         throw FaviconDownloadException(FaviconDownloadFailure.HTTP_STATUS)
                     }
-                    if (!response.contentType.orEmpty().substringBefore(';').trim()
+                    if (!response.contentType
+                            .orEmpty()
+                            .substringBefore(';')
+                            .trim()
                             .startsWith("image/", ignoreCase = true)
                     ) {
                         throw FaviconDownloadException(FaviconDownloadFailure.NOT_IMAGE)
@@ -115,29 +120,36 @@ class FaviconImageDownloader internal constructor(
         private const val READ_TIMEOUT_MS = 15_000
 
         private object OkHttpTransport : FaviconHttpTransport {
-            private val client = OkHttpClient.Builder()
-                .followRedirects(false)
-                .followSslRedirects(false)
-                .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-                .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
-                .build()
+            private val client =
+                OkHttpClient
+                    .Builder()
+                    .followRedirects(false)
+                    .followSslRedirects(false)
+                    .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+                    .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+                    .build()
 
             override fun open(target: ValidatedFaviconUrl): FaviconHttpResponse {
-                val pinnedClient = client.newBuilder()
-                    .dns(object : Dns {
-                        override fun lookup(hostname: String): List<InetAddress> {
-                            if (!hostname.equals(target.host, ignoreCase = true)) {
-                                throw UnknownHostException(hostname)
-                            }
-                            return target.addresses
-                        }
-                    })
-                    .build()
-                val request = Request.Builder()
-                    .url(target.uri.toURL())
-                    .header("Accept", "image/*")
-                    .get()
-                    .build()
+                val pinnedClient =
+                    client
+                        .newBuilder()
+                        .dns(
+                            object : Dns {
+                                override fun lookup(hostname: String): List<InetAddress> {
+                                    if (!hostname.equals(target.host, ignoreCase = true)) {
+                                        throw UnknownHostException(hostname)
+                                    }
+                                    return target.addresses
+                                }
+                            },
+                        ).build()
+                val request =
+                    Request
+                        .Builder()
+                        .url(target.uri.toURL())
+                        .header("Accept", "image/*")
+                        .get()
+                        .build()
                 return OkHttpResponse(pinnedClient.newCall(request).execute())
             }
         }

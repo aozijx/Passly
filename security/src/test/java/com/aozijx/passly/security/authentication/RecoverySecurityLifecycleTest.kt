@@ -4,97 +4,105 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecoverySecurityLifecycleTest {
-
     @Test
-    fun `successfully consumed recovery code cannot be consumed again`() = runBlocking {
-        var recoveryEnvelopePresent = true
-        var rollbackCount = 0
-        val consume = suspend {
-            check(recoveryEnvelopePresent) { "recovery envelope is already consumed" }
-            recoveryEnvelopePresent = false
+    fun `successfully consumed recovery code cannot be consumed again`() =
+        runBlocking {
+            var recoveryEnvelopePresent = true
+            var rollbackCount = 0
+            val consume =
+                suspend {
+                    check(recoveryEnvelopePresent) { "recovery envelope is already consumed" }
+                    recoveryEnvelopePresent = false
+                }
+
+            val firstUse = consumeRecoveryCodeOrRollback(consume) { rollbackCount++ }
+            val secondUse = consumeRecoveryCodeOrRollback(consume) { rollbackCount++ }
+
+            assertTrue(firstUse)
+            assertFalse(secondUse)
+            assertFalse(recoveryEnvelopePresent)
+            assertEquals(1, rollbackCount)
         }
 
-        val firstUse = consumeRecoveryCodeOrRollback(consume) { rollbackCount++ }
-        val secondUse = consumeRecoveryCodeOrRollback(consume) { rollbackCount++ }
+    @Test
+    fun `failed recovery code consumption seals staged session`() =
+        runBlocking {
+            var sealed = false
 
-        assertTrue(firstUse)
-        assertFalse(secondUse)
-        assertFalse(recoveryEnvelopePresent)
-        assertEquals(1, rollbackCount)
-    }
+            val consumed =
+                consumeRecoveryCodeOrRollback(
+                    consume = { error("persistent envelope deletion failed") },
+                    rollback = { sealed = true },
+                )
+
+            assertFalse(consumed)
+            assertTrue(sealed)
+        }
 
     @Test
-    fun `failed recovery code consumption seals staged session`() = runBlocking {
-        var sealed = false
+    fun `cancelled recovery code consumption still seals staged session`() =
+        runBlocking {
+            var sealed = false
+            var cancelled = false
 
-        val consumed = consumeRecoveryCodeOrRollback(
-            consume = { error("persistent envelope deletion failed") },
-            rollback = { sealed = true }
-        )
+            try {
+                consumeRecoveryCodeOrRollback(
+                    consume = { throw CancellationException("cancelled") },
+                    rollback = { sealed = true },
+                )
+            } catch (_: CancellationException) {
+                cancelled = true
+            }
 
-        assertFalse(consumed)
-        assertTrue(sealed)
-    }
+            assertTrue(cancelled)
+            assertTrue(sealed)
+        }
 
     @Test
-    fun `cancelled recovery code consumption still seals staged session`() = runBlocking {
-        var sealed = false
-        var cancelled = false
+    fun `recovery password provisioning seals before availability refresh`() =
+        runBlocking {
+            val events = mutableListOf<String>()
 
-        try {
-            consumeRecoveryCodeOrRollback(
-                consume = { throw CancellationException("cancelled") },
-                rollback = { sealed = true },
+            finishRecoveryPasswordProvisioning(
+                seal = { events += "sealed" },
+                refreshAvailability = { events += "refreshed" },
             )
-        } catch (_: CancellationException) {
-            cancelled = true
+
+            assertEquals(listOf("sealed", "refreshed"), events)
         }
 
-        assertTrue(cancelled)
-        assertTrue(sealed)
-    }
-
     @Test
-    fun `recovery password provisioning seals before availability refresh`() = runBlocking {
-        val events = mutableListOf<String>()
+    fun `availability refresh failure cannot reopen completed recovery session`() =
+        runBlocking {
+            var sealed = false
 
-        finishRecoveryPasswordProvisioning(
-            seal = { events += "sealed" },
-            refreshAvailability = { events += "refreshed" }
-        )
-
-        assertEquals(listOf("sealed", "refreshed"), events)
-    }
-
-    @Test
-    fun `availability refresh failure cannot reopen completed recovery session`() = runBlocking {
-        var sealed = false
-
-        finishRecoveryPasswordProvisioning(
-            seal = { sealed = true },
-            refreshAvailability = { error("derived availability refresh failed") }
-        )
-
-        assertTrue(sealed)
-    }
-
-    @Test
-    fun `availability refresh fatal error propagates only after recovery session is sealed`() = runBlocking {
-        val fatal = AssertionError("fatal refresh failure")
-        var sealed = false
-        val actual = runCatching {
             finishRecoveryPasswordProvisioning(
                 seal = { sealed = true },
-                refreshAvailability = { throw fatal },
+                refreshAvailability = { error("derived availability refresh failed") },
             )
-        }.exceptionOrNull()
 
-        assertSame(fatal, actual)
-        assertTrue(sealed)
-    }
+            assertTrue(sealed)
+        }
+
+    @Test
+    fun `availability refresh fatal error propagates only after recovery session is sealed`() =
+        runBlocking {
+            val fatal = AssertionError("fatal refresh failure")
+            var sealed = false
+            val actual =
+                runCatching {
+                    finishRecoveryPasswordProvisioning(
+                        seal = { sealed = true },
+                        refreshAvailability = { throw fatal },
+                    )
+                }.exceptionOrNull()
+
+            assertSame(fatal, actual)
+            assertTrue(sealed)
+        }
 }

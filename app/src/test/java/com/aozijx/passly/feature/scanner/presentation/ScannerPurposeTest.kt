@@ -9,12 +9,13 @@ import org.junit.Test
 
 class ScannerPurposeTest {
     private val otpConfig = OtpConfig(secret = "secret")
-    private val wifiPayload = WifiQrPayload(
-        ssid = "Office",
-        password = "password",
-        securityType = WifiSecurityType.WpaPersonal,
-        isHidden = false,
-    )
+    private val wifiPayload =
+        WifiQrPayload(
+            ssid = "Office",
+            password = "password",
+            securityType = WifiSecurityType.WpaPersonal,
+            isHidden = false,
+        )
 
     @Test
     fun `general scanner exposes both typed imports`() {

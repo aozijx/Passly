@@ -7,10 +7,16 @@ plugins {
 
 android {
     namespace = "com.aozijx.passly.security"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
+    compileSdk =
+        libs.versions.androidCompileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
-        minSdk = libs.versions.androidMinSdk.get().toInt()
+        minSdk =
+            libs.versions.androidMinSdk
+                .get()
+                .toInt()
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -20,7 +26,11 @@ android {
 }
 
 kotlin {
-    jvmToolchain(libs.versions.jvmToolchain.get().toInt())
+    jvmToolchain(
+        libs.versions.jvmToolchain
+            .get()
+            .toInt(),
+    )
 }
 
 dependencies {

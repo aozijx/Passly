@@ -13,20 +13,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AuthenticationReducerTest {
-
     @Test
     fun `available authentication methods are part of authoritative ui state`() {
-        val methods = AuthenticationMethods(
-            setOf(
-                AuthenticationMethod.BIOMETRIC,
-                AuthenticationMethod.APP_PASSWORD,
-            ),
-        )
+        val methods =
+            AuthenticationMethods(
+                setOf(
+                    AuthenticationMethod.BIOMETRIC,
+                    AuthenticationMethod.APP_PASSWORD,
+                ),
+            )
 
-        val result = UnlockReducer.reduce(
-            UnlockUiState(),
-            UnlockMutation.AvailableMethodsChanged(methods),
-        )
+        val result =
+            UnlockReducer.reduce(
+                UnlockUiState(),
+                UnlockMutation.AvailableMethodsChanged(methods),
+            )
 
         assertEquals(methods, result.availableMethods)
     }
@@ -37,18 +38,21 @@ class AuthenticationReducerTest {
         val validPassword = OwnedChars.fromString("long-enough-password")
         val matchingConfirmation = OwnedChars.fromString("long-enough-password")
         try {
-            val short = UnlockReducer.reduce(
-                UnlockUiState(passwordSetup = UnlockPasswordSetup.Editing()),
-                UnlockMutation.NewAppPasswordChanged(shortPassword),
-            )
-            val withPassword = UnlockReducer.reduce(
-                short,
-                UnlockMutation.NewAppPasswordChanged(validPassword),
-            )
-            val matching = UnlockReducer.reduce(
-                withPassword,
-                UnlockMutation.ConfirmAppPasswordChanged(matchingConfirmation),
-            )
+            val short =
+                UnlockReducer.reduce(
+                    UnlockUiState(passwordSetup = UnlockPasswordSetup.Editing()),
+                    UnlockMutation.NewAppPasswordChanged(shortPassword),
+                )
+            val withPassword =
+                UnlockReducer.reduce(
+                    short,
+                    UnlockMutation.NewAppPasswordChanged(validPassword),
+                )
+            val matching =
+                UnlockReducer.reduce(
+                    withPassword,
+                    UnlockMutation.ConfirmAppPasswordChanged(matchingConfirmation),
+                )
 
             assertFalse((short.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
             assertFalse((withPassword.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
@@ -62,24 +66,28 @@ class AuthenticationReducerTest {
 
     @Test
     fun `authentication lifecycle preserves authoritative failure`() {
-        val failure = AuthenticationFailure(
-            code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
-        )
-        val started = UnlockReducer.reduce(
-            UnlockUiState(),
-            UnlockMutation.AuthenticationStarted(AuthenticationMethod.APP_PASSWORD),
-        )
-        val failed = UnlockReducer.reduce(
-            started,
-            UnlockMutation.AuthenticationFailed(
-                method = AuthenticationMethod.APP_PASSWORD,
-                failure = failure,
-            ),
-        )
-        val finished = UnlockReducer.reduce(
-            failed,
-            UnlockMutation.AuthenticationFinished,
-        )
+        val failure =
+            AuthenticationFailure(
+                code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
+            )
+        val started =
+            UnlockReducer.reduce(
+                UnlockUiState(),
+                UnlockMutation.AuthenticationStarted(AuthenticationMethod.APP_PASSWORD),
+            )
+        val failed =
+            UnlockReducer.reduce(
+                started,
+                UnlockMutation.AuthenticationFailed(
+                    method = AuthenticationMethod.APP_PASSWORD,
+                    failure = failure,
+                ),
+            )
+        val finished =
+            UnlockReducer.reduce(
+                failed,
+                UnlockMutation.AuthenticationFinished,
+            )
 
         assertEquals(
             UnlockVerificationPhase.Authenticating(AuthenticationMethod.APP_PASSWORD),
@@ -94,18 +102,20 @@ class AuthenticationReducerTest {
 
     @Test
     fun `invalidated biometric key gets a recovery-specific failure instead of generic verification text`() {
-        val started = UnlockReducer.reduce(
-            UnlockUiState(),
-            UnlockMutation.AuthenticationStarted(AuthenticationMethod.BIOMETRIC),
-        )
+        val started =
+            UnlockReducer.reduce(
+                UnlockUiState(),
+                UnlockMutation.AuthenticationStarted(AuthenticationMethod.BIOMETRIC),
+            )
 
-        val failed = UnlockReducer.reduce(
-            started,
-            UnlockMutation.AuthenticationFailed(
-                method = AuthenticationMethod.BIOMETRIC,
-                failure = AuthenticationFailure(AuthenticationFailureCode.KEY_INVALIDATED),
-            ),
-        )
+        val failed =
+            UnlockReducer.reduce(
+                started,
+                UnlockMutation.AuthenticationFailed(
+                    method = AuthenticationMethod.BIOMETRIC,
+                    failure = AuthenticationFailure(AuthenticationFailureCode.KEY_INVALIDATED),
+                ),
+            )
 
         val failure = (failed.verificationPhase as UnlockVerificationPhase.Failed).failure
         assertEquals(UnlockFailureMessage.BiometricKeyInvalidated, failure.message)
@@ -113,15 +123,17 @@ class AuthenticationReducerTest {
 
     @Test
     fun `resetting unlock inputs clears only unlock state`() {
-        val initial = UnlockUiState(
-            recoveryUnlockVisible = true,
-            inputExpansion = UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
-        )
+        val initial =
+            UnlockUiState(
+                recoveryUnlockVisible = true,
+                inputExpansion = UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
+            )
 
-        val result = UnlockReducer.reduce(
-            initial,
-            UnlockMutation.UnlockInputsReset,
-        )
+        val result =
+            UnlockReducer.reduce(
+                initial,
+                UnlockMutation.UnlockInputsReset,
+            )
 
         assertFalse(result.recoveryUnlockVisible)
         assertSame(UnlockInputExpansion.Collapsed, result.inputExpansion)
@@ -134,15 +146,17 @@ class AuthenticationReducerTest {
         val password = OwnedChars.fromString("temporary")
         val confirm = OwnedChars.fromString("temporary")
         try {
-            val result = UnlockReducer.reduce(
-                UnlockUiState(
-                    passwordSetup = UnlockPasswordSetup.Editing(
-                        newPassword = password,
-                        confirmPassword = confirm,
+            val result =
+                UnlockReducer.reduce(
+                    UnlockUiState(
+                        passwordSetup =
+                            UnlockPasswordSetup.Editing(
+                                newPassword = password,
+                                confirmPassword = confirm,
+                            ),
                     ),
-                ),
-                UnlockMutation.PasswordSetupClosed,
-            )
+                    UnlockMutation.PasswordSetupClosed,
+                )
 
             assertSame(UnlockPasswordSetup.Closed, result.passwordSetup)
         } finally {

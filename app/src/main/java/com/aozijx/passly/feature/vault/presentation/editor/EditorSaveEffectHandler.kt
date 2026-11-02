@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 
 internal sealed interface EditorSaveEffect {
     data object Saved : EditorSaveEffect
+
     data object Failed : EditorSaveEffect
 }
 
@@ -38,7 +39,10 @@ internal fun EditorSaveEffectHandler(
 
 private sealed interface FailureNotice {
     data object Idle : FailureNotice
-    class Showing(val job: Job) : FailureNotice
+
+    class Showing(
+        val job: Job,
+    ) : FailureNotice
 }
 
 /** Keep result consumption synchronous; a transient notice must never hold up navigation. */
@@ -50,6 +54,7 @@ internal suspend fun collectEditorSaveEffects(
 ) {
     lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
         var notice: FailureNotice = FailureNotice.Idle
+
         fun dismissFailure() {
             val previous = notice
             notice = FailureNotice.Idle

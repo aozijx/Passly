@@ -1,12 +1,12 @@
 package com.aozijx.passly.feature.autofill.legacy
 
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtraction
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtractor
@@ -17,9 +17,13 @@ import kotlinx.coroutines.flow.first
 
 sealed interface LegacySavePreparation {
     data object Saved : LegacySavePreparation
+
     data object Queued : LegacySavePreparation
+
     data object Disabled : LegacySavePreparation
+
     data object InvalidDraft : LegacySavePreparation
+
     data object Failed : LegacySavePreparation
 }
 
@@ -48,14 +52,16 @@ class LegacySaveFlow internal constructor(
 
     suspend fun prepare(request: AutofillRequest): LegacySavePreparation {
         if (!legacySaveEnabled()) return LegacySavePreparation.Disabled
-        val draft = when (val extraction = extractDraft(request)) {
-            is AutofillSaveDraftExtraction.Ready -> extraction.draft
-            is AutofillSaveDraftExtraction.Rejected -> return LegacySavePreparation.InvalidDraft
-        }
+        val draft =
+            when (val extraction = extractDraft(request)) {
+                is AutofillSaveDraftExtraction.Ready -> extraction.draft
+                is AutofillSaveDraftExtraction.Rejected -> return LegacySavePreparation.InvalidDraft
+            }
         if (canPersistImmediately()) return persistImmediately(draft)
 
         return when (enqueueInbox(AutofillInboxSource.LEGACY_SERVICE, draft)) {
             AutofillInboxEnqueueOutcome.Queued -> LegacySavePreparation.Queued
+
             AutofillInboxEnqueueOutcome.NotProvisioned,
             AutofillInboxEnqueueOutcome.Full,
             AutofillInboxEnqueueOutcome.Failed,
@@ -64,7 +70,10 @@ class LegacySaveFlow internal constructor(
     }
 
     private suspend fun legacySaveEnabled(): Boolean =
-        settingsSource.interaction.first().autofill.let { it.enabled && it.savePromptsEnabled }
+        settingsSource.interaction
+            .first()
+            .autofill
+            .let { it.enabled && it.savePromptsEnabled }
 
     private suspend fun persistImmediately(draft: AutofillSaveDraft): LegacySavePreparation =
         when (saveCredential(draft)) {

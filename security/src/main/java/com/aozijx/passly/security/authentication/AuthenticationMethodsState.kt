@@ -19,9 +19,10 @@ internal class AuthenticationMethodsState {
     val methods: StateFlow<AuthenticationMethods> = _methods.asStateFlow()
     val value: AuthenticationMethods get() = _methods.value
 
-    fun beginRefresh(): Long = synchronized(stateLock) {
-        ++refreshGeneration
-    }
+    fun beginRefresh(): Long =
+        synchronized(stateLock) {
+            ++refreshGeneration
+        }
 
     suspend fun refresh(
         generation: Long,
@@ -30,25 +31,30 @@ internal class AuthenticationMethodsState {
     ) {
         refreshMutex.withLock {
             val revision = synchronized(stateLock) { stateRevision }
-            val methods = try {
-                resolve()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: Throwable) {
+            val methods =
                 try {
-                    onFailure(failure)
-                } catch (observerFailure: Throwable) {
-                    when (observerFailure) {
-                        is CancellationException,
-                        is Error -> {
-                            if (observerFailure !== failure) observerFailure.addSuppressed(failure)
-                            throw observerFailure
+                    resolve()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Throwable) {
+                    try {
+                        onFailure(failure)
+                    } catch (observerFailure: Throwable) {
+                        when (observerFailure) {
+                            is CancellationException,
+                            is Error,
+                            -> {
+                                if (observerFailure !== failure) observerFailure.addSuppressed(failure)
+                                throw observerFailure
+                            }
+
+                            else -> {
+                                if (observerFailure !== failure) failure.addSuppressed(observerFailure)
+                            }
                         }
-                        else -> if (observerFailure !== failure) failure.addSuppressed(observerFailure)
                     }
+                    throw failure
                 }
-                throw failure
-            }
             synchronized(stateLock) {
                 if (generation == refreshGeneration && revision == stateRevision) {
                     _methods.value = methods
@@ -57,10 +63,12 @@ internal class AuthenticationMethodsState {
         }
     }
 
-    fun onRecoveryCodeConsumed() = synchronized(stateLock) {
-        stateRevision++
-        _methods.value = AuthenticationMethods(
-            _methods.value.available - AuthenticationMethod.RECOVERY_CODE
-        )
-    }
+    fun onRecoveryCodeConsumed() =
+        synchronized(stateLock) {
+            stateRevision++
+            _methods.value =
+                AuthenticationMethods(
+                    _methods.value.available - AuthenticationMethod.RECOVERY_CODE,
+                )
+        }
 }

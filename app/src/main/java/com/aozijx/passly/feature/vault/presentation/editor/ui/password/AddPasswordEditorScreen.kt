@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.password
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -28,15 +27,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordAction
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
-import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
-import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 
 @Composable
 fun AddPasswordEditorScreen(
@@ -52,9 +52,10 @@ fun AddPasswordEditorScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val form = state.form
     var showAssociatedAppPicker by rememberSaveable { mutableStateOf(false) }
-    val selectedApp = form.associatedAppPackage?.let { packageName ->
-        state.availableApps.firstOrNull { it.packageName == packageName }
-    }
+    val selectedApp =
+        form.associatedAppPackage?.let { packageName ->
+            state.availableApps.firstOrNull { it.packageName == packageName }
+        }
 
     fun save() {
         keyboardController?.hide()
@@ -98,7 +99,7 @@ fun AddPasswordEditorScreen(
                         visible = form.isPasswordVisible,
                         onVisibilityChanged = { onAction(AddPasswordAction.PasswordVisibilityChanged(it)) },
                     )
-                }
+                },
             )
         }
 
@@ -131,9 +132,10 @@ fun AddPasswordEditorScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = selectedApp?.label
-                            ?: form.associatedAppPackage
-                            ?: stringResource(R.string.not_set),
+                        text =
+                            selectedApp?.label
+                                ?: form.associatedAppPackage
+                                ?: stringResource(R.string.not_set),
                     )
                     selectedApp?.packageName?.let { packageName ->
                         Text(
@@ -152,14 +154,15 @@ fun AddPasswordEditorScreen(
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (state.canSave) {
-                            focusManager.clearFocus(force = true)
-                            save()
-                        }
-                    },
-                ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            if (state.canSave) {
+                                focusManager.clearFocus(force = true)
+                                save()
+                            }
+                        },
+                    ),
             )
         }
     }

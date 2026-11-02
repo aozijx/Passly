@@ -20,8 +20,8 @@ import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -55,11 +55,12 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.getInsetsController(window, window.decorView).systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        val permissionServices = PermissionServices(
-            statusReader = permissionStatusReader,
-            requestArbiter = permissionRequestArbiter,
-            requestHistory = permissionRequestHistory,
-        )
+        val permissionServices =
+            PermissionServices(
+                statusReader = permissionStatusReader,
+                requestArbiter = permissionRequestArbiter,
+                requestHistory = permissionRequestHistory,
+            )
         setContent {
             PasslyApp(
                 activity = this,

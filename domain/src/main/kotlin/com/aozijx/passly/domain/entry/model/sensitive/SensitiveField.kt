@@ -15,7 +15,7 @@ enum class SensitiveFieldKey {
     SSH_PRIVATE_KEY,
     SSH_PASSPHRASE,
     PASSKEY_PRIVATE_REFERENCE,
-    OTP_SECRET
+    OTP_SECRET,
 }
 
 /** Well-known field keys on the secret-field table that are not revealable sensitive values. */
@@ -27,7 +27,7 @@ object SecretFieldKeys {
 /** Non-secret metadata used to render whether a protected value exists. */
 data class SensitiveFieldPresence(
     val entryId: EntryId,
-    val keys: Set<SensitiveFieldKey>
+    val keys: Set<SensitiveFieldKey>,
 ) {
     operator fun contains(key: SensitiveFieldKey): Boolean = key in keys
 }
@@ -36,7 +36,7 @@ data class SensitiveFieldPresence(
 data class RevealedSensitiveField(
     val entryId: EntryId,
     val key: SensitiveFieldKey,
-    val value: SensitiveValue
+    val value: SensitiveValue,
 )
 
 /** A decrypted high-sensitivity value from one immutable revision snapshot. */

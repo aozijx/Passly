@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.presentation.ui.diagnostics
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -30,8 +29,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
@@ -103,26 +103,37 @@ internal fun DiagnosticsScreen(
             LevelFilters(state, onAction)
         }
         when {
-            state.isLoading -> item { StatusText(stringResource(R.string.settings_log_loading)) }
-            state.isSessionRestricted -> item {
-                StatusText(stringResource(R.string.settings_diagnostics_session_restricted))
+            state.isLoading -> {
+                item { StatusText(stringResource(R.string.settings_log_loading)) }
             }
-            state.visibleLines.isEmpty() -> item { StatusText(stringResource(R.string.settings_log_empty)) }
-            else -> items(state.visibleLines.size) { index ->
-                val line = state.visibleLines[index]
-                Text(
-                    text = line.text,
-                    fontFamily = FontFamily.Monospace,
-                    color = line.level.semanticColor(),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .combinedClickable(
-                            onClick = {},
-                            onLongClick = { selectedLine = line },
-                        )
-                        .padding(vertical = 6.dp),
-                )
+
+            state.isSessionRestricted -> {
+                item {
+                    StatusText(stringResource(R.string.settings_diagnostics_session_restricted))
+                }
+            }
+
+            state.visibleLines.isEmpty() -> {
+                item { StatusText(stringResource(R.string.settings_log_empty)) }
+            }
+
+            else -> {
+                items(state.visibleLines.size) { index ->
+                    val line = state.visibleLines[index]
+                    Text(
+                        text = line.text,
+                        fontFamily = FontFamily.Monospace,
+                        color = line.level.semanticColor(),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onClick = {},
+                                    onLongClick = { selectedLine = line },
+                                ).padding(vertical = 6.dp),
+                    )
+                }
             }
         }
     }
@@ -153,12 +164,16 @@ internal fun DiagnosticsScreen(
 }
 
 @Composable
-private fun LevelFilters(state: DiagnosticsUiState, onAction: (DiagnosticsAction) -> Unit) {
+private fun LevelFilters(
+    state: DiagnosticsUiState,
+    onAction: (DiagnosticsAction) -> Unit,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         listOf(LogLevel.ERROR, LogLevel.WARN, LogLevel.INFO, LogLevel.DEBUG).forEach { level ->
@@ -193,11 +208,12 @@ private fun FormatSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = if (action == ExportAction.SHARE) {
-                    stringResource(R.string.settings_diagnostics_share_format)
-                } else {
-                    stringResource(R.string.settings_diagnostics_export_format)
-                },
+                text =
+                    if (action == ExportAction.SHARE) {
+                        stringResource(R.string.settings_diagnostics_share_format)
+                    } else {
+                        stringResource(R.string.settings_diagnostics_export_format)
+                    },
                 style = MaterialTheme.typography.titleLarge,
             )
             Spacer(Modifier.height(4.dp))
@@ -209,14 +225,19 @@ private fun FormatSheet(
 }
 
 @Composable
-private fun FormatOption(format: LogFormat, description: Int, onSelect: (LogFormat) -> Unit) {
+private fun FormatOption(
+    format: LogFormat,
+    description: Int,
+    onSelect: (LogFormat) -> Unit,
+) {
     Surface(
         onClick = { onSelect(format) },
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
             Text(format.name, style = MaterialTheme.typography.titleMedium)
@@ -249,7 +270,11 @@ private fun ConfirmClearDialog(onAction: (DiagnosticsAction) -> Unit) {
 }
 
 @Composable
-private fun CopyDialog(onCopyRow: () -> Unit, onCopyTrace: () -> Unit, onDismiss: () -> Unit) {
+private fun CopyDialog(
+    onCopyRow: () -> Unit,
+    onCopyTrace: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_diagnostics_copy_title)) },
@@ -267,11 +292,15 @@ private fun CopyDialog(onCopyRow: () -> Unit, onCopyTrace: () -> Unit, onDismiss
 }
 
 @Composable
-private fun LogLevel.semanticColor(): Color = when (this) {
-    LogLevel.FATAL -> MaterialTheme.colorScheme.error
-    LogLevel.ERROR -> MaterialTheme.colorScheme.error
-    LogLevel.WARN -> MaterialTheme.colorScheme.tertiary
-    LogLevel.INFO,
-    LogLevel.DEBUG,
+private fun LogLevel.semanticColor(): Color =
+    when (this) {
+        LogLevel.FATAL -> MaterialTheme.colorScheme.error
+
+        LogLevel.ERROR -> MaterialTheme.colorScheme.error
+
+        LogLevel.WARN -> MaterialTheme.colorScheme.tertiary
+
+        LogLevel.INFO,
+        LogLevel.DEBUG,
         -> MaterialTheme.colorScheme.onSurface
-}
+    }

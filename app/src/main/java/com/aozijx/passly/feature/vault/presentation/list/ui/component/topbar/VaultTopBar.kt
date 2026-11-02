@@ -20,8 +20,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
 import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
@@ -50,16 +50,18 @@ fun VaultTopBar(
     }
 
     Column(
-        modifier = modifier.animateContentSize(
-            animationSpec = motionScheme.defaultEffectsSpec(),
-        ),
+        modifier =
+            modifier.animateContentSize(
+                animationSpec = motionScheme.defaultEffectsSpec(),
+            ),
     ) {
         TopAppBar(
-            scrollBehavior = if (uiState.collapseOnScroll && !searchStateHolder.uiState.isEditing) {
-                scrollBehavior
-            } else {
-                null
-            },
+            scrollBehavior =
+                if (uiState.collapseOnScroll && !searchStateHolder.uiState.isEditing) {
+                    scrollBehavior
+                } else {
+                    null
+                },
             windowInsets = WindowInsets.statusBars,
             colors = passlyTopAppBarColors(),
             title = {

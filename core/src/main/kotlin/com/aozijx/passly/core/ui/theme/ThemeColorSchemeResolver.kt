@@ -38,11 +38,12 @@ fun rememberAppColorScheme(
 }
 
 @Composable
-fun ThemeSchemeDefinition.resolveSeedColors(): List<Color> = listOf(
-    colorResource(seedResources.primary),
-    colorResource(seedResources.secondary),
-    colorResource(seedResources.tertiary),
-)
+fun ThemeSchemeDefinition.resolveSeedColors(): List<Color> =
+    listOf(
+        colorResource(seedResources.primary),
+        colorResource(seedResources.secondary),
+        colorResource(seedResources.tertiary),
+    )
 
 @Composable
 fun ThemeSchemeDefinition.resolveAccentSeeds(): AccentSeeds {

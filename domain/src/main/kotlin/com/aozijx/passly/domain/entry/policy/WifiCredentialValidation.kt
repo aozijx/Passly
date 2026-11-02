@@ -8,19 +8,27 @@ object WifiCredentialValidation {
         ssid: String,
         password: String?,
         securityType: WifiSecurityType,
-    ): Set<EntryViolation> = buildSet {
-        if (ssid.isBlank()) {
-            add(EntryViolation(FieldKey.WIFI_SSID, EntryViolationCode.REQUIRED))
-        }
-        when (securityType) {
-            WifiSecurityType.Open -> if (!password.isNullOrEmpty()) {
-                add(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.INVALID_FORMAT))
+    ): Set<EntryViolation> =
+        buildSet {
+            if (ssid.isBlank()) {
+                add(EntryViolation(FieldKey.WIFI_SSID, EntryViolationCode.REQUIRED))
             }
+            when (securityType) {
+                WifiSecurityType.Open -> {
+                    if (!password.isNullOrEmpty()) {
+                        add(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.INVALID_FORMAT))
+                    }
+                }
 
-            WifiSecurityType.Wep -> validateWepPassword(password)
-            WifiSecurityType.WpaPersonal -> validateWpaPassword(password)
+                WifiSecurityType.Wep -> {
+                    validateWepPassword(password)
+                }
+
+                WifiSecurityType.WpaPersonal -> {
+                    validateWpaPassword(password)
+                }
+            }
         }
-    }
 
     private fun MutableSet<EntryViolation>.validateWepPassword(password: String?) {
         if (password.isNullOrEmpty()) {

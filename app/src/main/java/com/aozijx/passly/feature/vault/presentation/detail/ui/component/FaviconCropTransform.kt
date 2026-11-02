@@ -67,23 +67,26 @@ internal object FaviconCropTransform {
         )
     }
 
-    private fun translationBounds(geometry: FaviconCropGeometry, zoom: Float): Pair<Float, Float> {
+    private fun translationBounds(
+        geometry: FaviconCropGeometry,
+        zoom: Float,
+    ): Pair<Float, Float> {
         if (
             geometry.viewportWidth <= 0f || geometry.viewportHeight <= 0f ||
             geometry.imageWidth <= 0f || geometry.imageHeight <= 0f
         ) {
             return 0f to 0f
         }
-        val baseScale = max(
-            geometry.viewportWidth / geometry.imageWidth,
-            geometry.viewportHeight / geometry.imageHeight,
-        )
+        val baseScale =
+            max(
+                geometry.viewportWidth / geometry.imageWidth,
+                geometry.viewportHeight / geometry.imageHeight,
+            )
         val renderedWidth = geometry.imageWidth * baseScale * zoom
         val renderedHeight = geometry.imageHeight * baseScale * zoom
         return ((renderedWidth - geometry.viewportWidth) / 2f).coerceAtLeast(0f) to
             ((renderedHeight - geometry.viewportHeight) / 2f).coerceAtLeast(0f)
     }
 
-    private fun Float.normalizedBy(maximum: Float): Float =
-        if (maximum <= 0f) 0f else (this / maximum).coerceIn(-1f, 1f)
+    private fun Float.normalizedBy(maximum: Float): Float = if (maximum <= 0f) 0f else (this / maximum).coerceIn(-1f, 1f)
 }

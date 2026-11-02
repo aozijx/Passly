@@ -1,7 +1,9 @@
 package com.aozijx.passly.domain.access.model
 
 @JvmInline
-value class RecoveryCredentialId(val value: String) {
+value class RecoveryCredentialId(
+    val value: String,
+) {
     init {
         require(value.isNotBlank()) { "Recovery credential ID cannot be blank" }
     }
@@ -10,16 +12,26 @@ value class RecoveryCredentialId(val value: String) {
 /** Owns temporary recovery-code plaintext until committed or closed. */
 interface RecoveryCredentialDraft : AutoCloseable {
     val id: RecoveryCredentialId
+
     fun reveal(): CharArray?
+
     suspend fun commit(): AuthenticationResult
+
     /** Whether the exact draft envelope crossed the durable store commit point. */
     val isCommitted: Boolean
+
     override fun close()
 }
 
 sealed interface RecoveryCredentialCreation {
-    data class Ready(val draft: RecoveryCredentialDraft) : RecoveryCredentialCreation
-    data class Failed(val failure: AuthenticationFailure) : RecoveryCredentialCreation
+    data class Ready(
+        val draft: RecoveryCredentialDraft,
+    ) : RecoveryCredentialCreation
+
+    data class Failed(
+        val failure: AuthenticationFailure,
+    ) : RecoveryCredentialCreation
+
     data object Cancelled : RecoveryCredentialCreation
 }
 

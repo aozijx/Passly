@@ -41,208 +41,238 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutofillTraceLifecycleTest {
     @Test
-    fun `delivery and session close remain ordered in one trace with separate spans`() = runTest {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val logger = logger(records)
-        val continuations = TraceContinuationStore(logger)
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val interaction = store.create(
-            AutofillInteractionSource.LEGACY,
-            AutofillGrantContext("com.example.app"),
-            AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        logger.withRootTrace(Operations.AutofillLegacyRequest) {
-            continuations.capture(interaction.id.value)
-        }
-        val delivery = AutofillResultDelivery(
-            completeSelection = CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            unlockLease = lease,
-            scope = this,
-            logger = logger,
-            continuations = continuations,
-        )
-
-        delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
-            assertNull(lockController.reason)
-        }
-        runCurrent()
-
-        assertEquals(
-            listOf(
-                Events.Autofill.ResultDeliveryStarted,
-                Events.Autofill.ResultDelivered,
-                Events.Autofill.SessionCloseStarted,
-                Events.Autofill.SessionClosed,
-            ),
-            records.map { it.event },
-        )
-        assertEquals(1, records.map { it.trace.traceId }.distinct().size)
-        assertNotEquals(records[0].trace.spanId, records[2].trace.spanId)
-        listOf(records[1], records[3]).forEach { completed ->
-            val elapsed = completed.fields.values[LogFieldKeys.ElapsedMs] as LogValue.DurationMs
-            assertEquals(true, elapsed.value >= 0)
-        }
-        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-        assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
-    }
-
-    @Test
-    fun `platform delivery failure is logged and does not close the session`() = runTest {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val logger = logger(records)
-        val continuations = TraceContinuationStore(logger)
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val interaction = store.create(
-            AutofillInteractionSource.CREDENTIAL_MANAGER,
-            AutofillGrantContext("com.example.app"),
-            AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        logger.withRootTrace(Operations.AutofillCredentialRequest) {
-            continuations.capture(interaction.id.value)
-        }
-        val delivery = AutofillResultDelivery(
-            CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            lease,
-            this,
-            logger,
-            continuations,
-        )
-
-        assertThrows(IllegalStateException::class.java) {
-            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
-                error("raw package com.secret.target must not escape")
+    fun `delivery and session close remain ordered in one trace with separate spans`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+            val continuations = TraceContinuationStore(logger)
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    AutofillInteractionSource.LEGACY,
+                    AutofillGrantContext("com.example.app"),
+                    AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            logger.withRootTrace(Operations.AutofillLegacyRequest) {
+                continuations.capture(interaction.id.value)
             }
-        }
-        runCurrent()
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    scope = this,
+                    logger = logger,
+                    continuations = continuations,
+                )
 
-        assertEquals(
-            listOf(Events.Autofill.ResultDeliveryStarted, Events.Autofill.ResultDeliveryFailed),
-            records.map { it.event },
-        )
-        assertNull(lockController.reason)
-        assertEquals(AutofillInteractionState.Authorized, store.snapshot(interaction.id)?.state)
-        assertEquals("IllegalStateException", records.last().error?.exception?.type?.value)
-    }
+            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
+                assertNull(lockController.reason)
+            }
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    Events.Autofill.ResultDeliveryStarted,
+                    Events.Autofill.ResultDelivered,
+                    Events.Autofill.SessionCloseStarted,
+                    Events.Autofill.SessionClosed,
+                ),
+                records.map { it.event },
+            )
+            assertEquals(1, records.map { it.trace.traceId }.distinct().size)
+            assertNotEquals(records[0].trace.spanId, records[2].trace.spanId)
+            listOf(records[1], records[3]).forEach { completed ->
+                val elapsed = completed.fields.values[LogFieldKeys.ElapsedMs] as LogValue.DurationMs
+                assertEquals(true, elapsed.value >= 0)
+            }
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+            assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
+        }
 
     @Test
-    fun `missing pending intent continuation creates a new root and records resume unavailable`() = runTest {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val logger = logger(records)
-        val continuations = TraceContinuationStore(logger)
-        val store = AutofillInteractionStore()
-        val lease = AutofillUnlockLease(RecordingLockController())
-        val interaction = store.create(
-            AutofillInteractionSource.LEGACY,
-            AutofillGrantContext("com.example.app"),
-            AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        val delivery = AutofillResultDelivery(
-            CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            lease,
-            this,
-            logger,
-            continuations,
-        )
+    fun `platform delivery failure is logged and does not close the session`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+            val continuations = TraceContinuationStore(logger)
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    AutofillInteractionSource.CREDENTIAL_MANAGER,
+                    AutofillGrantContext("com.example.app"),
+                    AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            logger.withRootTrace(Operations.AutofillCredentialRequest) {
+                continuations.capture(interaction.id.value)
+            }
+            val delivery =
+                AutofillResultDelivery(
+                    CompleteAutofillSelection(
+                        NoOpActivityRecorder,
+                        FinishAutofillInteraction(store, lease),
+                    ),
+                    lease,
+                    this,
+                    logger,
+                    continuations,
+                )
 
-        delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {}
-        runCurrent()
+            assertThrows(IllegalStateException::class.java) {
+                delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
+                    error("raw package com.secret.target must not escape")
+                }
+            }
+            runCurrent()
 
-        assertEquals(Events.Application.TraceResumeUnavailable, records.first().event)
-        assertEquals(1, records.map { it.trace.traceId }.distinct().size)
-        assertEquals(Events.Autofill.SessionClosed, records.last().event)
-    }
+            assertEquals(
+                listOf(Events.Autofill.ResultDeliveryStarted, Events.Autofill.ResultDeliveryFailed),
+                records.map { it.event },
+            )
+            assertNull(lockController.reason)
+            assertEquals(AutofillInteractionState.Authorized, store.snapshot(interaction.id)?.state)
+            assertEquals(
+                "IllegalStateException",
+                records
+                    .last()
+                    .error
+                    ?.exception
+                    ?.type
+                    ?.value,
+            )
+        }
 
     @Test
-    fun `legacy and credential result callbacks remain independent`() = runTest {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val logger = logger(records)
-        val continuations = TraceContinuationStore(logger)
-        val store = AutofillInteractionStore()
-        val lease = AutofillUnlockLease(RecordingLockController())
-        val legacy = store.create(
-            AutofillInteractionSource.LEGACY,
-            AutofillGrantContext("com.legacy.app"),
-            AutofillInteractionState.Authorized,
-        )
-        val credential = store.create(
-            AutofillInteractionSource.CREDENTIAL_MANAGER,
-            AutofillGrantContext("com.credential.app"),
-            AutofillInteractionState.Authorized,
-        )
-        val delivery = AutofillResultDelivery(
-            CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            lease,
-            this,
-            logger,
-            continuations,
-        )
-        val callbacks = mutableListOf<String>()
+    fun `missing pending intent continuation creates a new root and records resume unavailable`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+            val continuations = TraceContinuationStore(logger)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(RecordingLockController())
+            val interaction =
+                store.create(
+                    AutofillInteractionSource.LEGACY,
+                    AutofillGrantContext("com.example.app"),
+                    AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val delivery =
+                AutofillResultDelivery(
+                    CompleteAutofillSelection(
+                        NoOpActivityRecorder,
+                        FinishAutofillInteraction(store, lease),
+                    ),
+                    lease,
+                    this,
+                    logger,
+                    continuations,
+                )
 
-        delivery.commitResult(AutofillSelectionReceipt(legacy.id, EntryId("legacy-entry"))) {
-            callbacks += "legacy_dataset"
+            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {}
+            runCurrent()
+
+            assertEquals(Events.Application.TraceResumeUnavailable, records.first().event)
+            assertEquals(1, records.map { it.trace.traceId }.distinct().size)
+            assertEquals(Events.Autofill.SessionClosed, records.last().event)
         }
-        delivery.commitResult(AutofillSelectionReceipt(credential.id, EntryId("credential-entry"))) {
-            callbacks += "credential_intent"
+
+    @Test
+    fun `legacy and credential result callbacks remain independent`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+            val continuations = TraceContinuationStore(logger)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(RecordingLockController())
+            val legacy =
+                store.create(
+                    AutofillInteractionSource.LEGACY,
+                    AutofillGrantContext("com.legacy.app"),
+                    AutofillInteractionState.Authorized,
+                )
+            val credential =
+                store.create(
+                    AutofillInteractionSource.CREDENTIAL_MANAGER,
+                    AutofillGrantContext("com.credential.app"),
+                    AutofillInteractionState.Authorized,
+                )
+            val delivery =
+                AutofillResultDelivery(
+                    CompleteAutofillSelection(
+                        NoOpActivityRecorder,
+                        FinishAutofillInteraction(store, lease),
+                    ),
+                    lease,
+                    this,
+                    logger,
+                    continuations,
+                )
+            val callbacks = mutableListOf<String>()
+
+            delivery.commitResult(AutofillSelectionReceipt(legacy.id, EntryId("legacy-entry"))) {
+                callbacks += "legacy_dataset"
+            }
+            delivery.commitResult(AutofillSelectionReceipt(credential.id, EntryId("credential-entry"))) {
+                callbacks += "credential_intent"
+            }
+            runCurrent()
+
+            assertEquals(listOf("legacy_dataset", "credential_intent"), callbacks)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(legacy.id)?.state)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(credential.id)?.state)
+            assertEquals(2, records.count { it.event == Events.Autofill.ResultDelivered })
         }
-        runCurrent()
 
-        assertEquals(listOf("legacy_dataset", "credential_intent"), callbacks)
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(legacy.id)?.state)
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(credential.id)?.state)
-        assertEquals(2, records.count { it.event == Events.Autofill.ResultDelivered })
-    }
+    private fun logger(records: MutableList<SanitizedLogRecord>) =
+        DefaultLogger(
+            sanitizer = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.THROW),
+            sinks = listOf(LogSink(records::add)),
+            lifecycleSinks = emptyList(),
+            idGenerator = SequentialIdGenerator(),
+            timeSource =
+                object : ObservabilityTimeSource {
+                    override fun wallTimeMs() = 1_700_000_000_000L
 
-    private fun logger(records: MutableList<SanitizedLogRecord>) = DefaultLogger(
-        sanitizer = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.THROW),
-        sinks = listOf(LogSink(records::add)),
-        lifecycleSinks = emptyList(),
-        idGenerator = SequentialIdGenerator(),
-        timeSource = object : ObservabilityTimeSource {
-            override fun wallTimeMs() = 1_700_000_000_000L
-            override fun elapsedRealtimeMs() = 100L
-        },
-        processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
-        secureSessionProvider = SecureSessionProvider { SecureSessionId("secure_session") },
-    )
+                    override fun elapsedRealtimeMs() = 100L
+                },
+            processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
+            secureSessionProvider = SecureSessionProvider { SecureSessionId("secure_session") },
+        )
 
     private class SequentialIdGenerator : ObservabilityIdGenerator {
         private var next = 0
+
         private fun id(prefix: String) = "${prefix}_${++next}_value"
+
         override fun eventId() = EventId(id("event"))
+
         override fun traceId() = TraceId(id("trace"))
+
         override fun spanId() = SpanId(id("span"))
     }
 
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
         var trigger: LockTrigger? = null
+
         override suspend fun lock(request: SessionLockRequest) {
             reason = request.reason
             trigger = request.trigger
@@ -250,8 +280,13 @@ class AutofillTraceLifecycleTest {
     }
 
     private data object NoOpActivityRecorder : ActivityRecorder {
-        override suspend fun recordUsage(entryId: String, type: ActivityType) = AppResult.Success(Unit)
+        override suspend fun recordUsage(
+            entryId: String,
+            type: ActivityType,
+        ) = AppResult.Success(Unit)
+
         override suspend fun deleteByEntryId(entryId: String) = Unit
+
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 }

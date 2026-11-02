@@ -31,7 +31,8 @@ jobs:
       - name: Run architecture and Android quality gates
         shell: bash
         run: >-
-          ./gradlew verifyArchitecture
+          ./gradlew ktlintCheckAll
+          verifyArchitecture
           :app:compileDebugKotlin
           :domain:test
           :runtime:session:test

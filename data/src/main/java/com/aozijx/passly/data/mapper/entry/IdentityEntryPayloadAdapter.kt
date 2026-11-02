@@ -11,13 +11,16 @@ internal class IdentityEntryPayloadAdapter : EntryPayloadAdapter {
 
     override fun encode(credential: EntryCredential): SecretPayload {
         require(credential is IdentityCredential) { "IDENTITY adapter requires IdentityCredential" }
-        return SecretPayload(identity = IdentityCredentialPayload(
-            idNumber = credential.idNumber,
-            securityQuestion = credential.securityQuestion,
-            securityAnswer = credential.securityAnswer,
-            seedPhrase = credential.seedPhrase,
-            recoveryCodes = credential.recoveryCodes,
-        ))
+        return SecretPayload(
+            identity =
+                IdentityCredentialPayload(
+                    idNumber = credential.idNumber,
+                    securityQuestion = credential.securityQuestion,
+                    securityAnswer = credential.securityAnswer,
+                    seedPhrase = credential.seedPhrase,
+                    recoveryCodes = credential.recoveryCodes,
+                ),
+        )
     }
 
     override fun decode(payload: SecretPayload): EntryCredential {

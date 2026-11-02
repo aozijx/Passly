@@ -31,24 +31,26 @@ interface DatabaseCleaner {
  * 按子表→父表顺序执行清理，确保外键约束不受影响。
  */
 @Singleton
-internal class DatabaseCleanerImpl @Inject constructor(
-    private val databaseSession: AppDatabaseSession
-) : DatabaseCleaner {
-
-    override suspend fun clearAllData(): DatabaseClearResult = databaseSession.transaction {
-        val maintenance = databaseMaintenanceDao()
-        // 子表→父表顺序：先删依赖表，再删主表
-        val attachmentsDeleted = maintenance.clearAttachments()
-        val revisionsDeleted = maintenance.clearRevisions()
-        maintenance.clearAttachmentGcQueue()
-        val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
-        DatabaseClearResult(
-            revisionsDeleted = revisionsDeleted,
-            activityDeleted = maintenance.clearActivities(),
-            attachmentsDeleted = attachmentsDeleted,
-            attachmentResourcesDeleted = attachmentResourcesDeleted,
-            secretsDeleted = maintenance.clearSecrets(),
-            entriesDeleted = maintenance.clearEntries(),
-        )
+internal class DatabaseCleanerImpl
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+    ) : DatabaseCleaner {
+        override suspend fun clearAllData(): DatabaseClearResult =
+            databaseSession.transaction {
+                val maintenance = databaseMaintenanceDao()
+                // 子表→父表顺序：先删依赖表，再删主表
+                val attachmentsDeleted = maintenance.clearAttachments()
+                val revisionsDeleted = maintenance.clearRevisions()
+                maintenance.clearAttachmentGcQueue()
+                val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
+                DatabaseClearResult(
+                    revisionsDeleted = revisionsDeleted,
+                    activityDeleted = maintenance.clearActivities(),
+                    attachmentsDeleted = attachmentsDeleted,
+                    attachmentResourcesDeleted = attachmentResourcesDeleted,
+                    secretsDeleted = maintenance.clearSecrets(),
+                    entriesDeleted = maintenance.clearEntries(),
+                )
+            }
     }
-}

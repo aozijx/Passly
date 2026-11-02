@@ -4,8 +4,8 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.AuthorizationPermitRevoker
 import com.aozijx.passly.domain.access.port.DatabaseResetSessionCoordinator
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
-import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.lock.LockStateManager
 import kotlinx.coroutines.Dispatchers
@@ -25,9 +25,7 @@ internal class SecureDatabaseResetCoordinator(
     private val authenticationState: MutableStateFlow<AuthenticationState>,
     private val databaseFailure: MutableStateFlow<Throwable?>,
 ) : DatabaseResetSessionCoordinator {
-    override suspend fun withExclusiveDatabaseReset(
-        operation: suspend () -> Throwable?,
-    ): Throwable? {
+    override suspend fun withExclusiveDatabaseReset(operation: suspend () -> Throwable?): Throwable? {
         var fatalForCaller: Error? = null
         return try {
             sessionMutex.withLock {
@@ -49,21 +47,30 @@ internal class SecureDatabaseResetCoordinator(
                     throw error
                 } finally {
                     withContext(NonCancellable) {
-                        val failure = operationFailure
-                            ?: SessionLockedException("Database reset did not reopen the secure database")
+                        val failure =
+                            operationFailure
+                                ?: SessionLockedException("Database reset did not reopen the secure database")
 
                         fun collectCleanupFailure(cleanupFailure: Throwable) {
                             when (cleanupFailure) {
-                                is Error -> when (val primaryFatal = fatalError) {
-                                    null -> {
-                                        fatalError = cleanupFailure
-                                        if (failure !== cleanupFailure) cleanupFailure.addSuppressed(failure)
-                                    }
-                                    else -> if (primaryFatal !== cleanupFailure) {
-                                        primaryFatal.addSuppressed(cleanupFailure)
+                                is Error -> {
+                                    when (val primaryFatal = fatalError) {
+                                        null -> {
+                                            fatalError = cleanupFailure
+                                            if (failure !== cleanupFailure) cleanupFailure.addSuppressed(failure)
+                                        }
+
+                                        else -> {
+                                            if (primaryFatal !== cleanupFailure) {
+                                                primaryFatal.addSuppressed(cleanupFailure)
+                                            }
+                                        }
                                     }
                                 }
-                                else -> if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+
+                                else -> {
+                                    if (failure !== cleanupFailure) failure.addSuppressed(cleanupFailure)
+                                }
                             }
                         }
 
@@ -80,6 +87,7 @@ internal class SecureDatabaseResetCoordinator(
                                 lockStateManager.mark(SecureSessionState.UNLOCKED)
                                 databaseFailure.value = null
                             }
+
                             else -> {
                                 lockStateManager.mark(sessionManager.lockState)
                                 try {

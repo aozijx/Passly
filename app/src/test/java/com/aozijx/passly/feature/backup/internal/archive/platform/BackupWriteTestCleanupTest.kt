@@ -19,12 +19,13 @@ class BackupWriteTestCleanupTest {
     fun `delete exception fails a successful write check`() {
         val cleanupFailure = SecurityException("delete denied")
 
-        val thrown = assertThrows(SecurityException::class.java) {
-            enforceWriteTestCleanup(
-                primaryFailure = null,
-                cleanupResult = Result.failure(cleanupFailure),
-            )
-        }
+        val thrown =
+            assertThrows(SecurityException::class.java) {
+                enforceWriteTestCleanup(
+                    primaryFailure = null,
+                    cleanupResult = Result.failure(cleanupFailure),
+                )
+            }
 
         assertEquals(cleanupFailure, thrown)
     }

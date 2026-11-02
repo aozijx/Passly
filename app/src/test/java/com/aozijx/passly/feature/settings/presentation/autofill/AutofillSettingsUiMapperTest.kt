@@ -10,20 +10,22 @@ import org.junit.Test
 class AutofillSettingsUiMapperTest {
     @Test
     fun mapsSettingsAndPlatformAvailabilityToUiModel() {
-        val autofill = AutofillSettings(
+        val autofill =
+            AutofillSettings(
                 enabled = false,
                 presentation = AutofillPresentation.BOTTOM_SHEET,
                 savePromptsEnabled = false,
                 maxSuggestions = AutofillSettings.MAX_SUGGESTIONS + 5,
             )
 
-        val model = autofill.toAutofillSettingsUiModel(
-            supportsCredentialManager = false,
-            canEditPreferences = true,
-            preferencesRefreshing = false,
-            preferencesFailed = false,
-            systemService = AutofillSourceState.Ready(true),
-        )
+        val model =
+            autofill.toAutofillSettingsUiModel(
+                supportsCredentialManager = false,
+                canEditPreferences = true,
+                preferencesRefreshing = false,
+                preferencesFailed = false,
+                systemService = AutofillSourceState.Ready(true),
+            )
 
         assertFalse(model.enabled)
         assertTrue(model.canEditPreferences)
@@ -35,5 +37,4 @@ class AutofillSettingsUiMapperTest {
         assertEquals(AutofillSettings.MIN_SUGGESTIONS, model.minSuggestions)
         assertEquals(AutofillSettings.MAX_SUGGESTIONS, model.maxSuggestionsLimit)
     }
-
 }

@@ -13,9 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 
 @Composable
-fun rememberImagePicker(
-    onImagePicked: (Uri, ImageType) -> Unit
-): (ImageType) -> Unit {
+fun rememberImagePicker(onImagePicked: (Uri, ImageType) -> Unit): (ImageType) -> Unit {
     val pendingImageType = rememberSaveable { mutableStateOf<ImageType?>(null) }
 
     fun handleUriResult(uri: Uri?) {
@@ -26,33 +24,37 @@ fun rememberImagePicker(
         pendingImageType.value = null
     }
 
-    val pickMediaLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> handleUriResult(uri) }
-    )
+    val pickMediaLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.PickVisualMedia(),
+            onResult = { uri -> handleUriResult(uri) },
+        )
 
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            handleUriResult(result.data?.data)
-        } else {
-            pendingImageType.value = null
+    val galleryLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                handleUriResult(result.data?.data)
+            } else {
+                pendingImageType.value = null
+            }
         }
-    }
 
     return { imageType: ImageType ->
         pendingImageType.value = imageType
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pickMediaLauncher.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
             )
         } else {
-            val intent = Intent(
-                Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            ).apply {
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+            val intent =
+                Intent(
+                    Intent.ACTION_PICK,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                ).apply {
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
             galleryLauncher.launch(intent)
         }
     }

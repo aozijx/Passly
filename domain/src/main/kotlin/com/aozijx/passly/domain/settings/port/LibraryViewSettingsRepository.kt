@@ -11,5 +11,6 @@ interface LibraryViewSettingsSource {
 
 interface LibraryViewSettingsRepository : LibraryViewSettingsSource {
     suspend fun setSort(sort: EntrySort)
+
     suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode)
 }

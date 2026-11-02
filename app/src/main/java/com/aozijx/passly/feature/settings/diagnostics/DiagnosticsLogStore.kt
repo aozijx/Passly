@@ -16,6 +16,8 @@ data class DiagnosticsLogLine(
 /** Feature-facing access to the persisted diagnostics log. */
 interface DiagnosticsLogStore {
     suspend fun readLines(limit: Int): List<DiagnosticsLogLine>
+
     suspend fun storageBytes(): Long
+
     suspend fun clear(): LogClearResult
 }

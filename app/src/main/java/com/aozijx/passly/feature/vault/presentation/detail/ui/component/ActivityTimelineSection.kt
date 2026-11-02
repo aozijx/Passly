@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,14 +35,13 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
-import androidx.compose.ui.platform.LocalConfiguration
 import java.text.DateFormat
 import java.util.Date
 
 enum class ActivityFilter {
     ALL,
     ACTIONS,
-    AUTOFILL
+    AUTOFILL,
 }
 
 @Composable
@@ -52,50 +52,63 @@ fun ActivityTimelineSection(
 ) {
     var currentFilter by remember { mutableStateOf(ActivityFilter.ALL) }
 
-    val filteredList = remember(activityList, currentFilter) {
-        when (currentFilter) {
-            ActivityFilter.ALL -> activityList
-            ActivityFilter.ACTIONS -> activityList.filter { it.type.isMutation }
-            ActivityFilter.AUTOFILL -> activityList.filter {
-                it.type == ActivityType.AUTOFILL
+    val filteredList =
+        remember(activityList, currentFilter) {
+            when (currentFilter) {
+                ActivityFilter.ALL -> {
+                    activityList
+                }
+
+                ActivityFilter.ACTIONS -> {
+                    activityList.filter { it.type.isMutation }
+                }
+
+                ActivityFilter.AUTOFILL -> {
+                    activityList.filter {
+                        it.type == ActivityType.AUTOFILL
+                    }
+                }
             }
         }
-    }
 
     InfoGroupCard(title = stringResource(R.string.vault_detail_history_label)) {
         Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 ActivityFilterChip(
                     selected = currentFilter == ActivityFilter.ALL,
                     onClick = { currentFilter = ActivityFilter.ALL },
-                    label = stringResource(R.string.tab_all)
+                    label = stringResource(R.string.tab_all),
                 )
                 ActivityFilterChip(
                     selected = currentFilter == ActivityFilter.ACTIONS,
                     onClick = { currentFilter = ActivityFilter.ACTIONS },
-                    label = stringResource(R.string.vault_detail_history_updates)
+                    label = stringResource(R.string.vault_detail_history_updates),
                 )
                 ActivityFilterChip(
                     selected = currentFilter == ActivityFilter.AUTOFILL,
                     onClick = { currentFilter = ActivityFilter.AUTOFILL },
-                    label = stringResource(R.string.vault_detail_activity_autofill)
+                    label = stringResource(R.string.vault_detail_activity_autofill),
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             when (loadState) {
-                DetailActivityHistoryState.Loading -> CircularProgressIndicator(
-                    modifier = Modifier.padding(vertical = 8.dp).size(20.dp),
-                    strokeWidth = 2.dp,
-                )
+                DetailActivityHistoryState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(vertical = 8.dp).size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                }
+
                 DetailActivityHistoryState.Failed -> {
                     Text(
                         text = stringResource(R.string.vault_detail_history_load_failed),
@@ -108,15 +121,18 @@ fun ActivityTimelineSection(
                         ActivityItems(filteredList)
                     }
                 }
-                DetailActivityHistoryState.Ready -> if (filteredList.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.vault_detail_history_empty_filtered),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                } else {
-                    ActivityItems(filteredList)
+
+                DetailActivityHistoryState.Ready -> {
+                    if (filteredList.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.vault_detail_history_empty_filtered),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    } else {
+                        ActivityItems(filteredList)
+                    }
                 }
             }
         }
@@ -136,12 +152,12 @@ private fun ActivityItems(activities: List<DetailActivityUiModel>) {
 private fun ActivityFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
-    label: String
+    label: String,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
     )
 }
 
@@ -153,16 +169,18 @@ private fun ActivityItem(activity: DetailActivityUiModel) {
     Row(verticalAlignment = Alignment.Top) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(getActivityColor(activity.type))
+                modifier =
+                    Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(getActivityColor(activity.type)),
             )
             Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(24.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
+                modifier =
+                    Modifier
+                        .width(1.dp)
+                        .height(24.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant),
             )
         }
 
@@ -172,12 +190,12 @@ private fun ActivityItem(activity: DetailActivityUiModel) {
             Text(
                 text = formatActivityDescription(activity),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = dateFormat.format(Date(activity.createdAt)),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -185,28 +203,38 @@ private fun ActivityItem(activity: DetailActivityUiModel) {
 
 @Composable
 private fun formatActivityDescription(activity: DetailActivityUiModel): String {
-    val description = when (activity.type) {
-        ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
-        ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
-        ActivityType.VERSION_RESTORED -> stringResource(R.string.vault_detail_activity_version_restored)
-        ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)
-        ActivityType.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
-        ActivityType.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
-        ActivityType.COPY_PASSWORD -> stringResource(R.string.vault_detail_activity_copy_password)
-        ActivityType.COPY_USERNAME -> stringResource(R.string.vault_detail_activity_copy_username)
-        ActivityType.VIEW -> stringResource(R.string.vault_detail_activity_view)
-        ActivityType.EXPORT -> stringResource(R.string.vault_detail_activity_export)
-        ActivityType.IMPORT -> stringResource(R.string.vault_detail_activity_import)
-    }
+    val description =
+        when (activity.type) {
+            ActivityType.CREATE -> stringResource(R.string.vault_detail_activity_create)
+            ActivityType.UPDATE -> stringResource(R.string.vault_detail_activity_update)
+            ActivityType.VERSION_RESTORED -> stringResource(R.string.vault_detail_activity_version_restored)
+            ActivityType.DELETE -> stringResource(R.string.vault_detail_activity_delete)
+            ActivityType.RESTORE -> stringResource(R.string.vault_detail_activity_restore)
+            ActivityType.AUTOFILL -> stringResource(R.string.vault_detail_activity_autofill)
+            ActivityType.COPY_PASSWORD -> stringResource(R.string.vault_detail_activity_copy_password)
+            ActivityType.COPY_USERNAME -> stringResource(R.string.vault_detail_activity_copy_username)
+            ActivityType.VIEW -> stringResource(R.string.vault_detail_activity_view)
+            ActivityType.EXPORT -> stringResource(R.string.vault_detail_activity_export)
+            ActivityType.IMPORT -> stringResource(R.string.vault_detail_activity_import)
+        }
     return when (val context = activity.context) {
-        is EntryActivityContext.ContentRevision -> stringResource(R.string.vault_detail_activity_revision_format, description, context.version.value)
-        EntryActivityContext.Usage, EntryActivityContext.Lifecycle -> description
+        is EntryActivityContext.ContentRevision -> {
+            stringResource(
+                R.string.vault_detail_activity_revision_format,
+                description,
+                context.version.value,
+            )
+        }
+
+        EntryActivityContext.Usage, EntryActivityContext.Lifecycle -> {
+            description
+        }
     }
 }
 
 @Composable
-private fun getActivityColor(type: ActivityType): Color {
-    return when (type) {
+private fun getActivityColor(type: ActivityType): Color =
+    when (type) {
         ActivityType.CREATE -> Color(0xFF4CAF50)
         ActivityType.UPDATE -> MaterialTheme.colorScheme.primary
         ActivityType.VERSION_RESTORED -> MaterialTheme.colorScheme.tertiary
@@ -218,4 +246,3 @@ private fun getActivityColor(type: ActivityType): Color {
         ActivityType.EXPORT -> MaterialTheme.colorScheme.tertiary
         ActivityType.IMPORT -> Color(0xFF8BC34A)
     }
-}

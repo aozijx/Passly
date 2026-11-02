@@ -1,8 +1,8 @@
 package com.aozijx.passly.data.observability
 
-import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
+import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
@@ -15,11 +15,11 @@ import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
-import com.aozijx.passly.core.observability.sink.LogDropCounts
 import com.aozijx.passly.core.observability.sink.LogClearResult
+import com.aozijx.passly.core.observability.sink.LogDropCounts
 import java.io.File
-import java.nio.file.Files
 import java.io.RandomAccessFile
+import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -62,10 +62,11 @@ class EncryptedLogRecordStoreTest {
 
     @Test
     fun `retention removes expired log`() {
-        val expiredLog = File(directory, "expired.log").apply {
-            writeText("expired")
-            setLastModified(now - EncryptedLogFileManager.RETENTION_MS - 1)
-        }
+        val expiredLog =
+            File(directory, "expired.log").apply {
+                writeText("expired")
+                setLastModified(now - EncryptedLogFileManager.RETENTION_MS - 1)
+            }
         val store = newStore()
         store.write(sampleRecord(1))
         assertTrue(store.flush(2_000))
@@ -133,15 +134,16 @@ class EncryptedLogRecordStoreTest {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
         val first = AtomicBoolean(true)
-        val store = newStore(
-            maxQueuedRecords = 1,
-            beforeWrite = {
-                if (first.compareAndSet(true, false)) {
-                    entered.countDown()
-                    release.await(2, TimeUnit.SECONDS)
-                }
-            },
-        )
+        val store =
+            newStore(
+                maxQueuedRecords = 1,
+                beforeWrite = {
+                    if (first.compareAndSet(true, false)) {
+                        entered.countDown()
+                        release.await(2, TimeUnit.SECONDS)
+                    }
+                },
+            )
         store.write(sampleRecord(1))
         assertTrue(entered.await(2, TimeUnit.SECONDS))
         store.write(sampleRecord(2).copy(level = LogLevel.DEBUG))
@@ -163,15 +165,16 @@ class EncryptedLogRecordStoreTest {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
         val first = AtomicBoolean(true)
-        val store = newStore(
-            maxQueuedRecords = 1,
-            beforeWrite = {
-                if (first.compareAndSet(true, false)) {
-                    entered.countDown()
-                    release.await(2, TimeUnit.SECONDS)
-                }
-            },
-        )
+        val store =
+            newStore(
+                maxQueuedRecords = 1,
+                beforeWrite = {
+                    if (first.compareAndSet(true, false)) {
+                        entered.countDown()
+                        release.await(2, TimeUnit.SECONDS)
+                    }
+                },
+            )
         store.write(sampleRecord(1))
         assertTrue(entered.await(2, TimeUnit.SECONDS))
         store.write(sampleRecord(2))
@@ -194,9 +197,11 @@ class EncryptedLogRecordStoreTest {
         store.write(sampleRecord(1))
         assertTrue(store.flush(2_000))
 
-        val expected = directory.listFiles()!!
-            .filter { it.extension == EncryptedLogFileManager.LOG_EXTENSION }
-            .sumOf(File::length)
+        val expected =
+            directory
+                .listFiles()!!
+                .filter { it.extension == EncryptedLogFileManager.LOG_EXTENSION }
+                .sumOf(File::length)
         assertEquals(expected, store.storageBytes())
         assertTrue(unrelated.exists())
         store.close()
@@ -207,14 +212,15 @@ class EncryptedLogRecordStoreTest {
         val shouldBlock = AtomicBoolean(false)
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
-        val store = newStore(
-            beforeWrite = {
-                if (shouldBlock.compareAndSet(true, false)) {
-                    entered.countDown()
-                    release.await(2, TimeUnit.SECONDS)
-                }
-            },
-        )
+        val store =
+            newStore(
+                beforeWrite = {
+                    if (shouldBlock.compareAndSet(true, false)) {
+                        entered.countDown()
+                        release.await(2, TimeUnit.SECONDS)
+                    }
+                },
+            )
         val existing = sampleRecord(1)
         val pending = sampleRecord(2)
         try {
@@ -241,14 +247,15 @@ class EncryptedLogRecordStoreTest {
         val shouldBlock = AtomicBoolean(false)
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
-        val store = newStore(
-            beforeWrite = {
-                if (shouldBlock.compareAndSet(true, false)) {
-                    entered.countDown()
-                    release.await(2, TimeUnit.SECONDS)
-                }
-            },
-        )
+        val store =
+            newStore(
+                beforeWrite = {
+                    if (shouldBlock.compareAndSet(true, false)) {
+                        entered.countDown()
+                        release.await(2, TimeUnit.SECONDS)
+                    }
+                },
+            )
         val existing = sampleRecord(1)
         val acceptedBeforeClear = sampleRecord(2)
         val acceptedAfterClear = sampleRecord(3)
@@ -266,17 +273,19 @@ class EncryptedLogRecordStoreTest {
             store.write(acceptedBeforeClear)
             assertTrue(entered.await(2, TimeUnit.SECONDS))
 
-            clearThread = Thread {
-                clearResult.set(store.clear())
-                clearFinished.countDown()
-            }.apply(Thread::start)
+            clearThread =
+                Thread {
+                    clearResult.set(store.clear())
+                    clearFinished.countDown()
+                }.apply(Thread::start)
             awaitTimedWaiting(clearThread)
 
-            writeThread = Thread {
-                writeStarted.countDown()
-                store.write(acceptedAfterClear)
-                writeReturned.countDown()
-            }.apply(Thread::start)
+            writeThread =
+                Thread {
+                    writeStarted.countDown()
+                    store.write(acceptedAfterClear)
+                    writeReturned.countDown()
+                }.apply(Thread::start)
             assertTrue(writeStarted.await(2, TimeUnit.SECONDS))
             assertFalse(writeReturned.await(50, TimeUnit.MILLISECONDS))
 
@@ -314,15 +323,16 @@ class EncryptedLogRecordStoreTest {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
         val first = AtomicBoolean(true)
-        val store = newStore(
-            maxQueuedRecords = 1,
-            beforeWrite = {
-                if (first.compareAndSet(true, false)) {
-                    entered.countDown()
-                    release.await(2, TimeUnit.SECONDS)
-                }
-            },
-        )
+        val store =
+            newStore(
+                maxQueuedRecords = 1,
+                beforeWrite = {
+                    if (first.compareAndSet(true, false)) {
+                        entered.countDown()
+                        release.await(2, TimeUnit.SECONDS)
+                    }
+                },
+            )
         store.write(sampleRecord(1))
         assertTrue(entered.await(2, TimeUnit.SECONDS))
         store.write(sampleRecord(2))
@@ -340,13 +350,14 @@ class EncryptedLogRecordStoreTest {
         val wrapper = TestKeyWrapper()
         val lockEntered = CountDownLatch(1)
         val releaseLock = CountDownLatch(1)
-        val store = newStore(
-            wrapper = wrapper,
-            insideWriteLock = {
-                lockEntered.countDown()
-                releaseLock.await(2, TimeUnit.SECONDS)
-            },
-        )
+        val store =
+            newStore(
+                wrapper = wrapper,
+                insideWriteLock = {
+                    lockEntered.countDown()
+                    releaseLock.await(2, TimeUnit.SECONDS)
+                },
+            )
         val unwrapsAfterInitialization = wrapper.unwrapCalls
         store.write(sampleRecord(9))
         assertTrue(lockEntered.await(2, TimeUnit.SECONDS))
@@ -387,20 +398,23 @@ class EncryptedLogRecordStoreTest {
         insideWriteLock = insideWriteLock,
     )
 
-    private fun errorRecord(index: Int) = sampleRecord(index).copy(
-        level = LogLevel.ERROR,
-        event = Events.Autofill.ResultDeliveryFailed,
-        error = ErrorPayload(
-            errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
-            reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
-            exception = ExceptionSnapshot(
-                type = ExceptionType("IllegalStateException"),
-                appStackFrames = emptyList(),
-                causeTypes = emptyList(),
-                foreignFrameCount = 1,
-            ),
-        ),
-    )
+    private fun errorRecord(index: Int) =
+        sampleRecord(index).copy(
+            level = LogLevel.ERROR,
+            event = Events.Autofill.ResultDeliveryFailed,
+            error =
+                ErrorPayload(
+                    errorCode = ErrorCode("AUTOFILL_RESULT_DELIVERY_FAILED"),
+                    reason = ReasonCode("PLATFORM_CALLBACK_FAILED"),
+                    exception =
+                        ExceptionSnapshot(
+                            type = ExceptionType("IllegalStateException"),
+                            appStackFrames = emptyList(),
+                            causeTypes = emptyList(),
+                            foreignFrameCount = 1,
+                        ),
+                ),
+        )
 
     private fun awaitTimedWaiting(thread: Thread) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
@@ -410,38 +424,49 @@ class EncryptedLogRecordStoreTest {
         assertEquals(Thread.State.TIMED_WAITING, thread.state)
     }
 
-    private fun sampleRecord(index: Int) = SanitizedLogRecord(
-        eventId = EventId("event_${index.toString().padStart(8, '0')}"),
-        timestampMs = now,
-        elapsedRealtimeMs = index.toLong(),
-        level = LogLevel.INFO,
-        category = LogCategory.AUTOFILL,
-        event = Events.Autofill.ResultDelivered,
-        processSessionId = ProcessSessionId("process_12345678"),
-        secureSessionId = null,
-        trace = TraceSnapshot(
-            traceId = TraceId("trace_12345678"),
-            spanId = SpanId("span_${index.toString().padStart(8, '0')}"),
-            parentSpanId = null,
-        ),
-        fields = LogFields.Empty,
-        error = null,
-    )
+    private fun sampleRecord(index: Int) =
+        SanitizedLogRecord(
+            eventId = EventId("event_${index.toString().padStart(8, '0')}"),
+            timestampMs = now,
+            elapsedRealtimeMs = index.toLong(),
+            level = LogLevel.INFO,
+            category = LogCategory.AUTOFILL,
+            event = Events.Autofill.ResultDelivered,
+            processSessionId = ProcessSessionId("process_12345678"),
+            secureSessionId = null,
+            trace =
+                TraceSnapshot(
+                    traceId = TraceId("trace_12345678"),
+                    spanId = SpanId("span_${index.toString().padStart(8, '0')}"),
+                    parentSpanId = null,
+                ),
+            fields = LogFields.Empty,
+            error = null,
+        )
 
     private class TestKeyWrapper : LogKeyWrapper {
         private val key = SecretKeySpec(ByteArray(32) { 7 }, "AES")
         var unwrapCalls = 0
 
-        override fun wrap(dataKey: ByteArray, aad: ByteArray): WrappedLogKey =
-            AesGcmKeyWrapping.wrap(key, dataKey, aad)
+        override fun wrap(
+            dataKey: ByteArray,
+            aad: ByteArray,
+        ): WrappedLogKey = AesGcmKeyWrapping.wrap(key, dataKey, aad)
 
-        override fun unwrap(wrapped: WrappedLogKey, aad: ByteArray): ByteArray {
+        override fun unwrap(
+            wrapped: WrappedLogKey,
+            aad: ByteArray,
+        ): ByteArray {
             unwrapCalls++
             return AesGcmKeyWrapping.unwrap(key, wrapped, aad)
         }
     }
 
-    private fun overwriteSequence(file: File, recordIndex: Int, sequence: Long) {
+    private fun overwriteSequence(
+        file: File,
+        recordIndex: Int,
+        sequence: Long,
+    ) {
         RandomAccessFile(file, "rw").use { input ->
             assertEquals(EncryptedLogFileManager.FILE_MAGIC, input.readInt())
             assertEquals(EncryptedLogFileManager.FILE_VERSION, input.readInt())

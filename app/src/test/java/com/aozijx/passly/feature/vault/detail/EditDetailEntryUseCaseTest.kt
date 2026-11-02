@@ -8,11 +8,11 @@ import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
-import com.aozijx.passly.domain.entry.policy.EntryEdit
-import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
@@ -24,12 +24,12 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.testing.testLogger
 import com.aozijx.passly.testing.RecordingTestLogger
+import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -42,321 +42,373 @@ import org.junit.Test
 
 class EditDetailEntryUseCaseTest {
     @Test
-    fun fullFormEditReappliesToLatestEntryAfterVersionConflict() = runTest {
-        val query = FakeQueryRepository(entry(version = 3, favorite = true))
-        val command = FakeCommandRepository(query).apply {
-            failures += Conflict(errorId = "first-conflict")
-            onFailure = { query.current = entry(version = 4, favorite = false, primaryUrl = "https://latest.example") }
-        }
-        val draft = listOf(
-            FieldKey.TITLE to EntryDraftValue.Text("Edited"),
-            FieldKey.PASSWORD to EntryDraftValue.Text("new-password"),
-            FieldKey.PRIMARY_URL to EntryDraftValue.Text("https://form.example"),
-        ).fold(EntryDraft(EntryType.LOGIN)) { current, (key, value) ->
-            current.withValue(EntryTypeDefinitions[EntryType.LOGIN], key, value)
-        }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+    fun fullFormEditReappliesToLatestEntryAfterVersionConflict() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 3, favorite = true))
+            val command =
+                FakeCommandRepository(query).apply {
+                    failures += Conflict(errorId = "first-conflict")
+                    onFailure = { query.current = entry(version = 4, favorite = false, primaryUrl = "https://latest.example") }
+                }
+            val draft =
+                listOf(
+                    FieldKey.TITLE to EntryDraftValue.Text("Edited"),
+                    FieldKey.PASSWORD to EntryDraftValue.Text("new-password"),
+                    FieldKey.PRIMARY_URL to EntryDraftValue.Text("https://form.example"),
+                ).fold(EntryDraft(EntryType.LOGIN)) { current, (key, value) ->
+                    current.withValue(EntryTypeDefinitions[EntryType.LOGIN], key, value)
+                }
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, EntryEdit.ReplaceForm(draft))
+            val result = useCase.edit(ENTRY_ID, EntryEdit.ReplaceForm(draft))
 
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals(listOf(3, 4), command.expectedVersions)
-        assertEquals("new-password", updated.secret.login?.password)
-        assertEquals("https://form.example", updated.associations.primaryUrl)
-        assertEquals(false, updated.favorite)
-    }
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals(listOf(3, 4), command.expectedVersions)
+            assertEquals("new-password", updated.secret.login?.password)
+            assertEquals("https://form.example", updated.associations.primaryUrl)
+            assertEquals(false, updated.favorite)
+        }
 
     @Test
-    fun invalidMetadataReturnsValidationFailureWithoutThrowingOrWriting() = runTest {
-        for (edit in listOf(
-            EntryEdit.SetTitle("  "),
-            EntryEdit.SetTags(setOf("valid", " ")),
-            EntryEdit.SetApplicationIds(setOf(" ")),
-        )) {
-            val original = entry(version = 1)
+    fun invalidMetadataReturnsValidationFailureWithoutThrowingOrWriting() =
+        runTest {
+            for (edit in listOf(
+                EntryEdit.SetTitle("  "),
+                EntryEdit.SetTags(setOf("valid", " ")),
+                EntryEdit.SetApplicationIds(setOf(" ")),
+            )) {
+                val original = entry(version = 1)
+                val query = FakeQueryRepository(original)
+                val command = FakeCommandRepository(query)
+                val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+                val result = useCase.edit(ENTRY_ID, edit)
+
+                assertTrue(result is AppResult.Failure && result.error is ValidationError)
+                assertTrue(command.submittedChanges.isEmpty())
+                assertEquals(original, query.current)
+            }
+        }
+
+    @Test
+    fun invalidCardEditReturnsValidationFailureWithoutWriting() =
+        runTest {
+            val original =
+                entry(version = 1).let {
+                    it.copy(
+                        identity = it.identity.copy(type = EntryType.BANK_CARD),
+                        secret = EntrySecret(CardCredential(cardNumber = null, cardCvv = null)),
+                    )
+                }
             val query = FakeQueryRepository(original)
             val command = FakeCommandRepository(query)
             val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-            val result = useCase.edit(ENTRY_ID, edit)
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "4111111111111112"))
 
             assertTrue(result is AppResult.Failure && result.error is ValidationError)
             assertTrue(command.submittedChanges.isEmpty())
             assertEquals(original, query.current)
         }
-    }
 
     @Test
-    fun invalidCardEditReturnsValidationFailureWithoutWriting() = runTest {
-        val original = entry(version = 1).let {
-            it.copy(identity = it.identity.copy(type = EntryType.BANK_CARD),
-                secret = EntrySecret(CardCredential(cardNumber = null, cardCvv = null)))
+    fun cardholderEditWritesCardCredentialAndPreservesProfileUsername() =
+        runTest {
+            val original =
+                entry(version = 1).let {
+                    it.copy(
+                        identity = it.identity.copy(type = EntryType.BANK_CARD),
+                        secret = EntrySecret(credential = CardCredential(cardNumber = "4111111111111111", cardHolder = "Before")),
+                    )
+                }
+            val query = FakeQueryRepository(original)
+            val command = FakeCommandRepository(query)
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_HOLDER, "After"))
+
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals("After", updated.secret.card?.cardHolder)
+            assertEquals(original.username, updated.username)
+            assertNull(command.submittedChanges.single().profile)
+            assertEquals(
+                "After",
+                command.submittedChanges
+                    .single()
+                    .secret
+                    ?.card
+                    ?.cardHolder,
+            )
+            assertEquals(original.secret.card?.cardNumber, updated.secret.card?.cardNumber)
         }
-        val query = FakeQueryRepository(original)
-        val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "4111111111111112"))
-
-        assertTrue(result is AppResult.Failure && result.error is ValidationError)
-        assertTrue(command.submittedChanges.isEmpty())
-        assertEquals(original, query.current)
-    }
 
     @Test
-    fun cardholderEditWritesCardCredentialAndPreservesProfileUsername() = runTest {
-        val original = entry(version = 1).let {
-            it.copy(
-                identity = it.identity.copy(type = EntryType.BANK_CARD),
-                secret = EntrySecret(credential = CardCredential(cardNumber = "4111111111111111", cardHolder = "Before")),
+    fun fieldFromAnotherCredentialTypeIsRejectedWithoutThrowingOrWriting() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 1))
+            val command = FakeCommandRepository(query)
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "5555555555554444"))
+
+            assertTrue((result as AppResult.Failure).error is ValidationError)
+            assertTrue(command.submittedChanges.isEmpty())
+        }
+
+    @Test
+    fun restrictedSessionIsRejectedAtTheEditUseCaseBoundary() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 1))
+            val command = FakeCommandRepository(query)
+            val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
+
+            assertTrue((result as AppResult.Failure).error is SessionModeRestricted)
+            assertTrue(command.submittedChanges.isEmpty())
+        }
+
+    @Test
+    fun tagEditDoesNotSubmitTheIncompleteSecretBundle() =
+        runTest {
+            val query =
+                FakeQueryRepository(
+                    entry(version = 1).copy(
+                        secret = EntrySecret(credential = LoginCredential(password = null)),
+                    ),
+                )
+            val command = FakeCommandRepository(query)
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
+
+            assertTrue(result is AppResult.Success)
+            assertEquals(
+                emptySet<String>(),
+                command.submittedChanges
+                    .single()
+                    .profile
+                    ?.tags,
+            )
+            assertNull(command.submittedChanges.single().secret)
+        }
+
+    @Test
+    fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
+            val command = FakeCommandRepository(query)
+            val logger = RecordingTestLogger()
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
+
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals("Renamed", updated.title)
+            assertEquals("latest notes", updated.secret.notes)
+            assertEquals(8, updated.version.value)
+            assertEquals(listOf(7), command.expectedVersions)
+            assertEquals(
+                listOf(Events.Vault.EntryUpdateStarted, Events.Vault.EntryUpdateCompleted),
+                logger.events.map { it.event },
+            )
+            assertEquals(listOf(Operations.VaultEntryUpdate), logger.spans)
+            assertEquals(
+                setOf(LogFieldKeys.EntryType, LogFieldKeys.ElapsedMs),
+                logger.events
+                    .last()
+                    .fields.values.keys,
             )
         }
-        val query = FakeQueryRepository(original)
-        val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_HOLDER, "After"))
-
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals("After", updated.secret.card?.cardHolder)
-        assertEquals(original.username, updated.username)
-        assertNull(command.submittedChanges.single().profile)
-        assertEquals("After", command.submittedChanges.single().secret?.card?.cardHolder)
-        assertEquals(original.secret.card?.cardNumber, updated.secret.card?.cardNumber)
-    }
 
     @Test
-    fun fieldFromAnotherCredentialTypeIsRejectedWithoutThrowingOrWriting() = runTest {
-        val query = FakeQueryRepository(entry(version = 1))
-        val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+    fun updateRetriesOneConflictAgainstReloadedEntry() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 3, notes = "before conflict"))
+            val command =
+                FakeCommandRepository(query).apply {
+                    failures += Conflict(errorId = "first-conflict")
+                    onFailure = {
+                        query.current = entry(version = 4, notes = "concurrent notes")
+                    }
+                }
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "5555555555554444"))
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
-        assertTrue((result as AppResult.Failure).error is ValidationError)
-        assertTrue(command.submittedChanges.isEmpty())
-    }
-
-    @Test
-    fun restrictedSessionIsRejectedAtTheEditUseCaseBoundary() = runTest {
-        val query = FakeQueryRepository(entry(version = 1))
-        val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState, testLogger())
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
-
-        assertTrue((result as AppResult.Failure).error is SessionModeRestricted)
-        assertTrue(command.submittedChanges.isEmpty())
-    }
-
-    @Test
-    fun tagEditDoesNotSubmitTheIncompleteSecretBundle() = runTest {
-        val query = FakeQueryRepository(
-            entry(version = 1).copy(
-                secret = EntrySecret(credential = LoginCredential(password = null)),
-            ),
-        )
-        val command = FakeCommandRepository(query)
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
-
-        assertTrue(result is AppResult.Success)
-        assertEquals(emptySet<String>(), command.submittedChanges.single().profile?.tags)
-        assertNull(command.submittedChanges.single().secret)
-    }
-
-    @Test
-    fun updateAppliesPatchToLatestEntryAndReturnsReloadedVersion() = runTest {
-        val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
-        val command = FakeCommandRepository(query)
-        val logger = RecordingTestLogger()
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
-
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals("Renamed", updated.title)
-        assertEquals("latest notes", updated.secret.notes)
-        assertEquals(8, updated.version.value)
-        assertEquals(listOf(7), command.expectedVersions)
-        assertEquals(
-            listOf(Events.Vault.EntryUpdateStarted, Events.Vault.EntryUpdateCompleted),
-            logger.events.map { it.event },
-        )
-        assertEquals(listOf(Operations.VaultEntryUpdate), logger.spans)
-        assertEquals(
-            setOf(LogFieldKeys.EntryType, LogFieldKeys.ElapsedMs),
-            logger.events.last().fields.values.keys,
-        )
-    }
-
-    @Test
-    fun updateRetriesOneConflictAgainstReloadedEntry() = runTest {
-        val query = FakeQueryRepository(entry(version = 3, notes = "before conflict"))
-        val command = FakeCommandRepository(query).apply {
-            failures += Conflict(errorId = "first-conflict")
-            onFailure = {
-                query.current = entry(version = 4, notes = "concurrent notes")
-            }
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals("Renamed", updated.title)
+            assertEquals("concurrent notes", updated.secret.notes)
+            assertEquals(5, updated.version.value)
+            assertEquals(listOf(3, 4), command.expectedVersions)
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
-
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals("Renamed", updated.title)
-        assertEquals("concurrent notes", updated.secret.notes)
-        assertEquals(5, updated.version.value)
-        assertEquals(listOf(3, 4), command.expectedVersions)
-    }
 
     @Test
-    fun updateReturnsSecondConflictWithoutThirdAttempt() = runTest {
-        val query = FakeQueryRepository(entry(version = 3))
-        val command = FakeCommandRepository(query).apply {
-            failures += Conflict(errorId = "first-conflict")
-            failures += Conflict(errorId = "second-conflict")
+    fun updateReturnsSecondConflictWithoutThirdAttempt() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 3))
+            val command =
+                FakeCommandRepository(query).apply {
+                    failures += Conflict(errorId = "first-conflict")
+                    failures += Conflict(errorId = "second-conflict")
+                }
+            val logger = RecordingTestLogger()
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
+
+            assertTrue((result as AppResult.Failure).error is Conflict)
+            assertEquals(2, command.expectedVersions.size)
+            assertEquals(Events.Vault.EntryUpdateFailed, logger.events.last().event)
+            assertTrue(logger.events.last().throwable is Conflict)
         }
-        val logger = RecordingTestLogger()
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
-
-        assertTrue((result as AppResult.Failure).error is Conflict)
-        assertEquals(2, command.expectedVersions.size)
-        assertEquals(Events.Vault.EntryUpdateFailed, logger.events.last().event)
-        assertTrue(logger.events.last().throwable is Conflict)
-    }
 
     @Test
-    fun updateDoesNotRetryNonConflictFailure() = runTest {
-        val query = FakeQueryRepository(entry(version = 3))
-        val command = FakeCommandRepository(query).apply {
-            failures += ValidationError(errorId = "validation")
+    fun updateDoesNotRetryNonConflictFailure() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 3))
+            val command =
+                FakeCommandRepository(query).apply {
+                    failures += ValidationError(errorId = "validation")
+                }
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
+
+            assertTrue((result as AppResult.Failure).error is ValidationError)
+            assertEquals(1, command.expectedVersions.size)
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
-
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
-
-        assertTrue((result as AppResult.Failure).error is ValidationError)
-        assertEquals(1, command.expectedVersions.size)
-    }
 
     @Test
-    fun updateReturnsNotFoundWhenEntryDisappears() = runTest {
-        val query = FakeQueryRepository(null)
-        val useCase = EditDetailEntryUseCase(
-            query,
-            FakeCommandRepository(query),
-            FullSessionAccessState,
-            testLogger(),
-        )
+    fun updateReturnsNotFoundWhenEntryDisappears() =
+        runTest {
+            val query = FakeQueryRepository(null)
+            val useCase =
+                EditDetailEntryUseCase(
+                    query,
+                    FakeCommandRepository(query),
+                    FullSessionAccessState,
+                    testLogger(),
+                )
 
-        val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
-        assertTrue((result as AppResult.Failure).error is NotFound)
-    }
+            assertTrue((result as AppResult.Failure).error is NotFound)
+        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun concurrentUpdatesAreSerializedAndSecondUsesFirstResult() = runTest {
-        val query = FakeQueryRepository(entry(version = 1))
-        val firstStarted = CompletableDeferred<Unit>()
-        val releaseFirst = CompletableDeferred<Unit>()
-        val command = FakeCommandRepository(query).apply {
-            beforeFirstSuccess = {
-                firstStarted.complete(Unit)
-                releaseFirst.await()
-            }
+    fun concurrentUpdatesAreSerializedAndSecondUsesFirstResult() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 1))
+            val firstStarted = CompletableDeferred<Unit>()
+            val releaseFirst = CompletableDeferred<Unit>()
+            val command =
+                FakeCommandRepository(query).apply {
+                    beforeFirstSuccess = {
+                        firstStarted.complete(Unit)
+                        releaseFirst.await()
+                    }
+                }
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val first = async { useCase.edit(ENTRY_ID, EntryEdit.SetTitle("First")) }
+            firstStarted.await()
+            val second = async { useCase.edit(ENTRY_ID, EntryEdit.SetNotes("Second notes")) }
+            runCurrent()
+
+            assertEquals(listOf(1), command.expectedVersions)
+            releaseFirst.complete(Unit)
+            first.await()
+            val secondResult = (second.await() as AppResult.Success<Entry>).data
+
+            assertEquals(listOf(1, 2), command.expectedVersions)
+            assertEquals("First", secondResult.title)
+            assertEquals("Second notes", secondResult.secret.notes)
+            assertEquals(3, secondResult.version.value)
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
-
-        val first = async { useCase.edit(ENTRY_ID, EntryEdit.SetTitle("First")) }
-        firstStarted.await()
-        val second = async { useCase.edit(ENTRY_ID, EntryEdit.SetNotes("Second notes")) }
-        runCurrent()
-
-        assertEquals(listOf(1), command.expectedVersions)
-        releaseFirst.complete(Unit)
-        first.await()
-        val secondResult = (second.await() as AppResult.Success<Entry>).data
-
-        assertEquals(listOf(1, 2), command.expectedVersions)
-        assertEquals("First", secondResult.title)
-        assertEquals("Second notes", secondResult.secret.notes)
-        assertEquals(3, secondResult.version.value)
-    }
 
     @Test
-    fun primaryUrlEditPreservesLatestApplicationIds() = runTest {
-        val query = FakeQueryRepository(
-            entry(
-                version = 2,
-                primaryUrl = "https://old.example.com",
-                applicationIds = setOf("com.example.latest"),
-            ),
-        )
-        val useCase = EditDetailEntryUseCase(
-            query,
-            FakeCommandRepository(query),
-            FullSessionAccessState,
-            testLogger(),
-        )
+    fun primaryUrlEditPreservesLatestApplicationIds() =
+        runTest {
+            val query =
+                FakeQueryRepository(
+                    entry(
+                        version = 2,
+                        primaryUrl = "https://old.example.com",
+                        applicationIds = setOf("com.example.latest"),
+                    ),
+                )
+            val useCase =
+                EditDetailEntryUseCase(
+                    query,
+                    FakeCommandRepository(query),
+                    FullSessionAccessState,
+                    testLogger(),
+                )
 
-        val result = useCase.edit(
-            ENTRY_ID,
-            EntryEdit.SetPrimaryUrl("https://new.example.com"),
-        )
+            val result =
+                useCase.edit(
+                    ENTRY_ID,
+                    EntryEdit.SetPrimaryUrl("https://new.example.com"),
+                )
 
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals("https://new.example.com", updated.associations.primaryUrl)
-        assertEquals(setOf("com.example.latest"), updated.associations.applicationIds)
-    }
-
-    @Test
-    fun applicationIdEditPreservesLatestPrimaryUrl() = runTest {
-        val query = FakeQueryRepository(
-            entry(
-                version = 2,
-                primaryUrl = "https://latest.example.com",
-                applicationIds = setOf("com.example.old"),
-            ),
-        )
-        val useCase = EditDetailEntryUseCase(
-            query,
-            FakeCommandRepository(query),
-            FullSessionAccessState,
-            testLogger(),
-        )
-
-        val result = useCase.edit(
-            ENTRY_ID,
-            EntryEdit.SetApplicationIds(setOf("com.example.new")),
-        )
-
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals("https://latest.example.com", updated.associations.primaryUrl)
-        assertEquals(setOf("com.example.new"), updated.associations.applicationIds)
-    }
-
-    @Test
-    fun toggleFavoriteReevaluatesLatestEntryAfterConflict() = runTest {
-        val query = FakeQueryRepository(entry(version = 3, favorite = true))
-        val command = FakeCommandRepository(query).apply {
-            failures += Conflict(errorId = "first-conflict")
-            onFailure = { query.current = entry(version = 4, favorite = false) }
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals("https://new.example.com", updated.associations.primaryUrl)
+            assertEquals(setOf("com.example.latest"), updated.associations.applicationIds)
         }
-        val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
-        val result = useCase.edit(ENTRY_ID, EntryEdit.ToggleFavorite)
+    @Test
+    fun applicationIdEditPreservesLatestPrimaryUrl() =
+        runTest {
+            val query =
+                FakeQueryRepository(
+                    entry(
+                        version = 2,
+                        primaryUrl = "https://latest.example.com",
+                        applicationIds = setOf("com.example.old"),
+                    ),
+                )
+            val useCase =
+                EditDetailEntryUseCase(
+                    query,
+                    FakeCommandRepository(query),
+                    FullSessionAccessState,
+                    testLogger(),
+                )
 
-        val updated = (result as AppResult.Success<Entry>).data
-        assertEquals(true, updated.favorite)
-        assertEquals(listOf(3, 4), command.expectedVersions)
-    }
+            val result =
+                useCase.edit(
+                    ENTRY_ID,
+                    EntryEdit.SetApplicationIds(setOf("com.example.new")),
+                )
 
-    private class FakeQueryRepository(initial: Entry?) : EntryQueryRepository {
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals("https://latest.example.com", updated.associations.primaryUrl)
+            assertEquals(setOf("com.example.new"), updated.associations.applicationIds)
+        }
+
+    @Test
+    fun toggleFavoriteReevaluatesLatestEntryAfterConflict() =
+        runTest {
+            val query = FakeQueryRepository(entry(version = 3, favorite = true))
+            val command =
+                FakeCommandRepository(query).apply {
+                    failures += Conflict(errorId = "first-conflict")
+                    onFailure = { query.current = entry(version = 4, favorite = false) }
+                }
+            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.ToggleFavorite)
+
+            val updated = (result as AppResult.Success<Entry>).data
+            assertEquals(true, updated.favorite)
+            assertEquals(listOf(3, 4), command.expectedVersions)
+        }
+
+    private class FakeQueryRepository(
+        initial: Entry?,
+    ) : EntryQueryRepository {
         var current: Entry? = initial
 
         override suspend fun getById(entryId: EntryId): Entry? = current
@@ -387,16 +439,16 @@ class EditDetailEntryUseCaseTest {
                 block()
             }
             val current = requireNotNull(query.current)
-            query.current = current.copy(
-                identity = current.identity.copy(version = current.version.next()),
-                profile = changes.profile ?: current.profile,
-                secret = changes.secret ?: current.secret,
-            )
+            query.current =
+                current.copy(
+                    identity = current.identity.copy(version = current.version.next()),
+                    profile = changes.profile ?: current.profile,
+                    secret = changes.secret ?: current.secret,
+                )
             return AppResult.Success(Unit)
         }
 
-        override suspend fun createEntry(entry: Entry): AppResult<EntryId> =
-            AppResult.Success(entry.id)
+        override suspend fun createEntry(entry: Entry): AppResult<EntryId> = AppResult.Success(entry.id)
 
         override suspend fun moveToTrash(
             id: EntryId,
@@ -423,43 +475,55 @@ class EditDetailEntryUseCaseTest {
         primaryUrl: String? = null,
         applicationIds: Set<String> = emptySet(),
     ) = Entry(
-        identity = EntryIdentity(
-            id = ENTRY_ID,
-            type = EntryType.LOGIN,
-            version = EntryVersion(version),
-            timestamps = EntryTimestamps(createdAtMs = 1, updatedAtMs = version.toLong()),
-        ),
-        profile = EntryProfile(
-            title = "Original",
-            username = "latest-user",
-            associations = EntryAssociations(
-                primaryUrl = primaryUrl,
-                applicationIds = applicationIds,
+        identity =
+            EntryIdentity(
+                id = ENTRY_ID,
+                type = EntryType.LOGIN,
+                version = EntryVersion(version),
+                timestamps = EntryTimestamps(createdAtMs = 1, updatedAtMs = version.toLong()),
             ),
-            favorite = favorite,
-            tags = setOf("Latest"),
-        ),
-        secret = EntrySecret(
-            credential = LoginCredential(password = "latest-password"),
-            notes = notes,
-        ),
+        profile =
+            EntryProfile(
+                title = "Original",
+                username = "latest-user",
+                associations =
+                    EntryAssociations(
+                        primaryUrl = primaryUrl,
+                        applicationIds = applicationIds,
+                    ),
+                favorite = favorite,
+                tags = setOf("Latest"),
+            ),
+        secret =
+            EntrySecret(
+                credential = LoginCredential(password = "latest-password"),
+                notes = notes,
+            ),
     )
 
     private companion object {
         val ENTRY_ID = EntryId("entry-1")
 
-        val RestrictedSessionAccessState = object : SecureSessionAccessState {
-            override val authenticationState = kotlinx.coroutines.flow.MutableStateFlow(
-                com.aozijx.passly.domain.access.model.AuthenticationState.RecoveryMode(1),
-            )
-            override fun isUnlocked() = true
-        }
+        val RestrictedSessionAccessState =
+            object : SecureSessionAccessState {
+                override val authenticationState =
+                    kotlinx.coroutines.flow.MutableStateFlow(
+                        com.aozijx.passly.domain.access.model.AuthenticationState
+                            .RecoveryMode(1),
+                    )
 
-        val FullSessionAccessState = object : SecureSessionAccessState {
-            override val authenticationState = kotlinx.coroutines.flow.MutableStateFlow(
-                com.aozijx.passly.domain.access.model.AuthenticationState.Authenticated(1),
-            )
-            override fun isUnlocked() = true
-        }
+                override fun isUnlocked() = true
+            }
+
+        val FullSessionAccessState =
+            object : SecureSessionAccessState {
+                override val authenticationState =
+                    kotlinx.coroutines.flow.MutableStateFlow(
+                        com.aozijx.passly.domain.access.model.AuthenticationState
+                            .Authenticated(1),
+                    )
+
+                override fun isUnlocked() = true
+            }
     }
 }

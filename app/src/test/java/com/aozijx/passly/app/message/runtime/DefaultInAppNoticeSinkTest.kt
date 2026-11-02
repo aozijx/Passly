@@ -11,20 +11,22 @@ import org.junit.Test
 
 class DefaultInAppNoticeSinkTest {
     @Test
-    fun fullQueueReportsFailureAndPreservesAlreadyQueuedNotices() = runBlocking {
-        val sink = DefaultInAppNoticeSink()
-        val notices = (0 until 64).map { index ->
-            newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "notice-$index")
-        }
+    fun fullQueueReportsFailureAndPreservesAlreadyQueuedNotices() =
+        runBlocking {
+            val sink = DefaultInAppNoticeSink()
+            val notices =
+                (0 until 64).map { index ->
+                    newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "notice-$index")
+                }
 
-        notices.forEach { notice ->
-            assertEquals(SinkResult.Delivered, sink.deliver(notice))
-        }
-        assertEquals(
-            SinkResult.Failed("notice.in_app_queue_full"),
-            sink.deliver(newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "overflow")),
-        )
+            notices.forEach { notice ->
+                assertEquals(SinkResult.Delivered, sink.deliver(notice))
+            }
+            assertEquals(
+                SinkResult.Failed("notice.in_app_queue_full"),
+                sink.deliver(newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "overflow")),
+            )
 
-        assertEquals(notices, sink.notices.take(notices.size).toList())
-    }
+            assertEquals(notices, sink.notices.take(notices.size).toList())
+        }
 }

@@ -16,7 +16,7 @@ fun PasskeySection(
     onPasskeyCopy: () -> Unit,
     onPasskeyReveal: () -> Unit,
     onHardwareKeyCopy: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val passkeyDataLabel = stringResource(R.string.passkey_data)
     val hardwareKeyInfoLabel = stringResource(R.string.hardware_key_info)

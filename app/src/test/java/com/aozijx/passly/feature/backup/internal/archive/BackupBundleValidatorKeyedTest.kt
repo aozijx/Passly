@@ -12,13 +12,15 @@ class BackupBundleValidatorKeyedTest {
     @Test
     fun validKeyedLoginDocumentPassesValidation() {
         BackupBundleValidator.validate(
-            bundle = bundle(
-                fields = listOf(
-                    BackupFieldRecord("title", BackupFieldValue.text("Example")),
-                    BackupFieldRecord("password", BackupFieldValue.text("secret")),
-                    BackupFieldRecord("favorite", BackupFieldValue.boolean(false)),
+            bundle =
+                bundle(
+                    fields =
+                        listOf(
+                            BackupFieldRecord("title", BackupFieldValue.text("Example")),
+                            BackupFieldRecord("password", BackupFieldValue.text("secret")),
+                            BackupFieldRecord("favorite", BackupFieldValue.boolean(false)),
+                        ),
                 ),
-            ),
             requireResourceData = false,
         )
     }
@@ -27,12 +29,14 @@ class BackupBundleValidatorKeyedTest {
     fun duplicateFieldKeyIsRejected() {
         assertThrows(IllegalArgumentException::class.java) {
             BackupBundleValidator.validate(
-                bundle = bundle(
-                    fields = listOf(
-                        BackupFieldRecord("title", BackupFieldValue.text("One")),
-                        BackupFieldRecord("title", BackupFieldValue.text("Two")),
+                bundle =
+                    bundle(
+                        fields =
+                            listOf(
+                                BackupFieldRecord("title", BackupFieldValue.text("One")),
+                                BackupFieldRecord("title", BackupFieldValue.text("Two")),
+                            ),
                     ),
-                ),
                 requireResourceData = false,
             )
         }
@@ -42,39 +46,44 @@ class BackupBundleValidatorKeyedTest {
     fun fieldWithMultiplePayloadsIsRejected() {
         assertThrows(IllegalArgumentException::class.java) {
             BackupBundleValidator.validate(
-                bundle = bundle(
-                    fields = listOf(
-                        BackupFieldRecord("title", BackupFieldValue.text("Example")),
-                        BackupFieldRecord(
-                            "favorite",
-                            BackupFieldValue(
-                                kind = BackupFieldValue.KIND_BOOLEAN,
-                                text = "false",
-                                booleanValue = false,
+                bundle =
+                    bundle(
+                        fields =
+                            listOf(
+                                BackupFieldRecord("title", BackupFieldValue.text("Example")),
+                                BackupFieldRecord(
+                                    "favorite",
+                                    BackupFieldValue(
+                                        kind = BackupFieldValue.KIND_BOOLEAN,
+                                        text = "false",
+                                        booleanValue = false,
+                                    ),
+                                ),
                             ),
-                        ),
                     ),
-                ),
                 requireResourceData = false,
             )
         }
     }
 
-    private fun bundle(fields: List<BackupFieldRecord>) = BackupBundle(
-        document = BackupDocument(
-            format = BackupDocument.FORMAT,
-            version = BackupDocument.CURRENT_VERSION,
-            exportedAt = 10L,
-            entries = listOf(
-                BackupEntryRecord(
-                    id = "entry-1",
-                    type = "login",
-                    revision = 1,
-                    createdAt = 1L,
-                    updatedAt = 2L,
-                    fields = fields,
+    private fun bundle(fields: List<BackupFieldRecord>) =
+        BackupBundle(
+            document =
+                BackupDocument(
+                    format = BackupDocument.FORMAT,
+                    version = BackupDocument.CURRENT_VERSION,
+                    exportedAt = 10L,
+                    entries =
+                        listOf(
+                            BackupEntryRecord(
+                                id = "entry-1",
+                                type = "login",
+                                revision = 1,
+                                createdAt = 1L,
+                                updatedAt = 2L,
+                                fields = fields,
+                            ),
+                        ),
                 ),
-            ),
-        ),
-    )
+        )
 }

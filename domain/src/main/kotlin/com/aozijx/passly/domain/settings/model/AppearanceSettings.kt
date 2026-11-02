@@ -7,14 +7,18 @@ data class AppearanceSettings(
     val isDynamicColor: Boolean = true,
     val themeKey: String = "default",
     val language: AppLanguage = AppLanguage.SYSTEM,
-    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED
+    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
 )
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
-enum class AppLanguage(val locale: Locale?) {
+
+enum class AppLanguage(
+    val locale: Locale?,
+) {
     SYSTEM(null),
     ZH(Locale.SIMPLIFIED_CHINESE),
-    EN(Locale.ENGLISH);
+    EN(Locale.ENGLISH),
+    ;
 
     /** BCP-47 标签；跟随系统时 AppCompat 需要空标签。 */
     val applicationLocaleTags: String

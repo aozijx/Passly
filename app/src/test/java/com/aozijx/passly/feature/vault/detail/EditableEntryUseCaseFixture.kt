@@ -46,24 +46,29 @@ internal class EditableEntryUseCaseFixture(
     val editor = EditDetailEntryUseCase(query, command, access, testLogger())
 
     companion object {
-        fun unsupportedEntry() = EditableEntryUseCaseFixture(
-            Entry(
-                identity = EntryIdentity(
-                    EntryId("unsupported-fixture"),
-                    EntryType.NOTE,
-                    timestamps = EntryTimestamps(1),
+        fun unsupportedEntry() =
+            EditableEntryUseCaseFixture(
+                Entry(
+                    identity =
+                        EntryIdentity(
+                            EntryId("unsupported-fixture"),
+                            EntryType.NOTE,
+                            timestamps = EntryTimestamps(1),
+                        ),
+                    profile = EntryProfile("Unsupported"),
                 ),
-                profile = EntryProfile("Unsupported"),
-            ),
-        )
+            )
     }
 
     internal class TestAccess : SecureSessionAccessState {
         override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1))
+
         override fun isUnlocked() = true
     }
 
-    internal class TestQuery(var current: Entry?) : EntryQueryRepository {
+    internal class TestQuery(
+        var current: Entry?,
+    ) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId) = current
     }
 
@@ -87,9 +92,10 @@ internal class EditableEntryUseCaseFixture(
             keys: Set<SensitiveFieldKey>,
             action: SensitiveAccessAction,
             permit: AuthorizationPermit,
-        ): List<RevealedSensitiveField> = keys.mapNotNull { key ->
-            values[key]?.let { RevealedSensitiveField(entryId, key, OwnedChars.fromString(it)) }
-        }
+        ): List<RevealedSensitiveField> =
+            keys.mapNotNull { key ->
+                values[key]?.let { RevealedSensitiveField(entryId, key, OwnedChars.fromString(it)) }
+            }
 
         override suspend fun reveal(
             entryId: EntryId,
@@ -101,31 +107,52 @@ internal class EditableEntryUseCaseFixture(
         override suspend fun readBundle(entryId: EntryId) = EntrySecret()
     }
 
-    private class TestCommand(private val query: TestQuery) : EntryCommandRepository {
+    private class TestCommand(
+        private val query: TestQuery,
+    ) : EntryCommandRepository {
         override suspend fun updateEntry(
             id: EntryId,
             expectedVersion: EntryVersion,
             changes: EntryUpdate,
         ): AppResult<Unit> {
             val current = requireNotNull(query.current)
-            query.current = current.copy(
-                identity = current.identity.copy(version = current.version.next()),
-                profile = changes.profile ?: current.profile,
-                secret = changes.secret ?: current.secret,
-            )
+            query.current =
+                current.copy(
+                    identity = current.identity.copy(version = current.version.next()),
+                    profile = changes.profile ?: current.profile,
+                    secret = changes.secret ?: current.secret,
+                )
             return AppResult.Success(Unit)
         }
 
         override suspend fun createEntry(entry: Entry) = AppResult.Success(entry.id)
-        override suspend fun moveToTrash(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
-        override suspend fun restoreEntry(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
-        override suspend fun deletePermanently(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
+
+        override suspend fun moveToTrash(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun restoreEntry(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun deletePermanently(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
         override suspend fun emptyTrash() = AppResult.Success(0)
     }
 
     private class TestActivity : ActivityRecorder {
-        override suspend fun recordUsage(entryId: String, type: ActivityType) = AppResult.Success(Unit)
+        override suspend fun recordUsage(
+            entryId: String,
+            type: ActivityType,
+        ) = AppResult.Success(Unit)
+
         override suspend fun deleteByEntryId(entryId: String) = Unit
+
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 }

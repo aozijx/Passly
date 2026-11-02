@@ -13,13 +13,16 @@ object BackupBundleValidator {
 
     internal fun isSafeArchiveId(value: String): Boolean = safeArchiveId.matches(value)
 
-    fun validate(bundle: BackupBundle, requireResourceData: Boolean) {
+    fun validate(
+        bundle: BackupBundle,
+        requireResourceData: Boolean,
+    ) {
         KeyedBackupBundleValidator.validate(bundle, requireResourceData)
     }
 
     fun sha256Hex(data: ByteArray): String =
-        MessageDigest.getInstance("SHA-256")
+        MessageDigest
+            .getInstance("SHA-256")
             .digest(data)
             .joinToString("") { "%02x".format(it) }
-
 }

@@ -38,8 +38,12 @@ class OtpConfigInputTest {
     @Test
     fun `HOTP accepts zero and largest long and ignores inactive period`() {
         for (counter in listOf(0L, Long.MAX_VALUE)) {
-            val config = (input.copy(type = OtpType.HOTP, counter = counter.toString(), period = "unused")
-                .parse() as OtpConfigInputResult.Valid).config
+            val config =
+                (
+                    input
+                        .copy(type = OtpType.HOTP, counter = counter.toString(), period = "unused")
+                        .parse() as OtpConfigInputResult.Valid
+                ).config
             assertEquals(counter, config.counter)
             assertEquals(null, config.periodSeconds)
         }
@@ -74,7 +78,10 @@ class OtpConfigInputTest {
         }
     }
 
-    private fun assertInvalid(value: OtpConfigInput, field: FieldKey) {
+    private fun assertInvalid(
+        value: OtpConfigInput,
+        field: FieldKey,
+    ) {
         val result = value.parse()
         assertTrue(result is OtpConfigInputResult.Invalid)
         assertTrue(field in (result as OtpConfigInputResult.Invalid).fields)

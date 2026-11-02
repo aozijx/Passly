@@ -55,10 +55,11 @@ internal fun CardExpiryField(
     modifier: Modifier = Modifier,
 ) {
     var showPicker by remember { mutableStateOf(false) }
-    val value = when (selection) {
-        CardExpirySelection.NotSet -> stringResource(R.string.card_expiry_not_set)
-        is CardExpirySelection.Selected -> selection.value.storageValue
-    }
+    val value =
+        when (selection) {
+            CardExpirySelection.NotSet -> stringResource(R.string.card_expiry_not_set)
+            is CardExpirySelection.Selected -> selection.value.storageValue
+        }
 
     OutlinedCard(onClick = { showPicker = true }, modifier = modifier.fillMaxWidth()) {
         Row(
@@ -191,13 +192,14 @@ private fun <T> WheelColumn(
             contentAlignment = Alignment.Center,
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .background(
-                        MaterialTheme.colorScheme.secondaryContainer,
-                        RoundedCornerShape(12.dp),
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .background(
+                            MaterialTheme.colorScheme.secondaryContainer,
+                            RoundedCornerShape(12.dp),
+                        ),
             )
             LazyColumn(
                 state = listState,
@@ -207,20 +209,22 @@ private fun <T> WheelColumn(
             ) {
                 itemsIndexed(items) { index, item ->
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .clickable { scope.launch { listState.animateScrollToItem(index) } },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .clickable { scope.launch { listState.animateScrollToItem(index) } },
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = itemLabel(item),
                             style = MaterialTheme.typography.titleMedium,
-                            color = if (index == selectedIndex) {
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
+                            color =
+                                if (index == selectedIndex) {
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                         )
                     }
                 }

@@ -12,33 +12,45 @@ internal object ScannerResultClassifier {
         if (rawValue.isBlank()) return ScannerClassification.Empty
 
         when (val otp = OtpAuthUriCodec.parse(rawValue)) {
-            is OtpUriParseResult.Parsed ->
+            is OtpUriParseResult.Parsed -> {
                 return ScannerClassification.Classified(ScannerResult.Otp(rawValue, otp.config))
+            }
+
             OtpUriParseResult.NotOtp,
             OtpUriParseResult.Malformed,
-            OtpUriParseResult.Unsupported -> Unit
+            OtpUriParseResult.Unsupported,
+            -> {
+                Unit
+            }
         }
 
         when (val wifi = WifiQrPayloadParser.parse(rawValue)) {
-            is WifiQrParseResult.Parsed ->
+            is WifiQrParseResult.Parsed -> {
                 return ScannerClassification.Classified(
                     ScannerResult.Wifi(rawValue, wifi.payload),
                 )
+            }
+
             WifiQrParseResult.NotWifi,
             WifiQrParseResult.Malformed,
             WifiQrParseResult.Unsupported,
-            -> Unit
+            -> {
+                Unit
+            }
         }
 
-        val uri = try {
-            URI(rawValue)
-        } catch (_: URISyntaxException) {
-            null
-        }
+        val uri =
+            try {
+                URI(rawValue)
+            } catch (_: URISyntaxException) {
+                null
+            }
         if (
             uri != null &&
-            (uri.scheme.equals("http", ignoreCase = true) ||
-                uri.scheme.equals("https", ignoreCase = true)) &&
+            (
+                uri.scheme.equals("http", ignoreCase = true) ||
+                    uri.scheme.equals("https", ignoreCase = true)
+            ) &&
             !uri.host.isNullOrBlank()
         ) {
             return ScannerClassification.Classified(ScannerResult.WebLink(rawValue, uri))
@@ -50,5 +62,8 @@ internal object ScannerResultClassifier {
 
 internal sealed interface ScannerClassification {
     data object Empty : ScannerClassification
-    data class Classified(val result: ScannerResult) : ScannerClassification
+
+    data class Classified(
+        val result: ScannerResult,
+    ) : ScannerClassification
 }

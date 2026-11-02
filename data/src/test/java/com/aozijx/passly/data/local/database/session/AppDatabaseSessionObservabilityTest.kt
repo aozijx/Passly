@@ -27,156 +27,177 @@ import java.util.concurrent.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class AppDatabaseSessionObservabilityTest {
     @Test
-    fun `successful transition emits required structured database fields`() = runBlocking {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val adapter = DatabaseSessionEventLogger(logger(records))
+    fun `successful transition emits required structured database fields`() =
+        runBlocking {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val adapter = DatabaseSessionEventLogger(logger(records))
 
-        adapter.record(
-            SessionTransitionEvent(
-                fromState = SecureSessionState.SEALED,
-                toState = SecureSessionState.UNLOCKED,
-                owner = SessionTransitionOwner.SESSION_RUNTIME,
-                reason = SessionTransitionReason.OPEN,
-                lockType = SessionLockType.NONE,
-                elapsedMs = 17,
-            ),
-        )
+            adapter.record(
+                SessionTransitionEvent(
+                    fromState = SecureSessionState.SEALED,
+                    toState = SecureSessionState.UNLOCKED,
+                    owner = SessionTransitionOwner.SESSION_RUNTIME,
+                    reason = SessionTransitionReason.OPEN,
+                    lockType = SessionLockType.NONE,
+                    elapsedMs = 17,
+                ),
+            )
 
-        val record = records.single()
-        assertEquals(Events.Database.SessionTransition, record.event)
-        assertEquals(LogLevel.INFO, record.level)
-        assertEquals("SEALED", (record.fields.values[LogFieldKeys.FromState] as LogValue.EnumValue).value.value)
-        assertEquals("UNLOCKED", (record.fields.values[LogFieldKeys.ToState] as LogValue.EnumValue).value.value)
-        assertEquals("NONE", (record.fields.values[LogFieldKeys.LockType] as LogValue.EnumValue).value.value)
-        assertEquals("SESSION_RUNTIME", (record.fields.values[LogFieldKeys.Owner] as LogValue.EnumValue).value.value)
-        assertEquals(17L, (record.fields.values[LogFieldKeys.ElapsedMs] as LogValue.DurationMs).value)
-        assertFalse(record.fields.values.containsKey(LogFieldKeys.TimeoutMs))
-        assertNull(record.error)
-    }
-
-    @Test
-    fun `close failure emits safe error while drain timeout is throwable free degradation`() = runBlocking {
-        val records = mutableListOf<SanitizedLogRecord>()
-        val adapter = DatabaseSessionEventLogger(logger(records))
-        val failure = IllegalStateException("database path and secret must not escape")
-
-        adapter.record(
-            SessionTransitionEvent(
-                SecureSessionState.SEALED,
-                SecureSessionState.SEALED,
-                SessionTransitionOwner.SESSION_RUNTIME,
-                SessionTransitionReason.CLOSE_FAILED,
-                SessionLockType.SEALED,
-                elapsedMs = 9,
-                error = failure,
-            ),
-        )
-        adapter.record(
-            SessionTransitionEvent(
-                SecureSessionState.UNLOCKED,
-                SecureSessionState.SEALED,
-                SessionTransitionOwner.SESSION_RUNTIME,
-                SessionTransitionReason.DRAIN_TIMEOUT,
-                SessionLockType.SEALED,
-                elapsedMs = 25,
-                timeoutMs = 20,
-                activeLeaseCount = 2,
-            ),
-        )
-
-        val error = records.first()
-        assertEquals(Events.Database.SessionTransitionFailed, error.event)
-        assertEquals(LogLevel.ERROR, error.level)
-        assertEquals("DATABASE_RESOURCE_CLOSE_FAILED", error.error!!.reason.value)
-        assertEquals("IllegalStateException", error.error!!.exception!!.type.value)
-        assertFalse(error.toString().contains("secret"))
-
-        val timeout = records.last()
-        assertEquals(Events.Database.SessionTransitionFailed, timeout.event)
-        assertEquals(LogLevel.WARN, timeout.level)
-        assertNull(timeout.error!!.exception)
-        assertEquals(20L, (timeout.fields.values[LogFieldKeys.TimeoutMs] as LogValue.DurationMs).value)
-        assertEquals(2L, (timeout.fields.values[LogFieldKeys.ActiveLeaseCount] as LogValue.Count).value)
-    }
-
-    @Test
-    fun `ordinary production log sink failure is isolated by DefaultLogger`() = runBlocking {
-        val adapter = DatabaseSessionEventLogger(
-            logger(mutableListOf(), LogSink { throw IllegalStateException("log sink unavailable") }),
-        )
-
-        adapter.record(openEvent())
-    }
-
-    @Test
-    fun `fatal production log sink error propagates through database event adapter`() = runBlocking {
-        val fatal = AssertionError("fatal log sink failure")
-        val adapter = DatabaseSessionEventLogger(logger(mutableListOf(), LogSink { throw fatal }))
-
-        val caught = try {
-            adapter.record(openEvent())
-            null
-        } catch (error: AssertionError) {
-            error
+            val record = records.single()
+            assertEquals(Events.Database.SessionTransition, record.event)
+            assertEquals(LogLevel.INFO, record.level)
+            assertEquals("SEALED", (record.fields.values[LogFieldKeys.FromState] as LogValue.EnumValue).value.value)
+            assertEquals("UNLOCKED", (record.fields.values[LogFieldKeys.ToState] as LogValue.EnumValue).value.value)
+            assertEquals("NONE", (record.fields.values[LogFieldKeys.LockType] as LogValue.EnumValue).value.value)
+            assertEquals("SESSION_RUNTIME", (record.fields.values[LogFieldKeys.Owner] as LogValue.EnumValue).value.value)
+            assertEquals(17L, (record.fields.values[LogFieldKeys.ElapsedMs] as LogValue.DurationMs).value)
+            assertFalse(record.fields.values.containsKey(LogFieldKeys.TimeoutMs))
+            assertNull(record.error)
         }
 
-        assertSame(fatal, caught)
-    }
-
     @Test
-    fun `log sink cancellation propagates through database event adapter`() = runBlocking {
-        val cancellation = CancellationException("log sink cancelled")
-        val adapter = DatabaseSessionEventLogger(logger(mutableListOf(), LogSink { throw cancellation }))
+    fun `close failure emits safe error while drain timeout is throwable free degradation`() =
+        runBlocking {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val adapter = DatabaseSessionEventLogger(logger(records))
+            val failure = IllegalStateException("database path and secret must not escape")
 
-        val caught = try {
-            adapter.record(openEvent())
-            null
-        } catch (failure: CancellationException) {
-            failure
+            adapter.record(
+                SessionTransitionEvent(
+                    SecureSessionState.SEALED,
+                    SecureSessionState.SEALED,
+                    SessionTransitionOwner.SESSION_RUNTIME,
+                    SessionTransitionReason.CLOSE_FAILED,
+                    SessionLockType.SEALED,
+                    elapsedMs = 9,
+                    error = failure,
+                ),
+            )
+            adapter.record(
+                SessionTransitionEvent(
+                    SecureSessionState.UNLOCKED,
+                    SecureSessionState.SEALED,
+                    SessionTransitionOwner.SESSION_RUNTIME,
+                    SessionTransitionReason.DRAIN_TIMEOUT,
+                    SessionLockType.SEALED,
+                    elapsedMs = 25,
+                    timeoutMs = 20,
+                    activeLeaseCount = 2,
+                ),
+            )
+
+            val error = records.first()
+            assertEquals(Events.Database.SessionTransitionFailed, error.event)
+            assertEquals(LogLevel.ERROR, error.level)
+            assertEquals("DATABASE_RESOURCE_CLOSE_FAILED", error.error!!.reason.value)
+            assertEquals(
+                "IllegalStateException",
+                error.error!!
+                    .exception!!
+                    .type.value,
+            )
+            assertFalse(error.toString().contains("secret"))
+
+            val timeout = records.last()
+            assertEquals(Events.Database.SessionTransitionFailed, timeout.event)
+            assertEquals(LogLevel.WARN, timeout.level)
+            assertNull(timeout.error!!.exception)
+            assertEquals(20L, (timeout.fields.values[LogFieldKeys.TimeoutMs] as LogValue.DurationMs).value)
+            assertEquals(2L, (timeout.fields.values[LogFieldKeys.ActiveLeaseCount] as LogValue.Count).value)
         }
 
-        assertSame(cancellation, caught)
-    }
+    @Test
+    fun `ordinary production log sink failure is isolated by DefaultLogger`() =
+        runBlocking {
+            val adapter =
+                DatabaseSessionEventLogger(
+                    logger(mutableListOf(), LogSink { throw IllegalStateException("log sink unavailable") }),
+                )
 
-    private fun openEvent() = SessionTransitionEvent(
-        fromState = SecureSessionState.SEALED,
-        toState = SecureSessionState.UNLOCKED,
-        owner = SessionTransitionOwner.SESSION_RUNTIME,
-        reason = SessionTransitionReason.OPEN,
-        lockType = SessionLockType.NONE,
-        elapsedMs = 0,
-    )
+            adapter.record(openEvent())
+        }
+
+    @Test
+    fun `fatal production log sink error propagates through database event adapter`() =
+        runBlocking {
+            val fatal = AssertionError("fatal log sink failure")
+            val adapter = DatabaseSessionEventLogger(logger(mutableListOf(), LogSink { throw fatal }))
+
+            val caught =
+                try {
+                    adapter.record(openEvent())
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+        }
+
+    @Test
+    fun `log sink cancellation propagates through database event adapter`() =
+        runBlocking {
+            val cancellation = CancellationException("log sink cancelled")
+            val adapter = DatabaseSessionEventLogger(logger(mutableListOf(), LogSink { throw cancellation }))
+
+            val caught =
+                try {
+                    adapter.record(openEvent())
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertSame(cancellation, caught)
+        }
+
+    private fun openEvent() =
+        SessionTransitionEvent(
+            fromState = SecureSessionState.SEALED,
+            toState = SecureSessionState.UNLOCKED,
+            owner = SessionTransitionOwner.SESSION_RUNTIME,
+            reason = SessionTransitionReason.OPEN,
+            lockType = SessionLockType.NONE,
+            elapsedMs = 0,
+        )
 
     private fun logger(
         records: MutableList<SanitizedLogRecord>,
         sink: LogSink = LogSink(records::add),
     ) = DefaultLogger(
-        sanitizer = PrivacyPolicy(
-            IdentifierHasher { _, _ -> null },
-            ContractViolationBehavior.THROW,
-        ),
+        sanitizer =
+            PrivacyPolicy(
+                IdentifierHasher { _, _ -> null },
+                ContractViolationBehavior.THROW,
+            ),
         sinks = listOf(sink),
         lifecycleSinks = emptyList(),
         idGenerator = SequentialIds(),
-        timeSource = object : ObservabilityTimeSource {
-            override fun wallTimeMs() = 1_700_000_000_000L
-            override fun elapsedRealtimeMs() = 100L
-        },
+        timeSource =
+            object : ObservabilityTimeSource {
+                override fun wallTimeMs() = 1_700_000_000_000L
+
+                override fun elapsedRealtimeMs() = 100L
+            },
         processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
         secureSessionProvider = SecureSessionProvider { null },
     )
 
     private class SequentialIds : ObservabilityIdGenerator {
         private var next = 0
+
         private fun value(prefix: String) = "${prefix}_${++next}_value"
+
         override fun eventId() = EventId(value("event"))
+
         override fun traceId() = TraceId(value("trace"))
+
         override fun spanId() = SpanId(value("span"))
     }
 }

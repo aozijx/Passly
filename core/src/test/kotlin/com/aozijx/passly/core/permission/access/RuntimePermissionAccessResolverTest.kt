@@ -13,8 +13,8 @@ class RuntimePermissionAccessResolverTest {
             RuntimePermissionAccessResolver.resolve(
                 status = PermissionStatus.GRANTED,
                 requestedBefore = true,
-                shouldShowRationale = false
-            )
+                shouldShowRationale = false,
+            ),
         )
     }
 
@@ -25,8 +25,8 @@ class RuntimePermissionAccessResolverTest {
             RuntimePermissionAccessResolver.resolve(
                 status = PermissionStatus.NOT_APPLICABLE,
                 requestedBefore = true,
-                shouldShowRationale = true
-            )
+                shouldShowRationale = true,
+            ),
         )
     }
 
@@ -37,8 +37,8 @@ class RuntimePermissionAccessResolverTest {
             RuntimePermissionAccessResolver.resolve(
                 status = PermissionStatus.DENIED,
                 requestedBefore = false,
-                shouldShowRationale = false
-            )
+                shouldShowRationale = false,
+            ),
         )
     }
 
@@ -49,8 +49,8 @@ class RuntimePermissionAccessResolverTest {
             RuntimePermissionAccessResolver.resolve(
                 status = PermissionStatus.DENIED,
                 requestedBefore = true,
-                shouldShowRationale = true
-            )
+                shouldShowRationale = true,
+            ),
         )
     }
 
@@ -61,8 +61,8 @@ class RuntimePermissionAccessResolverTest {
             RuntimePermissionAccessResolver.resolve(
                 status = PermissionStatus.DENIED,
                 requestedBefore = true,
-                shouldShowRationale = false
-            )
+                shouldShowRationale = false,
+            ),
         )
     }
 }

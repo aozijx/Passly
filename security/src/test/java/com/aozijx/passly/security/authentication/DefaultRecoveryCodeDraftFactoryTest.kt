@@ -21,65 +21,70 @@ import org.junit.Test
 
 class DefaultRecoveryCodeDraftFactoryTest {
     @Test
-    fun `creation runs inside exact recovery authorization scope`() = runBlocking {
-        val session = FakeSession(AuthenticationState.Authenticated(1L))
-        val gate = RecordingGate()
-        val draft = FakeDraft()
-        val generator = RecordingGenerator(gate) { RecoveryCredentialCreation.Ready(draft) }
+    fun `creation runs inside exact recovery authorization scope`() =
+        runBlocking {
+            val session = FakeSession(AuthenticationState.Authenticated(1L))
+            val gate = RecordingGate()
+            val draft = FakeDraft()
+            val generator = RecordingGenerator(gate) { RecoveryCredentialCreation.Ready(draft) }
 
-        val result = DefaultRecoveryCodeDraftFactory(gate, session, generator).create()
+            val result = DefaultRecoveryCodeDraftFactory(gate, session, generator).create()
 
-        assertEquals(
-            AuthorizationScope.Global(AuthenticationPurpose.MANAGE_RECOVERY_CODE),
-            gate.scope,
-        )
-        assertTrue(generator.ranInsideAuthorization)
-        assertTrue(result is RecoveryCredentialCreation.Ready)
-    }
-
-    @Test
-    fun `cancelled authorization does not generate a recovery draft`() = runBlocking {
-        val session = FakeSession(AuthenticationState.Authenticated(1L))
-        val gate = RecordingGate(cancel = true)
-        val generator = RecordingGenerator(gate) { error("must not generate") }
-
-        val result = DefaultRecoveryCodeDraftFactory(gate, session, generator).create()
-
-        assertEquals(RecoveryCredentialCreation.Cancelled, result)
-        assertEquals(0, generator.callCount)
-    }
+            assertEquals(
+                AuthorizationScope.Global(AuthenticationPurpose.MANAGE_RECOVERY_CODE),
+                gate.scope,
+            )
+            assertTrue(generator.ranInsideAuthorization)
+            assertTrue(result is RecoveryCredentialCreation.Ready)
+        }
 
     @Test
-    fun `restricted session is rejected before authorization`() = runBlocking {
-        val session = FakeSession(AuthenticationState.RecoveryMode(1L))
-        val gate = RecordingGate()
-        val generator = RecordingGenerator(gate) { error("must not generate") }
+    fun `cancelled authorization does not generate a recovery draft`() =
+        runBlocking {
+            val session = FakeSession(AuthenticationState.Authenticated(1L))
+            val gate = RecordingGate(cancel = true)
+            val generator = RecordingGenerator(gate) { error("must not generate") }
 
-        val result = DefaultRecoveryCodeDraftFactory(gate, session, generator).create()
+            val result = DefaultRecoveryCodeDraftFactory(gate, session, generator).create()
 
-        assertTrue(result is RecoveryCredentialCreation.Failed)
-        assertNull(gate.scope)
-        assertEquals(0, generator.callCount)
-    }
+            assertEquals(RecoveryCredentialCreation.Cancelled, result)
+            assertEquals(0, generator.callCount)
+        }
 
     @Test
-    fun `session bound draft refuses reveal and commit after session expires`() = runBlocking {
-        val session = FakeSession(AuthenticationState.Authenticated(1L))
-        val delegate = FakeDraft()
-        val draft = SessionBoundRecoveryCredentialDraft(
-            delegate,
-            session,
-            session.state.value as AuthenticationState.Authenticated,
-        )
+    fun `restricted session is rejected before authorization`() =
+        runBlocking {
+            val session = FakeSession(AuthenticationState.RecoveryMode(1L))
+            val gate = RecordingGate()
+            val generator = RecordingGenerator(gate) { error("must not generate") }
 
-        assertEquals("RECOVERY", draft.reveal()?.concatToString())
-        session.state.value = AuthenticationState.Locked
+            val result = DefaultRecoveryCodeDraftFactory(gate, session, generator).create()
 
-        assertNull(draft.reveal())
-        val result = draft.commit()
-        assertTrue(result is AuthenticationResult.Failure)
-        assertFalse(delegate.committed)
-    }
+            assertTrue(result is RecoveryCredentialCreation.Failed)
+            assertNull(gate.scope)
+            assertEquals(0, generator.callCount)
+        }
+
+    @Test
+    fun `session bound draft refuses reveal and commit after session expires`() =
+        runBlocking {
+            val session = FakeSession(AuthenticationState.Authenticated(1L))
+            val delegate = FakeDraft()
+            val draft =
+                SessionBoundRecoveryCredentialDraft(
+                    delegate,
+                    session,
+                    session.state.value as AuthenticationState.Authenticated,
+                )
+
+            assertEquals("RECOVERY", draft.reveal()?.concatToString())
+            session.state.value = AuthenticationState.Locked
+
+            assertNull(draft.reveal())
+            val result = draft.commit()
+            assertTrue(result is AuthenticationResult.Failure)
+            assertFalse(delegate.committed)
+        }
 
     private class RecordingGate(
         private val cancel: Boolean = false,
@@ -117,22 +122,30 @@ class DefaultRecoveryCodeDraftFactoryTest {
         }
     }
 
-    private class FakeSession(initial: AuthenticationState) : SecureSessionAccessState {
+    private class FakeSession(
+        initial: AuthenticationState,
+    ) : SecureSessionAccessState {
         val state = MutableStateFlow(initial)
         override val authenticationState = state
-        override fun isUnlocked(): Boolean = state.value is AuthenticationState.Authenticated ||
-            state.value is AuthenticationState.RecoveryMode
+
+        override fun isUnlocked(): Boolean =
+            state.value is AuthenticationState.Authenticated ||
+                state.value is AuthenticationState.RecoveryMode
     }
 
     private class FakeDraft : RecoveryCredentialDraft {
         override val id = RecoveryCredentialId("draft")
         var committed = false
+
         override fun reveal(): CharArray = "RECOVERY".toCharArray()
+
         override suspend fun commit(): AuthenticationResult {
             committed = true
             return AuthenticationResult.Success(com.aozijx.passly.domain.access.model.AuthenticationMethod.RECOVERY_CODE)
         }
+
         override val isCommitted: Boolean get() = committed
+
         override fun close() = Unit
     }
 }

@@ -34,12 +34,16 @@ class EntryTest {
         )
     }
 
-    private fun entry(type: EntryType, secret: EntrySecret) = Entry(
-        identity = EntryIdentity(
-            id = EntryId("entry"),
-            type = type,
-            timestamps = EntryTimestamps(createdAtMs = 1),
-        ),
+    private fun entry(
+        type: EntryType,
+        secret: EntrySecret,
+    ) = Entry(
+        identity =
+            EntryIdentity(
+                id = EntryId("entry"),
+                type = type,
+                timestamps = EntryTimestamps(createdAtMs = 1),
+            ),
         profile = EntryProfile(title = "Example"),
         secret = secret,
     )

@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.wifi
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,14 +28,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiAction
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiFormState
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
 internal fun WifiFormFields(
@@ -55,26 +55,28 @@ internal fun WifiFormFields(
                 value = form.password,
                 onValueChange = { onAction(AddWifiAction.PasswordChanged(it)) },
                 label = stringResource(R.string.wifi_password),
-                visualTransformation = if (form.isPasswordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
+                visualTransformation =
+                    if (form.isPasswordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
                 keyboardType = KeyboardType.Password,
                 isError = passwordError != null,
-                supportingText = passwordError?.let { error ->
-                    {
-                        Text(
-                            stringResource(
-                                if (error == EntryViolationCode.REQUIRED) {
-                                    R.string.wifi_password_required
-                                } else {
-                                    R.string.wifi_password_invalid
-                                },
-                            ),
-                        )
-                    }
-                },
+                supportingText =
+                    passwordError?.let { error ->
+                        {
+                            Text(
+                                stringResource(
+                                    if (error == EntryViolationCode.REQUIRED) {
+                                        R.string.wifi_password_required
+                                    } else {
+                                        R.string.wifi_password_invalid
+                                    },
+                                ),
+                            )
+                        }
+                    },
                 trailingIcon = {
                     SensitiveFieldVisibilityButton(
                         fieldLabelRes = R.string.wifi_password,
@@ -85,9 +87,10 @@ internal fun WifiFormFields(
             )
         }
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -119,9 +122,11 @@ private fun WifiSecurityTypeDropdown(
             readOnly = true,
             label = { Text(stringResource(R.string.wifi_encryption)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).excludeFromAutofill(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .excludeFromAutofill(),
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -142,10 +147,11 @@ private fun WifiSecurityTypeDropdown(
 }
 
 @Composable
-private fun WifiSecurityType.label(): String = stringResource(
-    when (this) {
-        WifiSecurityType.Open -> R.string.wifi_security_open
-        WifiSecurityType.Wep -> R.string.wifi_security_wep
-        WifiSecurityType.WpaPersonal -> R.string.wifi_security_wpa_personal
-    },
-)
+private fun WifiSecurityType.label(): String =
+    stringResource(
+        when (this) {
+            WifiSecurityType.Open -> R.string.wifi_security_open
+            WifiSecurityType.Wep -> R.string.wifi_security_wep
+            WifiSecurityType.WpaPersonal -> R.string.wifi_security_wpa_personal
+        },
+    )

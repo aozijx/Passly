@@ -16,18 +16,23 @@ internal object AutofillInputTypeClassifier {
             InputType.TYPE_CLASS_DATETIME -> names += "TYPE_CLASS_DATETIME"
         }
         when (typeClass) {
-            InputType.TYPE_CLASS_TEXT -> when (variation) {
-                InputType.TYPE_TEXT_VARIATION_NORMAL -> names += "TEXT_VARIATION_NORMAL"
-                InputType.TYPE_TEXT_VARIATION_PASSWORD -> names += "TEXT_VARIATION_PASSWORD"
-                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD -> names += "TEXT_VARIATION_VISIBLE_PASSWORD"
-                InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> names += "TEXT_VARIATION_WEB_PASSWORD"
-                InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS -> names += "TEXT_VARIATION_EMAIL_ADDRESS"
-                InputType.TYPE_TEXT_VARIATION_PERSON_NAME -> names += "TEXT_VARIATION_PERSON_NAME"
-                InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> names += "TEXT_VARIATION_WEB_EMAIL_ADDRESS"
-                InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT -> names += "TEXT_VARIATION_WEB_EDIT_TEXT"
+            InputType.TYPE_CLASS_TEXT -> {
+                when (variation) {
+                    InputType.TYPE_TEXT_VARIATION_NORMAL -> names += "TEXT_VARIATION_NORMAL"
+                    InputType.TYPE_TEXT_VARIATION_PASSWORD -> names += "TEXT_VARIATION_PASSWORD"
+                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD -> names += "TEXT_VARIATION_VISIBLE_PASSWORD"
+                    InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD -> names += "TEXT_VARIATION_WEB_PASSWORD"
+                    InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS -> names += "TEXT_VARIATION_EMAIL_ADDRESS"
+                    InputType.TYPE_TEXT_VARIATION_PERSON_NAME -> names += "TEXT_VARIATION_PERSON_NAME"
+                    InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS -> names += "TEXT_VARIATION_WEB_EMAIL_ADDRESS"
+                    InputType.TYPE_TEXT_VARIATION_WEB_EDIT_TEXT -> names += "TEXT_VARIATION_WEB_EDIT_TEXT"
+                }
             }
-            InputType.TYPE_CLASS_NUMBER -> if (variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD) {
-                names += "NUMBER_VARIATION_PASSWORD"
+
+            InputType.TYPE_CLASS_NUMBER -> {
+                if (variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD) {
+                    names += "NUMBER_VARIATION_PASSWORD"
+                }
             }
         }
         return names.joinToString(" ")
@@ -36,11 +41,19 @@ internal object AutofillInputTypeClassifier {
     fun isPassword(inputType: Int): Boolean {
         val variation = inputType and InputType.TYPE_MASK_VARIATION
         return when (inputType and InputType.TYPE_MASK_CLASS) {
-            InputType.TYPE_CLASS_TEXT -> variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
-                variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
-                variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
-            InputType.TYPE_CLASS_NUMBER -> variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            else -> false
+            InputType.TYPE_CLASS_TEXT -> {
+                variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+                    variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                    variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
+            }
+
+            InputType.TYPE_CLASS_NUMBER -> {
+                variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            }
+
+            else -> {
+                false
+            }
         }
     }
 }

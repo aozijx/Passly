@@ -28,19 +28,21 @@ enum class AuthenticationPurpose {
     CLEAR_DATABASE,
 }
 
-class FreshAuthenticationRequiredException : IllegalStateException(
-    "High-sensitivity access requires fresh authentication",
-)
+class FreshAuthenticationRequiredException :
+    IllegalStateException(
+        "High-sensitivity access requires fresh authentication",
+    )
 
 @JvmInline
-value class AuthenticationRequestId(val value: String) {
+value class AuthenticationRequestId(
+    val value: String,
+) {
     init {
         require(value.isNotBlank()) { "Authentication request ID cannot be blank" }
     }
 
     companion object {
-        fun new(): AuthenticationRequestId =
-            AuthenticationRequestId(UuidCreator.getTimeOrderedEpoch().toString())
+        fun new(): AuthenticationRequestId = AuthenticationRequestId(UuidCreator.getTimeOrderedEpoch().toString())
     }
 }
 
@@ -57,24 +59,36 @@ data class AuthenticationRequest(
 sealed interface AuthenticationState {
     data object Locked : AuthenticationState
 
-    data class AwaitingHost(val requestId: AuthenticationRequestId) : AuthenticationState
+    data class AwaitingHost(
+        val requestId: AuthenticationRequestId,
+    ) : AuthenticationState
 
     data class Authenticating(
         val requestId: AuthenticationRequestId,
         val method: AuthenticationMethod,
     ) : AuthenticationState
 
-    data class Unlocking(val requestId: AuthenticationRequestId) : AuthenticationState
+    data class Unlocking(
+        val requestId: AuthenticationRequestId,
+    ) : AuthenticationState
 
-    data class Authenticated(val authenticatedAtMs: Long) : AuthenticationState
+    data class Authenticated(
+        val authenticatedAtMs: Long,
+    ) : AuthenticationState
 
     /** Database access owned only by active Autofill interactions. */
-    data class AutofillAuthenticated(val authenticatedAtMs: Long) : AuthenticationState
+    data class AutofillAuthenticated(
+        val authenticatedAtMs: Long,
+    ) : AuthenticationState
 
     /** Database access is restricted to rebuilding primary authentication methods. */
-    data class RecoveryMode(val authenticatedAtMs: Long) : AuthenticationState
+    data class RecoveryMode(
+        val authenticatedAtMs: Long,
+    ) : AuthenticationState
 
-    data class Locking(val reason: LockReason) : AuthenticationState
+    data class Locking(
+        val reason: LockReason,
+    ) : AuthenticationState
 }
 
 /** A set-based availability model avoids one Boolean property per authentication method. */
@@ -83,8 +97,7 @@ data class AuthenticationMethods(
 ) {
     operator fun contains(method: AuthenticationMethod): Boolean = method in available
 
-    fun restrictTo(methods: Set<AuthenticationMethod>): AuthenticationMethods =
-        AuthenticationMethods(available intersect methods)
+    fun restrictTo(methods: Set<AuthenticationMethod>): AuthenticationMethods = AuthenticationMethods(available intersect methods)
 }
 
 sealed interface AuthenticationResult {
@@ -93,8 +106,13 @@ sealed interface AuthenticationResult {
         val reusedSession: Boolean = false,
     ) : AuthenticationResult
 
-    data class Cancelled(val reason: CancellationReason) : AuthenticationResult
-    data class Failure(val failure: AuthenticationFailure) : AuthenticationResult
+    data class Cancelled(
+        val reason: CancellationReason,
+    ) : AuthenticationResult
+
+    data class Failure(
+        val failure: AuthenticationFailure,
+    ) : AuthenticationResult
 }
 
 enum class CancellationReason { USER, CALLER, SESSION_LOCKED }

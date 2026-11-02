@@ -8,7 +8,10 @@ package com.aozijx.passly.app.message.contract
  * 两阶段 claim 阻止分发重入；至少一个目标成功后 complete，全部失败或取消时 release。
  */
 interface NoticeDeduplicator {
-    fun begin(eventId: String, ttlMs: Long): DeduplicationClaim
+    fun begin(
+        eventId: String,
+        ttlMs: Long,
+    ): DeduplicationClaim
 
     fun complete(claim: DeduplicationClaim.Acquired)
 
@@ -19,7 +22,7 @@ sealed interface DeduplicationClaim {
     data class Acquired(
         val eventId: String,
         val token: Long,
-        val ttlMs: Long
+        val ttlMs: Long,
     ) : DeduplicationClaim
 
     data object Duplicate : DeduplicationClaim

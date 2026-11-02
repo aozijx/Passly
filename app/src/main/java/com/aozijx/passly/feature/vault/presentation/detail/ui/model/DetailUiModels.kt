@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 
 data class DetailHeaderUiModel(
     val title: String,
@@ -20,7 +20,10 @@ data class DetailContentUiModel(
     val activities: List<DetailActivityUiModel>,
 )
 
-data class DetailMetadataUiModel(val createdAt: Long, val updatedAt: Long)
+data class DetailMetadataUiModel(
+    val createdAt: Long,
+    val updatedAt: Long,
+)
 
 data class DetailActivityUiModel(
     val type: ActivityType,
@@ -60,14 +63,24 @@ data class DetailNotesUiModel(
 )
 
 data class DetailBankCardUiModel(
-    val cardholder: String?, val cardholderRevealed: Boolean,
-    val cardNumber: String?, val cardNumberRevealed: Boolean, val hasCardNumber: Boolean,
-    val cvv: String?, val cvvRevealed: Boolean, val hasCvv: Boolean,
+    val cardholder: String?,
+    val cardholderRevealed: Boolean,
+    val cardNumber: String?,
+    val cardNumberRevealed: Boolean,
+    val hasCardNumber: Boolean,
+    val cvv: String?,
+    val cvvRevealed: Boolean,
+    val hasCvv: Boolean,
     val expiration: String?,
-    val paymentPin: String?, val paymentPinRevealed: Boolean, val hasPaymentPin: Boolean,
-    val editingCardholder: Boolean, val editedCardholder: String,
-    val editingCardNumber: Boolean, val editedCardNumber: String,
-    val editingCvv: Boolean, val editedCvv: String,
+    val paymentPin: String?,
+    val paymentPinRevealed: Boolean,
+    val hasPaymentPin: Boolean,
+    val editingCardholder: Boolean,
+    val editedCardholder: String,
+    val editingCardNumber: Boolean,
+    val editedCardNumber: String,
+    val editingCvv: Boolean,
+    val editedCvv: String,
     val canRevealMore: Boolean,
     val bankDetails: List<DetailCardTextFieldUiModel> = emptyList(),
 )
@@ -89,15 +102,24 @@ data class DetailIdentityUiModel(
 
 data class DetailSshUiModel(
     val fingerprint: String,
-    val hasPassphrase: Boolean, val hasPrivateKey: Boolean,
-    val passphrase: String?, val passphraseRevealed: Boolean,
-    val privateKey: String?, val privateKeyRevealed: Boolean,
-    val isEditingPassphrase: Boolean, val editedPassphrase: String,
+    val hasPassphrase: Boolean,
+    val hasPrivateKey: Boolean,
+    val passphrase: String?,
+    val passphraseRevealed: Boolean,
+    val privateKey: String?,
+    val privateKeyRevealed: Boolean,
+    val isEditingPassphrase: Boolean,
+    val editedPassphrase: String,
     val canRevealMore: Boolean,
 )
 
 sealed interface DetailOtpUiModel {
     data object Pending : DetailOtpUiModel
-    data class Ready(val code: String, val progress: Float) : DetailOtpUiModel
+
+    data class Ready(
+        val code: String,
+        val progress: Float,
+    ) : DetailOtpUiModel
+
     data object Failed : DetailOtpUiModel
 }

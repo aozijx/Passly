@@ -34,8 +34,14 @@ class AutofillInboxFileManagerTest {
         assertEquals(listOf(nowMs, nowMs + 1), queued.map { it.queuedAtMs })
         assertArrayEquals(byteArrayOf(1, 2, 3), queued[0].encodedRecord)
         assertArrayEquals(byteArrayOf(4, 5), queued[1].encodedRecord)
-        assertEquals(listOf(first.value, second.value),
-            File(root, "${KEY_ID.toHex()}/pending").listFiles().orEmpty().map { it.name }.sorted())
+        assertEquals(
+            listOf(first.value, second.value),
+            File(root, "${KEY_ID.toHex()}/pending")
+                .listFiles()
+                .orEmpty()
+                .map { it.name }
+                .sorted(),
+        )
     }
 
     @Test
@@ -109,8 +115,7 @@ class AutofillInboxFileManagerTest {
     private fun draftId(value: Int): AutofillInboxDraftId =
         AutofillInboxDraftId.fromBytes(ByteArray(16) { index -> (value + index).toByte() })
 
-    private fun ByteArray.toHex(): String =
-        joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
+    private fun ByteArray.toHex(): String = joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xff) }
 
     private companion object {
         val KEY_ID = ByteArray(16) { it.toByte() }

@@ -9,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class DetailRelatedEntryIdsTest {
-
     @Test
     fun `account resolves all members without including itself`() {
         assertEquals(
@@ -42,10 +41,11 @@ class DetailRelatedEntryIdsTest {
         )
     }
 
-    private fun links() = listOf(
-        link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
-        link("otp", "otp", "login", EntryRelationType.OTP_FOR),
-    )
+    private fun links() =
+        listOf(
+            link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
+            link("otp", "otp", "login", EntryRelationType.OTP_FOR),
+        )
 
     private fun link(
         id: String,

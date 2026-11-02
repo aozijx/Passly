@@ -1,9 +1,9 @@
 package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
-import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -50,14 +50,24 @@ class EntryEditTest {
     fun editCommandsDoNotStringifyTheirInputValues() {
         val marker = "private-input-marker"
         for (edit in listOf(
-            EntryEdit.SetTitle(marker), EntryEdit.SetWifiNetworkName(marker),
-            EntryEdit.SetFieldValue(FieldKey.PASSWORD, marker), EntryEdit.SetNotes(marker),
-            EntryEdit.SetPrimaryUrl(marker), EntryEdit.SetApplicationIds(setOf(marker)),
-            EntryEdit.SetTags(setOf(marker)), EntryEdit.SetIcon(EntryIcon(name = marker)),
-            EntryEdit.ReplaceForm(EntryDraft(EntryType.LOGIN).withValue(
-                EntryTypeDefinitions[EntryType.LOGIN], FieldKey.PASSWORD, EntryDraftValue.Text(marker),
-            )),
-        )) assertFalse(edit.toString().contains(marker))
+            EntryEdit.SetTitle(marker),
+            EntryEdit.SetWifiNetworkName(marker),
+            EntryEdit.SetFieldValue(FieldKey.PASSWORD, marker),
+            EntryEdit.SetNotes(marker),
+            EntryEdit.SetPrimaryUrl(marker),
+            EntryEdit.SetApplicationIds(setOf(marker)),
+            EntryEdit.SetTags(setOf(marker)),
+            EntryEdit.SetIcon(EntryIcon(name = marker)),
+            EntryEdit.ReplaceForm(
+                EntryDraft(EntryType.LOGIN).withValue(
+                    EntryTypeDefinitions[EntryType.LOGIN],
+                    FieldKey.PASSWORD,
+                    EntryDraftValue.Text(marker),
+                ),
+            ),
+        )) {
+            assertFalse(edit.toString().contains(marker))
+        }
     }
 
     @Test
@@ -95,10 +105,12 @@ class EntryEditTest {
     fun usernameEditPreservesLatestUnrelatedFields() {
         val latest = loginEntry()
 
-        val actual = EntryEdit.SetFieldValue(
-            FieldKey.USERNAME,
-            "latest-user",
-        ).applyRequired(latest)
+        val actual =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.USERNAME,
+                    "latest-user",
+                ).applyRequired(latest)
 
         assertEquals("latest-user", actual.username)
         assertEquals(latest.copy(profile = latest.profile.copy(username = "latest-user")), actual)
@@ -108,10 +120,12 @@ class EntryEditTest {
     fun loginPasswordEditPreservesLatestCredentialFields() {
         val latest = loginEntry()
 
-        val actual = EntryEdit.SetFieldValue(
-            FieldKey.PASSWORD,
-            "new-password",
-        ).applyRequired(latest)
+        val actual =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.PASSWORD,
+                    "new-password",
+                ).applyRequired(latest)
 
         assertEquals("new-password", actual.secret.login?.password)
         assertEquals("mail@example.com", actual.secret.login?.email)
@@ -122,14 +136,18 @@ class EntryEditTest {
     fun cardEditsPreserveOtherCardFields() {
         val latest = cardEntry()
 
-        val withNumber = EntryEdit.SetFieldValue(
-            FieldKey.CARD_NUMBER,
-            "5555555555554444",
-        ).applyRequired(latest)
-        val withCvv = EntryEdit.SetFieldValue(
-            FieldKey.CARD_CVV,
-            "999",
-        ).applyRequired(latest)
+        val withNumber =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.CARD_NUMBER,
+                    "5555555555554444",
+                ).applyRequired(latest)
+        val withCvv =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.CARD_CVV,
+                    "999",
+                ).applyRequired(latest)
 
         assertEquals("5555555555554444", withNumber.secret.card?.cardNumber)
         assertEquals("123", withNumber.secret.card?.cardCvv)
@@ -143,10 +161,12 @@ class EntryEditTest {
     fun wifiPasswordEditPreservesWifiMetadata() {
         val latest = wifiEntry()
 
-        val actual = EntryEdit.SetFieldValue(
-            FieldKey.PASSWORD,
-            "new-wifi-password",
-        ).applyRequired(latest)
+        val actual =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.PASSWORD,
+                    "new-wifi-password",
+                ).applyRequired(latest)
 
         assertEquals("new-wifi-password", actual.secret.wifi?.password)
         assertEquals(WifiSecurityType.WpaPersonal, actual.secret.wifi?.securityType)
@@ -158,10 +178,12 @@ class EntryEditTest {
     fun sshPassphraseEditPreservesKeys() {
         val latest = sshEntry()
 
-        val actual = EntryEdit.SetFieldValue(
-            FieldKey.SSH_PASSPHRASE,
-            "new-passphrase",
-        ).applyRequired(latest)
+        val actual =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.SSH_PASSPHRASE,
+                    "new-passphrase",
+                ).applyRequired(latest)
 
         assertEquals("new-passphrase", actual.secret.ssh?.passphrase)
         assertEquals("private", actual.secret.ssh?.privateKey)
@@ -184,12 +206,16 @@ class EntryEditTest {
     fun associationEditsPreserveMatchDomains() {
         val latest = loginEntry()
 
-        val withUrl = EntryEdit.SetPrimaryUrl(
-            "https://new.example.com",
-        ).applyRequired(latest)
-        val actual = EntryEdit.SetApplicationIds(
-            setOf("com.example.new"),
-        ).applyRequired(withUrl)
+        val withUrl =
+            EntryEdit
+                .SetPrimaryUrl(
+                    "https://new.example.com",
+                ).applyRequired(latest)
+        val actual =
+            EntryEdit
+                .SetApplicationIds(
+                    setOf("com.example.new"),
+                ).applyRequired(withUrl)
 
         assertEquals("https://new.example.com", actual.associations.primaryUrl)
         assertEquals(setOf("com.example.new"), actual.associations.applicationIds)
@@ -225,90 +251,110 @@ class EntryEditTest {
 
     @Test
     fun unsupportedSensitiveFieldDoesNotProduceAnEntryUpdate() {
-        val actual = EntryEdit.SetFieldValue(
-            FieldKey.PAYMENT_PIN,
-            "1234",
-        ).applyTo(cardEntry())
+        val actual =
+            EntryEdit
+                .SetFieldValue(
+                    FieldKey.PAYMENT_PIN,
+                    "1234",
+                ).applyTo(cardEntry())
 
         assertEquals(EntryEditResult.Unsupported, actual)
     }
 
-    private fun loginEntry() = entry(
-        type = EntryType.LOGIN,
-        secret = EntrySecret(
-            credential = LoginCredential(
-                email = "mail@example.com",
-                password = "old-password",
-            ),
-            notes = "latest notes",
-        ),
-    )
+    private fun loginEntry() =
+        entry(
+            type = EntryType.LOGIN,
+            secret =
+                EntrySecret(
+                    credential =
+                        LoginCredential(
+                            email = "mail@example.com",
+                            password = "old-password",
+                        ),
+                    notes = "latest notes",
+                ),
+        )
 
-    private fun cardEntry() = entry(
-        type = EntryType.BANK_CARD,
-        secret = EntrySecret(
-            credential = CardCredential(
-                cardNumber = "4111111111111111",
-                cardCvv = "123",
-                cardExpiry = "12/30",
-                cardHolder = "Latest Holder",
-            ),
-            notes = "latest notes",
-        ),
-    )
+    private fun cardEntry() =
+        entry(
+            type = EntryType.BANK_CARD,
+            secret =
+                EntrySecret(
+                    credential =
+                        CardCredential(
+                            cardNumber = "4111111111111111",
+                            cardCvv = "123",
+                            cardExpiry = "12/30",
+                            cardHolder = "Latest Holder",
+                        ),
+                    notes = "latest notes",
+                ),
+        )
 
-    private fun wifiEntry() = entry(
-        type = EntryType.WIFI,
-        secret = EntrySecret(
-            credential = WifiCredential(
-                ssid = "Latest Network",
-                password = "old-wifi-password",
-                securityType = WifiSecurityType.WpaPersonal,
-                isHidden = true,
-            ),
-            notes = "latest notes",
-        ),
-    )
+    private fun wifiEntry() =
+        entry(
+            type = EntryType.WIFI,
+            secret =
+                EntrySecret(
+                    credential =
+                        WifiCredential(
+                            ssid = "Latest Network",
+                            password = "old-wifi-password",
+                            securityType = WifiSecurityType.WpaPersonal,
+                            isHidden = true,
+                        ),
+                    notes = "latest notes",
+                ),
+        )
 
-    private fun sshEntry() = entry(
-        type = EntryType.SSH_KEY,
-        secret = EntrySecret(
-            credential = SshCredential(
-                privateKey = "private",
-                publicKey = "public",
-                passphrase = "old-passphrase",
-            ),
-            notes = "latest notes",
-        ),
-    )
+    private fun sshEntry() =
+        entry(
+            type = EntryType.SSH_KEY,
+            secret =
+                EntrySecret(
+                    credential =
+                        SshCredential(
+                            privateKey = "private",
+                            publicKey = "public",
+                            passphrase = "old-passphrase",
+                        ),
+                    notes = "latest notes",
+                ),
+        )
 
-    private fun entry(type: EntryType, secret: EntrySecret) = Entry(
-        identity = EntryIdentity(
-            id = EntryId("entry-1"),
-            type = type,
-            version = EntryVersion(7),
-            timestamps = EntryTimestamps(createdAtMs = 10, updatedAtMs = 20),
-        ),
-        profile = EntryProfile(
-            title = "Latest title",
-            username = "latest-user",
-            associations = EntryAssociations(
-                primaryUrl = "https://login.example.com",
-                domains = setOf("example.com", "login.example.com"),
-                applicationIds = setOf("com.example.latest"),
+    private fun entry(
+        type: EntryType,
+        secret: EntrySecret,
+    ) = Entry(
+        identity =
+            EntryIdentity(
+                id = EntryId("entry-1"),
+                type = type,
+                version = EntryVersion(7),
+                timestamps = EntryTimestamps(createdAtMs = 10, updatedAtMs = 20),
             ),
-            icon = EntryIcon(
-                name = "legacy-icon",
-                customReference = "/private/favicon.webp",
-                color = "secondary",
+        profile =
+            EntryProfile(
+                title = "Latest title",
+                username = "latest-user",
+                associations =
+                    EntryAssociations(
+                        primaryUrl = "https://login.example.com",
+                        domains = setOf("example.com", "login.example.com"),
+                        applicationIds = setOf("com.example.latest"),
+                    ),
+                icon =
+                    EntryIcon(
+                        name = "legacy-icon",
+                        customReference = "/private/favicon.webp",
+                        color = "secondary",
+                    ),
+                favorite = true,
+                tags = linkedSetOf("Personal", "Latest"),
+                expiresAtMs = 9999,
             ),
-            favorite = true,
-            tags = linkedSetOf("Personal", "Latest"),
-            expiresAtMs = 9999,
-        ),
         secret = secret,
     )
 
-    private fun EntryEdit.applyRequired(entry: Entry): Entry =
-        (applyTo(entry) as EntryEditResult.Updated).entry
+    private fun EntryEdit.applyRequired(entry: Entry): Entry = (applyTo(entry) as EntryEditResult.Updated).entry
 }

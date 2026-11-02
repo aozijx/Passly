@@ -9,7 +9,6 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 class AnimatedColorSchemeTest {
-
     @Test
     fun `one progress interpolates all material color roles`() {
         val start = distinctColorScheme(0x001000)
@@ -17,8 +16,11 @@ class AnimatedColorSchemeTest {
 
         val result = lerpColorScheme(start, end, fraction = 0.4f)
 
-        fun assertRole(from: Color, to: Color, actual: Color) =
-            assertEquals(lerp(from, to, 0.4f), actual)
+        fun assertRole(
+            from: Color,
+            to: Color,
+            actual: Color,
+        ) = assertEquals(lerp(from, to, 0.4f), actual)
 
         assertRole(start.primary, end.primary, result.primary)
         assertRole(start.onPrimary, end.onPrimary, result.onPrimary)
@@ -93,12 +95,13 @@ class AnimatedColorSchemeTest {
         val second = lightColorScheme(primary = Color.White, surface = Color.Blue)
         val third = lightColorScheme(primary = Color.Red, surface = Color.Green)
 
-        val retargeted = retargetColorScheme(
-            start = first,
-            stop = second,
-            progress = 0.35f,
-            newTarget = third,
-        )
+        val retargeted =
+            retargetColorScheme(
+                start = first,
+                stop = second,
+                progress = 0.35f,
+                newTarget = third,
+            )
 
         assertEquals(lerp(first.primary, second.primary, 0.35f), retargeted.start.primary)
         assertEquals(lerp(first.surface, second.surface, 0.35f), retargeted.start.surface)
@@ -117,25 +120,57 @@ class AnimatedColorSchemeTest {
 
     private fun distinctColorScheme(offset: Int): androidx.compose.material3.ColorScheme {
         var role = offset
+
         fun next() = Color(0xFF000000.toInt() or role++)
         return lightColorScheme(
-            primary = next(), onPrimary = next(), primaryContainer = next(),
-            onPrimaryContainer = next(), inversePrimary = next(), secondary = next(),
-            onSecondary = next(), secondaryContainer = next(), onSecondaryContainer = next(),
-            tertiary = next(), onTertiary = next(), tertiaryContainer = next(),
-            onTertiaryContainer = next(), background = next(), onBackground = next(),
-            surface = next(), onSurface = next(), surfaceVariant = next(),
-            onSurfaceVariant = next(), surfaceTint = next(), inverseSurface = next(),
-            inverseOnSurface = next(), error = next(), onError = next(),
-            errorContainer = next(), onErrorContainer = next(), outline = next(),
-            outlineVariant = next(), scrim = next(), surfaceBright = next(),
-            surfaceDim = next(), surfaceContainer = next(), surfaceContainerHigh = next(),
-            surfaceContainerHighest = next(), surfaceContainerLow = next(),
-            surfaceContainerLowest = next(), primaryFixed = next(), primaryFixedDim = next(),
-            onPrimaryFixed = next(), onPrimaryFixedVariant = next(), secondaryFixed = next(),
-            secondaryFixedDim = next(), onSecondaryFixed = next(),
-            onSecondaryFixedVariant = next(), tertiaryFixed = next(), tertiaryFixedDim = next(),
-            onTertiaryFixed = next(), onTertiaryFixedVariant = next(),
+            primary = next(),
+            onPrimary = next(),
+            primaryContainer = next(),
+            onPrimaryContainer = next(),
+            inversePrimary = next(),
+            secondary = next(),
+            onSecondary = next(),
+            secondaryContainer = next(),
+            onSecondaryContainer = next(),
+            tertiary = next(),
+            onTertiary = next(),
+            tertiaryContainer = next(),
+            onTertiaryContainer = next(),
+            background = next(),
+            onBackground = next(),
+            surface = next(),
+            onSurface = next(),
+            surfaceVariant = next(),
+            onSurfaceVariant = next(),
+            surfaceTint = next(),
+            inverseSurface = next(),
+            inverseOnSurface = next(),
+            error = next(),
+            onError = next(),
+            errorContainer = next(),
+            onErrorContainer = next(),
+            outline = next(),
+            outlineVariant = next(),
+            scrim = next(),
+            surfaceBright = next(),
+            surfaceDim = next(),
+            surfaceContainer = next(),
+            surfaceContainerHigh = next(),
+            surfaceContainerHighest = next(),
+            surfaceContainerLow = next(),
+            surfaceContainerLowest = next(),
+            primaryFixed = next(),
+            primaryFixedDim = next(),
+            onPrimaryFixed = next(),
+            onPrimaryFixedVariant = next(),
+            secondaryFixed = next(),
+            secondaryFixedDim = next(),
+            onSecondaryFixed = next(),
+            onSecondaryFixedVariant = next(),
+            tertiaryFixed = next(),
+            tertiaryFixedDim = next(),
+            onTertiaryFixed = next(),
+            onTertiaryFixedVariant = next(),
         )
     }
 }

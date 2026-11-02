@@ -53,11 +53,12 @@ fun SettingsRoute(
     LaunchedEffect(selectedRoute) {
         if (selectedRoute != null) retainedDetailRoute = selectedRoute
     }
-    val renderedDetailRoute = resolveSettingsDetailRoute(
-        isSinglePane = isSinglePane,
-        navigatorRoute = selectedRoute,
-        retainedDetailRoute = retainedDetailRoute,
-    )
+    val renderedDetailRoute =
+        resolveSettingsDetailRoute(
+            isSinglePane = isSinglePane,
+            navigatorRoute = selectedRoute,
+            retainedDetailRoute = retainedDetailRoute,
+        )
     val navigateBack: () -> Unit = {
         scope.launch { navigator.navigateBack(backBehavior) }
     }
@@ -72,16 +73,16 @@ fun SettingsRoute(
         }
     }
 
-
     if (isSinglePane) {
         SettingsSinglePane(
             navigator = navigator,
             backBehavior = backBehavior,
-            currentPage = if (selectedRoute == null) {
-                SettingsSinglePanePage.List
-            } else {
-                SettingsSinglePanePage.Detail
-            },
+            currentPage =
+                if (selectedRoute == null) {
+                    SettingsSinglePanePage.List
+                } else {
+                    SettingsSinglePanePage.Detail
+                },
             listContent = {
                 SettingsMainPage(
                     onBack = onOuterBack,
@@ -114,8 +115,9 @@ fun SettingsRoute(
                     SettingsMainPage(
                         onBack = onOuterBack,
                         onGroupClick = { routeKey ->
-                            val route = SettingsDestination.fromRouteKey(routeKey)
-                                ?: return@SettingsMainPage
+                            val route =
+                                SettingsDestination.fromRouteKey(routeKey)
+                                    ?: return@SettingsMainPage
                             navigateToDetail(route)
                         },
                         selectedRouteKey = selectedRoute?.route,
@@ -138,7 +140,6 @@ fun SettingsRoute(
             },
         )
     }
-
 }
 
 /** Pops one destination so nested details return to their owning settings page. */
@@ -153,19 +154,19 @@ internal enum class SettingsDetailTransitionDirection {
 internal fun resolveSettingsDetailTransitionDirection(
     initial: SettingsDestination?,
     target: SettingsDestination?,
-): SettingsDetailTransitionDirection = when {
-    settingsParentDestination(target) == initial -> SettingsDetailTransitionDirection.Forward
-    settingsParentDestination(initial) == target -> SettingsDetailTransitionDirection.Backward
-    else -> SettingsDetailTransitionDirection.Forward
-}
+): SettingsDetailTransitionDirection =
+    when {
+        settingsParentDestination(target) == initial -> SettingsDetailTransitionDirection.Forward
+        settingsParentDestination(initial) == target -> SettingsDetailTransitionDirection.Backward
+        else -> SettingsDetailTransitionDirection.Forward
+    }
 
-private fun settingsParentDestination(
-    destination: SettingsDestination?,
-): SettingsDestination? = when (destination) {
-    SettingsDestination.Diagnostics -> SettingsDestination.DataManagement
-    SettingsDestination.BackupRestore -> SettingsDestination.Permissions
-    else -> null
-}
+private fun settingsParentDestination(destination: SettingsDestination?): SettingsDestination? =
+    when (destination) {
+        SettingsDestination.Diagnostics -> SettingsDestination.DataManagement
+        SettingsDestination.BackupRestore -> SettingsDestination.Permissions
+        else -> null
+    }
 
 /** Shared detail animation for both compact and expanded settings layouts. */
 @Composable
@@ -179,22 +180,28 @@ private fun AnimatedSettingsDetailRoute(
         targetState = route,
         transitionSpec = {
             val direction = resolveSettingsDetailTransitionDirection(initialState, targetState)
-            val enterOffset: (Int) -> Int = when (direction) {
-                SettingsDetailTransitionDirection.Forward -> { width -> width / 5 }
-                SettingsDetailTransitionDirection.Backward -> { width -> -width / 5 }
-            }
-            val exitOffset: (Int) -> Int = when (direction) {
-                SettingsDetailTransitionDirection.Forward -> { width -> -width / 5 }
-                SettingsDetailTransitionDirection.Backward -> { width -> width / 5 }
-            }
-            val enter = fadeIn(animationSpec = routeFadeIn) + slideInHorizontally(
-                initialOffsetX = enterOffset,
-                animationSpec = routeSlide,
-            )
-            val exit = fadeOut(animationSpec = routeFadeOut) + slideOutHorizontally(
-                targetOffsetX = exitOffset,
-                animationSpec = routeSlide,
-            )
+            val enterOffset: (Int) -> Int =
+                when (direction) {
+                    SettingsDetailTransitionDirection.Forward -> { width -> width / 5 }
+                    SettingsDetailTransitionDirection.Backward -> { width -> -width / 5 }
+                }
+            val exitOffset: (Int) -> Int =
+                when (direction) {
+                    SettingsDetailTransitionDirection.Forward -> { width -> -width / 5 }
+                    SettingsDetailTransitionDirection.Backward -> { width -> width / 5 }
+                }
+            val enter =
+                fadeIn(animationSpec = routeFadeIn) +
+                    slideInHorizontally(
+                        initialOffsetX = enterOffset,
+                        animationSpec = routeSlide,
+                    )
+            val exit =
+                fadeOut(animationSpec = routeFadeOut) +
+                    slideOutHorizontally(
+                        targetOffsetX = exitOffset,
+                        animationSpec = routeSlide,
+                    )
             enter togetherWith exit using SizeTransform(clip = false)
         },
         label = "settingsDetail",
@@ -215,17 +222,20 @@ private fun AnimatedSettingsDetailRoute(
  * 重定向到新目标，而不是重启整段动画。快速连续切换多个设置项时，
  * 内容平滑追向最新目标，避免跳变与掉帧。
  */
-private val routeSlide = spring<IntOffset>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMediumLow
-)
+private val routeSlide =
+    spring<IntOffset>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+    )
 
-private val routeFadeIn = spring<Float>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMediumLow
-)
+private val routeFadeIn =
+    spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+    )
 
-private val routeFadeOut = spring<Float>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = Spring.StiffnessMediumLow
-)
+private val routeFadeOut =
+    spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+    )

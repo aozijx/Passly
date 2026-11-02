@@ -1,6 +1,5 @@
 package com.aozijx.passly.security.authentication.host
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,10 +23,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.security.R
 
 internal enum class AuthenticationMethodUiModel {
-    BIOMETRIC, APP_PASSWORD, RECOVERY_CODE,
+    BIOMETRIC,
+    APP_PASSWORD,
+    RECOVERY_CODE,
 }
 
 internal sealed interface AuthenticationDialogUiState {
@@ -35,6 +37,7 @@ internal sealed interface AuthenticationDialogUiState {
         val identity: AuthUiRequestId,
         val methods: List<AuthenticationMethodUiModel>,
     ) : AuthenticationDialogUiState
+
     data class Secret(
         val identity: AuthUiRequestId,
         val method: AuthenticationMethodUiModel,
@@ -42,8 +45,15 @@ internal sealed interface AuthenticationDialogUiState {
 }
 
 internal interface AuthenticationDialogEventHandler {
-    fun onMethodSelected(identity: AuthUiRequestId, method: AuthenticationMethodUiModel?)
-    fun onSecretSubmitted(identity: AuthUiRequestId, secret: CharArray?)
+    fun onMethodSelected(
+        identity: AuthUiRequestId,
+        method: AuthenticationMethodUiModel?,
+    )
+
+    fun onSecretSubmitted(
+        identity: AuthUiRequestId,
+        secret: CharArray?,
+    )
 }
 
 @Composable
@@ -52,18 +62,26 @@ internal fun AuthenticationDialogs(
     events: AuthenticationDialogEventHandler,
 ) {
     when (state) {
-        is AuthenticationDialogUiState.ChooseMethod -> MethodDialog(
-            methods = state.methods,
-            onSelected = { events.onMethodSelected(state.identity, it) },
-            onCancel = { events.onMethodSelected(state.identity, null) },
-        )
-        is AuthenticationDialogUiState.Secret -> SecretDialog(
-            identity = state.identity,
-            method = state.method,
-            onSubmit = { events.onSecretSubmitted(state.identity, it) },
-            onCancel = { events.onSecretSubmitted(state.identity, null) },
-        )
-        null -> Unit
+        is AuthenticationDialogUiState.ChooseMethod -> {
+            MethodDialog(
+                methods = state.methods,
+                onSelected = { events.onMethodSelected(state.identity, it) },
+                onCancel = { events.onMethodSelected(state.identity, null) },
+            )
+        }
+
+        is AuthenticationDialogUiState.Secret -> {
+            SecretDialog(
+                identity = state.identity,
+                method = state.method,
+                onSubmit = { events.onSecretSubmitted(state.identity, it) },
+                onCancel = { events.onSecretSubmitted(state.identity, null) },
+            )
+        }
+
+        null -> {
+            Unit
+        }
     }
 }
 
@@ -125,7 +143,17 @@ private fun SecretDialog(
                 value = secret,
                 onValueChange = { secret = it },
                 label = {
-                    Text(stringResource(if (method == AuthenticationMethodUiModel.RECOVERY_CODE) R.string.security_auth_recovery_code_label else R.string.security_auth_app_password_label))
+                    Text(
+                        stringResource(
+                            if (method ==
+                                AuthenticationMethodUiModel.RECOVERY_CODE
+                            ) {
+                                R.string.security_auth_recovery_code_label
+                            } else {
+                                R.string.security_auth_app_password_label
+                            },
+                        ),
+                    )
                 },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -144,10 +172,11 @@ private fun SecretDialog(
 }
 
 @Composable
-private fun AuthenticationMethodUiModel.label(): String = stringResource(
-    when (this) {
-        AuthenticationMethodUiModel.BIOMETRIC -> R.string.security_auth_method_biometric
-        AuthenticationMethodUiModel.APP_PASSWORD -> R.string.security_auth_app_password_label
-        AuthenticationMethodUiModel.RECOVERY_CODE -> R.string.security_auth_restore_access
-    },
-)
+private fun AuthenticationMethodUiModel.label(): String =
+    stringResource(
+        when (this) {
+            AuthenticationMethodUiModel.BIOMETRIC -> R.string.security_auth_method_biometric
+            AuthenticationMethodUiModel.APP_PASSWORD -> R.string.security_auth_app_password_label
+            AuthenticationMethodUiModel.RECOVERY_CODE -> R.string.security_auth_restore_access
+        },
+    )

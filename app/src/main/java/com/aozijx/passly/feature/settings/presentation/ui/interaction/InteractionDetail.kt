@@ -21,7 +21,7 @@ internal fun InteractionDetail(
             onSwipeEnabledChange = onSwipeEnabledChange,
             onPullToSearchEnabledChange = onPullToSearchEnabledChange,
             onLeftSwipeActionClick = onLeftSwipeActionClick,
-            onRightSwipeActionClick = onRightSwipeActionClick
+            onRightSwipeActionClick = onRightSwipeActionClick,
         )
     }
 }

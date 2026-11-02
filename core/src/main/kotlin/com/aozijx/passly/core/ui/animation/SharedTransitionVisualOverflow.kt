@@ -20,7 +20,7 @@ object SharedTransitionOverlayClip {
                 sharedContentState: SharedTransitionScope.SharedContentState,
                 bounds: Rect,
                 layoutDirection: LayoutDirection,
-                density: Density
+                density: Density,
             ): Path? = null
         }
 }
@@ -35,11 +35,12 @@ object SharedTransitionOverlayClip {
  */
 fun Modifier.withSharedTransitionVisualOverflow(
     sharedModifier: Modifier,
-    visualOverflow: Dp
+    visualOverflow: Dp,
 ): Modifier =
     layout { measurable, constraints ->
         val inset = visualOverflow.roundToPx().coerceAtLeast(0)
         val extraSpace = inset * 2
+
         fun expanded(value: Int): Int =
             if (value == Constraints.Infinity) {
                 Constraints.Infinity
@@ -49,22 +50,24 @@ fun Modifier.withSharedTransitionVisualOverflow(
                     .toInt()
             }
 
-        val placeable = measurable.measure(
-            constraints.copy(
-                minWidth = expanded(constraints.minWidth),
-                maxWidth = expanded(constraints.maxWidth),
-                minHeight = expanded(constraints.minHeight),
-                maxHeight = expanded(constraints.maxHeight)
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minWidth = expanded(constraints.minWidth),
+                    maxWidth = expanded(constraints.maxWidth),
+                    minHeight = expanded(constraints.minHeight),
+                    maxHeight = expanded(constraints.maxHeight),
+                ),
             )
-        )
-        val width = (placeable.width - extraSpace)
-            .coerceIn(constraints.minWidth, constraints.maxWidth)
-        val height = (placeable.height - extraSpace)
-            .coerceIn(constraints.minHeight, constraints.maxHeight)
+        val width =
+            (placeable.width - extraSpace)
+                .coerceIn(constraints.minWidth, constraints.maxWidth)
+        val height =
+            (placeable.height - extraSpace)
+                .coerceIn(constraints.minHeight, constraints.maxHeight)
 
         layout(width, height) {
             placeable.placeRelative(-inset, -inset)
         }
-    }
-        .then(sharedModifier)
+    }.then(sharedModifier)
         .padding(visualOverflow)

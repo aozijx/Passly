@@ -74,13 +74,14 @@ class AutofillUnlockLease private constructor(
         }
     }
 
-    suspend fun borrowIfOwned(interactionId: AutofillInteractionId): Boolean = mutex.withLock {
-        synchronized(stateMonitor) {
-            val accepted = owned && !lockPending && acceptingNewBorrowers
-            if (accepted) borrowers += interactionId
-            accepted
+    suspend fun borrowIfOwned(interactionId: AutofillInteractionId): Boolean =
+        mutex.withLock {
+            synchronized(stateMonitor) {
+                val accepted = owned && !lockPending && acceptingNewBorrowers
+                if (accepted) borrowers += interactionId
+                accepted
+            }
         }
-    }
 
     /** Opens a completion barrier before the delivered interaction starts closing its session. */
     fun beginResultCompletion(interactionId: AutofillInteractionId) {
@@ -92,11 +93,12 @@ class AutofillUnlockLease private constructor(
     }
 
     suspend fun endResultCompletion(finalizeSession: suspend () -> Unit): Boolean {
-        val isLastCompletion = synchronized(stateMonitor) {
-            check(completionsInFlight > 0) { "No Autofill result completion is active" }
-            completionsInFlight -= 1
-            completionsInFlight == 0
-        }
+        val isLastCompletion =
+            synchronized(stateMonitor) {
+                check(completionsInFlight > 0) { "No Autofill result completion is active" }
+                completionsInFlight -= 1
+                completionsInFlight == 0
+            }
         if (!isLastCompletion) return false
 
         try {
@@ -104,47 +106,49 @@ class AutofillUnlockLease private constructor(
             retryPendingLock(allowLastCompletionBarrier = true)
             return true
         } finally {
-            val (completedBarrier, shouldScheduleRetry) = synchronized(stateMonitor) {
-                acceptingNewBorrowers = !lockPending
-                val barrier = completionBarrier.also { completionBarrier = null }
-                barrier to (lockPending && owned && borrowers.isEmpty())
-            }
+            val (completedBarrier, shouldScheduleRetry) =
+                synchronized(stateMonitor) {
+                    acceptingNewBorrowers = !lockPending
+                    val barrier = completionBarrier.also { completionBarrier = null }
+                    barrier to (lockPending && owned && borrowers.isEmpty())
+                }
             completedBarrier?.complete(Unit)
             if (shouldScheduleRetry) schedulePendingLockRetry()
         }
     }
 
-    suspend fun release(interactionId: AutofillInteractionId) = withContext(NonCancellable) {
-        mutex.withLock {
-            val shouldLock = synchronized(stateMonitor) {
-                borrowers -= interactionId
-                if (owned && borrowers.isEmpty()) {
-                    lockPending = true
-                    acceptingNewBorrowers = false
-                    completionBarrier == null
-                } else {
-                    false
-                }
+    suspend fun release(interactionId: AutofillInteractionId) =
+        withContext(NonCancellable) {
+            mutex.withLock {
+                val shouldLock =
+                    synchronized(stateMonitor) {
+                        borrowers -= interactionId
+                        if (owned && borrowers.isEmpty()) {
+                            lockPending = true
+                            acceptingNewBorrowers = false
+                            completionBarrier == null
+                        } else {
+                            false
+                        }
+                    }
+                if (shouldLock) lockOwnedSessionIfPendingLocked()
             }
-            if (shouldLock) lockOwnedSessionIfPendingLocked()
         }
-    }
 
     private suspend fun retryPendingLock(allowLastCompletionBarrier: Boolean = false) =
         withContext(NonCancellable) {
             mutex.withLock {
                 lockOwnedSessionIfPendingLocked(allowLastCompletionBarrier)
             }
-    }
+        }
 
     /** Keep ownership until lock() returns; failures leave a retryable lock obligation. */
-    private suspend fun lockOwnedSessionIfPendingLocked(
-        allowLastCompletionBarrier: Boolean = false,
-    ) {
-        val shouldLock = synchronized(stateMonitor) {
-            lockPending && owned && borrowers.isEmpty() &&
-                (completionBarrier == null || allowLastCompletionBarrier && completionsInFlight == 0)
-        }
+    private suspend fun lockOwnedSessionIfPendingLocked(allowLastCompletionBarrier: Boolean = false) {
+        val shouldLock =
+            synchronized(stateMonitor) {
+                lockPending && owned && borrowers.isEmpty() &&
+                    (completionBarrier == null || (allowLastCompletionBarrier && completionsInFlight == 0))
+            }
         if (!shouldLock) return
 
         try {
@@ -155,7 +159,7 @@ class AutofillUnlockLease private constructor(
         }
         synchronized(stateMonitor) {
             if (lockPending && borrowers.isEmpty() &&
-                (completionBarrier == null || allowLastCompletionBarrier && completionsInFlight == 0)
+                (completionBarrier == null || (allowLastCompletionBarrier && completionsInFlight == 0))
             ) {
                 owned = false
                 lockPending = false
@@ -170,39 +174,43 @@ class AutofillUnlockLease private constructor(
     private fun schedulePendingLockRetry() {
         synchronized(stateMonitor) {
             if (lockRetryJob?.isActive == true) return
-            lockRetryJob = retryScope.launch(start = CoroutineStart.DEFAULT) {
-                var delayMs = FIRST_LOCK_RETRY_DELAY_MS
-                while (true) {
-                    delay(delayMs)
-                    val shouldRetry = synchronized(stateMonitor) {
-                        lockPending && owned && borrowers.isEmpty() && completionBarrier == null
-                    }
-                    if (!shouldRetry) return@launch
+            lockRetryJob =
+                retryScope
+                    .launch(start = CoroutineStart.DEFAULT) {
+                        var delayMs = FIRST_LOCK_RETRY_DELAY_MS
+                        while (true) {
+                            delay(delayMs)
+                            val shouldRetry =
+                                synchronized(stateMonitor) {
+                                    lockPending && owned && borrowers.isEmpty() && completionBarrier == null
+                                }
+                            if (!shouldRetry) return@launch
 
-                    try {
-                        retryPendingLock()
-                        val stillPending = synchronized(stateMonitor) { lockPending }
-                        if (!stillPending) return@launch
-                    } catch (_: Exception) {
-                        delayMs = (delayMs * 2).coerceAtMost(MAX_LOCK_RETRY_DELAY_MS)
+                            try {
+                                retryPendingLock()
+                                val stillPending = synchronized(stateMonitor) { lockPending }
+                                if (!stillPending) return@launch
+                            } catch (_: Exception) {
+                                delayMs = (delayMs * 2).coerceAtMost(MAX_LOCK_RETRY_DELAY_MS)
+                            }
+                        }
+                    }.also { job ->
+                        job.invokeOnCompletion {
+                            synchronized(stateMonitor) {
+                                if (lockRetryJob === job) lockRetryJob = null
+                            }
+                        }
                     }
-                }
-            }.also { job ->
-                job.invokeOnCompletion {
-                    synchronized(stateMonitor) {
-                        if (lockRetryJob === job) lockRetryJob = null
-                    }
-                }
-            }
         }
     }
 
-    private suspend fun lockAutofillSession() = sessionLockController.lock(
-        SessionLockRequest(
-            LockReason.AUTOFILL_REQUEST_FINISHED,
-            LockTrigger.AUTOFILL_COMPLETION,
-        ),
-    )
+    private suspend fun lockAutofillSession() =
+        sessionLockController.lock(
+            SessionLockRequest(
+                LockReason.AUTOFILL_REQUEST_FINISHED,
+                LockTrigger.AUTOFILL_COMPLETION,
+            ),
+        )
 
     private companion object {
         const val FIRST_LOCK_RETRY_DELAY_MS = 1_000L

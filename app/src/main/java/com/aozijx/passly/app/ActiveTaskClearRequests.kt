@@ -7,10 +7,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 /** Delivers task-clear commands only to the activity that is currently collecting. */
 internal class ActiveTaskClearRequests {
-    private val mutableEvents = MutableSharedFlow<Unit>(
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private val mutableEvents =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     val events: SharedFlow<Unit> = mutableEvents.asSharedFlow()
 

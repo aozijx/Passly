@@ -11,12 +11,12 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.credential.WifiCredential
-import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,13 +27,27 @@ class EntryValidationTest {
         for (number in listOf("4111111111111112", "not-a-card", "4111x111111111111")) {
             assertEquals(
                 setOf(EntryViolation(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_FORMAT)),
-                EntryValidation.validate(entry(EntryType.BANK_CARD, EntryProfile(title = "Card"),
-                    EntrySecret(CardCredential(cardNumber = number)))),
+                EntryValidation.validate(
+                    entry(
+                        EntryType.BANK_CARD,
+                        EntryProfile(title = "Card"),
+                        EntrySecret(CardCredential(cardNumber = number)),
+                    ),
+                ),
             )
         }
-        assertTrue(EntryValidation.validate(entry(EntryType.BANK_CARD, EntryProfile(title = "Card"),
-            EntrySecret(CardCredential(cardNumber = "4111 1111-1111 1111")))).isEmpty())
+        assertTrue(
+            EntryValidation
+                .validate(
+                    entry(
+                        EntryType.BANK_CARD,
+                        EntryProfile(title = "Card"),
+                        EntrySecret(CardCredential(cardNumber = "4111 1111-1111 1111")),
+                    ),
+                ).isEmpty(),
+        )
     }
+
     @Test
     fun `otp rejects malformed secrets for both encodings`() {
         for (encoding in OtpSecretEncoding.entries) {
@@ -53,8 +67,15 @@ class EntryValidationTest {
         assertEquals(
             setOf(FieldKey.OTP_DIGITS, FieldKey.OTP_PERIOD, FieldKey.OTP_ALGORITHM)
                 .mapTo(linkedSetOf()) { EntryViolation(it, EntryViolationCode.INVALID_FORMAT) },
-            otpViolations(OtpConfig(type = OtpType.STEAM, secret = "MY", digits = 6,
-                periodSeconds = 60, algorithm = OtpHashAlgorithm.SHA256)),
+            otpViolations(
+                OtpConfig(
+                    type = OtpType.STEAM,
+                    secret = "MY",
+                    digits = 6,
+                    periodSeconds = 60,
+                    algorithm = OtpHashAlgorithm.SHA256,
+                ),
+            ),
         )
     }
 
@@ -68,27 +89,38 @@ class EntryValidationTest {
 
     @Test
     fun `valid otp configuration is checked without rewriting its representation`() {
-        val config = OtpConfig(secret = " Zg== ", encoding = OtpSecretEncoding.BASE64,
-            issuer = " Issuer ", accountName = " Account ")
+        val config =
+            OtpConfig(
+                secret = " Zg== ",
+                encoding = OtpSecretEncoding.BASE64,
+                issuer = " Issuer ",
+                accountName = " Account ",
+            )
         assertTrue(otpViolations(config).isEmpty())
         assertEquals(" Zg== ", config.secret)
         assertEquals(" Issuer ", config.issuer)
         assertEquals(" Account ", config.accountName)
     }
 
-    private fun otpViolations(config: OtpConfig) = EntryValidation.validate(entry(
-        type = EntryType.OTP,
-        profile = EntryProfile(title = "OTP"),
-        secret = EntrySecret(OtpCredential(config)),
-    ))
+    private fun otpViolations(config: OtpConfig) =
+        EntryValidation.validate(
+            entry(
+                type = EntryType.OTP,
+                profile = EntryProfile(title = "OTP"),
+                secret = EntrySecret(OtpCredential(config)),
+            ),
+        )
 
     @Test
     fun `card expiry accepts the four digit year emitted by the editor`() {
-        val violations = EntryValidation.validate(entry(
-            type = EntryType.BANK_CARD,
-            profile = EntryProfile(title = "Card"),
-            secret = EntrySecret(CardCredential(cardNumber = "4111111111111111", cardExpiry = "03/2030")),
-        ))
+        val violations =
+            EntryValidation.validate(
+                entry(
+                    type = EntryType.BANK_CARD,
+                    profile = EntryProfile(title = "Card"),
+                    secret = EntrySecret(CardCredential(cardNumber = "4111111111111111", cardExpiry = "03/2030")),
+                ),
+            )
 
         assertTrue(violations.isEmpty())
     }
@@ -96,24 +128,28 @@ class EntryValidationTest {
     @Test
     fun `card expiry rejects invalid months and ambiguous short years`() {
         listOf("00/30", "13/30", "03/30", "00/2030", "13/2030", "03/0000").forEach { expiry ->
-            val violations = EntryValidation.validate(entry(
-                type = EntryType.BANK_CARD,
-                profile = EntryProfile(title = "Card"),
-                secret = EntrySecret(CardCredential(cardNumber = "4111111111111111", cardExpiry = expiry)),
-            ))
+            val violations =
+                EntryValidation.validate(
+                    entry(
+                        type = EntryType.BANK_CARD,
+                        profile = EntryProfile(title = "Card"),
+                        secret = EntrySecret(CardCredential(cardNumber = "4111111111111111", cardExpiry = expiry)),
+                    ),
+                )
             assertTrue(EntryViolation(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT) in violations)
         }
     }
 
     @Test
     fun `login validation keeps optional username and returns stable password code`() {
-        val violations = EntryValidation.validate(
-            entry(
-                type = EntryType.LOGIN,
-                profile = EntryProfile(title = "Login"),
-                secret = EntrySecret(LoginCredential()),
+        val violations =
+            EntryValidation.validate(
+                entry(
+                    type = EntryType.LOGIN,
+                    profile = EntryProfile(title = "Login"),
+                    secret = EntrySecret(LoginCredential()),
+                ),
             )
-        )
 
         assertEquals(
             setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.REQUIRED)),
@@ -123,19 +159,21 @@ class EntryValidationTest {
 
     @Test
     fun `card validation reports independent field violations`() {
-        val violations = EntryValidation.validate(
-            entry(
-                type = EntryType.BANK_CARD,
-                profile = EntryProfile(title = "Card"),
-                secret = EntrySecret(
-                    CardCredential(
-                        cardNumber = "123",
-                        cardExpiry = "2028-10",
-                        cardCvv = "12",
-                    )
+        val violations =
+            EntryValidation.validate(
+                entry(
+                    type = EntryType.BANK_CARD,
+                    profile = EntryProfile(title = "Card"),
+                    secret =
+                        EntrySecret(
+                            CardCredential(
+                                cardNumber = "123",
+                                cardExpiry = "2028-10",
+                                cardCvv = "12",
+                            ),
+                        ),
                 ),
             )
-        )
 
         assertTrue(EntryViolation(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_LENGTH) in violations)
         assertTrue(EntryViolation(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT) in violations)
@@ -144,11 +182,12 @@ class EntryValidationTest {
 
     @Test
     fun `open wifi rejects a retained password`() {
-        val violations = WifiCredentialValidation.validate(
-            ssid = "Guest",
-            password = "must-be-cleared",
-            securityType = WifiSecurityType.Open,
-        )
+        val violations =
+            WifiCredentialValidation.validate(
+                ssid = "Guest",
+                password = "must-be-cleared",
+                securityType = WifiSecurityType.Open,
+            )
 
         assertEquals(
             setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.INVALID_FORMAT)),
@@ -198,19 +237,21 @@ class EntryValidationTest {
 
     @Test
     fun `entry validation delegates wifi rules to the shared policy`() {
-        val violations = EntryValidation.validate(
-            entry(
-                type = EntryType.WIFI,
-                profile = EntryProfile(title = "Office"),
-                secret = EntrySecret(
-                    WifiCredential(
-                        ssid = "Office",
-                        password = "short",
-                        securityType = WifiSecurityType.WpaPersonal,
-                    ),
+        val violations =
+            EntryValidation.validate(
+                entry(
+                    type = EntryType.WIFI,
+                    profile = EntryProfile(title = "Office"),
+                    secret =
+                        EntrySecret(
+                            WifiCredential(
+                                ssid = "Office",
+                                password = "short",
+                                securityType = WifiSecurityType.WpaPersonal,
+                            ),
+                        ),
                 ),
-            ),
-        )
+            )
 
         assertEquals(
             setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.INVALID_LENGTH)),
@@ -218,12 +259,17 @@ class EntryValidationTest {
         )
     }
 
-    private fun entry(type: EntryType, profile: EntryProfile, secret: EntrySecret) = Entry(
-        identity = EntryIdentity(
-            id = EntryId("entry"),
-            type = type,
-            timestamps = EntryTimestamps(createdAtMs = 1),
-        ),
+    private fun entry(
+        type: EntryType,
+        profile: EntryProfile,
+        secret: EntrySecret,
+    ) = Entry(
+        identity =
+            EntryIdentity(
+                id = EntryId("entry"),
+                type = type,
+                timestamps = EntryTimestamps(createdAtMs = 1),
+            ),
         profile = profile,
         secret = secret,
     )

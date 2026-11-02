@@ -2,7 +2,9 @@ package com.aozijx.passly.core.observability
 
 import java.util.UUID
 
-enum class LogLevel(val wireId: Int) {
+enum class LogLevel(
+    val wireId: Int,
+) {
     DEBUG(0),
     INFO(1),
     WARN(2),
@@ -15,7 +17,9 @@ enum class LogLevel(val wireId: Int) {
     }
 }
 
-enum class LogCategory(val wireId: Int) {
+enum class LogCategory(
+    val wireId: Int,
+) {
     APPLICATION(0),
     DATABASE(1),
     SECURITY(2),
@@ -30,7 +34,9 @@ enum class LogCategory(val wireId: Int) {
 }
 
 @JvmInline
-value class EventId(val value: String) {
+value class EventId(
+    val value: String,
+) {
     init {
         require(value.matches(OPAQUE_ID_PATTERN)) { "Invalid event id" }
     }
@@ -41,28 +47,36 @@ value class EventId(val value: String) {
 }
 
 @JvmInline
-value class TraceId(val value: String) {
+value class TraceId(
+    val value: String,
+) {
     init {
         require(value.matches(OPAQUE_ID_PATTERN)) { "Invalid trace id" }
     }
 }
 
 @JvmInline
-value class SpanId(val value: String) {
+value class SpanId(
+    val value: String,
+) {
     init {
         require(value.matches(OPAQUE_ID_PATTERN)) { "Invalid span id" }
     }
 }
 
 @JvmInline
-value class ProcessSessionId(val value: String) {
+value class ProcessSessionId(
+    val value: String,
+) {
     init {
         require(value.matches(OPAQUE_ID_PATTERN)) { "Invalid process session id" }
     }
 }
 
 @JvmInline
-value class SecureSessionId(val value: String) {
+value class SecureSessionId(
+    val value: String,
+) {
     init {
         require(value.matches(OPAQUE_ID_PATTERN)) { "Invalid secure session id" }
     }
@@ -75,7 +89,9 @@ data class TraceSnapshot(
 )
 
 @JvmInline
-value class ExceptionType(val value: String) {
+value class ExceptionType(
+    val value: String,
+) {
     init {
         require(value.matches(Regex("^[A-Za-z][A-Za-z0-9_$]{0,63}$"))) {
             "Invalid exception type"
@@ -83,7 +99,9 @@ value class ExceptionType(val value: String) {
     }
 }
 
-enum class ExceptionKind(val wireId: Int) {
+enum class ExceptionKind(
+    val wireId: Int,
+) {
     DATABASE_IO(0),
     CRYPTO(1),
     AUTHENTICATION(2),
@@ -99,7 +117,9 @@ enum class ExceptionKind(val wireId: Int) {
 }
 
 @JvmInline
-value class AppStackFrame(val value: String) {
+value class AppStackFrame(
+    val value: String,
+) {
     init {
         require(value.length <= 256 && value.matches(APP_STACK_FRAME_PATTERN)) {
             "Invalid application stack frame"
@@ -165,12 +185,13 @@ internal val APP_STACK_FRAME_PATTERN =
             "\\([A-Za-z][A-Za-z0-9_$-]{0,95}\\.(?:kt|java):[1-9][0-9]{0,6}\\)$",
     )
 
-fun EventKey.category(): LogCategory = when (value.substringBefore('.')) {
-    "application" -> LogCategory.APPLICATION
-    "database" -> LogCategory.DATABASE
-    "security" -> LogCategory.SECURITY
-    "autofill" -> LogCategory.AUTOFILL
-    "backup" -> LogCategory.BACKUP
-    "vault" -> LogCategory.VAULT
-    else -> throw IllegalArgumentException("Event category is not registered")
-}
+fun EventKey.category(): LogCategory =
+    when (value.substringBefore('.')) {
+        "application" -> LogCategory.APPLICATION
+        "database" -> LogCategory.DATABASE
+        "security" -> LogCategory.SECURITY
+        "autofill" -> LogCategory.AUTOFILL
+        "backup" -> LogCategory.BACKUP
+        "vault" -> LogCategory.VAULT
+        else -> throw IllegalArgumentException("Event category is not registered")
+    }

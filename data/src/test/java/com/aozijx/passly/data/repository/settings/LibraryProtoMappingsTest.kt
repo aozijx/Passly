@@ -21,11 +21,12 @@ class LibraryProtoMappingsTest {
 
     @Test
     fun `unspecified hierarchy is rejected instead of becoming collapsed`() {
-        val proto = VaultViewPreferences.newBuilder()
-            .setHierarchyDisplayMode(
-                EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_UNSPECIFIED,
-            )
-            .build()
+        val proto =
+            VaultViewPreferences
+                .newBuilder()
+                .setHierarchyDisplayMode(
+                    EntryHierarchyDisplayModePreference.ENTRY_HIERARCHY_DISPLAY_MODE_UNSPECIFIED,
+                ).build()
 
         assertThrows(IllegalArgumentException::class.java) {
             readVault(proto)
@@ -34,12 +35,14 @@ class LibraryProtoMappingsTest {
 
     @Test
     fun `unspecified sort field is rejected instead of becoming a valid default`() {
-        val proto = VaultViewPreferences.newBuilder()
-            .setSort(
-                VaultSortPreference.newBuilder()
-                    .setField(VaultSortFieldPreference.VAULT_SORT_FIELD_UNSPECIFIED),
-            )
-            .build()
+        val proto =
+            VaultViewPreferences
+                .newBuilder()
+                .setSort(
+                    VaultSortPreference
+                        .newBuilder()
+                        .setField(VaultSortFieldPreference.VAULT_SORT_FIELD_UNSPECIFIED),
+                ).build()
 
         assertThrows(IllegalArgumentException::class.java) {
             readVault(proto)

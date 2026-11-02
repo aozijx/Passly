@@ -3,9 +3,18 @@ package com.aozijx.passly.feature.vault.presentation.detail
 import java.util.Locale
 
 internal sealed interface TagNormalizationResult {
-    data class Valid(val tags: Set<String>) : TagNormalizationResult
-    data class TooMany(val maximum: Int) : TagNormalizationResult
-    data class TooLong(val value: String, val maximum: Int) : TagNormalizationResult
+    data class Valid(
+        val tags: Set<String>,
+    ) : TagNormalizationResult
+
+    data class TooMany(
+        val maximum: Int,
+    ) : TagNormalizationResult
+
+    data class TooLong(
+        val value: String,
+        val maximum: Int,
+    ) : TagNormalizationResult
 }
 
 internal object DetailTagNormalizer {
@@ -27,9 +36,10 @@ internal object DetailTagNormalizer {
             return TagNormalizationResult.TooMany(MAX_TAG_COUNT)
         }
 
-        val sorted = distinct.values
-            .sortedWith(String.CASE_INSENSITIVE_ORDER.thenBy { it })
-            .toCollection(linkedSetOf())
+        val sorted =
+            distinct.values
+                .sortedWith(String.CASE_INSENSITIVE_ORDER.thenBy { it })
+                .toCollection(linkedSetOf())
         return TagNormalizationResult.Valid(sorted)
     }
 

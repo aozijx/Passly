@@ -7,10 +7,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.DetailQrState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.EntryQrSheet
+import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailTopBar
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.EntryQrSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
 

@@ -1,14 +1,14 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.data
 
-import android.widget.Toast
 import android.provider.DocumentsContract
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,13 +16,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.presentation.BackupOperationRoute
-import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsEffect
+import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.ui.data.BackupDirectoryClearDialog
@@ -32,9 +32,7 @@ import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun BackupRoute(
-    onBack: (() -> Unit)?,
-) {
+internal fun BackupRoute(onBack: (() -> Unit)?) {
     val context = LocalContext.current
     val viewModel: DataManagementSettingsViewModel = hiltViewModel()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -50,38 +48,46 @@ internal fun BackupRoute(
         }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val readyState = when (val current = state) {
-        DataManagementSettingsUiState.Loading -> return
-        is DataManagementSettingsUiState.Ready -> current
-    }
+    val readyState =
+        when (val current = state) {
+            DataManagementSettingsUiState.Loading -> return
+            is DataManagementSettingsUiState.Ready -> current
+        }
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
     val notSetText = stringResource(R.string.not_set)
-    val selectionCancelledMessage = stringResource(
-        R.string.settings_backup_directory_selection_cancelled,
-    )
-    val permissionDeniedMessage = stringResource(
-        R.string.settings_backup_directory_permission_denied,
-    )
-    val unavailableMessage = stringResource(
-        R.string.settings_backup_directory_unavailable,
-    )
-    val pathLabel = remember(readyState.directoryUri) {
-        UriDisplayNameFormatter.format(readyState.directoryUri) ?: notSetText
-    }
-    val backupPathPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        val owner = pageOwner.value
-        val requestId = directoryRequestId.value
-        directoryRequestId.value = null
-        if (owner != null && requestId != null) viewModel.onAction(
-            DataManagementSettingsUiAction.BackupDirectoryPicked(
-                uri = uri?.toString(),
-                pageOwner = owner,
-                requestId = requestId,
-            ),
+    val selectionCancelledMessage =
+        stringResource(
+            R.string.settings_backup_directory_selection_cancelled,
         )
-    }
+    val permissionDeniedMessage =
+        stringResource(
+            R.string.settings_backup_directory_permission_denied,
+        )
+    val unavailableMessage =
+        stringResource(
+            R.string.settings_backup_directory_unavailable,
+        )
+    val pathLabel =
+        remember(readyState.directoryUri) {
+            UriDisplayNameFormatter.format(readyState.directoryUri) ?: notSetText
+        }
+    val backupPathPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocumentTree(),
+        ) { uri ->
+            val owner = pageOwner.value
+            val requestId = directoryRequestId.value
+            directoryRequestId.value = null
+            if (owner != null && requestId != null) {
+                viewModel.onAction(
+                    DataManagementSettingsUiAction.BackupDirectoryPicked(
+                        uri = uri?.toString(),
+                        pageOwner = owner,
+                        requestId = requestId,
+                    ),
+                )
+            }
+        }
 
     LaunchedEffect(
         viewModel,
@@ -92,21 +98,27 @@ internal fun BackupRoute(
         unavailableMessage,
     ) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
-            val message = when (effect) {
-                DataManagementSettingsEffect.BackupDirectorySelectionCancelled ->
-                    selectionCancelledMessage
-                DataManagementSettingsEffect.BackupDirectoryPermissionDenied ->
-                    permissionDeniedMessage
-                DataManagementSettingsEffect.BackupDirectoryUnavailable ->
-                    unavailableMessage
-            }
+            val message =
+                when (effect) {
+                    DataManagementSettingsEffect.BackupDirectorySelectionCancelled -> {
+                        selectionCancelledMessage
+                    }
+
+                    DataManagementSettingsEffect.BackupDirectoryPermissionDenied -> {
+                        permissionDeniedMessage
+                    }
+
+                    DataManagementSettingsEffect.BackupDirectoryUnavailable -> {
+                        unavailableMessage
+                    }
+                }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.BACKUP_RESTORE.titleRes),
-        onBack = onBack
+        onBack = onBack,
     ) {
         item {
             BackupOperationRoute(
@@ -126,8 +138,12 @@ internal fun BackupRoute(
                         )
                     }
                 },
-                onClearBackupPath = if (readyState.directoryUri.isNullOrBlank()) null
-                else ({ showClearDirectoryDialog = true }),
+                onClearBackupPath =
+                    if (readyState.directoryUri.isNullOrBlank()) {
+                        null
+                    } else {
+                        ({ showClearDirectoryDialog = true })
+                    },
             )
         }
     }

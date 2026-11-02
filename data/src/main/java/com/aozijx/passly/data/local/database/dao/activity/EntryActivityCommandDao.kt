@@ -9,7 +9,6 @@ import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 
 @Dao
 interface EntryActivityCommandDao {
-
     // === Strict Insert (ignore duplicate) ===
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

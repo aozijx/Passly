@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
-import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigInput
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
@@ -23,10 +23,18 @@ data class OtpFormState(
     val tags: String = "",
 ) {
     val configInput: OtpConfigInput
-        get() = OtpConfigInput(
-            secret = secret, type = type, algorithm = algorithm, digits = digits,
-            period = period, counter = counter, encoding = encoding, issuer = issuer, accountName = accountName,
-        )
+        get() =
+            OtpConfigInput(
+                secret = secret,
+                type = type,
+                algorithm = algorithm,
+                digits = digits,
+                period = period,
+                counter = counter,
+                encoding = encoding,
+                issuer = issuer,
+                accountName = accountName,
+            )
 
     val isValid: Boolean get() = title.isNotBlank() && configInput.parse() is OtpConfigInputResult.Valid
 }

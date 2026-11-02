@@ -16,8 +16,7 @@ internal class FakeBackupOperationGateway(
 
     override fun buildExportFileName(format: BackupExportFormat): String = "backup.${format.extension}"
 
-    override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult =
-        BackupExecutionResult.DirectoryWritable
+    override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult = BackupExecutionResult.DirectoryWritable
 
     override suspend fun exportToConfiguredDirectory(request: BackupExportOperationRequest): BackupExecutionResult =
         BackupExecutionResult.ExportSucceeded
@@ -34,13 +33,14 @@ internal class FakeBackupOperationGateway(
     override suspend fun import(request: BackupImportOperationRequest): BackupExecutionResult = performImport(request)
 
     private companion object {
-        val TEST_IMPORT_RESULT = BackupImportResult(
-            importedEntryCount = 1,
-            existingEntryCount = 0,
-            skippedEntryCount = 0,
-            ignoredFieldCount = 0,
-            prunedLinkCount = 0,
-            prunedResourceCount = 0,
-        )
+        val TEST_IMPORT_RESULT =
+            BackupImportResult(
+                importedEntryCount = 1,
+                existingEntryCount = 0,
+                skippedEntryCount = 0,
+                ignoredFieldCount = 0,
+                prunedLinkCount = 0,
+                prunedResourceCount = 0,
+            )
     }
 }

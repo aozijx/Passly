@@ -10,20 +10,32 @@ data class StorageSettingsUiState(
 
 sealed interface StorageSizeUiState {
     data object Loading : StorageSizeUiState
-    data class Available(val formattedSize: String) : StorageSizeUiState
+
+    data class Available(
+        val formattedSize: String,
+    ) : StorageSizeUiState
+
     data object Unavailable : StorageSizeUiState
 }
 
 sealed interface StorageSettingsAction {
     data object ClearCache : StorageSettingsAction
+
     data object ClearLogs : StorageSettingsAction
-    data class SetLogRecordingMode(val mode: DiagnosticsLogRecordingMode) : StorageSettingsAction
+
+    data class SetLogRecordingMode(
+        val mode: DiagnosticsLogRecordingMode,
+    ) : StorageSettingsAction
 }
 
 sealed interface StorageSettingsEffect {
     data object CacheCleared : StorageSettingsEffect
+
     data object CacheClearFailed : StorageSettingsEffect
+
     data object LogsCleared : StorageSettingsEffect
+
     data object LogClearFailed : StorageSettingsEffect
+
     data object LogRecordingSettingsSaveFailed : StorageSettingsEffect
 }

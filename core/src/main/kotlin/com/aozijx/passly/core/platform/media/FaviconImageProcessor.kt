@@ -25,7 +25,9 @@ class FaviconProcessingException(
 
 interface FaviconDraftFiles {
     suspend fun discard(path: String?)
+
     suspend fun discardPromotedCandidate(path: String?)
+
     fun discardEditorResources(
         stagedPath: String?,
         pendingInputPath: String?,
@@ -35,11 +37,15 @@ interface FaviconDraftFiles {
 
 interface FaviconImageProcessor : FaviconDraftFiles {
     suspend fun stageUpload(uri: Uri): Result<String>
+
     suspend fun stageHttpsUrl(value: String): Result<String>
+
     suspend fun process(
         stagedInputPath: String,
         crop: FaviconCropRequest?,
     ): Result<String>
+
     suspend fun promote(stagedPath: String): Result<String>
+
     fun isStaged(path: String): Boolean
 }

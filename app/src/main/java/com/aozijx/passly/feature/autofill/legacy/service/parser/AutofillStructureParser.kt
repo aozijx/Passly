@@ -32,7 +32,6 @@ data class ParsedStructure(
 }
 
 object AutofillStructureParser {
-
     private const val MAX_TREE_DEPTH = 64
     private const val MAX_NODE_COUNT = 10_000
 
@@ -42,23 +41,27 @@ object AutofillStructureParser {
 
         return ParsedStructure(
             packageName = parser.packageName,
-            webDomain = parser.webDomain
-                ?.takeUnless { it == "127.0.0.1" || it == "localhost" },
+            webDomain =
+                parser.webDomain
+                    ?.takeUnless { it == "127.0.0.1" || it == "localhost" },
             editableFields = parser.editableFields,
         )
     }
 
-    private class ParserImpl(structure: AssistStructure) {
+    private class ParserImpl(
+        structure: AssistStructure,
+    ) {
         var packageName: String? = structure.activityComponent?.packageName
         var webDomain: String? = null
         val editableFields = mutableListOf<EditableFieldInfo>()
 
         init {
-            val roots = buildList {
-                for (index in 0 until structure.windowNodeCount) {
-                    add(structure.getWindowNodeAt(index).rootViewNode)
+            val roots =
+                buildList {
+                    for (index in 0 until structure.windowNodeCount) {
+                        add(structure.getWindowNodeAt(index).rootViewNode)
+                    }
                 }
-            }
             traverseBoundedPreOrder(
                 roots = roots,
                 maxDepth = MAX_TREE_DEPTH,
@@ -85,9 +88,10 @@ object AutofillStructureParser {
             val autofillId = node.autofillId
 
             if (isEditableText && autofillId != null) {
-                val value = node.autofillValue?.let {
-                    if (it.isText) it.textValue.toString() else null
-                } ?: node.text?.toString()
+                val value =
+                    node.autofillValue?.let {
+                        if (it.isText) it.textValue.toString() else null
+                    } ?: node.text?.toString()
 
                 editableFields.add(
                     EditableFieldInfo(
@@ -99,11 +103,10 @@ object AutofillStructureParser {
                         className = node.className,
                         autofillHints = node.autofillHints?.toList().orEmpty(),
                         isFocused = node.isFocused,
-                        value = value
-                    )
+                        value = value,
+                    ),
                 )
             }
-
         }
 
         private fun childrenOf(node: AssistStructure.ViewNode): List<AssistStructure.ViewNode> =
@@ -113,13 +116,12 @@ object AutofillStructureParser {
                 }
             }
 
-        private fun inputTypeNames(inputType: Int): String =
-            AutofillInputTypeClassifier.describe(inputType)
+        private fun inputTypeNames(inputType: Int): String = AutofillInputTypeClassifier.describe(inputType)
 
         private fun isEditableTextField(
             node: AssistStructure.ViewNode,
             inputType: Int,
-            className: String
+            className: String,
         ): Boolean {
             val isPwdType = AutofillInputTypeClassifier.isPassword(inputType)
 
@@ -131,7 +133,9 @@ object AutofillStructureParser {
                 cls == InputType.TYPE_CLASS_NUMBER ||
                 cls == InputType.TYPE_CLASS_PHONE ||
                 cls == InputType.TYPE_CLASS_DATETIME
-            ) return true
+            ) {
+                return true
+            }
 
             if (className.contains("edittext") || className.contains("textinput")) return true
 

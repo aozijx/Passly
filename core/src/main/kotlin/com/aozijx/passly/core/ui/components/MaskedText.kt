@@ -13,7 +13,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 
 enum class MaskStyle {
-    DEFAULT, SHORT
+    DEFAULT,
+    SHORT,
 }
 
 /**
@@ -29,12 +30,13 @@ fun MaskedText(
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     color: Color = LocalContentColor.current,
     textAlign: TextAlign = TextAlign.End,
-    fontWeight: FontWeight = FontWeight.Bold
+    fontWeight: FontWeight = FontWeight.Bold,
 ) {
-    val mask = when (maskStyle) {
-        MaskStyle.DEFAULT -> "••••••"
-        MaskStyle.SHORT -> "•••"
-    }
+    val mask =
+        when (maskStyle) {
+            MaskStyle.DEFAULT -> "••••••"
+            MaskStyle.SHORT -> "•••"
+        }
 
     Text(
         text = if (isRevealed) text.orEmpty() else mask,
@@ -45,6 +47,6 @@ fun MaskedText(
         fontWeight = fontWeight,
         letterSpacing = if (isRevealed) 0.sp else 3.sp,
         maxLines = 1,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
     )
 }

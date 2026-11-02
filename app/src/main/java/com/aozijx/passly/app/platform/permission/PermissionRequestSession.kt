@@ -14,12 +14,14 @@ internal class PermissionRequestSession(
 ) : AutoCloseable {
     private sealed interface State {
         data object Idle : State
+
         class Pending(
             val permission: RuntimePermission,
             val androidName: String,
             val requestedBefore: Boolean,
             val lease: PermissionRequestLease,
         ) : State
+
         data object Closed : State
     }
 
@@ -38,12 +40,13 @@ internal class PermissionRequestSession(
             State.Idle -> Unit
         }
         val lease = arbiter.tryAcquire(owner) ?: return PermissionRequestStart.Busy
-        val requestedBefore = try {
-            history.wasRequested(permission).also { history.markRequested(permission) }
-        } catch (error: Throwable) {
-            lease.release()
-            throw error
-        }
+        val requestedBefore =
+            try {
+                history.wasRequested(permission).also { history.markRequested(permission) }
+            } catch (error: Throwable) {
+                lease.release()
+                throw error
+            }
         val pending = State.Pending(permission, androidName, requestedBefore, lease)
         state = pending
         try {

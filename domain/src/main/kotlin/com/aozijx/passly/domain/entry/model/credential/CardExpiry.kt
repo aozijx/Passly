@@ -1,6 +1,9 @@
 package com.aozijx.passly.domain.entry.model.credential
 
-data class CardExpiry(val month: Int, val year: Int) {
+data class CardExpiry(
+    val month: Int,
+    val year: Int,
+) {
     init {
         require(isValid(month, year)) { "Card expiry month or year is invalid" }
     }
@@ -15,15 +18,24 @@ data class CardExpiry(val month: Int, val year: Int) {
             val match = STORAGE_PATTERN.matchEntire(value) ?: return CardExpiryParseResult.Invalid
             val month = match.groupValues[1].toInt()
             val year = match.groupValues[2].toInt()
-            return if (isValid(month, year)) CardExpiryParseResult.Parsed(CardExpiry(month, year))
-            else CardExpiryParseResult.Invalid
+            return if (isValid(month, year)) {
+                CardExpiryParseResult.Parsed(CardExpiry(month, year))
+            } else {
+                CardExpiryParseResult.Invalid
+            }
         }
 
-        private fun isValid(month: Int, year: Int): Boolean = month in 1..12 && year in 1..9999
+        private fun isValid(
+            month: Int,
+            year: Int,
+        ): Boolean = month in 1..12 && year in 1..9999
     }
 }
 
 sealed interface CardExpiryParseResult {
-    data class Parsed(val value: CardExpiry) : CardExpiryParseResult
+    data class Parsed(
+        val value: CardExpiry,
+    ) : CardExpiryParseResult
+
     data object Invalid : CardExpiryParseResult
 }

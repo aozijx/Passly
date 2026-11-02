@@ -5,23 +5,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
@@ -47,19 +47,21 @@ fun DetailRoute(
     val qrState by viewModel.qrState.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
     val otpLabel = stringResource(R.string.vault_detail_totp_label)
-    val pickFaviconImage = rememberImagePicker { uri, _ ->
-        viewModel.onAction(DetailUiAction.PickedFaviconImage(uri))
-    }
+    val pickFaviconImage =
+        rememberImagePicker { uri, _ ->
+            viewModel.onAction(DetailUiAction.PickedFaviconImage(uri))
+        }
 
     LaunchedEffect(entryId, viewModel) {
         viewModel.load(entryId, launchMode)
     }
     LaunchedEffect(viewModel, lifecycle, context, resources, copiedMessageFormat, otpLabel) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
-            val label = when (effect) {
-                is DetailEffect.ContentCopied -> resources.getString(effect.fieldKey.copyLabelRes())
-                DetailEffect.OtpCopied -> otpLabel
-            }
+            val label =
+                when (effect) {
+                    is DetailEffect.ContentCopied -> resources.getString(effect.fieldKey.copyLabelRes())
+                    DetailEffect.OtpCopied -> otpLabel
+                }
             Toast.makeText(context, copiedMessageFormat.format(label), Toast.LENGTH_SHORT).show()
         }
     }
@@ -75,27 +77,39 @@ fun DetailRoute(
         when (uiState.snapshotState) {
             DetailSnapshotState.Loading,
             DetailSnapshotState.Ready,
-            DetailSnapshotState.RefreshingAfterRestore -> Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
+            DetailSnapshotState.RefreshingAfterRestore,
+            -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
             }
-            DetailSnapshotState.NotFound -> DetailLoadMessage(
-                message = stringResource(R.string.vault_detail_entry_not_found),
-                action = stringResource(R.string.back),
-                onAction = onBack,
-            )
-            DetailSnapshotState.Failed -> DetailLoadMessage(
-                message = stringResource(R.string.vault_detail_load_failed),
-                action = stringResource(R.string.retry),
-                onAction = { viewModel.onAction(DetailUiAction.RetryDetailLoad) },
-            )
-            DetailSnapshotState.RefreshFailedAfterRestore -> DetailLoadMessage(
-                message = stringResource(R.string.vault_detail_refresh_failed_after_restore),
-                action = stringResource(R.string.retry),
-                onAction = { viewModel.onAction(DetailUiAction.RetrySnapshotRefresh) },
-            )
+
+            DetailSnapshotState.NotFound -> {
+                DetailLoadMessage(
+                    message = stringResource(R.string.vault_detail_entry_not_found),
+                    action = stringResource(R.string.back),
+                    onAction = onBack,
+                )
+            }
+
+            DetailSnapshotState.Failed -> {
+                DetailLoadMessage(
+                    message = stringResource(R.string.vault_detail_load_failed),
+                    action = stringResource(R.string.retry),
+                    onAction = { viewModel.onAction(DetailUiAction.RetryDetailLoad) },
+                )
+            }
+
+            DetailSnapshotState.RefreshFailedAfterRestore -> {
+                DetailLoadMessage(
+                    message = stringResource(R.string.vault_detail_refresh_failed_after_restore),
+                    action = stringResource(R.string.retry),
+                    onAction = { viewModel.onAction(DetailUiAction.RetrySnapshotRefresh) },
+                )
+            }
         }
         return
     }

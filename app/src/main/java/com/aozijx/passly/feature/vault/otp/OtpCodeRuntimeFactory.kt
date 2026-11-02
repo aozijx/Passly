@@ -10,28 +10,31 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
-class OtpCodeRuntimeFactory @Inject constructor(
-    private val otpConfigRepository: OtpConfigRepository,
-    private val sessionStateProvider: SessionStateProvider,
-    private val sensitiveKeyFreshnessState: SensitiveKeyFreshnessState,
-) {
-    internal fun create(scope: CoroutineScope): OtpCodeRuntime = OtpCodeRuntime(
-        scope = scope,
-        codeGenerator = OtpGenerator::generate,
-        loadOtpConfig = otpConfigRepository::getConfig,
-        consumeHotpCode = otpConfigRepository::consumeHotpCode,
-        initiallyUnlocked = sessionStateProvider.isWritable,
-    ).also { runtime ->
-        runtime.start()
-        scope.launch {
-            sessionStateProvider.lockStateFlow.collect { state ->
-                runtime.onSessionStateChanged(state == SecureSessionState.UNLOCKED)
+class OtpCodeRuntimeFactory
+    @Inject
+    constructor(
+        private val otpConfigRepository: OtpConfigRepository,
+        private val sessionStateProvider: SessionStateProvider,
+        private val sensitiveKeyFreshnessState: SensitiveKeyFreshnessState,
+    ) {
+        internal fun create(scope: CoroutineScope): OtpCodeRuntime =
+            OtpCodeRuntime(
+                scope = scope,
+                codeGenerator = OtpGenerator::generate,
+                loadOtpConfig = otpConfigRepository::getConfig,
+                consumeHotpCode = otpConfigRepository::consumeHotpCode,
+                initiallyUnlocked = sessionStateProvider.isWritable,
+            ).also { runtime ->
+                runtime.start()
+                scope.launch {
+                    sessionStateProvider.lockStateFlow.collect { state ->
+                        runtime.onSessionStateChanged(state == SecureSessionState.UNLOCKED)
+                    }
+                }
+                scope.launch {
+                    sensitiveKeyFreshnessState.generation.drop(1).collect {
+                        runtime.onFreshAuthentication()
+                    }
+                }
             }
-        }
-        scope.launch {
-            sensitiveKeyFreshnessState.generation.drop(1).collect {
-                runtime.onFreshAuthentication()
-            }
-        }
     }
-}

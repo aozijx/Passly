@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
+import com.aozijx.passly.app.navigation.AppRoute
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.policy.WifiQrPayload
+import com.aozijx.passly.feature.vault.entry.EditorSeedToken
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedStageResult
+import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedStager
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationRequest
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationResult
-import com.aozijx.passly.app.navigation.AppRoute
-import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
-import com.aozijx.passly.feature.vault.entry.EditorSeedToken
-import com.aozijx.passly.domain.entry.policy.WifiQrPayload
-import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedStageResult
-import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedStager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -21,14 +21,15 @@ class VaultNavigationTest {
         val routes = mutableListOf<String>()
         val navigation = navigation(singleTopRoutes = routes)
 
-        val handled = mapOf(
-            VaultAddTypeUiModel.PASSWORD to AppRoute.AddPassword.route,
-            VaultAddTypeUiModel.TOTP to AppRoute.AddOtp.route,
-            VaultAddTypeUiModel.BANK_CARD to AppRoute.AddBankCard.route,
-            VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
-        ).map { (type, expectedRoute) ->
-            navigation.navigate(VaultDestinationRequest.OpenEditor(type)) to expectedRoute
-        }
+        val handled =
+            mapOf(
+                VaultAddTypeUiModel.PASSWORD to AppRoute.AddPassword.route,
+                VaultAddTypeUiModel.TOTP to AppRoute.AddOtp.route,
+                VaultAddTypeUiModel.BANK_CARD to AppRoute.AddBankCard.route,
+                VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
+            ).map { (type, expectedRoute) ->
+                navigation.navigate(VaultDestinationRequest.OpenEditor(type)) to expectedRoute
+            }
 
         assertTrue(handled.all { it.first == VaultNavigationResult.Navigated })
         assertEquals(handled.map { it.second }, routes)
@@ -39,9 +40,10 @@ class VaultNavigationTest {
         val routes = mutableListOf<String>()
         val navigation = navigation(singleTopRoutes = routes)
 
-        val handled = navigation.navigate(
-            VaultDestinationRequest.OpenEditor(VaultAddTypeUiModel.SSH_KEY),
-        )
+        val handled =
+            navigation.navigate(
+                VaultDestinationRequest.OpenEditor(VaultAddTypeUiModel.SSH_KEY),
+            )
 
         assertEquals(VaultNavigationResult.UnsupportedDestination, handled)
         assertTrue(routes.isEmpty())
@@ -97,8 +99,9 @@ class VaultNavigationTest {
     ) = VaultNavigation(
         navigateToRoute = routes::add,
         navigateToSingleTopRoute = singleTopRoutes::add,
-        seedStager = EntryEditorSeedStager {
-            EntryEditorSeedStageResult.Staged(EditorSeedToken("token-1"))
-        },
+        seedStager =
+            EntryEditorSeedStager {
+                EntryEditorSeedStageResult.Staged(EditorSeedToken("token-1"))
+            },
     )
 }

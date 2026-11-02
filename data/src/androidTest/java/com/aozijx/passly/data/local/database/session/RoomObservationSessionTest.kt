@@ -26,6 +26,8 @@ import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
+import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
+import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -35,12 +37,13 @@ import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
-import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.runtime.session.SecureSessionState
-import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.runtime.session.SessionKeySource
+import com.aozijx.passly.runtime.session.SessionLockedException
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,21 +54,18 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.runBlocking
-import java.io.IOException
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -77,313 +77,338 @@ import org.junit.runner.RunWith
 class RoomObservationSessionTest {
     @Test
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun activePagingRestartsOnceAfterDatabaseResetAndKeepsQueryFilters() = runBlocking {
-        System.loadLibrary("sqlcipher")
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
-        val logger = NoOpLogger
-        val failReopen = AtomicBoolean(false)
-        val session = AppDatabaseSession(
-            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
-            keySource = SessionKeySource {
-                if (failReopen.get()) throw IOException("Test database key unavailable")
-                DATABASE_KEY.copyOf()
-            },
-            eventLogger = DatabaseSessionEventLogger(logger),
-        )
-        val access = FixedAuthenticatedAccess()
-        val controller = VaultDatabaseResetController(context, session, logger)
-        val store = RoomEntryPagingStore(session, access)
-        val query = EntryListQuery(
-            searchText = "needle",
-            entryTypes = setOf(EntryType.LOGIN),
-            sort = EntrySort(
-                field = EntrySortField.TITLE,
-                direction = SortDirection.ASC,
-                pinFavorites = false,
-            ),
-        )
-        val differ = AsyncPagingDataDiffer(
-            diffCallback = object : DiffUtil.ItemCallback<EntryListItem>() {
-                override fun areItemsTheSame(oldItem: EntryListItem, newItem: EntryListItem) =
-                    oldItem.id == newItem.id
-
-                override fun areContentsTheSame(oldItem: EntryListItem, newItem: EntryListItem) =
-                    oldItem == newItem
-            },
-            updateCallback = NoOpListUpdateCallback,
-            mainDispatcher = Dispatchers.Main,
-            workerDispatcher = Dispatchers.IO,
-        )
-        val pageEmissions = AtomicInteger()
-        val pageSourceGenerations = AtomicInteger()
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val pages = kotlinx.coroutines.flow.flowOf(query)
-            .flatMapLatest { currentQuery ->
-                pageSourceGenerations.incrementAndGet()
-                store.pages(currentQuery, PagingConfig(pageSize = 20, enablePlaceholders = false))
-            }
-            .onEach { pageEmissions.incrementAndGet() }
-            .cachedIn(scope)
-        val collection = scope.launch {
-            pages.collectLatest(differ::submitData)
-        }
-
-        try {
-            awaitPageEmissions(pageEmissions, 1)
-            assertNull(session.unlock())
-            awaitPageEmissions(pageEmissions, 2)
-            session.transaction {
-                entryCommandDao().insertStrict(
-                    EntryEntity(entryId = "before-match", entryType = EntryType.LOGIN, title = "Needle before"),
-                )
-                entryCommandDao().insertStrict(
-                    EntryEntity(entryId = "before-other", entryType = EntryType.LOGIN, title = "Other before"),
-                )
-            }
-            awaitPageTitles(differ, listOf("Needle before"))
-            val beforeResetEmissions = pageEmissions.get()
-            assertEquals(3, beforeResetEmissions)
-            assertEquals(1, pageSourceGenerations.get())
-
-            assertNull(controller.reset())
-            withTimeout(10_000L) {
-                while (pageEmissions.get() < beforeResetEmissions + 2) delay(10L)
-            }
-            awaitPageTitles(differ, emptyList())
-            delay(250L)
-            assertEquals(beforeResetEmissions + 2, pageEmissions.get())
-            assertEquals(1, pageSourceGenerations.get())
-
-            session.transaction {
-                entryCommandDao().insertStrict(
-                    EntryEntity(entryId = "after-match", entryType = EntryType.LOGIN, title = "Needle after"),
-                )
-                entryCommandDao().insertStrict(
-                    EntryEntity(entryId = "after-other", entryType = EntryType.LOGIN, title = "Other after"),
-                )
-            }
-            awaitPageTitles(differ, listOf("Needle after"))
-            assertEquals(1, pageSourceGenerations.get())
-
-            val beforeFailedResetEmissions = pageEmissions.get()
-            failReopen.set(true)
-            assertTrue(controller.reset() is DatabaseInitFailed)
-            awaitPageEmissions(pageEmissions, beforeFailedResetEmissions + 1)
-            awaitPageTitles(differ, emptyList())
-            assertEquals(SecureSessionState.SEALED, session.lockStateFlow.first())
-            delay(250L)
-            assertEquals(beforeFailedResetEmissions + 1, pageEmissions.get())
-            assertEquals(1, pageSourceGenerations.get())
-        } finally {
-            collection.cancelAndJoin()
-            scope.cancel()
-            session.seal()
+    fun activePagingRestartsOnceAfterDatabaseResetAndKeepsQueryFilters() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
-        }
-    }
+            val logger = NoOpLogger
+            val failReopen = AtomicBoolean(false)
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource =
+                        SessionKeySource {
+                            if (failReopen.get()) throw IOException("Test database key unavailable")
+                            DATABASE_KEY.copyOf()
+                        },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                )
+            val access = FixedAuthenticatedAccess()
+            val controller = VaultDatabaseResetController(context, session, logger)
+            val store = RoomEntryPagingStore(session, access)
+            val query =
+                EntryListQuery(
+                    searchText = "needle",
+                    entryTypes = setOf(EntryType.LOGIN),
+                    sort =
+                        EntrySort(
+                            field = EntrySortField.TITLE,
+                            direction = SortDirection.ASC,
+                            pinFavorites = false,
+                        ),
+                )
+            val differ =
+                AsyncPagingDataDiffer(
+                    diffCallback =
+                        object : DiffUtil.ItemCallback<EntryListItem>() {
+                            override fun areItemsTheSame(
+                                oldItem: EntryListItem,
+                                newItem: EntryListItem,
+                            ) = oldItem.id == newItem.id
 
-    @Test
-    fun sealingWaitsForActiveRoomTransactionBeforeClosingDatabase() = runBlocking {
-        System.loadLibrary("sqlcipher")
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
-        val logger = NoOpLogger
-        val session = AppDatabaseSession(
-            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
-            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
-            eventLogger = DatabaseSessionEventLogger(logger),
-        )
-        val transactionStarted = CompletableDeferred<Unit>()
-        val releaseTransaction = CompletableDeferred<Unit>()
-
-        try {
-            assertNull(session.unlock())
-            val transaction = async(Dispatchers.IO) {
-                session.transaction {
-                    entryCommandDao().insertStrict(EntryEntity(entryId = "lease-entry", title = "Committed"))
-                    transactionStarted.complete(Unit)
-                    releaseTransaction.await()
+                            override fun areContentsTheSame(
+                                oldItem: EntryListItem,
+                                newItem: EntryListItem,
+                            ) = oldItem == newItem
+                        },
+                    updateCallback = NoOpListUpdateCallback,
+                    mainDispatcher = Dispatchers.Main,
+                    workerDispatcher = Dispatchers.IO,
+                )
+            val pageEmissions = AtomicInteger()
+            val pageSourceGenerations = AtomicInteger()
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val pages =
+                kotlinx.coroutines.flow
+                    .flowOf(query)
+                    .flatMapLatest { currentQuery ->
+                        pageSourceGenerations.incrementAndGet()
+                        store.pages(currentQuery, PagingConfig(pageSize = 20, enablePlaceholders = false))
+                    }.onEach { pageEmissions.incrementAndGet() }
+                    .cachedIn(scope)
+            val collection =
+                scope.launch {
+                    pages.collectLatest(differ::submitData)
                 }
-            }
-            transactionStarted.await()
 
-            val sealing = async(Dispatchers.IO) { session.seal() }
-            withTimeout(10_000L) {
-                session.lockStateFlow.first { it == SecureSessionState.SEALED }
-            }
-
-            assertFalse(transaction.isCompleted)
-            assertFalse(sealing.isCompleted)
-            val rejectedRead = runCatching { session.query { entryQueryDao().getById("lease-entry") } }
-            assertTrue(rejectedRead.exceptionOrNull() is SessionLockedException)
-
-            releaseTransaction.complete(Unit)
-            transaction.await()
-            sealing.await()
-
-            assertNull(session.unlock())
-            assertEquals("Committed", session.query { entryQueryDao().getById("lease-entry")?.title })
-        } finally {
-            releaseTransaction.complete(Unit)
-            session.seal()
-            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
-        }
-    }
-
-    @Test
-    fun sealingTimeoutCancelsRoomTransactionBeforeClosingDatabase() = runBlocking {
-        System.loadLibrary("sqlcipher")
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
-        val logger = NoOpLogger
-        val session = AppDatabaseSession(
-            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
-            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
-            eventLogger = DatabaseSessionEventLogger(logger),
-        )
-        val transactionStarted = CompletableDeferred<Unit>()
-        var transaction: Job? = null
-
-        try {
-            assertNull(session.unlock())
-            val runningTransaction = async(Dispatchers.IO) {
+            try {
+                awaitPageEmissions(pageEmissions, 1)
+                assertNull(session.unlock())
+                awaitPageEmissions(pageEmissions, 2)
                 session.transaction {
-                    entryCommandDao().insertStrict(EntryEntity(entryId = "timeout-lease-entry", title = "Rolled back"))
-                    transactionStarted.complete(Unit)
-                    awaitCancellation()
+                    entryCommandDao().insertStrict(
+                        EntryEntity(entryId = "before-match", entryType = EntryType.LOGIN, title = "Needle before"),
+                    )
+                    entryCommandDao().insertStrict(
+                        EntryEntity(entryId = "before-other", entryType = EntryType.LOGIN, title = "Other before"),
+                    )
                 }
+                awaitPageTitles(differ, listOf("Needle before"))
+                val beforeResetEmissions = pageEmissions.get()
+                assertEquals(3, beforeResetEmissions)
+                assertEquals(1, pageSourceGenerations.get())
+
+                assertNull(controller.reset())
+                withTimeout(10_000L) {
+                    while (pageEmissions.get() < beforeResetEmissions + 2) delay(10L)
+                }
+                awaitPageTitles(differ, emptyList())
+                delay(250L)
+                assertEquals(beforeResetEmissions + 2, pageEmissions.get())
+                assertEquals(1, pageSourceGenerations.get())
+
+                session.transaction {
+                    entryCommandDao().insertStrict(
+                        EntryEntity(entryId = "after-match", entryType = EntryType.LOGIN, title = "Needle after"),
+                    )
+                    entryCommandDao().insertStrict(
+                        EntryEntity(entryId = "after-other", entryType = EntryType.LOGIN, title = "Other after"),
+                    )
+                }
+                awaitPageTitles(differ, listOf("Needle after"))
+                assertEquals(1, pageSourceGenerations.get())
+
+                val beforeFailedResetEmissions = pageEmissions.get()
+                failReopen.set(true)
+                assertTrue(controller.reset() is DatabaseInitFailed)
+                awaitPageEmissions(pageEmissions, beforeFailedResetEmissions + 1)
+                awaitPageTitles(differ, emptyList())
+                assertEquals(SecureSessionState.SEALED, session.lockStateFlow.first())
+                delay(250L)
+                assertEquals(beforeFailedResetEmissions + 1, pageEmissions.get())
+                assertEquals(1, pageSourceGenerations.get())
+            } finally {
+                collection.cancelAndJoin()
+                scope.cancel()
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             }
-            transaction = runningTransaction
-            transactionStarted.await()
-
-            session.seal()
-            runningTransaction.join()
-
-            assertTrue("timed-out transaction must be cancelled", runningTransaction.isCancelled)
-            assertEquals(SecureSessionState.SEALED, session.lockState)
-            assertNull(session.unlock())
-            assertNull(session.query { entryQueryDao().getById("timeout-lease-entry") })
-        } finally {
-            transaction?.cancelAndJoin()
-            session.seal()
-            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
         }
-    }
 
     @Test
-    fun activeRoomCollectorsEmitEmptyOnDatabaseOnlySealAndResubscribeAfterReopen() = runBlocking {
-        System.loadLibrary("sqlcipher")
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
-        val logger = NoOpLogger
-        val session = AppDatabaseSession(
-            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
-            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
-            eventLogger = DatabaseSessionEventLogger(logger),
-        )
-        val access = FixedAuthenticatedAccess()
-        val authenticatedState = access.authenticationState.value
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val activities = ObservationProbe<EntryActivityEntity>()
-        val links = ObservationProbe<EntryLinkEntity>()
-        val revisions = ObservationProbe<EntryRevisionEntity>()
-        val activityValues = Channel<List<EntryActivityEntity>>(Channel.UNLIMITED)
-        val linkValues = Channel<List<EntryLinkEntity>>(Channel.UNLIMITED)
-        val revisionValues = Channel<List<EntryRevisionEntity>>(Channel.UNLIMITED)
-        val jobs = mutableListOf<Job>()
-
-        try {
-            assertNull(session.unlock())
-            session.transaction {
-                entryCommandDao().insertStrict(EntryEntity(entryId = "entry-a", title = "A"))
-                entryCommandDao().insertStrict(EntryEntity(entryId = "entry-b", title = "B"))
-                entryActivityCommandDao().insertIdempotent(
-                    EntryActivityEntity("activity-1", "entry-a", ActivityType.CREATE, createdAt = 1L),
-                )
-                entryLinkCommandDao().insertStrict(
-                    EntryLinkEntity(
-                        linkId = "link-1",
-                        sourceEntryId = "entry-a",
-                        targetEntryId = "entry-b",
-                        relationType = EntryRelationType.RELATED_TO,
-                        createdAt = 1L,
-                        updatedAt = 1L,
-                    ),
-                )
-                entryRevisionCommandDao().insertStrict(
-                    EntryRevisionEntity(
-                        revisionId = "revision-1",
-                        entryId = "entry-a",
-                        version = 1,
-                        entryContentCipher = byteArrayOf(1),
-                        sensitiveFieldCipherSet = byteArrayOf(1),
-                        changeType = "VALUE_CHANGED",
-                        createdAt = 1L,
-                    ),
-                )
-            }
-
-            jobs += scope.launch {
-                activityObservations(session, access, activities)
-                    .collect(activityValues::send)
-            }
-            jobs += scope.launch {
-                linkObservations(session, access, links)
-                    .collect(linkValues::send)
-            }
-            jobs += scope.launch {
-                revisionObservations(session, access, revisions)
-                    .collect(revisionValues::send)
-            }
-
-            assertEquals(1, nextNonEmpty(activityValues).size)
-            assertEquals(1, nextNonEmpty(linkValues).size)
-            assertEquals(1, nextNonEmpty(revisionValues).size)
-            assertEquals(1, activities.starts.get())
-            assertEquals(1, links.starts.get())
-            assertEquals(1, revisions.starts.get())
-
-            session.seal()
-
-            assertEquals(emptyList<EntryActivityEntity>(), nextEmpty(activityValues))
-            assertEquals(emptyList<EntryLinkEntity>(), nextEmpty(linkValues))
-            assertEquals(emptyList<EntryRevisionEntity>(), nextEmpty(revisionValues))
-            assertEquals(1, activities.completions.get())
-            assertEquals(1, links.completions.get())
-            assertEquals(1, revisions.completions.get())
-            assertEquals(authenticatedState, access.authenticationState.value)
-
-            assertNull(session.unlock())
-
-            assertEquals(1, nextNonEmpty(activityValues).size)
-            assertEquals(1, nextNonEmpty(linkValues).size)
-            assertEquals(1, nextNonEmpty(revisionValues).size)
-            assertEquals(2, activities.starts.get())
-            assertEquals(2, links.starts.get())
-            assertEquals(2, revisions.starts.get())
-            assertEquals(authenticatedState, access.authenticationState.value)
-        } finally {
-            jobs.forEach(Job::cancel)
-            scope.cancel()
-            session.seal()
+    fun sealingWaitsForActiveRoomTransactionBeforeClosingDatabase() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                )
+            val transactionStarted = CompletableDeferred<Unit>()
+            val releaseTransaction = CompletableDeferred<Unit>()
+
+            try {
+                assertNull(session.unlock())
+                val transaction =
+                    async(Dispatchers.IO) {
+                        session.transaction {
+                            entryCommandDao().insertStrict(EntryEntity(entryId = "lease-entry", title = "Committed"))
+                            transactionStarted.complete(Unit)
+                            releaseTransaction.await()
+                        }
+                    }
+                transactionStarted.await()
+
+                val sealing = async(Dispatchers.IO) { session.seal() }
+                withTimeout(10_000L) {
+                    session.lockStateFlow.first { it == SecureSessionState.SEALED }
+                }
+
+                assertFalse(transaction.isCompleted)
+                assertFalse(sealing.isCompleted)
+                val rejectedRead = runCatching { session.query { entryQueryDao().getById("lease-entry") } }
+                assertTrue(rejectedRead.exceptionOrNull() is SessionLockedException)
+
+                releaseTransaction.complete(Unit)
+                transaction.await()
+                sealing.await()
+
+                assertNull(session.unlock())
+                assertEquals("Committed", session.query { entryQueryDao().getById("lease-entry")?.title })
+            } finally {
+                releaseTransaction.complete(Unit)
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
         }
-    }
+
+    @Test
+    fun sealingTimeoutCancelsRoomTransactionBeforeClosingDatabase() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                )
+            val transactionStarted = CompletableDeferred<Unit>()
+            var transaction: Job? = null
+
+            try {
+                assertNull(session.unlock())
+                val runningTransaction =
+                    async(Dispatchers.IO) {
+                        session.transaction {
+                            entryCommandDao().insertStrict(EntryEntity(entryId = "timeout-lease-entry", title = "Rolled back"))
+                            transactionStarted.complete(Unit)
+                            awaitCancellation()
+                        }
+                    }
+                transaction = runningTransaction
+                transactionStarted.await()
+
+                session.seal()
+                runningTransaction.join()
+
+                assertTrue("timed-out transaction must be cancelled", runningTransaction.isCancelled)
+                assertEquals(SecureSessionState.SEALED, session.lockState)
+                assertNull(session.unlock())
+                assertNull(session.query { entryQueryDao().getById("timeout-lease-entry") })
+            } finally {
+                transaction?.cancelAndJoin()
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
+    fun activeRoomCollectorsEmitEmptyOnDatabaseOnlySealAndResubscribeAfterReopen() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                )
+            val access = FixedAuthenticatedAccess()
+            val authenticatedState = access.authenticationState.value
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val activities = ObservationProbe<EntryActivityEntity>()
+            val links = ObservationProbe<EntryLinkEntity>()
+            val revisions = ObservationProbe<EntryRevisionEntity>()
+            val activityValues = Channel<List<EntryActivityEntity>>(Channel.UNLIMITED)
+            val linkValues = Channel<List<EntryLinkEntity>>(Channel.UNLIMITED)
+            val revisionValues = Channel<List<EntryRevisionEntity>>(Channel.UNLIMITED)
+            val jobs = mutableListOf<Job>()
+
+            try {
+                assertNull(session.unlock())
+                session.transaction {
+                    entryCommandDao().insertStrict(EntryEntity(entryId = "entry-a", title = "A"))
+                    entryCommandDao().insertStrict(EntryEntity(entryId = "entry-b", title = "B"))
+                    entryActivityCommandDao().insertIdempotent(
+                        EntryActivityEntity("activity-1", "entry-a", ActivityType.CREATE, createdAt = 1L),
+                    )
+                    entryLinkCommandDao().insertStrict(
+                        EntryLinkEntity(
+                            linkId = "link-1",
+                            sourceEntryId = "entry-a",
+                            targetEntryId = "entry-b",
+                            relationType = EntryRelationType.RELATED_TO,
+                            createdAt = 1L,
+                            updatedAt = 1L,
+                        ),
+                    )
+                    entryRevisionCommandDao().insertStrict(
+                        EntryRevisionEntity(
+                            revisionId = "revision-1",
+                            entryId = "entry-a",
+                            version = 1,
+                            entryContentCipher = byteArrayOf(1),
+                            sensitiveFieldCipherSet = byteArrayOf(1),
+                            changeType = "VALUE_CHANGED",
+                            createdAt = 1L,
+                        ),
+                    )
+                }
+
+                jobs +=
+                    scope.launch {
+                        activityObservations(session, access, activities)
+                            .collect(activityValues::send)
+                    }
+                jobs +=
+                    scope.launch {
+                        linkObservations(session, access, links)
+                            .collect(linkValues::send)
+                    }
+                jobs +=
+                    scope.launch {
+                        revisionObservations(session, access, revisions)
+                            .collect(revisionValues::send)
+                    }
+
+                assertEquals(1, nextNonEmpty(activityValues).size)
+                assertEquals(1, nextNonEmpty(linkValues).size)
+                assertEquals(1, nextNonEmpty(revisionValues).size)
+                assertEquals(1, activities.starts.get())
+                assertEquals(1, links.starts.get())
+                assertEquals(1, revisions.starts.get())
+
+                session.seal()
+
+                assertEquals(emptyList<EntryActivityEntity>(), nextEmpty(activityValues))
+                assertEquals(emptyList<EntryLinkEntity>(), nextEmpty(linkValues))
+                assertEquals(emptyList<EntryRevisionEntity>(), nextEmpty(revisionValues))
+                assertEquals(1, activities.completions.get())
+                assertEquals(1, links.completions.get())
+                assertEquals(1, revisions.completions.get())
+                assertEquals(authenticatedState, access.authenticationState.value)
+
+                assertNull(session.unlock())
+
+                assertEquals(1, nextNonEmpty(activityValues).size)
+                assertEquals(1, nextNonEmpty(linkValues).size)
+                assertEquals(1, nextNonEmpty(revisionValues).size)
+                assertEquals(2, activities.starts.get())
+                assertEquals(2, links.starts.get())
+                assertEquals(2, revisions.starts.get())
+                assertEquals(authenticatedState, access.authenticationState.value)
+            } finally {
+                jobs.forEach(Job::cancel)
+                scope.cancel()
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
 
     private fun <T> gatedObservations(
         session: AppDatabaseSession,
         access: SecureSessionAccessState,
         probe: ObservationProbe<T>,
         query: suspend com.aozijx.passly.data.local.database.AppDatabase.() -> Flow<List<T>>,
-    ): Flow<List<T>> = session.observeWhenReadable(
-        authorized = access.isAuthorized,
-        emptyValue = { emptyList() },
-    ) {
-        query()
-            .onStart { probe.starts.incrementAndGet() }
-            .onCompletion { probe.completions.incrementAndGet() }
-    }
+    ): Flow<List<T>> =
+        session.observeWhenReadable(
+            authorized = access.isAuthorized,
+            emptyValue = { emptyList() },
+        ) {
+            query()
+                .onStart { probe.starts.incrementAndGet() }
+                .onCompletion { probe.completions.incrementAndGet() }
+        }
 
     private fun activityObservations(
         session: AppDatabaseSession,
@@ -414,7 +439,10 @@ class RoomObservationSessionTest {
             error("Unreachable")
         }
 
-    private suspend fun awaitPageEmissions(emissions: AtomicInteger, expected: Int) {
+    private suspend fun awaitPageEmissions(
+        emissions: AtomicInteger,
+        expected: Int,
+    ) {
         withTimeout(10_000L) {
             while (emissions.get() < expected) delay(10L)
         }
@@ -430,10 +458,26 @@ class RoomObservationSessionTest {
     }
 
     private object NoOpListUpdateCallback : ListUpdateCallback {
-        override fun onInserted(position: Int, count: Int) = Unit
-        override fun onRemoved(position: Int, count: Int) = Unit
-        override fun onMoved(fromPosition: Int, toPosition: Int) = Unit
-        override fun onChanged(position: Int, count: Int, payload: Any?) = Unit
+        override fun onInserted(
+            position: Int,
+            count: Int,
+        ) = Unit
+
+        override fun onRemoved(
+            position: Int,
+            count: Int,
+        ) = Unit
+
+        override fun onMoved(
+            fromPosition: Int,
+            toPosition: Int,
+        ) = Unit
+
+        override fun onChanged(
+            position: Int,
+            count: Int,
+            payload: Any?,
+        ) = Unit
     }
 
     private suspend fun <T> nextEmpty(channel: Channel<List<T>>): List<T> =
@@ -460,12 +504,46 @@ class RoomObservationSessionTest {
     }
 
     private object NoOpLogger : Logger {
-        override fun debug(event: EventKey, fields: LogFields) = Unit
-        override fun info(event: EventKey, fields: LogFields) = Unit
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) = Unit
-        override fun warn(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun error(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun fatal(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
+
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
 
         override suspend fun <T> withRootTrace(
             operation: OperationCode,

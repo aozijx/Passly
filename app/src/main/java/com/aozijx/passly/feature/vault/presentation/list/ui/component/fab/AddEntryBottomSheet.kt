@@ -52,10 +52,11 @@ fun AddEntryBottomSheet(
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp)),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp)),
         ) {
             Text(
                 text = stringResource(R.string.vault_fab_add_title),
@@ -66,9 +67,10 @@ fun AddEntryBottomSheet(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 options.chunked(2).forEach { types ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         types.forEach { type ->
@@ -78,9 +80,10 @@ fun AddEntryBottomSheet(
                                     onSelectType(type)
                                     onDismiss()
                                 },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight(),
                             )
                         }
                     }
@@ -100,19 +103,21 @@ private fun TypeCard(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
     ) {
         Box(Modifier.fillMaxWidth()) {
             Icon(
                 imageVector = type.icon(),
                 contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(76.dp)
-                    .alpha(0.10f)
-                    .blur(8.dp, BlurredEdgeTreatment.Unbounded),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(76.dp)
+                        .alpha(0.10f)
+                        .blur(8.dp, BlurredEdgeTreatment.Unbounded),
                 tint = MaterialTheme.colorScheme.primary,
             )
             Column(modifier = Modifier.padding(16.dp)) {

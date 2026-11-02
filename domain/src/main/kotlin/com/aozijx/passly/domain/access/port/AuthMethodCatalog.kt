@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
  * 实现层负责从持久化存储加载各方式的注册状态。
  */
 interface AuthMethodCatalog {
-
     /** 各方式的可用性 */
     val methods: StateFlow<AuthenticationMethods>
 

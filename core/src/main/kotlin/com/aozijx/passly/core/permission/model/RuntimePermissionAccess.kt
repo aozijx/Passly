@@ -4,5 +4,5 @@ enum class RuntimePermissionAccess {
     GRANTED,
     REQUESTABLE,
     SETTINGS_REQUIRED,
-    NOT_APPLICABLE
+    NOT_APPLICABLE,
 }

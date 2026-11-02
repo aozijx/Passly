@@ -21,21 +21,21 @@ object PasslyNavigationAnim {
 
     val enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) = {
         fadeIn(animationSpec = tween(DURATION, easing = easing)) +
-                scaleIn(initialScale = 0.92f, animationSpec = tween(DURATION, easing = easing))
+            scaleIn(initialScale = 0.92f, animationSpec = tween(DURATION, easing = easing))
     }
 
     val exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) = {
         fadeOut(animationSpec = tween(DURATION, easing = easing)) +
-                scaleOut(targetScale = 1.08f, animationSpec = tween(DURATION, easing = easing))
+            scaleOut(targetScale = 1.08f, animationSpec = tween(DURATION, easing = easing))
     }
 
     val popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) = {
         fadeIn(animationSpec = tween(DURATION, easing = easing)) +
-                scaleIn(initialScale = 1.08f, animationSpec = tween(DURATION, easing = easing))
+            scaleIn(initialScale = 1.08f, animationSpec = tween(DURATION, easing = easing))
     }
 
     val popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) = {
         fadeOut(animationSpec = tween(DURATION, easing = easing)) +
-                scaleOut(targetScale = 0.92f, animationSpec = tween(DURATION, easing = easing))
+            scaleOut(targetScale = 0.92f, animationSpec = tween(DURATION, easing = easing))
     }
 }

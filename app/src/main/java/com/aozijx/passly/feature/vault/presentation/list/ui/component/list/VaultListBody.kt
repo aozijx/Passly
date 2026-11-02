@@ -39,16 +39,20 @@ internal fun VaultListBody(
     val hasActiveQuickFilters = state.navigation.selectedFilters.isNotEmpty()
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(contentPadding),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(contentPadding),
     ) {
         AnimatedVisibility(
-            visible = !state.toolbar.isSearchActive &&
+            visible =
+                !state.toolbar.isSearchActive &&
                     state.toolbar.selectedCategory == null &&
-                    (hasActiveQuickFilters ||
+                    (
+                        hasActiveQuickFilters ||
                             !state.layout.collapseQuickFilterBarOnScroll ||
-                            scrollBehavior.state.collapsedFraction < 0.5f),
+                            scrollBehavior.state.collapsedFraction < 0.5f
+                    ),
             enter = expandVertically(animationSpec = motionScheme.defaultSpatialSpec()),
             exit = shrinkVertically(animationSpec = motionScheme.defaultSpatialSpec()),
         ) {
@@ -66,9 +70,10 @@ internal fun VaultListBody(
             onItemAction = onItemAction,
             otpStateProvider = otpStateProvider,
             gridState = gridState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
         )
     }
 }

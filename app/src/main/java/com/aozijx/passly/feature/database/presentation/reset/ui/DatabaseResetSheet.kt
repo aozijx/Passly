@@ -41,10 +41,11 @@ internal fun DatabaseResetSheet(
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -56,21 +57,32 @@ internal fun DatabaseResetSheet(
                 style = MaterialTheme.typography.bodyMedium,
             )
             when (val phase = state.phase) {
-                DatabaseResetPhase.Idle -> Unit
-                DatabaseResetPhase.Resetting -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator()
+                DatabaseResetPhase.Idle -> {
+                    Unit
                 }
-                DatabaseResetPhase.Completed -> Text(
-                    stringResource(R.string.database_reset_success),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                is DatabaseResetPhase.Failed -> Text(
-                    text = phase.reason.message(),
-                    color = MaterialTheme.colorScheme.error,
-                )
+
+                DatabaseResetPhase.Resetting -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                DatabaseResetPhase.Completed -> {
+                    Text(
+                        stringResource(R.string.database_reset_success),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                is DatabaseResetPhase.Failed -> {
+                    Text(
+                        text = phase.reason.message(),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
@@ -117,10 +129,17 @@ internal fun DatabaseResetSheet(
 }
 
 @Composable
-private fun DatabaseResetFailure.message(): String = when (this) {
-    DatabaseResetFailure.SessionRestricted ->
-        stringResource(R.string.database_reset_error_session_restricted)
-    DatabaseResetFailure.AuthorizationDenied ->
-        stringResource(R.string.database_reset_error_authorization_denied)
-    is DatabaseResetFailure.Unexpected -> stringResource(message.resourceId)
-}
+private fun DatabaseResetFailure.message(): String =
+    when (this) {
+        DatabaseResetFailure.SessionRestricted -> {
+            stringResource(R.string.database_reset_error_session_restricted)
+        }
+
+        DatabaseResetFailure.AuthorizationDenied -> {
+            stringResource(R.string.database_reset_error_authorization_denied)
+        }
+
+        is DatabaseResetFailure.Unexpected -> {
+            stringResource(message.resourceId)
+        }
+    }

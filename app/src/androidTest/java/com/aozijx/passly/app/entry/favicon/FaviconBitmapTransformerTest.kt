@@ -28,9 +28,10 @@ class FaviconBitmapTransformerTest {
         val input = pngFile("wide.png", 4097, 1)
         val output = temporaryFolder.newFile("result.webp").apply(File::delete)
 
-        val error = assertThrows(FaviconImageException::class.java) {
-            transformer.transform(input, output, crop = null)
-        }
+        val error =
+            assertThrows(FaviconImageException::class.java) {
+                transformer.transform(input, output, crop = null)
+            }
 
         assertEquals(FaviconImageFailure.UNSUPPORTED_DIMENSIONS, error.reason)
         assertTrue(!output.exists())
@@ -51,10 +52,11 @@ class FaviconBitmapTransformerTest {
 
     @Test
     fun transform_cropProducesSquareAndPreservesAlpha() {
-        val bitmap = Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888).apply {
-            eraseColor(Color.TRANSPARENT)
-            setPixel(width / 2, height / 2, Color.RED)
-        }
+        val bitmap =
+            Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888).apply {
+                eraseColor(Color.TRANSPARENT)
+                setPixel(width / 2, height / 2, Color.RED)
+            }
         val input = writeBitmap("alpha.png", bitmap, Bitmap.CompressFormat.PNG)
         val output = temporaryFolder.newFile("alpha.webp")
 
@@ -100,30 +102,112 @@ class FaviconBitmapTransformerTest {
         decoded.recycle()
     }
 
-    private fun pngFile(name: String, width: Int, height: Int): File {
+    private fun pngFile(
+        name: String,
+        width: Int,
+        height: Int,
+    ): File {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.GREEN) }
         return writeBitmap(name, bitmap, Bitmap.CompressFormat.PNG)
     }
 
-    private fun writeBitmap(name: String, bitmap: Bitmap, format: Bitmap.CompressFormat): File {
+    private fun writeBitmap(
+        name: String,
+        bitmap: Bitmap,
+        format: Bitmap.CompressFormat,
+    ): File {
         val file = temporaryFolder.newFile(name)
         FileOutputStream(file).use { output -> assertTrue(bitmap.compress(format, 100, output)) }
         bitmap.recycle()
         return file
     }
 
-    private fun twoFrameGif(): ByteArray = byteArrayOf(
-        0x47, 0x49, 0x46, 0x38, 0x39, 0x61,
-        0x01, 0x00, 0x01, 0x00, 0x80.toByte(), 0x00, 0x00,
-        0x00, 0x00, 0x00, 0xff.toByte(), 0xff.toByte(), 0xff.toByte(),
-        0x21, 0xff.toByte(), 0x0b, 0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30,
-        0x03, 0x01, 0x00, 0x00, 0x00,
-        0x21, 0xf9.toByte(), 0x04, 0x00, 0x01, 0x00, 0x00, 0x00,
-        0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
-        0x02, 0x02, 0x44, 0x01, 0x00,
-        0x21, 0xf9.toByte(), 0x04, 0x00, 0x01, 0x00, 0x00, 0x00,
-        0x2c, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
-        0x02, 0x02, 0x4c, 0x01, 0x00,
-        0x3b,
-    )
+    private fun twoFrameGif(): ByteArray =
+        byteArrayOf(
+            0x47,
+            0x49,
+            0x46,
+            0x38,
+            0x39,
+            0x61,
+            0x01,
+            0x00,
+            0x01,
+            0x00,
+            0x80.toByte(),
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0xff.toByte(),
+            0xff.toByte(),
+            0xff.toByte(),
+            0x21,
+            0xff.toByte(),
+            0x0b,
+            0x4e,
+            0x45,
+            0x54,
+            0x53,
+            0x43,
+            0x41,
+            0x50,
+            0x45,
+            0x32,
+            0x2e,
+            0x30,
+            0x03,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x21,
+            0xf9.toByte(),
+            0x04,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x2c,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x02,
+            0x02,
+            0x44,
+            0x01,
+            0x00,
+            0x21,
+            0xf9.toByte(),
+            0x04,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x2c,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x02,
+            0x02,
+            0x4c,
+            0x01,
+            0x00,
+            0x3b,
+        )
 }

@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation
 
-import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

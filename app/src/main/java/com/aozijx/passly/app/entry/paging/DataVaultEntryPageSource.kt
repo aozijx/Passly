@@ -9,11 +9,13 @@ import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
-class DataVaultEntryPageSource @Inject constructor(
-    private val store: EntryPagingStore,
-) : VaultEntryPageSource {
-    override fun pages(
-        query: EntryListQuery,
-        config: PagingConfig,
-    ): Flow<PagingData<EntryListItem>> = store.pages(query, config)
-}
+class DataVaultEntryPageSource
+    @Inject
+    constructor(
+        private val store: EntryPagingStore,
+    ) : VaultEntryPageSource {
+        override fun pages(
+            query: EntryListQuery,
+            config: PagingConfig,
+        ): Flow<PagingData<EntryListItem>> = store.pages(query, config)
+    }

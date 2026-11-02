@@ -9,41 +9,70 @@ import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
-internal fun SwipeActionPreference.toDomain(): SwipeActionType = when (this) {
-    SwipeActionPreference.SWIPE_ACTION_DISABLED -> SwipeActionType.DISABLED
-    SwipeActionPreference.SWIPE_ACTION_DELETE -> SwipeActionType.DELETE
-    SwipeActionPreference.SWIPE_ACTION_COPY_PASSWORD -> SwipeActionType.COPY_PASSWORD
-    SwipeActionPreference.SWIPE_ACTION_COPY_USERNAME -> SwipeActionType.COPY_USERNAME
-    SwipeActionPreference.SWIPE_ACTION_UNSPECIFIED ->
-        throw IllegalArgumentException("Unsupported swipe action: $this")
-}
+internal fun SwipeActionPreference.toDomain(): SwipeActionType =
+    when (this) {
+        SwipeActionPreference.SWIPE_ACTION_DISABLED -> {
+            SwipeActionType.DISABLED
+        }
 
-internal fun SwipeActionType.toProto(): SwipeActionPreference = when (this) {
-    SwipeActionType.DISABLED -> SwipeActionPreference.SWIPE_ACTION_DISABLED
-    SwipeActionType.DELETE -> SwipeActionPreference.SWIPE_ACTION_DELETE
-    SwipeActionType.COPY_PASSWORD -> SwipeActionPreference.SWIPE_ACTION_COPY_PASSWORD
-    SwipeActionType.COPY_USERNAME -> SwipeActionPreference.SWIPE_ACTION_COPY_USERNAME
-}
+        SwipeActionPreference.SWIPE_ACTION_DELETE -> {
+            SwipeActionType.DELETE
+        }
 
-internal fun AutofillPresentationPreference.toDomain(): AutofillPresentation = when (this) {
-    AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING ->
-        AutofillPresentation.FLOATING
-    AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE ->
-        AutofillPresentation.SYSTEM_INLINE
-    AutofillPresentationPreference.AUTOFILL_PRESENTATION_BOTTOM_SHEET ->
-        AutofillPresentation.BOTTOM_SHEET
-    AutofillPresentationPreference.AUTOFILL_PRESENTATION_UNSPECIFIED ->
-        throw IllegalArgumentException("Unsupported autofill presentation: $this")
-}
+        SwipeActionPreference.SWIPE_ACTION_COPY_PASSWORD -> {
+            SwipeActionType.COPY_PASSWORD
+        }
 
-internal fun AutofillPresentation.toProto(): AutofillPresentationPreference = when (this) {
-    AutofillPresentation.FLOATING ->
-        AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING
-    AutofillPresentation.SYSTEM_INLINE ->
-        AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE
-    AutofillPresentation.BOTTOM_SHEET ->
-        AutofillPresentationPreference.AUTOFILL_PRESENTATION_BOTTOM_SHEET
-}
+        SwipeActionPreference.SWIPE_ACTION_COPY_USERNAME -> {
+            SwipeActionType.COPY_USERNAME
+        }
+
+        SwipeActionPreference.SWIPE_ACTION_UNSPECIFIED -> {
+            throw IllegalArgumentException("Unsupported swipe action: $this")
+        }
+    }
+
+internal fun SwipeActionType.toProto(): SwipeActionPreference =
+    when (this) {
+        SwipeActionType.DISABLED -> SwipeActionPreference.SWIPE_ACTION_DISABLED
+        SwipeActionType.DELETE -> SwipeActionPreference.SWIPE_ACTION_DELETE
+        SwipeActionType.COPY_PASSWORD -> SwipeActionPreference.SWIPE_ACTION_COPY_PASSWORD
+        SwipeActionType.COPY_USERNAME -> SwipeActionPreference.SWIPE_ACTION_COPY_USERNAME
+    }
+
+internal fun AutofillPresentationPreference.toDomain(): AutofillPresentation =
+    when (this) {
+        AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING -> {
+            AutofillPresentation.FLOATING
+        }
+
+        AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE -> {
+            AutofillPresentation.SYSTEM_INLINE
+        }
+
+        AutofillPresentationPreference.AUTOFILL_PRESENTATION_BOTTOM_SHEET -> {
+            AutofillPresentation.BOTTOM_SHEET
+        }
+
+        AutofillPresentationPreference.AUTOFILL_PRESENTATION_UNSPECIFIED -> {
+            throw IllegalArgumentException("Unsupported autofill presentation: $this")
+        }
+    }
+
+internal fun AutofillPresentation.toProto(): AutofillPresentationPreference =
+    when (this) {
+        AutofillPresentation.FLOATING -> {
+            AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING
+        }
+
+        AutofillPresentation.SYSTEM_INLINE -> {
+            AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE
+        }
+
+        AutofillPresentation.BOTTOM_SHEET -> {
+            AutofillPresentationPreference.AUTOFILL_PRESENTATION_BOTTOM_SHEET
+        }
+    }
 
 internal fun readInteraction(p: InteractionPreferences): InteractionSettings =
     InteractionSettings(
@@ -63,8 +92,9 @@ internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
         includeOtp = p.includeOtp,
         savePromptsEnabled = p.savePromptsEnabled,
         allowUnmatchedSuggestions = p.allowUnmatchedSuggestions,
-        maxSuggestions = p.maxSuggestions.coerceIn(
-            AutofillSettings.MIN_SUGGESTIONS,
-            AutofillSettings.MAX_SUGGESTIONS,
-        ),
+        maxSuggestions =
+            p.maxSuggestions.coerceIn(
+                AutofillSettings.MIN_SUGGESTIONS,
+                AutofillSettings.MAX_SUGGESTIONS,
+            ),
     )

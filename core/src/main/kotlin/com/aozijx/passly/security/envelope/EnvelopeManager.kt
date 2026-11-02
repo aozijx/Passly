@@ -22,7 +22,7 @@ object EnvelopeManager {
         dek: ByteArray,
         wrappingKey: SecretKeySpec,
         salt: ByteArray,
-        algorithm: KdfAlgorithm
+        algorithm: KdfAlgorithm,
     ): KeyEnvelope {
         val iv = ByteArray(IV_LENGTH).also(random::nextBytes)
         val cipher = Cipher.getInstance(ALGORITHM)
@@ -33,27 +33,33 @@ object EnvelopeManager {
             iv = iv,
             salt = salt,
             algorithm = algorithm,
-            version = KeyEnvelope.VERSION_CURRENT
+            version = KeyEnvelope.VERSION_CURRENT,
         )
     }
 
     fun wrapWithCipher(
         type: EnvelopeType,
         dek: ByteArray,
-        cipher: Cipher
-    ): KeyEnvelope = KeyEnvelope(
-        type = type,
-        ciphertext = cipher.doFinal(dek),
-        iv = cipher.iv,
-        salt = ByteArray(0),
-        algorithm = KdfAlgorithm.NONE,
-        version = KeyEnvelope.VERSION_CURRENT
-    )
+        cipher: Cipher,
+    ): KeyEnvelope =
+        KeyEnvelope(
+            type = type,
+            ciphertext = cipher.doFinal(dek),
+            iv = cipher.iv,
+            salt = ByteArray(0),
+            algorithm = KdfAlgorithm.NONE,
+            version = KeyEnvelope.VERSION_CURRENT,
+        )
 
-    fun unwrap(envelope: KeyEnvelope, cipher: Cipher): ByteArray =
-        cipher.doFinal(envelope.ciphertext)
+    fun unwrap(
+        envelope: KeyEnvelope,
+        cipher: Cipher,
+    ): ByteArray = cipher.doFinal(envelope.ciphertext)
 
-    fun verify(envelope: KeyEnvelope, key: SecretKeySpec): Boolean =
+    fun verify(
+        envelope: KeyEnvelope,
+        key: SecretKeySpec,
+    ): Boolean =
         try {
             val cipher = Cipher.getInstance(ALGORITHM)
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, envelope.iv))

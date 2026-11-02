@@ -12,7 +12,7 @@ fun AppPasswordActionDialog(
     isBusy: Boolean = false,
     onDismiss: () -> Unit,
     onChangePassword: () -> Unit,
-    onDisablePassword: () -> Unit
+    onDisablePassword: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = { if (!isBusy) onDismiss() },
@@ -27,6 +27,6 @@ fun AppPasswordActionDialog(
             TextButton(onClick = onDisablePassword, enabled = !isBusy) {
                 Text(stringResource(R.string.settings_app_password_disable_action))
             }
-        }
+        },
     )
 }

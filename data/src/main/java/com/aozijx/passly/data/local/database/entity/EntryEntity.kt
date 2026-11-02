@@ -16,7 +16,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
         Index(value = ["deletedAt", "title"]),
         Index(value = ["primaryUrl"]),
         Index(value = ["iconCustomReference"]),
-    ]
+    ],
 )
 data class EntryEntity(
     @PrimaryKey
@@ -39,5 +39,5 @@ data class EntryEntity(
     val expiresAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val deletedAt: Long? = null
+    val deletedAt: Long? = null,
 )

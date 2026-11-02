@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,12 +29,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionComparisonUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
@@ -53,11 +53,12 @@ fun RevisionHistorySheet(
     val comparison = (model as? DetailRevisionSheetUiModel.ComparisonPage)?.content
     val restore = (comparison as? DetailRevisionComparisonUiState.Ready)?.restore
     val dismissAllowed = rememberUpdatedState(restore != DetailRevisionRestoreUiState.Restoring)
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed.value },
-    )
+    val sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+            confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed.value },
+        )
     ModalBottomSheet(
         onDismissRequest = {
             if (dismissAllowed.value) onAction(DetailUiAction.DismissRevisionHistory)
@@ -68,10 +69,17 @@ fun RevisionHistorySheet(
         tonalElevation = 0.dp,
     ) {
         when (model) {
-            DetailRevisionSheetUiModel.Hidden -> Unit
-            is DetailRevisionSheetUiModel.ListPage -> RevisionList(model.content, onAction)
-            is DetailRevisionSheetUiModel.ComparisonPage ->
+            DetailRevisionSheetUiModel.Hidden -> {
+                Unit
+            }
+
+            is DetailRevisionSheetUiModel.ListPage -> {
+                RevisionList(model.content, onAction)
+            }
+
+            is DetailRevisionSheetUiModel.ComparisonPage -> {
                 RevisionComparison(model.content, onAction)
+            }
         }
     }
     if (restore == DetailRevisionRestoreUiState.Confirming) {
@@ -107,17 +115,23 @@ private fun RevisionList(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         )
         when (content) {
-            DetailRevisionListUiState.Loading -> Loading()
-            DetailRevisionListUiState.Failed -> Column {
-                Text(
-                    text = stringResource(R.string.revision_load_failed),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(24.dp),
-                )
-                TextButton(onClick = { onAction(DetailUiAction.RetryRevisionHistory) }) {
-                    Text(stringResource(R.string.retry))
+            DetailRevisionListUiState.Loading -> {
+                Loading()
+            }
+
+            DetailRevisionListUiState.Failed -> {
+                Column {
+                    Text(
+                        text = stringResource(R.string.revision_load_failed),
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                    TextButton(onClick = { onAction(DetailUiAction.RetryRevisionHistory) }) {
+                        Text(stringResource(R.string.retry))
+                    }
                 }
             }
+
             is DetailRevisionListUiState.Ready -> {
                 if (content.revisions.isEmpty()) {
                     Text(
@@ -160,8 +174,9 @@ private fun RevisionComparison(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val restoreInProgress = (content as? DetailRevisionComparisonUiState.Ready)
-                ?.restore == DetailRevisionRestoreUiState.Restoring
+            val restoreInProgress =
+                (content as? DetailRevisionComparisonUiState.Ready)
+                    ?.restore == DetailRevisionRestoreUiState.Restoring
             IconButton(
                 enabled = !restoreInProgress,
                 onClick = { onAction(DetailUiAction.RevisionBack) },
@@ -175,20 +190,29 @@ private fun RevisionComparison(
             )
         }
         when (content) {
-            DetailRevisionComparisonUiState.Loading -> Loading()
-            DetailRevisionComparisonUiState.Failed -> Text(
-                text = stringResource(R.string.revision_load_failed),
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(24.dp),
-            )
+            DetailRevisionComparisonUiState.Loading -> {
+                Loading()
+            }
+
+            DetailRevisionComparisonUiState.Failed -> {
+                Text(
+                    text = stringResource(R.string.revision_load_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(24.dp),
+                )
+            }
+
             is DetailRevisionComparisonUiState.Ready -> {
                 LazyColumn(
                     modifier = Modifier.weight(1f, fill = false).testTag("revision-comparison-list"),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(content.differences, key = { it.field.toString() }) { difference ->
-                        RevisionDifferenceRow(difference, onAction,
-                            revealEnabled = content.restore == DetailRevisionRestoreUiState.Idle)
+                        RevisionDifferenceRow(
+                            difference,
+                            onAction,
+                            revealEnabled = content.restore == DetailRevisionRestoreUiState.Idle,
+                        )
                     }
                 }
                 Button(

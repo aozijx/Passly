@@ -22,90 +22,90 @@ internal enum class SettingsGroup(
     @param:StringRes val titleRes: Int,
     @param:StringRes val subtitleRes: Int,
     val icon: ImageVector,
-    val routeKey: String
+    val routeKey: String,
 ) {
     APPEARANCE(
         sectionTitleRes = R.string.settings_section_appearance,
         icon = Icons.Default.Palette,
         titleRes = R.string.settings_page_appearance,
         subtitleRes = R.string.settings_page_appearance_summary,
-        routeKey = "settings/appearance"
+        routeKey = "settings/appearance",
     ),
     INTERFACE(
         sectionTitleRes = R.string.settings_section_appearance,
         icon = Icons.Default.SpaceDashboard,
         titleRes = R.string.settings_page_interface,
         subtitleRes = R.string.settings_page_interface_summary,
-        routeKey = "settings/interface"
+        routeKey = "settings/interface",
     ),
     SECURITY(
         sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Lock,
         titleRes = R.string.settings_page_security,
         subtitleRes = R.string.settings_page_security_summary,
-        routeKey = "settings/security"
+        routeKey = "settings/security",
     ),
     PRIVACY(
         sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Visibility,
         titleRes = R.string.settings_page_privacy,
         subtitleRes = R.string.settings_page_privacy_summary,
-        routeKey = "settings/privacy"
+        routeKey = "settings/privacy",
     ),
     PERMISSIONS(
         sectionTitleRes = R.string.settings_section_security,
         icon = Icons.Default.Security,
         titleRes = R.string.settings_page_permissions,
         subtitleRes = R.string.settings_page_permissions_summary,
-        routeKey = "settings/permissions"
+        routeKey = "settings/permissions",
     ),
     INTERACTION(
         sectionTitleRes = R.string.settings_section_features,
         icon = Icons.Default.TouchApp,
         titleRes = R.string.settings_page_interaction,
         subtitleRes = R.string.settings_page_interaction_summary,
-        routeKey = "settings/interaction"
+        routeKey = "settings/interaction",
     ),
     AUTOFILL(
         sectionTitleRes = R.string.settings_section_features,
         icon = Icons.Default.VpnKey,
         titleRes = R.string.settings_page_autofill,
         subtitleRes = R.string.settings_page_autofill_summary,
-        routeKey = "settings/autofill"
+        routeKey = "settings/autofill",
     ),
     DATA_MANAGEMENT(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Storage,
         titleRes = R.string.settings_page_data,
         subtitleRes = R.string.settings_page_data_summary,
-        routeKey = "settings/data"
+        routeKey = "settings/data",
     ),
     BACKUP_RESTORE(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Restore,
         titleRes = R.string.settings_page_backup_restore,
         subtitleRes = R.string.settings_page_backup_restore_summary,
-        routeKey = "settings/backup_restore"
+        routeKey = "settings/backup_restore",
     ),
     RECOVERY_CODE(
         sectionTitleRes = R.string.settings_section_data,
         icon = Icons.Default.Key,
         titleRes = R.string.recovery_code_label,
         subtitleRes = R.string.settings_page_recovery_code_summary,
-        routeKey = "settings/recovery_code"
+        routeKey = "settings/recovery_code",
     ),
     NOTIFICATIONS(
         sectionTitleRes = R.string.settings_section_other,
         icon = Icons.Default.Notifications,
         titleRes = R.string.settings_page_notifications,
         subtitleRes = R.string.settings_page_notifications_summary,
-        routeKey = "settings/notifications"
+        routeKey = "settings/notifications",
     ),
     ABOUT(
         sectionTitleRes = R.string.settings_section_other,
         icon = Icons.Default.Info,
         titleRes = R.string.settings_page_about,
         subtitleRes = R.string.settings_page_about_summary,
-        routeKey = "settings/about"
-    )
+        routeKey = "settings/about",
+    ),
 }

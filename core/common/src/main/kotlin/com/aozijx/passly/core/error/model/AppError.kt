@@ -43,9 +43,9 @@ class Unexpected(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-    code = UNEXPECTED,
-    recoverable = false,
-    severity = ErrorSeverity.ERROR,
-    errorId = errorId,
-    throwableType = throwableType,
-)
+        code = UNEXPECTED,
+        recoverable = false,
+        severity = ErrorSeverity.ERROR,
+        errorId = errorId,
+        throwableType = throwableType,
+    )

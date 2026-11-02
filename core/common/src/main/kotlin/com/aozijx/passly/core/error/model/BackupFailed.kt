@@ -8,9 +8,9 @@ class BackupFailed(
     errorId: String = UuidCreator.getTimeOrderedEpoch().toString(),
     throwableType: String? = null,
 ) : DataError(
-    code = BACKUP_FAILED,
-    recoverable = true,
-    severity = ErrorSeverity.ERROR,
-    errorId = errorId,
-    throwableType = throwableType,
-)
+        code = BACKUP_FAILED,
+        recoverable = true,
+        severity = ErrorSeverity.ERROR,
+        errorId = errorId,
+        throwableType = throwableType,
+    )

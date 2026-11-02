@@ -4,7 +4,7 @@ enum class PersistedDirectoryAccessStatus {
     NOT_CONFIGURED,
     GRANTED,
     GRANT_MISSING,
-    UNAVAILABLE
+    UNAVAILABLE,
 }
 
 fun resolvePersistedDirectoryAccess(
@@ -12,9 +12,10 @@ fun resolvePersistedDirectoryAccess(
     uriValid: Boolean,
     hasWriteGrant: Boolean,
     providerAvailable: Boolean,
-): PersistedDirectoryAccessStatus = when {
-    !configured -> PersistedDirectoryAccessStatus.NOT_CONFIGURED
-    !uriValid || !providerAvailable -> PersistedDirectoryAccessStatus.UNAVAILABLE
-    !hasWriteGrant -> PersistedDirectoryAccessStatus.GRANT_MISSING
-    else -> PersistedDirectoryAccessStatus.GRANTED
-}
+): PersistedDirectoryAccessStatus =
+    when {
+        !configured -> PersistedDirectoryAccessStatus.NOT_CONFIGURED
+        !uriValid || !providerAvailable -> PersistedDirectoryAccessStatus.UNAVAILABLE
+        !hasWriteGrant -> PersistedDirectoryAccessStatus.GRANT_MISSING
+        else -> PersistedDirectoryAccessStatus.GRANTED
+    }

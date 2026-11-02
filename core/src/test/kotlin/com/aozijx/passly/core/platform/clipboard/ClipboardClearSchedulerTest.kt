@@ -1,8 +1,11 @@
 package com.aozijx.passly.core.platform.clipboard
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -14,49 +17,48 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClipboardClearSchedulerTest {
+    @Test
+    fun `scheduled token is cleared only after delay`() =
+        runTest {
+            val cleared = mutableListOf<String>()
+            val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
+
+            scheduler.replace("first", 30_000, publish = {}) { cleared += it }
+            advanceTimeBy(29_999)
+            assertEquals(emptyList<String>(), cleared)
+
+            advanceUntilIdle()
+            assertEquals(listOf("first"), cleared)
+        }
 
     @Test
-    fun `scheduled token is cleared only after delay`() = runTest {
-        val cleared = mutableListOf<String>()
-        val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
+    fun `new replacement replaces previous token`() =
+        runTest {
+            val cleared = mutableListOf<String>()
+            val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
 
-        scheduler.replace("first", 30_000, publish = {}) { cleared += it }
-        advanceTimeBy(29_999)
-        assertEquals(emptyList<String>(), cleared)
+            scheduler.replace("first", 30_000, publish = {}) { cleared += it }
+            scheduler.replace("second", 15_000, publish = {}) { cleared += it }
+            advanceUntilIdle()
 
-        advanceUntilIdle()
-        assertEquals(listOf("first"), cleared)
-    }
-
-    @Test
-    fun `new replacement replaces previous token`() = runTest {
-        val cleared = mutableListOf<String>()
-        val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
-
-        scheduler.replace("first", 30_000, publish = {}) { cleared += it }
-        scheduler.replace("second", 15_000, publish = {}) { cleared += it }
-        advanceUntilIdle()
-
-        assertEquals(listOf("second"), cleared)
-    }
+            assertEquals(listOf("second"), cleared)
+        }
 
     @Test
-    fun `cancel prevents pending clear`() = runTest {
-        val cleared = mutableListOf<String>()
-        val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
+    fun `cancel prevents pending clear`() =
+        runTest {
+            val cleared = mutableListOf<String>()
+            val scheduler = ClipboardClearScheduler(this, StandardTestDispatcher(testScheduler))
 
-        scheduler.replace("first", 15_000, publish = {}) { cleared += it }
-        scheduler.cancel()
-        advanceUntilIdle()
+            scheduler.replace("first", 15_000, publish = {}) { cleared += it }
+            scheduler.cancel()
+            advanceUntilIdle()
 
-        assertEquals(emptyList<String>(), cleared)
-    }
+            assertEquals(emptyList<String>(), cleared)
+        }
 
     @Test
     fun `interleaved copies do not cancel the active clip expiration`() {
@@ -68,28 +70,30 @@ class ClipboardClearSchedulerTest {
         val releaseFirst = CountDownLatch(1)
         val secondCopyStarted = CountDownLatch(1)
 
-        val first = Thread {
-            scheduler.replace(
-                ownershipToken = "first",
-                delayMillis = 10_000,
-                publish = {
-                    activeToken.set("first")
-                    firstPublished.countDown()
-                    releaseFirst.await()
-                },
-                clear = { token -> if (activeToken.compareAndSet(token, null)) cleared.countDown() },
-            )
-        }
-        val second = Thread {
-            firstPublished.await()
-            secondCopyStarted.countDown()
-            scheduler.replace(
-                ownershipToken = "second",
-                delayMillis = 20,
-                publish = { activeToken.set("second") },
-                clear = { token -> if (activeToken.compareAndSet(token, null)) cleared.countDown() },
-            )
-        }
+        val first =
+            Thread {
+                scheduler.replace(
+                    ownershipToken = "first",
+                    delayMillis = 10_000,
+                    publish = {
+                        activeToken.set("first")
+                        firstPublished.countDown()
+                        releaseFirst.await()
+                    },
+                    clear = { token -> if (activeToken.compareAndSet(token, null)) cleared.countDown() },
+                )
+            }
+        val second =
+            Thread {
+                firstPublished.await()
+                secondCopyStarted.countDown()
+                scheduler.replace(
+                    ownershipToken = "second",
+                    delayMillis = 20,
+                    publish = { activeToken.set("second") },
+                    clear = { token -> if (activeToken.compareAndSet(token, null)) cleared.countDown() },
+                )
+            }
 
         try {
             first.start()
@@ -131,19 +135,20 @@ class ClipboardClearSchedulerTest {
                 }
             },
         )
-        val second = Thread {
-            oldTimerCheckedOwnership.await()
-            newCopyStarted.countDown()
-            scheduler.replace(
-                ownershipToken = "second",
-                delayMillis = 10_000,
-                publish = {
-                    activeToken.set("second")
-                    newClipPublished.countDown()
-                },
-                clear = { token -> activeToken.compareAndSet(token, null) },
-            )
-        }
+        val second =
+            Thread {
+                oldTimerCheckedOwnership.await()
+                newCopyStarted.countDown()
+                scheduler.replace(
+                    ownershipToken = "second",
+                    delayMillis = 10_000,
+                    publish = {
+                        activeToken.set("second")
+                        newClipPublished.countDown()
+                    },
+                    clear = { token -> activeToken.compareAndSet(token, null) },
+                )
+            }
 
         try {
             second.start()

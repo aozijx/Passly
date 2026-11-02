@@ -24,8 +24,7 @@ internal class VaultOtpStateProviderBindings(
         this.onUnsubscribe = onUnsubscribe
     }
 
-    override fun state(entryId: String): Flow<VaultOtpUiState?> =
-        states.map { current -> current[entryId]?.toUiModel() }
+    override fun state(entryId: String): Flow<VaultOtpUiState?> = states.map { current -> current[entryId]?.toUiModel() }
 
     override fun subscribe(entryId: String) = onSubscribe(entryId)
 

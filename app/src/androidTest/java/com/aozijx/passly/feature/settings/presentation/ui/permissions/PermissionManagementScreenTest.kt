@@ -31,22 +31,25 @@ class PermissionManagementScreenTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         setContent(
             actions = actions,
-            directory = BackupDirectoryUiModel(
-                label = "backup",
-                status = PersistedDirectoryAccessStatus.GRANTED,
-            ),
+            directory =
+                BackupDirectoryUiModel(
+                    label = "backup",
+                    status = PersistedDirectoryAccessStatus.GRANTED,
+                ),
         )
 
-        composeRule.onNodeWithText(context.getString(R.string.settings_permissions_camera))
+        composeRule
+            .onNodeWithText(context.getString(R.string.settings_permissions_camera))
             .performClick()
 
         assertEquals(
             listOf(PermissionManagementScreenAction.RuntimePermissionSelected(RuntimePermission.CAMERA)),
             actions,
         )
-        composeRule.onNodeWithText(
-            context.getString(R.string.settings_permissions_backup_manage),
-        ).performClick()
+        composeRule
+            .onNodeWithText(
+                context.getString(R.string.settings_permissions_backup_manage),
+            ).performClick()
 
         assertEquals(
             listOf(
@@ -56,36 +59,41 @@ class PermissionManagementScreenTest {
             actions,
         )
 
-        composeRule.onNodeWithText(
-            context.getString(R.string.settings_permissions_capability_network),
-        ).assertHasNoClickAction()
+        composeRule
+            .onNodeWithText(
+                context.getString(R.string.settings_permissions_capability_network),
+            ).assertHasNoClickAction()
     }
 
     private fun setContent(
         actions: MutableList<PermissionManagementScreenAction>,
-        directory: BackupDirectoryUiModel = BackupDirectoryUiModel(
-            status = PersistedDirectoryAccessStatus.NOT_CONFIGURED,
-        ),
+        directory: BackupDirectoryUiModel =
+            BackupDirectoryUiModel(
+                status = PersistedDirectoryAccessStatus.NOT_CONFIGURED,
+            ),
     ) {
         composeRule.setContent {
             MaterialTheme {
                 PermissionManagementScreen(
-                    state = PermissionManagementUiState(
-                        runtimePermissions = listOf(
-                            RuntimePermissionUiModel(
-                                permission = RuntimePermission.CAMERA,
-                                access = RuntimePermissionAccess.REQUESTABLE,
-                                action = RuntimePermissionUiAction.REQUEST,
-                            ),
+                    state =
+                        PermissionManagementUiState(
+                            runtimePermissions =
+                                listOf(
+                                    RuntimePermissionUiModel(
+                                        permission = RuntimePermission.CAMERA,
+                                        access = RuntimePermissionAccess.REQUESTABLE,
+                                        action = RuntimePermissionUiAction.REQUEST,
+                                    ),
+                                ),
+                            backupDirectory = directory,
+                            manifestCapabilities =
+                                listOf(
+                                    ManifestCapabilityUiModel(
+                                        capability = ManifestCapability.INTERNET,
+                                        interactive = false,
+                                    ),
+                                ),
                         ),
-                        backupDirectory = directory,
-                        manifestCapabilities = listOf(
-                            ManifestCapabilityUiModel(
-                                capability = ManifestCapability.INTERNET,
-                                interactive = false,
-                            ),
-                        ),
-                    ),
                     onAction = actions::add,
                     onBack = {},
                 )

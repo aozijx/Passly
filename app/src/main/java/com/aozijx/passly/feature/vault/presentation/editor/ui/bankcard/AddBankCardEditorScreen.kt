@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.bankcard
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,6 +9,7 @@ import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,22 +23,22 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.material3.OutlinedTextField
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardSavePhase
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
-import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
+import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.domain.entry.policy.CardNumberInvalidReason
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardSavePhase
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,21 +126,25 @@ fun AddBankCardEditorScreen(
                 visualTransformation = if (form.isCardNumberVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 isError = form.cardNumberValidation is CardNumberValidationResult.Invalid,
-                supportingText = when (val validation = form.cardNumberValidation) {
-                    is CardNumberValidationResult.Invalid -> {
-                        { Text(validation.reason.label()) }
-                    }
-                    CardNumberValidationResult.Empty,
-                    is CardNumberValidationResult.Valid,
-                    -> null
-                },
+                supportingText =
+                    when (val validation = form.cardNumberValidation) {
+                        is CardNumberValidationResult.Invalid -> {
+                            { Text(validation.reason.label()) }
+                        }
+
+                        CardNumberValidationResult.Empty,
+                        is CardNumberValidationResult.Valid,
+                        -> {
+                            null
+                        }
+                    },
                 trailingIcon = {
                     SensitiveFieldVisibilityButton(
                         fieldLabelRes = R.string.card_number,
                         visible = form.isCardNumberVisible,
                         onVisibilityChanged = { onAction(AddBankCardAction.CardNumberVisibilityChanged(it)) },
                     )
-                }
+                },
             )
             NextFocusTextField(
                 value = form.paymentPin,
@@ -154,16 +158,19 @@ fun AddBankCardEditorScreen(
                         visible = form.isPinVisible,
                         onVisibilityChanged = { onAction(AddBankCardAction.PinVisibilityChanged(it)) },
                     )
-                }
+                },
             )
             NextFocusTextField(
                 value = form.cardCvv,
                 onValueChange = { onAction(AddBankCardAction.CvvChanged(it)) },
                 label = stringResource(R.string.card_cvv),
                 isError = !form.isCvvValid,
-                supportingText = if (!form.isCvvValid) {
-                    { Text(stringResource(R.string.vault_card_cvv_invalid)) }
-                } else null,
+                supportingText =
+                    if (!form.isCvvValid) {
+                        { Text(stringResource(R.string.vault_card_cvv_invalid)) }
+                    } else {
+                        null
+                    },
                 visualTransformation = if (form.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
                 trailingIcon = {
@@ -172,7 +179,7 @@ fun AddBankCardEditorScreen(
                         visible = form.isCvvVisible,
                         onVisibilityChanged = { onAction(AddBankCardAction.CvvVisibilityChanged(it)) },
                     )
-                }
+                },
             )
             CardExpiryField(
                 selection = form.cardExpiry,
@@ -201,14 +208,15 @@ fun AddBankCardEditorScreen(
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (state.canSave) {
-                            focusManager.clearFocus(force = true)
-                            save()
-                        }
-                    },
-                ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            if (state.canSave) {
+                                focusManager.clearFocus(force = true)
+                                save()
+                            }
+                        },
+                    ),
             )
         }
     }
@@ -227,17 +235,20 @@ private fun CardTypeDropdown(
         onExpandedChange = { expanded = it },
     ) {
         OutlinedTextField(
-            value = when (selected) {
-                CardTypeSelection.Unselected -> ""
-                is CardTypeSelection.Selected -> selected.type.label()
-            },
+            value =
+                when (selected) {
+                    CardTypeSelection.Unselected -> ""
+                    is CardTypeSelection.Selected -> selected.type.label()
+                },
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).excludeFromAutofill(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .excludeFromAutofill(),
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -261,10 +272,11 @@ private fun CardTypeDropdown(
 private fun CardType.label(): String = stringResource(labelRes)
 
 @Composable
-private fun CardNumberInvalidReason.label(): String = stringResource(
-    when (this) {
-        CardNumberInvalidReason.InvalidLength -> R.string.card_number_invalid_length
-        CardNumberInvalidReason.InvalidCharacters -> R.string.card_number_invalid_characters
-        CardNumberInvalidReason.ChecksumFailed -> R.string.card_number_checksum_failed
-    },
-)
+private fun CardNumberInvalidReason.label(): String =
+    stringResource(
+        when (this) {
+            CardNumberInvalidReason.InvalidLength -> R.string.card_number_invalid_length
+            CardNumberInvalidReason.InvalidCharacters -> R.string.card_number_invalid_characters
+            CardNumberInvalidReason.ChecksumFailed -> R.string.card_number_checksum_failed
+        },
+    )

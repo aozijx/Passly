@@ -8,7 +8,6 @@ import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.BeginGetCredentialResponse
 import androidx.credentials.provider.BeginGetPasswordOption
 import androidx.credentials.provider.CredentialEntry
-import dagger.hilt.android.qualifiers.ApplicationContext
 import com.aozijx.passly.R
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
@@ -19,6 +18,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerUnlockResult
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,159 +27,182 @@ import javax.inject.Singleton
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @Singleton
-class CredentialBeginGetHandler @Inject constructor(
-    private val flow: CredentialManagerFlow,
-    private val adapter: CredentialPlatformAdapter,
-    private val pendingIntentFactory: CredentialPendingIntentFactory,
-    private val logger: Logger,
-    private val traceContinuations: TraceContinuationStore,
-    @param:ApplicationContext private val context: Context,
-) {
-    suspend fun resolve(
-        request: BeginGetCredentialRequest,
-    ): BeginGetCredentialResponse {
-        val discoveryStartedAt = monotonicTimeMs()
-        val passwordOptions = request.beginGetCredentialOptions
-            .filterIsInstance<BeginGetPasswordOption>()
-        if (passwordOptions.isEmpty()) {
-            logUnavailable(Reasons.NoFillableFields)
-            return BeginGetCredentialResponse()
-        }
-
-        val packageName =
-            CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
-                ?: run {
-                    logUnavailable(Reasons.NoFillableFields)
-                    return BeginGetCredentialResponse()
-                }
-        return buildResponse(
-            discovery = flow.beginGet(adapter.buildRequest(packageName)),
-            passwordOptions = passwordOptions,
-            context = context,
-            includeUnlockAction = true,
-            discoveryStartedAt = discoveryStartedAt,
-        )
-    }
-
-    suspend fun resolveAfterUnlock(
-        request: BeginGetCredentialRequest,
-        interactionId: AutofillInteractionId,
-    ): CredentialUnlockResponse {
-        val discoveryStartedAt = monotonicTimeMs()
-        val passwordOptions = request.beginGetCredentialOptions
-            .filterIsInstance<BeginGetPasswordOption>()
-        if (passwordOptions.isEmpty()) return CredentialUnlockResponse.Unavailable
-        val packageName = CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
-            ?: return CredentialUnlockResponse.Unavailable
-
-        return when (
-            val result = flow.unlockAndRediscover(
-                interactionId,
-                adapter.buildRequest(packageName),
-            )
-        ) {
-            is CredentialManagerUnlockResult.NotAuthorized -> {
-                CredentialUnlockResponse.NotAuthorized(result)
+class CredentialBeginGetHandler
+    @Inject
+    constructor(
+        private val flow: CredentialManagerFlow,
+        private val adapter: CredentialPlatformAdapter,
+        private val pendingIntentFactory: CredentialPendingIntentFactory,
+        private val logger: Logger,
+        private val traceContinuations: TraceContinuationStore,
+        @param:ApplicationContext private val context: Context,
+    ) {
+        suspend fun resolve(request: BeginGetCredentialRequest): BeginGetCredentialResponse {
+            val discoveryStartedAt = monotonicTimeMs()
+            val passwordOptions =
+                request.beginGetCredentialOptions
+                    .filterIsInstance<BeginGetPasswordOption>()
+            if (passwordOptions.isEmpty()) {
+                logUnavailable(Reasons.NoFillableFields)
+                return BeginGetCredentialResponse()
             }
 
-            is CredentialManagerUnlockResult.Rediscovered -> CredentialUnlockResponse.Ready(
-                buildResponse(
-                    discovery = result.discovery,
-                    passwordOptions = passwordOptions,
-                    context = context,
-                    includeUnlockAction = false,
-                    discoveryStartedAt = discoveryStartedAt,
-                ),
+            val packageName =
+                CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
+                    ?: run {
+                        logUnavailable(Reasons.NoFillableFields)
+                        return BeginGetCredentialResponse()
+                    }
+            return buildResponse(
+                discovery = flow.beginGet(adapter.buildRequest(packageName)),
+                passwordOptions = passwordOptions,
+                context = context,
+                includeUnlockAction = true,
+                discoveryStartedAt = discoveryStartedAt,
             )
         }
-    }
 
-    private suspend fun buildResponse(
-        discovery: AutofillDiscoveryOutcome,
-        passwordOptions: List<BeginGetPasswordOption>,
-        context: Context,
-        includeUnlockAction: Boolean,
-        discoveryStartedAt: Long,
-    ): BeginGetCredentialResponse = when (discovery) {
-        is AutofillDiscoveryOutcome.RequiresUnlock -> if (includeUnlockAction) {
-                traceContinuations.capture(discovery.snapshot.id.value)
-                logger.log(
-                    LogStatements.Autofill.discoveryCompleted(
-                        monotonicTimeMs() - discoveryStartedAt,
-                    ),
-                )
-                BeginGetCredentialResponse(
-                    authenticationActions = listOf(
-                        AuthenticationAction(
-                            context.getString(R.string.vault_locked_title),
-                            pendingIntentFactory.createUnlockPendingIntent(
-                                context,
-                                discovery.snapshot.id,
+        suspend fun resolveAfterUnlock(
+            request: BeginGetCredentialRequest,
+            interactionId: AutofillInteractionId,
+        ): CredentialUnlockResponse {
+            val discoveryStartedAt = monotonicTimeMs()
+            val passwordOptions =
+                request.beginGetCredentialOptions
+                    .filterIsInstance<BeginGetPasswordOption>()
+            if (passwordOptions.isEmpty()) return CredentialUnlockResponse.Unavailable
+            val packageName =
+                CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
+                    ?: return CredentialUnlockResponse.Unavailable
+
+            return when (
+                val result =
+                    flow.unlockAndRediscover(
+                        interactionId,
+                        adapter.buildRequest(packageName),
+                    )
+            ) {
+                is CredentialManagerUnlockResult.NotAuthorized -> {
+                    CredentialUnlockResponse.NotAuthorized(result)
+                }
+
+                is CredentialManagerUnlockResult.Rediscovered -> {
+                    CredentialUnlockResponse.Ready(
+                        buildResponse(
+                            discovery = result.discovery,
+                            passwordOptions = passwordOptions,
+                            context = context,
+                            includeUnlockAction = false,
+                            discoveryStartedAt = discoveryStartedAt,
+                        ),
+                    )
+                }
+            }
+        }
+
+        private suspend fun buildResponse(
+            discovery: AutofillDiscoveryOutcome,
+            passwordOptions: List<BeginGetPasswordOption>,
+            context: Context,
+            includeUnlockAction: Boolean,
+            discoveryStartedAt: Long,
+        ): BeginGetCredentialResponse =
+            when (discovery) {
+                is AutofillDiscoveryOutcome.RequiresUnlock -> {
+                    if (includeUnlockAction) {
+                        traceContinuations.capture(discovery.snapshot.id.value)
+                        logger.log(
+                            LogStatements.Autofill.discoveryCompleted(
+                                monotonicTimeMs() - discoveryStartedAt,
                             ),
                         )
-                    )
-                )
-            } else {
-                flow.cancel(discovery.snapshot.id)
-                BeginGetCredentialResponse()
+                        BeginGetCredentialResponse(
+                            authenticationActions =
+                                listOf(
+                                    AuthenticationAction(
+                                        context.getString(R.string.vault_locked_title),
+                                        pendingIntentFactory.createUnlockPendingIntent(
+                                            context,
+                                            discovery.snapshot.id,
+                                        ),
+                                    ),
+                                ),
+                        )
+                    } else {
+                        flow.cancel(discovery.snapshot.id)
+                        BeginGetCredentialResponse()
+                    }
+                }
+
+                is AutofillDiscoveryOutcome.Candidates -> {
+                    val entries = mutableListOf<CredentialEntry>()
+                    for (option in passwordOptions) {
+                        entries +=
+                            adapter.buildPasswordEntries(
+                                interactionId = discovery.snapshot.id,
+                                candidates = discovery.candidates,
+                                context = context,
+                                option = option,
+                            )
+                    }
+                    if (entries.isEmpty()) {
+                        flow.cancel(discovery.snapshot.id)
+                        logUnavailable(Reasons.NoMatchingEntry)
+                        BeginGetCredentialResponse()
+                    } else {
+                        traceContinuations.capture(discovery.snapshot.id.value)
+                        logger.log(
+                            LogStatements.Autofill.discoveryCompleted(
+                                monotonicTimeMs() - discoveryStartedAt,
+                            ),
+                        )
+                        BeginGetCredentialResponse(entries)
+                    }
+                }
+
+                is AutofillDiscoveryOutcome.ResumeSelection -> {
+                    flow.cancel(discovery.snapshot.id)
+                    BeginGetCredentialResponse()
+                }
+
+                is AutofillDiscoveryOutcome.NoCandidates -> {
+                    flow.cancel(discovery.snapshot.id)
+                    logUnavailable(Reasons.NoMatchingEntry)
+                    BeginGetCredentialResponse()
+                }
+
+                AutofillDiscoveryOutcome.Disabled -> {
+                    BeginGetCredentialResponse().also {
+                        logUnavailable(Reasons.SessionRestricted)
+                    }
+                }
+
+                AutofillDiscoveryOutcome.UnsupportedFields -> {
+                    BeginGetCredentialResponse().also {
+                        logUnavailable(Reasons.NoFillableFields)
+                    }
+                }
+
+                is AutofillDiscoveryOutcome.Failed -> {
+                    BeginGetCredentialResponse().also {
+                        logUnavailable(Reasons.DatabaseUnavailable)
+                    }
+                }
             }
 
-        is AutofillDiscoveryOutcome.Candidates -> {
-            val entries = mutableListOf<CredentialEntry>()
-            for (option in passwordOptions) {
-                entries += adapter.buildPasswordEntries(
-                    interactionId = discovery.snapshot.id,
-                    candidates = discovery.candidates,
-                    context = context,
-                    option = option,
-                )
-            }
-            if (entries.isEmpty()) {
-                flow.cancel(discovery.snapshot.id)
-                logUnavailable(Reasons.NoMatchingEntry)
-                BeginGetCredentialResponse()
-            } else {
-                traceContinuations.capture(discovery.snapshot.id.value)
-                logger.log(
-                    LogStatements.Autofill.discoveryCompleted(
-                        monotonicTimeMs() - discoveryStartedAt,
-                    ),
-                )
-                BeginGetCredentialResponse(entries)
-            }
-        }
-
-        is AutofillDiscoveryOutcome.ResumeSelection -> {
-            flow.cancel(discovery.snapshot.id)
-            BeginGetCredentialResponse()
-        }
-
-        is AutofillDiscoveryOutcome.NoCandidates -> {
-            flow.cancel(discovery.snapshot.id)
-            logUnavailable(Reasons.NoMatchingEntry)
-            BeginGetCredentialResponse()
-        }
-
-        AutofillDiscoveryOutcome.Disabled -> BeginGetCredentialResponse().also {
-            logUnavailable(Reasons.SessionRestricted)
-        }
-        AutofillDiscoveryOutcome.UnsupportedFields -> BeginGetCredentialResponse().also {
-            logUnavailable(Reasons.NoFillableFields)
-        }
-        is AutofillDiscoveryOutcome.Failed -> BeginGetCredentialResponse().also {
-            logUnavailable(Reasons.DatabaseUnavailable)
+        private fun logUnavailable(reason: com.aozijx.passly.core.observability.ReasonCode) {
+            logger.log(LogStatements.Autofill.discoveryUnavailable(reason))
         }
     }
-
-    private fun logUnavailable(reason: com.aozijx.passly.core.observability.ReasonCode) {
-        logger.log(LogStatements.Autofill.discoveryUnavailable(reason))
-    }
-}
 
 sealed interface CredentialUnlockResponse {
-    data class Ready(val response: BeginGetCredentialResponse) : CredentialUnlockResponse
+    data class Ready(
+        val response: BeginGetCredentialResponse,
+    ) : CredentialUnlockResponse
+
     data class NotAuthorized(
         val result: CredentialManagerUnlockResult.NotAuthorized,
     ) : CredentialUnlockResponse
+
     data object Unavailable : CredentialUnlockResponse
 }

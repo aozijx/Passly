@@ -7,8 +7,9 @@ import com.aozijx.passly.domain.access.model.EnvelopeType
 internal fun BootstrapData.readAuthenticationCredentialSnapshot(): AuthenticationCredentialSnapshot {
     val envelopeTypes = envelopesList.mapTo(hashSetOf()) { it.type }
     return AuthenticationCredentialSnapshot(
-        biometricConfigured = hasBiometricBinding() && biometricBinding.activeAlias.isNotBlank() &&
-            EnvelopeType.BIOMETRIC.value in envelopeTypes,
+        biometricConfigured =
+            hasBiometricBinding() && biometricBinding.activeAlias.isNotBlank() &&
+                EnvelopeType.BIOMETRIC.value in envelopeTypes,
         appPasswordConfigured = EnvelopeType.APP_PASSWORD.value in envelopeTypes,
         recoveryCodeConfigured = EnvelopeType.RECOVERY.value in envelopeTypes,
     )

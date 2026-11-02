@@ -13,12 +13,15 @@ internal class WifiEntryPayloadAdapter : EntryPayloadAdapter {
 
     override fun encode(credential: EntryCredential): SecretPayload {
         require(credential is WifiCredential) { "WIFI adapter requires WifiCredential" }
-        return SecretPayload(wifi = WifiCredentialPayload(
-            ssid = credential.ssid,
-            password = credential.password,
-            securityType = credential.securityType.storedValue,
-            isHidden = credential.isHidden,
-        ))
+        return SecretPayload(
+            wifi =
+                WifiCredentialPayload(
+                    ssid = credential.ssid,
+                    password = credential.password,
+                    securityType = credential.securityType.storedValue,
+                    isHidden = credential.isHidden,
+                ),
+        )
     }
 
     override fun decode(payload: SecretPayload): EntryCredential {
@@ -33,10 +36,16 @@ internal class WifiEntryPayloadAdapter : EntryPayloadAdapter {
 
     private fun String?.requireWifiSecurityType(): WifiSecurityType =
         when (val result = WifiSecurityType.parseStoredValue(this)) {
-            is WifiSecurityTypeParseResult.Supported -> result.value
-            WifiSecurityTypeParseResult.Missing ->
+            is WifiSecurityTypeParseResult.Supported -> {
+                result.value
+            }
+
+            WifiSecurityTypeParseResult.Missing -> {
                 throw IllegalArgumentException("Wi-Fi security type is missing")
-            is WifiSecurityTypeParseResult.Unsupported ->
+            }
+
+            is WifiSecurityTypeParseResult.Unsupported -> {
                 throw IllegalArgumentException("Unsupported Wi-Fi security type: ${result.storedValue}")
+            }
         }
 }

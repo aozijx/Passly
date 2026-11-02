@@ -11,13 +11,17 @@ internal object RevisionHistoryMaintenanceSerializer : Serializer<RevisionHistor
     override val defaultValue: RevisionHistoryMaintenance
         get() = RevisionHistoryMaintenance.getDefaultInstance()
 
-    override suspend fun readFrom(input: InputStream): RevisionHistoryMaintenance = try {
-        RevisionHistoryMaintenance.parseFrom(input)
-    } catch (error: InvalidProtocolBufferException) {
-        throw CorruptionException("Unable to read revision history maintenance state.", error)
-    }
+    override suspend fun readFrom(input: InputStream): RevisionHistoryMaintenance =
+        try {
+            RevisionHistoryMaintenance.parseFrom(input)
+        } catch (error: InvalidProtocolBufferException) {
+            throw CorruptionException("Unable to read revision history maintenance state.", error)
+        }
 
-    override suspend fun writeTo(t: RevisionHistoryMaintenance, output: OutputStream) {
+    override suspend fun writeTo(
+        t: RevisionHistoryMaintenance,
+        output: OutputStream,
+    ) {
         t.writeTo(output)
     }
 }

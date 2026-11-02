@@ -22,6 +22,7 @@ enum class AutofillOperationFailure {
 
 sealed interface AutofillDiscoveryOutcome {
     data object Disabled : AutofillDiscoveryOutcome
+
     data object UnsupportedFields : AutofillDiscoveryOutcome
 
     data class RequiresUnlock(
@@ -45,21 +46,41 @@ sealed interface AutofillDiscoveryOutcome {
         val entryId: EntryId,
     ) : AutofillDiscoveryOutcome
 
-    data class Failed(val failure: AutofillOperationFailure) : AutofillDiscoveryOutcome
+    data class Failed(
+        val failure: AutofillOperationFailure,
+    ) : AutofillDiscoveryOutcome
 }
 
 sealed interface AutofillSelectionOutcome {
-    data class Filled(val payload: AutofillCredentialPayload) : AutofillSelectionOutcome
+    data class Filled(
+        val payload: AutofillCredentialPayload,
+    ) : AutofillSelectionOutcome
+
     data object Cancelled : AutofillSelectionOutcome
+
     data object Unauthorized : AutofillSelectionOutcome
+
     data object CandidateUnavailable : AutofillSelectionOutcome
+
     data object ScopeMismatch : AutofillSelectionOutcome
-    data class Rejected(val reason: AutofillInteractionRejection) : AutofillSelectionOutcome
-    data class Failed(val failure: AutofillOperationFailure) : AutofillSelectionOutcome
+
+    data class Rejected(
+        val reason: AutofillInteractionRejection,
+    ) : AutofillSelectionOutcome
+
+    data class Failed(
+        val failure: AutofillOperationFailure,
+    ) : AutofillSelectionOutcome
 }
 
 sealed interface AutofillSaveOutcome {
-    data class Saved(val entryId: EntryId) : AutofillSaveOutcome
+    data class Saved(
+        val entryId: EntryId,
+    ) : AutofillSaveOutcome
+
     data object InvalidDraft : AutofillSaveOutcome
-    data class Failed(val failure: AutofillOperationFailure) : AutofillSaveOutcome
+
+    data class Failed(
+        val failure: AutofillOperationFailure,
+    ) : AutofillSaveOutcome
 }

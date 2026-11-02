@@ -24,52 +24,58 @@ import org.junit.Test
 /** Security boundary tests for the limited Recovery Mode session. */
 class RecoveryModeBoundaryTest {
     @Test
-    fun `recovery mode requires authorization before autofill`() = runBlocking {
-        val sessionState = RecoverySecureSessionAccessState()
-        val interaction = StartAutofillInteraction(
-            store = AutofillInteractionStore(),
-            unlockLease = AutofillUnlockLease(NoOpAuthenticationController),
-            vaultAccessState = sessionState,
-        )(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example"),
-            requireAuthentication = false,
-        )
+    fun `recovery mode requires authorization before autofill`() =
+        runBlocking {
+            val sessionState = RecoverySecureSessionAccessState()
+            val interaction =
+                StartAutofillInteraction(
+                    store = AutofillInteractionStore(),
+                    unlockLease = AutofillUnlockLease(NoOpAuthenticationController),
+                    vaultAccessState = sessionState,
+                )(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example"),
+                    requireAuthentication = false,
+                )
 
-        assertEquals(AutofillInteractionState.RequiresUnlock, interaction.state)
-    }
-
-    @Test
-    fun `existing autofill session authorizes another autofill interaction`() = runBlocking {
-        val lease = AutofillUnlockLease(NoOpAuthenticationController)
-        lease.acquireOrBorrow(AutofillInteractionId("owner"), acquiredUnlock = true)
-        val interaction = StartAutofillInteraction(
-            store = AutofillInteractionStore(),
-            unlockLease = lease,
-            vaultAccessState = AutofillSecureSessionAccessState(),
-        )(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example"),
-            requireAuthentication = false,
-        )
-
-        assertEquals(AutofillInteractionState.Authorized, interaction.state)
-    }
+            assertEquals(AutofillInteractionState.RequiresUnlock, interaction.state)
+        }
 
     @Test
-    fun `orphaned autofill state cannot authorize without an active lease`() = runBlocking {
-        val interaction = StartAutofillInteraction(
-            store = AutofillInteractionStore(),
-            unlockLease = AutofillUnlockLease(NoOpAuthenticationController),
-            vaultAccessState = AutofillSecureSessionAccessState(),
-        )(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example"),
-            requireAuthentication = false,
-        )
+    fun `existing autofill session authorizes another autofill interaction`() =
+        runBlocking {
+            val lease = AutofillUnlockLease(NoOpAuthenticationController)
+            lease.acquireOrBorrow(AutofillInteractionId("owner"), acquiredUnlock = true)
+            val interaction =
+                StartAutofillInteraction(
+                    store = AutofillInteractionStore(),
+                    unlockLease = lease,
+                    vaultAccessState = AutofillSecureSessionAccessState(),
+                )(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example"),
+                    requireAuthentication = false,
+                )
 
-        assertEquals(AutofillInteractionState.RequiresUnlock, interaction.state)
-    }
+            assertEquals(AutofillInteractionState.Authorized, interaction.state)
+        }
+
+    @Test
+    fun `orphaned autofill state cannot authorize without an active lease`() =
+        runBlocking {
+            val interaction =
+                StartAutofillInteraction(
+                    store = AutofillInteractionStore(),
+                    unlockLease = AutofillUnlockLease(NoOpAuthenticationController),
+                    vaultAccessState = AutofillSecureSessionAccessState(),
+                )(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example"),
+                    requireAuthentication = false,
+                )
+
+            assertEquals(AutofillInteractionState.RequiresUnlock, interaction.state)
+        }
 
     @Test
     fun `recovery mode hasFullSecureSessionAccess returns false`() {
@@ -112,37 +118,47 @@ class RecoveryModeBoundaryTest {
     }
 
     private class RecoverySecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState = MutableStateFlow<AuthenticationState>(
-            AuthenticationState.RecoveryMode(authenticatedAtMs = 0L),
-        )
+        override val authenticationState =
+            MutableStateFlow<AuthenticationState>(
+                AuthenticationState.RecoveryMode(authenticatedAtMs = 0L),
+            )
+
         override fun isUnlocked(): Boolean = true
     }
 
     private class AuthenticatedSecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState = MutableStateFlow<AuthenticationState>(
-            AuthenticationState.Authenticated(authenticatedAtMs = 0L),
-        )
+        override val authenticationState =
+            MutableStateFlow<AuthenticationState>(
+                AuthenticationState.Authenticated(authenticatedAtMs = 0L),
+            )
+
         override fun isUnlocked(): Boolean = true
     }
 
     private class AutofillSecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState = MutableStateFlow<AuthenticationState>(
-            AuthenticationState.AutofillAuthenticated(authenticatedAtMs = 0L),
-        )
+        override val authenticationState =
+            MutableStateFlow<AuthenticationState>(
+                AuthenticationState.AutofillAuthenticated(authenticatedAtMs = 0L),
+            )
+
         override fun isUnlocked(): Boolean = true
     }
 
     private class LockedSecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState = MutableStateFlow<AuthenticationState>(
-            AuthenticationState.Locked,
-        )
+        override val authenticationState =
+            MutableStateFlow<AuthenticationState>(
+                AuthenticationState.Locked,
+            )
+
         override fun isUnlocked(): Boolean = false
     }
 
     private class LockingSecureSessionAccessState : SecureSessionAccessState {
-        override val authenticationState = MutableStateFlow<AuthenticationState>(
-            AuthenticationState.Locking(LockReason.AUTOFILL_REQUEST_FINISHED),
-        )
+        override val authenticationState =
+            MutableStateFlow<AuthenticationState>(
+                AuthenticationState.Locking(LockReason.AUTOFILL_REQUEST_FINISHED),
+            )
+
         override fun isUnlocked(): Boolean = true
     }
 

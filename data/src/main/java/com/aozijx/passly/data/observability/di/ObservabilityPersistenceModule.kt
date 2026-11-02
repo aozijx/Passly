@@ -11,7 +11,5 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 internal abstract class ObservabilityPersistenceModule {
     @Binds
-    abstract fun bindLogRecordStoreFactory(
-        implementation: EncryptedLogRecordStoreFactory,
-    ): LogRecordStoreFactory
+    abstract fun bindLogRecordStoreFactory(implementation: EncryptedLogRecordStoreFactory): LogRecordStoreFactory
 }

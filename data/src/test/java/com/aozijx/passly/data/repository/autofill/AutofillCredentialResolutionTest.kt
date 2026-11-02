@@ -13,11 +13,12 @@ import org.junit.Test
 class AutofillCredentialResolutionTest {
     @Test
     fun activeLoginWithPasswordResolvesTypedPayload() {
-        val resolution = resolveAutofillCredential(
-            entity = loginEntity(),
-            password = "secret",
-            otpCode = null,
-        )
+        val resolution =
+            resolveAutofillCredential(
+                entity = loginEntity(),
+                password = "secret",
+                otpCode = null,
+            )
 
         val payload = (resolution as AutofillCredentialResolution.Resolved).payload
         assertEquals("entry-1", payload.entryId.value)
@@ -68,10 +69,11 @@ class AutofillCredentialResolutionTest {
 
     @Test
     fun linkedOtpIsSelectedOnlyWhenItTargetsTheLogin() {
-        val links = listOf(
-            link("unrelated", "otp-1", "other-login"),
-            link("expected", "otp-2", "entry-1"),
-        )
+        val links =
+            listOf(
+                link("unrelated", "otp-1", "other-login"),
+                link("expected", "otp-2", "entry-1"),
+            )
 
         assertEquals("otp-2", findLinkedOtpEntryId("entry-1", links))
         assertEquals(null, findLinkedOtpEntryId("missing", links))
@@ -101,25 +103,27 @@ class AutofillCredentialResolutionTest {
         )
     }
 
-    private fun loginEntity(): EntryEntity = EntryEntity(
-        entryId = "entry-1",
-        entryType = EntryType.LOGIN,
-        title = "Example",
-        username = "person@example.com",
-        createdAt = 10L,
-        updatedAt = 20L,
-    )
+    private fun loginEntity(): EntryEntity =
+        EntryEntity(
+            entryId = "entry-1",
+            entryType = EntryType.LOGIN,
+            title = "Example",
+            username = "person@example.com",
+            createdAt = 10L,
+            updatedAt = 20L,
+        )
 
     private fun link(
         id: String,
         source: String,
         target: String,
-    ): EntryLinkEntity = EntryLinkEntity(
-        linkId = id,
-        sourceEntryId = source,
-        targetEntryId = target,
-        relationType = EntryRelationType.OTP_FOR,
-        createdAt = 10L,
-        updatedAt = 10L,
-    )
+    ): EntryLinkEntity =
+        EntryLinkEntity(
+            linkId = id,
+            sourceEntryId = source,
+            targetEntryId = target,
+            relationType = EntryRelationType.OTP_FOR,
+            createdAt = 10L,
+            updatedAt = 10L,
+        )
 }

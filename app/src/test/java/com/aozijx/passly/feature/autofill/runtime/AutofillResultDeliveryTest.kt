@@ -2,11 +2,11 @@ package com.aozijx.passly.feature.autofill.runtime
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.*
-import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.core.observability.internal.*
 import com.aozijx.passly.core.observability.privacy.*
 import com.aozijx.passly.core.observability.sink.LogSink
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
+import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
@@ -22,8 +22,8 @@ import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.feature.autofill.core.CompleteAutofillSelection
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.StartAutofillInteraction
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,202 +37,224 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutofillResultDeliveryTest {
     @Test
-    fun `trace capture failure after platform delivery still completes selection and releases lease`() = runTest {
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val interaction = store.create(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        val logger = TraceFailingLogger(testLogger())
-        val delivery = AutofillResultDelivery(
-            completeSelection = CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            unlockLease = lease,
-            scope = this,
-            logger = logger,
-            continuations = TraceContinuationStore(logger),
-        )
-        var platformDeliveries = 0
+    fun `trace capture failure after platform delivery still completes selection and releases lease`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val logger = TraceFailingLogger(testLogger())
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    scope = this,
+                    logger = logger,
+                    continuations = TraceContinuationStore(logger),
+                )
+            var platformDeliveries = 0
 
-        delivery.commitResult(
-            receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
-        ) {
-            platformDeliveries++
-            logger.failTraces = true
-        }
-        runCurrent()
-
-        assertEquals(1, platformDeliveries)
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
-        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-    }
-
-    @Test
-    fun `platform callback failure releases completion barrier and permits one successful retry`() = runTest {
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val interaction = store.create(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        val logger = testLogger()
-        val delivery = AutofillResultDelivery(
-            completeSelection = CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            unlockLease = lease,
-            scope = this,
-            logger = logger,
-            continuations = TraceContinuationStore(logger),
-        )
-        val receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))
-
-        try {
-            delivery.commitResult(receipt) {
-                throw IllegalStateException("platform rejected result")
+            delivery.commitResult(
+                receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
+            ) {
+                platformDeliveries++
+                logger.failTraces = true
             }
-            throw AssertionError("expected platform callback failure")
-        } catch (expected: IllegalStateException) {
-            assertEquals("platform rejected result", expected.message)
+            runCurrent()
+
+            assertEquals(1, platformDeliveries)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
         }
 
-        assertEquals(AutofillInteractionState.Authorized, store.snapshot(interaction.id)?.state)
-        assertNull(lockController.reason)
-
-        var successfulDeliveries = 0
-        delivery.commitResult(receipt) { successfulDeliveries++ }
-        runCurrent()
-
-        assertEquals(1, successfulDeliveries)
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
-        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-    }
-
     @Test
-    fun `delivered result stops a later request from borrowing the completed fill session`() = runTest {
-        val store = AutofillInteractionStore()
-        val lease = AutofillUnlockLease(RecordingLockController())
-        val accessState = AutofillOnlyAccessState()
-        val completedInteraction = store.create(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(completedInteraction.id, acquiredUnlock = true)
-        val logger = testLogger()
-        val delivery = AutofillResultDelivery(
-            completeSelection = CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            unlockLease = lease,
-            scope = this,
-            logger = logger,
-            continuations = TraceContinuationStore(logger),
-        )
+    fun `platform callback failure releases completion barrier and permits one successful retry`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val logger = testLogger()
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    scope = this,
+                    logger = logger,
+                    continuations = TraceContinuationStore(logger),
+                )
+            val receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))
 
-        delivery.commitResult(
-            receipt = AutofillSelectionReceipt(completedInteraction.id, EntryId("entry-1")),
-        ) {}
-        val nextInteraction = async(start = CoroutineStart.UNDISPATCHED) {
-            StartAutofillInteraction(store, lease, accessState)(
-                source = AutofillInteractionSource.LEGACY,
-                scope = AutofillGrantContext("com.example.app"),
-                requireAuthentication = false,
-            )
-        }
+            try {
+                delivery.commitResult(receipt) {
+                    throw IllegalStateException("platform rejected result")
+                }
+                throw AssertionError("expected platform callback failure")
+            } catch (expected: IllegalStateException) {
+                assertEquals("platform rejected result", expected.message)
+            }
 
-        assertFalse(nextInteraction.isCompleted)
-        runCurrent()
-
-        assertEquals(AutofillInteractionState.RequiresUnlock, nextInteraction.await().state)
-    }
-
-    @Test
-    fun `temporary unlock closes only after the platform result is delivered`() = runTest {
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val interaction = store.create(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
-        val logger = testLogger()
-        val delivery = AutofillResultDelivery(
-            completeSelection = CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            unlockLease = lease,
-            scope = this,
-            logger = logger,
-            continuations = TraceContinuationStore(logger),
-        )
-
-        assertNull(lockController.reason)
-
-        delivery.commitResult(
-            receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
-        ) {
+            assertEquals(AutofillInteractionState.Authorized, store.snapshot(interaction.id)?.state)
             assertNull(lockController.reason)
-        }
-        runCurrent()
 
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
-        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-        assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
-    }
+            var successfulDeliveries = 0
+            delivery.commitResult(receipt) { successfulDeliveries++ }
+            runCurrent()
+
+            assertEquals(1, successfulDeliveries)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+        }
 
     @Test
-    fun `successful fill expires abandoned interactions before closing temporary unlock`() = runTest {
-        val store = AutofillInteractionStore()
-        val lockController = RecordingLockController()
-        val lease = AutofillUnlockLease(lockController)
-        val selected = store.create(
-            source = AutofillInteractionSource.LEGACY,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        val abandoned = store.create(
-            source = AutofillInteractionSource.CREDENTIAL_MANAGER,
-            scope = AutofillGrantContext("com.example.app"),
-            initialState = AutofillInteractionState.Authorized,
-        )
-        lease.acquireOrBorrow(selected.id, acquiredUnlock = true)
-        lease.acquireOrBorrow(abandoned.id, acquiredUnlock = false)
-        val logger = testLogger()
-        val delivery = AutofillResultDelivery(
-            completeSelection = CompleteAutofillSelection(
-                NoOpActivityRecorder,
-                FinishAutofillInteraction(store, lease),
-            ),
-            unlockLease = lease,
-            scope = this,
-            logger = logger,
-            continuations = TraceContinuationStore(logger),
-        )
+    fun `delivered result stops a later request from borrowing the completed fill session`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(RecordingLockController())
+            val accessState = AutofillOnlyAccessState()
+            val completedInteraction =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(completedInteraction.id, acquiredUnlock = true)
+            val logger = testLogger()
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    scope = this,
+                    logger = logger,
+                    continuations = TraceContinuationStore(logger),
+                )
 
-        delivery.commitResult(
-            receipt = AutofillSelectionReceipt(selected.id, EntryId("entry-1")),
-        ) {}
-        runCurrent()
+            delivery.commitResult(
+                receipt = AutofillSelectionReceipt(completedInteraction.id, EntryId("entry-1")),
+            ) {}
+            val nextInteraction =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    StartAutofillInteraction(store, lease, accessState)(
+                        source = AutofillInteractionSource.LEGACY,
+                        scope = AutofillGrantContext("com.example.app"),
+                        requireAuthentication = false,
+                    )
+                }
 
-        assertEquals(AutofillInteractionState.Completed, store.snapshot(selected.id)?.state)
-        assertEquals(AutofillInteractionState.Expired, store.snapshot(abandoned.id)?.state)
-        assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-    }
+            assertFalse(nextInteraction.isCompleted)
+            runCurrent()
+
+            assertEquals(AutofillInteractionState.RequiresUnlock, nextInteraction.await().state)
+        }
+
+    @Test
+    fun `temporary unlock closes only after the platform result is delivered`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val logger = testLogger()
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    scope = this,
+                    logger = logger,
+                    continuations = TraceContinuationStore(logger),
+                )
+
+            assertNull(lockController.reason)
+
+            delivery.commitResult(
+                receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
+            ) {
+                assertNull(lockController.reason)
+            }
+            runCurrent()
+
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+            assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
+        }
+
+    @Test
+    fun `successful fill expires abandoned interactions before closing temporary unlock`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val selected =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            val abandoned =
+                store.create(
+                    source = AutofillInteractionSource.CREDENTIAL_MANAGER,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(selected.id, acquiredUnlock = true)
+            lease.acquireOrBorrow(abandoned.id, acquiredUnlock = false)
+            val logger = testLogger()
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    scope = this,
+                    logger = logger,
+                    continuations = TraceContinuationStore(logger),
+                )
+
+            delivery.commitResult(
+                receipt = AutofillSelectionReceipt(selected.id, EntryId("entry-1")),
+            ) {}
+            runCurrent()
+
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(selected.id)?.state)
+            assertEquals(AutofillInteractionState.Expired, store.snapshot(abandoned.id)?.state)
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+        }
 
     private class RecordingLockController : SessionLockController {
         var reason: LockReason? = null
@@ -252,29 +274,42 @@ class AutofillResultDeliveryTest {
     }
 
     private data object NoOpActivityRecorder : ActivityRecorder {
-        override suspend fun recordUsage(entryId: String, type: ActivityType) = AppResult.Success(Unit)
+        override suspend fun recordUsage(
+            entryId: String,
+            type: ActivityType,
+        ) = AppResult.Success(Unit)
+
         override suspend fun deleteByEntryId(entryId: String) = Unit
+
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 
-    private fun testLogger() = DefaultLogger(
-        sanitizer = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.THROW),
-        sinks = listOf(LogSink { }),
-        lifecycleSinks = emptyList(),
-        idGenerator = object : ObservabilityIdGenerator {
-            private var next = 0
-            private fun id(prefix: String) = "${prefix}_${++next}_value"
-            override fun eventId() = EventId(id("event"))
-            override fun traceId() = TraceId(id("trace"))
-            override fun spanId() = SpanId(id("span"))
-        },
-        timeSource = object : ObservabilityTimeSource {
-            override fun wallTimeMs() = 1_700_000_000_000L
-            override fun elapsedRealtimeMs() = 100L
-        },
-        processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
-        secureSessionProvider = SecureSessionProvider { null },
-    )
+    private fun testLogger() =
+        DefaultLogger(
+            sanitizer = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.THROW),
+            sinks = listOf(LogSink { }),
+            lifecycleSinks = emptyList(),
+            idGenerator =
+                object : ObservabilityIdGenerator {
+                    private var next = 0
+
+                    private fun id(prefix: String) = "${prefix}_${++next}_value"
+
+                    override fun eventId() = EventId(id("event"))
+
+                    override fun traceId() = TraceId(id("trace"))
+
+                    override fun spanId() = SpanId(id("span"))
+                },
+            timeSource =
+                object : ObservabilityTimeSource {
+                    override fun wallTimeMs() = 1_700_000_000_000L
+
+                    override fun elapsedRealtimeMs() = 100L
+                },
+            processSessionProvider = ProcessSessionProvider { ProcessSessionId("process_session") },
+            secureSessionProvider = SecureSessionProvider { null },
+        )
 
     private class TraceFailingLogger(
         private val delegate: Logger,

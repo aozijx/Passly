@@ -10,7 +10,7 @@ data class BackupDocument(
     val appVersion: String? = null,
     val entries: List<BackupEntryRecord>,
     val links: List<BackupLinkRecord> = emptyList(),
-    val resources: List<BackupResourceRecord> = emptyList()
+    val resources: List<BackupResourceRecord> = emptyList(),
 ) {
     companion object {
         const val FORMAT = "passly-field-archive"

@@ -13,9 +13,9 @@ import androidx.credentials.exceptions.GetCredentialUnknownException
 import androidx.credentials.exceptions.GetCredentialUnsupportedException
 import androidx.credentials.provider.BeginGetCredentialRequest
 import androidx.credentials.provider.PendingIntentHandler
-import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 
 internal sealed interface PasswordGetParseResult {
@@ -25,7 +25,10 @@ internal sealed interface PasswordGetParseResult {
         val packageName: String,
         val option: GetPasswordOption,
     ) : PasswordGetParseResult
-    data class Failed(val exception: GetCredentialException) : PasswordGetParseResult
+
+    data class Failed(
+        val exception: GetCredentialException,
+    ) : PasswordGetParseResult
 }
 
 internal sealed interface UnlockParseResult {
@@ -33,7 +36,10 @@ internal sealed interface UnlockParseResult {
         val interactionId: AutofillInteractionId,
         val request: BeginGetCredentialRequest,
     ) : UnlockParseResult
-    data class Failed(val exception: GetCredentialException) : UnlockParseResult
+
+    data class Failed(
+        val exception: GetCredentialException,
+    ) : UnlockParseResult
 }
 
 internal sealed interface PasswordCreateParseResult {
@@ -43,63 +49,72 @@ internal sealed interface PasswordCreateParseResult {
         val username: String,
         val password: String,
     ) : PasswordCreateParseResult
-    data class Failed(val exception: CreateCredentialException) : PasswordCreateParseResult
+
+    data class Failed(
+        val exception: CreateCredentialException,
+    ) : PasswordCreateParseResult
 }
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 internal object CredentialRequestParser {
-    fun parseInteractionId(sourceIntent: Intent): AutofillInteractionId? =
-        sourceIntent.readInteractionId()
+    fun parseInteractionId(sourceIntent: Intent): AutofillInteractionId? = sourceIntent.readInteractionId()
 
     fun parsePasswordGet(sourceIntent: Intent): PasswordGetParseResult {
         val providerRequest =
             PendingIntentHandler.retrieveProviderGetCredentialRequest(sourceIntent)
                 ?: return PasswordGetParseResult.Failed(
-                    GetCredentialUnknownException("Missing system get request")
+                    GetCredentialUnknownException("Missing system get request"),
                 )
         // 系统可能在同一请求携带多个选项（password + passkey）。
         // singleOrNull() 在多元素时返回 null 会让密码条目点击即失败，
         // 应取第一个密码选项（passkey 条目有独立的 begin-get 路径）。
-        val option = providerRequest.credentialOptions
-            .filterIsInstance<GetPasswordOption>()
-            .firstOrNull()
-            ?: return PasswordGetParseResult.Failed(
-                GetCredentialUnsupportedException("Selected entry is not a password request")
+        val option =
+            providerRequest.credentialOptions
+                .filterIsInstance<GetPasswordOption>()
+                .firstOrNull()
+                ?: return PasswordGetParseResult.Failed(
+                    GetCredentialUnsupportedException("Selected entry is not a password request"),
+                )
+        val packageName =
+            CredentialCallingAppResolver.resolveNativePackage(
+                providerRequest.callingAppInfo,
+            ) ?: return PasswordGetParseResult.Failed(
+                GetCredentialUnsupportedException("Privileged origin requests are not configured"),
             )
-        val packageName = CredentialCallingAppResolver.resolveNativePackage(
-            providerRequest.callingAppInfo
-        ) ?: return PasswordGetParseResult.Failed(
-            GetCredentialUnsupportedException("Privileged origin requests are not configured")
-        )
-        val interactionId = sourceIntent.readInteractionId()
-            ?: return PasswordGetParseResult.Failed(
-                GetCredentialUnknownException("Missing Autofill interaction id")
-            )
-        val entryId = sourceIntent.getStringExtra(AutofillLaunchExtras.ENTRY_ID)
-            ?.takeIf(String::isNotBlank)
-            ?.let(::EntryId)
+        val interactionId =
+            sourceIntent.readInteractionId()
+                ?: return PasswordGetParseResult.Failed(
+                    GetCredentialUnknownException("Missing Autofill interaction id"),
+                )
+        val entryId =
+            sourceIntent
+                .getStringExtra(AutofillLaunchExtras.ENTRY_ID)
+                ?.takeIf(String::isNotBlank)
+                ?.let(::EntryId)
         if (entryId == null) {
             return PasswordGetParseResult.Failed(
-                GetCredentialUnknownException("Missing selected credential id")
+                GetCredentialUnknownException("Missing selected credential id"),
             )
         }
         return PasswordGetParseResult.Ready(interactionId, entryId, packageName, option)
     }
 
     fun parseUnlock(sourceIntent: Intent): UnlockParseResult {
-        val request = PendingIntentHandler.retrieveBeginGetCredentialRequest(sourceIntent)
-            ?: return UnlockParseResult.Failed(
-                GetCredentialUnknownException("Missing system begin-get request")
-            )
+        val request =
+            PendingIntentHandler.retrieveBeginGetCredentialRequest(sourceIntent)
+                ?: return UnlockParseResult.Failed(
+                    GetCredentialUnknownException("Missing system begin-get request"),
+                )
         if (CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo) == null) {
             return UnlockParseResult.Failed(
-                GetCredentialUnsupportedException("Privileged origin requests are not configured")
+                GetCredentialUnsupportedException("Privileged origin requests are not configured"),
             )
         }
-        val interactionId = sourceIntent.readInteractionId()
-            ?: return UnlockParseResult.Failed(
-                GetCredentialUnknownException("Missing Autofill interaction id")
-            )
+        val interactionId =
+            sourceIntent.readInteractionId()
+                ?: return UnlockParseResult.Failed(
+                    GetCredentialUnknownException("Missing Autofill interaction id"),
+                )
         return UnlockParseResult.Ready(interactionId, request)
     }
 
@@ -107,23 +122,26 @@ internal object CredentialRequestParser {
         val providerRequest =
             PendingIntentHandler.retrieveProviderCreateCredentialRequest(sourceIntent)
                 ?: return PasswordCreateParseResult.Failed(
-                    CreateCredentialUnknownException("Missing system create request")
+                    CreateCredentialUnknownException("Missing system create request"),
                 )
-        val request = providerRequest.callingRequest as? CreatePasswordRequest
-            ?: return PasswordCreateParseResult.Failed(
-                CreateCredentialUnsupportedException(
-                    "Selected entry is not a password create request"
+        val request =
+            providerRequest.callingRequest as? CreatePasswordRequest
+                ?: return PasswordCreateParseResult.Failed(
+                    CreateCredentialUnsupportedException(
+                        "Selected entry is not a password create request",
+                    ),
                 )
+        val packageName =
+            CredentialCallingAppResolver.resolveNativePackage(
+                providerRequest.callingAppInfo,
+            ) ?: return PasswordCreateParseResult.Failed(
+                CreateCredentialUnsupportedException("Privileged origin requests are not configured"),
             )
-        val packageName = CredentialCallingAppResolver.resolveNativePackage(
-            providerRequest.callingAppInfo
-        ) ?: return PasswordCreateParseResult.Failed(
-            CreateCredentialUnsupportedException("Privileged origin requests are not configured")
-        )
-        val interactionId = sourceIntent.readInteractionId()
-            ?: return PasswordCreateParseResult.Failed(
-                CreateCredentialUnknownException("Missing Autofill interaction id")
-            )
+        val interactionId =
+            sourceIntent.readInteractionId()
+                ?: return PasswordCreateParseResult.Failed(
+                    CreateCredentialUnknownException("Missing Autofill interaction id"),
+                )
         return PasswordCreateParseResult.Ready(
             interactionId = interactionId,
             packageName = packageName,

@@ -8,25 +8,29 @@ package com.aozijx.passly.domain.sensitive
  * - 使用 [close] 或 [clear] 擦除内容；
  * - [fromString]/[copyOf] 构造副本，[toPlainString]/[toCharArray] 读取。
  */
-class OwnedChars private constructor(chars: CharArray) : AutoCloseable, SensitiveValue {
-    private var _value: CharArray? = chars
+class OwnedChars private constructor(
+    chars: CharArray,
+) : AutoCloseable,
+    SensitiveValue {
+    private var value: CharArray? = chars
 
-    val length: Int get() = _value?.size ?: 0
+    val length: Int get() = value?.size ?: 0
 
-    override val isEmpty: Boolean get() = _value?.isEmpty() ?: true
+    override val isEmpty: Boolean get() = value?.isEmpty() ?: true
 
-    val isWiped: Boolean get() = _value?.all { it == '\u0000' } ?: true
+    val isWiped: Boolean get() = value?.all { it == '\u0000' } ?: true
 
     /** 消费：转移所有权给调用者，当前实例置空。 */
-    fun consume(): CharArray = synchronized(this) {
-        (requireNotNull(_value) { "OwnedChars already consumed" }).also { _value = null }
-    }
+    fun consume(): CharArray =
+        synchronized(this) {
+            (requireNotNull(value) { "OwnedChars already consumed" }).also { value = null }
+        }
 
     /** 擦除内容。 */
     fun clear() {
         synchronized(this) {
-            _value?.fill('\u0000')
-            _value = null
+            value?.fill('\u0000')
+            value = null
         }
     }
 
@@ -34,11 +38,12 @@ class OwnedChars private constructor(chars: CharArray) : AutoCloseable, Sensitiv
 
     override fun wipe() = clear()
 
-    override fun toCharArray(): CharArray = synchronized(this) {
-        (_value ?: return CharArray(0)).copyOf()
-    }
+    override fun toCharArray(): CharArray =
+        synchronized(this) {
+            (value ?: return CharArray(0)).copyOf()
+        }
 
-    fun toPlainString(): String = String(_value ?: CharArray(0))
+    fun toPlainString(): String = String(value ?: CharArray(0))
 
     override fun toString(): String = if (isEmpty) "" else "***"
 
@@ -56,7 +61,6 @@ class OwnedChars private constructor(chars: CharArray) : AutoCloseable, Sensitiv
 
         fun fromString(s: String): OwnedChars = OwnedChars(s.toCharArray())
 
-        fun fromNullableString(s: String?): OwnedChars? =
-            if (s.isNullOrEmpty()) null else fromString(s)
+        fun fromNullableString(s: String?): OwnedChars? = if (s.isNullOrEmpty()) null else fromString(s)
     }
 }

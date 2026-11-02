@@ -2,7 +2,9 @@ package com.aozijx.passly.domain.entry.model
 
 import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 
-enum class EntryType(val credentialKind: EntryCredentialKind) {
+enum class EntryType(
+    val credentialKind: EntryCredentialKind,
+) {
     ACCOUNT(EntryCredentialKind.NONE),
     LOGIN(EntryCredentialKind.LOGIN),
     NOTE(EntryCredentialKind.NONE),

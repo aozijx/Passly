@@ -8,15 +8,14 @@ import com.google.protobuf.ByteString
 internal fun BootstrapData.readAutofillInboxKeyMaterial(): AutofillInboxKeyMaterial? =
     if (hasAutofillInboxKey()) autofillInboxKey.toDomain() else null
 
-internal fun BootstrapData.Builder.setAutofillInboxKeyMaterial(
-    material: AutofillInboxKeyMaterial,
-): BootstrapData.Builder = setAutofillInboxKey(material.toProto())
+internal fun BootstrapData.Builder.setAutofillInboxKeyMaterial(material: AutofillInboxKeyMaterial): BootstrapData.Builder =
+    setAutofillInboxKey(material.toProto())
 
-internal fun BootstrapData.Builder.clearAutofillInboxKeyMaterial(): BootstrapData.Builder =
-    clearAutofillInboxKey()
+internal fun BootstrapData.Builder.clearAutofillInboxKeyMaterial(): BootstrapData.Builder = clearAutofillInboxKey()
 
 private fun AutofillInboxKeyMaterial.toProto(): AutofillInboxKeyMaterialProto =
-    AutofillInboxKeyMaterialProto.newBuilder()
+    AutofillInboxKeyMaterialProto
+        .newBuilder()
         .setFormatVersion(formatVersion)
         .setKeyId(ByteString.copyFrom(keyId))
         .setPublicKey(ByteString.copyFrom(publicKey))

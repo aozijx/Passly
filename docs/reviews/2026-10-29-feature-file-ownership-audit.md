@@ -63,7 +63,7 @@
 |---|---|---|
 | `presentation/shared/components/NextFocusTextField.kt` | `feature/vault/presentation/editor/ui/common/NextFocusTextField.kt` | 6 个密码、OTP、银行卡、Wi-Fi 编辑器调用点；`docs/development/compose-ui.md` 已改为记录 Vault 局部位置。 |
 | `presentation/shared/components/common/DropdownSelector.kt` | `feature/vault/presentation/editor/ui/otp/DropdownSelector.kt` | `OtpConfigForm` 的 3 个调用点。 |
-| `presentation/shared/media/ImagePalette.kt` | `feature/vault/presentation/list/ui/component/cardstyle/ImagePalette.kt` | `PasswordCardStyle` 的调用点。 |
+| `presentation/shared/media/ImagePalette.kt` | `feature/vault/presentation/list/ui/component/cardstyle/ImagePaletteColors.kt` | `PasswordCardStyle` 的调用点。 |
 | `presentation/shared/components/AppPackagePickerBottomSheet.kt` | `feature/vault/presentation/common/ui/AppPackagePickerBottomSheet.kt` | Vault 详情页和密码编辑页的 Compose 使用点。 |
 | Picker 文件中的 `AppPackagePickerItemUiModel` | `feature/vault/presentation/common/AppPackagePickerItemUiModel.kt` | 独立于 Compose UI；供密码编辑 Contract/ViewModel、详情 mapper、详情 presentation model 和关联条目 UI 使用。 |
 

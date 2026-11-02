@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 internal fun observeDatabaseReadAccess(
     isAuthorized: Flow<Boolean>,
     databaseLockState: Flow<SecureSessionState>,
-): Flow<Boolean> = combine(isAuthorized, databaseLockState) { authorized, state ->
-    authorized && state == SecureSessionState.UNLOCKED
-}.distinctUntilChanged()
+): Flow<Boolean> =
+    combine(isAuthorized, databaseLockState) { authorized, state ->
+        authorized && state == SecureSessionState.UNLOCKED
+    }.distinctUntilChanged()

@@ -323,11 +323,13 @@
 
 ## Task 57：让 Kotlin 编码规范可重复检查
 
-- [ ] 按 `docs/development/kotlin-style.md` 固定格式合同，在仓库根加入 `.editorconfig`，并选定版本固定的 Kotlin formatter/linter，提供可本地运行且接入 Gradle `check` 的验证任务。格式检查不得在常规验证中静默改写源文件。
-- [ ] 先对当前 Kotlin 源码生成规范差异清单，再分离格式修正与行为改动；至少执行四空格缩进、尾逗号、import 顺序及文件/包命名检查。只调整格式的变更保持独立、可审阅，不让规范接入掩盖同批业务差异。
-- [ ] 保留可维护的例外机制并记录其理由；禁止以全仓 `@Suppress` 或宽松基线掩盖新违规。CI 与本地文档使用同一 Gradle task，核对 `check` 不重复运行昂贵构建任务。
+- [x] 按 `docs/development/kotlin-style.md` 固定格式合同，在仓库根加入 `.editorconfig`，并选定版本固定的 Kotlin formatter/linter，提供可本地运行且接入 Gradle `check` 的验证任务。格式检查不得在常规验证中静默改写源文件。
+- [x] 先对当前 Kotlin 源码生成规范差异清单，再分离格式修正与行为改动；至少执行四空格缩进、尾逗号、import 顺序及文件/包命名检查。只调整格式的变更保持独立、可审阅，不让规范接入掩盖同批业务差异。
+- [x] 保留可维护的例外机制并记录其理由；禁止以全仓 `@Suppress` 或宽松基线掩盖新违规。CI 与本地文档使用同一 Gradle task，核对 `check` 不重复运行昂贵构建任务。
 
 **证据：** `docs/development/kotlin-style.md` 要求 4 空格缩进、多行参数/集合尾逗号和 IDE/formatter import 排序，但仓库根没有 `.editorconfig`，Gradle/version catalog/CI 源码未检出 `ktlint`、`detekt`、`spotless` 或 Kotlin format task 配置。当前 `AppNoticeHostViewModel.kt` 的 imports 先列 `app.message.model.NoticeLevel`，再列同级 `app.message.contract.*`，与字母排序合同不一致；代码未被统一的可重复格式检查发现。该项是编码规范尚未机械化的维护缺口，需先评估对现有 Gradle `check` 的成本，再建立单一格式门禁，避免引入多个重叠工具。
+
+**实现进度（2026-11-02）：** 已完成。选用 ktlint Gradle 插件 `14.2.0` 和固定引擎 `1.8.0`，通过根 `.editorconfig` 与 `ktlintCheckAll`/`ktlintFormatAll` 覆盖 Gradle 模块、Gradle Kotlin 脚本和 `buildSrc`；每个子项目的 `check` 接入本模块只读 `ktlintCheck`。Android CI 与本地文档运行同一个 `ktlintCheckAll`，格式化需显式调用。首轮模块报告记录 21,214 项、1,221 个源文件差异；最高频规则为 multiline-expression-wrapping 5,243、function-signature 4,092、blank-line-before-declaration 1,670、class-signature 1,297、trailing-comma-on-call-site 1,143；另有 11 个文件命名不匹配，均通过文件重命名修正，包名规则无违规。格式接入前后没有行为修改；顺手将可变状态字段改成语义化名称、常量改成大写命名，并给混合布尔条件补显式括号。通配 import 规则按现有规范明确关闭，字母排序仍强制检查；未使用基线或全局 suppress。`ktlintCheckAll` 任务图只执行 lint；`:app:check` dry-run 确认模块 `check` 包含 `ktlintCheck`，其编译/测试任务是原有 Android 生命周期。`ktlintFormatAll`、`ktlintCheckAll`、`verifyArchitecture`、`:app:testDebugUnitTest`、`:core:testDebugUnitTest`、`:core:common:test`、`:data:testDebugUnitTest`、`:domain:test`、`:runtime:session:test`、`:security:testDebugUnitTest`、`:app:compileDebugAndroidTestKotlin`、`:data:compileDebugAndroidTestKotlin` 与 `git diff --check` 均通过；单测合计 1,550 项、0 failures/errors。文件重命名同步更新错误目录与文件归属审查文档。
 
 ## Task 58：审查长函数与大文件的职责密度
 

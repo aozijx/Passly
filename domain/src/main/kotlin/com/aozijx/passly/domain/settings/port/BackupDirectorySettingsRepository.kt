@@ -8,5 +8,6 @@ interface BackupDirectorySettingsSource {
 
 interface BackupDirectorySettingsRepository : BackupDirectorySettingsSource {
     suspend fun setBackupDirectoryUri(uri: String)
+
     suspend fun clearBackupDirectoryUri()
 }

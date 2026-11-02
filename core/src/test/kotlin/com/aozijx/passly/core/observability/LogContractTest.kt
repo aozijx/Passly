@@ -25,13 +25,15 @@ class LogContractTest {
 
     @Test
     fun `log fields expose no arbitrary string value`() {
-        val constructorSignatures = LogValue::class.java.declaredClasses.associate { type ->
-            type.simpleName to type.declaredConstructors
-                .single { Modifier.isPublic(it.modifiers) }
-                .parameterTypes
-                .filterNot { it.name == "kotlin.jvm.internal.DefaultConstructorMarker" }
-                .toList()
-        }
+        val constructorSignatures =
+            LogValue::class.java.declaredClasses.associate { type ->
+                type.simpleName to
+                    type.declaredConstructors
+                        .single { Modifier.isPublic(it.modifiers) }
+                        .parameterTypes
+                        .filterNot { it.name == "kotlin.jvm.internal.DefaultConstructorMarker" }
+                        .toList()
+            }
 
         assertEquals(
             mapOf(
@@ -60,7 +62,13 @@ class LogContractTest {
             Logger::error
 
         assertFalse(warnContract == errorContract)
-        assertEquals(SanitizedLogRecord::class.java, LogSink::class.java.methods.single().parameterTypes.single())
+        assertEquals(
+            SanitizedLogRecord::class.java,
+            LogSink::class.java.methods
+                .single()
+                .parameterTypes
+                .single(),
+        )
     }
 
     @Test

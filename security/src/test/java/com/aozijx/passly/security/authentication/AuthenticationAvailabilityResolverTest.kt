@@ -9,15 +9,16 @@ import org.junit.Test
 class AuthenticationAvailabilityResolverTest {
     @Test
     fun `hardware availability only gates biometric configuration`() {
-        val credentials = AuthenticationCredentialSnapshot(
-            biometricConfigured = true,
-            appPasswordConfigured = true,
-            recoveryCodeConfigured = true,
-        )
+        val credentials =
+            AuthenticationCredentialSnapshot(
+                biometricConfigured = true,
+                appPasswordConfigured = true,
+                recoveryCodeConfigured = true,
+            )
 
         assertEquals(
             AuthenticationMethods(
-                setOf(AuthenticationMethod.APP_PASSWORD, AuthenticationMethod.RECOVERY_CODE)
+                setOf(AuthenticationMethod.APP_PASSWORD, AuthenticationMethod.RECOVERY_CODE),
             ),
             credentials.toAuthenticationMethods(biometricAvailable = false),
         )
@@ -27,7 +28,7 @@ class AuthenticationAvailabilityResolverTest {
                     AuthenticationMethod.BIOMETRIC,
                     AuthenticationMethod.APP_PASSWORD,
                     AuthenticationMethod.RECOVERY_CODE,
-                )
+                ),
             ),
             credentials.toAuthenticationMethods(biometricAvailable = true),
         )

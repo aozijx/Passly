@@ -15,17 +15,19 @@ class ErrorCatalogTaskTest {
     fun `duplicate codes and unknown default reasons are rejected`() {
         assertFailsWith<IllegalArgumentException> {
             parse(
-                errors = """
+                errors =
+                    """
                     {"symbol":"One","code":"DUPLICATE","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"one"},
                     {"symbol":"Two","code":"DUPLICATE","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"two"}
-                """.trimIndent(),
+                    """.trimIndent(),
             )
         }
         assertFailsWith<IllegalArgumentException> {
             parse(
-                errors = """
+                errors =
+                    """
                     {"symbol":"One","code":"ONE_ERROR","default_reason":"MISSING","category":"APPLICATION","exposure":"INTERNAL","description":"one"}
-                """.trimIndent(),
+                    """.trimIndent(),
             )
         }
     }
@@ -34,27 +36,31 @@ class ErrorCatalogTaskTest {
     fun `message mapping exists only for user actionable errors`() {
         assertFailsWith<IllegalArgumentException> {
             parse(
-                errors = """
+                errors =
+                    """
                     {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"USER_ACTIONABLE","description":"one"}
-                """.trimIndent(),
+                    """.trimIndent(),
             )
         }
         assertFailsWith<IllegalArgumentException> {
             parse(
-                errors = """
+                errors =
+                    """
                     {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"APPLICATION","exposure":"INTERNAL","description":"one","message_key":"auth_error_failed"}
-                """.trimIndent(),
+                    """.trimIndent(),
             )
         }
     }
 
     @Test
     fun `rendered kotlin and markdown are deterministic`() {
-        val catalog = parse(
-            errors = """
-                {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"SECURITY","exposure":"USER_ACTIONABLE","description":"Visible failure","message_key":"auth_error_failed"}
-            """.trimIndent(),
-        )
+        val catalog =
+            parse(
+                errors =
+                    """
+                    {"symbol":"One","code":"ONE_ERROR","default_reason":"KNOWN","category":"SECURITY","exposure":"USER_ACTIONABLE","description":"Visible failure","message_key":"auth_error_failed"}
+                    """.trimIndent(),
+            )
 
         val first = ErrorCatalogRenderer.render(catalog)
         val second = ErrorCatalogRenderer.render(catalog)
@@ -69,10 +75,11 @@ class ErrorCatalogTaskTest {
         assertTrue(first.markdown.contains("| `ONE_ERROR` | `KNOWN` | USER_ACTIONABLE | Visible failure |"))
     }
 
-    private fun parse(errors: String): ErrorCatalog = ErrorCatalogParser.parse(
-        directory.resolve("catalog.json").apply {
-            writeText(
-                """
+    private fun parse(errors: String): ErrorCatalog =
+        ErrorCatalogParser.parse(
+            directory.resolve("catalog.json").apply {
+                writeText(
+                    """
                     {
                       "schema_version": 1,
                       "reasons": [
@@ -82,8 +89,8 @@ class ErrorCatalogTaskTest {
                         $errors
                       ]
                     }
-                """.trimIndent(),
-            )
-        },
-    )
+                    """.trimIndent(),
+                )
+            },
+        )
 }

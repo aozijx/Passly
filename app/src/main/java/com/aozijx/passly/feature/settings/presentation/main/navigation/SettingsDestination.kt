@@ -5,16 +5,31 @@ import java.io.Serializable
 /**
  * 设置模块嵌套导航路由。
  */
-sealed class SettingsDestination(val route: String) : Serializable {
+sealed class SettingsDestination(
+    val route: String,
+) : Serializable {
     companion object {
         private val destinations by lazy {
-            listOf(Security, Privacy, Permissions, Appearance, Interface, Interaction, Autofill,
-                DataManagement, BackupRestore, Notifications, RecoveryCode, About, Diagnostics)
-                .associateBy(SettingsDestination::route)
+            listOf(
+                Security,
+                Privacy,
+                Permissions,
+                Appearance,
+                Interface,
+                Interaction,
+                Autofill,
+                DataManagement,
+                BackupRestore,
+                Notifications,
+                RecoveryCode,
+                About,
+                Diagnostics,
+            ).associateBy(SettingsDestination::route)
         }
 
         fun fromRouteKey(routeKey: String): SettingsDestination? = destinations[routeKey]
     }
+
     data object Main : SettingsDestination("settings/main") {
         private fun readResolve(): Any = Main
     }
@@ -72,18 +87,19 @@ sealed class SettingsDestination(val route: String) : Serializable {
     }
 }
 
-internal fun settingsDetailRoutes(): List<SettingsDestination> = listOf(
-    SettingsDestination.Security,
-    SettingsDestination.Privacy,
-    SettingsDestination.Permissions,
-    SettingsDestination.Appearance,
-    SettingsDestination.Interface,
-    SettingsDestination.Interaction,
-    SettingsDestination.Autofill,
-    SettingsDestination.DataManagement,
-    SettingsDestination.BackupRestore,
-    SettingsDestination.Notifications,
-    SettingsDestination.RecoveryCode,
-    SettingsDestination.About,
-    SettingsDestination.Diagnostics,
-)
+internal fun settingsDetailRoutes(): List<SettingsDestination> =
+    listOf(
+        SettingsDestination.Security,
+        SettingsDestination.Privacy,
+        SettingsDestination.Permissions,
+        SettingsDestination.Appearance,
+        SettingsDestination.Interface,
+        SettingsDestination.Interaction,
+        SettingsDestination.Autofill,
+        SettingsDestination.DataManagement,
+        SettingsDestination.BackupRestore,
+        SettingsDestination.Notifications,
+        SettingsDestination.RecoveryCode,
+        SettingsDestination.About,
+        SettingsDestination.Diagnostics,
+    )

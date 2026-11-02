@@ -1,15 +1,14 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import androidx.annotation.StringRes
-
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailCardTextFieldUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailCardTextFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIdentityUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPasskeyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSeedPhraseUiModel
@@ -19,8 +18,13 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSshUiM
  * One projection of the storage facts used by every detail section:
  * metadata says whether a protected value exists; the reveal store may supply its plaintext.
  */
-internal class DetailFieldProjection(private val state: DetailUiState) {
-    fun protected(fieldKey: FieldKey, sensitiveKey: SensitiveFieldKey): DetailProtectedField =
+internal class DetailFieldProjection(
+    private val state: DetailUiState,
+) {
+    fun protected(
+        fieldKey: FieldKey,
+        sensitiveKey: SensitiveFieldKey,
+    ): DetailProtectedField =
         DetailProtectedField(
             present = sensitiveKey in state.sensitiveFieldKeys,
             value = state.revealed(fieldKey).copyToString(),
@@ -45,7 +49,11 @@ internal fun detailBankCardUiModel(
     val cvv = fields.protected(FieldKey.CARD_CVV, SensitiveFieldKey.CARD_CVV)
     val paymentPin = fields.protected(FieldKey.PAYMENT_PIN, SensitiveFieldKey.CARD_PAYMENT_PIN)
 
-    fun bankDetail(field: DetailFieldUiModel, @StringRes labelRes: Int, value: String?) = DetailCardTextFieldUiModel(
+    fun bankDetail(
+        field: DetailFieldUiModel,
+        @StringRes labelRes: Int,
+        value: String?,
+    ) = DetailCardTextFieldUiModel(
         field = field,
         labelRes = labelRes,
         value = value,
@@ -73,14 +81,15 @@ internal fun detailBankCardUiModel(
         editingCvv = state.fieldEdits.isEditing(FieldKey.CARD_CVV),
         editedCvv = state.fieldEdits.draft(FieldKey.CARD_CVV),
         canRevealMore = cardNumber.hidden || cvv.hidden || paymentPin.hidden,
-        bankDetails = listOf(
-            bankDetail(DetailFieldUiModel.CARD_ISSUING_BANK, R.string.card_issuing_bank, card?.issuingBank),
-            bankDetail(DetailFieldUiModel.CARD_BANK_BRANCH, R.string.card_bank_branch, card?.bankBranch),
-            bankDetail(DetailFieldUiModel.CARD_PRODUCT, R.string.card_product, card?.cardProduct),
-            bankDetail(DetailFieldUiModel.CARD_CURRENCY, R.string.card_currency, card?.currency),
-            bankDetail(DetailFieldUiModel.CARD_BANK_PHONE, R.string.card_bank_phone, card?.bankPhone),
-            bankDetail(DetailFieldUiModel.BILLING_ADDRESS, R.string.billing_address, card?.billingAddress),
-        ),
+        bankDetails =
+            listOf(
+                bankDetail(DetailFieldUiModel.CARD_ISSUING_BANK, R.string.card_issuing_bank, card?.issuingBank),
+                bankDetail(DetailFieldUiModel.CARD_BANK_BRANCH, R.string.card_bank_branch, card?.bankBranch),
+                bankDetail(DetailFieldUiModel.CARD_PRODUCT, R.string.card_product, card?.cardProduct),
+                bankDetail(DetailFieldUiModel.CARD_CURRENCY, R.string.card_currency, card?.currency),
+                bankDetail(DetailFieldUiModel.CARD_BANK_PHONE, R.string.card_bank_phone, card?.bankPhone),
+                bankDetail(DetailFieldUiModel.BILLING_ADDRESS, R.string.billing_address, card?.billingAddress),
+            ),
     )
 }
 
@@ -121,22 +130,22 @@ internal fun detailSeedPhraseUiModel(fields: DetailFieldProjection): DetailSeedP
 internal fun detailPasskeyUiModel(
     entry: Entry,
     fields: DetailFieldProjection,
-): DetailPasskeyUiModel = fields.protected(
-    FieldKey.PASSKEY_DATA,
-    SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE,
-).let {
-    DetailPasskeyUiModel(
-        present = it.present,
-        revealedValue = it.value,
-        hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo,
-    )
-}
+): DetailPasskeyUiModel =
+    fields
+        .protected(
+            FieldKey.PASSKEY_DATA,
+            SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE,
+        ).let {
+            DetailPasskeyUiModel(
+                present = it.present,
+                revealedValue = it.value,
+                hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo,
+            )
+        }
 
-internal fun DetailFieldEditState.isEditing(fieldKey: FieldKey): Boolean =
-    isEditing(DetailDraftKey.EntryField(fieldKey))
+internal fun DetailFieldEditState.isEditing(fieldKey: FieldKey): Boolean = isEditing(DetailDraftKey.EntryField(fieldKey))
 
-internal fun DetailFieldEditState.draft(fieldKey: FieldKey): String =
-    draft(DetailDraftKey.EntryField(fieldKey))
+internal fun DetailFieldEditState.draft(fieldKey: FieldKey): String = draft(DetailDraftKey.EntryField(fieldKey))
 
 internal fun SensitiveValue?.copyToString(): String? {
     val source = this ?: return null

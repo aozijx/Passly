@@ -13,23 +13,23 @@ import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
             childColumns = ["sourceEntryId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
             childColumns = ["targetEntryId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["sourceEntryId"]),
         Index(value = ["targetEntryId"]),
         Index(
             value = ["sourceEntryId", "targetEntryId", "relationType"],
-            unique = true
-        )
-    ]
+            unique = true,
+        ),
+    ],
 )
 data class EntryLinkEntity(
     @PrimaryKey
@@ -38,5 +38,5 @@ data class EntryLinkEntity(
     val targetEntryId: String,
     val relationType: EntryRelationType,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 )

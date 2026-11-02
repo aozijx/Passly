@@ -18,12 +18,13 @@ internal fun BackupSheetColumn(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-            .padding(horizontal = 20.dp)
-            .navigationBarsPadding()
-            .padding(bottom = 24.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                .padding(horizontal = 20.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,
     )

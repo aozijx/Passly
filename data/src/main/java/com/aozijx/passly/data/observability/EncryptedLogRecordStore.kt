@@ -44,55 +44,64 @@ internal class EncryptedLogRecordStore(
 ) : LogRecordStore {
     private val writeAcceptanceLock = Any()
     private val writeLock = Any()
-    private val manager = EncryptedLogFileManager(
-        directory = directory,
-        keyWrapper = keyWrapper,
-        random = random,
-        nowMs = nowMs,
-        maxFileBytes = maxFileBytes,
-        maxTotalBytes = maxTotalBytes,
-        maxFiles = maxFiles,
-    )
+    private val manager =
+        EncryptedLogFileManager(
+            directory = directory,
+            keyWrapper = keyWrapper,
+            random = random,
+            nowMs = nowMs,
+            maxFileBytes = maxFileBytes,
+            maxTotalBytes = maxTotalBytes,
+            maxFiles = maxFiles,
+        )
     private val crashClaimed = AtomicBoolean(false)
     private val overflowEmergencyClaimed = AtomicBoolean(false)
     private val emergencyThreads = ConcurrentHashMap.newKeySet<Thread>()
     private val droppedCounts = AtomicLongArray(LogLevel.entries.size)
-    private val writer = ThreadPoolExecutor(
-        1,
-        1,
-        0,
-        TimeUnit.MILLISECONDS,
-        ArrayBlockingQueue(maxQueuedRecords),
-        { task -> Thread(task, "passly-observability-writer").apply { isDaemon = true } },
-        ThreadPoolExecutor.AbortPolicy(),
-    )
-    private val emergencyEntry = AtomicReference(
-        manager.prepareEntry(File(directory, "emergency_${nowMs()}.log"), nowMs()),
-    )
+    private val writer =
+        ThreadPoolExecutor(
+            1,
+            1,
+            0,
+            TimeUnit.MILLISECONDS,
+            ArrayBlockingQueue(maxQueuedRecords),
+            { task -> Thread(task, "passly-observability-writer").apply { isDaemon = true } },
+            ThreadPoolExecutor.AbortPolicy(),
+        )
+    private val emergencyEntry =
+        AtomicReference(
+            manager.prepareEntry(File(directory, "emergency_${nowMs()}.log"), nowMs()),
+        )
 
-    override fun write(record: SanitizedLogRecord) = synchronized(writeAcceptanceLock) {
-        val task = WriteTask(record)
-        try {
-            writer.execute(task)
-        } catch (_: RejectedExecutionException) {
-            val evicted = evictQueuedLowerPriority(record.level)
-            if (evicted != null) {
-                recordDrop(evicted)
-                if (runCatching { writer.execute(task) }.isSuccess) return@synchronized
+    override fun write(record: SanitizedLogRecord) =
+        synchronized(writeAcceptanceLock) {
+            val task = WriteTask(record)
+            try {
+                writer.execute(task)
+            } catch (_: RejectedExecutionException) {
+                val evicted = evictQueuedLowerPriority(record.level)
+                if (evicted != null) {
+                    recordDrop(evicted)
+                    if (runCatching { writer.execute(task) }.isSuccess) return@synchronized
+                }
+                if (record.level in setOf(LogLevel.ERROR, LogLevel.FATAL) &&
+                    overflowEmergencyClaimed.compareAndSet(false, true)
+                ) {
+                    if (emergencyWriteAsync(record, "overflow")) return@synchronized
+                }
+                recordDrop(record.level)
             }
-            if (record.level in setOf(LogLevel.ERROR, LogLevel.FATAL) &&
-                overflowEmergencyClaimed.compareAndSet(false, true)
-            ) {
-                if (emergencyWriteAsync(record, "overflow")) return@synchronized
-            }
-            recordDrop(record.level)
         }
-    }
 
-    override fun readPage(cursor: LogRecordCursor?, limit: Int): LogRecordPage =
-        synchronized(writeLock) { readPageLocked(cursor, limit) }
+    override fun readPage(
+        cursor: LogRecordCursor?,
+        limit: Int,
+    ): LogRecordPage = synchronized(writeLock) { readPageLocked(cursor, limit) }
 
-    private fun readPageLocked(cursor: LogRecordCursor?, limit: Int): LogRecordPage {
+    private fun readPageLocked(
+        cursor: LogRecordCursor?,
+        limit: Int,
+    ): LogRecordPage {
         require(limit in 1..MAX_PAGE_RECORDS) { "Invalid page size" }
         val files = manager.listLogFiles()
         val total = files.sumOf(manager::countRecords)
@@ -108,46 +117,58 @@ internal class EncryptedLogRecordStore(
                 try {
                     val headerEnd = input.filePointer
                     val fileId = opened.fileId.toHex()
-                    val offset = if (cursor != null && cursor.fileIndex == fileIndex) {
-                        require(cursor.fileId == fileId) { "Cursor file mismatch" }
-                        require(cursor.nextRecordOffset in 0..(input.length() - headerEnd)) {
-                            "Invalid cursor offset"
+                    val offset =
+                        if (cursor != null && cursor.fileIndex == fileIndex) {
+                            require(cursor.fileId == fileId) { "Cursor file mismatch" }
+                            require(cursor.nextRecordOffset in 0..(input.length() - headerEnd)) {
+                                "Invalid cursor offset"
+                            }
+                            cursor.nextRecordOffset
+                        } else {
+                            0L
                         }
-                        cursor.nextRecordOffset
-                    } else 0L
-                    var expected = if (cursor != null && cursor.fileIndex == fileIndex) {
-                        cursor.nextSequence
-                    } else 1L
+                    var expected =
+                        if (cursor != null && cursor.fileIndex == fileIndex) {
+                            cursor.nextSequence
+                        } else {
+                            1L
+                        }
                     input.seek(headerEnd + offset)
                     while (input.filePointer < input.length() && records.size < limit) {
-                        val nonce = ByteArray(input.readInt().checkedExact(NONCE_BYTES))
-                            .also(input::readFully)
+                        val nonce =
+                            ByteArray(input.readInt().checkedExact(NONCE_BYTES))
+                                .also(input::readFully)
                         val sequence = input.readLong()
                         require(sequence == expected) { "Non-monotonic record sequence" }
                         val level = input.readUnsignedByte()
                         require(LogLevel.fromWireId(level) != null) { "Invalid record level" }
-                        val ciphertext = ByteArray(
-                            input.readInt().checkedMax(LogRecordCodec.MAX_RECORD_BYTES + TAG_BYTES),
-                        ).also(input::readFully)
+                        val ciphertext =
+                            ByteArray(
+                                input.readInt().checkedMax(LogRecordCodec.MAX_RECORD_BYTES + TAG_BYTES),
+                            ).also(input::readFully)
                         val plain = decrypt(opened.dataKey, opened.fileId, sequence, level, nonce, ciphertext)
                         ciphertext.fill(0)
-                        val record = try {
-                            LogRecordCodec.decode(plain)
-                        } finally {
-                            plain.fill(0)
-                        }
+                        val record =
+                            try {
+                                LogRecordCodec.decode(plain)
+                            } finally {
+                                plain.fill(0)
+                            }
                         require(record.level.wireId == level) { "Authenticated level mismatch" }
                         records += record
                         expected++
                         if (records.size == limit) {
-                            next = if (input.filePointer < input.length()) {
-                                LogRecordCursor(
-                                    fileIndex,
-                                    fileId,
-                                    input.filePointer - headerEnd,
-                                    expected,
-                                )
-                            } else nextFileCursor(files, fileIndex + 1)
+                            next =
+                                if (input.filePointer < input.length()) {
+                                    LogRecordCursor(
+                                        fileIndex,
+                                        fileId,
+                                        input.filePointer - headerEnd,
+                                        expected,
+                                    )
+                                } else {
+                                    nextFileCursor(files, fileIndex + 1)
+                                }
                             break@files
                         }
                     }
@@ -169,8 +190,10 @@ internal class EncryptedLogRecordStore(
         var cursor: LogRecordCursor? = null
         do {
             val page = readPage(cursor, minOf(MAX_PAGE_RECORDS, limit - result.size))
-            result += page.records.filter { it.timestampMs in startTimestampMs until endTimestampMs }
-                .take(limit - result.size)
+            result +=
+                page.records
+                    .filter { it.timestampMs in startTimestampMs until endTimestampMs }
+                    .take(limit - result.size)
             cursor = page.nextCursor
         } while (cursor != null && result.size < limit)
         return result
@@ -182,11 +205,12 @@ internal class EncryptedLogRecordStore(
         val completed = CountDownLatch(1)
         writer.prestartCoreThread()
         return try {
-            val queued = writer.queue.offer(
-                Runnable { completed.countDown() },
-                timeoutMs,
-                TimeUnit.MILLISECONDS,
-            )
+            val queued =
+                writer.queue.offer(
+                    Runnable { completed.countDown() },
+                    timeoutMs,
+                    TimeUnit.MILLISECONDS,
+                )
             if (!queued) return false
             var remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
             if (!completed.await(remaining, TimeUnit.NANOSECONDS)) return false
@@ -202,43 +226,49 @@ internal class EncryptedLogRecordStore(
         }
     }
 
-    override fun clear(): LogClearResult = synchronized(writeAcceptanceLock) {
-        if (!flush(CLEAR_FLUSH_TIMEOUT_MS)) return@synchronized LogClearResult.Failed
-        synchronized(writeLock) {
-            if (manager.clear()) LogClearResult.Cleared else LogClearResult.Failed
+    override fun clear(): LogClearResult =
+        synchronized(writeAcceptanceLock) {
+            if (!flush(CLEAR_FLUSH_TIMEOUT_MS)) return@synchronized LogClearResult.Failed
+            synchronized(writeLock) {
+                if (manager.clear()) LogClearResult.Cleared else LogClearResult.Failed
+            }
         }
-    }
 
     override fun storageBytes(): Long = synchronized(writeLock) { manager.storageBytes() }
 
-    override fun drainDroppedCounts(): LogDropCounts = LogDropCounts(
-        debug = droppedCounts.getAndSet(LogLevel.DEBUG.ordinal, 0),
-        info = droppedCounts.getAndSet(LogLevel.INFO.ordinal, 0),
-        warn = droppedCounts.getAndSet(LogLevel.WARN.ordinal, 0),
-        error = droppedCounts.getAndSet(LogLevel.ERROR.ordinal, 0),
-        fatal = droppedCounts.getAndSet(LogLevel.FATAL.ordinal, 0),
-    )
+    override fun drainDroppedCounts(): LogDropCounts =
+        LogDropCounts(
+            debug = droppedCounts.getAndSet(LogLevel.DEBUG.ordinal, 0),
+            info = droppedCounts.getAndSet(LogLevel.INFO.ordinal, 0),
+            warn = droppedCounts.getAndSet(LogLevel.WARN.ordinal, 0),
+            error = droppedCounts.getAndSet(LogLevel.ERROR.ordinal, 0),
+            fatal = droppedCounts.getAndSet(LogLevel.FATAL.ordinal, 0),
+        )
 
-    override fun crashEmergencyWrite(record: SanitizedLogRecord, timeoutMs: Long): Boolean =
+    override fun crashEmergencyWrite(
+        record: SanitizedLogRecord,
+        timeoutMs: Long,
+    ): Boolean =
         synchronized(writeAcceptanceLock) {
-        require(timeoutMs > 0) { "Emergency timeout must be positive" }
-        if (!crashClaimed.compareAndSet(false, true)) return@synchronized false
-        emergencyWrite(record, timeoutMs, "crash")
-    }
+            require(timeoutMs > 0) { "Emergency timeout must be positive" }
+            if (!crashClaimed.compareAndSet(false, true)) return@synchronized false
+            emergencyWrite(record, timeoutMs, "crash")
+        }
 
     override fun close() {
         writer.shutdown()
-        val terminated = try {
-            if (writer.awaitTermination(500, TimeUnit.MILLISECONDS)) {
-                true
-            } else {
-                writer.shutdownNow()
-                writer.awaitTermination(500, TimeUnit.MILLISECONDS)
+        val terminated =
+            try {
+                if (writer.awaitTermination(500, TimeUnit.MILLISECONDS)) {
+                    true
+                } else {
+                    writer.shutdownNow()
+                    writer.awaitTermination(500, TimeUnit.MILLISECONDS)
+                }
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                false
             }
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
-            false
-        }
         val emergencyDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CLOSE_TIMEOUT_MS)
         emergencyThreads.toList().forEach { emergencyThread ->
             val remaining = (emergencyDeadline - System.nanoTime()).coerceAtLeast(0)
@@ -248,7 +278,9 @@ internal class EncryptedLogRecordStore(
         emergencyEntry.getAndSet(null)?.destroy()
     }
 
-    private inner class WriteTask(val record: SanitizedLogRecord) : Runnable {
+    private inner class WriteTask(
+        val record: SanitizedLogRecord,
+    ) : Runnable {
         override fun run() {
             try {
                 beforeWrite()
@@ -272,12 +304,14 @@ internal class EncryptedLogRecordStore(
     }
 
     private fun evictQueuedLowerPriority(incoming: LogLevel): LogLevel? {
-        val evictableLevels = listOf(LogLevel.DEBUG, LogLevel.INFO)
-            .filter { it.ordinal < incoming.ordinal }
+        val evictableLevels =
+            listOf(LogLevel.DEBUG, LogLevel.INFO)
+                .filter { it.ordinal < incoming.ordinal }
         for (level in evictableLevels) {
-            val task = writer.queue.firstOrNull {
-                it is WriteTask && it.record.level == level
-            } ?: continue
+            val task =
+                writer.queue.firstOrNull {
+                    it is WriteTask && it.record.level == level
+                } ?: continue
             if (writer.queue.remove(task)) return level
         }
         return null
@@ -287,14 +321,21 @@ internal class EncryptedLogRecordStore(
         droppedCounts.incrementAndGet(level.ordinal)
     }
 
-    private fun emergencyWriteAsync(record: SanitizedLogRecord, prefix: String): Boolean {
+    private fun emergencyWriteAsync(
+        record: SanitizedLogRecord,
+        prefix: String,
+    ): Boolean {
         val entry = emergencyEntry.getAndSet(null) ?: return false
         launchEmergencyWrite(record, prefix, entry)
         return true
     }
 
     /** Uses only pre-created in-memory key material and a separate file; no Keystore or normal lock. */
-    private fun emergencyWrite(record: SanitizedLogRecord, timeoutMs: Long, prefix: String): Boolean {
+    private fun emergencyWrite(
+        record: SanitizedLogRecord,
+        timeoutMs: Long,
+        prefix: String,
+    ): Boolean {
         val completed = AtomicBoolean(false)
         val entry = emergencyEntry.getAndSet(null) ?: return false
         val thread = launchEmergencyWrite(record, prefix, entry, completed)
@@ -308,29 +349,32 @@ internal class EncryptedLogRecordStore(
         entry: EncryptedLogFileManager.Entry,
         completed: AtomicBoolean = AtomicBoolean(false),
     ): Thread {
-        val thread = Thread(
-            {
-            var plain: ByteArray? = null
-            var stagingFile: File? = null
-            try {
-                plain = LogRecordCodec.encode(record)
-                val staging = File.createTempFile("${prefix}_${nowMs()}_", ".tmp", directory)
-                    .also { stagingFile = it }
-                manager.writeHeader(staging, entry)
-                append(staging, entry, 1, record.level.wireId, plain)
-                val completedFile = File(directory, "${staging.nameWithoutExtension}.log")
-                completed.set(staging.renameTo(completedFile))
-            } catch (_: Throwable) {
-                // Logging must never replace the original failure.
-            } finally {
-                if (completed.get().not()) stagingFile?.delete()
-                plain?.fill(0)
-                entry.destroy()
-                emergencyThreads.remove(Thread.currentThread())
-            }
-            },
-            "passly-observability-emergency",
-        ).apply { isDaemon = true }
+        val thread =
+            Thread(
+                {
+                    var plain: ByteArray? = null
+                    var stagingFile: File? = null
+                    try {
+                        plain = LogRecordCodec.encode(record)
+                        val staging =
+                            File
+                                .createTempFile("${prefix}_${nowMs()}_", ".tmp", directory)
+                                .also { stagingFile = it }
+                        manager.writeHeader(staging, entry)
+                        append(staging, entry, 1, record.level.wireId, plain)
+                        val completedFile = File(directory, "${staging.nameWithoutExtension}.log")
+                        completed.set(staging.renameTo(completedFile))
+                    } catch (_: Throwable) {
+                        // Logging must never replace the original failure.
+                    } finally {
+                        if (completed.get().not()) stagingFile?.delete()
+                        plain?.fill(0)
+                        entry.destroy()
+                        emergencyThreads.remove(Thread.currentThread())
+                    }
+                },
+                "passly-observability-emergency",
+            ).apply { isDaemon = true }
         emergencyThreads.add(thread)
         thread.start()
         return thread
@@ -389,25 +433,31 @@ internal class EncryptedLogRecordStore(
         return cipher.doFinal(ciphertext)
     }
 
-    private fun nextFileCursor(files: List<File>, start: Int): LogRecordCursor? {
+    private fun nextFileCursor(
+        files: List<File>,
+        start: Int,
+    ): LogRecordCursor? {
         for (index in start until files.size) {
-            val cursor = runCatching {
-                RandomAccessFile(files[index], "r").use { input ->
-                    val opened = manager.readHeader(input)
-                    try {
-                        LogRecordCursor(index, opened.fileId.toHex(), 0, 1)
-                    } finally {
-                        opened.destroy()
+            val cursor =
+                runCatching {
+                    RandomAccessFile(files[index], "r").use { input ->
+                        val opened = manager.readHeader(input)
+                        try {
+                            LogRecordCursor(index, opened.fileId.toHex(), 0, 1)
+                        } finally {
+                            opened.destroy()
+                        }
                     }
-                }
-            }.getOrNull()
+                }.getOrNull()
             if (cursor != null) return cursor
         }
         return null
     }
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+
     private fun Int.checkedMax(max: Int): Int = also { require(it in TAG_BYTES..max) }
+
     private fun Int.checkedExact(expected: Int): Int = also { require(it == expected) }
 
     companion object {
@@ -424,11 +474,14 @@ internal class EncryptedLogRecordStore(
 }
 
 @Singleton
-internal class EncryptedLogRecordStoreFactory @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-) : LogRecordStoreFactory {
-    override fun create(): LogRecordStore = EncryptedLogRecordStore(
-        directory = File(context.noBackupFilesDir, EncryptedLogRecordStore.DIRECTORY_NAME),
-        keyWrapper = AndroidKeystoreLogKeyWrapper(),
-    )
-}
+internal class EncryptedLogRecordStoreFactory
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+    ) : LogRecordStoreFactory {
+        override fun create(): LogRecordStore =
+            EncryptedLogRecordStore(
+                directory = File(context.noBackupFilesDir, EncryptedLogRecordStore.DIRECTORY_NAME),
+                keyWrapper = AndroidKeystoreLogKeyWrapper(),
+            )
+    }

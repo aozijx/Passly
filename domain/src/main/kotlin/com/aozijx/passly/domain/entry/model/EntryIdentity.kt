@@ -1,7 +1,9 @@
 package com.aozijx.passly.domain.entry.model
 
 @JvmInline
-value class EntryId(val value: String) : Comparable<EntryId> {
+value class EntryId(
+    val value: String,
+) : Comparable<EntryId> {
     init {
         require(value.isNotBlank()) { "Entry ID cannot be blank" }
     }
@@ -10,7 +12,9 @@ value class EntryId(val value: String) : Comparable<EntryId> {
 }
 
 @JvmInline
-value class EntryVersion(val value: Int) {
+value class EntryVersion(
+    val value: Int,
+) {
     init {
         require(value >= INITIAL_VALUE) { "Entry version must be positive" }
     }

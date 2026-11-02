@@ -9,7 +9,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppThemeSchemesTest {
-
     @Test
     fun everyConfiguredTheme_resolvesToThreeSeeds() {
         AppThemeSchemes.all.forEach { scheme ->
@@ -40,19 +39,22 @@ class AppThemeSchemesTest {
 
     @Test
     fun manualPalette_usesAllThreeAccentSeeds() {
-        val seeds = TEST_SEEDS.copy(
-            secondary = TEST_SEEDS.primary,
-            tertiary = TEST_SEEDS.primary,
-        )
+        val seeds =
+            TEST_SEEDS.copy(
+                secondary = TEST_SEEDS.primary,
+                tertiary = TEST_SEEDS.primary,
+            )
 
-        val secondaryChanged = generateAppColorScheme(
-            seeds.copy(secondary = TEST_SEEDS.secondary),
-            isDark = false,
-        )
-        val tertiaryChanged = generateAppColorScheme(
-            seeds.copy(tertiary = TEST_SEEDS.tertiary),
-            isDark = false,
-        )
+        val secondaryChanged =
+            generateAppColorScheme(
+                seeds.copy(secondary = TEST_SEEDS.secondary),
+                isDark = false,
+            )
+        val tertiaryChanged =
+            generateAppColorScheme(
+                seeds.copy(tertiary = TEST_SEEDS.tertiary),
+                isDark = false,
+            )
         val baseline = generateAppColorScheme(seeds, isDark = false)
 
         assertNotEquals(baseline.secondary, secondaryChanged.secondary)
@@ -78,14 +80,16 @@ class AppThemeSchemesTest {
         }
     }
 
-    private fun contrastRatio(first: Color, second: Color): Float {
+    private fun contrastRatio(
+        first: Color,
+        second: Color,
+    ): Float {
         val lighter = maxOf(first.luminance(), second.luminance())
         val darker = minOf(first.luminance(), second.luminance())
         return (lighter + 0.05f) / (darker + 0.05f)
     }
 
-    private fun Color.channelSpread(): Float =
-        maxOf(red, green, blue) - minOf(red, green, blue)
+    private fun Color.channelSpread(): Float = maxOf(red, green, blue) - minOf(red, green, blue)
 
     private companion object {
         val TEST_SEEDS = AccentSeeds(0xFF5B789E, 0xFF6C7E71, 0xFF85789B)

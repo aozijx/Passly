@@ -24,6 +24,7 @@ internal val AppShellUiState.windowPolicy: AppWindowPolicy
 
 sealed interface AppShellDatabaseState {
     data object Available : AppShellDatabaseState
+
     data class Failed(
         val cause: Throwable,
         val retryPhase: DatabaseRetryPhase = DatabaseRetryPhase.Idle,
@@ -49,20 +50,25 @@ internal enum class AppShellDestination {
 }
 
 internal val AppShellUiState.destination: AppShellDestination
-    get() = when {
-        databaseState is AppShellDatabaseState.Failed -> AppShellDestination.DATABASE_ERROR
-        sessionMode == AppShellSessionMode.VAULT -> AppShellDestination.VAULT
-        sessionMode == AppShellSessionMode.RECOVERY -> AppShellDestination.RECOVERY
-        else -> AppShellDestination.AUTHENTICATION
-    }
+    get() =
+        when {
+            databaseState is AppShellDatabaseState.Failed -> AppShellDestination.DATABASE_ERROR
+            sessionMode == AppShellSessionMode.VAULT -> AppShellDestination.VAULT
+            sessionMode == AppShellSessionMode.RECOVERY -> AppShellDestination.RECOVERY
+            else -> AppShellDestination.AUTHENTICATION
+        }
 
-internal fun AuthenticationState.toAppShellSessionMode(): AppShellSessionMode = when (this) {
-    is AuthenticationState.Authenticated -> AppShellSessionMode.VAULT
-    is AuthenticationState.RecoveryMode -> AppShellSessionMode.RECOVERY
-    AuthenticationState.Locked,
-    is AuthenticationState.AwaitingHost,
-    is AuthenticationState.Authenticating,
-    is AuthenticationState.Unlocking,
-    is AuthenticationState.Locking,
-    is AuthenticationState.AutofillAuthenticated -> AppShellSessionMode.AUTHENTICATION
-}
+internal fun AuthenticationState.toAppShellSessionMode(): AppShellSessionMode =
+    when (this) {
+        is AuthenticationState.Authenticated -> AppShellSessionMode.VAULT
+
+        is AuthenticationState.RecoveryMode -> AppShellSessionMode.RECOVERY
+
+        AuthenticationState.Locked,
+        is AuthenticationState.AwaitingHost,
+        is AuthenticationState.Authenticating,
+        is AuthenticationState.Unlocking,
+        is AuthenticationState.Locking,
+        is AuthenticationState.AutofillAuthenticated,
+        -> AppShellSessionMode.AUTHENTICATION
+    }

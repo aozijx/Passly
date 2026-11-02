@@ -12,12 +12,12 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
  * available set, never broaden it.
  */
 object AuthenticationMethodPolicy {
-
     /** Primary authentication factors that represent everyday unlock methods. */
-    val PRIMARY_METHODS: Set<AuthenticationMethod> = setOf(
-        AuthenticationMethod.BIOMETRIC,
-        AuthenticationMethod.APP_PASSWORD
-    )
+    val PRIMARY_METHODS: Set<AuthenticationMethod> =
+        setOf(
+            AuthenticationMethod.BIOMETRIC,
+            AuthenticationMethod.APP_PASSWORD,
+        )
 
     /**
      * Purposes that are allowed during a recovery-mode session.
@@ -26,17 +26,19 @@ object AuthenticationMethodPolicy {
      * recovery code.  Only these purposes are permitted while in recovery mode;
      * any other purpose will fail with [AuthenticationFailureCode.SESSION_MODE_RESTRICTED].
      */
-    val RECOVERY_MODE_PURPOSES: Set<AuthenticationPurpose> = setOf(
-        AuthenticationPurpose.RECOVER_AUTH_METHODS
-    )
+    val RECOVERY_MODE_PURPOSES: Set<AuthenticationPurpose> =
+        setOf(
+            AuthenticationPurpose.RECOVER_AUTH_METHODS,
+        )
 
     /**
      * Purposes that can reuse an existing recovery-mode session without
      * re-authentication.
      */
-    val RECOVERY_MODE_REUSABLE_PURPOSES: Set<AuthenticationPurpose> = setOf(
-        AuthenticationPurpose.RECOVER_AUTH_METHODS
-    )
+    val RECOVERY_MODE_REUSABLE_PURPOSES: Set<AuthenticationPurpose> =
+        setOf(
+            AuthenticationPurpose.RECOVER_AUTH_METHODS,
+        )
 
     /**
      * Returns the set of [AuthenticationMethod]s authorized for the given [purpose].
@@ -48,7 +50,8 @@ object AuthenticationMethodPolicy {
         when (purpose) {
             AuthenticationPurpose.UNLOCK_VAULT,
             AuthenticationPurpose.BACKUP_EXPORT,
-            AuthenticationPurpose.CLEAR_DATABASE -> PRIMARY_METHODS
+            AuthenticationPurpose.CLEAR_DATABASE,
+            -> PRIMARY_METHODS
 
             AuthenticationPurpose.RECOVER_AUTH_METHODS -> setOf(AuthenticationMethod.RECOVERY_CODE)
 
@@ -61,23 +64,29 @@ object AuthenticationMethodPolicy {
      */
     fun requiresFreshAuthentication(
         purpose: AuthenticationPurpose,
-        reauthenticateSensitiveCopies: Boolean
-    ): Boolean = when (purpose) {
-        AuthenticationPurpose.UNLOCK_VAULT,
-        AuthenticationPurpose.REVEAL_SECRET -> false
+        reauthenticateSensitiveCopies: Boolean,
+    ): Boolean =
+        when (purpose) {
+            AuthenticationPurpose.UNLOCK_VAULT,
+            AuthenticationPurpose.REVEAL_SECRET,
+            -> false
 
-        // 自动填充二阶段（填充/保存）需要新鲜认证：业务层 requireAuthentication
-        // 开关要求"填充前验证"时，即使 vault 已解锁也必须重新验证。
-        // 候选展示（BeginGet）不调用 authenticate，不受此策略影响。
-        AuthenticationPurpose.COPY_SECRET -> reauthenticateSensitiveCopies
-        AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> true
-        else -> true
-    }
+            // 自动填充二阶段（填充/保存）需要新鲜认证：业务层 requireAuthentication
+            // 开关要求"填充前验证"时，即使 vault 已解锁也必须重新验证。
+            // 候选展示（BeginGet）不调用 authenticate，不受此策略影响。
+            AuthenticationPurpose.COPY_SECRET -> reauthenticateSensitiveCopies
 
-    fun unlocksSensitiveDataKey(purpose: AuthenticationPurpose): Boolean = purpose in setOf(
-        AuthenticationPurpose.UNLOCK_VAULT,
-        AuthenticationPurpose.AUTOFILL,
-        AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET,
-        AuthenticationPurpose.BACKUP_EXPORT,
-    )
+            AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET -> true
+
+            else -> true
+        }
+
+    fun unlocksSensitiveDataKey(purpose: AuthenticationPurpose): Boolean =
+        purpose in
+            setOf(
+                AuthenticationPurpose.UNLOCK_VAULT,
+                AuthenticationPurpose.AUTOFILL,
+                AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET,
+                AuthenticationPurpose.BACKUP_EXPORT,
+            )
 }

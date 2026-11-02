@@ -5,8 +5,8 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.detail.EntryQrExportResult
 import com.aozijx.passly.feature.vault.detail.EntryQrKind
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,33 +38,44 @@ internal class DetailQrSession(
     fun request(entry: Entry) {
         close()
         if (!scope.isActive || !access.hasFullSecureSessionAccess()) return
-        val kind = when (entry.type) {
-            EntryType.OTP -> EntryQrKind.Otp
-            EntryType.WIFI -> EntryQrKind.Wifi
-            else -> return
-        }
+        val kind =
+            when (entry.type) {
+                EntryType.OTP -> EntryQrKind.Otp
+                EntryType.WIFI -> EntryQrKind.Wifi
+                else -> return
+            }
         val currentGeneration = generation
         mutableState.value = DetailQrState.Loading(kind)
-        requestJob = scope.launch {
-            val result = try {
-                export(entry)
-            } catch (cancelled: CancellationException) {
-                if (currentGeneration == generation) mutableState.value = DetailQrState.Hidden
-                throw cancelled
-            }
-            if (!isActive || currentGeneration != generation || !access.hasFullSecureSessionAccess()) {
-                (result as? EntryQrExportResult.Ready)?.content?.wipe()
-                return@launch
-            }
-            mutableState.value = when (result) {
-                is EntryQrExportResult.Ready -> {
-                    DetailQrState.Ready(result.kind, DetailQrPayload(result.content))
+        requestJob =
+            scope.launch {
+                val result =
+                    try {
+                        export(entry)
+                    } catch (cancelled: CancellationException) {
+                        if (currentGeneration == generation) mutableState.value = DetailQrState.Hidden
+                        throw cancelled
+                    }
+                if (!isActive || currentGeneration != generation || !access.hasFullSecureSessionAccess()) {
+                    (result as? EntryQrExportResult.Ready)?.content?.wipe()
+                    return@launch
                 }
-                EntryQrExportResult.Unavailable -> DetailQrState.Failed(kind)
-                EntryQrExportResult.Denied,
-                EntryQrExportResult.Cancelled -> DetailQrState.Hidden
+                mutableState.value =
+                    when (result) {
+                        is EntryQrExportResult.Ready -> {
+                            DetailQrState.Ready(result.kind, DetailQrPayload(result.content))
+                        }
+
+                        EntryQrExportResult.Unavailable -> {
+                            DetailQrState.Failed(kind)
+                        }
+
+                        EntryQrExportResult.Denied,
+                        EntryQrExportResult.Cancelled,
+                        -> {
+                            DetailQrState.Hidden
+                        }
+                    }
             }
-        }
     }
 
     fun close() {

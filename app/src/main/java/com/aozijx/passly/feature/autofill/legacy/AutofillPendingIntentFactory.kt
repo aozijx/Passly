@@ -17,111 +17,118 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AutofillPendingIntentFactory @Inject constructor(
-    private val launchTarget: AutofillLaunchTarget,
-) {
-    fun createCandidateIntent(
-        context: Context,
-        interactionId: AutofillInteractionId,
-        entryId: EntryId,
-        parsed: ParsedStructure,
-        uiMode: AutofillPresentation,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-        inlineRequest: InlineSuggestionsRequest? = null,
-    ): Intent {
-        val requestId = AutofillPendingIntentPolicy.legacyFillRequestId(
-            interactionId.value,
-            entryId.value,
-        )
-        return launchTarget.legacyFillIntent(context, requestId).apply {
-            setIdentifier(requestId)
-            putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
-            putCommonExtras(
-                interactionId,
-                parsed,
-                uiMode,
-                roleIds,
-                LegacyAutofillResultTarget.DATASET,
-                inlineRequest,
-            )
-        }
-    }
-
-    fun createPickerIntent(
-        context: Context,
-        interactionId: AutofillInteractionId,
-        parsed: ParsedStructure,
-        uiMode: AutofillPresentation,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-        inlineRequest: InlineSuggestionsRequest? = null,
-    ): Intent {
-        val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
-        return launchTarget.legacyFillIntent(context, requestId).apply {
-            setIdentifier(requestId)
-            putCommonExtras(
-                interactionId,
-                parsed,
-                uiMode,
-                roleIds,
-                LegacyAutofillResultTarget.DATASET,
-                inlineRequest,
-            )
-        }
-    }
-
-    fun createUnlockIntent(
-        context: Context,
-        interactionId: AutofillInteractionId,
-        parsed: ParsedStructure,
-        uiMode: AutofillPresentation,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-        inlineRequest: InlineSuggestionsRequest? = null,
-    ): Intent {
-        val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
-        return launchTarget.legacyFillIntent(context, requestId).apply {
-            setIdentifier(requestId)
-            putCommonExtras(
-                interactionId,
-                parsed,
-                uiMode,
-                roleIds,
-                LegacyAutofillResultTarget.RESPONSE,
-                inlineRequest,
-            )
-        }
-    }
-
-    private fun Intent.putCommonExtras(
-        interactionId: AutofillInteractionId,
-        parsed: ParsedStructure,
-        uiMode: AutofillPresentation,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-        resultTarget: LegacyAutofillResultTarget,
-        inlineRequest: InlineSuggestionsRequest?,
+class AutofillPendingIntentFactory
+    @Inject
+    constructor(
+        private val launchTarget: AutofillLaunchTarget,
     ) {
-        putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
-        putExtra(AutofillLaunchExtras.UI_MODE, uiMode.wireKey)
-        inlineRequest?.let { putExtra(AutofillLaunchExtras.INLINE_REQUEST, it) }
-        putExtra(AutofillLaunchExtras.RESULT_TARGET, resultTarget.wireValue)
-        putExtra(AutofillLaunchExtras.PACKAGE_NAME, parsed.packageName)
-        putExtra(AutofillLaunchExtras.WEB_DOMAIN, parsed.webDomain)
-        putExtra(AutofillLaunchExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())
-        roleIds[FieldRole.USERNAME]?.takeIf(List<AutofillId>::isNotEmpty)
-            ?.let { putExtra(AutofillLaunchExtras.USERNAME_IDS, ArrayList(it)) }
-        roleIds[FieldRole.PASSWORD]?.takeIf(List<AutofillId>::isNotEmpty)
-            ?.let { putExtra(AutofillLaunchExtras.PASSWORD_IDS, ArrayList(it)) }
-        roleIds[FieldRole.OTP]?.takeIf(List<AutofillId>::isNotEmpty)
-            ?.let { putExtra(AutofillLaunchExtras.OTP_IDS, ArrayList(it)) }
-    }
+        fun createCandidateIntent(
+            context: Context,
+            interactionId: AutofillInteractionId,
+            entryId: EntryId,
+            parsed: ParsedStructure,
+            uiMode: AutofillPresentation,
+            roleIds: Map<FieldRole, List<AutofillId>>,
+            inlineRequest: InlineSuggestionsRequest? = null,
+        ): Intent {
+            val requestId =
+                AutofillPendingIntentPolicy.legacyFillRequestId(
+                    interactionId.value,
+                    entryId.value,
+                )
+            return launchTarget.legacyFillIntent(context, requestId).apply {
+                setIdentifier(requestId)
+                putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
+                putCommonExtras(
+                    interactionId,
+                    parsed,
+                    uiMode,
+                    roleIds,
+                    LegacyAutofillResultTarget.DATASET,
+                    inlineRequest,
+                )
+            }
+        }
 
-    fun getActivityPendingIntent(
-        context: Context,
-        requestCode: Int,
-        intent: Intent,
-    ): PendingIntent = PendingIntent.getActivity(
-        context,
-        requestCode,
-        intent,
-        AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
-    )
-}
+        fun createPickerIntent(
+            context: Context,
+            interactionId: AutofillInteractionId,
+            parsed: ParsedStructure,
+            uiMode: AutofillPresentation,
+            roleIds: Map<FieldRole, List<AutofillId>>,
+            inlineRequest: InlineSuggestionsRequest? = null,
+        ): Intent {
+            val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
+            return launchTarget.legacyFillIntent(context, requestId).apply {
+                setIdentifier(requestId)
+                putCommonExtras(
+                    interactionId,
+                    parsed,
+                    uiMode,
+                    roleIds,
+                    LegacyAutofillResultTarget.DATASET,
+                    inlineRequest,
+                )
+            }
+        }
+
+        fun createUnlockIntent(
+            context: Context,
+            interactionId: AutofillInteractionId,
+            parsed: ParsedStructure,
+            uiMode: AutofillPresentation,
+            roleIds: Map<FieldRole, List<AutofillId>>,
+            inlineRequest: InlineSuggestionsRequest? = null,
+        ): Intent {
+            val requestId = AutofillPendingIntentPolicy.legacyInteractionRequestId(interactionId.value)
+            return launchTarget.legacyFillIntent(context, requestId).apply {
+                setIdentifier(requestId)
+                putCommonExtras(
+                    interactionId,
+                    parsed,
+                    uiMode,
+                    roleIds,
+                    LegacyAutofillResultTarget.RESPONSE,
+                    inlineRequest,
+                )
+            }
+        }
+
+        private fun Intent.putCommonExtras(
+            interactionId: AutofillInteractionId,
+            parsed: ParsedStructure,
+            uiMode: AutofillPresentation,
+            roleIds: Map<FieldRole, List<AutofillId>>,
+            resultTarget: LegacyAutofillResultTarget,
+            inlineRequest: InlineSuggestionsRequest?,
+        ) {
+            putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
+            putExtra(AutofillLaunchExtras.UI_MODE, uiMode.wireKey)
+            inlineRequest?.let { putExtra(AutofillLaunchExtras.INLINE_REQUEST, it) }
+            putExtra(AutofillLaunchExtras.RESULT_TARGET, resultTarget.wireValue)
+            putExtra(AutofillLaunchExtras.PACKAGE_NAME, parsed.packageName)
+            putExtra(AutofillLaunchExtras.WEB_DOMAIN, parsed.webDomain)
+            putExtra(AutofillLaunchExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())
+            roleIds[FieldRole.USERNAME]
+                ?.takeIf(List<AutofillId>::isNotEmpty)
+                ?.let { putExtra(AutofillLaunchExtras.USERNAME_IDS, ArrayList(it)) }
+            roleIds[FieldRole.PASSWORD]
+                ?.takeIf(List<AutofillId>::isNotEmpty)
+                ?.let { putExtra(AutofillLaunchExtras.PASSWORD_IDS, ArrayList(it)) }
+            roleIds[FieldRole.OTP]
+                ?.takeIf(List<AutofillId>::isNotEmpty)
+                ?.let { putExtra(AutofillLaunchExtras.OTP_IDS, ArrayList(it)) }
+        }
+
+        fun getActivityPendingIntent(
+            context: Context,
+            requestCode: Int,
+            intent: Intent,
+        ): PendingIntent =
+            PendingIntent.getActivity(
+                context,
+                requestCode,
+                intent,
+                AutofillPendingIntentPolicy.ACTIVITY_FLAGS,
+            )
+    }

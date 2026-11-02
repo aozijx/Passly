@@ -38,26 +38,29 @@ class SegmentedSettingsGroupTest {
 
             MaterialTheme {
                 SegmentedSettingsGroup(
-                    items = listOf(
-                        dropdownSettingsGroupItem(
-                            key = "appearance.theme_mode",
-                            title = "外观模式",
-                            selected = selected,
-                            selectedLabel = when (selected) {
-                                null -> "跟随系统"
-                                false -> "浅色"
-                                true -> "深色"
-                            },
-                            options = listOf(
-                                null to "跟随系统",
-                                false to "浅色",
-                                true to "深色",
+                    items =
+                        listOf(
+                            dropdownSettingsGroupItem(
+                                key = "appearance.theme_mode",
+                                title = "外观模式",
+                                selected = selected,
+                                selectedLabel =
+                                    when (selected) {
+                                        null -> "跟随系统"
+                                        false -> "浅色"
+                                        true -> "深色"
+                                    },
+                                options =
+                                    listOf(
+                                        null to "跟随系统",
+                                        false to "浅色",
+                                        true to "深色",
+                                    ),
+                                expanded = expanded,
+                                onExpandedChange = { expanded = it },
+                                onSelect = { selected = it },
                             ),
-                            expanded = expanded,
-                            onExpandedChange = { expanded = it },
-                            onSelect = { selected = it },
                         ),
-                    ),
                 )
             }
         }
@@ -72,30 +75,35 @@ class SegmentedSettingsGroupTest {
         composeRule.setContent {
             MaterialTheme {
                 SegmentedSettingsGroup(
-                    items = listOf(
-                        sliderSettingsGroupItem(
-                            key = "interface.app_corner_radius",
-                            icon = Icons.Default.RoundedCorner,
-                            title = "应用圆角",
-                            subtitle = "调整应用组件的圆角",
-                            value = 16f,
-                            valueLabel = "16 dp",
-                            valueRange = 0f..48f,
-                            steps = 47,
-                            onValueChange = {},
-                            onValueChangeFinished = {},
+                    items =
+                        listOf(
+                            sliderSettingsGroupItem(
+                                key = "interface.app_corner_radius",
+                                icon = Icons.Default.RoundedCorner,
+                                title = "应用圆角",
+                                subtitle = "调整应用组件的圆角",
+                                value = 16f,
+                                valueLabel = "16 dp",
+                                valueRange = 0f..48f,
+                                steps = 47,
+                                onValueChange = {},
+                                onValueChangeFinished = {},
+                            ),
                         ),
-                    ),
                     modifier = Modifier.width(360.dp).testTag("settings_group"),
                 )
             }
         }
 
-        val groupBounds = composeRule.onNodeWithTag("settings_group")
-            .getUnclippedBoundsInRoot()
-        val sliderBounds = composeRule.onNode(
-            SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo),
-        ).getUnclippedBoundsInRoot()
+        val groupBounds =
+            composeRule
+                .onNodeWithTag("settings_group")
+                .getUnclippedBoundsInRoot()
+        val sliderBounds =
+            composeRule
+                .onNode(
+                    SemanticsMatcher.keyIsDefined(SemanticsProperties.ProgressBarRangeInfo),
+                ).getUnclippedBoundsInRoot()
 
         val groupCenter = (groupBounds.left + groupBounds.right) / 2
         val sliderCenter = (sliderBounds.left + sliderBounds.right) / 2

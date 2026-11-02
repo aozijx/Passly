@@ -17,7 +17,10 @@ object AppPreferencesSerializer : Serializer<AppPreferences> {
             throw CorruptionException("Unable to read app preferences.", error)
         }
 
-    override suspend fun writeTo(t: AppPreferences, output: OutputStream) {
+    override suspend fun writeTo(
+        t: AppPreferences,
+        output: OutputStream,
+    ) {
         t.writeTo(output)
     }
 }

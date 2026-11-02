@@ -1,6 +1,5 @@
 package com.aozijx.passly.core.ui.components.common
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import kotlinx.coroutines.delay
 
 private const val RESULT_DISPLAY_DURATION_MS = 2_500L
@@ -112,16 +112,19 @@ fun InputActionButton(
                     singleLine = true,
                     label = { Text(config.inputLabel) },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done,
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
                     keyboardActions = KeyboardActions(onDone = { submit() }),
                     enabled = enabled && state.phase != ActionButtonPhase.InProgress,
-                    modifier = Modifier
-                        .bringIntoViewRequester(bringIntoViewRequester)
-                        .focusRequester(focusRequester)
-                        .fillMaxWidth().excludeFromAutofill(),
+                    modifier =
+                        Modifier
+                            .bringIntoViewRequester(bringIntoViewRequester)
+                            .focusRequester(focusRequester)
+                            .fillMaxWidth()
+                            .excludeFromAutofill(),
                     shape = MaterialTheme.shapes.extraLarge,
                 )
                 Spacer(modifier = Modifier.height(InputFieldSpacing))
@@ -131,20 +134,28 @@ fun InputActionButton(
         ActionButton(
             modifier = Modifier.fillMaxWidth(),
             phase = state.phase,
-            icon = when (state.phase) {
-                ActionButtonPhase.Succeeded -> config.successIcon
-                ActionButtonPhase.Failed -> config.errorIcon
-                ActionButtonPhase.Idle,
-                ActionButtonPhase.InProgress -> config.icon
-            },
+            icon =
+                when (state.phase) {
+                    ActionButtonPhase.Succeeded -> config.successIcon
+
+                    ActionButtonPhase.Failed -> config.errorIcon
+
+                    ActionButtonPhase.Idle,
+                    ActionButtonPhase.InProgress,
+                    -> config.icon
+                },
             containerColor = config.containerColor,
             text = if (state.expanded) config.expandedText else config.collapsedText,
-            resultText = when (state.phase) {
-                ActionButtonPhase.Succeeded -> config.successText
-                ActionButtonPhase.Failed -> config.errorText
-                ActionButtonPhase.Idle,
-                ActionButtonPhase.InProgress -> ""
-            },
+            resultText =
+                when (state.phase) {
+                    ActionButtonPhase.Succeeded -> config.successText
+
+                    ActionButtonPhase.Failed -> config.errorText
+
+                    ActionButtonPhase.Idle,
+                    ActionButtonPhase.InProgress,
+                    -> ""
+                },
             enabled = enabled && (!state.expanded || state.value.isNotEmpty()),
             onClick = {
                 if (state.expanded) submit() else onExpandedChange(true)

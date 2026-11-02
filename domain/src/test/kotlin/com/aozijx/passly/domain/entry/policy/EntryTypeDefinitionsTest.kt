@@ -16,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntryTypeDefinitionsTest {
-
     @Test
     fun sensitiveStorageKeyIsResolvedWithinEntryType() {
         assertEquals(
@@ -25,6 +24,7 @@ class EntryTypeDefinitionsTest {
         )
         assertEquals(null, EntryTypeDefinitions.sensitiveStorageKey(EntryType.WIFI, FieldKey.PASSWORD))
     }
+
     @Test
     fun otpDefinition_usesOtpScopedIdentityFields() {
         val otp = EntryTypeDefinitions[EntryType.OTP]
@@ -52,13 +52,15 @@ class EntryTypeDefinitionsTest {
         val counter = requireNotNull(definition[FieldKey.OTP_COUNTER])
 
         assertEquals(EntryFieldValueType.LONG, counter.valueType)
-        val draft = EntryDraft(EntryType.OTP).withValue(
-            definition,
-            FieldKey.OTP_COUNTER,
-            EntryDraftValue.LongNumber(Long.MAX_VALUE),
-        )
+        val draft =
+            EntryDraft(EntryType.OTP).withValue(
+                definition,
+                FieldKey.OTP_COUNTER,
+                EntryDraftValue.LongNumber(Long.MAX_VALUE),
+            )
         assertEquals(EntryDraftValue.LongNumber(Long.MAX_VALUE), draft[FieldKey.OTP_COUNTER])
     }
+
     @Test
     fun `catalog defines every entry type with one required title`() {
         assertEquals(EntryType.entries.toSet(), EntryTypeDefinitions.all.map { it.type }.toSet())
@@ -70,34 +72,38 @@ class EntryTypeDefinitionsTest {
 
     @Test
     fun `catalog rejects duplicate type definitions before indexing`() {
-        val login = EntryTypeDefinition(
-            EntryType.LOGIN,
-            listOf(EntryFieldDefinition(FieldKey.TITLE, required = true)),
-        )
-
-        val error = assertThrows(IllegalArgumentException::class.java) {
-            buildEntryTypeDefinitionIndex(
-                definitions = listOf(login, login),
-                expectedTypes = setOf(EntryType.LOGIN),
+        val login =
+            EntryTypeDefinition(
+                EntryType.LOGIN,
+                listOf(EntryFieldDefinition(FieldKey.TITLE, required = true)),
             )
-        }
+
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                buildEntryTypeDefinitionIndex(
+                    definitions = listOf(login, login),
+                    expectedTypes = setOf(EntryType.LOGIN),
+                )
+            }
 
         assertTrue(error.message.orEmpty().contains(EntryType.LOGIN.name))
     }
 
     @Test
     fun `catalog rejects missing type definitions with the missing type identified`() {
-        val login = EntryTypeDefinition(
-            EntryType.LOGIN,
-            listOf(EntryFieldDefinition(FieldKey.TITLE, required = true)),
-        )
-
-        val error = assertThrows(IllegalArgumentException::class.java) {
-            buildEntryTypeDefinitionIndex(
-                definitions = listOf(login),
-                expectedTypes = setOf(EntryType.LOGIN, EntryType.OTP),
+        val login =
+            EntryTypeDefinition(
+                EntryType.LOGIN,
+                listOf(EntryFieldDefinition(FieldKey.TITLE, required = true)),
             )
-        }
+
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                buildEntryTypeDefinitionIndex(
+                    definitions = listOf(login),
+                    expectedTypes = setOf(EntryType.LOGIN, EntryType.OTP),
+                )
+            }
 
         assertTrue(error.message.orEmpty().contains(EntryType.OTP.name))
     }
@@ -124,11 +130,12 @@ class EntryTypeDefinitionsTest {
 
     @Test
     fun `high sensitivity definitions map to protected storage keys`() {
-        val mappedKeys = EntryTypeDefinitions.all
-            .flatMap(EntryTypeDefinition::fields)
-            .filter { it.access == EntryFieldAccess.HIGH_SENSITIVITY }
-            .mapNotNull(EntryFieldDefinition::sensitiveFieldKey)
-            .toSet()
+        val mappedKeys =
+            EntryTypeDefinitions.all
+                .flatMap(EntryTypeDefinition::fields)
+                .filter { it.access == EntryFieldAccess.HIGH_SENSITIVITY }
+                .mapNotNull(EntryFieldDefinition::sensitiveFieldKey)
+                .toSet()
 
         assertEquals(SensitiveFieldKey.entries.toSet(), mappedKeys)
     }
@@ -151,9 +158,10 @@ class EntryTypeDefinitionsTest {
     @Test
     fun `draft accepts only fields and value types declared by its entry type`() {
         val definition = EntryTypeDefinitions[EntryType.WIFI]
-        val draft = EntryDraft(EntryType.WIFI)
-            .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Office"))
-            .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Passly"))
+        val draft =
+            EntryDraft(EntryType.WIFI)
+                .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Office"))
+                .withValue(definition, FieldKey.WIFI_SSID, EntryDraftValue.Text("Passly"))
 
         assertTrue(draft.missingRequiredFields(definition).isEmpty())
         assertThrows(IllegalArgumentException::class.java) {
@@ -171,9 +179,10 @@ class EntryTypeDefinitionsTest {
     @Test
     fun `draft reports blank required fields using the domain definition`() {
         val definition = EntryTypeDefinitions[EntryType.LOGIN]
-        val draft = EntryDraft(EntryType.LOGIN)
-            .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Example"))
-            .withValue(definition, FieldKey.USERNAME, EntryDraftValue.Text(""))
+        val draft =
+            EntryDraft(EntryType.LOGIN)
+                .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text("Example"))
+                .withValue(definition, FieldKey.USERNAME, EntryDraftValue.Text(""))
 
         assertEquals(
             setOf(FieldKey.PASSWORD),

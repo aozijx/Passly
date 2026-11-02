@@ -24,7 +24,7 @@ internal fun SettingsSecondaryPage(
     title: String,
     onBack: (() -> Unit)?,
     actions: @Composable RowScope.() -> Unit = {},
-    content: LazyListScope.() -> Unit
+    content: LazyListScope.() -> Unit,
 ) {
     val adaptiveLayout = LocalPasslyAdaptiveLayout.current
 
@@ -35,25 +35,27 @@ internal fun SettingsSecondaryPage(
                 onNavigateBack = onBack,
                 actions = actions,
             )
-        }
+        },
     ) { innerPadding ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.TopCenter
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter,
         ) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .widthIn(max = if (adaptiveLayout.isExpanded) 840.dp else 720.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = if (adaptiveLayout.isAtLeastMedium) 32.dp else 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxHeight()
+                        .widthIn(max = if (adaptiveLayout.isExpanded) 840.dp else 720.dp)
+                        .fillMaxWidth()
+                        .padding(horizontal = if (adaptiveLayout.isAtLeastMedium) 32.dp else 16.dp),
                 content = {
                     item { Spacer(modifier = Modifier.height(8.dp)) }
                     content()
                     item { Spacer(modifier = Modifier.height(32.dp)) }
-                }
+                },
             )
         }
     }

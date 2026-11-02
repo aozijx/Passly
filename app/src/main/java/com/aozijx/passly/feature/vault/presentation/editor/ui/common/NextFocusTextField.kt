@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.common
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,6 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 
 @Composable
 fun NextFocusTextField(
@@ -40,13 +40,15 @@ fun NextFocusTextField(
         supportingText = supportingText,
         singleLine = true,
         modifier = modifier.fillMaxWidth().excludeFromAutofill(),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = ImeAction.Next,
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = { focusManager.moveFocus(FocusDirection.Next) },
-        ),
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = ImeAction.Next,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Next) },
+            ),
         visualTransformation = visualTransformation,
         textStyle = textStyle,
         trailingIcon = trailingIcon,

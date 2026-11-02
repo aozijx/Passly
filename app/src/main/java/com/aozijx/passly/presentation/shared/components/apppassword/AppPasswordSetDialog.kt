@@ -28,7 +28,7 @@ fun AppPasswordSetDialog(
     onDismiss: () -> Unit,
     confirmEnabled: Boolean,
     isBusy: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -55,7 +55,7 @@ fun AppPasswordSetDialog(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = null,
                 modifier = Modifier.size(28.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
         },
         title = {
@@ -66,7 +66,7 @@ fun AppPasswordSetDialog(
                 Text(
                     text = stringResource(R.string.settings_auth_password_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.size(16.dp))
                 PasswordFields(
@@ -82,7 +82,7 @@ fun AppPasswordSetDialog(
                     Text(
                         text = errorMessage,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -90,7 +90,7 @@ fun AppPasswordSetDialog(
         confirmButton = {
             TextButton(
                 onClick = submit,
-                enabled = !isBusy && confirmEnabled
+                enabled = !isBusy && confirmEnabled,
             ) {
                 Text(stringResource(R.string.save))
             }
@@ -99,6 +99,6 @@ fun AppPasswordSetDialog(
             TextButton(onClick = dismiss, enabled = !isBusy) {
                 Text(stringResource(R.string.cancel))
             }
-        }
+        },
     )
 }

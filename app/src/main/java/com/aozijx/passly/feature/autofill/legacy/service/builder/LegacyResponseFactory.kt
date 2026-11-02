@@ -21,290 +21,330 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class LegacyResponseFactory @Inject constructor(
-    private val pendingIntentFactory: AutofillPendingIntentFactory,
-) {
-    fun buildFillResponse(
-        context: Context,
-        outcome: AutofillDiscoveryOutcome,
-        parsed: ParsedStructure,
-    ): FillResponse? = buildResult(context, outcome, parsed).response
+class LegacyResponseFactory
+    @Inject
+    constructor(
+        private val pendingIntentFactory: AutofillPendingIntentFactory,
+    ) {
+        fun buildFillResponse(
+            context: Context,
+            outcome: AutofillDiscoveryOutcome,
+            parsed: ParsedStructure,
+        ): FillResponse? = buildResult(context, outcome, parsed).response
 
-    fun buildResult(
-        context: Context,
-        outcome: AutofillDiscoveryOutcome,
-        parsed: ParsedStructure,
-        inlineRequest: InlineSuggestionsRequest? = null,
-    ): LegacyResponseBuildResult = when (outcome) {
-        AutofillDiscoveryOutcome.Disabled,
-        -> unavailable(Reasons.SessionRestricted)
+        fun buildResult(
+            context: Context,
+            outcome: AutofillDiscoveryOutcome,
+            parsed: ParsedStructure,
+            inlineRequest: InlineSuggestionsRequest? = null,
+        ): LegacyResponseBuildResult =
+            when (outcome) {
+                AutofillDiscoveryOutcome.Disabled,
+                -> {
+                    unavailable(Reasons.SessionRestricted)
+                }
 
-        AutofillDiscoveryOutcome.UnsupportedFields -> unavailable(Reasons.NoFillableFields)
+                AutofillDiscoveryOutcome.UnsupportedFields -> {
+                    unavailable(Reasons.NoFillableFields)
+                }
 
-        is AutofillDiscoveryOutcome.Failed -> unavailable(Reasons.DatabaseUnavailable)
+                is AutofillDiscoveryOutcome.Failed -> {
+                    unavailable(Reasons.DatabaseUnavailable)
+                }
 
-        is AutofillDiscoveryOutcome.RequiresUnlock -> completed(
-            interactionId = outcome.snapshot.id,
-            response = buildUnlockResponse(
-                context,
-                outcome.snapshot.id,
-                outcome.context,
-                parsed,
-                inlineRequest,
-            ),
-        )
+                is AutofillDiscoveryOutcome.RequiresUnlock -> {
+                    completed(
+                        interactionId = outcome.snapshot.id,
+                        response =
+                            buildUnlockResponse(
+                                context,
+                                outcome.snapshot.id,
+                                outcome.context,
+                                parsed,
+                                inlineRequest,
+                            ),
+                    )
+                }
 
-        is AutofillDiscoveryOutcome.NoCandidates -> LegacyResponseBuildResult(
-            response = buildCandidateResponse(
-                context = context,
-                interactionId = outcome.snapshot.id,
-                candidates = emptyList(),
-                discoveryContext = outcome.context,
-                parsed = parsed,
-                inlineRequest = inlineRequest,
-            ),
-            observation = LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
-        )
+                is AutofillDiscoveryOutcome.NoCandidates -> {
+                    LegacyResponseBuildResult(
+                        response =
+                            buildCandidateResponse(
+                                context = context,
+                                interactionId = outcome.snapshot.id,
+                                candidates = emptyList(),
+                                discoveryContext = outcome.context,
+                                parsed = parsed,
+                                inlineRequest = inlineRequest,
+                            ),
+                        observation = LegacyDiscoveryObservation.Unavailable(Reasons.NoMatchingEntry),
+                    )
+                }
 
-        is AutofillDiscoveryOutcome.Candidates -> completed(
-            interactionId = outcome.snapshot.id,
-            response = buildCandidateResponse(
-                context = context,
-                interactionId = outcome.snapshot.id,
-                candidates = outcome.candidates,
-                discoveryContext = outcome.context,
-                parsed = parsed,
-                inlineRequest = inlineRequest,
-            ),
-        )
-        is AutofillDiscoveryOutcome.ResumeSelection -> unavailable(Reasons.UnknownFailure)
-    }
+                is AutofillDiscoveryOutcome.Candidates -> {
+                    completed(
+                        interactionId = outcome.snapshot.id,
+                        response =
+                            buildCandidateResponse(
+                                context = context,
+                                interactionId = outcome.snapshot.id,
+                                candidates = outcome.candidates,
+                                discoveryContext = outcome.context,
+                                parsed = parsed,
+                                inlineRequest = inlineRequest,
+                            ),
+                    )
+                }
 
-    fun buildDataset(
-        payload: AutofillCredentialPayload,
-        usernameIds: List<AutofillId>,
-        passwordIds: List<AutofillId>,
-        otpIds: List<AutofillId>,
-    ): Dataset? = LegacyDatasetFactory.createFillDatasetForRoles(
-        usernameIds = usernameIds,
-        passwordIds = passwordIds,
-        otpIds = otpIds,
-        username = payload.username,
-        password = payload.password,
-        totpCode = payload.otpCode,
-    )
+                is AutofillDiscoveryOutcome.ResumeSelection -> {
+                    unavailable(Reasons.UnknownFailure)
+                }
+            }
 
-    private fun buildUnlockResponse(
-        context: Context,
-        interactionId: AutofillInteractionId,
-        discoveryContext: AutofillDiscoveryContext,
-        parsed: ParsedStructure,
-        inlineRequest: InlineSuggestionsRequest?,
-    ): FillResponse? {
-        if (parsed.allIds.isEmpty()) return null
-        val builder = FillResponse.Builder()
-        val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
-        val intent = pendingIntentFactory.createUnlockIntent(
-            context = context,
-            interactionId = interactionId,
-            parsed = parsed,
-            uiMode = discoveryContext.presentation,
-            roleIds = roleIds,
-            inlineRequest = inlineRequest,
-        )
-        val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
-            context,
-            interactionId.value.hashCode(),
-            intent,
-        )
-        LegacyDatasetFactory.setAuthenticationCompat(
-            builder,
-            parsed.allIds.toTypedArray(),
-            pendingIntent.intentSender,
-            AutofillRemoteViewFactory.render(
-                context,
-                AutofillRemoteItem.SingleLine(context.getString(R.string.vault_locked_title)),
-            ),
-            inlinePresentation = if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
-                LegacyInlinePresentationFactory.create(
-                    inlineRequest,
-                    0,
-                    context.getString(R.string.vault_locked_title),
-                    null,
-                    pendingIntent,
-                )
-            } else null,
-        )
-        addSaveInfo(builder, discoveryContext, parsed)
-        return builder.build()
-    }
-
-    private fun buildCandidateResponse(
-        context: Context,
-        interactionId: AutofillInteractionId,
-        candidates: List<AutofillCandidateSummary>,
-        discoveryContext: AutofillDiscoveryContext,
-        parsed: ParsedStructure,
-        inlineRequest: InlineSuggestionsRequest?,
-    ): FillResponse? {
-        if (parsed.allIds.isEmpty()) return null
-
-        val builder = FillResponse.Builder()
-        val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
-        if (candidates.isNotEmpty() &&
-            discoveryContext.presentation == AutofillPresentation.BOTTOM_SHEET
-        ) {
-            addPickerAuthentication(
-                builder,
-                context,
-                interactionId,
-                candidates.size,
-                discoveryContext,
-                parsed,
-                roleIds,
+        fun buildDataset(
+            payload: AutofillCredentialPayload,
+            usernameIds: List<AutofillId>,
+            passwordIds: List<AutofillId>,
+            otpIds: List<AutofillId>,
+        ): Dataset? =
+            LegacyDatasetFactory.createFillDatasetForRoles(
+                usernameIds = usernameIds,
+                passwordIds = passwordIds,
+                otpIds = otpIds,
+                username = payload.username,
+                password = payload.password,
+                totpCode = payload.otpCode,
             )
-        } else {
-            candidates.forEachIndexed { index, candidate ->
-                addCandidateAuthentication(
+
+        private fun buildUnlockResponse(
+            context: Context,
+            interactionId: AutofillInteractionId,
+            discoveryContext: AutofillDiscoveryContext,
+            parsed: ParsedStructure,
+            inlineRequest: InlineSuggestionsRequest?,
+        ): FillResponse? {
+            if (parsed.allIds.isEmpty()) return null
+            val builder = FillResponse.Builder()
+            val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
+            val intent =
+                pendingIntentFactory.createUnlockIntent(
+                    context = context,
+                    interactionId = interactionId,
+                    parsed = parsed,
+                    uiMode = discoveryContext.presentation,
+                    roleIds = roleIds,
+                    inlineRequest = inlineRequest,
+                )
+            val pendingIntent =
+                pendingIntentFactory.getActivityPendingIntent(
+                    context,
+                    interactionId.value.hashCode(),
+                    intent,
+                )
+            LegacyDatasetFactory.setAuthenticationCompat(
+                builder,
+                parsed.allIds.toTypedArray(),
+                pendingIntent.intentSender,
+                AutofillRemoteViewFactory.render(
+                    context,
+                    AutofillRemoteItem.SingleLine(context.getString(R.string.vault_locked_title)),
+                ),
+                inlinePresentation =
+                    if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
+                        LegacyInlinePresentationFactory.create(
+                            inlineRequest,
+                            0,
+                            context.getString(R.string.vault_locked_title),
+                            null,
+                            pendingIntent,
+                        )
+                    } else {
+                        null
+                    },
+            )
+            addSaveInfo(builder, discoveryContext, parsed)
+            return builder.build()
+        }
+
+        private fun buildCandidateResponse(
+            context: Context,
+            interactionId: AutofillInteractionId,
+            candidates: List<AutofillCandidateSummary>,
+            discoveryContext: AutofillDiscoveryContext,
+            parsed: ParsedStructure,
+            inlineRequest: InlineSuggestionsRequest?,
+        ): FillResponse? {
+            if (parsed.allIds.isEmpty()) return null
+
+            val builder = FillResponse.Builder()
+            val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
+            if (candidates.isNotEmpty() &&
+                discoveryContext.presentation == AutofillPresentation.BOTTOM_SHEET
+            ) {
+                addPickerAuthentication(
                     builder,
                     context,
                     interactionId,
-                    candidate,
+                    candidates.size,
                     discoveryContext,
                     parsed,
                     roleIds,
-                    inlineRequest = if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
-                        inlineRequest
-                    } else null,
-                    suggestionIndex = index,
                 )
+            } else {
+                candidates.forEachIndexed { index, candidate ->
+                    addCandidateAuthentication(
+                        builder,
+                        context,
+                        interactionId,
+                        candidate,
+                        discoveryContext,
+                        parsed,
+                        roleIds,
+                        inlineRequest =
+                            if (discoveryContext.presentation == AutofillPresentation.SYSTEM_INLINE) {
+                                inlineRequest
+                            } else {
+                                null
+                            },
+                        suggestionIndex = index,
+                    )
+                }
             }
+            val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
+            if (candidates.isEmpty() && !hasSaveInfo) return null
+            return builder.build()
         }
-        val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
-        if (candidates.isEmpty() && !hasSaveInfo) return null
-        return builder.build()
-    }
 
-    private fun addSaveInfo(
-        builder: FillResponse.Builder,
-        discoveryContext: AutofillDiscoveryContext,
-        parsed: ParsedStructure,
-    ): Boolean {
-        val saveInfo = LegacySaveInfoFactory.create(discoveryContext, parsed) ?: return false
-        builder.setSaveInfo(saveInfo)
-        return true
-    }
-
-    private fun addCandidateAuthentication(
-        builder: FillResponse.Builder,
-        context: Context,
-        interactionId: AutofillInteractionId,
-        candidate: AutofillCandidateSummary,
-        discoveryContext: AutofillDiscoveryContext,
-        parsed: ParsedStructure,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-        inlineRequest: InlineSuggestionsRequest?,
-        suggestionIndex: Int,
-    ) {
-        val subtitle = candidate.entry.username.trim()
-        val item = if (subtitle.isEmpty()) {
-            AutofillRemoteItem.SingleLine(candidate.entry.title)
-        } else {
-            AutofillRemoteItem.DoubleLine(candidate.entry.title, subtitle)
+        private fun addSaveInfo(
+            builder: FillResponse.Builder,
+            discoveryContext: AutofillDiscoveryContext,
+            parsed: ParsedStructure,
+        ): Boolean {
+            val saveInfo = LegacySaveInfoFactory.create(discoveryContext, parsed) ?: return false
+            builder.setSaveInfo(saveInfo)
+            return true
         }
-        val presentation = AutofillRemoteViewFactory.render(context, item)
-        val intent = pendingIntentFactory.createCandidateIntent(
-            context = context,
-            interactionId = interactionId,
-            entryId = candidate.entry.id,
-            parsed = parsed,
-            uiMode = discoveryContext.presentation,
-            roleIds = roleIds,
-            inlineRequest = inlineRequest,
-        )
-        val requestCode = "${interactionId.value}:${candidate.entry.id.value}".hashCode()
-        val pendingIntent = pendingIntentFactory.getActivityPendingIntent(context, requestCode, intent)
-        val dataset = Dataset.Builder().setAuthentication(pendingIntent.intentSender)
-        val inlinePresentation = LegacyInlinePresentationFactory.create(
-            inlineRequest,
-            suggestionIndex,
-            candidate.entry.title,
-            subtitle.takeIf(String::isNotBlank),
-            pendingIntent,
-        )
-        LegacyDatasetFactory.setMenuPresentationCompat(
-            dataset,
-            parsed.allIds,
-            presentation,
-            inlinePresentation,
-        )
-        builder.addDataset(dataset.build())
-    }
 
-    private fun addPickerAuthentication(
-        builder: FillResponse.Builder,
-        context: Context,
-        interactionId: AutofillInteractionId,
-        candidateCount: Int,
-        discoveryContext: AutofillDiscoveryContext,
-        parsed: ParsedStructure,
-        roleIds: Map<FieldRole, List<AutofillId>>,
-    ) {
-        val intent = pendingIntentFactory.createPickerIntent(
-            context = context,
-            interactionId = interactionId,
-            parsed = parsed,
-            uiMode = discoveryContext.presentation,
-            roleIds = roleIds,
-        )
-        val pendingIntent = pendingIntentFactory.getActivityPendingIntent(
-            context,
-            interactionId.value.hashCode(),
-            intent,
-        )
-        builder.addDataset(
-            LegacyDatasetFactory.createAuthenticatedPickerDataset(
-                ids = parsed.allIds,
-                authentication = pendingIntent.intentSender,
-                presentation = AutofillRemoteViewFactory.render(
+        private fun addCandidateAuthentication(
+            builder: FillResponse.Builder,
+            context: Context,
+            interactionId: AutofillInteractionId,
+            candidate: AutofillCandidateSummary,
+            discoveryContext: AutofillDiscoveryContext,
+            parsed: ParsedStructure,
+            roleIds: Map<FieldRole, List<AutofillId>>,
+            inlineRequest: InlineSuggestionsRequest?,
+            suggestionIndex: Int,
+        ) {
+            val subtitle = candidate.entry.username.trim()
+            val item =
+                if (subtitle.isEmpty()) {
+                    AutofillRemoteItem.SingleLine(candidate.entry.title)
+                } else {
+                    AutofillRemoteItem.DoubleLine(candidate.entry.title, subtitle)
+                }
+            val presentation = AutofillRemoteViewFactory.render(context, item)
+            val intent =
+                pendingIntentFactory.createCandidateIntent(
+                    context = context,
+                    interactionId = interactionId,
+                    entryId = candidate.entry.id,
+                    parsed = parsed,
+                    uiMode = discoveryContext.presentation,
+                    roleIds = roleIds,
+                    inlineRequest = inlineRequest,
+                )
+            val requestCode = "${interactionId.value}:${candidate.entry.id.value}".hashCode()
+            val pendingIntent = pendingIntentFactory.getActivityPendingIntent(context, requestCode, intent)
+            val dataset = Dataset.Builder().setAuthentication(pendingIntent.intentSender)
+            val inlinePresentation =
+                LegacyInlinePresentationFactory.create(
+                    inlineRequest,
+                    suggestionIndex,
+                    candidate.entry.title,
+                    subtitle.takeIf(String::isNotBlank),
+                    pendingIntent,
+                )
+            LegacyDatasetFactory.setMenuPresentationCompat(
+                dataset,
+                parsed.allIds,
+                presentation,
+                inlinePresentation,
+            )
+            builder.addDataset(dataset.build())
+        }
+
+        private fun addPickerAuthentication(
+            builder: FillResponse.Builder,
+            context: Context,
+            interactionId: AutofillInteractionId,
+            candidateCount: Int,
+            discoveryContext: AutofillDiscoveryContext,
+            parsed: ParsedStructure,
+            roleIds: Map<FieldRole, List<AutofillId>>,
+        ) {
+            val intent =
+                pendingIntentFactory.createPickerIntent(
+                    context = context,
+                    interactionId = interactionId,
+                    parsed = parsed,
+                    uiMode = discoveryContext.presentation,
+                    roleIds = roleIds,
+                )
+            val pendingIntent =
+                pendingIntentFactory.getActivityPendingIntent(
                     context,
-                    AutofillRemoteItem.DoubleLine(
-                        title = context.getString(
-                            R.string.autofill_prompt_title,
-                            context.getString(R.string.app_name),
+                    interactionId.value.hashCode(),
+                    intent,
+                )
+            builder.addDataset(
+                LegacyDatasetFactory.createAuthenticatedPickerDataset(
+                    ids = parsed.allIds,
+                    authentication = pendingIntent.intentSender,
+                    presentation =
+                        AutofillRemoteViewFactory.render(
+                            context,
+                            AutofillRemoteItem.DoubleLine(
+                                title =
+                                    context.getString(
+                                        R.string.autofill_prompt_title,
+                                        context.getString(R.string.app_name),
+                                    ),
+                                subtitle =
+                                    context.resources.getQuantityString(
+                                        R.plurals.autofill_trigger_count,
+                                        candidateCount,
+                                        candidateCount,
+                                    ),
+                            ),
                         ),
-                        subtitle = context.resources.getQuantityString(
-                            R.plurals.autofill_trigger_count,
-                            candidateCount,
-                            candidateCount,
-                        ),
-                    ),
                 ),
-            ),
+            )
+        }
+
+        private fun resolveRoleIds(
+            roleMap: Map<String, FieldRole>,
+            parsed: ParsedStructure,
+        ): Map<FieldRole, List<AutofillId>> {
+            val idByString = parsed.editableFields.associate { it.autofillId.toString() to it.autofillId }
+            return roleMap.entries
+                .groupBy(
+                    keySelector = Map.Entry<String, FieldRole>::value,
+                    valueTransform = { idByString[it.key] },
+                ).mapValues { (_, ids) -> ids.filterNotNull() }
+        }
+
+        private fun unavailable(reason: ReasonCode) =
+            LegacyResponseBuildResult(
+                response = null,
+                observation = LegacyDiscoveryObservation.Unavailable(reason),
+            )
+
+        private fun completed(
+            interactionId: AutofillInteractionId,
+            response: FillResponse?,
+        ) = LegacyResponseBuildResult(
+            response = response,
+            observation = LegacyDiscoveryObservation.Completed(interactionId),
         )
     }
-
-    private fun resolveRoleIds(
-        roleMap: Map<String, FieldRole>,
-        parsed: ParsedStructure,
-    ): Map<FieldRole, List<AutofillId>> {
-        val idByString = parsed.editableFields.associate { it.autofillId.toString() to it.autofillId }
-        return roleMap.entries.groupBy(
-            keySelector = Map.Entry<String, FieldRole>::value,
-            valueTransform = { idByString[it.key] },
-        ).mapValues { (_, ids) -> ids.filterNotNull() }
-    }
-
-    private fun unavailable(reason: ReasonCode) = LegacyResponseBuildResult(
-        response = null,
-        observation = LegacyDiscoveryObservation.Unavailable(reason),
-    )
-
-    private fun completed(
-        interactionId: AutofillInteractionId,
-        response: FillResponse?,
-    ) = LegacyResponseBuildResult(
-        response = response,
-        observation = LegacyDiscoveryObservation.Completed(interactionId),
-    )
-}

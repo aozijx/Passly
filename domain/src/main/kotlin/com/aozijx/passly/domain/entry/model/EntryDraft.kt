@@ -5,27 +5,37 @@ sealed interface EntryDraftValue {
     val valueType: EntryFieldValueType
     val isEmpty: Boolean
 
-    data class Text(val value: String) : EntryDraftValue {
+    data class Text(
+        val value: String,
+    ) : EntryDraftValue {
         override val valueType: EntryFieldValueType = EntryFieldValueType.TEXT
         override val isEmpty: Boolean get() = value.isBlank()
     }
 
-    data class TextList(val values: List<String>) : EntryDraftValue {
+    data class TextList(
+        val values: List<String>,
+    ) : EntryDraftValue {
         override val valueType: EntryFieldValueType = EntryFieldValueType.TEXT_LIST
         override val isEmpty: Boolean get() = values.none { it.isNotBlank() }
     }
 
-    data class Toggle(val enabled: Boolean) : EntryDraftValue {
+    data class Toggle(
+        val enabled: Boolean,
+    ) : EntryDraftValue {
         override val valueType: EntryFieldValueType = EntryFieldValueType.BOOLEAN
         override val isEmpty: Boolean = false
     }
 
-    data class Number(val value: Int?) : EntryDraftValue {
+    data class Number(
+        val value: Int?,
+    ) : EntryDraftValue {
         override val valueType: EntryFieldValueType = EntryFieldValueType.INTEGER
         override val isEmpty: Boolean get() = value == null
     }
 
-    data class LongNumber(val value: Long?) : EntryDraftValue {
+    data class LongNumber(
+        val value: Long?,
+    ) : EntryDraftValue {
         override val valueType: EntryFieldValueType = EntryFieldValueType.LONG
         override val isEmpty: Boolean get() = value == null
     }
@@ -46,9 +56,10 @@ data class EntryDraft(
         require(definition.type == type) {
             "Draft type does not match its entry definition"
         }
-        val field = requireNotNull(definition[key]) {
-            "$key is not supported by ${definition.type}"
-        }
+        val field =
+            requireNotNull(definition[key]) {
+                "$key is not supported by ${definition.type}"
+            }
         require(field.valueType == value.valueType) {
             "$key requires ${field.valueType}, not ${value.valueType}"
         }
@@ -69,11 +80,14 @@ data class EntryDraft(
         require(definition.type == type) {
             "Draft type does not match its entry definition"
         }
-        return values.filterTo(linkedMapOf()) { (key, value) ->
-            definition[key]?.valueType != value.valueType || when (value) {
-                is EntryDraftValue.Number, is EntryDraftValue.LongNumber -> value.isEmpty
-                is EntryDraftValue.Text, is EntryDraftValue.TextList, is EntryDraftValue.Toggle -> false
-            }
-        }.keys.toSet()
+        return values
+            .filterTo(linkedMapOf()) { (key, value) ->
+                definition[key]?.valueType != value.valueType ||
+                    when (value) {
+                        is EntryDraftValue.Number, is EntryDraftValue.LongNumber -> value.isEmpty
+                        is EntryDraftValue.Text, is EntryDraftValue.TextList, is EntryDraftValue.Toggle -> false
+                    }
+            }.keys
+            .toSet()
     }
 }

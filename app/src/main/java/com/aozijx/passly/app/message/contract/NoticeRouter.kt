@@ -16,24 +16,26 @@ enum class RouteReason {
     APP_NOT_VISIBLE,
     FALLBACK_TO_IN_APP,
     SETTINGS_UNAVAILABLE,
-    NO_AVAILABLE_TARGET
+    NO_AVAILABLE_TARGET,
 }
 
 data class NoticeRoutePlan(
     val targets: Set<NoticeTarget>,
     val reason: RouteReason,
-    val fallbackTarget: NoticeTarget? = null
+    val fallbackTarget: NoticeTarget? = null,
 ) {
     companion object {
-        fun suppressed(reason: RouteReason) = NoticeRoutePlan(
-            targets = emptySet(),
-            reason = reason
-        )
+        fun suppressed(reason: RouteReason) =
+            NoticeRoutePlan(
+                targets = emptySet(),
+                reason = reason,
+            )
 
-        fun allowed(targets: Set<NoticeTarget>) = NoticeRoutePlan(
-            targets = targets,
-            reason = RouteReason.ALLOWED
-        )
+        fun allowed(targets: Set<NoticeTarget>) =
+            NoticeRoutePlan(
+                targets = targets,
+                reason = RouteReason.ALLOWED,
+            )
     }
 }
 
@@ -46,6 +48,6 @@ fun interface NoticeRouter {
     fun route(
         notice: AppNotice,
         policy: NoticeCodePolicy,
-        context: NoticeRoutingContext
+        context: NoticeRoutingContext,
     ): NoticeRoutePlan
 }

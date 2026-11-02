@@ -10,15 +10,14 @@ package com.aozijx.passly.domain.settings.model
 data class MessageSettings(
     val optionalMessagesEnabled: Boolean = true,
     val systemNotificationsEnabled: Boolean = true,
-    val topicSettings: Map<MessageTopic, TopicMessageSettings> = defaultMessageTopicSettings()
+    val topicSettings: Map<MessageTopic, TopicMessageSettings> = defaultMessageTopicSettings(),
 ) {
-    fun topic(topic: MessageTopic): TopicMessageSettings =
-        topicSettings[topic] ?: TopicMessageSettings()
+    fun topic(topic: MessageTopic): TopicMessageSettings = topicSettings[topic] ?: TopicMessageSettings()
 }
 
 data class TopicMessageSettings(
     val enabled: Boolean = true,
-    val minimumLevel: MessageLevel = MessageLevel.INFO
+    val minimumLevel: MessageLevel = MessageLevel.INFO,
 )
 
 enum class MessageTopic {
@@ -26,23 +25,27 @@ enum class MessageTopic {
     APP_LIFECYCLE,
     BACKUP,
     SECURITY,
-    DATABASE
+    DATABASE,
 }
 
-enum class MessageLevel(val severity: Int) {
+enum class MessageLevel(
+    val severity: Int,
+) {
     INFO(10),
     SUCCESS(20),
     WARNING(30),
     ERROR(40),
-    CRITICAL(50);
+    CRITICAL(50),
+    ;
 
     fun meetsMinimum(minimum: MessageLevel): Boolean = severity >= minimum.severity
 }
 
-fun defaultMessageTopicSettings(): Map<MessageTopic, TopicMessageSettings> = mapOf(
-    MessageTopic.CLIPBOARD to TopicMessageSettings(),
-    MessageTopic.APP_LIFECYCLE to TopicMessageSettings(),
-    MessageTopic.BACKUP to TopicMessageSettings(),
-    MessageTopic.SECURITY to TopicMessageSettings(minimumLevel = MessageLevel.WARNING),
-    MessageTopic.DATABASE to TopicMessageSettings(minimumLevel = MessageLevel.ERROR)
-)
+fun defaultMessageTopicSettings(): Map<MessageTopic, TopicMessageSettings> =
+    mapOf(
+        MessageTopic.CLIPBOARD to TopicMessageSettings(),
+        MessageTopic.APP_LIFECYCLE to TopicMessageSettings(),
+        MessageTopic.BACKUP to TopicMessageSettings(),
+        MessageTopic.SECURITY to TopicMessageSettings(minimumLevel = MessageLevel.WARNING),
+        MessageTopic.DATABASE to TopicMessageSettings(minimumLevel = MessageLevel.ERROR),
+    )

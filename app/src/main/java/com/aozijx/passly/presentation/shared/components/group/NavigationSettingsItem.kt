@@ -16,21 +16,22 @@ fun navigationSettingsGroupItem(
     value: String? = null,
     isLoading: Boolean = false,
     selected: Boolean = false,
-    onClick: () -> Unit
-): SegmentedSettingsItem = settingsGroupItem(
-    key = key,
-    visible = visible,
-    enabled = enabled,
-    icon = icon,
-    reserveLeadingIconSpace = reserveLeadingIconSpace,
-    title = title,
-    subtitle = subtitle,
-    isLoading = isLoading,
-    selected = selected,
-    onClick = onClick,
-    trailing = {
-        value?.takeIf(String::isNotBlank)?.let {
-            AnimatedSettingValue(value = it, enabled = enabled)
-        }
-    }
-)
+    onClick: () -> Unit,
+): SegmentedSettingsItem =
+    settingsGroupItem(
+        key = key,
+        visible = visible,
+        enabled = enabled,
+        icon = icon,
+        reserveLeadingIconSpace = reserveLeadingIconSpace,
+        title = title,
+        subtitle = subtitle,
+        isLoading = isLoading,
+        selected = selected,
+        onClick = onClick,
+        trailing = {
+            value?.takeIf(String::isNotBlank)?.let {
+                AnimatedSettingValue(value = it, enabled = enabled)
+            }
+        },
+    )

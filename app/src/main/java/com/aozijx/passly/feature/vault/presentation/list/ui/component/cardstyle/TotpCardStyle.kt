@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
-
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -30,10 +29,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 private object TotpBehaviorTokens {
     const val FALLBACK_CODE = "------"
@@ -50,35 +49,44 @@ fun TotpStyleVaultItem(
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
     val currentState =
         previewCode?.let { VaultOtpUiState.Ready(it, previewProgress ?: 0f) } ?: totpState
-    val isSteam = remember(entry.otpKind) {
-        entry.otpKind == VaultOtpKindUiModel.STEAM
-    }
+    val isSteam =
+        remember(entry.otpKind) {
+            entry.otpKind == VaultOtpKindUiModel.STEAM
+        }
 
     val readyState = currentState as? VaultOtpUiState.Ready
     val targetProgress = previewProgress ?: readyState?.progress ?: 0f
     val progress by animateFloatAsState(targetValue = targetProgress, label = "TotpProgress")
 
-    val shownCode = previewCode ?: run {
-        val rawCode = readyState?.code
-        if (rawCode == null) TotpBehaviorTokens.FALLBACK_CODE
-        else if (isSteam) rawCode
-        else {
-            when (rawCode.length) {
-                6 -> "${rawCode.take(3)} ${rawCode.drop(3)}"
-                8 -> "${rawCode.take(4)} ${rawCode.drop(4)}"
-                else -> rawCode.chunked(3).joinToString(" ")
+    val shownCode =
+        previewCode ?: run {
+            val rawCode = readyState?.code
+            if (rawCode == null) {
+                TotpBehaviorTokens.FALLBACK_CODE
+            } else if (isSteam) {
+                rawCode
+            } else {
+                when (rawCode.length) {
+                    6 -> "${rawCode.take(3)} ${rawCode.drop(3)}"
+                    8 -> "${rawCode.take(4)} ${rawCode.drop(4)}"
+                    else -> rawCode.chunked(3).joinToString(" ")
+                }
             }
         }
-    }
 
     val progressColor by animateColorAsState(
-        targetValue = if (progress < TotpBehaviorTokens.LOW_PROGRESS_THRESHOLD) MaterialTheme.colorScheme.error
-        else MaterialTheme.colorScheme.primary, label = "ProgressColor"
+        targetValue =
+            if (progress < TotpBehaviorTokens.LOW_PROGRESS_THRESHOLD) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+        label = "ProgressColor",
     )
 
     Card(
@@ -86,36 +94,41 @@ fun TotpStyleVaultItem(
         modifier = Modifier.fillMaxWidth(),
         shape = cardShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = CardStyleTokens.Totp.elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = CardStyleTokens.Totp.elevation),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(
-                                alpha = CardStyleTokens.Totp.SURFACE_GRADIENT_TOP_ALPHA
-                            ), MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
-                .padding(CardStyleTokens.Totp.contentPadding)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(cardShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(
+                                        alpha = CardStyleTokens.Totp.SURFACE_GRADIENT_TOP_ALPHA,
+                                    ),
+                                    MaterialTheme.colorScheme.surface,
+                                ),
+                        ),
+                    ).padding(CardStyleTokens.Totp.contentPadding),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.rowSpacing)
+                horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.rowSpacing),
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(CardStyleTokens.Totp.iconContainerSize)
-                        .background(
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                alpha = CardStyleTokens.Totp.ICON_CONTAINER_ALPHA
+                    modifier =
+                        Modifier
+                            .size(CardStyleTokens.Totp.iconContainerSize)
+                            .background(
+                                color =
+                                    MaterialTheme.colorScheme.secondaryContainer.copy(
+                                        alpha = CardStyleTokens.Totp.ICON_CONTAINER_ALPHA,
+                                    ),
+                                shape = RoundedCornerShape(CardStyleTokens.Totp.iconContainerCorner),
                             ),
-                            shape = RoundedCornerShape(CardStyleTokens.Totp.iconContainerCorner)
-                        ), contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     VaultListItemIcon(Modifier, entry)
                 }
@@ -126,58 +139,63 @@ fun TotpStyleVaultItem(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = entry.categoryOrTemplateLabel(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
                 Column(
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.codeColumnSpacing)
+                    verticalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.codeColumnSpacing),
                 ) {
                     if (showCode) {
                         Text(
-                            text = shownCode, style = MaterialTheme.typography.titleLarge.copy(
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = CardStyleTokens.Totp.codeLetterSpacing,
-                                fontSize = CardStyleTokens.Totp.codeFontSize
-                            ), color = MaterialTheme.colorScheme.primary
+                            text = shownCode,
+                            style =
+                                MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = CardStyleTokens.Totp.codeLetterSpacing,
+                                    fontSize = CardStyleTokens.Totp.codeFontSize,
+                                ),
+                            color = MaterialTheme.colorScheme.primary,
                         )
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.progressRowSpacing)
+                            horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.progressRowSpacing),
                         ) {
                             CircularWavyProgressIndicator(
                                 progress = { progress },
                                 modifier = Modifier.size(CardStyleTokens.Totp.progressSize),
                                 color = progressColor,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                                    alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA
-                                )
+                                trackColor =
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(
+                                        alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA,
+                                    ),
                             )
                             Text(
                                 text = if (isSteam) TotpBehaviorTokens.STEAM_LABEL else TotpBehaviorTokens.TOTP_LABEL,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
                     } else {
                         Icon(
                             imageVector = Icons.Default.LockClock,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(
-                                alpha = CardStyleTokens.Totp.LOCK_ICON_TINT_ALPHA
-                            ),
-                            modifier = Modifier.size(CardStyleTokens.Totp.lockIconSize)
+                            tint =
+                                MaterialTheme.colorScheme.primary.copy(
+                                    alpha = CardStyleTokens.Totp.LOCK_ICON_TINT_ALPHA,
+                                ),
+                            modifier = Modifier.size(CardStyleTokens.Totp.lockIconSize),
                         )
                     }
                 }

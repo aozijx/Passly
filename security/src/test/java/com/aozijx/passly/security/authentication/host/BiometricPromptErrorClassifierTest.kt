@@ -7,17 +7,18 @@ import org.junit.Test
 class BiometricPromptErrorClassifierTest {
     @Test
     fun unavailablePlatformErrorsAreNotReportedAsCredentialFailures() {
-        val errors = listOf(
-            BiometricPrompt.ERROR_HW_NOT_PRESENT,
-            BiometricPrompt.ERROR_HW_UNAVAILABLE,
-            BiometricPrompt.ERROR_NO_BIOMETRICS,
-            BiometricPrompt.ERROR_SECURITY_UPDATE_REQUIRED
-        )
+        val errors =
+            listOf(
+                BiometricPrompt.ERROR_HW_NOT_PRESENT,
+                BiometricPrompt.ERROR_HW_UNAVAILABLE,
+                BiometricPrompt.ERROR_NO_BIOMETRICS,
+                BiometricPrompt.ERROR_SECURITY_UPDATE_REQUIRED,
+            )
 
         errors.forEach { error ->
             assertEquals(
                 BiometricHostFailure.METHOD_UNAVAILABLE,
-                BiometricPromptErrorClassifier.classify(error)
+                BiometricPromptErrorClassifier.classify(error),
             )
         }
     }
@@ -26,11 +27,11 @@ class BiometricPromptErrorClassifierTest {
     fun lockoutIsRateLimitedAndProcessingErrorsAreCryptoFailures() {
         assertEquals(
             BiometricHostFailure.RATE_LIMITED,
-            BiometricPromptErrorClassifier.classify(BiometricPrompt.ERROR_LOCKOUT)
+            BiometricPromptErrorClassifier.classify(BiometricPrompt.ERROR_LOCKOUT),
         )
         assertEquals(
             BiometricHostFailure.CRYPTO_OBJECT_INVALID,
-            BiometricPromptErrorClassifier.classify(BiometricPrompt.ERROR_UNABLE_TO_PROCESS)
+            BiometricPromptErrorClassifier.classify(BiometricPrompt.ERROR_UNABLE_TO_PROCESS),
         )
     }
 }

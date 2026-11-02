@@ -9,15 +9,16 @@ import org.junit.Test
 class LegacySaveInfoPolicyTest {
     @Test
     fun passwordFieldsAreRequiredAndUsernameFieldsAreOptionalInStableOrder() {
-        val plan = LegacySaveInfoPolicy.plan(
-            linkedMapOf(
-                "username-1" to FieldRole.USERNAME,
-                "password-1" to FieldRole.PASSWORD,
-                "otp" to FieldRole.OTP,
-                "password-2" to FieldRole.PASSWORD,
-                "username-2" to FieldRole.USERNAME,
-            ),
-        )
+        val plan =
+            LegacySaveInfoPolicy.plan(
+                linkedMapOf(
+                    "username-1" to FieldRole.USERNAME,
+                    "password-1" to FieldRole.PASSWORD,
+                    "otp" to FieldRole.OTP,
+                    "password-2" to FieldRole.PASSWORD,
+                    "username-2" to FieldRole.USERNAME,
+                ),
+            )
 
         requireNotNull(plan)
         assertEquals(listOf("password-1", "password-2"), plan.requiredPasswordFieldIds)

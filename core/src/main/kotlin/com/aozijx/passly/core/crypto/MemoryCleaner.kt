@@ -9,11 +9,12 @@ import sun.misc.Unsafe
  * 防止编译器优化掉零填充操作。
  */
 object MemoryCleaner {
-    private val unsafe = runCatching {
-        val field = Unsafe::class.java.getDeclaredField("theUnsafe")
-        field.isAccessible = true
-        field.get(null) as Unsafe
-    }.getOrNull()
+    private val unsafe =
+        runCatching {
+            val field = Unsafe::class.java.getDeclaredField("theUnsafe")
+            field.isAccessible = true
+            field.get(null) as Unsafe
+        }.getOrNull()
 
     fun wipeByteArray(array: ByteArray?) {
         array?.let {

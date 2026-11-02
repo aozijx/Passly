@@ -4,11 +4,15 @@ import com.aozijx.passly.domain.entry.model.EntryType
 
 sealed interface FaviconDraftSourceUiModel {
     data object InferredDefault : FaviconDraftSourceUiModel
+
     data class BuiltIn(
         val key: String,
         val colorToken: String?,
     ) : FaviconDraftSourceUiModel
-    data class PrivateImage(val localPath: String) : FaviconDraftSourceUiModel
+
+    data class PrivateImage(
+        val localPath: String,
+    ) : FaviconDraftSourceUiModel
 }
 
 enum class FaviconEditorTabUiModel {
@@ -46,12 +50,17 @@ sealed interface DetailFaviconEditorUiModel {
 
 sealed interface FaviconWorkUiState {
     data object Idle : FaviconWorkUiState
+
     data object Processing : FaviconWorkUiState
-    data class Failed(val error: FaviconProcessingErrorUiModel) : FaviconWorkUiState
+
+    data class Failed(
+        val error: FaviconProcessingErrorUiModel,
+    ) : FaviconWorkUiState
 }
 
 sealed interface FaviconOverlayUiState {
     data object None : FaviconOverlayUiState
+
     data object ConfirmDiscard : FaviconOverlayUiState
 }
 

@@ -17,9 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIconCardUiModel
 import com.aozijx.passly.presentation.shared.components.VaultIcons
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIconCardUiModel
 
 @Composable
 fun DetailIconCard(
@@ -27,14 +27,23 @@ fun DetailIconCard(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val iconDescription = when {
-        !model.iconCustomPath.isNullOrBlank() ->
-            stringResource(R.string.vault_detail_favicon_custom_image)
-        !model.iconName.isNullOrBlank() -> VaultIcons.findDefinition(model.iconName)
-            ?.let { stringResource(it.labelRes) }
-            ?: stringResource(R.string.vault_detail_favicon_built_in)
-        else -> stringResource(R.string.vault_detail_favicon_default)
-    }
+    val iconDescription =
+        when {
+            !model.iconCustomPath.isNullOrBlank() -> {
+                stringResource(R.string.vault_detail_favicon_custom_image)
+            }
+
+            !model.iconName.isNullOrBlank() -> {
+                VaultIcons
+                    .findDefinition(model.iconName)
+                    ?.let { stringResource(it.labelRes) }
+                    ?: stringResource(R.string.vault_detail_favicon_built_in)
+            }
+
+            else -> {
+                stringResource(R.string.vault_detail_favicon_default)
+            }
+        }
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,

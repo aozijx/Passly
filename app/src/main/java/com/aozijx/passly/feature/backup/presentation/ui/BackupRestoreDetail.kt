@@ -11,7 +11,7 @@ internal fun BackupRestoreDetail(
     onImport: () -> Unit,
     onPickBackupPath: () -> Unit,
     onTestBackupWrite: () -> Unit,
-    onClearBackupPath: (() -> Unit)?
+    onClearBackupPath: (() -> Unit)?,
 ) {
     SettingsSection {
         BackupRestoreSettingsSection(
@@ -21,7 +21,7 @@ internal fun BackupRestoreDetail(
             onImport = onImport,
             onPickPath = onPickBackupPath,
             onTestWrite = onTestBackupWrite,
-            onClearPath = onClearBackupPath
+            onClearPath = onClearBackupPath,
         )
     }
 }

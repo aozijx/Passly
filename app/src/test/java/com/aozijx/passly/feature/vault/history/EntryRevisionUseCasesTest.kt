@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.history
 
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.error.model.Conflict
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
@@ -9,8 +9,8 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
-import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -21,8 +21,8 @@ import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
 import com.aozijx.passly.domain.entry.model.history.RedactedEntryRevision
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
-import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
+import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
@@ -37,92 +37,101 @@ import org.junit.Test
 
 class EntryRevisionUseCasesTest {
     @Test
-    fun `reveal authorizes and forwards exact revision key set`() = runBlocking {
-        val repository = RecordingRevisionRepository()
-        val gate = RecordingAuthorizationGate()
-        val useCase = RevealRevisionFieldsUseCase(repository, gate)
-        val keys = setOf(SensitiveFieldKey.PASSWORD, SensitiveFieldKey.OTP_SECRET)
+    fun `reveal authorizes and forwards exact revision key set`() =
+        runBlocking {
+            val repository = RecordingRevisionRepository()
+            val gate = RecordingAuthorizationGate()
+            val useCase = RevealRevisionFieldsUseCase(repository, gate)
+            val keys = setOf(SensitiveFieldKey.PASSWORD, SensitiveFieldKey.OTP_SECRET)
 
-        val result = useCase(EntryId("entry"), EntryRevisionId("revision"), keys)
+            val result = useCase(EntryId("entry"), EntryRevisionId("revision"), keys)
 
-        assertEquals(
-            AuthorizationScope.SensitiveRevision(
-                entryId = EntryId("entry"),
-                revisionId = "revision",
-                fieldKeys = keys,
-                action = SensitiveRevisionAccessAction.REVEAL,
-            ),
-            gate.scope,
-        )
-        assertEquals(RevisionOperationResult.Succeeded(emptyList<RevealedRevisionSensitiveField>()), result)
-        assertEquals(keys, repository.revealedKeys)
-    }
-
-    @Test
-    fun `reveal cancellation is not reported as an error`() = runBlocking {
-        val repository = RecordingRevisionRepository()
-        val useCase = RevealRevisionFieldsUseCase(
-            repository,
-            RecordingAuthorizationGate(AuthorizationResult.Cancelled),
-        )
-
-        val result = useCase(
-            EntryId("entry"),
-            EntryRevisionId("revision"),
-            setOf(SensitiveFieldKey.PASSWORD),
-        )
-
-        assertSame(RevisionOperationResult.Cancelled, result)
-        assertEquals(null, repository.revealedKeys)
-    }
+            assertEquals(
+                AuthorizationScope.SensitiveRevision(
+                    entryId = EntryId("entry"),
+                    revisionId = "revision",
+                    fieldKeys = keys,
+                    action = SensitiveRevisionAccessAction.REVEAL,
+                ),
+                gate.scope,
+            )
+            assertEquals(RevisionOperationResult.Succeeded(emptyList<RevealedRevisionSensitiveField>()), result)
+            assertEquals(keys, repository.revealedKeys)
+        }
 
     @Test
-    fun `restore authorizes union and forwards current version once`() = runBlocking {
-        val repository = RecordingRevisionRepository(
-            snapshot = snapshot(setOf(SensitiveFieldKey.PASSWORD)),
-            restoreResult = AppResult.failure(Conflict()),
-        )
-        val gate = RecordingAuthorizationGate()
-        val useCase = RestoreEntryRevisionUseCase(
-            repository,
-            FakeEntryRepository(currentEntry()),
-            FakeSensitiveRepository(setOf(SensitiveFieldKey.OTP_SECRET)),
-            gate,
-        )
+    fun `reveal cancellation is not reported as an error`() =
+        runBlocking {
+            val repository = RecordingRevisionRepository()
+            val useCase =
+                RevealRevisionFieldsUseCase(
+                    repository,
+                    RecordingAuthorizationGate(AuthorizationResult.Cancelled),
+                )
 
-        val result = useCase(EntryId("entry"), EntryRevisionId("revision"))
+            val result =
+                useCase(
+                    EntryId("entry"),
+                    EntryRevisionId("revision"),
+                    setOf(SensitiveFieldKey.PASSWORD),
+                )
 
-        assertSame(RevisionOperationResult.Stale, result)
-        assertEquals(
-            AuthorizationScope.SensitiveRevision(
-                entryId = EntryId("entry"),
-                revisionId = "revision",
-                fieldKeys = setOf(SensitiveFieldKey.PASSWORD, SensitiveFieldKey.OTP_SECRET),
-                action = SensitiveRevisionAccessAction.RESTORE,
-            ),
-            gate.scope,
-        )
-        assertEquals(EntryVersion(7), repository.restoredVersion)
-        assertEquals(1, repository.restoreCalls)
-    }
+            assertSame(RevisionOperationResult.Cancelled, result)
+            assertEquals(null, repository.revealedKeys)
+        }
 
     @Test
-    fun `restore without sensitive fields bypasses authorization`() = runBlocking {
-        val repository = RecordingRevisionRepository(snapshot = snapshot(emptySet()))
-        val gate = RecordingAuthorizationGate()
-        val useCase = RestoreEntryRevisionUseCase(
-            repository,
-            FakeEntryRepository(currentEntry()),
-            FakeSensitiveRepository(emptySet()),
-            gate,
-        )
+    fun `restore authorizes union and forwards current version once`() =
+        runBlocking {
+            val repository =
+                RecordingRevisionRepository(
+                    snapshot = snapshot(setOf(SensitiveFieldKey.PASSWORD)),
+                    restoreResult = AppResult.failure(Conflict()),
+                )
+            val gate = RecordingAuthorizationGate()
+            val useCase =
+                RestoreEntryRevisionUseCase(
+                    repository,
+                    FakeEntryRepository(currentEntry()),
+                    FakeSensitiveRepository(setOf(SensitiveFieldKey.OTP_SECRET)),
+                    gate,
+                )
 
-        val result = useCase(EntryId("entry"), EntryRevisionId("revision"))
+            val result = useCase(EntryId("entry"), EntryRevisionId("revision"))
 
-        assertEquals(RevisionOperationResult.Succeeded(EntryVersion(8)), result)
-        assertEquals(null, gate.scope)
-        assertEquals(null, repository.restorePermit)
-    }
+            assertSame(RevisionOperationResult.Stale, result)
+            assertEquals(
+                AuthorizationScope.SensitiveRevision(
+                    entryId = EntryId("entry"),
+                    revisionId = "revision",
+                    fieldKeys = setOf(SensitiveFieldKey.PASSWORD, SensitiveFieldKey.OTP_SECRET),
+                    action = SensitiveRevisionAccessAction.RESTORE,
+                ),
+                gate.scope,
+            )
+            assertEquals(EntryVersion(7), repository.restoredVersion)
+            assertEquals(1, repository.restoreCalls)
+        }
+
+    @Test
+    fun `restore without sensitive fields bypasses authorization`() =
+        runBlocking {
+            val repository = RecordingRevisionRepository(snapshot = snapshot(emptySet()))
+            val gate = RecordingAuthorizationGate()
+            val useCase =
+                RestoreEntryRevisionUseCase(
+                    repository,
+                    FakeEntryRepository(currentEntry()),
+                    FakeSensitiveRepository(emptySet()),
+                    gate,
+                )
+
+            val result = useCase(EntryId("entry"), EntryRevisionId("revision"))
+
+            assertEquals(RevisionOperationResult.Succeeded(EntryVersion(8)), result)
+            assertEquals(null, gate.scope)
+            assertEquals(null, repository.restorePermit)
+        }
 
     private object TestPermit : AuthorizationPermit
 
@@ -153,10 +162,13 @@ class EntryRevisionUseCasesTest {
 
         override suspend fun initializeHistory(): AppResult<Unit> = AppResult.success(Unit)
 
-        override fun observeMetadata(entryId: EntryId): Flow<List<com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata>> = emptyFlow()
+        override fun observeMetadata(entryId: EntryId): Flow<List<com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata>> =
+            emptyFlow()
 
-        override suspend fun loadRedacted(entryId: EntryId, revisionId: EntryRevisionId) =
-            snapshot?.let { AppResult.success(it) } ?: error("unused")
+        override suspend fun loadRedacted(
+            entryId: EntryId,
+            revisionId: EntryRevisionId,
+        ) = snapshot?.let { AppResult.success(it) } ?: error("unused")
 
         override suspend fun reveal(
             entryId: EntryId,
@@ -181,7 +193,9 @@ class EntryRevisionUseCasesTest {
         }
     }
 
-    private class FakeEntryRepository(private val entry: Entry) : EntryQueryRepository {
+    private class FakeEntryRepository(
+        private val entry: Entry,
+    ) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId) = entry
     }
 
@@ -189,43 +203,60 @@ class EntryRevisionUseCasesTest {
         private val keys: Set<SensitiveFieldKey>,
     ) : SensitiveFieldRepository {
         override suspend fun getPresence(entryId: EntryId) = SensitiveFieldPresence(entryId, keys)
+
         override suspend fun reveal(
             entryId: EntryId,
             key: SensitiveFieldKey,
             action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ): RevealedSensitiveField? = error("unused")
+
         override suspend fun revealMany(
             entryId: EntryId,
             keys: Set<SensitiveFieldKey>,
             action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ): List<RevealedSensitiveField> = error("unused")
+
         override suspend fun readBundle(entryId: EntryId): EntrySecret = error("unused")
     }
 
-    private fun currentEntry() = Entry(
-        identity = EntryIdentity(
-            id = EntryId("entry"),
-            type = EntryType.LOGIN,
-            version = EntryVersion(7),
-            timestamps = EntryTimestamps(1L),
-        ),
-        profile = EntryProfile("Current"),
-        secret = EntrySecret(credential = com.aozijx.passly.domain.entry.model.credential.LoginCredential()),
-    )
+    private fun currentEntry() =
+        Entry(
+            identity =
+                EntryIdentity(
+                    id = EntryId("entry"),
+                    type = EntryType.LOGIN,
+                    version = EntryVersion(7),
+                    timestamps = EntryTimestamps(1L),
+                ),
+            profile = EntryProfile("Current"),
+            secret =
+                EntrySecret(
+                    credential =
+                        com.aozijx.passly.domain.entry.model.credential
+                            .LoginCredential(),
+                ),
+        )
 
-    private fun snapshot(keys: Set<SensitiveFieldKey>) = RedactedEntryRevision(
-        type = com.aozijx.passly.domain.entry.model.EntryType.LOGIN,
-        metadata = EntryRevisionMetadata(
-            id = EntryRevisionId("revision"),
-            entryId = EntryId("entry"),
-            version = EntryVersion(1),
-            createdAtMs = 1L,
-            change = RevisionChange.VALUE_CHANGED,
-        ),
-        profile = EntryProfile("Historical"),
-        secret = EntrySecret(credential = com.aozijx.passly.domain.entry.model.credential.LoginCredential()),
-        sensitiveFieldKeys = keys,
-    )
+    private fun snapshot(keys: Set<SensitiveFieldKey>) =
+        RedactedEntryRevision(
+            type = com.aozijx.passly.domain.entry.model.EntryType.LOGIN,
+            metadata =
+                EntryRevisionMetadata(
+                    id = EntryRevisionId("revision"),
+                    entryId = EntryId("entry"),
+                    version = EntryVersion(1),
+                    createdAtMs = 1L,
+                    change = RevisionChange.VALUE_CHANGED,
+                ),
+            profile = EntryProfile("Historical"),
+            secret =
+                EntrySecret(
+                    credential =
+                        com.aozijx.passly.domain.entry.model.credential
+                            .LoginCredential(),
+                ),
+            sensitiveFieldKeys = keys,
+        )
 }

@@ -1,11 +1,10 @@
 package com.aozijx.passly.security.dek
 
+import java.security.SecureRandom
 import org.junit.Assert.assertThrows
 import org.junit.Test
-import java.security.SecureRandom
 
 class VerificationTagTest {
-
     @Test
     fun verify_acceptsCreatingDek() {
         val dek = randomDek()
@@ -30,6 +29,5 @@ class VerificationTagTest {
         }
     }
 
-    private fun randomDek(): ByteArray =
-        ByteArray(32).also(SecureRandom()::nextBytes)
+    private fun randomDek(): ByteArray = ByteArray(32).also(SecureRandom()::nextBytes)
 }

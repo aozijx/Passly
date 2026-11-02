@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.autofill.presentation.credential
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -11,14 +10,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.core.observability.LogStatements
-import com.aozijx.passly.core.observability.Operations
-import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.app.theme.PersistedAppTheme
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService
-import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
 import com.aozijx.passly.feature.autofill.presentation.ActivityResultClaim
+import com.aozijx.passly.feature.autofill.runtime.AutofillResultDelivery
+import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @AndroidEntryPoint
 class CredentialResponseActivity : AppCompatActivity() {
-
     @Inject
     lateinit var authenticationHostRegistry: AuthenticationHostRegistry
 
@@ -66,17 +65,23 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     private fun responseLaunch(sourceIntent: Intent): CredentialResponseLaunch =
         when (val action = sourceIntent.action) {
-            ModernCredentialService.ACTION_GET_PASSWORD -> CredentialResponseLaunch(
-                action = CredentialResponseUiAction.PasswordGet(sourceIntent),
-            )
+            ModernCredentialService.ACTION_GET_PASSWORD -> {
+                CredentialResponseLaunch(
+                    action = CredentialResponseUiAction.PasswordGet(sourceIntent),
+                )
+            }
 
-            ModernCredentialService.ACTION_UNLOCK -> CredentialResponseLaunch(
-                action = CredentialResponseUiAction.Unlock(sourceIntent),
-            )
+            ModernCredentialService.ACTION_UNLOCK -> {
+                CredentialResponseLaunch(
+                    action = CredentialResponseUiAction.Unlock(sourceIntent),
+                )
+            }
 
-            ModernCredentialService.ACTION_CREATE_PASSWORD -> CredentialResponseLaunch(
-                action = CredentialResponseUiAction.PasswordCreate(sourceIntent),
-            )
+            ModernCredentialService.ACTION_CREATE_PASSWORD -> {
+                CredentialResponseLaunch(
+                    action = CredentialResponseUiAction.PasswordCreate(sourceIntent),
+                )
+            }
 
             else -> {
                 lifecycleScope.launch {
@@ -90,31 +95,31 @@ class CredentialResponseActivity : AppCompatActivity() {
             }
         }
 
-    private fun finishWithResult(
-        completion: CredentialResponseCompletion,
-    ) {
-        val committed = try {
-            resultClaim.commit {
-                // PendingIntentHandler requires RESULT_OK for valid responses and exceptions.
-                when (completion) {
-                    is CredentialResponseCompletion.Immediate -> {
-                        setResult(RESULT_OK, completion.resultIntent)
-                        hideIme()
-                        finish()
-                    }
-                    is CredentialResponseCompletion.CommittedSelection -> {
-                        resultDelivery.commitResult(completion.receipt) {
+    private fun finishWithResult(completion: CredentialResponseCompletion) {
+        val committed =
+            try {
+                resultClaim.commit {
+                    // PendingIntentHandler requires RESULT_OK for valid responses and exceptions.
+                    when (completion) {
+                        is CredentialResponseCompletion.Immediate -> {
                             setResult(RESULT_OK, completion.resultIntent)
                             hideIme()
                             finish()
                         }
+
+                        is CredentialResponseCompletion.CommittedSelection -> {
+                            resultDelivery.commitResult(completion.receipt) {
+                                setResult(RESULT_OK, completion.resultIntent)
+                                hideIme()
+                                finish()
+                            }
+                        }
                     }
                 }
+            } catch (_: Exception) {
+                finishCancelled()
+                return
             }
-        } catch (_: Exception) {
-            finishCancelled()
-            return
-        }
         if (!committed) return
         viewModel.onPlatformResultDelivered(completion)
     }
@@ -124,13 +129,14 @@ class CredentialResponseActivity : AppCompatActivity() {
     }
 
     private fun finishCancelled() {
-        val committed = try {
-            resultClaim.commit { setResult(RESULT_CANCELED) }
-        } catch (_: Exception) {
-            viewModel.cancelActiveInteraction()
-            finish()
-            return
-        }
+        val committed =
+            try {
+                resultClaim.commit { setResult(RESULT_CANCELED) }
+            } catch (_: Exception) {
+                viewModel.cancelActiveInteraction()
+                finish()
+                return
+            }
         if (!committed) return
         hideIme()
         viewModel.cancelActiveInteraction()
@@ -148,7 +154,8 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     private fun hideIme() {
         currentFocus?.clearFocus()
-        WindowCompat.getInsetsController(window, window.decorView)
+        WindowCompat
+            .getInsetsController(window, window.decorView)
             .hide(WindowInsetsCompat.Type.ime())
     }
 

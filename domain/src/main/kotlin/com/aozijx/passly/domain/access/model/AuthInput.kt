@@ -23,7 +23,7 @@ sealed interface AuthInput {
 
     /** 应用密码 — 调用方已获取明文密码 */
     class AppPassword internal constructor(
-        internal val secret: OwnedChars
+        internal val secret: OwnedChars,
     ) : AuthInput {
         override fun consumeCredential(): CharArray = secret.consume()
 
@@ -34,7 +34,7 @@ sealed interface AuthInput {
 
     /** 恢复码 — 调用方已获取恢复码 */
     class RecoveryCode internal constructor(
-        internal val secret: OwnedChars
+        internal val secret: OwnedChars,
     ) : AuthInput {
         override fun consumeCredential(): CharArray = secret.consume()
 

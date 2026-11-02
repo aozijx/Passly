@@ -8,19 +8,20 @@ import java.io.InputStream
 import java.io.OutputStream
 
 object BootstrapSerializer : Serializer<BootstrapData> {
-
     override val defaultValue: BootstrapData
         get() = BootstrapData.getDefaultInstance()
 
-    override suspend fun readFrom(input: InputStream): BootstrapData {
-        return try {
+    override suspend fun readFrom(input: InputStream): BootstrapData =
+        try {
             BootstrapData.parseFrom(input)
         } catch (error: InvalidProtocolBufferException) {
             throw CorruptionException("Unable to read vault bootstrap data.", error)
         }
-    }
 
-    override suspend fun writeTo(t: BootstrapData, output: OutputStream) {
+    override suspend fun writeTo(
+        t: BootstrapData,
+        output: OutputStream,
+    ) {
         t.writeTo(output)
     }
 }

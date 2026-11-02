@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class EntryAssociationsPayload(
     val primaryUrl: String? = null,
     val matchDomains: Set<String> = emptySet(),
-    val packageNames: Set<String> = emptySet()
+    val packageNames: Set<String> = emptySet(),
 )
 
 @Serializable
@@ -19,5 +19,5 @@ data class SummaryPayload(
     val favorite: Boolean = false,
     val tags: List<String> = emptyList(),
     val color: String? = null,
-    val expiresAt: Long? = null
+    val expiresAt: Long? = null,
 )

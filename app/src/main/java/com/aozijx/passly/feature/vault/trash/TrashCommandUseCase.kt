@@ -15,75 +15,87 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import javax.inject.Inject
 
-internal class TrashCommandUseCase @Inject constructor(
-    private val entryCommandRepository: EntryCommandRepository,
-    private val entryQueryRepository: EntryQueryRepository,
-    private val secureSessionAccessState: SecureSessionAccessState,
-    private val authorizationGate: AuthorizationGate,
-) {
-    suspend fun restore(
-        entryId: EntryId,
-        expectedVersion: EntryVersion,
-    ): TrashCommandResult {
-        val restriction = sessionRestriction()
-        if (restriction != null) return restriction
-        return entryCommandRepository.restoreEntry(entryId, expectedVersion).toTrashCommandResult()
-    }
-
-    suspend fun moveToTrash(entryId: EntryId): TrashCommandResult = authorizeDestructiveCommand {
-        val entry = entryQueryRepository.getById(entryId)
-        if (entry == null) {
-            TrashCommandResult.Failed(NotFound())
-        } else {
-            entryCommandRepository.moveToTrash(entry.id, entry.version).toTrashCommandResult()
+internal class TrashCommandUseCase
+    @Inject
+    constructor(
+        private val entryCommandRepository: EntryCommandRepository,
+        private val entryQueryRepository: EntryQueryRepository,
+        private val secureSessionAccessState: SecureSessionAccessState,
+        private val authorizationGate: AuthorizationGate,
+    ) {
+        suspend fun restore(
+            entryId: EntryId,
+            expectedVersion: EntryVersion,
+        ): TrashCommandResult {
+            val restriction = sessionRestriction()
+            if (restriction != null) return restriction
+            return entryCommandRepository.restoreEntry(entryId, expectedVersion).toTrashCommandResult()
         }
-    }
 
-    suspend fun deletePermanently(
-        entryId: EntryId,
-        expectedVersion: EntryVersion,
-    ): TrashCommandResult = authorizeDestructiveCommand {
-        entryCommandRepository.deletePermanently(entryId, expectedVersion)
-            .toTrashCommandResult()
-    }
-
-    suspend fun empty(): TrashCommandResult = authorizeDestructiveCommand {
-        entryCommandRepository.emptyTrash().toTrashCommandResult()
-    }
-
-    private suspend fun authorizeDestructiveCommand(
-        command: suspend () -> TrashCommandResult,
-    ): TrashCommandResult {
-        val restriction = sessionRestriction()
-        if (restriction != null) return restriction
-        return when (
-            val authorization = authorizationGate.authorize(
-                AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
-            ) {
-                command()
+        suspend fun moveToTrash(entryId: EntryId): TrashCommandResult =
+            authorizeDestructiveCommand {
+                val entry = entryQueryRepository.getById(entryId)
+                if (entry == null) {
+                    TrashCommandResult.Failed(NotFound())
+                } else {
+                    entryCommandRepository.moveToTrash(entry.id, entry.version).toTrashCommandResult()
+                }
             }
-        ) {
-            is AuthorizationResult.Allowed -> authorization.value
-            AuthorizationResult.Cancelled,
-            is AuthorizationResult.Denied -> TrashCommandResult.NotAuthorized
-        }
-    }
 
-    private fun sessionRestriction(): TrashCommandResult.Failed? =
-        if (secureSessionAccessState.hasFullSecureSessionAccess()) {
-            null
-        } else {
-            TrashCommandResult.Failed(SessionModeRestricted())
+        suspend fun deletePermanently(
+            entryId: EntryId,
+            expectedVersion: EntryVersion,
+        ): TrashCommandResult =
+            authorizeDestructiveCommand {
+                entryCommandRepository
+                    .deletePermanently(entryId, expectedVersion)
+                    .toTrashCommandResult()
+            }
+
+        suspend fun empty(): TrashCommandResult =
+            authorizeDestructiveCommand {
+                entryCommandRepository.emptyTrash().toTrashCommandResult()
+            }
+
+        private suspend fun authorizeDestructiveCommand(command: suspend () -> TrashCommandResult): TrashCommandResult {
+            val restriction = sessionRestriction()
+            if (restriction != null) return restriction
+            return when (
+                val authorization =
+                    authorizationGate.authorize(
+                        AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
+                    ) {
+                        command()
+                    }
+            ) {
+                is AuthorizationResult.Allowed -> authorization.value
+
+                AuthorizationResult.Cancelled,
+                is AuthorizationResult.Denied,
+                -> TrashCommandResult.NotAuthorized
+            }
         }
-}
+
+        private fun sessionRestriction(): TrashCommandResult.Failed? =
+            if (secureSessionAccessState.hasFullSecureSessionAccess()) {
+                null
+            } else {
+                TrashCommandResult.Failed(SessionModeRestricted())
+            }
+    }
 
 internal sealed interface TrashCommandResult {
     data object Completed : TrashCommandResult
+
     data object NotAuthorized : TrashCommandResult
-    data class Failed(val error: AppError) : TrashCommandResult
+
+    data class Failed(
+        val error: AppError,
+    ) : TrashCommandResult
 }
 
-private fun AppResult<*>.toTrashCommandResult(): TrashCommandResult = when (this) {
-    is AppResult.Success -> TrashCommandResult.Completed
-    is AppResult.Failure -> TrashCommandResult.Failed(error)
-}
+private fun AppResult<*>.toTrashCommandResult(): TrashCommandResult =
+    when (this) {
+        is AppResult.Success -> TrashCommandResult.Completed
+        is AppResult.Failure -> TrashCommandResult.Failed(error)
+    }

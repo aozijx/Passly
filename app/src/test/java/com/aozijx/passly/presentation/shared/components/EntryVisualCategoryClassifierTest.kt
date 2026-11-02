@@ -7,12 +7,13 @@ import org.junit.Test
 class EntryVisualCategoryClassifierTest {
     @Test
     fun entryTypeIsStrongerThanTextualHints() {
-        val result = EntryVisualCategoryClassifier.classify(
-            EntryClassificationInput(
-                entryType = EntryType.BANK_CARD,
-                title = "Work account",
-            ),
-        )
+        val result =
+            EntryVisualCategoryClassifier.classify(
+                EntryClassificationInput(
+                    entryType = EntryType.BANK_CARD,
+                    title = "Work account",
+                ),
+            )
 
         assertEquals(EntryVisualCategory.BANK, result)
     }
@@ -76,15 +77,16 @@ class EntryVisualCategoryClassifierTest {
         domains: Set<String> = emptySet(),
         packageNames: Set<String> = emptySet(),
         appNames: Set<String> = emptySet(),
-    ): EntryVisualCategory = EntryVisualCategoryClassifier.classify(
-        EntryClassificationInput(
-            entryType = EntryType.LOGIN,
-            title = title,
-            username = username,
-            urls = urls,
-            domains = domains,
-            packageNames = packageNames,
-            appNames = appNames,
-        ),
-    )
+    ): EntryVisualCategory =
+        EntryVisualCategoryClassifier.classify(
+            EntryClassificationInput(
+                entryType = EntryType.LOGIN,
+                title = title,
+                username = username,
+                urls = urls,
+                domains = domains,
+                packageNames = packageNames,
+                appNames = appNames,
+            ),
+        )
 }

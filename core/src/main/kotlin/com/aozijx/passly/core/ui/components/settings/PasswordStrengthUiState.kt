@@ -14,20 +14,19 @@ data class PasswordStrengthUiState(
     val progress: Float,
     val color: Color,
     val textResId: Int,
-    val level: PasswordStrengthLevel
+    val level: PasswordStrengthLevel,
 )
 
-fun PasswordStrengthResult.toUiState(
-    colorScheme: ColorScheme
-): PasswordStrengthUiState {
+fun PasswordStrengthResult.toUiState(colorScheme: ColorScheme): PasswordStrengthUiState {
     val progress = this.score / 100f
-    val (color, textRes) = when (this.level) {
-        PasswordStrengthLevel.VERY_WEAK -> colorScheme.error to R.string.password_strength_very_weak
-        PasswordStrengthLevel.WEAK -> colorScheme.error.copy(alpha = 0.7f) to R.string.password_strength_weak
-        PasswordStrengthLevel.MEDIUM -> colorScheme.tertiary to R.string.password_strength_medium
-        PasswordStrengthLevel.GOOD -> colorScheme.secondary to R.string.password_strength_good
-        PasswordStrengthLevel.STRONG -> colorScheme.primary to R.string.password_strength_strong
-    }
+    val (color, textRes) =
+        when (this.level) {
+            PasswordStrengthLevel.VERY_WEAK -> colorScheme.error to R.string.password_strength_very_weak
+            PasswordStrengthLevel.WEAK -> colorScheme.error.copy(alpha = 0.7f) to R.string.password_strength_weak
+            PasswordStrengthLevel.MEDIUM -> colorScheme.tertiary to R.string.password_strength_medium
+            PasswordStrengthLevel.GOOD -> colorScheme.secondary to R.string.password_strength_good
+            PasswordStrengthLevel.STRONG -> colorScheme.primary to R.string.password_strength_strong
+        }
     return PasswordStrengthUiState(progress, color, textRes, this.level)
 }
 

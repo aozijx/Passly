@@ -20,6 +20,7 @@ internal suspend fun collectScannerRouteEffects(
                 if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return@collect
                 when (effect) {
                     ScannerEffect.ScanSucceeded -> onScanSucceeded()
+
                     ScannerEffect.CopySucceeded,
                     ScannerEffect.ImageNoBarcode,
                     ScannerEffect.ImageDecodeFailed,

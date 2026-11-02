@@ -12,8 +12,9 @@ internal fun readSecurity(p: SecurityPreferences): SecuritySettings =
         isLockOnBackground = p.lockOnBackground,
         lockTimeout = p.lockTimeoutMs,
         reauthenticateSensitiveCopies = p.reauthenticateSensitiveCopies,
-        clipboardClearPolicy = ClipboardClearPolicy(
-            enabled = p.clipboardClearEnabled,
-            delaySeconds = ClipboardClearPolicy.normalizeDelaySeconds(p.clipboardClearDelaySeconds),
-        ),
+        clipboardClearPolicy =
+            ClipboardClearPolicy(
+                enabled = p.clipboardClearEnabled,
+                delaySeconds = ClipboardClearPolicy.normalizeDelaySeconds(p.clipboardClearDelaySeconds),
+            ),
     )

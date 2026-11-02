@@ -21,10 +21,18 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 
 @Composable
-fun RecoveryModeScreen(isSettingPassword: Boolean, onSetPassword: () -> Unit, onExit: () -> Unit) {
+fun RecoveryModeScreen(
+    isSettingPassword: Boolean,
+    onSetPassword: () -> Unit,
+    onExit: () -> Unit,
+) {
     Column(
-        modifier = Modifier.fillMaxSize().navigationBarsPadding().verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -32,22 +40,51 @@ fun RecoveryModeScreen(isSettingPassword: Boolean, onSetPassword: () -> Unit, on
         Spacer(Modifier.height(16.dp))
         Text(stringResource(R.string.recovery_mode_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Text(stringResource(R.string.recovery_mode_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            stringResource(R.string.recovery_mode_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(Modifier.height(32.dp))
         SettingsSection(Modifier.fillMaxWidth()) {
             SettingsSectionTitle(stringResource(R.string.authentication_label))
-            RecoveryActionCard(Icons.Default.LockReset, stringResource(R.string.recovery_mode_set_password), stringResource(R.string.app_password_unlock_description), onSetPassword, isSettingPassword)
+            RecoveryActionCard(
+                Icons.Default.LockReset,
+                stringResource(R.string.recovery_mode_set_password),
+                stringResource(R.string.app_password_unlock_description),
+                onSetPassword,
+                isSettingPassword,
+            )
         }
         Spacer(Modifier.height(16.dp))
         SettingsSection(Modifier.fillMaxWidth()) {
-            RecoveryActionCard(Icons.AutoMirrored.Filled.Logout, stringResource(R.string.recovery_mode_exit), stringResource(R.string.recovery_mode_locked_description), onExit, containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+            RecoveryActionCard(
+                Icons.AutoMirrored.Filled.Logout,
+                stringResource(R.string.recovery_mode_exit),
+                stringResource(R.string.recovery_mode_locked_description),
+                onExit,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
         }
     }
 }
 
 @Composable
-private fun RecoveryActionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit, isLoading: Boolean = false, containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-    Surface(onClick = onClick, enabled = !isLoading, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = containerColor) {
+private fun RecoveryActionCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    isLoading: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = containerColor,
+    ) {
         Row(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(16.dp))

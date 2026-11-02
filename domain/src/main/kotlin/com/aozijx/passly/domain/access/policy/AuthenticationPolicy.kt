@@ -1,8 +1,8 @@
 package com.aozijx.passly.domain.access.policy
 
-import com.aozijx.passly.domain.access.model.AuthenticationRequirement
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequirement
 
 /**
  * 认证策略。
@@ -13,7 +13,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
  * Policy 不参与 Grant 签发，后者由 [com.aozijx.passly.domain.access.port.AuthorizationGate] 内部负责。
  */
 fun interface AuthenticationPolicy {
-
     /**
      * 获取指定目的的一次性完整策略要求。
      *

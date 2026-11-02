@@ -18,11 +18,12 @@ class MessageLevelTest {
         }
     }
 
-    private fun severity(level: MessageLevel): Int = when (level) {
-        MessageLevel.INFO -> 10
-        MessageLevel.SUCCESS -> 20
-        MessageLevel.WARNING -> 30
-        MessageLevel.ERROR -> 40
-        MessageLevel.CRITICAL -> 50
-    }
+    private fun severity(level: MessageLevel): Int =
+        when (level) {
+            MessageLevel.INFO -> 10
+            MessageLevel.SUCCESS -> 20
+            MessageLevel.WARNING -> 30
+            MessageLevel.ERROR -> 40
+            MessageLevel.CRITICAL -> 50
+        }
 }

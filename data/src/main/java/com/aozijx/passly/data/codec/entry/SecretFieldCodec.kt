@@ -10,21 +10,30 @@ import javax.inject.Inject
  * Encrypts and decrypts one field-level secret payload. Each field gets its own AES-GCM
  * ciphertext bound to `entryId + fieldKey`, so revealing one field never decrypts the others.
  */
-class SecretFieldCodec @Inject constructor(
-    private val fieldEncryptor: SensitiveFieldEncryptor
-) {
-    suspend fun encrypt(entryId: String, key: SensitiveFieldKey, value: String): ByteArray =
-        fieldEncryptor.encrypt(value, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
+class SecretFieldCodec
+    @Inject
+    constructor(
+        private val fieldEncryptor: SensitiveFieldEncryptor,
+    ) {
+        suspend fun encrypt(
+            entryId: String,
+            key: SensitiveFieldKey,
+            value: String,
+        ): ByteArray = fieldEncryptor.encrypt(value, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
 
-    suspend fun decrypt(entryId: String, key: SensitiveFieldKey, cipher: ByteArray): String =
-        fieldEncryptor.decrypt(cipher, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
+        suspend fun decrypt(
+            entryId: String,
+            key: SensitiveFieldKey,
+            cipher: ByteArray,
+        ): String = fieldEncryptor.decrypt(cipher, DatabaseRecordAad.secretField(entryId, key.toStorageKey()))
 
-    suspend fun decryptProvisioned(
-        entryId: String,
-        key: SensitiveFieldKey,
-        cipher: ByteArray
-    ): String = fieldEncryptor.decryptProvisioned(
-        cipher,
-        DatabaseRecordAad.secretField(entryId, key.toStorageKey())
-    )
-}
+        suspend fun decryptProvisioned(
+            entryId: String,
+            key: SensitiveFieldKey,
+            cipher: ByteArray,
+        ): String =
+            fieldEncryptor.decryptProvisioned(
+                cipher,
+                DatabaseRecordAad.secretField(entryId, key.toStorageKey()),
+            )
+    }

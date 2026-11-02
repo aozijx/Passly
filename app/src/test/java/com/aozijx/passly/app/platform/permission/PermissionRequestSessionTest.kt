@@ -15,18 +15,24 @@ class PermissionRequestSessionTest {
     fun `closing pending host frees global lease and ignores late result`() {
         val arbiter = DefaultPermissionRequestArbiter()
         val session = PermissionRequestSession("scanner", arbiter, History())
-        assertEquals(PermissionRequestStart.Launched, session.request(RuntimePermission.CAMERA, "camera") {
-            PermissionRequestStart.Launched
-        })
+        assertEquals(
+            PermissionRequestStart.Launched,
+            session.request(RuntimePermission.CAMERA, "camera") {
+                PermissionRequestStart.Launched
+            },
+        )
         assertNull(arbiter.tryAcquire("other"))
         session.close()
         session.close()
         val nextLease = requireNotNull(arbiter.tryAcquire("settings"))
         session.complete { _, _, _ -> error("late result delivered") }
         assertNull(arbiter.tryAcquire("third"))
-        assertEquals(PermissionRequestStart.HostUnavailable, session.request(RuntimePermission.CAMERA, "camera") {
-            error("closed session launched")
-        })
+        assertEquals(
+            PermissionRequestStart.HostUnavailable,
+            session.request(RuntimePermission.CAMERA, "camera") {
+                error("closed session launched")
+            },
+        )
         nextLease.release()
     }
 
@@ -45,15 +51,24 @@ class PermissionRequestSessionTest {
     @Test
     fun `unavailable launcher can retry without leaving a pending request`() {
         val session = PermissionRequestSession("scanner", DefaultPermissionRequestArbiter(), History())
-        assertEquals(PermissionRequestStart.HostUnavailable, session.request(RuntimePermission.CAMERA, "camera") {
-            PermissionRequestStart.HostUnavailable
-        })
-        assertEquals(PermissionRequestStart.Launched, session.request(RuntimePermission.CAMERA, "camera") {
-            PermissionRequestStart.Launched
-        })
-        assertEquals(PermissionRequestStart.Busy, session.request(RuntimePermission.CAMERA, "camera") {
-            error("duplicate launch")
-        })
+        assertEquals(
+            PermissionRequestStart.HostUnavailable,
+            session.request(RuntimePermission.CAMERA, "camera") {
+                PermissionRequestStart.HostUnavailable
+            },
+        )
+        assertEquals(
+            PermissionRequestStart.Launched,
+            session.request(RuntimePermission.CAMERA, "camera") {
+                PermissionRequestStart.Launched
+            },
+        )
+        assertEquals(
+            PermissionRequestStart.Busy,
+            session.request(RuntimePermission.CAMERA, "camera") {
+                error("duplicate launch")
+            },
+        )
         session.close()
     }
 
@@ -79,9 +94,13 @@ class PermissionRequestSessionTest {
         assertNotNull(arbiter.tryAcquire("other"))
     }
 
-    private class History(private val fail: Boolean = false) : PermissionRequestHistory {
+    private class History(
+        private val fail: Boolean = false,
+    ) : PermissionRequestHistory {
         private val permissions = mutableSetOf<RuntimePermission>()
+
         override fun wasRequested(permission: RuntimePermission) = permission in permissions
+
         override fun markRequested(permission: RuntimePermission) {
             check(!fail) { "synthetic history failure" }
             permissions += permission

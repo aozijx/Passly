@@ -16,5 +16,7 @@ sealed class OtpGenerationError : Throwable() {
     data object CounterExhausted : OtpGenerationError()
 
     /** 加密/HMAC 运行时错误。 */
-    data class CryptoError(override val cause: Throwable) : OtpGenerationError()
+    data class CryptoError(
+        override val cause: Throwable,
+    ) : OtpGenerationError()
 }

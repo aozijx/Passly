@@ -3,7 +3,9 @@ package com.aozijx.passly.domain.entry.model.relation
 import com.aozijx.passly.domain.entry.model.EntryId
 
 @JvmInline
-value class EntryLinkId(val value: String) {
+value class EntryLinkId(
+    val value: String,
+) {
     init {
         require(value.isNotBlank()) { "Entry link ID cannot be blank" }
     }
@@ -18,7 +20,8 @@ enum class EntryRelationType {
     MEMBER_OF_ACCOUNT,
     OTP_FOR,
     RECOVERY_FOR,
-    RELATED_TO;
+    RELATED_TO,
+    ;
 
     val isSymmetric: Boolean
         get() = this == RELATED_TO
@@ -35,12 +38,12 @@ class EntryLink private constructor(
     val targetEntryId: EntryId,
     val relationType: EntryRelationType,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 ) {
     init {
         require(sourceEntryId != targetEntryId) { "An entry cannot link to itself" }
         require(
-            !relationType.isSymmetric || sourceEntryId.value < targetEntryId.value
+            !relationType.isSymmetric || sourceEntryId.value < targetEntryId.value,
         ) { "Symmetric entry links must use canonical endpoint order" }
     }
 
@@ -51,22 +54,23 @@ class EntryLink private constructor(
             targetEntryId: EntryId,
             relationType: EntryRelationType,
             createdAt: Long,
-            updatedAt: Long = createdAt
+            updatedAt: Long = createdAt,
         ): EntryLink {
-            val (source, target) = if (
-                relationType.isSymmetric && sourceEntryId.value > targetEntryId.value
-            ) {
-                targetEntryId to sourceEntryId
-            } else {
-                sourceEntryId to targetEntryId
-            }
+            val (source, target) =
+                if (
+                    relationType.isSymmetric && sourceEntryId.value > targetEntryId.value
+                ) {
+                    targetEntryId to sourceEntryId
+                } else {
+                    sourceEntryId to targetEntryId
+                }
             return EntryLink(
                 id = id,
                 sourceEntryId = source,
                 targetEntryId = target,
                 relationType = relationType,
                 createdAt = createdAt,
-                updatedAt = updatedAt
+                updatedAt = updatedAt,
             )
         }
     }
@@ -80,6 +84,5 @@ class EntryLink private constructor(
             createdAt == other.createdAt &&
             updatedAt == other.updatedAt
 
-    override fun hashCode(): Int =
-        arrayOf(id, sourceEntryId, targetEntryId, relationType, createdAt, updatedAt).contentHashCode()
+    override fun hashCode(): Int = arrayOf(id, sourceEntryId, targetEntryId, relationType, createdAt, updatedAt).contentHashCode()
 }

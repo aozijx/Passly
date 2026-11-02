@@ -3,23 +3,23 @@ package com.aozijx.passly.app.entry.creation
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
+import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
-import com.aozijx.passly.domain.entry.policy.InvalidEntryDraft
+import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.EntryValidation
+import com.aozijx.passly.domain.entry.policy.InvalidEntryDraft
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.github.f4b6a3.uuid.UuidCreator
@@ -71,12 +71,13 @@ class CreateEntryUseCase internal constructor(
         monotonicClock = ::monotonicTimeMs,
     )
 
-    override suspend operator fun invoke(draft: EntryDraft): AppResult<EntryId> = observeCreate(
-        draft = draft,
-        trigger = EntryCreateTrigger.USER,
-        hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
-        persist = entryCommandRepository::createEntry,
-    )
+    override suspend operator fun invoke(draft: EntryDraft): AppResult<EntryId> =
+        observeCreate(
+            draft = draft,
+            trigger = EntryCreateTrigger.USER,
+            hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
+            persist = entryCommandRepository::createEntry,
+        )
 
     override suspend fun createFromAutofill(
         draft: EntryDraft,
@@ -88,8 +89,11 @@ class CreateEntryUseCase internal constructor(
             trigger = EntryCreateTrigger.AUTOFILL,
             hasAccess = secureSessionAccessState::hasAutofillSessionAccess,
             persist = { entry ->
-                if (inboxDraftId == null) autofillEntryWriter.create(entry)
-                else autofillEntryWriter.createFromInbox(entry)
+                if (inboxDraftId == null) {
+                    autofillEntryWriter.create(entry)
+                } else {
+                    autofillEntryWriter.createFromInbox(entry)
+                }
             },
             forcedId = stableId,
         )
@@ -101,40 +105,47 @@ class CreateEntryUseCase internal constructor(
         hasAccess: () -> Boolean,
         persist: suspend (Entry) -> AppResult<EntryId>,
         forcedId: EntryId? = null,
-    ): AppResult<EntryId> = logger.inSpan(Operations.VaultEntryCreate) {
-        val entryType = draft.type
-        val startedAt = monotonicClock()
-        logger.log(LogStatements.Vault.entryCreateStarted(entryType, trigger))
-        val result = try {
-            if (hasAccess()) {
-                create(draft, persist, forcedId)
-            } else {
-                AppResult.Failure(SessionModeRestricted())
+    ): AppResult<EntryId> =
+        logger.inSpan(Operations.VaultEntryCreate) {
+            val entryType = draft.type
+            val startedAt = monotonicClock()
+            logger.log(LogStatements.Vault.entryCreateStarted(entryType, trigger))
+            val result =
+                try {
+                    if (hasAccess()) {
+                        create(draft, persist, forcedId)
+                    } else {
+                        AppResult.Failure(SessionModeRestricted())
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    logger.log(
+                        LogStatements.Vault.entryCreateFailed(
+                            failure,
+                            entryType,
+                            trigger,
+                            monotonicClock() - startedAt,
+                        ),
+                    )
+                    throw failure
+                }
+            val elapsedMs = monotonicClock() - startedAt
+            when (result) {
+                is AppResult.Success -> {
+                    logger.log(
+                        LogStatements.Vault.entryCreateCompleted(entryType, trigger, elapsedMs),
+                    )
+                }
+
+                is AppResult.Failure -> {
+                    logger.log(
+                        LogStatements.Vault.entryCreateFailed(result.error, entryType, trigger, elapsedMs),
+                    )
+                }
             }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: Exception) {
-            logger.log(
-                LogStatements.Vault.entryCreateFailed(
-                    failure,
-                    entryType,
-                    trigger,
-                    monotonicClock() - startedAt,
-                ),
-            )
-            throw failure
+            result
         }
-        val elapsedMs = monotonicClock() - startedAt
-        when (result) {
-            is AppResult.Success -> logger.log(
-                LogStatements.Vault.entryCreateCompleted(entryType, trigger, elapsedMs),
-            )
-            is AppResult.Failure -> logger.log(
-                LogStatements.Vault.entryCreateFailed(result.error, entryType, trigger, elapsedMs),
-            )
-        }
-        result
-    }
 
     private suspend fun create(
         draft: EntryDraft,
@@ -147,17 +158,19 @@ class CreateEntryUseCase internal constructor(
         }
 
         val now = clock()
-        val identity = EntryIdentity(
-            id = forcedId ?: idFactory(),
-            type = draft.type,
-            version = EntryVersion.INITIAL,
-            timestamps = EntryTimestamps(now),
-        )
-        val entry = try {
-            materializer.materialize(draft, identity)
-        } catch (_: InvalidEntryDraft) {
-            return AppResult.Failure(ValidationError())
-        }
+        val identity =
+            EntryIdentity(
+                id = forcedId ?: idFactory(),
+                type = draft.type,
+                version = EntryVersion.INITIAL,
+                timestamps = EntryTimestamps(now),
+            )
+        val entry =
+            try {
+                materializer.materialize(draft, identity)
+            } catch (_: InvalidEntryDraft) {
+                return AppResult.Failure(ValidationError())
+            }
         if (EntryValidation.validate(entry).isNotEmpty()) {
             return AppResult.Failure(ValidationError())
         }
@@ -165,17 +178,15 @@ class CreateEntryUseCase internal constructor(
     }
 }
 
-private fun stableInboxEntryId(draftId: AutofillInboxDraftId): EntryId = EntryId(
-    UUID.nameUUIDFromBytes("passly-autofill-inbox:${draftId.value}".toByteArray(Charsets.UTF_8)).toString(),
-)
+private fun stableInboxEntryId(draftId: AutofillInboxDraftId): EntryId =
+    EntryId(
+        UUID.nameUUIDFromBytes("passly-autofill-inbox:${draftId.value}".toByteArray(Charsets.UTF_8)).toString(),
+    )
 
 private enum class EntryCreateTrigger { USER, AUTOFILL }
 
 private object UnavailableAutofillEntryWriter : AutofillEntryWriter {
-    override suspend fun create(
-        entry: Entry,
-    ): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
+    override suspend fun create(entry: Entry): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
 
-    override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> =
-        AppResult.Failure(SessionModeRestricted())
+    override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
 }

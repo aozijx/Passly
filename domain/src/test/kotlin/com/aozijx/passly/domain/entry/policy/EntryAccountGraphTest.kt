@@ -10,17 +10,18 @@ import org.junit.Test
 class EntryAccountGraphTest {
     @Test
     fun `otp resolves account through login`() {
-        val graph = EntryAccountGraph(
-            listOf(
-                link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
-                link("otp", "otp", "login", EntryRelationType.OTP_FOR)
+        val graph =
+            EntryAccountGraph(
+                listOf(
+                    link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
+                    link("otp", "otp", "login", EntryRelationType.OTP_FOR),
+                ),
             )
-        )
 
         assertEquals(EntryId("account"), graph.accountFor(EntryId("otp")))
         assertEquals(
             setOf(EntryId("login"), EntryId("otp")),
-            graph.membersOf(EntryId("account"))
+            graph.membersOf(EntryId("account")),
         )
     }
 
@@ -28,12 +29,12 @@ class EntryAccountGraphTest {
         id: String,
         source: String,
         target: String,
-        type: EntryRelationType
+        type: EntryRelationType,
     ) = EntryLink.create(
         id = EntryLinkId(id),
         sourceEntryId = EntryId(source),
         targetEntryId = EntryId(target),
         relationType = type,
-        createdAt = 1L
+        createdAt = 1L,
     )
 }

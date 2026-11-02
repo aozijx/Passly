@@ -22,13 +22,13 @@ fun MetadataSection(metadata: DetailMetadataUiModel) {
     val dateFormat = remember(locale) { SimpleDateFormat("yyyy-MM-dd HH:mm", locale) }
     Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         MetadataText(
-            stringResource(R.string.metadata_created_at, dateFormat.format(Date(metadata.createdAt)))
+            stringResource(R.string.metadata_created_at, dateFormat.format(Date(metadata.createdAt))),
         )
         MetadataText(
             stringResource(
                 R.string.metadata_last_modified,
-                dateFormat.format(Date(metadata.updatedAt))
-            )
+                dateFormat.format(Date(metadata.updatedAt)),
+            ),
         )
     }
 }
@@ -36,6 +36,8 @@ fun MetadataSection(metadata: DetailMetadataUiModel) {
 @Composable
 fun MetadataText(text: String) {
     Text(
-        text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.outline,
     )
 }

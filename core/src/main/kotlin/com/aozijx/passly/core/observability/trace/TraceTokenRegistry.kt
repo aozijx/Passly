@@ -7,7 +7,9 @@ import com.aozijx.passly.core.observability.TraceId
 import java.util.UUID
 
 @JvmInline
-value class TraceToken(val value: String) {
+value class TraceToken(
+    val value: String,
+) {
     init {
         require(value.matches(Regex("^[A-Za-z0-9_-]{8,64}$"))) { "Invalid trace token" }
     }
@@ -43,20 +45,24 @@ class TraceTokenRegistry(
         }
         var token = tokenFactory()
         while (token in entries) token = tokenFactory()
-        entries[token] = Entry(
-            traceId = context.traceId,
-            spanId = context.spanId,
-            parentSpanId = context.parentSpanId,
-            operation = context.operation,
-            processSessionId = processSessionId,
-            expiresAtMs = nowMs() + ttlMs,
-            singleUse = singleUse,
-        )
+        entries[token] =
+            Entry(
+                traceId = context.traceId,
+                spanId = context.spanId,
+                parentSpanId = context.parentSpanId,
+                operation = context.operation,
+                processSessionId = processSessionId,
+                expiresAtMs = nowMs() + ttlMs,
+                singleUse = singleUse,
+            )
         return token
     }
 
     @Synchronized
-    fun consume(token: TraceToken, processSessionId: ProcessSessionId): TraceContext? {
+    fun consume(
+        token: TraceToken,
+        processSessionId: ProcessSessionId,
+    ): TraceContext? {
         pruneExpired()
         val entry = entries[token] ?: return null
         if (entry.processSessionId != processSessionId) {

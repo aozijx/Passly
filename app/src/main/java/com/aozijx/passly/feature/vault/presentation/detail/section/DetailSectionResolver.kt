@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail.section
 
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryType
 
 enum class DetailSectionKey {
     CREDENTIAL,
@@ -26,32 +26,34 @@ enum class DetailSectionKey {
  * passkey. This is deliberately separate from the vault card-style registry.
  */
 object DetailSectionResolver {
-    private val typeSections: Map<EntryType, Set<DetailSectionKey>> = mapOf(
-        EntryType.LOGIN to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.NOTE to emptySet(),
-        EntryType.OTP to setOf(DetailSectionKey.OTP),
-        EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
-        EntryType.ID_CARD to setOf(DetailSectionKey.IDENTITY),
-        EntryType.PASSPORT to setOf(DetailSectionKey.IDENTITY),
-        EntryType.DRIVER_LICENSE to setOf(DetailSectionKey.IDENTITY),
-        EntryType.SSH_KEY to setOf(DetailSectionKey.SSH),
-        EntryType.WIFI to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.SEED_PHRASE to setOf(DetailSectionKey.SEED_PHRASE),
-        EntryType.PASSKEY to setOf(DetailSectionKey.PASSKEY),
-        EntryType.RECOVERY_CODE to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.DATABASE_CREDENTIAL to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.SERVER_CREDENTIAL to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.API_KEY to setOf(DetailSectionKey.CREDENTIAL),
-        EntryType.CRYPTO_WALLET to setOf(DetailSectionKey.CREDENTIAL),
-    )
+    private val typeSections: Map<EntryType, Set<DetailSectionKey>> =
+        mapOf(
+            EntryType.LOGIN to setOf(DetailSectionKey.CREDENTIAL),
+            EntryType.NOTE to emptySet(),
+            EntryType.OTP to setOf(DetailSectionKey.OTP),
+            EntryType.BANK_CARD to setOf(DetailSectionKey.BANK_CARD),
+            EntryType.ID_CARD to setOf(DetailSectionKey.IDENTITY),
+            EntryType.PASSPORT to setOf(DetailSectionKey.IDENTITY),
+            EntryType.DRIVER_LICENSE to setOf(DetailSectionKey.IDENTITY),
+            EntryType.SSH_KEY to setOf(DetailSectionKey.SSH),
+            EntryType.WIFI to setOf(DetailSectionKey.CREDENTIAL),
+            EntryType.SEED_PHRASE to setOf(DetailSectionKey.SEED_PHRASE),
+            EntryType.PASSKEY to setOf(DetailSectionKey.PASSKEY),
+            EntryType.RECOVERY_CODE to setOf(DetailSectionKey.CREDENTIAL),
+            EntryType.DATABASE_CREDENTIAL to setOf(DetailSectionKey.CREDENTIAL),
+            EntryType.SERVER_CREDENTIAL to setOf(DetailSectionKey.CREDENTIAL),
+            EntryType.API_KEY to setOf(DetailSectionKey.CREDENTIAL),
+            EntryType.CRYPTO_WALLET to setOf(DetailSectionKey.CREDENTIAL),
+        )
 
-    private val commonSections = listOf(
-        DetailSectionKey.ENTRY_TYPE,
-        DetailSectionKey.ASSOCIATED_INFO,
-        DetailSectionKey.NOTES,
-        DetailSectionKey.METADATA,
-        DetailSectionKey.ACTIVITY,
-    )
+    private val commonSections =
+        listOf(
+            DetailSectionKey.ENTRY_TYPE,
+            DetailSectionKey.ASSOCIATED_INFO,
+            DetailSectionKey.NOTES,
+            DetailSectionKey.METADATA,
+            DetailSectionKey.ACTIVITY,
+        )
 
     fun resolve(entry: Entry): List<DetailSectionKey> {
         val selected = typeSections[entry.type].orEmpty().toMutableSet()

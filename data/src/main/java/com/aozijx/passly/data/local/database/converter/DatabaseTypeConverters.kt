@@ -1,10 +1,10 @@
 package com.aozijx.passly.data.local.database.converter
 
 import androidx.room.TypeConverter
-import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.data.codec.activityTypeFromStorageKey
 import com.aozijx.passly.data.codec.entryRelationTypeFromStorageKey
 import com.aozijx.passly.data.codec.entryTypeFromStorageKey
+import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.data.codec.otpTypeFromStorageKey
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -41,8 +41,7 @@ object StringSetConverter {
     fun fromStringSet(value: Set<String>): String = AppJson.encodeToString(value.sorted())
 
     @TypeConverter
-    fun toStringSet(value: String): Set<String> =
-        AppJson.decodeFromString<List<String>>(value).toSet()
+    fun toStringSet(value: String): Set<String> = AppJson.decodeFromString<List<String>>(value).toSet()
 }
 
 object EntryRelationTypeConverter {
@@ -50,6 +49,5 @@ object EntryRelationTypeConverter {
     fun fromEntryRelationType(value: EntryRelationType): String = value.toStorageKey()
 
     @TypeConverter
-    fun toEntryRelationType(value: String): EntryRelationType =
-        entryRelationTypeFromStorageKey(value)
+    fun toEntryRelationType(value: String): EntryRelationType = entryRelationTypeFromStorageKey(value)
 }

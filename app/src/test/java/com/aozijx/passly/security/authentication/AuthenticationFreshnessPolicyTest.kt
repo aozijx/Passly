@@ -1,26 +1,25 @@
 package com.aozijx.passly.security.authentication
 
-import com.aozijx.passly.domain.access.policy.AuthenticationMethodPolicy
-import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.policy.AuthenticationMethodPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AuthenticationFreshnessPolicyTest {
-
     @Test
     fun vaultUnlockEstablishesHighSensitivityKeyWindow() {
         assertTrue(
-            AuthenticationMethodPolicy.unlocksSensitiveDataKey(AuthenticationPurpose.UNLOCK_VAULT)
+            AuthenticationMethodPolicy.unlocksSensitiveDataKey(AuthenticationPurpose.UNLOCK_VAULT),
         )
     }
 
     @Test
     fun autofillAuthenticationEstablishesHighSensitivityKeyWindow() {
         assertTrue(
-            AuthenticationMethodPolicy.unlocksSensitiveDataKey(AuthenticationPurpose.AUTOFILL)
+            AuthenticationMethodPolicy.unlocksSensitiveDataKey(AuthenticationPurpose.AUTOFILL),
         )
     }
 
@@ -29,8 +28,8 @@ class AuthenticationFreshnessPolicyTest {
         assertTrue(
             AuthenticationMethodPolicy.requiresFreshAuthentication(
                 AuthenticationPurpose.REVEAL_HIGH_SENSITIVITY_SECRET,
-                reauthenticateSensitiveCopies = false
-            )
+                reauthenticateSensitiveCopies = false,
+            ),
         )
     }
 
@@ -39,14 +38,14 @@ class AuthenticationFreshnessPolicyTest {
         assertTrue(
             AuthenticationMethodPolicy.requiresFreshAuthentication(
                 AuthenticationPurpose.COPY_SECRET,
-                reauthenticateSensitiveCopies = true
-            )
+                reauthenticateSensitiveCopies = true,
+            ),
         )
         assertFalse(
             AuthenticationMethodPolicy.requiresFreshAuthentication(
                 AuthenticationPurpose.COPY_SECRET,
-                reauthenticateSensitiveCopies = false
-            )
+                reauthenticateSensitiveCopies = false,
+            ),
         )
     }
 
@@ -55,8 +54,8 @@ class AuthenticationFreshnessPolicyTest {
         assertFalse(
             AuthenticationMethodPolicy.requiresFreshAuthentication(
                 AuthenticationPurpose.REVEAL_SECRET,
-                reauthenticateSensitiveCopies = true
-            )
+                reauthenticateSensitiveCopies = true,
+            ),
         )
     }
 
@@ -65,23 +64,23 @@ class AuthenticationFreshnessPolicyTest {
         val primaryMethods = AuthenticationMethodPolicy.PRIMARY_METHODS
         assertEquals(
             primaryMethods,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.UNLOCK_VAULT)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.UNLOCK_VAULT),
         )
         assertEquals(
             primaryMethods,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.BACKUP_EXPORT)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.BACKUP_EXPORT),
         )
         assertEquals(
             primaryMethods,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.CLEAR_DATABASE)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.CLEAR_DATABASE),
         )
         assertEquals(
             primaryMethods,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.REVEAL_SECRET)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.REVEAL_SECRET),
         )
         assertEquals(
             primaryMethods,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.COPY_SECRET)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.COPY_SECRET),
         )
     }
 
@@ -90,7 +89,7 @@ class AuthenticationFreshnessPolicyTest {
         val recoveryOnly = setOf(AuthenticationMethod.RECOVERY_CODE)
         assertEquals(
             recoveryOnly,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RECOVER_AUTH_METHODS)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.RECOVER_AUTH_METHODS),
         )
     }
 
@@ -100,15 +99,15 @@ class AuthenticationFreshnessPolicyTest {
     fun primaryMethodsExcludeRecoveryCode() {
         assertFalse(
             "PRIMARY_METHODS must not contain RECOVERY_CODE",
-            AuthenticationMethod.RECOVERY_CODE in AuthenticationMethodPolicy.PRIMARY_METHODS
+            AuthenticationMethod.RECOVERY_CODE in AuthenticationMethodPolicy.PRIMARY_METHODS,
         )
         assertTrue(
             "PRIMARY_METHODS must contain APP_PASSWORD",
-            AuthenticationMethod.APP_PASSWORD in AuthenticationMethodPolicy.PRIMARY_METHODS
+            AuthenticationMethod.APP_PASSWORD in AuthenticationMethodPolicy.PRIMARY_METHODS,
         )
         assertTrue(
             "PRIMARY_METHODS must contain BIOMETRIC",
-            AuthenticationMethod.BIOMETRIC in AuthenticationMethodPolicy.PRIMARY_METHODS
+            AuthenticationMethod.BIOMETRIC in AuthenticationMethodPolicy.PRIMARY_METHODS,
         )
     }
 
@@ -116,7 +115,7 @@ class AuthenticationFreshnessPolicyTest {
     fun autofillRejectsRecoveryCode() {
         assertEquals(
             AuthenticationMethodPolicy.PRIMARY_METHODS,
-            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.AUTOFILL)
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(AuthenticationPurpose.AUTOFILL),
         )
     }
 
@@ -128,16 +127,16 @@ class AuthenticationFreshnessPolicyTest {
         assertEquals(
             "Recovery mode must allow only credential rebuilding",
             1,
-            recoveryPurposes.size
+            recoveryPurposes.size,
         )
         assertTrue(AuthenticationPurpose.RECOVER_AUTH_METHODS in recoveryPurposes)
         assertFalse(
             "UNLOCK_VAULT must not be in recovery mode purposes",
-            AuthenticationPurpose.UNLOCK_VAULT in recoveryPurposes
+            AuthenticationPurpose.UNLOCK_VAULT in recoveryPurposes,
         )
         assertFalse(
             "BACKUP_EXPORT must not be in recovery mode purposes",
-            AuthenticationPurpose.BACKUP_EXPORT in recoveryPurposes
+            AuthenticationPurpose.BACKUP_EXPORT in recoveryPurposes,
         )
     }
 
@@ -146,22 +145,23 @@ class AuthenticationFreshnessPolicyTest {
         assertEquals(
             "RECOVERY_MODE_REUSABLE_PURPOSES must match RECOVERY_MODE_PURPOSES",
             AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES,
-            AuthenticationMethodPolicy.RECOVERY_MODE_REUSABLE_PURPOSES
+            AuthenticationMethodPolicy.RECOVERY_MODE_REUSABLE_PURPOSES,
         )
     }
 
     @Test
     fun normalBackupExportRejectsRecoveryCode() {
-        val methods = AuthenticationMethodPolicy.allowedAuthenticationMethods(
-            AuthenticationPurpose.BACKUP_EXPORT
-        )
+        val methods =
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(
+                AuthenticationPurpose.BACKUP_EXPORT,
+            )
         assertFalse(
             "RECOVERY_CODE must not be allowed for BACKUP_EXPORT",
-            AuthenticationMethod.RECOVERY_CODE in methods
+            AuthenticationMethod.RECOVERY_CODE in methods,
         )
         assertTrue(
             "APP_PASSWORD must be allowed for BACKUP_EXPORT",
-            AuthenticationMethod.APP_PASSWORD in methods
+            AuthenticationMethod.APP_PASSWORD in methods,
         )
     }
 
@@ -169,33 +169,35 @@ class AuthenticationFreshnessPolicyTest {
 
     @Test
     fun manageAppPasswordRejectsRecoveryCode() {
-        val methods = AuthenticationMethodPolicy.allowedAuthenticationMethods(
-            AuthenticationPurpose.MANAGE_APP_PASSWORD
-        )
+        val methods =
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(
+                AuthenticationPurpose.MANAGE_APP_PASSWORD,
+            )
         assertEquals(
             "MANAGE_APP_PASSWORD must use PRIMARY_METHODS only",
             AuthenticationMethodPolicy.PRIMARY_METHODS,
-            methods
+            methods,
         )
         assertFalse(
             "RECOVERY_CODE must not be allowed for MANAGE_APP_PASSWORD",
-            AuthenticationMethod.RECOVERY_CODE in methods
+            AuthenticationMethod.RECOVERY_CODE in methods,
         )
     }
 
     @Test
     fun changeBiometricPolicyRejectsRecoveryCode() {
-        val methods = AuthenticationMethodPolicy.allowedAuthenticationMethods(
-            AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY
-        )
+        val methods =
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(
+                AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY,
+            )
         assertEquals(
             "CHANGE_BIOMETRIC_POLICY must use PRIMARY_METHODS only",
             AuthenticationMethodPolicy.PRIMARY_METHODS,
-            methods
+            methods,
         )
         assertFalse(
             "RECOVERY_CODE must not be allowed for CHANGE_BIOMETRIC_POLICY",
-            AuthenticationMethod.RECOVERY_CODE in methods
+            AuthenticationMethod.RECOVERY_CODE in methods,
         )
     }
 
@@ -203,13 +205,14 @@ class AuthenticationFreshnessPolicyTest {
 
     @Test
     fun recoverAuthMethodsRequiresOnlyRecoveryCode() {
-        val methods = AuthenticationMethodPolicy.allowedAuthenticationMethods(
-            AuthenticationPurpose.RECOVER_AUTH_METHODS
-        )
+        val methods =
+            AuthenticationMethodPolicy.allowedAuthenticationMethods(
+                AuthenticationPurpose.RECOVER_AUTH_METHODS,
+            )
         assertEquals(
             "RECOVER_AUTH_METHODS must allow only RECOVERY_CODE",
             setOf(AuthenticationMethod.RECOVERY_CODE),
-            methods
+            methods,
         )
     }
 
@@ -218,9 +221,8 @@ class AuthenticationFreshnessPolicyTest {
         assertTrue(
             AuthenticationMethodPolicy.requiresFreshAuthentication(
                 AuthenticationPurpose.RECOVER_AUTH_METHODS,
-                reauthenticateSensitiveCopies = false
-            )
+                reauthenticateSensitiveCopies = false,
+            ),
         )
     }
-
 }

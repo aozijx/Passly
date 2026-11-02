@@ -10,12 +10,8 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 internal abstract class InstalledAppCatalogModule {
     @Binds
-    abstract fun bindInstalledAppDirectory(
-        implementation: InstalledAppCatalog,
-    ): InstalledAppDirectory
+    abstract fun bindInstalledAppDirectory(implementation: InstalledAppCatalog): InstalledAppDirectory
 
     @Binds
-    abstract fun bindApplicationLabelResolver(
-        implementation: InstalledAppCatalog,
-    ): ApplicationLabelResolver
+    abstract fun bindApplicationLabelResolver(implementation: InstalledAppCatalog): ApplicationLabelResolver
 }

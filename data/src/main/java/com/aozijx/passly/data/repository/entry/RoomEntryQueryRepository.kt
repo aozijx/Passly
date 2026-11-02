@@ -17,27 +17,28 @@ import javax.inject.Singleton
  * 直接对接 DAO 查询，无写操作副作用。
  */
 @Singleton
-internal class RoomEntryQueryRepository @Inject constructor(
-    private val databaseSession: AppDatabaseSession,
-    private val sessionState: SecureSessionAccessState,
-    private val secretFieldStore: SecretFieldStore,
-) : EntryQueryRepository, EntryTagQuery {
+internal class RoomEntryQueryRepository
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+        private val sessionState: SecureSessionAccessState,
+        private val secretFieldStore: SecretFieldStore,
+    ) : EntryQueryRepository,
+        EntryTagQuery {
+        override suspend fun getById(entryId: EntryId): Entry? {
+            if (!sessionState.hasFullSecureSessionAccess()) return null
+            return databaseSession.query {
+                val metaEntity = entryQueryDao().getById(entryId.value) ?: return@query null
+                val summary = EntryProfileMapper.fromEntity(metaEntity)
+                val secret = secretFieldStore.readBundle(this, entryId.value, metaEntity.entryType)
+                EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
+            }
+        }
 
-    override suspend fun getById(entryId: EntryId): Entry? {
-        if (!sessionState.hasFullSecureSessionAccess()) return null
-        return databaseSession.query {
-            val metaEntity = entryQueryDao().getById(entryId.value) ?: return@query null
-            val summary = EntryProfileMapper.fromEntity(metaEntity)
-            val secret = secretFieldStore.readBundle(this, entryId.value, metaEntity.entryType)
-            EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
+        override suspend fun findAllTags(): Set<String> {
+            if (!sessionState.hasFullSecureSessionAccess()) return emptySet()
+            return databaseSession.query {
+                entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
+            }
         }
     }
-
-    override suspend fun findAllTags(): Set<String> {
-        if (!sessionState.hasFullSecureSessionAccess()) return emptySet()
-        return databaseSession.query {
-            entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
-        }
-    }
-
-}

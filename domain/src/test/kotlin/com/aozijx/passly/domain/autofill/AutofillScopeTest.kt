@@ -5,7 +5,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AutofillScopeTest {
-
     @Test
     fun `normalizeApplicationId trims and lowercases package names`() {
         assertEquals(

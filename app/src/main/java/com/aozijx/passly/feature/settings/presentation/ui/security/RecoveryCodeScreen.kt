@@ -24,13 +24,20 @@ fun RecoveryCodeScreen(
     onBack: (() -> Unit)?,
 ) {
     val sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden)
-    val errorMessage = when (state.draft) {
-        RecoveryCodeDraftUiState.Expired ->
-            stringResource(R.string.settings_recovery_code_draft_expired)
-        RecoveryCodeDraftUiState.Failed ->
-            stringResource(R.string.settings_recovery_code_operation_failed)
-        else -> null
-    }
+    val errorMessage =
+        when (state.draft) {
+            RecoveryCodeDraftUiState.Expired -> {
+                stringResource(R.string.settings_recovery_code_draft_expired)
+            }
+
+            RecoveryCodeDraftUiState.Failed -> {
+                stringResource(R.string.settings_recovery_code_operation_failed)
+            }
+
+            else -> {
+                null
+            }
+        }
 
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.RECOVERY_CODE.titleRes),
@@ -50,11 +57,12 @@ fun RecoveryCodeScreen(
         }
     }
 
-    val disclosure = when (val draft = state.draft) {
-        is RecoveryCodeDraftUiState.Ready -> draft.disclosure to false
-        is RecoveryCodeDraftUiState.Committing -> draft.disclosure?.let { it to true }
-        else -> null
-    }
+    val disclosure =
+        when (val draft = state.draft) {
+            is RecoveryCodeDraftUiState.Ready -> draft.disclosure to false
+            is RecoveryCodeDraftUiState.Committing -> draft.disclosure?.let { it to true }
+            else -> null
+        }
     disclosure?.let { (value, isCommitting) ->
         RecoveryCodeSheet(
             recoveryCode = value.toUiString(),

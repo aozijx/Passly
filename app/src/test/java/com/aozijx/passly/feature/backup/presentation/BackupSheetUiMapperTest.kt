@@ -13,20 +13,22 @@ class BackupSheetUiMapperTest {
     fun `maps export configuration to its dedicated sheet state`() {
         val password = OwnedChars.fromString("temporary")
         try {
-            val result = BackupUiState(
-                workflow = BackupWorkflow.ConfigureExport(
-                    BackupExportOptions(
-                        format = BackupExportFormat.ENCRYPTED,
-                        fileName = "backup.passly",
-                        password = password,
-                        includeIcons = false,
-                        includeAttachments = true,
-                        includeDeleted = false,
-                        includedEntryTypes = setOf(EntryType.LOGIN, EntryType.NOTE),
-                    ),
-                ),
-            ).toSheetUiState(configuredDirectoryLabel = "Documents/Passly")
-                as BackupRestoreSheetUiState.ExportOptions
+            val result =
+                BackupUiState(
+                    workflow =
+                        BackupWorkflow.ConfigureExport(
+                            BackupExportOptions(
+                                format = BackupExportFormat.ENCRYPTED,
+                                fileName = "backup.passly",
+                                password = password,
+                                includeIcons = false,
+                                includeAttachments = true,
+                                includeDeleted = false,
+                                includedEntryTypes = setOf(EntryType.LOGIN, EntryType.NOTE),
+                            ),
+                        ),
+                ).toSheetUiState(configuredDirectoryLabel = "Documents/Passly")
+                    as BackupRestoreSheetUiState.ExportOptions
 
             assertEquals("Documents/Passly", result.configuredDirectoryLabel)
             assertEquals("temporary", result.password)

@@ -23,164 +23,178 @@ import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
 import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
-import com.aozijx.passly.feature.backup.internal.model.toFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
+import com.aozijx.passly.feature.backup.internal.model.toFormatId
 import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 /** Internal implementation of the feature-owned operation boundary. */
-internal class DefaultBackupOperationGateway @Inject constructor(
-    private val settingsSource: BackupDirectorySettingsSource,
-    private val backupService: BackupArchiveService,
-    private val storageSupport: BackupStorageSupport,
-    private val authorizationGate: AuthorizationGate,
-    private val errorReporter: AppErrorReporter,
-) : BackupOperationGateway {
-    override fun buildExportFileName(format: BackupExportFormat): String =
-        storageSupport.buildBackupFileName(format.extension)
+internal class DefaultBackupOperationGateway
+    @Inject
+    constructor(
+        private val settingsSource: BackupDirectorySettingsSource,
+        private val backupService: BackupArchiveService,
+        private val storageSupport: BackupStorageSupport,
+        private val authorizationGate: AuthorizationGate,
+        private val errorReporter: AppErrorReporter,
+    ) : BackupOperationGateway {
+        override fun buildExportFileName(format: BackupExportFormat): String = storageSupport.buildBackupFileName(format.extension)
 
-    override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
-        if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
-        return storageSupport.checkDirectoryWritable(uri).fold(
-            onSuccess = { BackupExecutionResult.DirectoryWritable },
-            onFailure = { failure ->
-                if (failure is CancellationException) throw failure
-                val error = AppError.fromThrowable(failure)
-                errorReporter.report(
-                    error,
-                    ErrorReportContext(
-                        operation = OperationCode("backup_check_writable"),
-                        category = LogCategory.BACKUP,
-                    ),
-                )
-                BackupExecutionResult.Failure(error)
-            },
-        )
-    }
-
-    override suspend fun exportToConfiguredDirectory(
-        request: BackupExportOperationRequest,
-    ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
-        val directoryUri = settingsSource.backupDirectoryUri.first()
-            ?.takeUnless(String::isBlank)
-            ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
-        val targetUri = storageSupport.createNamedExportTarget(
-            directoryTreeUri = directoryUri,
-            fileName = request.fileName,
-            mimeType = request.format.mimeType,
-        ).getOrElse { error ->
-            if (error is CancellationException) throw error
-            return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
-        }
-        performExport(request, targetUri, deleteOnFailure = true)
-    }
-
-    override suspend fun exportToUri(
-        request: BackupExportOperationRequest,
-        targetUri: String,
-        deleteOnFailure: Boolean,
-    ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
-        performExport(request, targetUri, deleteOnFailure)
-    }
-
-    override suspend fun import(
-        request: BackupImportOperationRequest,
-    ): BackupExecutionResult = authorizeOperation(AuthenticationPurpose.BACKUP_IMPORT) {
-        performImport(request)
-    }
-
-    private suspend fun authorizeOperation(
-        purpose: AuthenticationPurpose,
-        operation: suspend () -> BackupExecutionResult,
-    ): BackupExecutionResult = when (
-        val authorization = authorizationGate.authorize(AuthorizationScope.Global(purpose)) {
-            operation()
-        }
-    ) {
-        is AuthorizationResult.Allowed -> authorization.value
-        AuthorizationResult.Cancelled -> BackupExecutionResult.Cancelled
-        is AuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
-    }
-
-    private suspend fun performExport(
-        request: BackupExportOperationRequest,
-        targetUri: String,
-        deleteOnFailure: Boolean,
-    ): BackupExecutionResult {
-        val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
-        return try {
-            when (val result = backupService.export(
-                BackupExportRequest(
-                    targetUri = targetUri,
-                    format = request.format.toFormatId(),
-                    password = password,
-                    options = BackupExportOptions(
-                        includeIcons = request.includeIcons && request.format.supportsResources,
-                        includeAttachments = request.includeAttachments && request.format.supportsResources,
-                        includeDeleted = request.includeDeleted,
-                        includedEntryTypes = request.includedEntryTypes,
-                    ),
-                ),
-            )) {
-                is AppResult.Success -> BackupExecutionResult.ExportSucceeded
-                is AppResult.Failure -> {
-                    if (deleteOnFailure) deleteFailedExport(targetUri)
-                    BackupExecutionResult.Failure(result.error)
-                }
-            }
-        } catch (cancelled: CancellationException) {
-            if (deleteOnFailure) {
-                val cleanupFailure = withContext(NonCancellable) {
-                    runCatching { deleteFailedExport(targetUri) }.fold(
-                        onSuccess = { deleted ->
-                            if (deleted) null else IOException("Unable to delete incomplete backup export")
-                        },
-                        onFailure = { it },
+        override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
+            if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
+            return storageSupport.checkDirectoryWritable(uri).fold(
+                onSuccess = { BackupExecutionResult.DirectoryWritable },
+                onFailure = { failure ->
+                    if (failure is CancellationException) throw failure
+                    val error = AppError.fromThrowable(failure)
+                    errorReporter.report(
+                        error,
+                        ErrorReportContext(
+                            operation = OperationCode("backup_check_writable"),
+                            category = LogCategory.BACKUP,
+                        ),
                     )
-                }
-                if (cleanupFailure != null && cleanupFailure !== cancelled) {
-                    cancelled.addSuppressed(cleanupFailure)
-                }
-            }
-            throw cancelled
-        } catch (error: Exception) {
-            if (deleteOnFailure) deleteFailedExport(targetUri)
-            BackupExecutionResult.Failure(AppError.fromThrowable(error))
-        } finally {
-            password?.fill('\u0000')
+                    BackupExecutionResult.Failure(error)
+                },
+            )
         }
-    }
 
-    private suspend fun performImport(
-        request: BackupImportOperationRequest,
-    ): BackupExecutionResult {
-        val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
-        return try {
-            when (val result = backupService.import(
-                BackupImportRequest(
-                    sourceUri = request.sourceUri,
-                    mode = request.mode,
-                    strategy = request.strategy,
-                    format = null,
-                    password = password,
-                ),
-            )) {
-                is AppResult.Success -> BackupExecutionResult.ImportSucceeded(result.data)
-                is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
+        override suspend fun exportToConfiguredDirectory(request: BackupExportOperationRequest): BackupExecutionResult =
+            authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
+                val directoryUri =
+                    settingsSource.backupDirectoryUri
+                        .first()
+                        ?.takeUnless(String::isBlank)
+                        ?: return@authorizeOperation BackupExecutionResult.Failure(BackupFailed())
+                val targetUri =
+                    storageSupport
+                        .createNamedExportTarget(
+                            directoryTreeUri = directoryUri,
+                            fileName = request.fileName,
+                            mimeType = request.format.mimeType,
+                        ).getOrElse { error ->
+                            if (error is CancellationException) throw error
+                            return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
+                        }
+                performExport(request, targetUri, deleteOnFailure = true)
             }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            BackupExecutionResult.Failure(AppError.fromThrowable(error))
-        } finally {
-            password?.fill('\u0000')
-        }
-    }
 
-    private suspend fun deleteFailedExport(targetUri: String): Boolean =
-        storageSupport.deleteDocument(targetUri)
-}
+        override suspend fun exportToUri(
+            request: BackupExportOperationRequest,
+            targetUri: String,
+            deleteOnFailure: Boolean,
+        ): BackupExecutionResult =
+            authorizeOperation(AuthenticationPurpose.BACKUP_EXPORT) {
+                performExport(request, targetUri, deleteOnFailure)
+            }
+
+        override suspend fun import(request: BackupImportOperationRequest): BackupExecutionResult =
+            authorizeOperation(AuthenticationPurpose.BACKUP_IMPORT) {
+                performImport(request)
+            }
+
+        private suspend fun authorizeOperation(
+            purpose: AuthenticationPurpose,
+            operation: suspend () -> BackupExecutionResult,
+        ): BackupExecutionResult =
+            when (
+                val authorization =
+                    authorizationGate.authorize(AuthorizationScope.Global(purpose)) {
+                        operation()
+                    }
+            ) {
+                is AuthorizationResult.Allowed -> authorization.value
+                AuthorizationResult.Cancelled -> BackupExecutionResult.Cancelled
+                is AuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
+            }
+
+        private suspend fun performExport(
+            request: BackupExportOperationRequest,
+            targetUri: String,
+            deleteOnFailure: Boolean,
+        ): BackupExecutionResult {
+            val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
+            return try {
+                when (
+                    val result =
+                        backupService.export(
+                            BackupExportRequest(
+                                targetUri = targetUri,
+                                format = request.format.toFormatId(),
+                                password = password,
+                                options =
+                                    BackupExportOptions(
+                                        includeIcons = request.includeIcons && request.format.supportsResources,
+                                        includeAttachments = request.includeAttachments && request.format.supportsResources,
+                                        includeDeleted = request.includeDeleted,
+                                        includedEntryTypes = request.includedEntryTypes,
+                                    ),
+                            ),
+                        )
+                ) {
+                    is AppResult.Success -> {
+                        BackupExecutionResult.ExportSucceeded
+                    }
+
+                    is AppResult.Failure -> {
+                        if (deleteOnFailure) deleteFailedExport(targetUri)
+                        BackupExecutionResult.Failure(result.error)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                if (deleteOnFailure) {
+                    val cleanupFailure =
+                        withContext(NonCancellable) {
+                            runCatching { deleteFailedExport(targetUri) }.fold(
+                                onSuccess = { deleted ->
+                                    if (deleted) null else IOException("Unable to delete incomplete backup export")
+                                },
+                                onFailure = { it },
+                            )
+                        }
+                    if (cleanupFailure != null && cleanupFailure !== cancelled) {
+                        cancelled.addSuppressed(cleanupFailure)
+                    }
+                }
+                throw cancelled
+            } catch (error: Exception) {
+                if (deleteOnFailure) deleteFailedExport(targetUri)
+                BackupExecutionResult.Failure(AppError.fromThrowable(error))
+            } finally {
+                password?.fill('\u0000')
+            }
+        }
+
+        private suspend fun performImport(request: BackupImportOperationRequest): BackupExecutionResult {
+            val password = request.password.takeUnless { it.isEmpty }?.toCharArray()
+            return try {
+                when (
+                    val result =
+                        backupService.import(
+                            BackupImportRequest(
+                                sourceUri = request.sourceUri,
+                                mode = request.mode,
+                                strategy = request.strategy,
+                                format = null,
+                                password = password,
+                            ),
+                        )
+                ) {
+                    is AppResult.Success -> BackupExecutionResult.ImportSucceeded(result.data)
+                    is AppResult.Failure -> BackupExecutionResult.Failure(result.error)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                BackupExecutionResult.Failure(AppError.fromThrowable(error))
+            } finally {
+                password?.fill('\u0000')
+            }
+        }
+
+        private suspend fun deleteFailedExport(targetUri: String): Boolean = storageSupport.deleteDocument(targetUri)
+    }

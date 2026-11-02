@@ -23,27 +23,37 @@ class DetailDisplayTitleTest {
 
     @Test
     fun changingNetworkNameToProfileTitleStillProducesNetworkEdit() {
-        assertEquals(DetailTitleEditPlan.Save(EntryEdit.SetWifiNetworkName("Personal label")),
-            wifi("Old network").planDetailTitleEdit("Personal label"))
+        assertEquals(
+            DetailTitleEditPlan.Save(EntryEdit.SetWifiNetworkName("Personal label")),
+            wifi("Old network").planDetailTitleEdit("Personal label"),
+        )
     }
 
     @Test
     fun changedNetworkNamePreservesItsSurroundingWhitespace() {
-        assertEquals(DetailTitleEditPlan.Save(EntryEdit.SetWifiNetworkName(" New network ")),
-            wifi("Old network").planDetailTitleEdit(" New network "))
+        assertEquals(
+            DetailTitleEditPlan.Save(EntryEdit.SetWifiNetworkName(" New network ")),
+            wifi("Old network").planDetailTitleEdit(" New network "),
+        )
     }
 
     @Test
     fun ordinaryTitleKeepsTrimmingAndBlankCancellation() {
-        val login = Entry(EntryIdentity(EntryId("login"), EntryType.LOGIN, timestamps = EntryTimestamps(1)),
-            EntryProfile(title = "Mail"), EntrySecret(LoginCredential()))
+        val login =
+            Entry(
+                EntryIdentity(EntryId("login"), EntryType.LOGIN, timestamps = EntryTimestamps(1)),
+                EntryProfile(title = "Mail"),
+                EntrySecret(LoginCredential()),
+            )
         assertEquals(DetailTitleEditPlan.Cancel, login.planDetailTitleEdit(" Mail "))
         assertEquals(DetailTitleEditPlan.Cancel, login.planDetailTitleEdit(" "))
         assertEquals(DetailTitleEditPlan.Save(EntryEdit.SetTitle("New title")), login.planDetailTitleEdit(" New title "))
     }
 
-    private fun wifi(ssid: String) = Entry(
-        EntryIdentity(EntryId("wifi"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
-        EntryProfile(title = "Personal label"), EntrySecret(WifiCredential(ssid)),
-    )
+    private fun wifi(ssid: String) =
+        Entry(
+            EntryIdentity(EntryId("wifi"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
+            EntryProfile(title = "Personal label"),
+            EntrySecret(WifiCredential(ssid)),
+        )
 }

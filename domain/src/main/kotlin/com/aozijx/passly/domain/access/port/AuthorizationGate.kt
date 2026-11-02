@@ -30,7 +30,6 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
  * 实现应确保闭包执行期间会话不会被锁定。
  */
 interface AuthorizationGate {
-
     /**
      * 授权并执行敏感操作。
      *
@@ -41,13 +40,16 @@ interface AuthorizationGate {
     suspend fun <T> authorize(
         scope: AuthorizationScope,
         input: AuthInput = AuthInput.Interactive,
-        block: suspend (AuthorizationPermit) -> T
+        block: suspend (AuthorizationPermit) -> T,
     ): AuthorizationResult<T>
 }
 
 /** Security-layer verifier. A permit is valid only when consumed for its exact scope. */
 interface AuthorizationPermitVerifier {
-    fun consume(permit: AuthorizationPermit, expectedScope: AuthorizationScope): Boolean
+    fun consume(
+        permit: AuthorizationPermit,
+        expectedScope: AuthorizationScope,
+    ): Boolean
 }
 
 /** Revokes every outstanding permit before a secure session is locked or sealed. */

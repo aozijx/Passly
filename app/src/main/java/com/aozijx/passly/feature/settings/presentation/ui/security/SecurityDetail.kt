@@ -11,7 +11,7 @@ internal fun SecurityDetail(
     onAppPasswordClick: () -> Unit,
     onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    onLockOnBackgroundChange: (Boolean) -> Unit
+    onLockOnBackgroundChange: (Boolean) -> Unit,
 ) {
     SettingsSection {
         LockAuthSettingsSection(
@@ -20,7 +20,7 @@ internal fun SecurityDetail(
             onAppPasswordClick = onAppPasswordClick,
             onBiometricEnabledChange = onBiometricEnabledChange,
             onInvalidateKeyOnBioChangeToggle = onInvalidateKeyOnBioChangeToggle,
-            onLockOnBackgroundChange = onLockOnBackgroundChange
+            onLockOnBackgroundChange = onLockOnBackgroundChange,
         )
     }
 }

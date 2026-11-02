@@ -3,11 +3,11 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -15,8 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchState
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
 import org.junit.Assert.assertTrue
@@ -48,11 +48,13 @@ class VaultTopBarMenuTest {
         composeRule.onNodeWithContentDescription(context.getString(R.string.more)).performClick()
         composeRule.waitForIdle()
         composeRule.onNode(isPopup()).assertNonZero()
-        composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
+        composeRule
+            .onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
             .assertIsDisplayed()
             .performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
+        composeRule
+            .onNodeWithText(context.getString(R.string.vault_menu_scan_qr))
             .assertDoesNotExist()
         composeRule.runOnIdle {
             assertTrue(requests == listOf(VaultRouteRequest.OpenScanner))
@@ -68,15 +70,17 @@ class VaultTopBarMenuTest {
         }
 
         composeRule.waitForIdle()
-        composeRule.onNodeWithText(context.getString(R.string.settings_title))
+        composeRule
+            .onNodeWithText(context.getString(R.string.settings_title))
             .assertIsDisplayed()
             .performClick()
         composeRule.runOnIdle {
             assertTrue(
-                requests == listOf(
-                    VaultRouteRequest.OpenScanner,
-                    VaultRouteRequest.OpenSettings,
-                ),
+                requests ==
+                    listOf(
+                        VaultRouteRequest.OpenScanner,
+                        VaultRouteRequest.OpenSettings,
+                    ),
             )
         }
 
@@ -94,28 +98,32 @@ class VaultTopBarMenuTest {
         assertTrue(bounds.bottom - bounds.top > 0.dp)
     }
 
-    private fun topBarState() = VaultTopBarUiState(
-        query = "",
-        menu = VaultMenuUiState(
-            showTotpCode = false,
-            availableCategories = emptyList(),
-            selectedCategory = null,
-            selectedSort = VaultSortUiModel.presets.first {
-                it.option == VaultSortOptionUiModel.CREATED_AT
-            },
-        ),
-        collapseOnScroll = false,
-        collapseQuickFilterOnScroll = false,
-        hideSystemBars = false,
-    )
+    private fun topBarState() =
+        VaultTopBarUiState(
+            query = "",
+            menu =
+                VaultMenuUiState(
+                    showTotpCode = false,
+                    availableCategories = emptyList(),
+                    selectedCategory = null,
+                    selectedSort =
+                        VaultSortUiModel.presets.first {
+                            it.option == VaultSortOptionUiModel.CREATED_AT
+                        },
+                ),
+            collapseOnScroll = false,
+            collapseQuickFilterOnScroll = false,
+            hideSystemBars = false,
+        )
 
-    private fun searchStateHolder() = VaultSearchStateHolder(
-        initialState = VaultSearchState.initial(false, ""),
-        initialSearchActive = false,
-        currentQuery = { "" },
-        currentSearchActive = { false },
-        onQueryChange = {},
-        onSearchActiveChange = {},
-        onExpandBars = {},
-    )
+    private fun searchStateHolder() =
+        VaultSearchStateHolder(
+            initialState = VaultSearchState.initial(false, ""),
+            initialSearchActive = false,
+            currentQuery = { "" },
+            currentSearchActive = { false },
+            onQueryChange = {},
+            onSearchActiveChange = {},
+            onExpandBars = {},
+        )
 }

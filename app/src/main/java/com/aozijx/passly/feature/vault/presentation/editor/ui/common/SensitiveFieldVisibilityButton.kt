@@ -22,9 +22,10 @@ internal fun SensitiveFieldVisibilityButton(
     modifier: Modifier = Modifier,
 ) {
     val label = stringResource(fieldLabelRes)
-    val state = stringResource(
-        if (visible) R.string.vault_editor_field_visible else R.string.vault_editor_field_hidden,
-    )
+    val state =
+        stringResource(
+            if (visible) R.string.vault_editor_field_visible else R.string.vault_editor_field_hidden,
+        )
     IconToggleButton(
         checked = visible,
         onCheckedChange = onVisibilityChanged,
@@ -32,10 +33,11 @@ internal fun SensitiveFieldVisibilityButton(
     ) {
         Icon(
             imageVector = if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-            contentDescription = stringResource(
-                if (visible) R.string.vault_editor_hide_field else R.string.vault_editor_show_field,
-                label,
-            ),
+            contentDescription =
+                stringResource(
+                    if (visible) R.string.vault_editor_hide_field else R.string.vault_editor_show_field,
+                    label,
+                ),
         )
     }
 }

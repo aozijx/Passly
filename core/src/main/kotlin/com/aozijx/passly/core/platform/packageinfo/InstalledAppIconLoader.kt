@@ -15,30 +15,36 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class InstalledAppIconLoader @Inject constructor(
-    @ApplicationContext context: Context,
-    private val logger: Logger,
-) {
-    private val packageManager = context.packageManager
-    private val cache = LruCache<String, Bitmap>(60)
-    private val targetSize = (48 * context.resources.displayMetrics.density).toInt()
+class InstalledAppIconLoader
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+        private val logger: Logger,
+    ) {
+        private val packageManager = context.packageManager
+        private val cache = LruCache<String, Bitmap>(60)
+        private val targetSize = (48 * context.resources.displayMetrics.density).toInt()
 
-    suspend fun loadIcon(packageName: String): Bitmap? = logger.inSpan(Operations.PackageIconLoad) {
-        cache[packageName]?.let { return@inSpan it }
-        try {
-            convert(packageManager.getApplicationIcon(packageName))?.also { cache.put(packageName, it) }
-        } catch (error: PackageManager.NameNotFoundException) {
-            logger.log(LogStatements.Application.packageIconNotFound(error))
-            null
-        }
-    }
+        suspend fun loadIcon(packageName: String): Bitmap? =
+            logger.inSpan(Operations.PackageIconLoad) {
+                cache[packageName]?.let { return@inSpan it }
+                try {
+                    convert(packageManager.getApplicationIcon(packageName))?.also { cache.put(packageName, it) }
+                } catch (error: PackageManager.NameNotFoundException) {
+                    logger.log(LogStatements.Application.packageIconNotFound(error))
+                    null
+                }
+            }
 
-    private fun convert(drawable: Drawable): Bitmap? = try {
-        if (drawable is BitmapDrawable && drawable.bitmap.width == targetSize && drawable.bitmap.height == targetSize) {
-            drawable.bitmap
-        } else drawable.toBitmap(targetSize, targetSize)
-    } catch (error: Exception) {
-        logger.log(LogStatements.Application.packageIconDecodeFailed(error))
-        null
+        private fun convert(drawable: Drawable): Bitmap? =
+            try {
+                if (drawable is BitmapDrawable && drawable.bitmap.width == targetSize && drawable.bitmap.height == targetSize) {
+                    drawable.bitmap
+                } else {
+                    drawable.toBitmap(targetSize, targetSize)
+                }
+            } catch (error: Exception) {
+                logger.log(LogStatements.Application.packageIconDecodeFailed(error))
+                null
+            }
     }
-}

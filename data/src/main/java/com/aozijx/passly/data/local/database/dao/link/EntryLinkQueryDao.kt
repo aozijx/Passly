@@ -21,7 +21,7 @@ interface EntryLinkQueryDao {
         SELECT * FROM entry_links
         WHERE sourceEntryId = :entryId OR targetEntryId = :entryId
         ORDER BY createdAt ASC
-        """
+        """,
     )
     fun observeByEntryId(entryId: String): Flow<List<EntryLinkEntity>>
 
@@ -30,7 +30,7 @@ interface EntryLinkQueryDao {
         SELECT * FROM entry_links
         WHERE sourceEntryId = :entryId OR targetEntryId = :entryId
         ORDER BY createdAt ASC
-        """
+        """,
     )
     suspend fun getByEntryId(entryId: String): List<EntryLinkEntity>
 }

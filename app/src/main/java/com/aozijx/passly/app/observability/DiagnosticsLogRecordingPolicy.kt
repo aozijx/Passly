@@ -9,23 +9,37 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class DiagnosticsLogRecordingPolicy @Inject constructor() {
-    private val mode = AtomicReference<DiagnosticsLogRecordingMode?>(null)
+internal class DiagnosticsLogRecordingPolicy
+    @Inject
+    constructor() {
+        private val mode = AtomicReference<DiagnosticsLogRecordingMode?>(null)
 
-    fun update(value: DiagnosticsLogRecordingMode) {
-        mode.set(value)
-    }
-
-    fun allows(level: LogLevel): Boolean = when (mode.get()) {
-        DiagnosticsLogRecordingMode.DISABLED, null -> false
-        DiagnosticsLogRecordingMode.WARN_AND_ABOVE -> when (level) {
-            LogLevel.DEBUG, LogLevel.INFO -> false
-            LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL -> true
+        fun update(value: DiagnosticsLogRecordingMode) {
+            mode.set(value)
         }
-        DiagnosticsLogRecordingMode.INFO_AND_ABOVE -> level != LogLevel.DEBUG
-        DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE -> true
+
+        fun allows(level: LogLevel): Boolean =
+            when (mode.get()) {
+                DiagnosticsLogRecordingMode.DISABLED, null -> {
+                    false
+                }
+
+                DiagnosticsLogRecordingMode.WARN_AND_ABOVE -> {
+                    when (level) {
+                        LogLevel.DEBUG, LogLevel.INFO -> false
+                        LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL -> true
+                    }
+                }
+
+                DiagnosticsLogRecordingMode.INFO_AND_ABOVE -> {
+                    level != LogLevel.DEBUG
+                }
+
+                DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE -> {
+                    true
+                }
+            }
     }
-}
 
 internal class PolicyLogRecordStore(
     private val delegate: LogRecordStore,
@@ -40,6 +54,5 @@ internal class PolicyLogRecordStore(
     override fun crashEmergencyWrite(
         record: SanitizedLogRecord,
         timeoutMs: Long,
-    ): Boolean =
-        policy.allows(record.level) && delegate.crashEmergencyWrite(record, timeoutMs)
+    ): Boolean = policy.allows(record.level) && delegate.crashEmergencyWrite(record, timeoutMs)
 }

@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation.ui
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,10 +27,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.BackupUiAction
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
@@ -55,10 +55,11 @@ internal fun BackupExportOptionsContent(
                 label = { Text(stringResource(R.string.settings_backup_password_label)) },
                 supportingText = { Text(stringResource(R.string.settings_backup_password_warning)) },
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
                 singleLine = true,
             )
         }
@@ -124,9 +125,10 @@ internal fun BackupExportOptionsContent(
                 FilterChip(
                     selected = type in state.includedEntryTypes,
                     onClick = {
-                        val updated = state.includedEntryTypes.toMutableSet().apply {
-                            if (!add(type)) remove(type)
-                        }
+                        val updated =
+                            state.includedEntryTypes.toMutableSet().apply {
+                                if (!add(type)) remove(type)
+                            }
                         onAction(BackupUiAction.UpdateIncludedEntryTypes(updated))
                     },
                     label = { Text(stringResource(type.labelRes)) },
@@ -143,9 +145,10 @@ internal fun BackupExportOptionsContent(
 
         HorizontalDivider()
         Text(
-            text = state.configuredDirectoryLabel?.let {
-                stringResource(R.string.settings_backup_save_to_configured_directory, it)
-            } ?: stringResource(R.string.settings_backup_choose_destination_after_confirm),
+            text =
+                state.configuredDirectoryLabel?.let {
+                    stringResource(R.string.settings_backup_save_to_configured_directory, it)
+                } ?: stringResource(R.string.settings_backup_choose_destination_after_confirm),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -167,19 +170,21 @@ internal fun BackupExportOptionsContent(
 
 @Composable
 private fun ExportSecurityNotice(format: BackupExportFormat) {
-    val text = when (format) {
-        BackupExportFormat.ENCRYPTED -> stringResource(R.string.settings_backup_encrypted_security_notice)
-        BackupExportFormat.JSON -> stringResource(R.string.settings_backup_json_security_notice)
-        BackupExportFormat.TEXT -> stringResource(R.string.settings_backup_text_security_notice)
-    }
+    val text =
+        when (format) {
+            BackupExportFormat.ENCRYPTED -> stringResource(R.string.settings_backup_encrypted_security_notice)
+            BackupExportFormat.JSON -> stringResource(R.string.settings_backup_json_security_notice)
+            BackupExportFormat.TEXT -> stringResource(R.string.settings_backup_text_security_notice)
+        }
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = if (format == BackupExportFormat.ENCRYPTED) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.error
-        },
+        color =
+            if (format == BackupExportFormat.ENCRYPTED) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.error
+            },
     )
 }
 
@@ -205,8 +210,9 @@ private fun BackupSwitchRow(
 }
 
 @StringRes
-private fun exportTitleResource(format: BackupExportFormat): Int = when (format) {
-    BackupExportFormat.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
-    BackupExportFormat.JSON -> R.string.settings_backup_json_options_title
-    BackupExportFormat.TEXT -> R.string.settings_backup_text_options_title
-}
+private fun exportTitleResource(format: BackupExportFormat): Int =
+    when (format) {
+        BackupExportFormat.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
+        BackupExportFormat.JSON -> R.string.settings_backup_json_options_title
+        BackupExportFormat.TEXT -> R.string.settings_backup_text_options_title
+    }

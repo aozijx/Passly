@@ -3,24 +3,32 @@ package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.credential.CardExpiry
+import com.aozijx.passly.domain.entry.policy.CardCvvValidator
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.domain.entry.policy.CardNumberValidator
-import com.aozijx.passly.domain.entry.policy.CardCvvValidator
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 
-enum class CardType(@param:StringRes val labelRes: Int) {
+enum class CardType(
+    @param:StringRes val labelRes: Int,
+) {
     DEBIT(R.string.card_type_debit),
-    CREDIT(R.string.card_type_credit)
+    CREDIT(R.string.card_type_credit),
 }
 
 sealed interface CardTypeSelection {
     data object Unselected : CardTypeSelection
-    data class Selected(val type: CardType) : CardTypeSelection
+
+    data class Selected(
+        val type: CardType,
+    ) : CardTypeSelection
 }
 
 sealed interface CardExpirySelection {
     data object NotSet : CardExpirySelection
-    data class Selected(val value: CardExpiry) : CardExpirySelection
+
+    data class Selected(
+        val value: CardExpiry,
+    ) : CardExpirySelection
 }
 
 data class AddBankCardFormState(
@@ -41,7 +49,7 @@ data class AddBankCardFormState(
     val notes: String = "",
     val isCardNumberVisible: Boolean = false,
     val isCvvVisible: Boolean = false,
-    val isPinVisible: Boolean = false
+    val isPinVisible: Boolean = false,
 ) {
     val cardNumberValidation: CardNumberValidationResult
         get() = CardNumberValidator.validate(cardNumber)
@@ -55,6 +63,7 @@ data class AddBankCardFormState(
 
 sealed interface AddBankCardSavePhase {
     data object Idle : AddBankCardSavePhase
+
     data object Saving : AddBankCardSavePhase
 }
 
@@ -65,8 +74,9 @@ data class AddBankCardUiState(
     val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
-        get() = form.isValid && savePhase == AddBankCardSavePhase.Idle &&
-            loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
+        get() =
+            form.isValid && savePhase == AddBankCardSavePhase.Idle &&
+                loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
 }
 
 internal fun cardExpiryYearRange(currentYear: Int): IntRange = currentYear..(currentYear + 20)

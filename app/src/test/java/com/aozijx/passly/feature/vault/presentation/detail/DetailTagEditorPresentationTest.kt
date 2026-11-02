@@ -9,11 +9,12 @@ import org.junit.Test
 class DetailTagEditorPresentationTest {
     @Test
     fun `tag editor state maps to ui only at the presentation boundary`() {
-        val state = DetailTagEditorState.Open(
-            initialTags = setOf("Work"),
-            draftTags = setOf("Personal"),
-            validationError = DetailTagValidationError.TOO_MANY_TAGS,
-        )
+        val state =
+            DetailTagEditorState.Open(
+                initialTags = setOf("Work"),
+                draftTags = setOf("Personal"),
+                validationError = DetailTagValidationError.TOO_MANY_TAGS,
+            )
 
         val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
 

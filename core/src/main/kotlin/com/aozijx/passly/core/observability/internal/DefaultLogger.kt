@@ -14,12 +14,12 @@ import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
-import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.TraceResumeResult
+import com.aozijx.passly.core.observability.TraceScope
+import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.LogSanitizer
 import com.aozijx.passly.core.observability.privacy.SanitizationContext
 import com.aozijx.passly.core.observability.privacy.SanitizationResult
-import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.sink.LogSink
 import com.aozijx.passly.core.observability.trace.SpanCompleted
 import com.aozijx.passly.core.observability.trace.SpanResult
@@ -44,12 +44,15 @@ fun interface SecureSessionProvider {
 
 interface ObservabilityTimeSource {
     fun wallTimeMs(): Long
+
     fun elapsedRealtimeMs(): Long
 }
 
 interface ObservabilityIdGenerator {
     fun eventId(): EventId
+
     fun traceId(): TraceId
+
     fun spanId(): SpanId
 }
 
@@ -57,10 +60,15 @@ class SecureObservabilityIdGenerator(
     private val secureRandom: SecureRandom = SecureRandom(),
 ) : ObservabilityIdGenerator {
     override fun eventId(): EventId = EventId(randomOpaqueId())
+
     override fun traceId(): TraceId = TraceId(randomOpaqueId())
+
     override fun spanId(): SpanId = SpanId(randomOpaqueId(8))
+
     private fun randomOpaqueId(byteCount: Int = 16): String =
-        Base64.getUrlEncoder().withoutPadding()
+        Base64
+            .getUrlEncoder()
+            .withoutPadding()
             .encodeToString(ByteArray(byteCount).also(secureRandom::nextBytes))
 }
 
@@ -75,11 +83,17 @@ class DefaultLogger(
     private val aggregator: EventAggregator? = null,
     private val traceTokenRegistry: TraceTokenRegistry = TraceTokenRegistry(timeSource::elapsedRealtimeMs),
 ) : Logger {
-    override fun debug(event: EventKey, fields: LogFields) {
+    override fun debug(
+        event: EventKey,
+        fields: LogFields,
+    ) {
         emit(PendingLogEvent(LogLevel.DEBUG, event, fields))
     }
 
-    override fun info(event: EventKey, fields: LogFields) {
+    override fun info(
+        event: EventKey,
+        fields: LogFields,
+    ) {
         emit(PendingLogEvent(LogLevel.INFO, event, fields))
     }
 
@@ -117,33 +131,37 @@ class DefaultLogger(
     override suspend fun <T> withRootTrace(
         operation: OperationCode,
         block: suspend TraceScope.() -> T,
-    ): T = runSpan(
-        TraceContext.root(idGenerator.traceId(), idGenerator.spanId(), operation),
-        block,
-    )
+    ): T =
+        runSpan(
+            TraceContext.root(idGenerator.traceId(), idGenerator.spanId(), operation),
+            block,
+        )
 
     override suspend fun <T> inSpan(
         operation: OperationCode,
         block: suspend TraceScope.() -> T,
     ): T {
-        val parent = TraceContext.currentOrNull()
-            ?: return withRootTrace(operation, block)
+        val parent =
+            TraceContext.currentOrNull()
+                ?: return withRootTrace(operation, block)
         return runSpan(parent.child(idGenerator.spanId(), operation), block)
     }
 
-    override fun captureTraceToken(singleUse: Boolean): TraceToken = traceTokenRegistry.capture(
-        context = requireTraceContext(),
-        processSessionId = processSessionProvider.current(),
-        singleUse = singleUse,
-    )
+    override fun captureTraceToken(singleUse: Boolean): TraceToken =
+        traceTokenRegistry.capture(
+            context = requireTraceContext(),
+            processSessionId = processSessionProvider.current(),
+            singleUse = singleUse,
+        )
 
     override suspend fun <T> resumeTrace(
         token: TraceToken,
         operation: OperationCode,
         block: suspend TraceScope.() -> T,
     ): TraceResumeResult<T> {
-        val captured = traceTokenRegistry.consume(token, processSessionProvider.current())
-            ?: return TraceResumeResult.Unavailable
+        val captured =
+            traceTokenRegistry.consume(token, processSessionProvider.current())
+                ?: return TraceResumeResult.Unavailable
         return TraceResumeResult.Resumed(
             runSpan(captured.child(idGenerator.spanId(), operation), block),
         )
@@ -168,11 +186,12 @@ class DefaultLogger(
             }
         } catch (failure: Throwable) {
             val businessFailure = originalFailure ?: failure
-            result = if (businessFailure is CancellationException) {
-                SpanResult.CANCELLED
-            } else {
-                SpanResult.FAILURE
-            }
+            result =
+                if (businessFailure is CancellationException) {
+                    SpanResult.CANCELLED
+                } else {
+                    SpanResult.FAILURE
+                }
             throw businessFailure
         } finally {
             val elapsedMs = (timeSource.elapsedRealtimeMs() - startedAt).coerceAtLeast(0)
@@ -204,18 +223,22 @@ class DefaultLogger(
         emit(event, requireTraceContext())
     }
 
-    private fun emit(event: PendingLogEvent, traceContext: TraceContext) {
-        val result = sanitizer.sanitize(
-            event,
-            SanitizationContext(
-                eventId = idGenerator.eventId(),
-                timestampMs = timeSource.wallTimeMs(),
-                elapsedRealtimeMs = timeSource.elapsedRealtimeMs(),
-                processSessionId = processSessionProvider.current(),
-                secureSessionId = secureSessionProvider.currentOrNull(),
-                trace = traceContext.snapshot(),
-            ),
-        )
+    private fun emit(
+        event: PendingLogEvent,
+        traceContext: TraceContext,
+    ) {
+        val result =
+            sanitizer.sanitize(
+                event,
+                SanitizationContext(
+                    eventId = idGenerator.eventId(),
+                    timestampMs = timeSource.wallTimeMs(),
+                    elapsedRealtimeMs = timeSource.elapsedRealtimeMs(),
+                    processSessionId = processSessionProvider.current(),
+                    secureSessionId = secureSessionProvider.currentOrNull(),
+                    trace = traceContext.snapshot(),
+                ),
+            )
         if (result is SanitizationResult.Accepted) {
             if (aggregator?.record(result.record) == false) return
             sinks.forEach { sink ->
@@ -230,9 +253,10 @@ class DefaultLogger(
         }
     }
 
-    private fun requireTraceContext(): TraceContext = checkNotNull(TraceContext.currentOrNull()) {
-        "Logger call requires an active trace"
-    }
+    private fun requireTraceContext(): TraceContext =
+        checkNotNull(TraceContext.currentOrNull()) {
+            "Logger call requires an active trace"
+        }
 
     private fun notifyStarted(span: SpanStarted) {
         lifecycleSinks.forEach { sink ->

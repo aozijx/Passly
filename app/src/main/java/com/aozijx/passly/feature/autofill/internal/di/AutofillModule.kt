@@ -23,7 +23,6 @@ annotation class Heuristic
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AutofillModule {
-
     @Binds
     @Singleton
     @Strict

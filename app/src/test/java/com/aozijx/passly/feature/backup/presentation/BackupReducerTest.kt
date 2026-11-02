@@ -13,10 +13,11 @@ class BackupReducerTest {
     @Test
     fun `reducer owns the complete options workflow`() {
         val opened = BackupReducer.reduce(BackupUiState(), BackupMutation.ExportOptionsOpened)
-        val prepared = BackupReducer.reduce(
-            opened,
-            BackupMutation.ExportPrepared(BackupExportFormat.JSON, "backup.json"),
-        )
+        val prepared =
+            BackupReducer.reduce(
+                opened,
+                BackupMutation.ExportPrepared(BackupExportFormat.JSON, "backup.json"),
+            )
         val awaitingTarget = BackupReducer.reduce(prepared, BackupMutation.ExportTargetRequested)
         val dismissed = BackupReducer.reduce(awaitingTarget, BackupMutation.WorkflowClosed)
 
@@ -34,15 +35,17 @@ class BackupReducerTest {
 
     @Test
     fun `preparing text export derives a clean format-specific configuration`() {
-        val state = BackupReducer.reduce(
-            BackupUiState(
-                workflow = BackupWorkflow.Failed(
-                    operation = BackupOperation.IMPORT,
-                    error = BackupFailed(),
+        val state =
+            BackupReducer.reduce(
+                BackupUiState(
+                    workflow =
+                        BackupWorkflow.Failed(
+                            operation = BackupOperation.IMPORT,
+                            error = BackupFailed(),
+                        ),
                 ),
-            ),
-            BackupMutation.ExportPrepared(BackupExportFormat.TEXT, "backup.txt"),
-        )
+                BackupMutation.ExportPrepared(BackupExportFormat.TEXT, "backup.txt"),
+            )
 
         val options = (state.workflow as BackupWorkflow.ConfigureExport).options
         assertEquals(BackupExportFormat.TEXT, options.format)
@@ -55,14 +58,16 @@ class BackupReducerTest {
     @Test
     fun `failure is represented by one complete workflow state`() {
         val error = BackupFailed()
-        val state = BackupReducer.reduce(
-            BackupUiState(
-                workflow = BackupWorkflow.ConfigureExport(
-                    BackupExportOptions(BackupExportFormat.ENCRYPTED, "backup.passly"),
+        val state =
+            BackupReducer.reduce(
+                BackupUiState(
+                    workflow =
+                        BackupWorkflow.ConfigureExport(
+                            BackupExportOptions(BackupExportFormat.ENCRYPTED, "backup.passly"),
+                        ),
                 ),
-            ),
-            BackupMutation.OperationFailed(BackupOperation.EXPORT, error),
-        )
+                BackupMutation.OperationFailed(BackupOperation.EXPORT, error),
+            )
 
         val failed = state.workflow as BackupWorkflow.Failed
         assertSame(BackupOperation.EXPORT, failed.operation)
@@ -72,10 +77,11 @@ class BackupReducerTest {
     @Test
     fun `updates for another workflow are ignored`() {
         val initial = BackupUiState(workflow = BackupWorkflow.FormatPicker)
-        val updated = BackupReducer.reduce(
-            initial,
-            BackupMutation.IncludedEntryTypesUpdated(setOf(EntryType.LOGIN)),
-        )
+        val updated =
+            BackupReducer.reduce(
+                initial,
+                BackupMutation.IncludedEntryTypesUpdated(setOf(EntryType.LOGIN)),
+            )
 
         assertSame(initial, updated)
     }

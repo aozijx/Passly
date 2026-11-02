@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.settings.diagnostics
 
-enum class LogFormat(val extension: String, val mimeType: String) {
+enum class LogFormat(
+    val extension: String,
+    val mimeType: String,
+) {
     JSONL("jsonl", "application/x-ndjson"),
     TSV("tsv", "text/tab-separated-values"),
     ZIP("zip", "application/zip"),
@@ -15,9 +18,14 @@ data class DiagnosticsExportRequest(
 ) {
     init {
         when (action) {
-            ExportAction.SHARE -> require(documentUri == null) { "Share request cannot have a document URI" }
-            ExportAction.EXPORT_LOCAL -> require(!documentUri.isNullOrBlank()) {
-                "Local export requires a document URI"
+            ExportAction.SHARE -> {
+                require(documentUri == null) { "Share request cannot have a document URI" }
+            }
+
+            ExportAction.EXPORT_LOCAL -> {
+                require(!documentUri.isNullOrBlank()) {
+                    "Local export requires a document URI"
+                }
             }
         }
     }

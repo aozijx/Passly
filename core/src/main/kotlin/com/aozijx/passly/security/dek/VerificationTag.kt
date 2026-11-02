@@ -22,16 +22,21 @@ object VerificationTag {
         cipher.init(
             Cipher.ENCRYPT_MODE,
             SecretKeySpec(dek, "AES"),
-            GCMParameterSpec(GCM_TAG_BITS, iv)
+            GCMParameterSpec(GCM_TAG_BITS, iv),
         )
         val ciphertext = cipher.doFinal(VERIFY_PLAINTEXT)
-        return ByteBuffer.allocate(iv.size + ciphertext.size)
+        return ByteBuffer
+            .allocate(iv.size + ciphertext.size)
             .put(iv)
             .put(ciphertext)
             .array()
     }
 
-    fun verify(dek: ByteArray, encodedTag: ByteArray, envelopeId: String) {
+    fun verify(
+        dek: ByteArray,
+        encodedTag: ByteArray,
+        envelopeId: String,
+    ) {
         require(encodedTag.size > IV_LENGTH) {
             "Invalid DEK verification tag for envelope '$envelopeId'"
         }
@@ -42,7 +47,7 @@ object VerificationTag {
         cipher.init(
             Cipher.DECRYPT_MODE,
             SecretKeySpec(dek, "AES"),
-            GCMParameterSpec(GCM_TAG_BITS, iv)
+            GCMParameterSpec(GCM_TAG_BITS, iv),
         )
         require(ConstantTime.isEqual(cipher.doFinal(ciphertext), VERIFY_PLAINTEXT)) {
             "DEK verification failed for envelope '$envelopeId'"

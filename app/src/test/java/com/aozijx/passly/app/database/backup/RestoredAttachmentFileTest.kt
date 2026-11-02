@@ -12,9 +12,10 @@ class RestoredAttachmentFileTest {
 
     @Test
     fun existingAttachmentIsRetainedWithoutBeingRewritten() {
-        val target = temporaryFolder.newFile("existing.attachment").apply {
-            writeBytes(byteArrayOf(1, 2, 3))
-        }
+        val target =
+            temporaryFolder.newFile("existing.attachment").apply {
+                writeBytes(byteArrayOf(1, 2, 3))
+            }
         val retainedPaths = mutableSetOf<String>()
         var writeCalled = false
 

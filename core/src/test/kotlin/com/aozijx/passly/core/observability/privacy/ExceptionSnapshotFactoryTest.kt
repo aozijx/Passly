@@ -12,11 +12,12 @@ class ExceptionSnapshotFactoryTest {
     @Test
     fun `snapshot never reads or emits throwable messages suppressed messages or foreign frames`() {
         val root = IllegalStateException("PASSWORD_SENTINEL")
-        root.stackTrace = arrayOf(
-            StackTraceElement("com.aozijx.passly.feature.login.LoginUseCase", "invoke", "LoginUseCase.kt", 42),
-            StackTraceElement("com.aozijx.passly.feature.login.OtherUseCase", "invoke", "PATH_SENTINEL", 43),
-            StackTraceElement("com.bank.secret.CustomerActivity", "TOKEN_SENTINEL", "CustomerActivity.kt", 8),
-        )
+        root.stackTrace =
+            arrayOf(
+                StackTraceElement("com.aozijx.passly.feature.login.LoginUseCase", "invoke", "LoginUseCase.kt", 42),
+                StackTraceElement("com.aozijx.passly.feature.login.OtherUseCase", "invoke", "PATH_SENTINEL", 43),
+                StackTraceElement("com.bank.secret.CustomerActivity", "TOKEN_SENTINEL", "CustomerActivity.kt", 8),
+            )
         root.addSuppressed(IllegalArgumentException("OTP_SENTINEL"))
 
         val snapshot = factory.create(root, ExceptionKind.AUTHENTICATION)
@@ -36,9 +37,10 @@ class ExceptionSnapshotFactoryTest {
     @Test
     fun `snapshot keeps at most 24 Passly frames and 3 cause types`() {
         val root = IllegalStateException("root")
-        root.stackTrace = Array(30) { index ->
-            StackTraceElement("com.aozijx.passly.core.SafeClass$index", "call", "SafeClass.kt", index + 1)
-        }
+        root.stackTrace =
+            Array(30) { index ->
+                StackTraceElement("com.aozijx.passly.core.SafeClass$index", "call", "SafeClass.kt", index + 1)
+            }
         root.initCause(
             IllegalArgumentException("one").apply {
                 initCause(
@@ -63,10 +65,11 @@ class ExceptionSnapshotFactoryTest {
     @Test
     fun `snapshot derives a readable class from a minified release frame`() {
         val root = IllegalStateException("secret")
-        root.stackTrace = arrayOf(
-            StackTraceElement("b08", "a", "VaultSessionController.kt", 321),
-            StackTraceElement("android.os.Handler", "dispatchMessage", "Handler.java", 99),
-        )
+        root.stackTrace =
+            arrayOf(
+                StackTraceElement("b08", "a", "VaultSessionController.kt", 321),
+                StackTraceElement("android.os.Handler", "dispatchMessage", "Handler.java", 99),
+            )
 
         val snapshot = factory.create(root, ExceptionKind.LIFECYCLE)
 

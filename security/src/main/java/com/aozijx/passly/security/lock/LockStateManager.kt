@@ -6,16 +6,18 @@ import javax.inject.Singleton
 
 /** Owns only the in-memory lock strength; lock side effects remain in the session controller. */
 @Singleton
-class LockStateManager @Inject constructor() {
-    @Volatile
-    var state: SecureSessionState = SecureSessionState.SEALED
-        private set
+class LockStateManager
+    @Inject
+    constructor() {
+        @Volatile
+        var state: SecureSessionState = SecureSessionState.SEALED
+            private set
 
-    fun isUnlocked(): Boolean = state == SecureSessionState.UNLOCKED
+        fun isUnlocked(): Boolean = state == SecureSessionState.UNLOCKED
 
-    fun isLocked(): Boolean = !isUnlocked()
+        fun isLocked(): Boolean = !isUnlocked()
 
-    fun mark(newState: SecureSessionState) {
-        state = newState
+        fun mark(newState: SecureSessionState) {
+            state = newState
+        }
     }
-}

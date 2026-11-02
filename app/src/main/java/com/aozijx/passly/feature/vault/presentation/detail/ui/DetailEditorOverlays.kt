@@ -1,10 +1,10 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui
 
 import androidx.compose.runtime.Composable
+import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconCropScreen
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconEditorSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TagEditorSheet
-import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
@@ -17,22 +17,30 @@ fun DetailEditorOverlays(
     onFaviconUploadRequested: () -> Unit,
 ) {
     when (val tagEditor = model.tagEditor) {
-        DetailTagEditorUiModel.Hidden -> Unit
-        is DetailTagEditorUiModel.Visible -> TagEditorSheet(
-            state = tagEditor,
-            isSaving = model.savingTags,
-            onInputChanged = { onAction(DetailUiAction.UpdateTagInput(it)) },
-            onSubmit = { onAction(DetailUiAction.SubmitTag(it)) },
-            onRemove = { onAction(DetailUiAction.RemoveTag(it)) },
-            onSave = { onAction(DetailUiAction.SaveTags) },
-            onDismiss = { onAction(DetailUiAction.DismissTagEditor) },
-            onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardTags) },
-            onKeepEditing = { onAction(DetailUiAction.KeepEditingTags) },
-        )
+        DetailTagEditorUiModel.Hidden -> {
+            Unit
+        }
+
+        is DetailTagEditorUiModel.Visible -> {
+            TagEditorSheet(
+                state = tagEditor,
+                isSaving = model.savingTags,
+                onInputChanged = { onAction(DetailUiAction.UpdateTagInput(it)) },
+                onSubmit = { onAction(DetailUiAction.SubmitTag(it)) },
+                onRemove = { onAction(DetailUiAction.RemoveTag(it)) },
+                onSave = { onAction(DetailUiAction.SaveTags) },
+                onDismiss = { onAction(DetailUiAction.DismissTagEditor) },
+                onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardTags) },
+                onKeepEditing = { onAction(DetailUiAction.KeepEditingTags) },
+            )
+        }
     }
 
     when (val faviconEditor = model.faviconEditor) {
-        DetailFaviconEditorUiModel.Hidden -> Unit
+        DetailFaviconEditorUiModel.Hidden -> {
+            Unit
+        }
+
         is DetailFaviconEditorUiModel.Visible -> {
             FaviconEditorSheet(
                 state = faviconEditor,

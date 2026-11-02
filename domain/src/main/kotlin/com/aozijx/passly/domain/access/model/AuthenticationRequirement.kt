@@ -10,7 +10,7 @@ data class AuthenticationRequirement(
     val allowedMethods: Set<AuthenticationMethod>,
     val freshness: AuthenticationFreshness,
     val grantTtlMs: Long,
-    val requiresUnlockedVault: Boolean
+    val requiresUnlockedVault: Boolean,
 ) {
     init {
         require(grantTtlMs >= 0L) { "Authorization grant TTL cannot be negative" }
@@ -20,7 +20,9 @@ data class AuthenticationRequirement(
 sealed interface AuthenticationFreshness {
     data object Required : AuthenticationFreshness
 
-    data class SessionPermitted(val ttlMs: Long) : AuthenticationFreshness {
+    data class SessionPermitted(
+        val ttlMs: Long,
+    ) : AuthenticationFreshness {
         init {
             require(ttlMs >= 0) { "Session TTL cannot be negative" }
         }

@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -25,23 +24,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
@@ -61,10 +61,11 @@ fun TagEditorSheet(
     onKeepEditing: () -> Unit,
 ) {
     val dismissAllowed by rememberUpdatedState(!isSaving)
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed },
-    )
+    val sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed },
+        )
     val scope = rememberCoroutineScope()
     val keepEditing: () -> Unit = {
         onKeepEditing()
@@ -76,10 +77,11 @@ fun TagEditorSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
@@ -106,16 +108,18 @@ fun TagEditorSheet(
                                     modifier = Modifier.size(18.dp),
                                 )
                             },
-                            modifier = Modifier.semantics {
-                                if (!isSaving) {
-                                    customActions = listOf(
-                                        CustomAccessibilityAction(removeLabel) {
-                                            onRemove(tag)
-                                            true
-                                        },
-                                    )
-                                }
-                            },
+                            modifier =
+                                Modifier.semantics {
+                                    if (!isSaving) {
+                                        customActions =
+                                            listOf(
+                                                CustomAccessibilityAction(removeLabel) {
+                                                    onRemove(tag)
+                                                    true
+                                                },
+                                            )
+                                    }
+                                },
                         )
                     }
                 }
@@ -125,35 +129,45 @@ fun TagEditorSheet(
                 enabled = !isSaving,
                 value = state.input,
                 onValueChange = onInputChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("tag-editor-input").excludeFromAutofill(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("tag-editor-input")
+                        .excludeFromAutofill(),
                 label = { Text(stringResource(R.string.vault_detail_tag_input_label)) },
                 placeholder = { Text(stringResource(R.string.vault_detail_tag_input_hint)) },
-                supportingText = state.validationError?.let { error ->
-                    {
-                        Text(
-                            text = when (error) {
-                                TagEditorValidationErrorUiModel.TOO_MANY_TAGS -> pluralStringResource(
-                                    R.plurals.vault_detail_tag_too_many,
-                                    20,
-                                    20,
-                                )
-                                TagEditorValidationErrorUiModel.TAG_TOO_LONG -> pluralStringResource(
-                                    R.plurals.vault_detail_tag_too_long,
-                                    32,
-                                    32,
-                                )
-                            },
-                        )
-                    }
-                },
+                supportingText =
+                    state.validationError?.let { error ->
+                        {
+                            Text(
+                                text =
+                                    when (error) {
+                                        TagEditorValidationErrorUiModel.TOO_MANY_TAGS -> {
+                                            pluralStringResource(
+                                                R.plurals.vault_detail_tag_too_many,
+                                                20,
+                                                20,
+                                            )
+                                        }
+
+                                        TagEditorValidationErrorUiModel.TAG_TOO_LONG -> {
+                                            pluralStringResource(
+                                                R.plurals.vault_detail_tag_too_long,
+                                                32,
+                                                32,
+                                            )
+                                        }
+                                    },
+                            )
+                        }
+                    },
                 isError = state.validationError != null,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = { if (!isSaving && state.input.isNotBlank()) onSubmit(state.input) },
-                ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = { if (!isSaving && state.input.isNotBlank()) onSubmit(state.input) },
+                    ),
             )
 
             if (state.suggestions.isNotEmpty()) {
@@ -185,9 +199,10 @@ fun TagEditorSheet(
                 Button(
                     onClick = onSave,
                     enabled = state.dirty && !isSaving,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("tag-editor-save"),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .testTag("tag-editor-save"),
                 ) {
                     if (isSaving) {
                         CircularProgressIndicator(

@@ -28,7 +28,7 @@ internal fun AnimatedSettingValue(
     targetState = value,
     valueLabel = { it },
     enabled = enabled,
-    modifier = modifier
+    modifier = modifier,
 )
 
 /**
@@ -48,28 +48,31 @@ internal fun <T> AnimatedSettingValue(
         targetState = targetState,
         modifier = modifier,
         transitionSpec = {
-            val verticalDirection = transitionDirection(initialState, targetState)
-                .coerceIn(-1, 1)
-                .takeIf { it != 0 }
-                ?: 1
+            val verticalDirection =
+                transitionDirection(initialState, targetState)
+                    .coerceIn(-1, 1)
+                    .takeIf { it != 0 }
+                    ?: 1
             slideInVertically(
-                animationSpec = motionScheme.defaultSpatialSpec()
-            ) { it * verticalDirection } togetherWith slideOutVertically(
-                animationSpec = motionScheme.defaultSpatialSpec()
-            ) { -it * verticalDirection }
+                animationSpec = motionScheme.defaultSpatialSpec(),
+            ) { it * verticalDirection } togetherWith
+                slideOutVertically(
+                    animationSpec = motionScheme.defaultSpatialSpec(),
+                ) { -it * verticalDirection }
         },
-        label = "setting_value"
+        label = "setting_value",
     ) { targetValue ->
         Text(
             text = valueLabel(targetValue),
             style = MaterialTheme.typography.bodyMedium,
-            color = if (enabled) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            },
+            color =
+                if (enabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                },
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            modifier = Modifier.padding(horizontal = 8.dp),
         )
     }
 }
@@ -77,27 +80,37 @@ internal fun <T> AnimatedSettingValue(
 /** 将 [ImageVector] 图标转换为 Material 列表项的行首内容。 */
 internal enum class LeadingSlot { NONE, ICON, PLACEHOLDER }
 
-internal fun resolveLeadingSlot(hasIcon: Boolean, reserveSpace: Boolean): LeadingSlot = when {
-    hasIcon -> LeadingSlot.ICON
-    reserveSpace -> LeadingSlot.PLACEHOLDER
-    else -> LeadingSlot.NONE
-}
+internal fun resolveLeadingSlot(
+    hasIcon: Boolean,
+    reserveSpace: Boolean,
+): LeadingSlot =
+    when {
+        hasIcon -> LeadingSlot.ICON
+        reserveSpace -> LeadingSlot.PLACEHOLDER
+        else -> LeadingSlot.NONE
+    }
 
 /** 将图标或等宽占位转换为 Material 列表项的行首内容。 */
-internal fun ImageVector?.asLeadingContent(
-    reserveSpace: Boolean = false,
-): (@Composable () -> Unit)? = when (resolveLeadingSlot(this != null, reserveSpace)) {
-    LeadingSlot.ICON -> requireNotNull(this).asIconLeadingContent()
-    LeadingSlot.PLACEHOLDER -> {
-        { Spacer(Modifier.size(LeadingIconSize)) }
-    }
-    LeadingSlot.NONE -> null
-}
+internal fun ImageVector?.asLeadingContent(reserveSpace: Boolean = false): (@Composable () -> Unit)? =
+    when (resolveLeadingSlot(this != null, reserveSpace)) {
+        LeadingSlot.ICON -> {
+            requireNotNull(this).asIconLeadingContent()
+        }
 
-private fun ImageVector.asIconLeadingContent(): @Composable () -> Unit = {
-    Icon(
-        imageVector = this,
-        contentDescription = null,
-        modifier = Modifier.size(LeadingIconSize),
-    )
-}
+        LeadingSlot.PLACEHOLDER -> {
+            { Spacer(Modifier.size(LeadingIconSize)) }
+        }
+
+        LeadingSlot.NONE -> {
+            null
+        }
+    }
+
+private fun ImageVector.asIconLeadingContent(): @Composable () -> Unit =
+    {
+        Icon(
+            imageVector = this,
+            contentDescription = null,
+            modifier = Modifier.size(LeadingIconSize),
+        )
+    }

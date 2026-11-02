@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SettingsSection(
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier, content = content)
 }
@@ -29,9 +29,10 @@ fun SettingsSectionTitle(
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier.padding(
-            start = 8.dp,
-            bottom = 8.dp,
-        )
+        modifier =
+            modifier.padding(
+                start = 8.dp,
+                bottom = 8.dp,
+            ),
     )
 }

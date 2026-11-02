@@ -14,11 +14,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.wifi.AddWifiEditorScreen
 
@@ -37,16 +37,18 @@ fun AddWifiEditorRoute(
     val saveFailedMessage = stringResource(R.string.vault_add_wifi_save_failed)
     val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
     val seedUnavailableMessage = stringResource(R.string.wifi_scanned_seed_unavailable)
-    val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
-    )
+    val saveActionModifier =
+        Modifier.rememberAddEntryFabTransitionModifier(
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
     var overlay by remember { mutableStateOf<WifiEditorOverlay>(WifiEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     LaunchedEffect(viewModel, editEntryId) {
-        if (editEntryId != null) viewModel.loadExistingEntry(editEntryId)
-        else if (viewModel.initialize(loadInitialContent) == AddWifiInitializationResult.Unavailable) {
+        if (editEntryId != null) {
+            viewModel.loadExistingEntry(editEntryId)
+        } else if (viewModel.initialize(loadInitialContent) == AddWifiInitializationResult.Unavailable) {
             snackbarHostState.showSnackbar(seedUnavailableMessage)
         }
     }
@@ -67,25 +69,36 @@ fun AddWifiEditorRoute(
     )
 
     when (overlay) {
-        WifiEditorOverlay.None -> Unit
-        WifiEditorOverlay.Scanner -> ScannerRoute(
-            purpose = ScannerPurpose.ApplyToWifiEditor,
-            onImport = { scannerImport ->
-                when (scannerImport) {
-                    is ScannerImport.Wifi -> {
-                        if (viewModel.tryApplyScannedWifi(scannerImport.payload)) {
-                            ScannerImportHandlingResult.Applied
-                        } else ScannerImportHandlingResult.Rejected
+        WifiEditorOverlay.None -> {
+            Unit
+        }
+
+        WifiEditorOverlay.Scanner -> {
+            ScannerRoute(
+                purpose = ScannerPurpose.ApplyToWifiEditor,
+                onImport = { scannerImport ->
+                    when (scannerImport) {
+                        is ScannerImport.Wifi -> {
+                            if (viewModel.tryApplyScannedWifi(scannerImport.payload)) {
+                                ScannerImportHandlingResult.Applied
+                            } else {
+                                ScannerImportHandlingResult.Rejected
+                            }
+                        }
+
+                        is ScannerImport.Otp -> {
+                            ScannerImportHandlingResult.Rejected
+                        }
                     }
-                    is ScannerImport.Otp -> ScannerImportHandlingResult.Rejected
-                }
-            },
-            onDismiss = { overlay = WifiEditorOverlay.None },
-        )
+                },
+                onDismiss = { overlay = WifiEditorOverlay.None },
+            )
+        }
     }
 }
 
 private sealed interface WifiEditorOverlay {
     data object None : WifiEditorOverlay
+
     data object Scanner : WifiEditorOverlay
 }

@@ -2,10 +2,10 @@ package com.aozijx.passly.feature.scanner.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -28,19 +28,28 @@ class ScannerViewModel internal constructor(
     private val logger: Logger,
     private val decode: suspend (ImageRef) -> BarcodeImageResult,
 ) : ViewModel() {
-    @Inject constructor(
+    @Inject
+    constructor(
         clipboardWriter: SensitiveClipboardWriter,
         logger: Logger,
         decoder: BarcodeImageDecoder,
     ) : this(clipboardWriter, logger, decoder::decode)
 
     private sealed interface Work {
-        class Active(val scope: CoroutineScope) : Work
+        class Active(
+            val scope: CoroutineScope,
+        ) : Work
+
         data object Stopped : Work
+
         data object Destroyed : Work
     }
 
-    private data class Delivery(val owner: Work.Active, val effect: ScannerEffect)
+    private data class Delivery(
+        val owner: Work.Active,
+        val effect: ScannerEffect,
+    )
+
     private val mutableState = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning)
     val uiState = mutableState.asStateFlow()
     private var work: Work = newWork()
@@ -50,29 +59,51 @@ class ScannerViewModel internal constructor(
     fun onAction(action: ScannerUiAction) {
         if (work == Work.Destroyed) return
         when (action) {
-            is ScannerUiAction.BarcodeDetected -> if (uiState.value == ScannerUiState.Scanning) completeScan(action.barcode)
-            is ScannerUiAction.DecodeImage -> decodeImage(action.image)
-            ScannerUiAction.CopyText -> copyText()
+            is ScannerUiAction.BarcodeDetected -> {
+                if (uiState.value == ScannerUiState.Scanning) completeScan(action.barcode)
+            }
+
+            is ScannerUiAction.DecodeImage -> {
+                decodeImage(action.image)
+            }
+
+            ScannerUiAction.CopyText -> {
+                copyText()
+            }
+
             ScannerUiAction.StartScanning -> {
                 replaceWork(newWork())
                 mutate(ScannerMutation.Started)
             }
-            ScannerUiAction.HostStarted -> resumeForHost()
-            ScannerUiAction.HostStopped -> pauseForHost()
+
+            ScannerUiAction.HostStarted -> {
+                resumeForHost()
+            }
+
+            ScannerUiAction.HostStopped -> {
+                pauseForHost()
+            }
+
             ScannerUiAction.StopScanning -> {
                 replaceWork(Work.Stopped)
                 mutate(ScannerMutation.Stopped)
             }
-            is ScannerUiAction.CameraFailure -> if (uiState.value == ScannerUiState.Scanning) {
-                val owner = work as? Work.Active ?: return
-                owner.scope.launch { reportFailure(action.error) }
+
+            is ScannerUiAction.CameraFailure -> {
+                if (uiState.value == ScannerUiState.Scanning) {
+                    val owner = work as? Work.Active ?: return
+                    owner.scope.launch { reportFailure(action.error) }
+                }
             }
         }
     }
 
-    private fun newWork() = Work.Active(CoroutineScope(
-        viewModelScope.coroutineContext + SupervisorJob(viewModelScope.coroutineContext.job),
-    ))
+    private fun newWork() =
+        Work.Active(
+            CoroutineScope(
+                viewModelScope.coroutineContext + SupervisorJob(viewModelScope.coroutineContext.job),
+            ),
+        )
 
     private fun replaceWork(next: Work) {
         val previous = work
@@ -82,15 +113,23 @@ class ScannerViewModel internal constructor(
 
     private fun pauseForHost() {
         when (work) {
-            Work.Stopped, Work.Destroyed -> return
-            is Work.Active -> when (uiState.value) {
-                is ScannerUiState.ShowingResult -> replaceWork(newWork())
-                ScannerUiState.Scanning,
-                ScannerUiState.ProcessingImage,
-                ScannerUiState.Stopped,
-                -> {
-                    replaceWork(Work.Stopped)
-                    mutate(ScannerMutation.Stopped)
+            Work.Stopped, Work.Destroyed -> {
+                return
+            }
+
+            is Work.Active -> {
+                when (uiState.value) {
+                    is ScannerUiState.ShowingResult -> {
+                        replaceWork(newWork())
+                    }
+
+                    ScannerUiState.Scanning,
+                    ScannerUiState.ProcessingImage,
+                    ScannerUiState.Stopped,
+                    -> {
+                        replaceWork(Work.Stopped)
+                        mutate(ScannerMutation.Stopped)
+                    }
                 }
             }
         }
@@ -98,7 +137,10 @@ class ScannerViewModel internal constructor(
 
     private fun resumeForHost() {
         when (work) {
-            is Work.Active, Work.Destroyed -> Unit
+            is Work.Active, Work.Destroyed -> {
+                Unit
+            }
+
             Work.Stopped -> {
                 replaceWork(newWork())
                 if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
@@ -106,17 +148,21 @@ class ScannerViewModel internal constructor(
         }
     }
 
-    private fun completeScan(raw: String): Boolean = when (val classified = ScannerResultClassifier.classify(raw)) {
-        ScannerClassification.Empty -> false
-        is ScannerClassification.Classified -> {
-            // A displayed result owns subsequent actions; retire pending image/copy feedback.
-            val owner = newWork()
-            replaceWork(owner)
-            mutate(ScannerMutation.ScanCompleted(classified.result))
-            deliveries.trySend(Delivery(owner, ScannerEffect.ScanSucceeded))
-            true
+    private fun completeScan(raw: String): Boolean =
+        when (val classified = ScannerResultClassifier.classify(raw)) {
+            ScannerClassification.Empty -> {
+                false
+            }
+
+            is ScannerClassification.Classified -> {
+                // A displayed result owns subsequent actions; retire pending image/copy feedback.
+                val owner = newWork()
+                replaceWork(owner)
+                mutate(ScannerMutation.ScanCompleted(classified.result))
+                deliveries.trySend(Delivery(owner, ScannerEffect.ScanSucceeded))
+                true
+            }
         }
-    }
 
     private fun copyText() {
         val owner = work as? Work.Active ?: return
@@ -139,8 +185,14 @@ class ScannerViewModel internal constructor(
             currentCoroutineContext().ensureActive()
             if (work !== owner) return@launch
             when (result) {
-                is BarcodeImageResult.Decoded -> if (!completeScan(result.rawValue)) imageUnavailable(owner, ScannerEffect.ImageNoBarcode)
-                BarcodeImageResult.NoBarcode -> imageUnavailable(owner, ScannerEffect.ImageNoBarcode)
+                is BarcodeImageResult.Decoded -> {
+                    if (!completeScan(result.rawValue)) imageUnavailable(owner, ScannerEffect.ImageNoBarcode)
+                }
+
+                BarcodeImageResult.NoBarcode -> {
+                    imageUnavailable(owner, ScannerEffect.ImageNoBarcode)
+                }
+
                 is BarcodeImageResult.Failed -> {
                     reportFailure(result.error)
                     imageUnavailable(owner, ScannerEffect.ImageDecodeFailed)
@@ -149,7 +201,10 @@ class ScannerViewModel internal constructor(
         }
     }
 
-    private fun imageUnavailable(owner: Work.Active, effect: ScannerEffect) {
+    private fun imageUnavailable(
+        owner: Work.Active,
+        effect: ScannerEffect,
+    ) {
         if (work !== owner) return
         mutate(ScannerMutation.ImageProcessingFailed)
         deliveries.trySend(Delivery(owner, effect))

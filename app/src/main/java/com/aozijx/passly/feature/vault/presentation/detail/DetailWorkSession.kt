@@ -21,7 +21,10 @@ internal class DetailWorkSession(
 ) {
     sealed interface Scope {
         data object Closed : Scope
-        class Active internal constructor(val entryId: EntryId) : Scope
+
+        class Active internal constructor(
+            val entryId: EntryId,
+        ) : Scope
     }
 
     private var scope: Scope = Scope.Closed
@@ -32,8 +35,7 @@ internal class DetailWorkSession(
         scope = Scope.Closed
     }
 
-    fun current(entryId: EntryId): Scope.Active? =
-        (scope as? Scope.Active)?.takeIf { it.entryId == entryId }
+    fun current(entryId: EntryId): Scope.Active? = (scope as? Scope.Active)?.takeIf { it.entryId == entryId }
 
     fun isCurrent(token: Scope.Active): Boolean = scope === token && hasAccess()
 
@@ -65,27 +67,33 @@ internal class DetailWorkSession(
         }
     }
 
-    suspend fun persist(token: Scope.Active, edit: EntryEdit, completion: DetailEditCompletion) {
+    suspend fun persist(
+        token: Scope.Active,
+        edit: EntryEdit,
+        completion: DetailEditCompletion,
+    ) {
         if (!isCurrent(token) || !currentCoroutineContext().isActive) return
-        val result = try {
-            editEntry(token.entryId, edit)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            failIfCurrent(token, completion)
-            return
-        }
+        val result =
+            try {
+                editEntry(token.entryId, edit)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                failIfCurrent(token, completion)
+                return
+            }
         if (!isCurrent(token) || !currentCoroutineContext().isActive) return
         when (result) {
             is AppResult.Success -> {
-                val presentation = try {
-                    present(result.data)
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    failIfCurrent(token, completion)
-                    return
-                }
+                val presentation =
+                    try {
+                        present(result.data)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        failIfCurrent(token, completion)
+                        return
+                    }
                 if (!isCurrent(token) || !currentCoroutineContext().isActive) return
                 onMutation(DetailMutation.EntryPresented(presentation))
                 if (!isCurrent(token) || !currentCoroutineContext().isActive) return
@@ -94,11 +102,17 @@ internal class DetailWorkSession(
                 }
                 if (isCurrent(token) && currentCoroutineContext().isActive) onMutation(DetailMutation.SaveSucceeded(completion))
             }
-            is AppResult.Failure -> onMutation(DetailMutation.SaveFailed(completion, result.error.code))
+
+            is AppResult.Failure -> {
+                onMutation(DetailMutation.SaveFailed(completion, result.error.code))
+            }
         }
     }
 
-    private suspend fun failIfCurrent(token: Scope.Active, completion: DetailEditCompletion) {
+    private suspend fun failIfCurrent(
+        token: Scope.Active,
+        completion: DetailEditCompletion,
+    ) {
         if (isCurrent(token) && currentCoroutineContext().isActive) {
             onMutation(DetailMutation.SaveFailed(completion, UNEXPECTED_FAILURE))
         }

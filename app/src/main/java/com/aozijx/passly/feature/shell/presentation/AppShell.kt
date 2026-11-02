@@ -31,11 +31,14 @@ internal fun AppShell(
     LaunchedEffect(effects, context, resources) {
         effects.collect { effect ->
             when (effect) {
-                is AppShellEffect.ShowError -> Toast.makeText(
-                    context,
-                    resources.getString(effect.error.resourceId),
-                    Toast.LENGTH_LONG,
-                ).show()
+                is AppShellEffect.ShowError -> {
+                    Toast
+                        .makeText(
+                            context,
+                            resources.getString(effect.error.resourceId),
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
             }
         }
     }
@@ -54,14 +57,21 @@ internal fun AppShell(
                 )
             }
 
-            AppShellDestination.VAULT -> vaultContent()
-            AppShellDestination.RECOVERY -> recoveryContent {
-                onAction(AppShellUiAction.ExitRecovery)
+            AppShellDestination.VAULT -> {
+                vaultContent()
             }
-            AppShellDestination.AUTHENTICATION -> authenticationContent()
+
+            AppShellDestination.RECOVERY -> {
+                recoveryContent {
+                    onAction(AppShellUiAction.ExitRecovery)
+                }
+            }
+
+            AppShellDestination.AUTHENTICATION -> {
+                authenticationContent()
+            }
         }
     }
-
 }
 
 /**

@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface ActivityQueryRepository {
     fun observeByEntryId(entryId: String): Flow<List<EntryActivity>>
+
     fun observeAll(): Flow<List<EntryActivity>>
+
     fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>>
 }

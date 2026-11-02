@@ -20,34 +20,38 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Singleton
-internal class RoomEntryPagingStore @Inject constructor(
-    private val databaseSession: AppDatabaseSession,
-    private val sessionState: SecureSessionAccessState,
-) : EntryPagingStore {
-
-    override fun pages(
-        query: EntryListQuery,
-        config: PagingConfig,
-    ): Flow<PagingData<EntryListItem>> = databaseSession.observeWhenReadable(
-        authorized = sessionState.isAuthorized,
-        emptyValue = { PagingData.empty() },
-    ) {
-        Pager(config = config) {
-            entryQueryDao().paging(buildEntryPagingQuery(query))
-        }.flow.map { pagingData ->
-            pagingData.map { row ->
-                val item = EntryListItemMapper.assemble(
-                    entity = row.entry,
-                    summary = EntryProfileMapper.fromEntity(row.entry),
-                )
-                item.copy(
-                    usage = EntryUsage(
-                        count = row.usageCount,
-                        lastUsedAtMs = row.lastUsedAt,
-                    ),
-                    accountId = row.accountId?.let(::EntryId),
-                )
+internal class RoomEntryPagingStore
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+        private val sessionState: SecureSessionAccessState,
+    ) : EntryPagingStore {
+        override fun pages(
+            query: EntryListQuery,
+            config: PagingConfig,
+        ): Flow<PagingData<EntryListItem>> =
+            databaseSession.observeWhenReadable(
+                authorized = sessionState.isAuthorized,
+                emptyValue = { PagingData.empty() },
+            ) {
+                Pager(config = config) {
+                    entryQueryDao().paging(buildEntryPagingQuery(query))
+                }.flow.map { pagingData ->
+                    pagingData.map { row ->
+                        val item =
+                            EntryListItemMapper.assemble(
+                                entity = row.entry,
+                                summary = EntryProfileMapper.fromEntity(row.entry),
+                            )
+                        item.copy(
+                            usage =
+                                EntryUsage(
+                                    count = row.usageCount,
+                                    lastUsedAtMs = row.lastUsedAt,
+                                ),
+                            accountId = row.accountId?.let(::EntryId),
+                        )
+                    }
+                }
             }
-        }
     }
-}

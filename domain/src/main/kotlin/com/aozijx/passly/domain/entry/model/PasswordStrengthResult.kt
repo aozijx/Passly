@@ -5,11 +5,11 @@ enum class PasswordStrengthLevel {
     WEAK,
     MEDIUM,
     GOOD,
-    STRONG
+    STRONG,
 }
 
 data class PasswordStrengthResult(
     val score: Int,
     val level: PasswordStrengthLevel,
-    val crackTimeSeconds: Double = 0.0
+    val crackTimeSeconds: Double = 0.0,
 )

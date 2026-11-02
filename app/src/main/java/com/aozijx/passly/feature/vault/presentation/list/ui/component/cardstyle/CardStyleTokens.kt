@@ -4,7 +4,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 object CardStyleTokens {
-
     object Base {
         const val CONTAINER_ALPHA = 0.3f
         val contentPadding = 16.dp

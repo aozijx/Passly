@@ -1,11 +1,12 @@
 package com.aozijx.passly.feature.autofill.core
 
+import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
-import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
@@ -14,9 +15,8 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
+import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,65 +27,72 @@ import org.junit.Test
 
 class SaveAutofillCredentialTest {
     @Test
-    fun blankPasswordIsRejectedBeforePersistence() = runBlocking {
-        val fixture = fixture()
+    fun blankPasswordIsRejectedBeforePersistence() =
+        runBlocking {
+            val fixture = fixture()
 
-        val outcome = fixture.operation(
-            draft(password = "  "),
-        )
+            val outcome =
+                fixture.operation(
+                    draft(password = "  "),
+                )
 
-        assertEquals(AutofillSaveOutcome.InvalidDraft, outcome)
-        assertEquals(0, fixture.repository.createCalls)
-    }
-
-    @Test
-    fun passwordOnlyDraftCreatesTypedLoginCredential() = runBlocking {
-        val fixture = fixture()
-
-        val outcome = fixture.operation(
-            draft(username = "", password = "secret"),
-        )
-
-        assertEquals(AutofillSaveOutcome.Saved(EntryId("saved-entry")), outcome)
-        val entry = requireNotNull(fixture.repository.createdEntry)
-        assertEquals(EntryType.LOGIN, entry.type)
-        assertEquals("", entry.username)
-        assertTrue(entry.secret.credential is LoginCredential)
-        assertEquals("secret", (entry.secret.credential as LoginCredential).password)
-    }
+            assertEquals(AutofillSaveOutcome.InvalidDraft, outcome)
+            assertEquals(0, fixture.repository.createCalls)
+        }
 
     @Test
-    fun inboxRetryUsesSameEntryId() = runBlocking {
-        val fixture = fixture()
-        val inboxDraftId = AutofillInboxDraftId("00112233445566778899aabbccddeeff")
+    fun passwordOnlyDraftCreatesTypedLoginCredential() =
+        runBlocking {
+            val fixture = fixture()
 
-        fixture.operation(draft(password = "secret"), inboxDraftId)
-        val firstId = requireNotNull(fixture.repository.createdEntry).id
-        fixture.operation(draft(password = "secret"), inboxDraftId)
-        val retryId = requireNotNull(fixture.repository.createdEntry).id
+            val outcome =
+                fixture.operation(
+                    draft(username = "", password = "secret"),
+                )
 
-        assertEquals(firstId, retryId)
-        assertEquals(listOf(firstId, retryId), fixture.repository.inboxEntryIds)
-    }
+            assertEquals(AutofillSaveOutcome.Saved(EntryId("saved-entry")), outcome)
+            val entry = requireNotNull(fixture.repository.createdEntry)
+            assertEquals(EntryType.LOGIN, entry.type)
+            assertEquals("", entry.username)
+            assertTrue(entry.secret.credential is LoginCredential)
+            assertEquals("secret", (entry.secret.credential as LoginCredential).password)
+        }
+
+    @Test
+    fun inboxRetryUsesSameEntryId() =
+        runBlocking {
+            val fixture = fixture()
+            val inboxDraftId = AutofillInboxDraftId("00112233445566778899aabbccddeeff")
+
+            fixture.operation(draft(password = "secret"), inboxDraftId)
+            val firstId = requireNotNull(fixture.repository.createdEntry).id
+            fixture.operation(draft(password = "secret"), inboxDraftId)
+            val retryId = requireNotNull(fixture.repository.createdEntry).id
+
+            assertEquals(firstId, retryId)
+            assertEquals(listOf(firstId, retryId), fixture.repository.inboxEntryIds)
+        }
 
     private fun fixture(): Fixture {
         val repository = RecordingEntryCommandRepository()
         val session = UnlockedSession()
-        val createEntry = CreateEntryUseCase(
-            entryCommandRepository = repository,
-            secureSessionAccessState = session,
-            materializer = EntryDraftMaterializer(),
-            autofillEntryWriter = repository,
-            logger = testLogger(),
-            idFactory = { EntryId("saved-entry") },
-            clock = { 1L },
-            monotonicClock = { 1L },
-        )
+        val createEntry =
+            CreateEntryUseCase(
+                entryCommandRepository = repository,
+                secureSessionAccessState = session,
+                materializer = EntryDraftMaterializer(),
+                autofillEntryWriter = repository,
+                logger = testLogger(),
+                idFactory = { EntryId("saved-entry") },
+                clock = { 1L },
+                monotonicClock = { 1L },
+            )
         return Fixture(
-            operation = SaveAutofillCredential(
-                applicationLabelResolver = ApplicationLabelResolver { "Example" },
-                createEntry = createEntry,
-            ),
+            operation =
+                SaveAutofillCredential(
+                    applicationLabelResolver = ApplicationLabelResolver { "Example" },
+                    createEntry = createEntry,
+                ),
             repository = repository,
         )
     }
@@ -113,7 +120,9 @@ class SaveAutofillCredentialTest {
         override fun isUnlocked(): Boolean = true
     }
 
-    private class RecordingEntryCommandRepository : EntryCommandRepository, AutofillEntryWriter {
+    private class RecordingEntryCommandRepository :
+        EntryCommandRepository,
+        AutofillEntryWriter {
         var createCalls = 0
         var createdEntry: Entry? = null
         val inboxEntryIds = mutableListOf<EntryId>()
@@ -131,12 +140,27 @@ class SaveAutofillCredentialTest {
             return createEntry(entry)
         }
 
-        override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) =
-            AppResult.Success(Unit)
+        override suspend fun updateEntry(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+            changes: EntryUpdate,
+        ) = AppResult.Success(Unit)
 
-        override suspend fun moveToTrash(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
-        override suspend fun restoreEntry(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
-        override suspend fun deletePermanently(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
+        override suspend fun moveToTrash(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun restoreEntry(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun deletePermanently(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
         override suspend fun emptyTrash() = AppResult.Success(0)
     }
 }

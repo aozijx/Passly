@@ -28,54 +28,55 @@ fun <T> dropdownSettingsGroupItem(
     options: List<Pair<T, String>>,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    onSelect: (T) -> Unit
-): SegmentedSettingsItem = SegmentedSettingsItem(key = key) { shapes ->
-    Box {
-        SegmentedListItem(
-            onClick = { onExpandedChange(!expanded) },
-            shapes = shapes,
-            colors = settingsSegmentedColors(),
-            verticalAlignment = Alignment.CenterVertically,
-            leadingContent = icon.asLeadingContent(),
-            trailingContent = {
-                AnimatedSettingValue(
-                    targetState = selected,
-                    valueLabel = { target ->
-                        options.firstOrNull { (value, _) -> value == target }?.second
-                            ?: selectedLabel
-                    },
-                    transitionDirection = { initial, target ->
-                        options.indexOfFirst { (value, _) -> value == target } -
-                            options.indexOfFirst { (value, _) -> value == initial }
-                    },
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                )
-            },
-            content = {
-                Text(text = title)
-            },
-        )
+    onSelect: (T) -> Unit,
+): SegmentedSettingsItem =
+    SegmentedSettingsItem(key = key) { shapes ->
+        Box {
+            SegmentedListItem(
+                onClick = { onExpandedChange(!expanded) },
+                shapes = shapes,
+                colors = settingsSegmentedColors(),
+                verticalAlignment = Alignment.CenterVertically,
+                leadingContent = icon.asLeadingContent(),
+                trailingContent = {
+                    AnimatedSettingValue(
+                        targetState = selected,
+                        valueLabel = { target ->
+                            options.firstOrNull { (value, _) -> value == target }?.second
+                                ?: selectedLabel
+                        },
+                        transitionDirection = { initial, target ->
+                            options.indexOfFirst { (value, _) -> value == target } -
+                                options.indexOfFirst { (value, _) -> value == initial }
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                },
+                content = {
+                    Text(text = title)
+                },
+            )
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { onExpandedChange(false) }
-        ) {
-            options.forEach { (value, label) ->
-                val isSelected = value == selected
-                DropdownMenuItem(
-                    text = {
-                        MenuOptionText(
-                            text = label,
-                            selected = isSelected
-                        )
-                    },
-                    onClick = {
-                        onSelect(value)
-                        onExpandedChange(false)
-                    },
-                    modifier = Modifier.selectedMenuModifier(isSelected)
-                )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { onExpandedChange(false) },
+            ) {
+                options.forEach { (value, label) ->
+                    val isSelected = value == selected
+                    DropdownMenuItem(
+                        text = {
+                            MenuOptionText(
+                                text = label,
+                                selected = isSelected,
+                            )
+                        },
+                        onClick = {
+                            onSelect(value)
+                            onExpandedChange(false)
+                        },
+                        modifier = Modifier.selectedMenuModifier(isSelected),
+                    )
+                }
             }
         }
     }
-}

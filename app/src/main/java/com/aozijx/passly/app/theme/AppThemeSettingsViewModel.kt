@@ -22,22 +22,24 @@ internal sealed interface AppThemeSettingsState {
 }
 
 @HiltViewModel
-internal class AppThemeSettingsViewModel @Inject constructor(
-    appearanceSettingsRepository: AppearanceSettingsRepository,
-    interfaceSettingsRepository: InterfaceSettingsRepository,
-) : ViewModel() {
-
-    val state: StateFlow<AppThemeSettingsState> = combine(
-        appearanceSettingsRepository.appearance,
-        interfaceSettingsRepository.interfaceSettings,
-    ) { appearance, interfaceSettings ->
-        AppThemeSettingsState.Ready(
-            appearance = appearance,
-            appCornerRadiusDp = interfaceSettings.appCornerRadiusDp,
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = AppThemeSettingsState.Loading,
-    )
-}
+internal class AppThemeSettingsViewModel
+    @Inject
+    constructor(
+        appearanceSettingsRepository: AppearanceSettingsRepository,
+        interfaceSettingsRepository: InterfaceSettingsRepository,
+    ) : ViewModel() {
+        val state: StateFlow<AppThemeSettingsState> =
+            combine(
+                appearanceSettingsRepository.appearance,
+                interfaceSettingsRepository.interfaceSettings,
+            ) { appearance, interfaceSettings ->
+                AppThemeSettingsState.Ready(
+                    appearance = appearance,
+                    appCornerRadiusDp = interfaceSettings.appCornerRadiusDp,
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = AppThemeSettingsState.Loading,
+            )
+    }

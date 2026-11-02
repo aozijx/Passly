@@ -12,32 +12,67 @@ import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 
-internal fun testLogger(): Logger = object : Logger {
-    override fun debug(event: EventKey, fields: LogFields) = Unit
-    override fun info(event: EventKey, fields: LogFields) = Unit
-    override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) = Unit
-    override fun warn(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-    override fun error(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-    override fun fatal(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
+internal fun testLogger(): Logger =
+    object : Logger {
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
 
-    override suspend fun <T> withRootTrace(
-        operation: OperationCode,
-        block: suspend TraceScope.() -> T,
-    ): T = TestTraceScope.block()
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
 
-    override suspend fun <T> inSpan(
-        operation: OperationCode,
-        block: suspend TraceScope.() -> T,
-    ): T = TestTraceScope.block()
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
 
-    override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
 
-    override suspend fun <T> resumeTrace(
-        token: TraceToken,
-        operation: OperationCode,
-        block: suspend TraceScope.() -> T,
-    ): TraceResumeResult<T> = error("not used")
-}
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override suspend fun <T> withRootTrace(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T = TestTraceScope.block()
+
+        override suspend fun <T> inSpan(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T = TestTraceScope.block()
+
+        override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
+
+        override suspend fun <T> resumeTrace(
+            token: TraceToken,
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): TraceResumeResult<T> = error("not used")
+    }
 
 internal data class RecordedTestLog(
     val event: EventKey,
@@ -51,32 +86,58 @@ internal class RecordingTestLogger : Logger {
     val events = mutableListOf<RecordedTestLog>()
     val spans = mutableListOf<OperationCode>()
 
-    override fun debug(event: EventKey, fields: LogFields) { events += RecordedTestLog(event, fields) }
-    override fun info(event: EventKey, fields: LogFields) { events += RecordedTestLog(event, fields) }
-    override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) {
+    override fun debug(
+        event: EventKey,
+        fields: LogFields,
+    ) {
+        events += RecordedTestLog(event, fields)
+    }
+
+    override fun info(
+        event: EventKey,
+        fields: LogFields,
+    ) {
+        events += RecordedTestLog(event, fields)
+    }
+
+    override fun degraded(
+        event: EventKey,
+        errorCode: ErrorCode,
+        reason: ReasonCode,
+        fields: LogFields,
+    ) {
         events += RecordedTestLog(event, fields, errorCode = errorCode, reason = reason)
     }
+
     override fun warn(
         event: EventKey,
         errorCode: ErrorCode,
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ) { events += RecordedTestLog(event, fields, throwable, errorCode, reason) }
+    ) {
+        events += RecordedTestLog(event, fields, throwable, errorCode, reason)
+    }
+
     override fun error(
         event: EventKey,
         errorCode: ErrorCode,
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ) { events += RecordedTestLog(event, fields, throwable, errorCode, reason) }
+    ) {
+        events += RecordedTestLog(event, fields, throwable, errorCode, reason)
+    }
+
     override fun fatal(
         event: EventKey,
         errorCode: ErrorCode,
         reason: ReasonCode,
         throwable: Throwable,
         fields: LogFields,
-    ) { events += RecordedTestLog(event, fields, throwable, errorCode, reason) }
+    ) {
+        events += RecordedTestLog(event, fields, throwable, errorCode, reason)
+    }
 
     override suspend fun <T> withRootTrace(
         operation: OperationCode,
@@ -92,6 +153,7 @@ internal class RecordingTestLogger : Logger {
     }
 
     override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
+
     override suspend fun <T> resumeTrace(
         token: TraceToken,
         operation: OperationCode,

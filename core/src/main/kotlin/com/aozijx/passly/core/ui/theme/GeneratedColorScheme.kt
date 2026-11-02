@@ -29,18 +29,20 @@ fun generateAppColorScheme(
     val base = if (isDark) darkColorScheme() else lightColorScheme()
     val primaryArgb = seeds.primary.toInt()
     val primaryHct = Hct.fromInt(primaryArgb)
-    val scheme = DynamicScheme(
-        primaryHct,
-        Variant.TONAL_SPOT,
-        isDark,
-        0.0,
-        TonalPalette.fromInt(primaryArgb),
-        TonalPalette.fromInt(seeds.secondary.toInt()),
-        TonalPalette.fromInt(seeds.tertiary.toInt()),
-        TonalPalette.fromHueAndChroma(primaryHct.hue, NEUTRAL_CHROMA),
-        TonalPalette.fromHueAndChroma(primaryHct.hue, NEUTRAL_VARIANT_CHROMA),
-    )
+    val scheme =
+        DynamicScheme(
+            primaryHct,
+            Variant.TONAL_SPOT,
+            isDark,
+            0.0,
+            TonalPalette.fromInt(primaryArgb),
+            TonalPalette.fromInt(seeds.secondary.toInt()),
+            TonalPalette.fromInt(seeds.tertiary.toInt()),
+            TonalPalette.fromHueAndChroma(primaryHct.hue, NEUTRAL_CHROMA),
+            TonalPalette.fromHueAndChroma(primaryHct.hue, NEUTRAL_VARIANT_CHROMA),
+        )
     val roles = MaterialDynamicColors()
+
     fun role(color: Int): Color = Color(color)
 
     return base.copy(

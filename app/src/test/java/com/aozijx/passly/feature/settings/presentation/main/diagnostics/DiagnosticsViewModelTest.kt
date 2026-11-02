@@ -29,20 +29,20 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.testing.MainDispatcherRule
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -54,212 +54,229 @@ class DiagnosticsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `page entry refreshes typed lines`() = runTest {
-        val lines = listOf(
-            DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
-            DiagnosticsLogLine(LogLevel.WARN, "row-two", "trace_two", "application.two"),
-        )
-        val store = RecordingLogStore(lines)
-        val viewModel = DiagnosticsViewModel(
-            secureSessionAccessState = FullAccess,
-            logStore = store,
-            exportDiagnostics = ExportDiagnosticsUseCase(FullAccess, UnusedAuthorizationGate, UnusedExportGateway),
-            logger = UnusedLogger,
-            clipboardWriter = RecordingClipboardWriter(),
-        )
+    fun `page entry refreshes typed lines`() =
+        runTest {
+            val lines =
+                listOf(
+                    DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
+                    DiagnosticsLogLine(LogLevel.WARN, "row-two", "trace_two", "application.two"),
+                )
+            val store = RecordingLogStore(lines)
+            val viewModel =
+                DiagnosticsViewModel(
+                    secureSessionAccessState = FullAccess,
+                    logStore = store,
+                    exportDiagnostics = ExportDiagnosticsUseCase(FullAccess, UnusedAuthorizationGate, UnusedExportGateway),
+                    logger = UnusedLogger,
+                    clipboardWriter = RecordingClipboardWriter(),
+                )
 
-        viewModel.onPageEntered()
-        runCurrent()
+            viewModel.onPageEntered()
+            runCurrent()
 
-        assertEquals(1, store.readCount)
-        assertEquals(lines, viewModel.uiState.value.retainedLines)
-    }
-
-    @Test
-    fun `failed clear reports failure and keeps retained lines`() = runTest {
-        val lines = listOf(
-            DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
-        )
-        val store = RecordingLogStore(lines, clearResult = LogClearResult.Failed)
-        val viewModel = viewModel(store)
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
-
-        viewModel.onAction(DiagnosticsAction.RequestClear)
-        viewModel.onAction(DiagnosticsAction.ConfirmClear)
-        runCurrent()
-
-        assertEquals(DiagnosticsEffect.ClearFailed, effect.await())
-        assertEquals(lines, viewModel.uiState.value.retainedLines)
-        assertEquals(false, viewModel.uiState.value.isClearConfirmationVisible)
-    }
-
-    @Test
-    fun `copy row and trace use the sensitive clipboard writer with bounded rows`() = runTest {
-        val traceLines = (0..100).map { index ->
-            DiagnosticsLogLine(LogLevel.INFO, "row-$index", "trace_shared", "application.row")
+            assertEquals(1, store.readCount)
+            assertEquals(lines, viewModel.uiState.value.retainedLines)
         }
-        val clipboard = RecordingClipboardWriter()
-        val viewModel = viewModel(
-            store = RecordingLogStore(traceLines),
-            clipboardWriter = clipboard,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-
-        viewModel.onAction(DiagnosticsAction.CopyRow(traceLines.first()))
-        runCurrent()
-        assertEquals(listOf("row-0"), clipboard.values)
-
-        viewModel.onAction(DiagnosticsAction.CopyTrace("trace_shared"))
-        runCurrent()
-        val copied = clipboard.values.last()
-        assertEquals(100, copied.lineSequence().count())
-        assertEquals("row-0", copied.lineSequence().first())
-        assertEquals("row-99", copied.lineSequence().last())
-    }
 
     @Test
-    fun `page exit prevents a suspended diagnostics copy from publishing`() = runTest {
-        val clipboard = DelayedClipboardWriter()
-        val lines = listOf(DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"))
-        val viewModel = viewModel(RecordingLogStore(lines), clipboardWriter = clipboard)
-        val pageOwner = viewModel.onPageEntered()
-        runCurrent()
+    fun `failed clear reports failure and keeps retained lines`() =
+        runTest {
+            val lines =
+                listOf(
+                    DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"),
+                )
+            val store = RecordingLogStore(lines, clearResult = LogClearResult.Failed)
+            val viewModel = viewModel(store)
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
 
-        viewModel.onAction(DiagnosticsAction.CopyRow(lines.single()))
-        runCurrent()
-        clipboard.writeStarted.await()
-        viewModel.onPageExited(pageOwner)
-        clipboard.finishWrite.complete(Unit)
-        runCurrent()
+            viewModel.onAction(DiagnosticsAction.RequestClear)
+            viewModel.onAction(DiagnosticsAction.ConfirmClear)
+            runCurrent()
 
-        assertEquals(emptyList<String>(), clipboard.values)
-    }
-
-    @Test
-    fun `late log read cannot replace lines loaded after reentering diagnostics`() = runTest {
-        val oldLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "old", "trace_old", "application.old"))
-        val newLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "new", "trace_new", "application.new"))
-        val store = DeferredReadLogStore()
-        val viewModel = viewModel(store)
-
-        val oldOwner = viewModel.onPageEntered()
-        runCurrent()
-        store.readStarted[0].await()
-
-        viewModel.onPageExited(oldOwner)
-        viewModel.onPageEntered()
-        runCurrent()
-        store.readStarted[1].await()
-
-        store.completeRead(1, newLines)
-        runCurrent()
-        assertEquals(newLines, viewModel.uiState.value.retainedLines)
-
-        store.completeRead(0, oldLines)
-        runCurrent()
-
-        assertEquals(newLines, viewModel.uiState.value.retainedLines)
-    }
+            assertEquals(DiagnosticsEffect.ClearFailed, effect.await())
+            assertEquals(lines, viewModel.uiState.value.retainedLines)
+            assertEquals(false, viewModel.uiState.value.isClearConfirmationVisible)
+        }
 
     @Test
-    fun `reentry does not replay export feedback from the previous page visit`() = runTest {
-        val gateway = DeferredExportGateway()
-        val viewModel = viewModel(
-            store = RecordingLogStore(emptyList()),
-            gate = AllowingAuthorizationGate,
-            gateway = gateway,
-            logger = ExecutingLogger,
-        )
-        val oldOwner = viewModel.onPageEntered()
-        runCurrent()
+    fun `copy row and trace use the sensitive clipboard writer with bounded rows`() =
+        runTest {
+            val traceLines =
+                (0..100).map { index ->
+                    DiagnosticsLogLine(LogLevel.INFO, "row-$index", "trace_shared", "application.row")
+                }
+            val clipboard = RecordingClipboardWriter()
+            val viewModel =
+                viewModel(
+                    store = RecordingLogStore(traceLines),
+                    clipboardWriter = clipboard,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
 
-        val pickerEffect = async { viewModel.effects.first() }
-        viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
-        viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
-        val picker = pickerEffect.await() as DiagnosticsEffect.SelectSaveDocument
-        assertEquals(LogFormat.JSONL, picker.format)
-        assertEquals("application/x-ndjson", picker.mimeType)
-        assertEquals("passly_logs.jsonl", picker.fileName)
+            viewModel.onAction(DiagnosticsAction.CopyRow(traceLines.first()))
+            runCurrent()
+            assertEquals(listOf("row-0"), clipboard.values)
 
-        viewModel.onAction(
-            DiagnosticsAction.SaveToDocument("content://test/export", oldOwner, picker.requestId),
-        )
-        gateway.exportStarted.await()
-        viewModel.onPageExited(oldOwner)
-        viewModel.onPageEntered()
-        gateway.exportResult.complete(Result.success(Unit))
-        runCurrent()
-
-        assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
-    }
+            viewModel.onAction(DiagnosticsAction.CopyTrace("trace_shared"))
+            runCurrent()
+            val copied = clipboard.values.last()
+            assertEquals(100, copied.lineSequence().count())
+            assertEquals("row-0", copied.lineSequence().first())
+            assertEquals("row-99", copied.lineSequence().last())
+        }
 
     @Test
-    fun `local format selection emits matching saf contract independent of level filters`() = runTest {
-        val viewModel = viewModel(RecordingLogStore(emptyList()))
-        val owner = viewModel.onPageEntered()
-        viewModel.onAction(DiagnosticsAction.ToggleLevel(LogLevel.INFO))
-        viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+    fun `page exit prevents a suspended diagnostics copy from publishing`() =
+        runTest {
+            val clipboard = DelayedClipboardWriter()
+            val lines = listOf(DiagnosticsLogLine(LogLevel.INFO, "row-one", "trace_one", "application.one"))
+            val viewModel = viewModel(RecordingLogStore(lines), clipboardWriter = clipboard)
+            val pageOwner = viewModel.onPageEntered()
+            runCurrent()
 
-        val effect = async { viewModel.effects.first() }
-        viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.TSV))
+            viewModel.onAction(DiagnosticsAction.CopyRow(lines.single()))
+            runCurrent()
+            clipboard.writeStarted.await()
+            viewModel.onPageExited(pageOwner)
+            clipboard.finishWrite.complete(Unit)
+            runCurrent()
 
-        val request = effect.await() as DiagnosticsEffect.SelectSaveDocument
-        assertEquals(LogFormat.TSV, request.format)
-        assertEquals("text/tab-separated-values", request.mimeType)
-        assertEquals("passly_logs.tsv", request.fileName)
-        assertEquals(LogFormat.TSV, viewModel.uiState.value.pendingLocalFormat)
-
-        viewModel.onAction(DiagnosticsAction.SaveDocumentCancelled(owner, request.requestId))
-
-        assertEquals(null, viewModel.uiState.value.pendingLocalFormat)
-    }
+            assertEquals(emptyList<String>(), clipboard.values)
+        }
 
     @Test
-    fun `late document result from an exited page cannot start an export`() = runTest {
-        val gateway = RecordingExportGateway()
-        val viewModel = viewModel(
-            store = RecordingLogStore(emptyList()),
-            gate = AllowingAuthorizationGate,
-            gateway = gateway,
-            logger = ExecutingLogger,
-        )
-        val oldOwner = viewModel.onPageEntered()
-        viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
-        val effect = async { viewModel.effects.first() }
-        viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
-        val picker = effect.await() as DiagnosticsEffect.SelectSaveDocument
+    fun `late log read cannot replace lines loaded after reentering diagnostics`() =
+        runTest {
+            val oldLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "old", "trace_old", "application.old"))
+            val newLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "new", "trace_new", "application.new"))
+            val store = DeferredReadLogStore()
+            val viewModel = viewModel(store)
 
-        viewModel.onPageExited(oldOwner)
-        viewModel.onPageEntered()
-        viewModel.onAction(
-            DiagnosticsAction.SaveToDocument("content://stale", oldOwner, picker.requestId),
-        )
-        runCurrent()
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
+            store.readStarted[0].await()
 
-        assertNull(gateway.request)
-        assertNull(viewModel.uiState.value.pendingLocalFormat)
-    }
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            runCurrent()
+            store.readStarted[1].await()
+
+            store.completeRead(1, newLines)
+            runCurrent()
+            assertEquals(newLines, viewModel.uiState.value.retainedLines)
+
+            store.completeRead(0, oldLines)
+            runCurrent()
+
+            assertEquals(newLines, viewModel.uiState.value.retainedLines)
+        }
 
     @Test
-    fun `share format reaches authenticated gateway without viewer filters`() = runTest {
-        val gateway = RecordingExportGateway()
-        val viewModel = viewModel(
-            store = RecordingLogStore(emptyList()),
-            gate = AllowingAuthorizationGate,
-            gateway = gateway,
-            logger = ExecutingLogger,
-        )
-        viewModel.onPageEntered()
-        viewModel.onAction(DiagnosticsAction.SearchChanged("trace_missing"))
-        viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.SHARE))
-        viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.ZIP))
-        runCurrent()
+    fun `reentry does not replay export feedback from the previous page visit`() =
+        runTest {
+            val gateway = DeferredExportGateway()
+            val viewModel =
+                viewModel(
+                    store = RecordingLogStore(emptyList()),
+                    gate = AllowingAuthorizationGate,
+                    gateway = gateway,
+                    logger = ExecutingLogger,
+                )
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
 
-        assertEquals(DiagnosticsExportRequest(ExportAction.SHARE, LogFormat.ZIP), gateway.request)
-    }
+            val pickerEffect = async { viewModel.effects.first() }
+            viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+            viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
+            val picker = pickerEffect.await() as DiagnosticsEffect.SelectSaveDocument
+            assertEquals(LogFormat.JSONL, picker.format)
+            assertEquals("application/x-ndjson", picker.mimeType)
+            assertEquals("passly_logs.jsonl", picker.fileName)
+
+            viewModel.onAction(
+                DiagnosticsAction.SaveToDocument("content://test/export", oldOwner, picker.requestId),
+            )
+            gateway.exportStarted.await()
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            gateway.exportResult.complete(Result.success(Unit))
+            runCurrent()
+
+            assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+        }
+
+    @Test
+    fun `local format selection emits matching saf contract independent of level filters`() =
+        runTest {
+            val viewModel = viewModel(RecordingLogStore(emptyList()))
+            val owner = viewModel.onPageEntered()
+            viewModel.onAction(DiagnosticsAction.ToggleLevel(LogLevel.INFO))
+            viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+
+            val effect = async { viewModel.effects.first() }
+            viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.TSV))
+
+            val request = effect.await() as DiagnosticsEffect.SelectSaveDocument
+            assertEquals(LogFormat.TSV, request.format)
+            assertEquals("text/tab-separated-values", request.mimeType)
+            assertEquals("passly_logs.tsv", request.fileName)
+            assertEquals(LogFormat.TSV, viewModel.uiState.value.pendingLocalFormat)
+
+            viewModel.onAction(DiagnosticsAction.SaveDocumentCancelled(owner, request.requestId))
+
+            assertEquals(null, viewModel.uiState.value.pendingLocalFormat)
+        }
+
+    @Test
+    fun `late document result from an exited page cannot start an export`() =
+        runTest {
+            val gateway = RecordingExportGateway()
+            val viewModel =
+                viewModel(
+                    store = RecordingLogStore(emptyList()),
+                    gate = AllowingAuthorizationGate,
+                    gateway = gateway,
+                    logger = ExecutingLogger,
+                )
+            val oldOwner = viewModel.onPageEntered()
+            viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.EXPORT_LOCAL))
+            val effect = async { viewModel.effects.first() }
+            viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.JSONL))
+            val picker = effect.await() as DiagnosticsEffect.SelectSaveDocument
+
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            viewModel.onAction(
+                DiagnosticsAction.SaveToDocument("content://stale", oldOwner, picker.requestId),
+            )
+            runCurrent()
+
+            assertNull(gateway.request)
+            assertNull(viewModel.uiState.value.pendingLocalFormat)
+        }
+
+    @Test
+    fun `share format reaches authenticated gateway without viewer filters`() =
+        runTest {
+            val gateway = RecordingExportGateway()
+            val viewModel =
+                viewModel(
+                    store = RecordingLogStore(emptyList()),
+                    gate = AllowingAuthorizationGate,
+                    gateway = gateway,
+                    logger = ExecutingLogger,
+                )
+            viewModel.onPageEntered()
+            viewModel.onAction(DiagnosticsAction.SearchChanged("trace_missing"))
+            viewModel.onAction(DiagnosticsAction.RequestExport(ExportAction.SHARE))
+            viewModel.onAction(DiagnosticsAction.SelectFormat(LogFormat.ZIP))
+            runCurrent()
+
+            assertEquals(DiagnosticsExportRequest(ExportAction.SHARE, LogFormat.ZIP), gateway.request)
+        }
 
     private fun viewModel(
         store: DiagnosticsLogStore,
@@ -295,12 +312,16 @@ class DiagnosticsViewModelTest {
         val readStarted = mutableListOf<CompletableDeferred<Unit>>()
         private val readContinuations = mutableListOf<Continuation<List<DiagnosticsLogLine>>>()
 
-        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> = suspendCoroutine { continuation ->
-            readContinuations += continuation
-            readStarted += CompletableDeferred<Unit>().also { it.complete(Unit) }
-        }
+        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> =
+            suspendCoroutine { continuation ->
+                readContinuations += continuation
+                readStarted += CompletableDeferred<Unit>().also { it.complete(Unit) }
+            }
 
-        fun completeRead(index: Int, lines: List<DiagnosticsLogLine>) {
+        fun completeRead(
+            index: Int,
+            lines: List<DiagnosticsLogLine>,
+        ) {
             readContinuations[index].resume(lines)
         }
 
@@ -326,7 +347,10 @@ class DiagnosticsViewModelTest {
             values += text
         }
 
-        override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean =
+        override suspend fun writeSensitiveIf(
+            text: String,
+            canWrite: () -> Boolean,
+        ): Boolean =
             withContext(NonCancellable) {
                 writeStarted.complete(Unit)
                 finishWrite.await()
@@ -370,6 +394,7 @@ class DiagnosticsViewModelTest {
 
     private class RecordingExportGateway : DiagnosticsExportGateway {
         var request: DiagnosticsExportRequest? = null
+
         override suspend fun export(
             permit: AuthorizationPermit,
             request: DiagnosticsExportRequest,
@@ -397,10 +422,22 @@ class DiagnosticsViewModelTest {
     }
 
     private object UnusedLogger : Logger {
-        override fun debug(event: EventKey, fields: LogFields) = error("Logger is not used")
-        override fun info(event: EventKey, fields: LogFields) = error("Logger is not used")
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) =
-            error("Logger is not used")
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = error("Logger is not used")
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = error("Logger is not used")
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = error("Logger is not used")
 
         override fun warn(
             event: EventKey,
@@ -437,6 +474,7 @@ class DiagnosticsViewModelTest {
         ): T = error("Logger is not used")
 
         override fun captureTraceToken(singleUse: Boolean): TraceToken = error("Logger is not used")
+
         override suspend fun <T> resumeTrace(
             token: TraceToken,
             operation: OperationCode,

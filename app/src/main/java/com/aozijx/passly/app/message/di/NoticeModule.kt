@@ -1,13 +1,5 @@
 package com.aozijx.passly.app.message.di
 
-import com.aozijx.passly.app.message.presentation.AndroidNoticeTextResolver
-import com.aozijx.passly.app.message.runtime.ProcessAppVisibilityProvider
-import com.aozijx.passly.app.message.system.AndroidSystemNotificationGateway
-import com.aozijx.passly.app.message.runtime.DefaultAppNoticeDispatcher
-import com.aozijx.passly.app.message.runtime.DefaultInAppNoticeSink
-import com.aozijx.passly.app.message.runtime.DefaultMessageSettingsSnapshotProvider
-import com.aozijx.passly.app.message.runtime.DefaultNoticeDeduplicator
-import com.aozijx.passly.app.message.runtime.DefaultNoticeRouter
 import com.aozijx.passly.app.message.contract.AppNoticeDispatcher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppVisibilityProvider
@@ -21,6 +13,14 @@ import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import com.aozijx.passly.app.message.contract.SystemNotificationGateway
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.message.contract.defaultNoticeCodePolicy
+import com.aozijx.passly.app.message.presentation.AndroidNoticeTextResolver
+import com.aozijx.passly.app.message.runtime.DefaultAppNoticeDispatcher
+import com.aozijx.passly.app.message.runtime.DefaultInAppNoticeSink
+import com.aozijx.passly.app.message.runtime.DefaultMessageSettingsSnapshotProvider
+import com.aozijx.passly.app.message.runtime.DefaultNoticeDeduplicator
+import com.aozijx.passly.app.message.runtime.DefaultNoticeRouter
+import com.aozijx.passly.app.message.runtime.ProcessAppVisibilityProvider
+import com.aozijx.passly.app.message.system.AndroidSystemNotificationGateway
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -34,9 +34,7 @@ import javax.inject.Singleton
 abstract class NoticeModule {
     @Binds
     @Singleton
-    abstract fun bindNoticeDeduplicator(
-        impl: DefaultNoticeDeduplicator
-    ): NoticeDeduplicator
+    abstract fun bindNoticeDeduplicator(impl: DefaultNoticeDeduplicator): NoticeDeduplicator
 
     @Binds
     @Singleton
@@ -60,9 +58,7 @@ abstract class NoticeModule {
 
     @Binds
     @Singleton
-    abstract fun bindSystemGateway(
-        impl: AndroidSystemNotificationGateway
-    ): SystemNotificationGateway
+    abstract fun bindSystemGateway(impl: AndroidSystemNotificationGateway): SystemNotificationGateway
 
     @Binds
     @IntoSet
@@ -70,21 +66,15 @@ abstract class NoticeModule {
 
     @Binds
     @Singleton
-    abstract fun bindSystemStateProvider(
-        impl: AndroidSystemNotificationGateway
-    ): SystemNotificationStateProvider
+    abstract fun bindSystemStateProvider(impl: AndroidSystemNotificationGateway): SystemNotificationStateProvider
 
     @Binds
     @Singleton
-    abstract fun bindSettingsProvider(
-        impl: DefaultMessageSettingsSnapshotProvider
-    ): MessageSettingsSnapshotProvider
+    abstract fun bindSettingsProvider(impl: DefaultMessageSettingsSnapshotProvider): MessageSettingsSnapshotProvider
 
     @Binds
     @Singleton
-    abstract fun bindVisibilityProvider(
-        impl: ProcessAppVisibilityProvider
-    ): AppVisibilityProvider
+    abstract fun bindVisibilityProvider(impl: ProcessAppVisibilityProvider): AppVisibilityProvider
 
     @Binds
     @Singleton
@@ -93,7 +83,6 @@ abstract class NoticeModule {
     companion object {
         @Provides
         @Singleton
-        fun provideNoticeCodeRegistry(): NoticeCodeRegistry =
-            NoticeCodeRegistry(::defaultNoticeCodePolicy)
+        fun provideNoticeCodeRegistry(): NoticeCodeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy)
     }
 }

@@ -1,11 +1,10 @@
 package com.aozijx.passly.presentation.shared.components.apppassword
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
@@ -31,6 +30,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
 import com.aozijx.passly.core.ui.components.settings.rememberPasswordStrength
 
@@ -58,38 +58,46 @@ fun PasswordFields(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.LockOpen,
-                contentDescription = null
+                contentDescription = null,
             )
         },
         trailingIcon = {
             IconButton(onClick = { newPasswordVisible = !newPasswordVisible }, enabled = enabled) {
                 Icon(
-                    imageVector = if (newPasswordVisible) {
-                        Icons.Outlined.VisibilityOff
-                    } else {
-                        Icons.Outlined.Visibility
-                    },
-                    contentDescription = stringResource(
-                        if (newPasswordVisible) R.string.hide_password
-                        else R.string.show_password
-                    )
+                    imageVector =
+                        if (newPasswordVisible) {
+                            Icons.Outlined.VisibilityOff
+                        } else {
+                            Icons.Outlined.Visibility
+                        },
+                    contentDescription =
+                        stringResource(
+                            if (newPasswordVisible) {
+                                R.string.hide_password
+                            } else {
+                                R.string.show_password
+                            },
+                        ),
                 )
             }
         },
-        visualTransformation = if (newPasswordVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Next
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = { focusManager.moveFocus(FocusDirection.Next) },
-        ),
+        visualTransformation =
+            if (newPasswordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Next,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Next) },
+            ),
         modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
-        shape = MaterialTheme.shapes.large
+        shape = MaterialTheme.shapes.large,
     )
 
     if (newPassword.isNotEmpty()) {
@@ -112,39 +120,49 @@ fun PasswordFields(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.Lock,
-                contentDescription = null
+                contentDescription = null,
             )
         },
         trailingIcon = {
             IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }, enabled = enabled) {
                 Icon(
-                    imageVector = if (confirmPasswordVisible) {
-                        Icons.Outlined.VisibilityOff
-                    } else {
-                        Icons.Outlined.Visibility
-                    },
-                    contentDescription = stringResource(
-                        if (confirmPasswordVisible) R.string.hide_password
-                        else R.string.show_password
-                    )
+                    imageVector =
+                        if (confirmPasswordVisible) {
+                            Icons.Outlined.VisibilityOff
+                        } else {
+                            Icons.Outlined.Visibility
+                        },
+                    contentDescription =
+                        stringResource(
+                            if (confirmPasswordVisible) {
+                                R.string.hide_password
+                            } else {
+                                R.string.show_password
+                            },
+                        ),
                 )
             }
         },
-        visualTransformation = if (confirmPasswordVisible) {
-            VisualTransformation.None
-        } else {
-            PasswordVisualTransformation()
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = ImeAction.Done
-        ),
+        visualTransformation =
+            if (confirmPasswordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
         keyboardActions = KeyboardActions(onDone = { onDone() }),
         isError = confirmPassword.isNotEmpty() && newPassword != confirmPassword,
-        supportingText = if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
-            { Text(stringResource(R.string.settings_auth_password_mismatch)) }
-        } else null,
+        supportingText =
+            if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
+                { Text(stringResource(R.string.settings_auth_password_mismatch)) }
+            } else {
+                null
+            },
         modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
-        shape = MaterialTheme.shapes.large
+        shape = MaterialTheme.shapes.large,
     )
 }

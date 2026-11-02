@@ -20,9 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
@@ -31,8 +31,8 @@ import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
-import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationPermissionRequest
+import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsViewModel
@@ -43,14 +43,15 @@ import com.aozijx.passly.feature.settings.presentation.ui.main.component.Setting
 
 private sealed interface NotificationPermissionLaunch {
     data object Idle : NotificationPermissionLaunch
-    data class Pending(val request: NotificationPermissionRequest) : NotificationPermissionLaunch
+
+    data class Pending(
+        val request: NotificationPermissionRequest,
+    ) : NotificationPermissionLaunch
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun NotificationsRoute(
-    onBack: (() -> Unit)?,
-) {
+internal fun NotificationsRoute(onBack: (() -> Unit)?) {
     val viewModel: NotificationSettingsViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -64,28 +65,37 @@ internal fun NotificationsRoute(
         noticePublisher.publish(newAppNotice(NoticeCode.NOTIFICATION_PERMISSION_DENIED))
     }
 
-    val permissionHost = rememberPermissionRequestHost("settings.notifications") { permission, result ->
-        if (permission != RuntimePermission.POST_NOTIFICATIONS) {
-            return@rememberPermissionRequestHost
-        }
-        val pending = permissionLaunch as? NotificationPermissionLaunch.Pending ?: return@rememberPermissionRequestHost
-        permissionLaunch = NotificationPermissionLaunch.Idle
-        when (result) {
-            PermissionRequestOutcome.Granted ->
-                viewModel.onAction(NotificationSettingsAction.RuntimePermissionGranted(pending.request))
+    val permissionHost =
+        rememberPermissionRequestHost("settings.notifications") { permission, result ->
+            if (permission != RuntimePermission.POST_NOTIFICATIONS) {
+                return@rememberPermissionRequestHost
+            }
+            val pending = permissionLaunch as? NotificationPermissionLaunch.Pending ?: return@rememberPermissionRequestHost
+            permissionLaunch = NotificationPermissionLaunch.Idle
+            when (result) {
+                PermissionRequestOutcome.Granted -> {
+                    viewModel.onAction(NotificationSettingsAction.RuntimePermissionGranted(pending.request))
+                }
 
-            is PermissionRequestOutcome.Denied ->
-                viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied(pending.request))
+                is PermissionRequestOutcome.Denied -> {
+                    viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied(pending.request))
+                }
+            }
         }
-    }
 
     LaunchedEffect(viewModel, permissionHost, context, noticePublisher, resources, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.effects.collect { effect ->
                 when (effect) {
-                    is NotificationSettingsEffect.SaveFailed -> Toast.makeText(
-                        context, resources.getString(effect.message.resourceId), Toast.LENGTH_SHORT,
-                    ).show()
+                    is NotificationSettingsEffect.SaveFailed -> {
+                        Toast
+                            .makeText(
+                                context,
+                                resources.getString(effect.message.resourceId),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                    }
+
                     is NotificationSettingsEffect.RequestRuntimeNotificationPermission -> {
                         if (!viewModel.canLaunchRuntimePermissionRequest(effect.request)) {
                             viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied(effect.request))
@@ -93,15 +103,20 @@ internal fun NotificationsRoute(
                         }
                         permissionLaunch = NotificationPermissionLaunch.Pending(effect.request)
                         when (permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)) {
-                            PermissionRequestStart.Launched -> Unit
+                            PermissionRequestStart.Launched -> {
+                                Unit
+                            }
+
                             PermissionRequestStart.AlreadyGranted,
-                            PermissionRequestStart.NotApplicable -> {
+                            PermissionRequestStart.NotApplicable,
+                            -> {
                                 permissionLaunch = NotificationPermissionLaunch.Idle
                                 viewModel.onAction(NotificationSettingsAction.RuntimePermissionGranted(effect.request))
                             }
 
                             PermissionRequestStart.Busy,
-                            PermissionRequestStart.HostUnavailable -> {
+                            PermissionRequestStart.HostUnavailable,
+                            -> {
                                 permissionLaunch = NotificationPermissionLaunch.Idle
                                 viewModel.onAction(NotificationSettingsAction.RuntimePermissionDenied(effect.request))
                             }
@@ -116,8 +131,9 @@ internal fun NotificationsRoute(
                         )
                     }
 
-                    NotificationSettingsEffect.ShowPermissionDenied ->
+                    NotificationSettingsEffect.ShowPermissionDenied -> {
                         publishPermissionDeniedNotice()
+                    }
                 }
             }
         }
@@ -125,11 +141,12 @@ internal fun NotificationsRoute(
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val owner = viewModel.onPageEntered()
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.onAction(NotificationSettingsAction.RefreshSystemNotificationState)
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    viewModel.onAction(NotificationSettingsAction.RefreshSystemNotificationState)
+                }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
@@ -146,21 +163,27 @@ internal fun NotificationsRoute(
         onBack = onBack,
     ) {
         when (val readyState = state) {
-            NotificationSettingsUiState.Loading -> Unit
-            is NotificationSettingsUiState.Ready -> item {
-                SettingsSection {
-                    NotificationSettingsSection(
-                        state = readyState.toUiModel(),
-                        onAction = viewModel::onAction,
-                    )
+            NotificationSettingsUiState.Loading -> {
+                Unit
+            }
+
+            is NotificationSettingsUiState.Ready -> {
+                item {
+                    SettingsSection {
+                        NotificationSettingsSection(
+                            state = readyState.toUiModel(),
+                            onAction = viewModel::onAction,
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }

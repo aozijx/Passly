@@ -1,13 +1,13 @@
 package com.aozijx.passly.security.dek
 
-import com.aozijx.passly.testing.testLogger
-import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
-import com.aozijx.passly.domain.access.model.KeyEnvelope
-import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricBinding
+import com.aozijx.passly.domain.access.model.BiometricBootstrapState
 import com.aozijx.passly.domain.access.model.BiometricRotationJournal
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,14 +28,15 @@ class SensitiveDataKeyManagerTest {
     private lateinit var manager: SensitiveDataKeyManager
 
     @Before
-    fun setUp() = runBlocking {
-        store = InMemoryVaultBootstrapStore()
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val dekManager = DekManager(store, FieldKeyManager(), testLogger())
-        val result = dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() })
-        check(result == DekUnlockResult.Success)
-        manager = SensitiveDataKeyManager(store, dekManager, scope)
-    }
+    fun setUp() =
+        runBlocking {
+            store = InMemoryVaultBootstrapStore()
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            val dekManager = DekManager(store, FieldKeyManager(), testLogger())
+            val result = dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() })
+            check(result == DekUnlockResult.Success)
+            manager = SensitiveDataKeyManager(store, dekManager, scope)
+        }
 
     @After
     fun tearDown() {
@@ -43,41 +44,44 @@ class SensitiveDataKeyManagerTest {
     }
 
     @Test
-    fun `provisioning persists only a wrapped stable key`() = runBlocking {
-        val first = manager.withProvisionedKey(ByteArray::clone)
-        val envelope = store.sensitiveKeyEnvelope
+    fun `provisioning persists only a wrapped stable key`() =
+        runBlocking {
+            val first = manager.withProvisionedKey(ByteArray::clone)
+            val envelope = store.sensitiveKeyEnvelope
 
-        assertNotNull(envelope)
-        assertFalse(envelope!!.containsSubsequence(first))
+            assertNotNull(envelope)
+            assertFalse(envelope!!.containsSubsequence(first))
 
-        val second = manager.withProvisionedKey(ByteArray::clone)
-        assertArrayEquals(first, second)
-        first.fill(0)
-        second.fill(0)
-    }
-
-    @Test
-    fun `read access requires fresh authentication and clear revokes it`() = runBlocking {
-        assertFreshAuthenticationRequired()
-
-        manager.unlockAfterFreshAuthentication()
-        val unlocked = manager.withUnlockedKey(ByteArray::clone)
-        assertTrue(unlocked.any { it != 0.toByte() })
-        unlocked.fill(0)
-
-        manager.clear()
-        assertFreshAuthenticationRequired()
-    }
+            val second = manager.withProvisionedKey(ByteArray::clone)
+            assertArrayEquals(first, second)
+            first.fill(0)
+            second.fill(0)
+        }
 
     @Test
-    fun `fresh authentication expires after ttl`() = runBlocking {
-        manager.unlockAfterFreshAuthentication(ttlMs = 20L)
-        manager.withUnlockedKey { assertTrue(it.isNotEmpty()) }
+    fun `read access requires fresh authentication and clear revokes it`() =
+        runBlocking {
+            assertFreshAuthenticationRequired()
 
-        delay(100L)
+            manager.unlockAfterFreshAuthentication()
+            val unlocked = manager.withUnlockedKey(ByteArray::clone)
+            assertTrue(unlocked.any { it != 0.toByte() })
+            unlocked.fill(0)
 
-        assertFreshAuthenticationRequired()
-    }
+            manager.clear()
+            assertFreshAuthenticationRequired()
+        }
+
+    @Test
+    fun `fresh authentication expires after ttl`() =
+        runBlocking {
+            manager.unlockAfterFreshAuthentication(ttlMs = 20L)
+            manager.withUnlockedKey { assertTrue(it.isNotEmpty()) }
+
+            delay(100L)
+
+            assertFreshAuthenticationRequired()
+        }
 
     private suspend fun assertFreshAuthenticationRequired() {
         val failure = runCatching { manager.withUnlockedKey { Unit } }.exceptionOrNull()
@@ -105,6 +109,7 @@ class SensitiveDataKeyManagerTest {
         override suspend fun load(type: EnvelopeType): KeyEnvelope? = envelopes[type]
 
         override suspend fun loadAll(): List<KeyEnvelope> = envelopes.values.toList()
+
         override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
 
         override suspend fun delete(type: EnvelopeType) {
@@ -129,18 +134,19 @@ class SensitiveDataKeyManagerTest {
 
         override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = attachmentKeyEnvelope?.clone()
 
-        override suspend fun loadBiometricState() = BiometricBootstrapState(
-            binding = null,
-            rotation = null,
-            cleanupAliases = emptySet()
-        )
+        override suspend fun loadBiometricState() =
+            BiometricBootstrapState(
+                binding = null,
+                rotation = null,
+                cleanupAliases = emptySet(),
+            )
 
         override suspend fun prepareBiometricRotation(journal: BiometricRotationJournal) = Unit
 
         override suspend fun commitBiometricRotation(
             envelope: KeyEnvelope,
             binding: BiometricBinding,
-            obsoleteAlias: String?
+            obsoleteAlias: String?,
         ) = Unit
 
         override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
@@ -148,6 +154,5 @@ class SensitiveDataKeyManagerTest {
         override suspend fun disableBiometric(activeAlias: String) = Unit
 
         override suspend fun clearBiometricRotationJournal() = Unit
-
     }
 }

@@ -9,7 +9,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SessionOwnershipPolicyTest {
-
     @Test
     fun `autofill authentication publishes only temporary access`() {
         assertEquals(

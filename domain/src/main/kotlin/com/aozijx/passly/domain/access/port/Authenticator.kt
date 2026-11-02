@@ -1,8 +1,8 @@
 package com.aozijx.passly.domain.access.port
 
 import com.aozijx.passly.domain.access.model.AuthInput
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 
 /**
@@ -17,7 +17,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
  * 不参与 Grant 签发。授权由 [AuthorizationGate] 负责。
  */
 interface Authenticator {
-
     /** 本认证器支持的方式 */
     val method: AuthenticationMethod
 
@@ -30,7 +29,7 @@ interface Authenticator {
      */
     suspend fun authenticate(
         purpose: AuthenticationPurpose,
-        input: AuthInput = AuthInput.Interactive
+        input: AuthInput = AuthInput.Interactive,
     ): AuthenticatorResult
 
     /**
@@ -50,5 +49,8 @@ sealed interface AuthenticatorResult {
     }
 
     data object UserCancelled : AuthenticatorResult
-    data class Rejected(val failure: AuthenticationFailure) : AuthenticatorResult
+
+    data class Rejected(
+        val failure: AuthenticationFailure,
+    ) : AuthenticatorResult
 }

@@ -10,8 +10,8 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
-import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.LogStatement
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.LockReason
@@ -22,6 +22,7 @@ import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import java.util.concurrent.atomic.AtomicLong
 
 internal enum class DeviceLockTrigger {
     SCREEN_OFF,
@@ -43,17 +43,26 @@ internal enum class DeviceLockTrigger {
 }
 
 internal sealed interface DeviceLockResult {
-    data class Locked(val shouldClearTask: Boolean) : DeviceLockResult
+    data class Locked(
+        val shouldClearTask: Boolean,
+    ) : DeviceLockResult
+
     data object Skipped : DeviceLockResult
 }
 
-internal fun DeviceLockResult.toLogStatement(trigger: DeviceLockTrigger): LogStatement = when (this) {
-    is DeviceLockResult.Locked -> LogStatements.Application.deviceLockCompleted(
-        trigger = trigger,
-        clearTask = shouldClearTask,
-    )
-    DeviceLockResult.Skipped -> LogStatements.Application.deviceLockSkipped(trigger)
-}
+internal fun DeviceLockResult.toLogStatement(trigger: DeviceLockTrigger): LogStatement =
+    when (this) {
+        is DeviceLockResult.Locked -> {
+            LogStatements.Application.deviceLockCompleted(
+                trigger = trigger,
+                clearTask = shouldClearTask,
+            )
+        }
+
+        DeviceLockResult.Skipped -> {
+            LogStatements.Application.deviceLockSkipped(trigger)
+        }
+    }
 
 internal class FlipTriggerGate {
     private var faceDown = false
@@ -103,147 +112,161 @@ internal class DeviceLockHandler(
 ) {
     suspend fun handle(trigger: DeviceLockTrigger): DeviceLockResult {
         val security = securitySettings.filterNotNull().first()
-        val request = when (trigger) {
-            DeviceLockTrigger.SCREEN_OFF -> SessionLockRequest(LockReason.BACKGROUND, LockTrigger.SCREEN_OFF)
-            DeviceLockTrigger.FLIP -> {
-                if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
-                    return DeviceLockResult.Skipped
+        val request =
+            when (trigger) {
+                DeviceLockTrigger.SCREEN_OFF -> {
+                    SessionLockRequest(LockReason.BACKGROUND, LockTrigger.SCREEN_OFF)
                 }
-                if (!security.isFlipToLockEnabled) return DeviceLockResult.Skipped
-                SessionLockRequest(LockReason.USER, LockTrigger.DEVICE_FLIP)
+
+                DeviceLockTrigger.FLIP -> {
+                    if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
+                        return DeviceLockResult.Skipped
+                    }
+                    if (!security.isFlipToLockEnabled) return DeviceLockResult.Skipped
+                    SessionLockRequest(LockReason.USER, LockTrigger.DEVICE_FLIP)
+                }
             }
-        }
         sessionLockController.lock(request)
         return DeviceLockResult.Locked(
-            shouldClearTask = security.isFlipToLockEnabled &&
-                security.isFlipExitAndClearStackEnabled,
+            shouldClearTask =
+                security.isFlipToLockEnabled &&
+                    security.isFlipExitAndClearStackEnabled,
         )
     }
 }
 
 /** Owns process-level screen-off reception and foreground-only flip sensing. */
 @Singleton
-class DeviceLockController @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    sessionAccessState: SecureSessionAccessState,
-    sessionLockController: SessionLockController,
-    securitySettingsSource: SecuritySettingsSource,
-    private val logger: Logger,
-) : SensorEventListener {
-    private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val triggerMutex = Mutex()
-    private val securitySettings = MutableStateFlow<SecuritySettings?>(null)
-    private val handler = DeviceLockHandler(
-        sessionAccessState = sessionAccessState,
-        sessionLockController = sessionLockController,
-        securitySettings = securitySettings,
-    )
-    private val activeTaskClearRequests = ActiveTaskClearRequests()
-    val clearTaskRequests: Flow<Unit> = activeTaskClearRequests.events
-    private val screenOffLockTracker = ScreenOffLockTracker()
-    private val flipTriggerGate = FlipTriggerGate()
-    private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-    private var receiverStarted = false
-    private var appInForeground = false
-
-    private val screenOffReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action != Intent.ACTION_SCREEN_OFF) return
-            val generation = screenOffLockTracker.markScreenOff()
-            val pendingResult = goAsync()
-            dispatch(
-                trigger = DeviceLockTrigger.SCREEN_OFF,
-                screenOffGeneration = generation,
-                onComplete = pendingResult::finish,
+class DeviceLockController
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        sessionAccessState: SecureSessionAccessState,
+        sessionLockController: SessionLockController,
+        securitySettingsSource: SecuritySettingsSource,
+        private val logger: Logger,
+    ) : SensorEventListener {
+        private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        private val triggerMutex = Mutex()
+        private val securitySettings = MutableStateFlow<SecuritySettings?>(null)
+        private val handler =
+            DeviceLockHandler(
+                sessionAccessState = sessionAccessState,
+                sessionLockController = sessionLockController,
+                securitySettings = securitySettings,
             )
-        }
-    }
+        private val activeTaskClearRequests = ActiveTaskClearRequests()
+        val clearTaskRequests: Flow<Unit> = activeTaskClearRequests.events
+        private val screenOffLockTracker = ScreenOffLockTracker()
+        private val flipTriggerGate = FlipTriggerGate()
+        private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        private var receiverStarted = false
+        private var appInForeground = false
 
-    init {
-        mainScope.launch {
-            securitySettingsSource.security.collect { settings ->
-                val flipSettingChanged =
-                    securitySettings.value?.isFlipToLockEnabled != settings.isFlipToLockEnabled
-                securitySettings.value = settings
-                if (flipSettingChanged) updateSensorRegistration()
+        private val screenOffReceiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(
+                    context: Context?,
+                    intent: Intent?,
+                ) {
+                    if (intent?.action != Intent.ACTION_SCREEN_OFF) return
+                    val generation = screenOffLockTracker.markScreenOff()
+                    val pendingResult = goAsync()
+                    dispatch(
+                        trigger = DeviceLockTrigger.SCREEN_OFF,
+                        screenOffGeneration = generation,
+                        onComplete = pendingResult::finish,
+                    )
+                }
+            }
+
+        init {
+            mainScope.launch {
+                securitySettingsSource.security.collect { settings ->
+                    val flipSettingChanged =
+                        securitySettings.value?.isFlipToLockEnabled != settings.isFlipToLockEnabled
+                    securitySettings.value = settings
+                    if (flipSettingChanged) updateSensorRegistration()
+                }
             }
         }
-    }
 
-    fun start() {
-        if (receiverStarted) return
-        receiverStarted = true
-        ContextCompat.registerReceiver(
-            context,
-            screenOffReceiver,
-            IntentFilter(Intent.ACTION_SCREEN_OFF),
-            ContextCompat.RECEIVER_EXPORTED,
-        )
-    }
-
-    fun onAppForeground() {
-        appInForeground = true
-        screenOffLockTracker.pendingGeneration()?.let { generation ->
-            dispatch(
-                trigger = DeviceLockTrigger.SCREEN_OFF,
-                screenOffGeneration = generation,
+        fun start() {
+            if (receiverStarted) return
+            receiverStarted = true
+            ContextCompat.registerReceiver(
+                context,
+                screenOffReceiver,
+                IntentFilter(Intent.ACTION_SCREEN_OFF),
+                ContextCompat.RECEIVER_EXPORTED,
             )
         }
-        updateSensorRegistration()
-    }
 
-    fun onAppBackground() {
-        appInForeground = false
-        sensorManager.unregisterListener(this)
-        if (!powerManager.isInteractive) {
-            val generation = screenOffLockTracker.markScreenOff()
-            dispatch(
-                trigger = DeviceLockTrigger.SCREEN_OFF,
-                screenOffGeneration = generation,
-            )
+        fun onAppForeground() {
+            appInForeground = true
+            screenOffLockTracker.pendingGeneration()?.let { generation ->
+                dispatch(
+                    trigger = DeviceLockTrigger.SCREEN_OFF,
+                    screenOffGeneration = generation,
+                )
+            }
+            updateSensorRegistration()
         }
-    }
 
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
-        if (flipTriggerGate.shouldTrigger(event.values[2])) dispatch(DeviceLockTrigger.FLIP)
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
-    private fun updateSensorRegistration() {
-        sensorManager.unregisterListener(this)
-        flipTriggerGate.reset()
-        if (!appInForeground || securitySettings.value?.isFlipToLockEnabled != true) return
-        accelerometer?.let { sensor ->
-            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        fun onAppBackground() {
+            appInForeground = false
+            sensorManager.unregisterListener(this)
+            if (!powerManager.isInteractive) {
+                val generation = screenOffLockTracker.markScreenOff()
+                dispatch(
+                    trigger = DeviceLockTrigger.SCREEN_OFF,
+                    screenOffGeneration = generation,
+                )
+            }
         }
-    }
 
-    private fun dispatch(
-        trigger: DeviceLockTrigger,
-        screenOffGeneration: Long? = null,
-        onComplete: () -> Unit = {},
-    ) {
-        lockScope.launch {
-            try {
-                logger.withRootTrace(Operations.SecurityLock) {
-                    triggerMutex.withLock {
-                        val result = handler.handle(trigger)
-                        screenOffGeneration?.let(screenOffLockTracker::complete)
-                        logger.log(result.toLogStatement(trigger))
-                        if (result is DeviceLockResult.Locked && result.shouldClearTask) {
-                            activeTaskClearRequests.requestClear()
+        override fun onSensorChanged(event: SensorEvent?) {
+            if (event?.sensor?.type != Sensor.TYPE_ACCELEROMETER) return
+            if (flipTriggerGate.shouldTrigger(event.values[2])) dispatch(DeviceLockTrigger.FLIP)
+        }
+
+        override fun onAccuracyChanged(
+            sensor: Sensor?,
+            accuracy: Int,
+        ) = Unit
+
+        private fun updateSensorRegistration() {
+            sensorManager.unregisterListener(this)
+            flipTriggerGate.reset()
+            if (!appInForeground || securitySettings.value?.isFlipToLockEnabled != true) return
+            accelerometer?.let { sensor ->
+                sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+            }
+        }
+
+        private fun dispatch(
+            trigger: DeviceLockTrigger,
+            screenOffGeneration: Long? = null,
+            onComplete: () -> Unit = {},
+        ) {
+            lockScope.launch {
+                try {
+                    logger.withRootTrace(Operations.SecurityLock) {
+                        triggerMutex.withLock {
+                            val result = handler.handle(trigger)
+                            screenOffGeneration?.let(screenOffLockTracker::complete)
+                            logger.log(result.toLogStatement(trigger))
+                            if (result is DeviceLockResult.Locked && result.shouldClearTask) {
+                                activeTaskClearRequests.requestClear()
+                            }
                         }
                     }
+                } finally {
+                    onComplete()
                 }
-            } finally {
-                onComplete()
             }
         }
     }
-
-}

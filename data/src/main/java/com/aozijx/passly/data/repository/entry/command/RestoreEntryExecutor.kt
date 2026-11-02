@@ -1,9 +1,9 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
-import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import javax.inject.Inject
 
@@ -12,17 +12,22 @@ import javax.inject.Inject
  *
  * 使用乐观锁版本校验，原子写入：恢复 + 版本自增 + 活动记录。
  */
-internal class RestoreEntryExecutor @Inject constructor(
-    private val databaseTransactions: DatabaseTransactionRunner,
-    private val activityWriter: EntryActivityWriter,
-    private val clock: DatabaseClock
-) {
-    suspend fun execute(id: String, expectedVersion: Int): AppResult<Unit> =
-        databaseTransactions.write("entry_restore") {
-            val now = clock.now()
-            val affected = entryCommandDao().restoreOptimistic(id, expectedVersion, now)
-            databaseTransactions.checkAffectedRows(affected)
+internal class RestoreEntryExecutor
+    @Inject
+    constructor(
+        private val databaseTransactions: DatabaseTransactionRunner,
+        private val activityWriter: EntryActivityWriter,
+        private val clock: DatabaseClock,
+    ) {
+        suspend fun execute(
+            id: String,
+            expectedVersion: Int,
+        ): AppResult<Unit> =
+            databaseTransactions.write("entry_restore") {
+                val now = clock.now()
+                val affected = entryCommandDao().restoreOptimistic(id, expectedVersion, now)
+                databaseTransactions.checkAffectedRows(affected)
 
-            activityWriter.recordActivity(this, id, ActivityType.RESTORE, now)
-        }
-}
+                activityWriter.recordActivity(this, id, ActivityType.RESTORE, now)
+            }
+    }

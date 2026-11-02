@@ -32,39 +32,41 @@ fun LanguagePicker(
     options: List<LanguageOptionUiModel>,
     onSelect: (AppLanguage) -> Unit,
     sheetState: SheetState,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
         // 使用 LazyColumn 替代 Column + verticalScroll 获得更稳定的滑动性能
         LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
             contentPadding = PaddingValues(top = 8.dp),
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
             item {
                 Text(
                     text = stringResource(R.string.settings_language_choose),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
             }
             items(options, key = { it.language.storageTag }) { language ->
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSelect(language.language) }
-                        .padding(horizontal = 24.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(language.language) }
+                            .padding(horizontal = 24.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(
                         selected = language.language == currentLanguage,
-                        onClick = { onSelect(language.language) }
+                        onClick = { onSelect(language.language) },
                     )
                     Spacer(Modifier.padding(start = 12.dp))
                     Text(text = language.label)

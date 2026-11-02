@@ -14,14 +14,14 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
-import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
-import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -32,8 +32,15 @@ class VaultListUiMapperTest {
     fun everyCreationMenuOptionHasAnEditorDestination() {
         val model = requireNotNull(VaultUiState(selectedSort = createdAtDescendingSort()).toUiModel(display()))
         val menuTypes = model.navigation.creationOptions
-        assertEquals(listOf(VaultAddTypeUiModel.PASSWORD, VaultAddTypeUiModel.TOTP,
-            VaultAddTypeUiModel.BANK_CARD, VaultAddTypeUiModel.WIFI), menuTypes)
+        assertEquals(
+            listOf(
+                VaultAddTypeUiModel.PASSWORD,
+                VaultAddTypeUiModel.TOTP,
+                VaultAddTypeUiModel.BANK_CARD,
+                VaultAddTypeUiModel.WIFI,
+            ),
+            menuTypes,
+        )
         assertTrue(menuTypes.isNotEmpty())
         assertTrue(menuTypes.all { VaultEditorDestinationRegistry.routeFor(it) != null })
     }
@@ -71,12 +78,14 @@ class VaultListUiMapperTest {
         val display = display()
         val sort = createdAtDescendingSort()
         val initial = VaultUiState(selectedSort = sort).toUiModel(display)
-        val pending = EntryListItem(
-            EntryIdentity(EntryId("pending"), EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
-            EntryProfile(title = "Pending"),
-        )
-        val withDialog = VaultUiState(selectedSort = sort, pendingDelete = pending)
-            .toUiModel(display)
+        val pending =
+            EntryListItem(
+                EntryIdentity(EntryId("pending"), EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
+                EntryProfile(title = "Pending"),
+            )
+        val withDialog =
+            VaultUiState(selectedSort = sort, pendingDelete = pending)
+                .toUiModel(display)
 
         requireNotNull(initial)
         requireNotNull(withDialog)
@@ -89,7 +98,8 @@ class VaultListUiMapperTest {
         assertEquals(false, initial.content.isPullToSearchEnabled)
     }
 
-    private fun display() = VaultListDisplayUiModel(
+    private fun display() =
+        VaultListDisplayUiModel(
             cardPresentations = emptyList(),
             swipeLeftAction = SwipeActionType.DELETE,
             swipeRightAction = SwipeActionType.COPY_PASSWORD,
@@ -100,31 +110,35 @@ class VaultListUiMapperTest {
             hideSystemBars = false,
         )
 
-    private fun createdAtDescendingSort() = EntrySort(
-        field = EntrySortField.CREATED_AT,
-        direction = SortDirection.DESC,
-    )
+    private fun createdAtDescendingSort() =
+        EntrySort(
+            field = EntrySortField.CREATED_AT,
+            direction = SortDirection.DESC,
+        )
 
     @Test
     fun entryMappingPreservesEveryRenderedValue() {
-        val item = EntryListItem(
-            identity = EntryIdentity(
-                id = EntryId("entry-1"),
-                type = EntryType.LOGIN,
-                timestamps = EntryTimestamps(1L),
-            ),
-            profile = EntryProfile(
-                title = "Mail",
-                username = "user@example.com",
-                tags = linkedSetOf("  Personal  "),
-                associations = EntryAssociations(primaryUrl = "example.com", applicationIds = setOf("com.example")),
-                icon = EntryIcon(customReference = "icons/mail.png"),
-                favorite = true,
-            ),
-            capabilities = EntryCapabilities(setOf(EntryCapability.PASSWORD, EntryCapability.OTP)),
-            otpType = OtpType.STEAM,
-            otpPreview = "ABC12",
-        )
+        val item =
+            EntryListItem(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("entry-1"),
+                        type = EntryType.LOGIN,
+                        timestamps = EntryTimestamps(1L),
+                    ),
+                profile =
+                    EntryProfile(
+                        title = "Mail",
+                        username = "user@example.com",
+                        tags = linkedSetOf("  Personal  "),
+                        associations = EntryAssociations(primaryUrl = "example.com", applicationIds = setOf("com.example")),
+                        icon = EntryIcon(customReference = "icons/mail.png"),
+                        favorite = true,
+                    ),
+                capabilities = EntryCapabilities(setOf(EntryCapability.PASSWORD, EntryCapability.OTP)),
+                otpType = OtpType.STEAM,
+                otpPreview = "ABC12",
+            )
 
         val ui = item.toUiModel()
 
@@ -145,17 +159,18 @@ class VaultListUiMapperTest {
 
     @Test
     fun addTypeMappingsPreserveExplicitFeatureMeaning() {
-        val addTypes = listOf(
-            AddType.PASSWORD to VaultAddTypeUiModel.PASSWORD,
-            AddType.TOTP to VaultAddTypeUiModel.TOTP,
-            AddType.BANK_CARD to VaultAddTypeUiModel.BANK_CARD,
-            AddType.WIFI to VaultAddTypeUiModel.WIFI,
-            AddType.SSH_KEY to VaultAddTypeUiModel.SSH_KEY,
-            AddType.ID_CARD to VaultAddTypeUiModel.ID_CARD,
-            AddType.SEED_PHRASE to VaultAddTypeUiModel.SEED_PHRASE,
-            AddType.PASSKEY to VaultAddTypeUiModel.PASSKEY,
-            AddType.RECOVERY_CODE to VaultAddTypeUiModel.RECOVERY_CODE,
-        )
+        val addTypes =
+            listOf(
+                AddType.PASSWORD to VaultAddTypeUiModel.PASSWORD,
+                AddType.TOTP to VaultAddTypeUiModel.TOTP,
+                AddType.BANK_CARD to VaultAddTypeUiModel.BANK_CARD,
+                AddType.WIFI to VaultAddTypeUiModel.WIFI,
+                AddType.SSH_KEY to VaultAddTypeUiModel.SSH_KEY,
+                AddType.ID_CARD to VaultAddTypeUiModel.ID_CARD,
+                AddType.SEED_PHRASE to VaultAddTypeUiModel.SEED_PHRASE,
+                AddType.PASSKEY to VaultAddTypeUiModel.PASSKEY,
+                AddType.RECOVERY_CODE to VaultAddTypeUiModel.RECOVERY_CODE,
+            )
 
         addTypes.forEach { (feature, ui) ->
             assertEquals(ui, feature.toUiModel())

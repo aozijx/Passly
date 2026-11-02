@@ -9,20 +9,23 @@ import org.junit.Test
 
 class DatabaseResetGatewayAdapterTest {
     @Test
-    fun resetMapsNullableFailureToAppResult() = runTest {
-        val controller = RecordingDatabaseResetController()
-        val gateway = DatabaseResetGatewayAdapter(
-            controller,
-            DatabaseResetSessionCoordinator { operation -> operation() },
-        )
+    fun resetMapsNullableFailureToAppResult() =
+        runTest {
+            val controller = RecordingDatabaseResetController()
+            val gateway =
+                DatabaseResetGatewayAdapter(
+                    controller,
+                    DatabaseResetSessionCoordinator { operation -> operation() },
+                )
 
-        assertTrue(gateway.reset() is AppResult.Success)
-        controller.error = IllegalStateException("reset failed")
-        assertTrue(gateway.reset() is AppResult.Failure)
-    }
+            assertTrue(gateway.reset() is AppResult.Success)
+            controller.error = IllegalStateException("reset failed")
+            assertTrue(gateway.reset() is AppResult.Failure)
+        }
 
     private class RecordingDatabaseResetController : DatabaseResetController {
         var error: Throwable? = null
+
         override suspend fun reset() = error
     }
 }

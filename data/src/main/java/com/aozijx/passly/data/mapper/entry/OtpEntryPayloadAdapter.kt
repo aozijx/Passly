@@ -21,27 +21,29 @@ internal class OtpEntryPayloadAdapter : EntryPayloadAdapter {
         return OtpCredential(config.toDomain())
     }
 
-    private fun OtpConfig.toPayload() = OtpConfigPayload(
-        type = type,
-        secret = secret,
-        algorithm = algorithm,
-        digits = digits,
-        periodSeconds = periodSeconds,
-        counter = counter,
-        encoding = encoding,
-        issuer = issuer,
-        accountName = accountName,
-    )
+    private fun OtpConfig.toPayload() =
+        OtpConfigPayload(
+            type = type,
+            secret = secret,
+            algorithm = algorithm,
+            digits = digits,
+            periodSeconds = periodSeconds,
+            counter = counter,
+            encoding = encoding,
+            issuer = issuer,
+            accountName = accountName,
+        )
 
-    private fun OtpConfigPayload.toDomain() = OtpConfig(
-        type = type,
-        secret = secret,
-        algorithm = algorithm,
-        digits = digits,
-        periodSeconds = periodSeconds,
-        counter = counter,
-        encoding = encoding,
-        issuer = issuer,
-        accountName = accountName,
-    )
+    private fun OtpConfigPayload.toDomain() =
+        OtpConfig(
+            type = type,
+            secret = secret,
+            algorithm = algorithm,
+            digits = digits,
+            periodSeconds = periodSeconds,
+            counter = counter,
+            encoding = encoding,
+            issuer = issuer,
+            accountName = accountName,
+        )
 }

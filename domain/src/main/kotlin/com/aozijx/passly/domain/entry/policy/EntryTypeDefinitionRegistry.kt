@@ -7,11 +7,12 @@ internal fun buildEntryTypeDefinitionIndex(
     definitions: List<EntryTypeDefinition>,
     expectedTypes: Set<EntryType>,
 ): Map<EntryType, EntryTypeDefinition> {
-    val duplicateTypes = definitions
-        .groupingBy(EntryTypeDefinition::type)
-        .eachCount()
-        .filterValues { it > 1 }
-        .keys
+    val duplicateTypes =
+        definitions
+            .groupingBy(EntryTypeDefinition::type)
+            .eachCount()
+            .filterValues { it > 1 }
+            .keys
     require(duplicateTypes.isEmpty()) {
         "Entry type catalog contains duplicate registrations: ${duplicateTypes.sortedBy(EntryType::name)}"
     }

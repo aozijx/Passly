@@ -3,14 +3,14 @@ package com.aozijx.passly.feature.vault.presentation.editor.ui
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
-import androidx.compose.ui.platform.testTag
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordFormState
@@ -25,9 +25,10 @@ class EntryFocusBehaviorTest {
 
     @Test
     fun passwordEditorKeepsFocusOrderAndOwnsScreenAndSaveModifiers() {
-        val state = AddPasswordUiState(
-            form = AddPasswordFormState(title = "Example", password = "secret"),
-        )
+        val state =
+            AddPasswordUiState(
+                form = AddPasswordFormState(title = "Example", password = "secret"),
+            )
 
         composeRule.setContent {
             AddPasswordEditorScreen(
@@ -53,5 +54,4 @@ class EntryFocusBehaviorTest {
         composeRule.onNodeWithText(username).performImeAction()
         composeRule.onNodeWithText(password).assertIsFocused()
     }
-
 }

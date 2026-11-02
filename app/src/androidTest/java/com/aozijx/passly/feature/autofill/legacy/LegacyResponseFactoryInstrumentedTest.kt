@@ -36,8 +36,8 @@ import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInf
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -51,65 +51,98 @@ class LegacyResponseFactoryInstrumentedTest {
     @Test
     @SdkSuppress(minSdkVersion = 31)
     fun inlinePresentationRequiresSupportedImeStyleAndCapacity() {
-        val attribution = PendingIntent.getActivity(
-            context,
-            912,
-            AndroidAutofillLaunchTarget().legacyFillIntent(context, "inline-test"),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
-        )
+        val attribution =
+            PendingIntent.getActivity(
+                context,
+                912,
+                AndroidAutofillLaunchTarget().legacyFillIntent(context, "inline-test"),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+            )
         val size = Size(100, 48)
-        val style = UiVersions.newStylesBuilder()
-            .addStyle(InlineSuggestionUi.newStyleBuilder().build())
-            .build()
-        val spec = InlinePresentationSpec.Builder(size, Size(300, 80))
-            .setStyle(style)
-            .build()
-        val request = InlineSuggestionsRequest.Builder(listOf(spec))
-            .setMaxSuggestionCount(1)
-            .build()
+        val style =
+            UiVersions
+                .newStylesBuilder()
+                .addStyle(InlineSuggestionUi.newStyleBuilder().build())
+                .build()
+        val spec =
+            InlinePresentationSpec
+                .Builder(size, Size(300, 80))
+                .setStyle(style)
+                .build()
+        val request =
+            InlineSuggestionsRequest
+                .Builder(listOf(spec))
+                .setMaxSuggestionCount(1)
+                .build()
 
         assertEquals(true, LegacyInlinePresentationFactory.isAvailable(request))
-        assertNotNull(LegacyInlinePresentationFactory.create(
-            request, 0, "Account", null, attribution,
-        ))
-        assertNull(LegacyInlinePresentationFactory.create(
-            request, 1, "Account", null, attribution,
-        ))
+        assertNotNull(
+            LegacyInlinePresentationFactory.create(
+                request,
+                0,
+                "Account",
+                null,
+                attribution,
+            ),
+        )
+        assertNull(
+            LegacyInlinePresentationFactory.create(
+                request,
+                1,
+                "Account",
+                null,
+                attribution,
+            ),
+        )
 
-        val unsupported = InlineSuggestionsRequest.Builder(listOf(
-            InlinePresentationSpec.Builder(size, Size(300, 80)).setStyle(Bundle.EMPTY).build(),
-        )).setMaxSuggestionCount(1).build()
+        val unsupported =
+            InlineSuggestionsRequest
+                .Builder(
+                    listOf(
+                        InlinePresentationSpec.Builder(size, Size(300, 80)).setStyle(Bundle.EMPTY).build(),
+                    ),
+                ).setMaxSuggestionCount(1)
+                .build()
         assertEquals(false, LegacyInlinePresentationFactory.isAvailable(unsupported))
-        assertNull(LegacyInlinePresentationFactory.create(
-            unsupported, 0, "Account", null, attribution,
-        ))
+        assertNull(
+            LegacyInlinePresentationFactory.create(
+                unsupported,
+                0,
+                "Account",
+                null,
+                attribution,
+            ),
+        )
         attribution.cancel()
     }
 
     @Test
     fun pickerAndUnlockIntentsDeclareTheirPlatformResultTargets() {
         val passwordId = View(context).autofillId
-        val parsed = ParsedStructure(
-            packageName = "com.example",
-            editableFields = listOf(EditableFieldInfo(passwordId)),
-        )
+        val parsed =
+            ParsedStructure(
+                packageName = "com.example",
+                editableFields = listOf(EditableFieldInfo(passwordId)),
+            )
         val interactionId = AutofillInteractionId("interaction-1")
         val roleIds = mapOf(FieldRole.PASSWORD to listOf(passwordId))
 
-        val pickerRequest = pendingIntentFactory.createPickerIntent(
-            context = context,
-            interactionId = interactionId,
-            parsed = parsed,
-            uiMode = AutofillPresentation.BOTTOM_SHEET,
-            roleIds = roleIds,
-        )
-        val unlockRequest = pendingIntentFactory.createUnlockIntent(
-            context = context,
-            interactionId = interactionId,
-            parsed = parsed,
-            uiMode = AutofillPresentation.BOTTOM_SHEET,
-            roleIds = roleIds,
-        )
+        val pickerRequest =
+            pendingIntentFactory.createPickerIntent(
+                context = context,
+                interactionId = interactionId,
+                parsed = parsed,
+                uiMode = AutofillPresentation.BOTTOM_SHEET,
+                roleIds = roleIds,
+            )
+        val unlockRequest =
+            pendingIntentFactory.createUnlockIntent(
+                context = context,
+                interactionId = interactionId,
+                parsed = parsed,
+                uiMode = AutofillPresentation.BOTTOM_SHEET,
+                roleIds = roleIds,
+            )
 
         assertEquals(
             LegacyAutofillResultTarget.DATASET,
@@ -128,19 +161,21 @@ class LegacyResponseFactoryInstrumentedTest {
     @Test
     fun passwordFormWithoutCandidatesStillReturnsSaveInfoResponse() {
         val passwordId = View(context).autofillId
-        val parsed = ParsedStructure(
-            packageName = "com.example",
-            editableFields = listOf(EditableFieldInfo(passwordId)),
-        )
+        val parsed =
+            ParsedStructure(
+                packageName = "com.example",
+                editableFields = listOf(EditableFieldInfo(passwordId)),
+            )
 
-        val result = factory.buildResult(
-            context,
-            AutofillDiscoveryOutcome.NoCandidates(
-                snapshot(),
-                discoveryContext(mapOf(passwordId.toString() to FieldRole.PASSWORD)),
-            ),
-            parsed,
-        )
+        val result =
+            factory.buildResult(
+                context,
+                AutofillDiscoveryOutcome.NoCandidates(
+                    snapshot(),
+                    discoveryContext(mapOf(passwordId.toString() to FieldRole.PASSWORD)),
+                ),
+                parsed,
+            )
 
         assertNotNull(result.response)
         assertEquals(
@@ -152,19 +187,21 @@ class LegacyResponseFactoryInstrumentedTest {
     @Test
     fun usernameOnlyFormWithoutCandidatesReturnsNoResponse() {
         val usernameId = View(context).autofillId
-        val parsed = ParsedStructure(
-            packageName = "com.example",
-            editableFields = listOf(EditableFieldInfo(usernameId)),
-        )
+        val parsed =
+            ParsedStructure(
+                packageName = "com.example",
+                editableFields = listOf(EditableFieldInfo(usernameId)),
+            )
 
-        val response = factory.buildFillResponse(
-            context,
-            AutofillDiscoveryOutcome.NoCandidates(
-                snapshot(),
-                discoveryContext(mapOf(usernameId.toString() to FieldRole.USERNAME)),
-            ),
-            parsed,
-        )
+        val response =
+            factory.buildFillResponse(
+                context,
+                AutofillDiscoveryOutcome.NoCandidates(
+                    snapshot(),
+                    discoveryContext(mapOf(usernameId.toString() to FieldRole.USERNAME)),
+                ),
+                parsed,
+            )
 
         assertNull(response)
     }
@@ -190,14 +227,18 @@ class LegacyResponseFactoryInstrumentedTest {
     fun remoteItemRendererUsesTheShapeDeclaredByItsPresentationModel() {
         val parent = FrameLayout(context)
 
-        val single = AutofillRemoteViewFactory.render(
-            context,
-            AutofillRemoteItem.SingleLine("Locked"),
-        ).apply(context, parent)
-        val double = AutofillRemoteViewFactory.render(
-            context,
-            AutofillRemoteItem.DoubleLine("Passly", "2 accounts"),
-        ).apply(context, parent)
+        val single =
+            AutofillRemoteViewFactory
+                .render(
+                    context,
+                    AutofillRemoteItem.SingleLine("Locked"),
+                ).apply(context, parent)
+        val double =
+            AutofillRemoteViewFactory
+                .render(
+                    context,
+                    AutofillRemoteItem.DoubleLine("Passly", "2 accounts"),
+                ).apply(context, parent)
 
         assertEquals("Locked", single.findViewById<TextView>(R.id.item_title).text)
         assertNull(single.findViewById<TextView?>(R.id.item_subtitle))
@@ -209,11 +250,12 @@ class LegacyResponseFactoryInstrumentedTest {
     fun responseBuildResultCarriesOneSemanticDiscoveryObservation() {
         val parsed = ParsedStructure()
 
-        val result = factory.buildResult(
-            context,
-            AutofillDiscoveryOutcome.Disabled,
-            parsed,
-        )
+        val result =
+            factory.buildResult(
+                context,
+                AutofillDiscoveryOutcome.Disabled,
+                parsed,
+            )
 
         assertNull(result.response)
         assertEquals(
@@ -233,11 +275,11 @@ class LegacyResponseFactoryInstrumentedTest {
         savePromptsEnabled = true,
     )
 
-    private fun snapshot() = AutofillInteractionSnapshot(
-        id = AutofillInteractionId("legacy-save-test"),
-        source = AutofillInteractionSource.LEGACY,
-        scope = AutofillGrantContext("com.example"),
-        state = AutofillInteractionState.CandidatesReady,
-    )
-
+    private fun snapshot() =
+        AutofillInteractionSnapshot(
+            id = AutofillInteractionId("legacy-save-test"),
+            source = AutofillInteractionSource.LEGACY,
+            scope = AutofillGrantContext("com.example"),
+            state = AutofillInteractionState.CandidatesReady,
+        )
 }

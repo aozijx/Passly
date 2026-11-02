@@ -25,11 +25,16 @@ class TagEditorSheetTest {
         composeRule.setContent {
             MaterialTheme {
                 TagEditorSheet(
-                    state = DetailTagEditorUiModel.Visible(
-                        initialTags = setOf("Work"), draftTags = setOf("Work"),
-                        availableTags = setOf("Finance"), input = "", suggestions = listOf("Finance"),
-                        validationError = null, overlay = TagEditorOverlayUiState.None,
-                    ),
+                    state =
+                        DetailTagEditorUiModel.Visible(
+                            initialTags = setOf("Work"),
+                            draftTags = setOf("Work"),
+                            availableTags = setOf("Finance"),
+                            input = "",
+                            suggestions = listOf("Finance"),
+                            validationError = null,
+                            overlay = TagEditorOverlayUiState.None,
+                        ),
                     isSaving = saving.value,
                     onInputChanged = { changes += it },
                     onSubmit = { changes += "submit:$it" },

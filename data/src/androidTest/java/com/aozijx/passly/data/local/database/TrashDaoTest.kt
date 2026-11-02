@@ -21,9 +21,11 @@ class TrashDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            TestDatabaseFactory
+                .inMemoryDatabaseBuilder(context)
+                .allowMainThreadQueries()
+                .build()
     }
 
     @After
@@ -32,58 +34,61 @@ class TrashDaoTest {
     }
 
     @Test
-    fun trash_restore_andPermanentDelete_requireCurrentVersion() = runBlocking {
-        val queryDao = database.entryQueryDao()
-        val commandDao = database.entryCommandDao()
-        commandDao.insertStrict(entry("entry-1"))
+    fun trash_restore_andPermanentDelete_requireCurrentVersion() =
+        runBlocking {
+            val queryDao = database.entryQueryDao()
+            val commandDao = database.entryCommandDao()
+            commandDao.insertStrict(entry("entry-1"))
 
-        assertEquals(
-            1,
-            commandDao.optimisticSoftDelete(
-                entryId = "entry-1",
-                expectedVersion = 1,
-                deletedAt = 10L,
-                updatedAt = 10L
+            assertEquals(
+                1,
+                commandDao.optimisticSoftDelete(
+                    entryId = "entry-1",
+                    expectedVersion = 1,
+                    deletedAt = 10L,
+                    updatedAt = 10L,
+                ),
             )
-        )
-        assertEquals(listOf("entry-1"), queryDao.observeDeleted().first().map { it.entryId })
-        assertEquals(0, commandDao.deleteDeletedOptimistic("entry-1", expectedVersion = 1))
-        assertEquals(1, commandDao.restoreOptimistic("entry-1", expectedVersion = 2, now = 20L))
-        assertEquals(emptyList<EntryEntity>(), queryDao.observeDeleted().first())
+            assertEquals(listOf("entry-1"), queryDao.observeDeleted().first().map { it.entryId })
+            assertEquals(0, commandDao.deleteDeletedOptimistic("entry-1", expectedVersion = 1))
+            assertEquals(1, commandDao.restoreOptimistic("entry-1", expectedVersion = 2, now = 20L))
+            assertEquals(emptyList<EntryEntity>(), queryDao.observeDeleted().first())
 
-        assertEquals(
-            1,
-            commandDao.optimisticSoftDelete(
-                entryId = "entry-1",
-                expectedVersion = 3,
-                deletedAt = 30L,
-                updatedAt = 30L
+            assertEquals(
+                1,
+                commandDao.optimisticSoftDelete(
+                    entryId = "entry-1",
+                    expectedVersion = 3,
+                    deletedAt = 30L,
+                    updatedAt = 30L,
+                ),
             )
-        )
-        assertEquals(1, commandDao.deleteDeletedOptimistic("entry-1", expectedVersion = 4))
-        assertNull(queryDao.getById("entry-1"))
-    }
+            assertEquals(1, commandDao.deleteDeletedOptimistic("entry-1", expectedVersion = 4))
+            assertNull(queryDao.getById("entry-1"))
+        }
 
     @Test
-    fun emptyTrash_keepsActiveEntries() = runBlocking {
-        val queryDao = database.entryQueryDao()
-        val commandDao = database.entryCommandDao()
-        commandDao.insertStrict(entry("active"))
-        commandDao.insertStrict(entry("deleted"))
-        commandDao.optimisticSoftDelete(
-            entryId = "deleted",
-            expectedVersion = 1,
-            deletedAt = 10L,
-            updatedAt = 10L
+    fun emptyTrash_keepsActiveEntries() =
+        runBlocking {
+            val queryDao = database.entryQueryDao()
+            val commandDao = database.entryCommandDao()
+            commandDao.insertStrict(entry("active"))
+            commandDao.insertStrict(entry("deleted"))
+            commandDao.optimisticSoftDelete(
+                entryId = "deleted",
+                expectedVersion = 1,
+                deletedAt = 10L,
+                updatedAt = 10L,
+            )
+
+            assertEquals(1, commandDao.deleteAllDeleted())
+            assertEquals(listOf("active"), queryDao.getAll().map { it.entryId })
+        }
+
+    private fun entry(id: String) =
+        EntryEntity(
+            entryId = id,
+            entryType = EntryType.LOGIN,
+            title = id,
         )
-
-        assertEquals(1, commandDao.deleteAllDeleted())
-        assertEquals(listOf("active"), queryDao.getAll().map { it.entryId })
-    }
-
-    private fun entry(id: String) = EntryEntity(
-        entryId = id,
-        entryType = EntryType.LOGIN,
-        title = id,
-    )
 }

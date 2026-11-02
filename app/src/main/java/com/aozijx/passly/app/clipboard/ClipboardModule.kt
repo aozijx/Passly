@@ -11,12 +11,8 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 internal abstract class ClipboardModule {
     @Binds
-    abstract fun bindSensitiveClipboardWriter(
-        implementation: ClipboardCopyController,
-    ): SensitiveClipboardWriter
+    abstract fun bindSensitiveClipboardWriter(implementation: ClipboardCopyController): SensitiveClipboardWriter
 
     @Binds
-    abstract fun bindOwnedClipboardCleaner(
-        implementation: ClipboardCopyController,
-    ): OwnedClipboardCleaner
+    abstract fun bindOwnedClipboardCleaner(implementation: ClipboardCopyController): OwnedClipboardCleaner
 }

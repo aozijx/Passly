@@ -58,9 +58,10 @@ internal fun ScannerScreen(
     BackHandler { onAction(ScannerScreenAction.Dismiss) }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(Color.Black),
     ) {
         ScannerCameraHost(
             onBarcodeDetected = {
@@ -82,11 +83,13 @@ internal fun ScannerScreen(
         AnimatedContent(
             targetState = state,
             transitionSpec = {
-                (fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
-                    slideInVertically(
-                        animationSpec = motionScheme.defaultSpatialSpec(),
-                        initialOffsetY = { it / 3 },
-                    )).togetherWith(
+                (
+                    fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+                        slideInVertically(
+                            animationSpec = motionScheme.defaultSpatialSpec(),
+                            initialOffsetY = { it / 3 },
+                        )
+                ).togetherWith(
                     fadeOut(animationSpec = motionScheme.fastEffectsSpec()) +
                         slideOutVertically(
                             animationSpec = motionScheme.defaultSpatialSpec(),
@@ -95,46 +98,52 @@ internal fun ScannerScreen(
                 )
             },
             contentKey = { scannerState -> scannerState::class },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(
-                    horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 12.dp,
-                    vertical = if (adaptiveLayout.isAtLeastMedium) 20.dp else 12.dp,
-                )
-                .widthIn(max = 560.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(
+                        horizontal = if (adaptiveLayout.isAtLeastMedium) 24.dp else 12.dp,
+                        vertical = if (adaptiveLayout.isAtLeastMedium) 20.dp else 12.dp,
+                    ).widthIn(max = 560.dp),
             label = "scanner-result",
         ) { scannerState ->
             when (scannerState) {
-                is ScannerUiState.ShowingResult -> ScannerResultCard(
-                    result = scannerState.result,
-                    purpose = purpose,
-                    compact = !adaptiveLayout.isAtLeastMedium,
-                    importing = importing,
-                    onScanAgain = { onAction(ScannerScreenAction.ScanAgain) },
-                    onConfirm = { onAction(ScannerScreenAction.ConfirmResult) },
-                )
+                is ScannerUiState.ShowingResult -> {
+                    ScannerResultCard(
+                        result = scannerState.result,
+                        purpose = purpose,
+                        compact = !adaptiveLayout.isAtLeastMedium,
+                        importing = importing,
+                        onScanAgain = { onAction(ScannerScreenAction.ScanAgain) },
+                        onConfirm = { onAction(ScannerScreenAction.ConfirmResult) },
+                    )
+                }
 
-                ScannerUiState.ProcessingImage -> Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                ScannerUiState.ProcessingImage -> {
+                    Surface(
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        Text(
-                            text = stringResource(R.string.scanner_processing_image),
-                            modifier = Modifier.padding(start = 12.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            Text(
+                                text = stringResource(R.string.scanner_processing_image),
+                                modifier = Modifier.padding(start = 12.dp),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
                     }
                 }
 
                 ScannerUiState.Scanning,
                 ScannerUiState.Stopped,
-                -> Unit
+                -> {
+                    Unit
+                }
             }
         }
     }
@@ -147,16 +156,16 @@ private fun ScannerTopBar(
     onPickPhoto: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(136.dp)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Black.copy(alpha = 0.78f), Color.Transparent),
-                ),
-            )
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(136.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.78f), Color.Transparent),
+                    ),
+                ).statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         ScannerTopBarButton(
             icon = Icons.Default.Close,
@@ -192,9 +201,10 @@ private fun ScannerTopBarButton(
     IconButton(
         enabled = enabled,
         onClick = onClick,
-        modifier = modifier
-            .size(48.dp)
-            .background(Color.Black.copy(alpha = 0.42f), CircleShape),
+        modifier =
+            modifier
+                .size(48.dp)
+                .background(Color.Black.copy(alpha = 0.42f), CircleShape),
     ) {
         Icon(icon, contentDescription = contentDescription, tint = Color.White)
     }

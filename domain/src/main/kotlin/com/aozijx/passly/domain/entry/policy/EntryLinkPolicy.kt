@@ -14,25 +14,32 @@ object EntryLinkPolicy {
         relationType: EntryRelationType,
         sourceType: EntryType,
         targetType: EntryType,
-    ): Boolean = when (relationType) {
-        EntryRelationType.MEMBER_OF_ACCOUNT ->
-            sourceType != EntryType.ACCOUNT && targetType == EntryType.ACCOUNT
+    ): Boolean =
+        when (relationType) {
+            EntryRelationType.MEMBER_OF_ACCOUNT -> {
+                sourceType != EntryType.ACCOUNT && targetType == EntryType.ACCOUNT
+            }
 
-        EntryRelationType.OTP_FOR ->
-            sourceType == EntryType.OTP && targetType.canReceiveAuthenticationFactor()
+            EntryRelationType.OTP_FOR -> {
+                sourceType == EntryType.OTP && targetType.canReceiveAuthenticationFactor()
+            }
 
-        EntryRelationType.RECOVERY_FOR ->
-            sourceType == EntryType.RECOVERY_CODE && targetType.canReceiveAuthenticationFactor()
+            EntryRelationType.RECOVERY_FOR -> {
+                sourceType == EntryType.RECOVERY_CODE && targetType.canReceiveAuthenticationFactor()
+            }
 
-        EntryRelationType.RELATED_TO -> true
-    }
+            EntryRelationType.RELATED_TO -> {
+                true
+            }
+        }
 
-    private fun EntryType.canReceiveAuthenticationFactor(): Boolean = when (this) {
-        EntryType.ACCOUNT,
-        EntryType.OTP,
-        EntryType.RECOVERY_CODE,
-        -> false
+    private fun EntryType.canReceiveAuthenticationFactor(): Boolean =
+        when (this) {
+            EntryType.ACCOUNT,
+            EntryType.OTP,
+            EntryType.RECOVERY_CODE,
+            -> false
 
-        else -> true
-    }
+            else -> true
+        }
 }

@@ -13,7 +13,5 @@ import javax.inject.Singleton
 abstract class VaultEntryDataAdapterModule {
     @Binds
     @Singleton
-    abstract fun bindVaultEntryPageSource(
-        implementation: DataVaultEntryPageSource,
-    ): VaultEntryPageSource
+    abstract fun bindVaultEntryPageSource(implementation: DataVaultEntryPageSource): VaultEntryPageSource
 }

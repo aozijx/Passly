@@ -47,7 +47,8 @@ internal fun VaultSystemBarsEffect(
     DisposableEffect(activity) {
         onDispose {
             activity?.let {
-                WindowCompat.getInsetsController(it.window, it.window.decorView)
+                WindowCompat
+                    .getInsetsController(it.window, it.window.decorView)
                     .show(WindowInsetsCompat.Type.statusBars())
             }
         }

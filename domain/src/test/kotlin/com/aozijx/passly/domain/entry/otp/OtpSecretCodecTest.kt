@@ -11,8 +11,12 @@ class OtpSecretCodecTest {
     @Test
     fun `base32 encodes and decodes RFC 4648 vectors without padding`() {
         mapOf(
-            "f" to "MY", "fo" to "MZXQ", "foo" to "MZXW6",
-            "foob" to "MZXW6YQ", "fooba" to "MZXW6YTB", "foobar" to "MZXW6YTBOI",
+            "f" to "MY",
+            "fo" to "MZXQ",
+            "foo" to "MZXW6",
+            "foob" to "MZXW6YQ",
+            "fooba" to "MZXW6YTB",
+            "foobar" to "MZXW6YTBOI",
         ).forEach { (plain, encoded) ->
             val bytes = plain.toByteArray(Charsets.US_ASCII)
             assertEquals(encoded, OtpSecretCodec.encodeBase32(bytes))
@@ -23,14 +27,20 @@ class OtpSecretCodecTest {
     @Test
     fun `empty and malformed keys have the same typed invalid-secret error`() {
         listOf("", "MZ", "MY=====", "M1", "MY======A").forEach { value ->
-            assertEquals(OtpGenerationError.InvalidSecret, assertThrows(OtpGenerationError::class.java) {
-                OtpSecretCodec.decode(value, OtpSecretEncoding.BASE32)
-            })
+            assertEquals(
+                OtpGenerationError.InvalidSecret,
+                assertThrows(OtpGenerationError::class.java) {
+                    OtpSecretCodec.decode(value, OtpSecretEncoding.BASE32)
+                },
+            )
         }
         listOf("", "!", "Zg===").forEach { value ->
-            assertEquals(OtpGenerationError.InvalidSecret, assertThrows(OtpGenerationError::class.java) {
-                OtpSecretCodec.decode(value, OtpSecretEncoding.BASE64)
-            })
+            assertEquals(
+                OtpGenerationError.InvalidSecret,
+                assertThrows(OtpGenerationError::class.java) {
+                    OtpSecretCodec.decode(value, OtpSecretEncoding.BASE64)
+                },
+            )
         }
     }
 }

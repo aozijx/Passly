@@ -1,7 +1,6 @@
 package com.aozijx.passly.data.local.database
 
 object DatabaseSchema {
-
     const val VERSION = 1
     const val DATABASE_NAME = "passly.db"
 

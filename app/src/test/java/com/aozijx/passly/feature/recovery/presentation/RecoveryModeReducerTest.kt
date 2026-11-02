@@ -1,28 +1,29 @@
 package com.aozijx.passly.feature.recovery.presentation
 
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
-import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
 import org.junit.Assert.assertSame
 import org.junit.Test
 
 class RecoveryModeReducerTest {
-
     @Test
     fun `successful password setup clears sensitive references`() {
         val password = OwnedChars.fromString("temporary")
         val confirm = OwnedChars.fromString("temporary")
         try {
-            val result = RecoveryModeReducer.reduce(
-                RecoveryModeUiState(
-                    passwordSetup = RecoveryPasswordSetup.Editing(
-                        newPassword = password,
-                        confirmPassword = confirm,
-                        phase = RecoveryPasswordSetupPhase.Saving,
+            val result =
+                RecoveryModeReducer.reduce(
+                    RecoveryModeUiState(
+                        passwordSetup =
+                            RecoveryPasswordSetup.Editing(
+                                newPassword = password,
+                                confirmPassword = confirm,
+                                phase = RecoveryPasswordSetupPhase.Saving,
+                            ),
                     ),
-                ),
-                RecoveryModeMutation.PasswordSetupCompleted,
-            )
+                    RecoveryModeMutation.PasswordSetupCompleted,
+                )
 
             assertSame(RecoveryPasswordSetup.Closed, result.passwordSetup)
         } finally {
@@ -33,24 +34,27 @@ class RecoveryModeReducerTest {
 
     @Test
     fun `rejected recovery mode closes setup`() {
-        val result = RecoveryModeReducer.reduce(
-            RecoveryModeUiState(
-                passwordSetup = RecoveryPasswordSetup.Editing(
-                    phase = RecoveryPasswordSetupPhase.Saving,
+        val result =
+            RecoveryModeReducer.reduce(
+                RecoveryModeUiState(
+                    passwordSetup =
+                        RecoveryPasswordSetup.Editing(
+                            phase = RecoveryPasswordSetupPhase.Saving,
+                        ),
                 ),
-            ),
-            RecoveryModeMutation.RecoveryModeRejected,
-        )
+                RecoveryModeMutation.RecoveryModeRejected,
+            )
 
         assertSame(RecoveryPasswordSetup.Closed, result.passwordSetup)
     }
 
     @Test
     fun `opening dialog preserves no full access state`() {
-        val result = RecoveryModeReducer.reduce(
-            RecoveryModeUiState(),
-            RecoveryModeMutation.PasswordDialogOpened,
-        )
+        val result =
+            RecoveryModeReducer.reduce(
+                RecoveryModeUiState(),
+                RecoveryModeMutation.PasswordDialogOpened,
+            )
 
         val setup = result.passwordSetup as RecoveryPasswordSetup.Editing
         assertSame(EmptySensitiveValue, setup.newPassword)

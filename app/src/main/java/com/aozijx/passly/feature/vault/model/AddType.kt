@@ -16,7 +16,8 @@ enum class AddType {
     ID_CARD,
     SEED_PHRASE,
     PASSKEY,
-    RECOVERY_CODE;
+    RECOVERY_CODE,
+    ;
 
     companion object {
         /** FAB 快捷菜单只保留直接创建的常用条目。 */
@@ -28,20 +29,47 @@ enum class AddType {
 }
 
 val AddType.entryTypes: Set<EntryType>
-    get() = when (this) {
-        AddType.PASSWORD -> setOf(
-            EntryType.LOGIN,
-            EntryType.DATABASE_CREDENTIAL,
-            EntryType.SERVER_CREDENTIAL,
-            EntryType.API_KEY,
-            EntryType.CRYPTO_WALLET,
-        )
-        AddType.TOTP -> setOf(EntryType.OTP)
-        AddType.BANK_CARD -> setOf(EntryType.BANK_CARD)
-        AddType.WIFI -> setOf(EntryType.WIFI)
-        AddType.SSH_KEY -> setOf(EntryType.SSH_KEY)
-        AddType.ID_CARD -> setOf(EntryType.ID_CARD, EntryType.PASSPORT, EntryType.DRIVER_LICENSE)
-        AddType.SEED_PHRASE -> setOf(EntryType.SEED_PHRASE)
-        AddType.PASSKEY -> setOf(EntryType.PASSKEY)
-        AddType.RECOVERY_CODE -> setOf(EntryType.RECOVERY_CODE)
-    }
+    get() =
+        when (this) {
+            AddType.PASSWORD -> {
+                setOf(
+                    EntryType.LOGIN,
+                    EntryType.DATABASE_CREDENTIAL,
+                    EntryType.SERVER_CREDENTIAL,
+                    EntryType.API_KEY,
+                    EntryType.CRYPTO_WALLET,
+                )
+            }
+
+            AddType.TOTP -> {
+                setOf(EntryType.OTP)
+            }
+
+            AddType.BANK_CARD -> {
+                setOf(EntryType.BANK_CARD)
+            }
+
+            AddType.WIFI -> {
+                setOf(EntryType.WIFI)
+            }
+
+            AddType.SSH_KEY -> {
+                setOf(EntryType.SSH_KEY)
+            }
+
+            AddType.ID_CARD -> {
+                setOf(EntryType.ID_CARD, EntryType.PASSPORT, EntryType.DRIVER_LICENSE)
+            }
+
+            AddType.SEED_PHRASE -> {
+                setOf(EntryType.SEED_PHRASE)
+            }
+
+            AddType.PASSKEY -> {
+                setOf(EntryType.PASSKEY)
+            }
+
+            AddType.RECOVERY_CODE -> {
+                setOf(EntryType.RECOVERY_CODE)
+            }
+        }

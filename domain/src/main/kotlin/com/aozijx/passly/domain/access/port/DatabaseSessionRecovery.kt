@@ -6,6 +6,10 @@ fun interface DatabaseSessionRecovery {
 
 sealed interface DatabaseSessionRetryResult {
     data object Ready : DatabaseSessionRetryResult
+
     data object Unavailable : DatabaseSessionRetryResult
-    data class Failed(val cause: Throwable) : DatabaseSessionRetryResult
+
+    data class Failed(
+        val cause: Throwable,
+    ) : DatabaseSessionRetryResult
 }

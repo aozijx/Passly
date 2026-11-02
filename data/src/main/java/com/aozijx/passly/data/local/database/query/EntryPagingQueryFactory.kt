@@ -4,14 +4,15 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 
-internal fun buildEntryCategoryQuery(): SimpleSQLiteQuery = SimpleSQLiteQuery(
-    """
+internal fun buildEntryCategoryQuery(): SimpleSQLiteQuery =
+    SimpleSQLiteQuery(
+        """
         SELECT MIN(TRIM(CAST(tag.value AS TEXT))) AS category
         FROM entries AS entry
         CROSS JOIN json_each(entry.tags) AS tag
@@ -19,8 +20,8 @@ internal fun buildEntryCategoryQuery(): SimpleSQLiteQuery = SimpleSQLiteQuery(
           AND TRIM(CAST(tag.value AS TEXT)) != ''
         GROUP BY LOWER(TRIM(CAST(tag.value AS TEXT)))
         ORDER BY category COLLATE NOCASE ASC
-    """.trimIndent()
-)
+        """.trimIndent(),
+    )
 
 internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
     val args = mutableListOf<Any>()
@@ -36,7 +37,8 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
 
     if (query.normalizedSearchText.isNotEmpty()) {
         val pattern = "%${query.normalizedSearchText.escapeLike()}%"
-        predicates += """
+        predicates +=
+            """
             (
                 LOWER(entry.title) LIKE ? ESCAPE '\' OR
                 LOWER(entry.username) LIKE ? ESCAPE '\' OR
@@ -45,7 +47,7 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
                 EXISTS (SELECT 1 FROM json_each(entry.domains) WHERE LOWER(value) LIKE ? ESCAPE '\') OR
                 EXISTS (SELECT 1 FROM json_each(entry.applicationIds) WHERE LOWER(value) LIKE ? ESCAPE '\')
             )
-        """.trimIndent()
+            """.trimIndent()
         repeat(6) { args += pattern }
     }
 
@@ -60,38 +62,49 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
         EntryHierarchyDisplayMode.COLLAPSED -> {
             if (hierarchyApplied) predicates += "account.accountId IS NULL"
         }
+
         EntryHierarchyDisplayMode.SEPARATE -> {
             predicates += "entry.entryType != ?"
             args += EntryType.ACCOUNT.toStorageKey()
         }
+
         EntryHierarchyDisplayMode.EXPANDED,
         null,
-        -> Unit
+        -> {
+            Unit
+        }
     }
 
     val expandedHierarchy =
         hierarchyApplied && query.hierarchyMode == EntryHierarchyDisplayMode.EXPANDED
     val itemOrderParts = query.itemOrderParts()
-    val orderParts = if (expandedHierarchy) {
-        buildList {
-            if (query.sort.pinFavorites) {
-                add(groupExpression("group_entry.favorite", "entry.favorite") + " DESC")
-            }
-            addAll(query.sort.field.groupOrder(query.sort.direction))
-            addAll(query.sort.tieBreaker.groupOrder(query.sort.tieBreaker.stableDirection))
-            add(groupExpression("group_entry.entryId", "entry.entryId") + " ASC")
-            add("CASE WHEN account.accountId IS NULL THEN 0 ELSE 1 END ASC")
-            addAll(itemOrderParts)
-        }.distinct()
-    } else itemOrderParts
-    val groupJoins = if (expandedHierarchy) {
-        """
+    val orderParts =
+        if (expandedHierarchy) {
+            buildList {
+                if (query.sort.pinFavorites) {
+                    add(groupExpression("group_entry.favorite", "entry.favorite") + " DESC")
+                }
+                addAll(query.sort.field.groupOrder(query.sort.direction))
+                addAll(query.sort.tieBreaker.groupOrder(query.sort.tieBreaker.stableDirection))
+                add(groupExpression("group_entry.entryId", "entry.entryId") + " ASC")
+                add("CASE WHEN account.accountId IS NULL THEN 0 ELSE 1 END ASC")
+                addAll(itemOrderParts)
+            }.distinct()
+        } else {
+            itemOrderParts
+        }
+    val groupJoins =
+        if (expandedHierarchy) {
+            """
             LEFT JOIN entries AS group_entry ON group_entry.entryId = account.accountId
             LEFT JOIN usage AS group_usage ON group_usage.entryId = group_entry.entryId
-        """.trimIndent()
-    } else ""
+            """.trimIndent()
+        } else {
+            ""
+        }
 
-    val sql = """
+    val sql =
+        """
         WITH usage AS (
             SELECT entryId, COUNT(*) AS usageCount, MAX(createdAt) AS lastUsedAt
             FROM entry_activities
@@ -151,37 +164,41 @@ internal fun buildEntryPagingQuery(query: EntryListQuery): SimpleSQLiteQuery {
         $groupJoins
         WHERE ${predicates.joinToString(" AND ")}
         ORDER BY ${orderParts.joinToString(", ")}
-    """.trimIndent()
+        """.trimIndent()
     return SimpleSQLiteQuery(sql, args.toTypedArray())
 }
 
-private fun String.escapeLike(): String = replace("\\", "\\\\")
-    .replace("%", "\\%")
-    .replace("_", "\\_")
+private fun String.escapeLike(): String =
+    replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
 
-private fun EntryListQuery.itemOrderParts(): List<String> = buildList {
-    if (sort.pinFavorites) add("entry.favorite DESC")
-    addAll(sort.field.sqlOrder(sort.direction, "entry", "usage"))
-    addAll(sort.tieBreaker.sqlOrder(sort.tieBreaker.stableDirection, "entry", "usage"))
-    add("entry.entryId ASC")
-}.distinct()
+private fun EntryListQuery.itemOrderParts(): List<String> =
+    buildList {
+        if (sort.pinFavorites) add("entry.favorite DESC")
+        addAll(sort.field.sqlOrder(sort.direction, "entry", "usage"))
+        addAll(sort.tieBreaker.sqlOrder(sort.tieBreaker.stableDirection, "entry", "usage"))
+        add("entry.entryId ASC")
+    }.distinct()
 
 private fun EntrySortField.sqlOrder(
     direction: SortDirection,
     entryAlias: String,
     usageAlias: String,
-): List<String> = buildList {
-    if (this@sqlOrder == EntrySortField.LAST_USED_AT) {
-        add("$usageAlias.lastUsedAt IS NULL ASC")
+): List<String> =
+    buildList {
+        if (this@sqlOrder == EntrySortField.LAST_USED_AT) {
+            add("$usageAlias.lastUsedAt IS NULL ASC")
+        }
+        add("${sqlExpression(entryAlias, usageAlias)} ${direction.name}")
     }
-    add("${sqlExpression(entryAlias, usageAlias)} ${direction.name}")
-}
 
 private fun EntrySortField.groupOrder(direction: SortDirection): List<String> {
-    val expression = groupExpression(
-        group = sqlExpression("group_entry", "group_usage"),
-        item = sqlExpression("entry", "usage"),
-    )
+    val expression =
+        groupExpression(
+            group = sqlExpression("group_entry", "group_usage"),
+            item = sqlExpression("entry", "usage"),
+        )
     return buildList {
         if (this@groupOrder == EntrySortField.LAST_USED_AT) {
             add("$expression IS NULL ASC")
@@ -190,22 +207,48 @@ private fun EntrySortField.groupOrder(direction: SortDirection): List<String> {
     }
 }
 
-private fun groupExpression(group: String, item: String): String =
-    "CASE WHEN account.accountId IS NOT NULL THEN $group ELSE $item END"
+private fun groupExpression(
+    group: String,
+    item: String,
+): String = "CASE WHEN account.accountId IS NOT NULL THEN $group ELSE $item END"
 
-private fun EntrySortField.sqlExpression(entryAlias: String, usageAlias: String): String =
+private fun EntrySortField.sqlExpression(
+    entryAlias: String,
+    usageAlias: String,
+): String =
     when (this) {
-        EntrySortField.TITLE -> "$entryAlias.title COLLATE NOCASE"
-        EntrySortField.CREATED_AT -> "$entryAlias.createdAt"
-        EntrySortField.UPDATED_AT -> "$entryAlias.updatedAt"
-        EntrySortField.LAST_USED_AT -> "$usageAlias.lastUsedAt"
-        EntrySortField.USAGE_FREQUENCY -> "COALESCE($usageAlias.usageCount, 0)"
-        EntrySortField.ENTRY_TYPE -> EntryType.entries.mapIndexed { index, type ->
-            "WHEN '${type.toStorageKey()}' THEN $index"
-        }.joinToString(
-            prefix = "CASE $entryAlias.entryType ",
-            postfix = " ELSE ${EntryType.entries.size} END",
-            separator = " ",
-        )
-        EntrySortField.ID -> "$entryAlias.entryId"
+        EntrySortField.TITLE -> {
+            "$entryAlias.title COLLATE NOCASE"
+        }
+
+        EntrySortField.CREATED_AT -> {
+            "$entryAlias.createdAt"
+        }
+
+        EntrySortField.UPDATED_AT -> {
+            "$entryAlias.updatedAt"
+        }
+
+        EntrySortField.LAST_USED_AT -> {
+            "$usageAlias.lastUsedAt"
+        }
+
+        EntrySortField.USAGE_FREQUENCY -> {
+            "COALESCE($usageAlias.usageCount, 0)"
+        }
+
+        EntrySortField.ENTRY_TYPE -> {
+            EntryType.entries
+                .mapIndexed { index, type ->
+                    "WHEN '${type.toStorageKey()}' THEN $index"
+                }.joinToString(
+                    prefix = "CASE $entryAlias.entryType ",
+                    postfix = " ELSE ${EntryType.entries.size} END",
+                    separator = " ",
+                )
+        }
+
+        EntrySortField.ID -> {
+            "$entryAlias.entryId"
+        }
     }

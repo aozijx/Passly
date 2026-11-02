@@ -6,8 +6,8 @@ import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,17 +15,26 @@ class SensitiveFieldSetMapperTest {
     @Test
     fun `unrevealed password and an absent optional clear do not create a content revision`() {
         val stored = EntrySecret(credential = CardCredential(), notes = "notes")
-        assertFalse(stored.copy(credential = CardCredential(cardCvv = ""))
-            .hasStoredChanges(stored, setOf(SensitiveFieldKey.CARD_NUMBER)))
+        assertFalse(
+            stored
+                .copy(credential = CardCredential(cardCvv = ""))
+                .hasStoredChanges(stored, setOf(SensitiveFieldKey.CARD_NUMBER)),
+        )
     }
 
     @Test
     fun `clearing an existing high field and explicitly replacing it are content changes`() {
         val stored = EntrySecret(credential = CardCredential())
-        assertTrue(stored.copy(credential = CardCredential(cardCvv = ""))
-            .hasStoredChanges(stored, setOf(SensitiveFieldKey.CARD_CVV)))
-        assertTrue(stored.copy(credential = CardCredential(cardCvv = "123"))
-            .hasStoredChanges(stored, emptySet()))
+        assertTrue(
+            stored
+                .copy(credential = CardCredential(cardCvv = ""))
+                .hasStoredChanges(stored, setOf(SensitiveFieldKey.CARD_CVV)),
+        )
+        assertTrue(
+            stored
+                .copy(credential = CardCredential(cardCvv = "123"))
+                .hasStoredChanges(stored, emptySet()),
+        )
     }
 
     @Test
@@ -37,9 +46,10 @@ class SensitiveFieldSetMapperTest {
 
     @Test
     fun `missing sensitive value is preserved during an entry update`() {
-        val updates = EntrySecret(
-            credential = LoginCredential(password = null),
-        ).toSensitiveFieldUpdates()
+        val updates =
+            EntrySecret(
+                credential = LoginCredential(password = null),
+            ).toSensitiveFieldUpdates()
 
         assertEquals(
             SensitiveFieldUpdate.Preserve,
@@ -49,9 +59,10 @@ class SensitiveFieldSetMapperTest {
 
     @Test
     fun `blank sensitive value is cleared during an entry update`() {
-        val updates = EntrySecret(
-            credential = CardCredential(cardCvv = ""),
-        ).toSensitiveFieldUpdates()
+        val updates =
+            EntrySecret(
+                credential = CardCredential(cardCvv = ""),
+            ).toSensitiveFieldUpdates()
 
         assertEquals(
             SensitiveFieldUpdate.Clear,
@@ -61,9 +72,10 @@ class SensitiveFieldSetMapperTest {
 
     @Test
     fun `provided sensitive value replaces only that field during an entry update`() {
-        val updates = EntrySecret(
-            credential = CardCredential(cardNumber = "4111"),
-        ).toSensitiveFieldUpdates()
+        val updates =
+            EntrySecret(
+                credential = CardCredential(cardNumber = "4111"),
+            ).toSensitiveFieldUpdates()
 
         assertEquals(
             SensitiveFieldUpdate.Replace("4111"),
@@ -81,9 +93,10 @@ class SensitiveFieldSetMapperTest {
 
     @Test
     fun `card credential splits into independent field values`() {
-        val fields = EntrySecret(
-            credential = CardCredential(cardNumber = "4111", cardCvv = "123"),
-        ).toSensitiveFieldValues()
+        val fields =
+            EntrySecret(
+                credential = CardCredential(cardNumber = "4111", cardCvv = "123"),
+            ).toSensitiveFieldValues()
 
         assertEquals("4111", fields[SensitiveFieldKey.CARD_NUMBER])
         assertEquals("123", fields[SensitiveFieldKey.CARD_CVV])
@@ -92,9 +105,10 @@ class SensitiveFieldSetMapperTest {
 
     @Test
     fun `identity recovery codes use one stable storage value`() {
-        val fields = EntrySecret(
-            credential = IdentityCredential(recoveryCodes = listOf("one", "two")),
-        ).toSensitiveFieldValues()
+        val fields =
+            EntrySecret(
+                credential = IdentityCredential(recoveryCodes = listOf("one", "two")),
+            ).toSensitiveFieldValues()
 
         assertEquals("one\ntwo", fields[SensitiveFieldKey.RECOVERY_CODES])
     }

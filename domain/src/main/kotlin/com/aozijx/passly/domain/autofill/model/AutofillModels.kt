@@ -35,7 +35,7 @@ data class AutofillField(
     val role: FieldRole? = null,
     val resourceId: String? = null,
     val contentDescription: String? = null,
-    val className: String? = null
+    val className: String? = null,
 )
 
 /**
@@ -55,8 +55,9 @@ data class AutofillGrantContext(
     val packageName: String,
     val webDomain: String? = null,
 ) {
-    fun normalized(): AutofillGrantContext = copy(
-        packageName = packageName.trim().lowercase(),
-        webDomain = AutofillScope.normalizeDomain(webDomain)
-    )
+    fun normalized(): AutofillGrantContext =
+        copy(
+            packageName = packageName.trim().lowercase(),
+            webDomain = AutofillScope.normalizeDomain(webDomain),
+        )
 }

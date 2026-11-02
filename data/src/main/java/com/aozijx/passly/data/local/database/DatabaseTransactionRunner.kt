@@ -3,11 +3,11 @@ package com.aozijx.passly.data.local.database
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
-import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
+import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,91 +26,99 @@ import javax.inject.Singleton
  * 读/写操作的租约管理由 [AppDatabaseSession] 负责，本类不再额外调用 [SessionStateProvider]。
  */
 @Singleton
-internal class DatabaseTransactionRunner @Inject constructor(
-    private val databaseSession: AppDatabaseSession,
-    private val sessionState: SecureSessionAccessState,
-    private val errorReporter: AppErrorReporter
-) {
+internal class DatabaseTransactionRunner
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+        private val sessionState: SecureSessionAccessState,
+        private val errorReporter: AppErrorReporter,
+    ) {
+        /**
+         * 在写事务中执行 [block]。
+         * 错误捕获在外层，确保异常先触发 Room 事务回滚，再转为 [AppResult.Failure]。
+         */
+        suspend fun <T> write(
+            operation: String,
+            block: suspend AppDatabase.() -> T,
+        ): AppResult<T> = writeWithAccess(operation, sessionState::hasFullSecureSessionAccess, block)
 
-    /**
-     * 在写事务中执行 [block]。
-     * 错误捕获在外层，确保异常先触发 Room 事务回滚，再转为 [AppResult.Failure]。
-     */
-    suspend fun <T> write(
-        operation: String,
-        block: suspend AppDatabase.() -> T
-    ): AppResult<T> {
-        return writeWithAccess(operation, sessionState::hasFullSecureSessionAccess, block)
-    }
+        suspend fun <T> writeForAutofill(
+            operation: String,
+            block: suspend AppDatabase.() -> T,
+        ): AppResult<T> = writeWithAccess(operation, sessionState::hasAutofillSessionAccess, block)
 
-    suspend fun <T> writeForAutofill(
-        operation: String,
-        block: suspend AppDatabase.() -> T,
-    ): AppResult<T> = writeWithAccess(operation, sessionState::hasAutofillSessionAccess, block)
+        private suspend fun <T> writeWithAccess(
+            operation: String,
+            isAuthorized: () -> Boolean,
+            block: suspend AppDatabase.() -> T,
+        ): AppResult<T> {
+            val result =
+                AppResult.runSuspendCatching {
+                    if (!isAuthorized()) throw SessionModeRestricted()
+                    databaseSession.transaction {
+                        block()
+                    }
+                }
+            if (result is AppResult.Failure) report(result.error, operation)
+            return result
+        }
 
-    private suspend fun <T> writeWithAccess(
-        operation: String,
-        isAuthorized: () -> Boolean,
-        block: suspend AppDatabase.() -> T,
-    ): AppResult<T> {
-        val result = AppResult.runSuspendCatching {
-            if (!isAuthorized()) throw SessionModeRestricted()
-            databaseSession.transaction {
-                block()
+        /**
+         * 在读操作中执行 [block]。
+         */
+        suspend fun <T> read(
+            operation: String,
+            block: suspend AppDatabase.() -> T,
+        ): AppResult<T> {
+            val result =
+                AppResult.runSuspendCatching {
+                    requireFullSecureSessionAccess()
+                    databaseSession.query {
+                        block()
+                    }
+                }
+            if (result is AppResult.Failure) report(result.error, operation)
+            return result
+        }
+
+        /**
+         * 检查乐观锁版本是否匹配，不匹配时抛出 [Conflict]。
+         */
+        fun checkVersion(
+            actualVersion: Int,
+            expectedVersion: Int,
+        ) {
+            if (actualVersion != expectedVersion) {
+                throw Conflict()
             }
         }
-        if (result is AppResult.Failure) report(result.error, operation)
-        return result
-    }
 
-    /**
-     * 在读操作中执行 [block]。
-     */
-    suspend fun <T> read(
-        operation: String,
-        block: suspend AppDatabase.() -> T
-    ): AppResult<T> {
-        val result = AppResult.runSuspendCatching {
-            requireFullSecureSessionAccess()
-            databaseSession.query {
-                block()
+        /**
+         * 检查乐观锁影响行数，0 行表示版本冲突。
+         */
+        fun checkAffectedRows(affectedRows: Int) {
+            if (affectedRows == 0) {
+                throw Conflict()
             }
         }
-        if (result is AppResult.Failure) report(result.error, operation)
-        return result
-    }
 
-    /**
-     * 检查乐观锁版本是否匹配，不匹配时抛出 [Conflict]。
-     */
-    fun checkVersion(actualVersion: Int, expectedVersion: Int) {
-        if (actualVersion != expectedVersion) {
-            throw Conflict()
+        private fun requireFullSecureSessionAccess() {
+            if (!sessionState.hasFullSecureSessionAccess()) {
+                throw SessionModeRestricted()
+            }
         }
-    }
 
-    /**
-     * 检查乐观锁影响行数，0 行表示版本冲突。
-     */
-    fun checkAffectedRows(affectedRows: Int) {
-        if (affectedRows == 0) {
-            throw Conflict()
-        }
-    }
-
-    private fun requireFullSecureSessionAccess() {
-        if (!sessionState.hasFullSecureSessionAccess()) {
-            throw SessionModeRestricted()
-        }
-    }
-
-    private suspend fun report(error: com.aozijx.passly.core.error.model.AppError, operation: String) {
-        errorReporter.report(
-            error = error,
-            context = ErrorReportContext(
-                operation = OperationCode(operation),
-                category = LogCategory.DATABASE
+        private suspend fun report(
+            error: com.aozijx.passly.core.error.model.AppError,
+            operation: String,
+        ) {
+            errorReporter.report(
+                error = error,
+                context =
+                    ErrorReportContext(
+                        operation = OperationCode(operation),
+                        category = LogCategory.DATABASE,
+                    ),
             )
-        )
+        }
     }
-}

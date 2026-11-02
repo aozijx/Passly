@@ -57,12 +57,13 @@ class AutofillInteractionTimeout private constructor(
         internal fun disabled(
             store: AutofillInteractionStore,
             unlockLease: AutofillUnlockLease,
-        ): AutofillInteractionTimeout = AutofillInteractionTimeout(
-            store = store,
-            unlockLease = unlockLease,
-            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-            timeoutMillis = DEFAULT_TIMEOUT_MILLIS,
-            enabled = false,
-        )
+        ): AutofillInteractionTimeout =
+            AutofillInteractionTimeout(
+                store = store,
+                unlockLease = unlockLease,
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                timeoutMillis = DEFAULT_TIMEOUT_MILLIS,
+                enabled = false,
+            )
     }
 }

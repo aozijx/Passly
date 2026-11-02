@@ -19,26 +19,19 @@ import javax.inject.Singleton
 internal abstract class AuthorizationModule {
     @Binds
     @Singleton
-    abstract fun bindAuthorizationGate(
-        impl: DefaultAuthorizationGate,
-    ): AuthorizationGate
+    abstract fun bindAuthorizationGate(impl: DefaultAuthorizationGate): AuthorizationGate
 
     @Binds
     @Singleton
-    abstract fun bindAuthorizationPermitVerifier(
-        impl: AuthorizationPermitRegistry,
-    ): AuthorizationPermitVerifier
+    abstract fun bindAuthorizationPermitVerifier(impl: AuthorizationPermitRegistry): AuthorizationPermitVerifier
 
     @Binds
     @Singleton
-    abstract fun bindAuthorizationPermitRevoker(
-        impl: AuthorizationPermitRegistry,
-    ): AuthorizationPermitRevoker
+    abstract fun bindAuthorizationPermitRevoker(impl: AuthorizationPermitRegistry): AuthorizationPermitRevoker
 
     companion object {
         @Provides
         @Singleton
-        fun provideMonotonicClock(): MonotonicClock =
-            MonotonicClock { System.nanoTime() / 1_000_000L }
+        fun provideMonotonicClock(): MonotonicClock = MonotonicClock { System.nanoTime() / 1_000_000L }
     }
 }

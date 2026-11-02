@@ -11,11 +11,14 @@ internal class SshEntryPayloadAdapter : EntryPayloadAdapter {
 
     override fun encode(credential: EntryCredential): SecretPayload {
         require(credential is SshCredential) { "SSH adapter requires SshCredential" }
-        return SecretPayload(ssh = SshCredentialPayload(
-            privateKey = credential.privateKey,
-            publicKey = credential.publicKey,
-            passphrase = credential.passphrase,
-        ))
+        return SecretPayload(
+            ssh =
+                SshCredentialPayload(
+                    privateKey = credential.privateKey,
+                    publicKey = credential.publicKey,
+                    passphrase = credential.passphrase,
+                ),
+        )
     }
 
     override fun decode(payload: SecretPayload): EntryCredential {

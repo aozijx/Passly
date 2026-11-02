@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,31 +21,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 @Composable
 fun DefaultItem(
     entry: VaultListItemUiModel,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = CardStyleTokens.Base.CONTAINER_ALPHA
-            )
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    MaterialTheme.colorScheme.surfaceVariant.copy(
+                        alpha = CardStyleTokens.Base.CONTAINER_ALPHA,
+                    ),
+            ),
     ) {
         Row(
             modifier = Modifier.padding(CardStyleTokens.Base.contentPadding),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-                VaultListItemIcon(
+            VaultListItemIcon(
                 Modifier,
                 entry,
             )
@@ -57,12 +58,12 @@ fun DefaultItem(
                 Text(
                     entry.title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = entry.categoryOrTemplateLabel(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -76,28 +77,32 @@ fun DefaultOtpItem(
     showCode: Boolean = true,
     previewCode: String? = null,
     previewProgress: Float? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val currentState =
         previewCode?.let { VaultOtpUiState.Ready(it, previewProgress ?: 0f) } ?: totpState
 
-    val isSteam = remember(entry.otpKind) {
-        entry.otpKind == VaultOtpKindUiModel.STEAM
-    }
+    val isSteam =
+        remember(entry.otpKind) {
+            entry.otpKind == VaultOtpKindUiModel.STEAM
+        }
 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            ),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-                VaultListItemIcon(
-                Modifier, entry
+            VaultListItemIcon(
+                Modifier,
+                entry,
             )
 
             Spacer(modifier = Modifier.width(20.dp))
@@ -108,14 +113,14 @@ fun DefaultOtpItem(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = entry.categoryOrTemplateLabel(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -125,35 +130,39 @@ fun DefaultOtpItem(
                 },
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 3.dp,
-                color = if (
-                    (previewProgress ?: (currentState as? VaultOtpUiState.Ready)?.progress ?: 1f) < 0.2f
-                ) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                color =
+                    if (
+                        (previewProgress ?: (currentState as? VaultOtpUiState.Ready)?.progress ?: 1f) < 0.2f
+                    ) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             )
 
             if (showCode) {
                 Text(
-                    text = if (isSteam) {
-                        previewCode ?: (currentState as? VaultOtpUiState.Ready)?.code ?: "------"
-                    } else {
-                        previewCode
-                            ?: (currentState as? VaultOtpUiState.Ready)?.code
-                                ?.chunked(3)
-                                ?.joinToString(" ")
-                            ?: "------"
-                    },
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp,
-                        fontSize = 18.sp
-                    ),
+                    text =
+                        if (isSteam) {
+                            previewCode ?: (currentState as? VaultOtpUiState.Ready)?.code ?: "------"
+                        } else {
+                            previewCode
+                                ?: (currentState as? VaultOtpUiState.Ready)
+                                    ?.code
+                                    ?.chunked(3)
+                                    ?.joinToString(" ")
+                                ?: "------"
+                        },
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp,
+                            fontSize = 18.sp,
+                        ),
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 12.dp)
+                    modifier = Modifier.padding(start = 12.dp),
                 )
 
                 Spacer(modifier = Modifier.width(4.dp))
@@ -173,14 +182,18 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
         onClick: () -> Unit,
     ) {
         when {
-            entry.hasOtp -> DefaultOtpItem(
-                entry = entry,
-                totpState = totpState,
-                showCode = showTotpCode,
-                onClick = onClick,
-            )
+            entry.hasOtp -> {
+                DefaultOtpItem(
+                    entry = entry,
+                    totpState = totpState,
+                    showCode = showTotpCode,
+                    onClick = onClick,
+                )
+            }
 
-            else -> DefaultItem(entry = entry, onClick = onClick)
+            else -> {
+                DefaultItem(entry = entry, onClick = onClick)
+            }
         }
     }
 

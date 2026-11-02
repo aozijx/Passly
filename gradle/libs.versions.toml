@@ -4,6 +4,8 @@ agp = "9.4.1"
 # Kotlin and KSP upgrades are validated together.
 kotlin = "2.3.20"
 ksp = "2.3.9"
+ktlintGradle = "14.2.0"
+ktlint = "1.8.0"
 hilt = "2.60.1"
 androidCompileSdk = "37"
 androidMinSdk = "31"
@@ -169,3 +171,4 @@ androidx-room = { id = "androidx.room", version.ref = "room" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }

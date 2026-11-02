@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultIconsTest {
-
     @Test
     fun catalogUsesUniqueStableKeysAndNonemptyCategories() {
         val definitions = VaultIcons.definitions
@@ -27,7 +26,11 @@ class VaultIconsTest {
 
     @Test
     fun decimalResourceIdStringIsNotAStoredIconKey() {
-        val resourceId = VaultIcons.definitions.first().labelRes.toString()
+        val resourceId =
+            VaultIcons.definitions
+                .first()
+                .labelRes
+                .toString()
 
         assertEquals(null, VaultIcons.findDefinition(resourceId))
     }

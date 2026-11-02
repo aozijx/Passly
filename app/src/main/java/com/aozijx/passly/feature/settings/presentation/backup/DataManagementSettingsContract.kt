@@ -2,7 +2,10 @@ package com.aozijx.passly.feature.settings.presentation.backup
 
 sealed interface DataManagementSettingsUiState {
     data object Loading : DataManagementSettingsUiState
-    data class Ready(val directoryUri: String?) : DataManagementSettingsUiState
+
+    data class Ready(
+        val directoryUri: String?,
+    ) : DataManagementSettingsUiState
 }
 
 sealed interface DataManagementSettingsUiAction {
@@ -11,6 +14,7 @@ sealed interface DataManagementSettingsUiAction {
         val pageOwner: Any,
         val requestId: String,
     ) : DataManagementSettingsUiAction
+
     data object ClearBackupDirectory : DataManagementSettingsUiAction
 }
 

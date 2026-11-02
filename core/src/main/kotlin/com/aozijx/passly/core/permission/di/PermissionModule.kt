@@ -25,7 +25,5 @@ abstract class PermissionModule {
 
     @Binds
     @Singleton
-    abstract fun bindRequestHistory(
-        impl: SharedPreferencesPermissionRequestHistory
-    ): PermissionRequestHistory
+    abstract fun bindRequestHistory(impl: SharedPreferencesPermissionRequestHistory): PermissionRequestHistory
 }

@@ -26,37 +26,39 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class DatabaseSchemaCompatibilityTest {
     @Test
-    fun legacyVersionOneDatabaseFailsOpenWithoutDeletingItsData() = runBlocking {
-        System.loadLibrary("sqlcipher")
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val databaseName = "legacy_attachment_schema_test.db"
-        context.deleteDatabase(databaseName)
-        val provider = DatabaseProvider(context, NoOpLogger)
-
-        try {
-            provider.open(databaseName, DATABASE_KEY.copyOf()).close()
-            legacyHelper(context, databaseName).use { helper ->
-                replaceAttachmentTableWithLegacySchema(helper.writableDatabase)
-            }
-
-            val file = context.getDatabasePath(databaseName)
-            assertTrue(file.exists())
-            assertNotNull(runCatching { provider.open(databaseName, DATABASE_KEY.copyOf()) }.exceptionOrNull())
-            assertTrue("A schema mismatch must not delete the user's database", file.exists())
-
-            legacyHelper(context, databaseName).use { helper ->
-                val columns = helper.writableDatabase.query("PRAGMA table_info(attachment_refs)").use { cursor ->
-                    buildSet {
-                        val nameColumn = cursor.getColumnIndexOrThrow("name")
-                        while (cursor.moveToNext()) add(cursor.getString(nameColumn))
-                    }
-                }
-                assertTrue(columns.containsAll(setOf("entryId", "stagingOwnerId", "status")))
-            }
-        } finally {
+    fun legacyVersionOneDatabaseFailsOpenWithoutDeletingItsData() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val databaseName = "legacy_attachment_schema_test.db"
             context.deleteDatabase(databaseName)
+            val provider = DatabaseProvider(context, NoOpLogger)
+
+            try {
+                provider.open(databaseName, DATABASE_KEY.copyOf()).close()
+                legacyHelper(context, databaseName).use { helper ->
+                    replaceAttachmentTableWithLegacySchema(helper.writableDatabase)
+                }
+
+                val file = context.getDatabasePath(databaseName)
+                assertTrue(file.exists())
+                assertNotNull(runCatching { provider.open(databaseName, DATABASE_KEY.copyOf()) }.exceptionOrNull())
+                assertTrue("A schema mismatch must not delete the user's database", file.exists())
+
+                legacyHelper(context, databaseName).use { helper ->
+                    val columns =
+                        helper.writableDatabase.query("PRAGMA table_info(attachment_refs)").use { cursor ->
+                            buildSet {
+                                val nameColumn = cursor.getColumnIndexOrThrow("name")
+                                while (cursor.moveToNext()) add(cursor.getString(nameColumn))
+                            }
+                        }
+                    assertTrue(columns.containsAll(setOf("entryId", "stagingOwnerId", "status")))
+                }
+            } finally {
+                context.deleteDatabase(databaseName)
+            }
         }
-    }
 
     private fun replaceAttachmentTableWithLegacySchema(db: SupportSQLiteDatabase) {
         // Room trusts its identity hash. Remove the current hash so opening the
@@ -86,24 +88,68 @@ class DatabaseSchemaCompatibilityTest {
         db.execSQL("CREATE INDEX index_attachment_refs_stagingOwnerId ON attachment_refs(stagingOwnerId)")
     }
 
-    private fun legacyHelper(context: Context, databaseName: String): SupportSQLiteOpenHelper =
+    private fun legacyHelper(
+        context: Context,
+        databaseName: String,
+    ): SupportSQLiteOpenHelper =
         SupportOpenHelperFactory(DATABASE_KEY.copyOf()).create(
-            SupportSQLiteOpenHelper.Configuration.builder(context)
+            SupportSQLiteOpenHelper.Configuration
+                .builder(context)
                 .name(databaseName)
-                .callback(object : SupportSQLiteOpenHelper.Callback(DatabaseSchema.VERSION) {
-                    override fun onCreate(db: SupportSQLiteDatabase) = Unit
-                    override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
-                })
-                .build(),
+                .callback(
+                    object : SupportSQLiteOpenHelper.Callback(DatabaseSchema.VERSION) {
+                        override fun onCreate(db: SupportSQLiteDatabase) = Unit
+
+                        override fun onUpgrade(
+                            db: SupportSQLiteDatabase,
+                            oldVersion: Int,
+                            newVersion: Int,
+                        ) = Unit
+                    },
+                ).build(),
         )
 
     private object NoOpLogger : Logger {
-        override fun debug(event: EventKey, fields: LogFields) = Unit
-        override fun info(event: EventKey, fields: LogFields) = Unit
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) = Unit
-        override fun warn(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun error(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun fatal(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
+
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
 
         override suspend fun <T> withRootTrace(
             operation: OperationCode,

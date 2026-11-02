@@ -17,7 +17,10 @@ object SecurityPreferencesSerializer : Serializer<SecurityPreferences> {
             throw CorruptionException("Unable to read security preferences.", error)
         }
 
-    override suspend fun writeTo(t: SecurityPreferences, output: OutputStream) {
+    override suspend fun writeTo(
+        t: SecurityPreferences,
+        output: OutputStream,
+    ) {
         t.writeTo(output)
     }
 }

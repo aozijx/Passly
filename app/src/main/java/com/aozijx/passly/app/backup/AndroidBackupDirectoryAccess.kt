@@ -13,48 +13,52 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class AndroidBackupDirectoryAccess @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    private val grantInspector: BackupDirectoryGrantInspector,
-) : BackupDirectoryAccess, BackupDirectoryStatusReader {
-    override fun inspect(treeUri: String?): PersistedDirectoryAccessStatus =
-        grantInspector.inspect(treeUri)
+class AndroidBackupDirectoryAccess
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        private val grantInspector: BackupDirectoryGrantInspector,
+    ) : BackupDirectoryAccess,
+        BackupDirectoryStatusReader {
+        override fun inspect(treeUri: String?): PersistedDirectoryAccessStatus = grantInspector.inspect(treeUri)
 
-    override suspend fun acquire(treeUri: String): BackupDirectoryGrantResult =
-        withContext(Dispatchers.IO) {
-            val uri = treeUri.toUri()
-            try {
-                context.contentResolver.takePersistableUriPermission(uri, PERMISSION_FLAGS)
-            } catch (_: SecurityException) {
-                return@withContext BackupDirectoryGrantResult.PermissionDenied
+        override suspend fun acquire(treeUri: String): BackupDirectoryGrantResult =
+            withContext(Dispatchers.IO) {
+                val uri = treeUri.toUri()
+                try {
+                    context.contentResolver.takePersistableUriPermission(uri, PERMISSION_FLAGS)
+                } catch (_: SecurityException) {
+                    return@withContext BackupDirectoryGrantResult.PermissionDenied
+                }
+
+                BackupStorageSupport.ensureAppDirectoryTreeUri(context, uri).fold(
+                    onSuccess = { BackupDirectoryGrantResult.Granted(treeUri) },
+                    onFailure = {
+                        runCatching {
+                            context.contentResolver.releasePersistableUriPermission(
+                                uri,
+                                PERMISSION_FLAGS,
+                            )
+                        }
+                        BackupDirectoryGrantResult.Unavailable
+                    },
+                )
             }
 
-            BackupStorageSupport.ensureAppDirectoryTreeUri(context, uri).fold(
-                onSuccess = { BackupDirectoryGrantResult.Granted(treeUri) },
-                onFailure = {
-                    runCatching {
-                        context.contentResolver.releasePersistableUriPermission(
-                            uri,
-                            PERMISSION_FLAGS,
-                        )
-                    }
-                    BackupDirectoryGrantResult.Unavailable
-                },
-            )
-        }
+        override suspend fun release(treeUri: String) =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.releasePersistableUriPermission(
+                        treeUri.toUri(),
+                        PERMISSION_FLAGS,
+                    )
+                }
+                Unit
+            }
 
-    override suspend fun release(treeUri: String) = withContext(Dispatchers.IO) {
-        runCatching {
-            context.contentResolver.releasePersistableUriPermission(
-                treeUri.toUri(),
-                PERMISSION_FLAGS,
-            )
+        private companion object {
+            const val PERMISSION_FLAGS =
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         }
-        Unit
     }
-
-    private companion object {
-        const val PERMISSION_FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-    }
-}

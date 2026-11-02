@@ -8,7 +8,9 @@ package com.aozijx.passly.domain.sensitive
  */
 interface SensitiveValue {
     val isEmpty: Boolean
+
     fun toCharArray(): CharArray
+
     fun wipe()
 }
 
@@ -18,6 +20,8 @@ interface SensitiveValue {
  */
 object EmptySensitiveValue : SensitiveValue {
     override val isEmpty: Boolean = true
+
     override fun toCharArray(): CharArray = CharArray(0)
+
     override fun wipe() {}
 }

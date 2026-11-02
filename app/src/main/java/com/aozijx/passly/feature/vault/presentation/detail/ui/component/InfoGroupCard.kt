@@ -19,13 +19,14 @@ import androidx.compose.ui.unit.dp
 fun InfoGroupCard(
     title: String,
     titleTrailing: @Composable (RowScope.() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, bottom = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, bottom = 8.dp),
         ) {
             Text(
                 text = title,
@@ -36,11 +37,16 @@ fun InfoGroupCard(
             titleTrailing?.invoke(this)
         }
         Card(
-            modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                    alpha = 0.3f
-                )
-            ), shape = MaterialTheme.shapes.large, content = content
+            modifier = Modifier.fillMaxWidth(),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.surfaceVariant.copy(
+                            alpha = 0.3f,
+                        ),
+                ),
+            shape = MaterialTheme.shapes.large,
+            content = content,
         )
     }
 }

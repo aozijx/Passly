@@ -11,5 +11,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class JsonBackupPackage(
     val document: BackupDocument,
-    val resourcesBase64: Map<String, String> = emptyMap()
+    val resourcesBase64: Map<String, String> = emptyMap(),
 )

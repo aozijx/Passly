@@ -9,7 +9,6 @@ import androidx.credentials.provider.CallingAppInfo
  * support native package identification.
  */
 internal object CredentialCallingAppResolver {
-
     fun resolveNativePackage(callingAppInfo: CallingAppInfo?): String? {
         if (callingAppInfo == null || callingAppInfo.isOriginPopulated()) return null
         return callingAppInfo.packageName.takeIf(String::isNotBlank)

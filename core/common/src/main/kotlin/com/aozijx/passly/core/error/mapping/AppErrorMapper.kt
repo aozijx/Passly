@@ -16,10 +16,8 @@ import java.security.GeneralSecurityException
 /**
  * 异常到 AppError 的映射。独立文件，避免 AppError.kt 循环依赖域子类。
  */
-fun AppError.Companion.fromThrowable(
-    throwable: Throwable
-): AppError {
-    return when (throwable) {
+fun AppError.Companion.fromThrowable(throwable: Throwable): AppError =
+    when (throwable) {
         is AppError -> throwable
         is DatabaseException.InvalidPassphraseException -> DatabaseLocked()
         is DatabaseException -> DatabaseInitFailed(throwableType = throwable.javaClass.simpleName)
@@ -30,4 +28,3 @@ fun AppError.Companion.fromThrowable(
         is GeneralSecurityException -> CryptoError(throwableType = throwable.javaClass.simpleName)
         else -> Unexpected(throwableType = throwable.javaClass.simpleName)
     }
-}

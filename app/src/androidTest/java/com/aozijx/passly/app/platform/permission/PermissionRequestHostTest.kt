@@ -38,9 +38,10 @@ class PermissionRequestHostTest {
                 ProvidePermissionServices(services) {
                     if (visible.value) {
                         val currentOwner = owner.value
-                        val host = rememberPermissionRequestHost(currentOwner) { _, result ->
-                            results += currentOwner to result
-                        }
+                        val host =
+                            rememberPermissionRequestHost(currentOwner) { _, result ->
+                                results += currentOwner to result
+                            }
                         SideEffect { hosts[currentOwner] = host }
                     }
                 }
@@ -82,21 +83,26 @@ class PermissionRequestHostTest {
         }
     }
 
-    private fun services(arbiter: DefaultPermissionRequestArbiter) = PermissionServices(
-        statusReader = PermissionStatusReader { PermissionStatus.DENIED },
-        requestArbiter = arbiter,
-        requestHistory = object : PermissionRequestHistory {
-            override fun wasRequested(permission: RuntimePermission) = false
-            override fun markRequested(permission: RuntimePermission) = Unit
-        },
-    )
+    private fun services(arbiter: DefaultPermissionRequestArbiter) =
+        PermissionServices(
+            statusReader = PermissionStatusReader { PermissionStatus.DENIED },
+            requestArbiter = arbiter,
+            requestHistory =
+                object : PermissionRequestHistory {
+                    override fun wasRequested(permission: RuntimePermission) = false
 
-    private fun registryOwner(registry: ActivityResultRegistry) = object : ActivityResultRegistryOwner {
-        override val activityResultRegistry = registry
-    }
+                    override fun markRequested(permission: RuntimePermission) = Unit
+                },
+        )
+
+    private fun registryOwner(registry: ActivityResultRegistry) =
+        object : ActivityResultRegistryOwner {
+            override val activityResultRegistry = registry
+        }
 
     private class RecordingRegistry : ActivityResultRegistry() {
         val requestCodes = mutableListOf<Int>()
+
         override fun <I, O> onLaunch(
             requestCode: Int,
             contract: ActivityResultContract<I, O>,

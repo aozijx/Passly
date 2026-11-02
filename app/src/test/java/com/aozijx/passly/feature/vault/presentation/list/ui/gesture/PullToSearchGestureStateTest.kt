@@ -7,11 +7,12 @@ class PullToSearchGestureStateTest {
     @Test
     fun `pull past threshold triggers only when released`() {
         var triggers = 0
-        val state = PullToSearchGestureState(
-            thresholdPx = 80f,
-            onProgressChanged = {},
-            onTriggered = { triggers++ },
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 80f,
+                onProgressChanged = {},
+                onTriggered = { triggers++ },
+            )
 
         state.onPull(deltaY = 50f, isAtTop = true)
         state.onPull(deltaY = 40f, isAtTop = true)
@@ -25,11 +26,12 @@ class PullToSearchGestureStateTest {
     fun `reverse drag cancels an armed pull without hidden overshoot`() {
         var triggers = 0
         val progress = mutableListOf<Float>()
-        val state = PullToSearchGestureState(
-            thresholdPx = 160f,
-            onProgressChanged = progress::add,
-            onTriggered = { triggers++ },
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 160f,
+                onProgressChanged = progress::add,
+                onTriggered = { triggers++ },
+            )
 
         state.onPull(deltaY = 300f, isAtTop = true)
         state.consumeReversePull(deltaY = -20f)
@@ -43,11 +45,12 @@ class PullToSearchGestureStateTest {
     fun `release below threshold does not trigger search`() {
         var triggers = 0
         val progress = mutableListOf<Float>()
-        val state = PullToSearchGestureState(
-            thresholdPx = 80f,
-            onProgressChanged = progress::add,
-            onTriggered = { triggers++ },
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 80f,
+                onProgressChanged = progress::add,
+                onTriggered = { triggers++ },
+            )
 
         state.onPull(deltaY = 60f, isAtTop = true)
         state.onRelease()
@@ -59,11 +62,12 @@ class PullToSearchGestureStateTest {
     @Test
     fun `leaving top before release cancels an armed pull`() {
         var triggers = 0
-        val state = PullToSearchGestureState(
-            thresholdPx = 80f,
-            onProgressChanged = {},
-            onTriggered = { triggers++ },
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 80f,
+                onProgressChanged = {},
+                onTriggered = { triggers++ },
+            )
 
         state.onPull(deltaY = 90f, isAtTop = true)
         state.onPull(deltaY = 10f, isAtTop = false)
@@ -75,11 +79,12 @@ class PullToSearchGestureStateTest {
     @Test
     fun `pull reports bounded expansion progress and resets when released`() {
         val progress = mutableListOf<Float>()
-        val state = PullToSearchGestureState(
-            thresholdPx = 100f,
-            onProgressChanged = progress::add,
-            onTriggered = {},
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 100f,
+                onProgressChanged = progress::add,
+                onTriggered = {},
+            )
 
         state.onPull(deltaY = 25f, isAtTop = true)
         state.onPull(deltaY = 50f, isAtTop = true)
@@ -91,11 +96,12 @@ class PullToSearchGestureStateTest {
     @Test
     fun `small reverse drag reduces progress instead of dropping the anchor`() {
         val progress = mutableListOf<Float>()
-        val state = PullToSearchGestureState(
-            thresholdPx = 100f,
-            onProgressChanged = progress::add,
-            onTriggered = {},
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 100f,
+                onProgressChanged = progress::add,
+                onTriggered = {},
+            )
 
         state.onPull(deltaY = 60f, isAtTop = true)
         state.onPull(deltaY = -20f, isAtTop = true)
@@ -106,11 +112,12 @@ class PullToSearchGestureStateTest {
     @Test
     fun `reverse drag consumes only the outstanding pull before list scrolling`() {
         val progress = mutableListOf<Float>()
-        val state = PullToSearchGestureState(
-            thresholdPx = 100f,
-            onProgressChanged = progress::add,
-            onTriggered = {},
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 100f,
+                onProgressChanged = progress::add,
+                onTriggered = {},
+            )
 
         state.onPull(deltaY = 70f, isAtTop = true)
 
@@ -122,11 +129,12 @@ class PullToSearchGestureStateTest {
     @Test
     fun `post scroll reverse delta also cancels outstanding pull`() {
         val progress = mutableListOf<Float>()
-        val state = PullToSearchGestureState(
-            thresholdPx = 100f,
-            onProgressChanged = progress::add,
-            onTriggered = {},
-        )
+        val state =
+            PullToSearchGestureState(
+                thresholdPx = 100f,
+                onProgressChanged = progress::add,
+                onTriggered = {},
+            )
 
         state.onPostScroll(deltaY = 60f, isAtTop = true)
 

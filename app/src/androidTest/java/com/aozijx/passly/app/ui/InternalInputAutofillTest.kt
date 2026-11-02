@@ -7,18 +7,18 @@ import android.view.View
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.autofill.ContentDataType
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
@@ -46,18 +46,20 @@ class InternalInputAutofillTest {
         compose.setContent {
             MaterialTheme {
                 when (surface.value) {
-                    InternalInputSurface.APPLICATION_PASSWORD ->
+                    InternalInputSurface.APPLICATION_PASSWORD -> {
                         Column { PasswordFields("", "", {}, {}, {}) }
+                    }
 
-                    InternalInputSurface.CREDENTIAL_EDITOR ->
+                    InternalInputSurface.CREDENTIAL_EDITOR -> {
                         AddPasswordEditorScreen(
                             state = AddPasswordUiState(form = AddPasswordFormState()),
                             onAction = {},
                             onBack = {},
                             snackbarHostState = remember { SnackbarHostState() },
                         )
+                    }
 
-                    InternalInputSurface.BACKUP ->
+                    InternalInputSurface.BACKUP -> {
                         BackupImportOptionsContent(
                             BackupRestoreSheetUiState.ImportOptions(
                                 "",
@@ -66,6 +68,7 @@ class InternalInputAutofillTest {
                             ),
                             onAction = {},
                         )
+                    }
 
                     InternalInputSurface.NATIVE_HOST -> {
                         val view = LocalView.current
@@ -104,11 +107,12 @@ class InternalInputAutofillTest {
         return inputs.size
     }
 
-    private tailrec fun Context.activity(): Activity = when (this) {
-        is Activity -> this
-        is ContextWrapper -> baseContext.activity()
-        else -> error("Test content has no Activity")
-    }
+    private tailrec fun Context.activity(): Activity =
+        when (this) {
+            is Activity -> this
+            is ContextWrapper -> baseContext.activity()
+            else -> error("Test content has no Activity")
+        }
 
     private enum class InternalInputSurface {
         APPLICATION_PASSWORD,

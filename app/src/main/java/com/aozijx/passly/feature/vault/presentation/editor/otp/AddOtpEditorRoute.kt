@@ -15,14 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.otp.AddOtpEditorScreen
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
@@ -44,10 +44,11 @@ fun AddOtpEditorRoute(
     val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
     val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
-    val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
-    )
+    val saveActionModifier =
+        Modifier.rememberAddEntryFabTransitionModifier(
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
     var overlay by remember { mutableStateOf<OtpEditorOverlay>(OtpEditorOverlay.None) }
 
     DisposableEffect(viewModel) {
@@ -73,11 +74,13 @@ fun AddOtpEditorRoute(
     ) {
         collectPageEffects(lifecycleOwner.lifecycle, viewModel.events) { event ->
             when (event) {
-                AddOtpEvent.UriParsed ->
+                AddOtpEvent.UriParsed -> {
                     Toast.makeText(context, uriParsedMessage, Toast.LENGTH_SHORT).show()
+                }
 
-                AddOtpEvent.UriParseFailed ->
+                AddOtpEvent.UriParseFailed -> {
                     snackbarHostState.showSnackbar(uriParseFailedMessage)
+                }
             }
         }
     }
@@ -93,25 +96,36 @@ fun AddOtpEditorRoute(
     )
 
     when (overlay) {
-        OtpEditorOverlay.None -> Unit
-        OtpEditorOverlay.Scanner -> ScannerRoute(
-            purpose = ScannerPurpose.ApplyToOtpEditor,
-            onImport = { scannerImport ->
-                when (scannerImport) {
-                    is ScannerImport.Otp -> {
-                        if (viewModel.tryApplyScannedConfig(scannerImport.config)) {
-                            ScannerImportHandlingResult.Applied
-                        } else ScannerImportHandlingResult.Rejected
+        OtpEditorOverlay.None -> {
+            Unit
+        }
+
+        OtpEditorOverlay.Scanner -> {
+            ScannerRoute(
+                purpose = ScannerPurpose.ApplyToOtpEditor,
+                onImport = { scannerImport ->
+                    when (scannerImport) {
+                        is ScannerImport.Otp -> {
+                            if (viewModel.tryApplyScannedConfig(scannerImport.config)) {
+                                ScannerImportHandlingResult.Applied
+                            } else {
+                                ScannerImportHandlingResult.Rejected
+                            }
+                        }
+
+                        is ScannerImport.Wifi -> {
+                            ScannerImportHandlingResult.Rejected
+                        }
                     }
-                    is ScannerImport.Wifi -> ScannerImportHandlingResult.Rejected
-                }
-            },
-            onDismiss = { overlay = OtpEditorOverlay.None },
-        )
+                },
+                onDismiss = { overlay = OtpEditorOverlay.None },
+            )
+        }
     }
 }
 
 private sealed interface OtpEditorOverlay {
     data object None : OtpEditorOverlay
+
     data object Scanner : OtpEditorOverlay
 }

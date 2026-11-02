@@ -12,7 +12,5 @@ import javax.inject.Singleton
 abstract class FaviconImageProcessorModule {
     @Binds
     @Singleton
-    abstract fun bindFaviconImageProcessor(
-        implementation: DefaultFaviconImageProcessor,
-    ): FaviconImageProcessor
+    abstract fun bindFaviconImageProcessor(implementation: DefaultFaviconImageProcessor): FaviconImageProcessor
 }

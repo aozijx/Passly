@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.editor.ui.wifi
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
@@ -20,14 +19,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiAction
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiUiState
-import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
 fun AddWifiEditorScreen(
@@ -66,11 +66,12 @@ fun AddWifiEditorScreen(
                 onValueChange = { onAction(AddWifiAction.SsidChanged(it)) },
                 label = stringResource(R.string.wifi_ssid),
                 isError = FieldKey.WIFI_SSID in state.fieldErrors,
-                supportingText = if (FieldKey.WIFI_SSID in state.fieldErrors) {
-                    { Text(stringResource(R.string.wifi_ssid_required)) }
-                } else {
-                    null
-                },
+                supportingText =
+                    if (FieldKey.WIFI_SSID in state.fieldErrors) {
+                        { Text(stringResource(R.string.wifi_ssid_required)) }
+                    } else {
+                        null
+                    },
                 trailingIcon = {
                     TextButton(
                         onClick = {
@@ -109,14 +110,15 @@ fun AddWifiEditorScreen(
                 singleLine = false,
                 minLines = 4,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        if (state.canSave) {
-                            focusManager.clearFocus(force = true)
-                            save()
-                        }
-                    },
-                ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            if (state.canSave) {
+                                focusManager.clearFocus(force = true)
+                                save()
+                            }
+                        },
+                    ),
             )
         }
     }

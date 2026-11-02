@@ -58,28 +58,30 @@ fun FaviconCropScreen(
                     style = MaterialTheme.typography.headlineSmall,
                 )
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                        .onSizeChanged { size ->
-                            geometry = geometry.copy(
-                                viewportWidth = size.width.toFloat(),
-                                viewportHeight = size.height.toFloat(),
-                            )
-                            cropState = FaviconCropTransform.clamp(cropState, geometry)
-                        }
-                        .pointerInput(stagedPath) {
-                            detectTransformGestures { _, pan, gestureZoom, _ ->
-                                cropState = FaviconCropTransform.applyGesture(
-                                    state = cropState,
-                                    geometry = geometry,
-                                    panX = pan.x,
-                                    panY = pan.y,
-                                    zoomChange = gestureZoom,
-                                )
-                            }
-                        },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .onSizeChanged { size ->
+                                geometry =
+                                    geometry.copy(
+                                        viewportWidth = size.width.toFloat(),
+                                        viewportHeight = size.height.toFloat(),
+                                    )
+                                cropState = FaviconCropTransform.clamp(cropState, geometry)
+                            }.pointerInput(stagedPath) {
+                                detectTransformGestures { _, pan, gestureZoom, _ ->
+                                    cropState =
+                                        FaviconCropTransform.applyGesture(
+                                            state = cropState,
+                                            geometry = geometry,
+                                            panX = pan.x,
+                                            panY = pan.y,
+                                            zoomChange = gestureZoom,
+                                        )
+                                }
+                            },
                     contentAlignment = Alignment.Center,
                 ) {
                     AsyncImage(
@@ -87,21 +89,23 @@ fun FaviconCropScreen(
                         contentDescription = null,
                         onSuccess = { success ->
                             val drawable = success.result.drawable
-                            geometry = geometry.copy(
-                                imageWidth = drawable.intrinsicWidth.coerceAtLeast(0).toFloat(),
-                                imageHeight = drawable.intrinsicHeight.coerceAtLeast(0).toFloat(),
-                            )
+                            geometry =
+                                geometry.copy(
+                                    imageWidth = drawable.intrinsicWidth.coerceAtLeast(0).toFloat(),
+                                    imageHeight = drawable.intrinsicHeight.coerceAtLeast(0).toFloat(),
+                                )
                             cropState = FaviconCropTransform.clamp(cropState, geometry)
                         },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                scaleX = cropState.zoom
-                                scaleY = cropState.zoom
-                                translationX = cropState.offsetX
-                                translationY = cropState.offsetY
-                                clip = true
-                            },
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = cropState.zoom
+                                    scaleY = cropState.zoom
+                                    translationX = cropState.offsetX
+                                    translationY = cropState.offsetY
+                                    clip = true
+                                },
                         contentScale = ContentScale.Crop,
                     )
                 }

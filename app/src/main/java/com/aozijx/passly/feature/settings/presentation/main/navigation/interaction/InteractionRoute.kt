@@ -13,8 +13,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsEffect
@@ -30,9 +30,7 @@ private enum class SwipeActionDialog { Left, Right }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun InteractionRoute(
-    onBack: (() -> Unit)?,
-) {
+internal fun InteractionRoute(onBack: (() -> Unit)?) {
     val viewModel: InteractionSettingsViewModel = hiltViewModel()
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
@@ -47,10 +45,11 @@ internal fun InteractionRoute(
 
     LaunchedEffect(viewModel, lifecycle, context, resources, savedMessage) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
-            val message = when (effect) {
-                InteractionSettingsEffect.Saved -> savedMessage
-                is InteractionSettingsEffect.SaveFailed -> resources.getString(effect.message.resourceId)
-            }
+            val message =
+                when (effect) {
+                    InteractionSettingsEffect.Saved -> savedMessage
+                    is InteractionSettingsEffect.SaveFailed -> resources.getString(effect.message.resourceId)
+                }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -60,19 +59,24 @@ internal fun InteractionRoute(
         onBack = onBack,
     ) {
         when (val readyState = state) {
-            InteractionSettingsUiState.Loading -> Unit
-            is InteractionSettingsUiState.Ready -> item {
-                InteractionDetail(
-                    state = readyState,
-                    onSwipeEnabledChange = {
-                        viewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
-                    },
-                    onPullToSearchEnabledChange = {
-                        viewModel.onAction(InteractionSettingsAction.SetPullToSearchEnabled(it))
-                    },
-                    onLeftSwipeActionClick = { activeDialog = SwipeActionDialog.Left },
-                    onRightSwipeActionClick = { activeDialog = SwipeActionDialog.Right },
-                )
+            InteractionSettingsUiState.Loading -> {
+                Unit
+            }
+
+            is InteractionSettingsUiState.Ready -> {
+                item {
+                    InteractionDetail(
+                        state = readyState,
+                        onSwipeEnabledChange = {
+                            viewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
+                        },
+                        onPullToSearchEnabledChange = {
+                            viewModel.onAction(InteractionSettingsAction.SetPullToSearchEnabled(it))
+                        },
+                        onLeftSwipeActionClick = { activeDialog = SwipeActionDialog.Left },
+                        onRightSwipeActionClick = { activeDialog = SwipeActionDialog.Right },
+                    )
+                }
             }
         }
     }
@@ -80,25 +84,33 @@ internal fun InteractionRoute(
     val readyState = state
     if (readyState is InteractionSettingsUiState.Ready) {
         when (activeDialog) {
-            SwipeActionDialog.Left -> SwipeActionSelectDialog(
-                title = stringResource(R.string.settings_swipe_select_left_action),
-                currentAction = readyState.swipeLeftAction,
-                onActionSelected = {
-                    viewModel.onAction(InteractionSettingsAction.SetSwipeLeftAction(it))
-                    activeDialog = null
-                },
-                onDismiss = { activeDialog = null },
-            )
-            SwipeActionDialog.Right -> SwipeActionSelectDialog(
-                title = stringResource(R.string.settings_swipe_select_right_action),
-                currentAction = readyState.swipeRightAction,
-                onActionSelected = {
-                    viewModel.onAction(InteractionSettingsAction.SetSwipeRightAction(it))
-                    activeDialog = null
-                },
-                onDismiss = { activeDialog = null },
-            )
-            null -> Unit
+            SwipeActionDialog.Left -> {
+                SwipeActionSelectDialog(
+                    title = stringResource(R.string.settings_swipe_select_left_action),
+                    currentAction = readyState.swipeLeftAction,
+                    onActionSelected = {
+                        viewModel.onAction(InteractionSettingsAction.SetSwipeLeftAction(it))
+                        activeDialog = null
+                    },
+                    onDismiss = { activeDialog = null },
+                )
+            }
+
+            SwipeActionDialog.Right -> {
+                SwipeActionSelectDialog(
+                    title = stringResource(R.string.settings_swipe_select_right_action),
+                    currentAction = readyState.swipeRightAction,
+                    onActionSelected = {
+                        viewModel.onAction(InteractionSettingsAction.SetSwipeRightAction(it))
+                        activeDialog = null
+                    },
+                    onDismiss = { activeDialog = null },
+                )
+            }
+
+            null -> {
+                Unit
+            }
         }
     }
 }

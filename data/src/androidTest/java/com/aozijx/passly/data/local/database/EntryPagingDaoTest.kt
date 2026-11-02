@@ -8,20 +8,20 @@ import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.model.EntryPagingRow
-import com.aozijx.passly.data.local.database.query.buildEntryPagingQuery
 import com.aozijx.passly.data.local.database.query.buildEntryCategoryQuery
+import com.aozijx.passly.data.local.database.query.buildEntryPagingQuery
 import com.aozijx.passly.data.mapper.entry.databaseFlag
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -35,222 +35,242 @@ class EntryPagingDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            TestDatabaseFactory
+                .inMemoryDatabaseBuilder(context)
+                .allowMainThreadQueries()
+                .build()
     }
 
     @After
     fun tearDown() = database.close()
 
     @Test
-    fun pagingQuery_filtersStructuredSummary_andReturnsUsageAndAccount() = runBlocking {
-        insert(entry("account", EntryType.ACCOUNT, "Example account"))
-        insert(
-            entry(
-                id = "mail",
-                type = EntryType.LOGIN,
-                title = "Mail",
-                tags = setOf("Work"),
-                domains = setOf("example.com"),
-                capabilityFlags = databaseFlag(EntryCapability.PASSWORD),
-            )
-        )
-        database.entryActivityCommandDao().insertAllIdempotent(
-            listOf(
-                activity("view", "mail", ActivityType.VIEW, 100L),
-                activity("copy", "mail", ActivityType.COPY_PASSWORD, 200L),
-                activity("update", "mail", ActivityType.UPDATE, 300L),
-            )
-        )
-        database.entryLinkCommandDao().upsert(
-            EntryLinkEntity(
-                linkId = "member",
-                sourceEntryId = "mail",
-                targetEntryId = "account",
-                relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
-                createdAt = 10L,
-                updatedAt = 10L,
-            )
-        )
-
-        val rows = load(
-            EntryListQuery(
-                searchText = "example",
-                entryTypes = setOf(EntryType.LOGIN),
-                category = "work",
-                sort = EntrySort(
-                    field = EntrySortField.TITLE,
-                    direction = SortDirection.ASC,
-                    pinFavorites = false,
+    fun pagingQuery_filtersStructuredSummary_andReturnsUsageAndAccount() =
+        runBlocking {
+            insert(entry("account", EntryType.ACCOUNT, "Example account"))
+            insert(
+                entry(
+                    id = "mail",
+                    type = EntryType.LOGIN,
+                    title = "Mail",
+                    tags = setOf("Work"),
+                    domains = setOf("example.com"),
+                    capabilityFlags = databaseFlag(EntryCapability.PASSWORD),
                 ),
             )
-        )
-
-        assertEquals(listOf("mail"), rows.map { it.entry.entryId })
-        assertEquals(2, rows.single().usageCount)
-        assertEquals(200L, rows.single().lastUsedAt)
-        assertEquals("account", rows.single().accountId)
-    }
-
-    @Test
-    fun pagingQuery_matchesAnySelectedEntryType() = runBlocking {
-        insert(entry("login", EntryType.LOGIN, "Login"))
-        insert(entry("otp", EntryType.OTP, "OTP"))
-        insert(entry("wifi", EntryType.WIFI, "Wi-Fi"))
-
-        val rows = load(
-            EntryListQuery(
-                entryTypes = setOf(EntryType.LOGIN, EntryType.OTP),
-                sort = EntrySort(
-                    field = EntrySortField.TITLE,
-                    direction = SortDirection.ASC,
-                    pinFavorites = false,
+            database.entryActivityCommandDao().insertAllIdempotent(
+                listOf(
+                    activity("view", "mail", ActivityType.VIEW, 100L),
+                    activity("copy", "mail", ActivityType.COPY_PASSWORD, 200L),
+                    activity("update", "mail", ActivityType.UPDATE, 300L),
                 ),
-            ),
-        )
-
-        assertEquals(setOf("login", "otp"), rows.map { it.entry.entryId }.toSet())
-    }
-
-    @Test
-    fun pagingQuery_keepsNullLastUsedLastInBothDirections() = runBlocking {
-        insert(entry("unused", EntryType.LOGIN, "Unused"))
-        insert(entry("older", EntryType.LOGIN, "Older"))
-        insert(entry("newer", EntryType.LOGIN, "Newer"))
-        database.entryActivityCommandDao().insertAllIdempotent(
-            listOf(
-                activity("older-view", "older", ActivityType.VIEW, 100L),
-                activity("newer-view", "newer", ActivityType.VIEW, 200L),
             )
-        )
-
-        fun query(direction: SortDirection) = EntryListQuery(
-            sort = EntrySort(
-                field = EntrySortField.LAST_USED_AT,
-                direction = direction,
-                pinFavorites = false,
+            database.entryLinkCommandDao().upsert(
+                EntryLinkEntity(
+                    linkId = "member",
+                    sourceEntryId = "mail",
+                    targetEntryId = "account",
+                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                    createdAt = 10L,
+                    updatedAt = 10L,
+                ),
             )
-        )
 
-        assertEquals(
-            listOf("older", "newer", "unused"),
-            load(query(SortDirection.ASC)).map { it.entry.entryId },
-        )
-        assertEquals(
-            listOf("newer", "older", "unused"),
-            load(query(SortDirection.DESC)).map { it.entry.entryId },
-        )
-    }
-
-    @Test
-    fun pagingQuery_sortsEntryTypeByDomainDeclarationOrder() = runBlocking {
-        insert(entry("note", EntryType.NOTE, "Note"))
-        insert(entry("login", EntryType.LOGIN, "Login"))
-        insert(entry("account", EntryType.ACCOUNT, "Account"))
-
-        val rows = load(
-            EntryListQuery(
-                sort = EntrySort(
-                    field = EntrySortField.ENTRY_TYPE,
-                    direction = SortDirection.ASC,
-                    pinFavorites = false,
+            val rows =
+                load(
+                    EntryListQuery(
+                        searchText = "example",
+                        entryTypes = setOf(EntryType.LOGIN),
+                        category = "work",
+                        sort =
+                            EntrySort(
+                                field = EntrySortField.TITLE,
+                                direction = SortDirection.ASC,
+                                pinFavorites = false,
+                            ),
+                    ),
                 )
-            )
-        )
 
-        assertEquals(
-            listOf("account", "login", "note"),
-            rows.map { it.entry.entryId },
-        )
-    }
+            assertEquals(listOf("mail"), rows.map { it.entry.entryId })
+            assertEquals(2, rows.single().usageCount)
+            assertEquals(200L, rows.single().lastUsedAt)
+            assertEquals("account", rows.single().accountId)
+        }
 
     @Test
-    fun pagingQuery_appliesHierarchyGlobally_butKeepsNarrowedMatchesVisible() = runBlocking {
-        insert(entry("z-account", EntryType.ACCOUNT, "Account"))
-        insert(entry("a-member", EntryType.LOGIN, "Member", tags = setOf("Work")))
-        insert(
-            entry(
-                "m-standalone",
-                EntryType.LOGIN,
-                "Standalone",
-                tags = setOf("work", "Personal"),
-            )
-        )
-        database.entryLinkCommandDao().upsert(
-            EntryLinkEntity(
-                linkId = "member-link",
-                sourceEntryId = "a-member",
-                targetEntryId = "z-account",
-                relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
-                createdAt = 10L,
-                updatedAt = 10L,
-            )
-        )
+    fun pagingQuery_matchesAnySelectedEntryType() =
+        runBlocking {
+            insert(entry("login", EntryType.LOGIN, "Login"))
+            insert(entry("otp", EntryType.OTP, "OTP"))
+            insert(entry("wifi", EntryType.WIFI, "Wi-Fi"))
 
-        suspend fun ids(mode: EntryHierarchyDisplayMode, search: String = "") = load(
-            EntryListQuery(
-                searchText = search,
-                hierarchyMode = mode,
-                sort = EntrySort(
-                    field = EntrySortField.ID,
-                    direction = SortDirection.ASC,
-                    pinFavorites = false,
-                    tieBreaker = EntrySortField.CREATED_AT,
+            val rows =
+                load(
+                    EntryListQuery(
+                        entryTypes = setOf(EntryType.LOGIN, EntryType.OTP),
+                        sort =
+                            EntrySort(
+                                field = EntrySortField.TITLE,
+                                direction = SortDirection.ASC,
+                                pinFavorites = false,
+                            ),
+                    ),
+                )
+
+            assertEquals(setOf("login", "otp"), rows.map { it.entry.entryId }.toSet())
+        }
+
+    @Test
+    fun pagingQuery_keepsNullLastUsedLastInBothDirections() =
+        runBlocking {
+            insert(entry("unused", EntryType.LOGIN, "Unused"))
+            insert(entry("older", EntryType.LOGIN, "Older"))
+            insert(entry("newer", EntryType.LOGIN, "Newer"))
+            database.entryActivityCommandDao().insertAllIdempotent(
+                listOf(
+                    activity("older-view", "older", ActivityType.VIEW, 100L),
+                    activity("newer-view", "newer", ActivityType.VIEW, 200L),
                 ),
             )
-        ).map { it.entry.entryId }
 
-        assertEquals(
-            listOf("m-standalone", "z-account"),
-            ids(EntryHierarchyDisplayMode.COLLAPSED),
-        )
-        assertEquals(
-            listOf("m-standalone", "z-account", "a-member"),
-            ids(EntryHierarchyDisplayMode.EXPANDED),
-        )
-        assertEquals(
-            listOf("a-member", "m-standalone"),
-            ids(EntryHierarchyDisplayMode.SEPARATE),
-        )
-        assertEquals(
-            listOf("a-member"),
-            ids(EntryHierarchyDisplayMode.COLLAPSED, search = "member"),
-        )
-        assertEquals(
-            emptyList<String>(),
-            ids(EntryHierarchyDisplayMode.SEPARATE, search = "account"),
-        )
-        assertEquals(
-            listOf("Personal", "Work"),
-            database.entryQueryDao().observeCategories(buildEntryCategoryQuery()).first(),
-        )
+            fun query(direction: SortDirection) =
+                EntryListQuery(
+                    sort =
+                        EntrySort(
+                            field = EntrySortField.LAST_USED_AT,
+                            direction = direction,
+                            pinFavorites = false,
+                        ),
+                )
 
-        database.entryCommandDao().optimisticSoftDelete(
-            entryId = "z-account",
-            expectedVersion = 1,
-            deletedAt = 20L,
-            updatedAt = 20L,
-        )
-        assertEquals(
-            listOf("a-member", "m-standalone"),
-            ids(EntryHierarchyDisplayMode.COLLAPSED),
-        )
-    }
+            assertEquals(
+                listOf("older", "newer", "unused"),
+                load(query(SortDirection.ASC)).map { it.entry.entryId },
+            )
+            assertEquals(
+                listOf("newer", "older", "unused"),
+                load(query(SortDirection.DESC)).map { it.entry.entryId },
+            )
+        }
 
-    private suspend fun insert(entry: EntryEntity) =
-        database.entryCommandDao().insertStrict(entry)
+    @Test
+    fun pagingQuery_sortsEntryTypeByDomainDeclarationOrder() =
+        runBlocking {
+            insert(entry("note", EntryType.NOTE, "Note"))
+            insert(entry("login", EntryType.LOGIN, "Login"))
+            insert(entry("account", EntryType.ACCOUNT, "Account"))
+
+            val rows =
+                load(
+                    EntryListQuery(
+                        sort =
+                            EntrySort(
+                                field = EntrySortField.ENTRY_TYPE,
+                                direction = SortDirection.ASC,
+                                pinFavorites = false,
+                            ),
+                    ),
+                )
+
+            assertEquals(
+                listOf("account", "login", "note"),
+                rows.map { it.entry.entryId },
+            )
+        }
+
+    @Test
+    fun pagingQuery_appliesHierarchyGlobally_butKeepsNarrowedMatchesVisible() =
+        runBlocking {
+            insert(entry("z-account", EntryType.ACCOUNT, "Account"))
+            insert(entry("a-member", EntryType.LOGIN, "Member", tags = setOf("Work")))
+            insert(
+                entry(
+                    "m-standalone",
+                    EntryType.LOGIN,
+                    "Standalone",
+                    tags = setOf("work", "Personal"),
+                ),
+            )
+            database.entryLinkCommandDao().upsert(
+                EntryLinkEntity(
+                    linkId = "member-link",
+                    sourceEntryId = "a-member",
+                    targetEntryId = "z-account",
+                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                    createdAt = 10L,
+                    updatedAt = 10L,
+                ),
+            )
+
+            suspend fun ids(
+                mode: EntryHierarchyDisplayMode,
+                search: String = "",
+            ) = load(
+                EntryListQuery(
+                    searchText = search,
+                    hierarchyMode = mode,
+                    sort =
+                        EntrySort(
+                            field = EntrySortField.ID,
+                            direction = SortDirection.ASC,
+                            pinFavorites = false,
+                            tieBreaker = EntrySortField.CREATED_AT,
+                        ),
+                ),
+            ).map { it.entry.entryId }
+
+            assertEquals(
+                listOf("m-standalone", "z-account"),
+                ids(EntryHierarchyDisplayMode.COLLAPSED),
+            )
+            assertEquals(
+                listOf("m-standalone", "z-account", "a-member"),
+                ids(EntryHierarchyDisplayMode.EXPANDED),
+            )
+            assertEquals(
+                listOf("a-member", "m-standalone"),
+                ids(EntryHierarchyDisplayMode.SEPARATE),
+            )
+            assertEquals(
+                listOf("a-member"),
+                ids(EntryHierarchyDisplayMode.COLLAPSED, search = "member"),
+            )
+            assertEquals(
+                emptyList<String>(),
+                ids(EntryHierarchyDisplayMode.SEPARATE, search = "account"),
+            )
+            assertEquals(
+                listOf("Personal", "Work"),
+                database.entryQueryDao().observeCategories(buildEntryCategoryQuery()).first(),
+            )
+
+            database.entryCommandDao().optimisticSoftDelete(
+                entryId = "z-account",
+                expectedVersion = 1,
+                deletedAt = 20L,
+                updatedAt = 20L,
+            )
+            assertEquals(
+                listOf("a-member", "m-standalone"),
+                ids(EntryHierarchyDisplayMode.COLLAPSED),
+            )
+        }
+
+    private suspend fun insert(entry: EntryEntity) = database.entryCommandDao().insertStrict(entry)
 
     private suspend fun load(query: EntryListQuery): List<EntryPagingRow> {
-        val result = database.entryQueryDao()
-            .paging(buildEntryPagingQuery(query))
-            .load(
-                PagingSource.LoadParams.Refresh(
-                    key = null,
-                    loadSize = 50,
-                    placeholdersEnabled = false,
+        val result =
+            database
+                .entryQueryDao()
+                .paging(buildEntryPagingQuery(query))
+                .load(
+                    PagingSource.LoadParams.Refresh(
+                        key = null,
+                        loadSize = 50,
+                        placeholdersEnabled = false,
+                    ),
                 )
-            )
         return when (result) {
             is PagingSource.LoadResult.Page -> result.data
             is PagingSource.LoadResult.Error -> throw result.throwable

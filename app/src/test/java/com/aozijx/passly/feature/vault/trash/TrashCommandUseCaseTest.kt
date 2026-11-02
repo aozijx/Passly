@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.trash
 
-import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.model.NotFound
+import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
@@ -12,8 +12,8 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -30,106 +30,117 @@ import org.junit.Test
 
 class TrashCommandUseCaseTest {
     @Test
-    fun lockedSessionDoesNotQueryOrMoveEntryToTrash() = runTest {
-        val fixture = fixture(AuthenticationState.Locked, entry = entry())
+    fun lockedSessionDoesNotQueryOrMoveEntryToTrash() =
+        runTest {
+            val fixture = fixture(AuthenticationState.Locked, entry = entry())
 
-        val result = fixture.useCase.moveToTrash(EntryId("entry"))
+            val result = fixture.useCase.moveToTrash(EntryId("entry"))
 
-        assertTrue((result as TrashCommandResult.Failed).error is SessionModeRestricted)
-        assertEquals(0, fixture.query.reads)
-        assertEquals(0, fixture.commands.moves)
-    }
-
-    @Test
-    fun missingEntryIsNotMovedToTrash() = runTest {
-        val fixture = fixture(AuthenticationState.Authenticated(1L))
-
-        val result = fixture.useCase.moveToTrash(EntryId("missing"))
-
-        assertTrue((result as TrashCommandResult.Failed).error is NotFound)
-        assertEquals(1, fixture.query.reads)
-        assertEquals(0, fixture.commands.moves)
-    }
+            assertTrue((result as TrashCommandResult.Failed).error is SessionModeRestricted)
+            assertEquals(0, fixture.query.reads)
+            assertEquals(0, fixture.commands.moves)
+        }
 
     @Test
-    fun moveToTrashUsesCurrentEntryVersion() = runTest {
-        val fixture = fixture(
-            AuthenticationState.Authenticated(1L),
-            entry = entry(EntryVersion(4)),
-        )
+    fun missingEntryIsNotMovedToTrash() =
+        runTest {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
 
-        val result = fixture.useCase.moveToTrash(EntryId("entry"))
+            val result = fixture.useCase.moveToTrash(EntryId("missing"))
 
-        assertEquals(TrashCommandResult.Completed, result)
-        assertEquals(EntryId("entry") to EntryVersion(4), fixture.commands.lastMove)
-    }
-
-    @Test
-    fun cancelledMoveAuthorizationDoesNotQueryOrMoveEntry() = runTest {
-        val fixture = fixture(
-            state = AuthenticationState.Authenticated(1L),
-            entry = entry(),
-            authorizationAllowed = false,
-        )
-
-        val result = fixture.useCase.moveToTrash(EntryId("entry"))
-
-        assertEquals(TrashCommandResult.NotAuthorized, result)
-        assertEquals(0, fixture.query.reads)
-        assertEquals(0, fixture.commands.moves)
-        assertEquals(
-            AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
-            fixture.authorization.lastScope,
-        )
-    }
+            assertTrue((result as TrashCommandResult.Failed).error is NotFound)
+            assertEquals(1, fixture.query.reads)
+            assertEquals(0, fixture.commands.moves)
+        }
 
     @Test
-    fun lockedSessionCannotRestore() = runTest {
-        val fixture = fixture(AuthenticationState.Locked)
+    fun moveToTrashUsesCurrentEntryVersion() =
+        runTest {
+            val fixture =
+                fixture(
+                    AuthenticationState.Authenticated(1L),
+                    entry = entry(EntryVersion(4)),
+                )
 
-        val result = fixture.useCase.restore(EntryId("entry"), EntryVersion(2))
+            val result = fixture.useCase.moveToTrash(EntryId("entry"))
 
-        assertTrue((result as TrashCommandResult.Failed).error is SessionModeRestricted)
-        assertEquals(0, fixture.commands.restores)
-    }
-
-    @Test
-    fun restoreUsesExpectedVersionWithoutFreshAuthorization() = runTest {
-        val fixture = fixture(AuthenticationState.Authenticated(1L))
-
-        val result = fixture.useCase.restore(EntryId("entry"), EntryVersion(3))
-
-        assertEquals(TrashCommandResult.Completed, result)
-        assertEquals(EntryId("entry") to EntryVersion(3), fixture.commands.lastRestore)
-        assertEquals(null, fixture.authorization.lastScope)
-    }
+            assertEquals(TrashCommandResult.Completed, result)
+            assertEquals(EntryId("entry") to EntryVersion(4), fixture.commands.lastMove)
+        }
 
     @Test
-    fun cancelledAuthorizationCannotDeletePermanently() = runTest {
-        val fixture = fixture(
-            state = AuthenticationState.Authenticated(1L),
-            authorizationAllowed = false,
-        )
+    fun cancelledMoveAuthorizationDoesNotQueryOrMoveEntry() =
+        runTest {
+            val fixture =
+                fixture(
+                    state = AuthenticationState.Authenticated(1L),
+                    entry = entry(),
+                    authorizationAllowed = false,
+                )
 
-        val result = fixture.useCase.deletePermanently(EntryId("entry"), EntryVersion(4))
+            val result = fixture.useCase.moveToTrash(EntryId("entry"))
 
-        assertEquals(TrashCommandResult.NotAuthorized, result)
-        assertEquals(0, fixture.commands.permanentDeletes)
-        assertEquals(
-            AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
-            fixture.authorization.lastScope,
-        )
-    }
+            assertEquals(TrashCommandResult.NotAuthorized, result)
+            assertEquals(0, fixture.query.reads)
+            assertEquals(0, fixture.commands.moves)
+            assertEquals(
+                AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
+                fixture.authorization.lastScope,
+            )
+        }
 
     @Test
-    fun authorizedEmptyTrashExecutesRepositoryCommand() = runTest {
-        val fixture = fixture(AuthenticationState.Authenticated(1L))
+    fun lockedSessionCannotRestore() =
+        runTest {
+            val fixture = fixture(AuthenticationState.Locked)
 
-        val result = fixture.useCase.empty()
+            val result = fixture.useCase.restore(EntryId("entry"), EntryVersion(2))
 
-        assertEquals(TrashCommandResult.Completed, result)
-        assertEquals(1, fixture.commands.emptyCalls)
-    }
+            assertTrue((result as TrashCommandResult.Failed).error is SessionModeRestricted)
+            assertEquals(0, fixture.commands.restores)
+        }
+
+    @Test
+    fun restoreUsesExpectedVersionWithoutFreshAuthorization() =
+        runTest {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+
+            val result = fixture.useCase.restore(EntryId("entry"), EntryVersion(3))
+
+            assertEquals(TrashCommandResult.Completed, result)
+            assertEquals(EntryId("entry") to EntryVersion(3), fixture.commands.lastRestore)
+            assertEquals(null, fixture.authorization.lastScope)
+        }
+
+    @Test
+    fun cancelledAuthorizationCannotDeletePermanently() =
+        runTest {
+            val fixture =
+                fixture(
+                    state = AuthenticationState.Authenticated(1L),
+                    authorizationAllowed = false,
+                )
+
+            val result = fixture.useCase.deletePermanently(EntryId("entry"), EntryVersion(4))
+
+            assertEquals(TrashCommandResult.NotAuthorized, result)
+            assertEquals(0, fixture.commands.permanentDeletes)
+            assertEquals(
+                AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
+                fixture.authorization.lastScope,
+            )
+        }
+
+    @Test
+    fun authorizedEmptyTrashExecutesRepositoryCommand() =
+        runTest {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+
+            val result = fixture.useCase.empty()
+
+            assertEquals(TrashCommandResult.Completed, result)
+            assertEquals(1, fixture.commands.emptyCalls)
+        }
 
     private fun fixture(
         state: AuthenticationState,
@@ -147,10 +158,11 @@ class TrashCommandUseCaseTest {
         )
     }
 
-    private fun entry(version: EntryVersion = EntryVersion.INITIAL) = Entry(
-        identity = EntryIdentity(EntryId("entry"), EntryType.ACCOUNT, version, EntryTimestamps(1L)),
-        profile = EntryProfile("Entry"),
-    )
+    private fun entry(version: EntryVersion = EntryVersion.INITIAL) =
+        Entry(
+            identity = EntryIdentity(EntryId("entry"), EntryType.ACCOUNT, version, EntryTimestamps(1L)),
+            profile = EntryProfile("Entry"),
+        )
 
     private data class Fixture(
         val useCase: TrashCommandUseCase,
@@ -159,8 +171,11 @@ class TrashCommandUseCaseTest {
         val authorization: RecordingAuthorizationGate,
     )
 
-    private class FixedAccess(state: AuthenticationState) : SecureSessionAccessState {
+    private class FixedAccess(
+        state: AuthenticationState,
+    ) : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> = MutableStateFlow(state)
+
         override fun isUnlocked() = authenticationState.value is AuthenticationState.Authenticated
     }
 
@@ -192,7 +207,10 @@ class TrashCommandUseCaseTest {
 
         var lastMove: Pair<EntryId, EntryVersion>? = null
 
-        override suspend fun moveToTrash(id: EntryId, expectedVersion: EntryVersion): AppResult<Unit> {
+        override suspend fun moveToTrash(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ): AppResult<Unit> {
             moves++
             lastMove = id to expectedVersion
             return AppResult.Success(Unit)
@@ -221,15 +239,17 @@ class TrashCommandUseCaseTest {
         }
 
         override suspend fun createEntry(entry: Entry) = AppResult.Success(entry.id)
+
         override suspend fun updateEntry(
             id: EntryId,
             expectedVersion: EntryVersion,
             changes: EntryUpdate,
         ) = AppResult.Success(Unit)
-
     }
 
-    private class RecordingQuery(private val entry: Entry?) : EntryQueryRepository {
+    private class RecordingQuery(
+        private val entry: Entry?,
+    ) : EntryQueryRepository {
         var reads = 0
 
         override suspend fun getById(entryId: EntryId): Entry? = entry.also { reads++ }

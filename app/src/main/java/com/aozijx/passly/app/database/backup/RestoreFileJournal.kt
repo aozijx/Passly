@@ -14,12 +14,15 @@ import java.util.UUID
 internal class RestoreFileJournal {
     private data class Change(
         val target: File,
-        val previous: File?
+        val previous: File?,
     )
 
     private val changes = mutableListOf<Change>()
 
-    fun replace(target: File, content: ByteArray) {
+    fun replace(
+        target: File,
+        content: ByteArray,
+    ) {
         val parent = requireNotNull(target.parentFile) { "恢复目标没有父目录" }
         require(parent.isDirectory || parent.mkdirs()) {
             "无法创建恢复目录: ${parent.name}"
@@ -27,15 +30,16 @@ internal class RestoreFileJournal {
 
         val token = UUID.randomUUID().toString()
         val temporary = File(parent, ".${target.name}.$token.importing")
-        val previous = if (target.exists()) {
-            File(parent, ".${target.name}.$token.previous").also { backup ->
-                require(target.renameTo(backup)) {
-                    "无法暂存已有文件: ${target.name}"
+        val previous =
+            if (target.exists()) {
+                File(parent, ".${target.name}.$token.previous").also { backup ->
+                    require(target.renameTo(backup)) {
+                        "无法暂存已有文件: ${target.name}"
+                    }
                 }
+            } else {
+                null
             }
-        } else {
-            null
-        }
 
         try {
             FileOutputStream(temporary).use { output ->

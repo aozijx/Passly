@@ -18,12 +18,19 @@ sealed interface DetailRevisionState {
 
 sealed interface DetailRevisionListState {
     data object Loading : DetailRevisionListState
-    data class Ready(val revisions: List<EntryRevisionMetadata>) : DetailRevisionListState
-    data class Failed(val reason: DetailRevisionFailure) : DetailRevisionListState
+
+    data class Ready(
+        val revisions: List<EntryRevisionMetadata>,
+    ) : DetailRevisionListState
+
+    data class Failed(
+        val reason: DetailRevisionFailure,
+    ) : DetailRevisionListState
 }
 
 sealed interface DetailRevisionPage {
     data object List : DetailRevisionPage
+
     data class Comparison(
         val revisionId: String,
         val phase: DetailRevisionComparisonPhase = DetailRevisionComparisonPhase.Loading,
@@ -32,11 +39,15 @@ sealed interface DetailRevisionPage {
 
 sealed interface DetailRevisionComparisonPhase {
     data object Loading : DetailRevisionComparisonPhase
+
     data class Ready(
         val differences: List<EntryRevisionDifference>,
         val restore: DetailRevisionRestorePhase = DetailRevisionRestorePhase.Idle,
     ) : DetailRevisionComparisonPhase
-    data class Failed(val reason: DetailRevisionFailure) : DetailRevisionComparisonPhase
+
+    data class Failed(
+        val reason: DetailRevisionFailure,
+    ) : DetailRevisionComparisonPhase
 }
 
 enum class DetailRevisionRestorePhase {

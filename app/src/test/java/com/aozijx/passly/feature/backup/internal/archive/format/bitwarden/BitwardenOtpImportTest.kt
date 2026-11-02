@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
 
 import com.aozijx.passly.core.error.model.BackupFailed
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -13,8 +13,10 @@ class BitwardenOtpImportTest {
 
     @Test
     fun `URI label keeps literal plus and decodes escaped content once`() {
-        val fields = importOtp("otpauth://totp/Bank+Lab:alice+tag%2540example?secret=$SECRET&issuer=Bank+Lab")
-            .fields.associate { it.key to it.value }
+        val fields =
+            importOtp("otpauth://totp/Bank+Lab:alice+tag%2540example?secret=$SECRET&issuer=Bank+Lab")
+                .fields
+                .associate { it.key to it.value }
 
         assertEquals("Bank+Lab", fields.getValue("otp_issuer").text)
         assertEquals("alice+tag%40example", fields.getValue("otp_account_name").text)
@@ -22,8 +24,10 @@ class BitwardenOtpImportTest {
 
     @Test
     fun `unprefixed label is account name rather than issuer`() {
-        val fields = importOtp("otpauth://totp/alice%40example?secret=$SECRET")
-            .fields.associate { it.key to it.value }
+        val fields =
+            importOtp("otpauth://totp/alice%40example?secret=$SECRET")
+                .fields
+                .associate { it.key to it.value }
 
         assertEquals("alice@example", fields.getValue("otp_account_name").text)
         assertEquals(null, fields["otp_issuer"])
@@ -31,8 +35,10 @@ class BitwardenOtpImportTest {
 
     @Test
     fun `HOTP preserves explicit long counter without adding a period`() {
-        val fields = importOtp("otpauth://hotp/Bank:alice?secret=$SECRET&counter=${Long.MAX_VALUE}&digits=8&algorithm=SHA512")
-            .fields.associate { it.key to it.value }
+        val fields =
+            importOtp("otpauth://hotp/Bank:alice?secret=$SECRET&counter=${Long.MAX_VALUE}&digits=8&algorithm=SHA512")
+                .fields
+                .associate { it.key to it.value }
 
         assertEquals("hotp", fields.getValue("otp_type").text)
         assertEquals(Long.MAX_VALUE, fields.getValue("otp_counter").longValue)
@@ -43,8 +49,10 @@ class BitwardenOtpImportTest {
 
     @Test
     fun `Steam issuer URI uses Steam code parameters`() {
-        val fields = importOtp("otpauth://totp/Steam:alice?secret=$SECRET&issuer=Steam&digits=5")
-            .fields.associate { it.key to it.value }
+        val fields =
+            importOtp("otpauth://totp/Steam:alice?secret=$SECRET&issuer=Steam&digits=5")
+                .fields
+                .associate { it.key to it.value }
 
         assertEquals("steam", fields.getValue("otp_type").text)
         assertEquals(5, fields.getValue("otp_digits").integerValue)
@@ -88,18 +96,19 @@ class BitwardenOtpImportTest {
 
     @Test
     fun `malformed ambiguous and unsupported OTP URIs fail instead of importing guessed configuration`() {
-        val invalid = listOf(
-            "otpauth://hotp/alice?secret=$SECRET",
-            "otpauth://hotp/alice?secret=$SECRET&counter=broken",
-            "otpauth://totp/alice?secret=$SECRET&period=broken",
-            "otpauth://totp/alice?secret=$SECRET&digits=broken",
-            "otpauth://totp/alice?secret=$SECRET&secret=MY",
-            "otpauth://totp/Bank:alice?secret=$SECRET&issuer=Other",
-            "otpauth://totp/alice?secret=$SECRET&encoder=unknown",
-            "otpauth://totp/alice?secret=INVALID!",
-            "otpauth://totp/%C3%28?secret=$SECRET",
-            "otpauth:totp/alice?secret=$SECRET",
-        )
+        val invalid =
+            listOf(
+                "otpauth://hotp/alice?secret=$SECRET",
+                "otpauth://hotp/alice?secret=$SECRET&counter=broken",
+                "otpauth://totp/alice?secret=$SECRET&period=broken",
+                "otpauth://totp/alice?secret=$SECRET&digits=broken",
+                "otpauth://totp/alice?secret=$SECRET&secret=MY",
+                "otpauth://totp/Bank:alice?secret=$SECRET&issuer=Other",
+                "otpauth://totp/alice?secret=$SECRET&encoder=unknown",
+                "otpauth://totp/alice?secret=INVALID!",
+                "otpauth://totp/%C3%28?secret=$SECRET",
+                "otpauth:totp/alice?secret=$SECRET",
+            )
         for (strategy in BackupImportStrategy.entries) {
             for (uri in invalid) {
                 assertThrows(BackupFailed::class.java) { importOtp(uri, strategy) }
@@ -111,10 +120,15 @@ class BitwardenOtpImportTest {
         value: String,
         strategy: BackupImportStrategy = BackupImportStrategy.COMPATIBLE,
     ): BackupEntryRecord {
-        val payload = """{"items":[{"id":"login-1","type":1,"name":"Bank","login":{"username":"alice","password":"fake-password","totp":${JsonPrimitive(value)}}}]}"""
-            .toByteArray(Charsets.UTF_8)
-        return adapter.decode(payload, password = null, strategy = strategy)
-            .document.entries.single { it.type == "otp" }
+        val payload =
+            """{"items":[{"id":"login-1","type":1,"name":"Bank","login":{"username":"alice","password":"fake-password","totp":${JsonPrimitive(
+                value,
+            )}}}]}"""
+                .toByteArray(Charsets.UTF_8)
+        return adapter
+            .decode(payload, password = null, strategy = strategy)
+            .document.entries
+            .single { it.type == "otp" }
     }
 
     private companion object {

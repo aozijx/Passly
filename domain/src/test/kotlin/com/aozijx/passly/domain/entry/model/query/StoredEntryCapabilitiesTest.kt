@@ -1,16 +1,16 @@
 package com.aozijx.passly.domain.entry.model.query
 
 import com.aozijx.passly.domain.entry.model.EntrySecret
-import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
-import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -52,7 +52,8 @@ class StoredEntryCapabilitiesTest {
 
     @Test
     fun wifiPasswordInStoredBundleKeepsPasswordCapabilityWithoutSeparateRow() {
-        val bundle = EntrySecret(WifiCredential(ssid = "Network", password = "network-password", securityType = WifiSecurityType.WpaPersonal))
+        val bundle =
+            EntrySecret(WifiCredential(ssid = "Network", password = "network-password", securityType = WifiSecurityType.WpaPersonal))
         val actual = EntryCapabilities.fromStoredSecret(bundle, emptySet())
         assertEquals(setOf(EntryCapability.PASSWORD, EntryCapability.WIFI), actual.values)
     }

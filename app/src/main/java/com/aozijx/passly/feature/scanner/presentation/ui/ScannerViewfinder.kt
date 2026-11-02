@@ -16,8 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,14 +52,16 @@ internal fun ScannerViewfinder(
         val cornerRadiusPx = with(density) { 28.dp.toPx() }
 
         Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
         ) {
-            val topLeft = Offset(
-                x = (size.width - frameSizePx) / 2f,
-                y = (size.height - frameSizePx) / 2f,
-            )
+            val topLeft =
+                Offset(
+                    x = (size.width - frameSizePx) / 2f,
+                    y = (size.height - frameSizePx) / 2f,
+                )
             drawRect(Color.Black.copy(alpha = 0.56f))
             drawRoundRect(
                 color = Color.Transparent,
@@ -71,13 +73,14 @@ internal fun ScannerViewfinder(
         }
 
         Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(frameSize)
-                .graphicsLayer {
-                    clip = true
-                    shape = RoundedCornerShape(28.dp)
-                },
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .size(frameSize)
+                    .graphicsLayer {
+                        clip = true
+                        shape = RoundedCornerShape(28.dp)
+                    },
         ) {
             ScannerFrame(modifier = Modifier.fillMaxSize())
             if (isScanning) {
@@ -85,33 +88,36 @@ internal fun ScannerViewfinder(
                 val progress by transition.animateFloat(
                     initialValue = 0.08f,
                     targetValue = 0.92f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 1_600, easing = LinearEasing),
-                        repeatMode = RepeatMode.Reverse,
-                    ),
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 1_600, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
                     label = "scanner-line-progress",
                 )
                 val travelPx = with(density) { (frameSize - 2.dp).toPx() }
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .graphicsLayer { translationY = travelPx * progress }
-                        .background(
-                            Brush.horizontalGradient(
-                                0f to Color.Transparent,
-                                0.5f to MaterialTheme.colorScheme.primary,
-                                1f to Color.Transparent,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .graphicsLayer { translationY = travelPx * progress }
+                            .background(
+                                Brush.horizontalGradient(
+                                    0f to Color.Transparent,
+                                    0.5f to MaterialTheme.colorScheme.primary,
+                                    1f to Color.Transparent,
+                                ),
                             ),
-                        ),
                 )
             }
         }
 
         Surface(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = frameSize / 2 + 32.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.Center)
+                    .offset(y = frameSize / 2 + 32.dp),
             shape = CircleShape,
             color = Color.Black.copy(alpha = 0.58f),
             contentColor = Color.White,
@@ -142,7 +148,11 @@ private fun ScannerFrame(modifier: Modifier = Modifier) {
             style = Stroke(width = outlineWidth),
         )
 
-        fun corner(start: Offset, horizontal: Offset, vertical: Offset) {
+        fun corner(
+            start: Offset,
+            horizontal: Offset,
+            vertical: Offset,
+        ) {
             drawLine(primary, start, horizontal, cornerWidth, StrokeCap.Round)
             drawLine(primary, start, vertical, cornerWidth, StrokeCap.Round)
         }

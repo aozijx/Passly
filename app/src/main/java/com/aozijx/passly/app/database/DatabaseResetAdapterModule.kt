@@ -12,7 +12,5 @@ import javax.inject.Singleton
 abstract class DatabaseResetAdapterModule {
     @Binds
     @Singleton
-    abstract fun bindDatabaseResetGateway(
-        implementation: DatabaseResetGatewayAdapter,
-    ): DatabaseResetGateway
+    abstract fun bindDatabaseResetGateway(implementation: DatabaseResetGatewayAdapter): DatabaseResetGateway
 }

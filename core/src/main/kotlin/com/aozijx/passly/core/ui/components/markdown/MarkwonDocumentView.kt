@@ -54,13 +54,16 @@ internal fun MarkwonDocumentView(
 }
 
 private fun createMarkwon(context: Context): Markwon =
-    Markwon.builder(context)
+    Markwon
+        .builder(context)
         .usePlugin(StrikethroughPlugin.create())
         .usePlugin(TablePlugin.create(context))
         .usePlugin(TaskListPlugin.create(context))
         .build()
 
-private class PasslyMarkdownTextView(context: Context) : MaterialTextView(context) {
+private class PasslyMarkdownTextView(
+    context: Context,
+) : MaterialTextView(context) {
     var renderedSource: String? = null
 
     init {

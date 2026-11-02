@@ -15,7 +15,8 @@ internal object TestDatabaseFactory {
     }
 
     fun inMemoryDatabaseBuilder(context: Context): RoomDatabase.Builder<AppDatabase> =
-        Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+        Room
+            .inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .openHelperFactory(SupportOpenHelperFactory(testPassphrase.copyOf()))
             .addCallback(AttachmentReferenceConstraintCallback)
 }

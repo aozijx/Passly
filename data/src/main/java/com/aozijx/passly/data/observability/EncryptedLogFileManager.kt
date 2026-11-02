@@ -14,22 +14,40 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-internal data class WrappedLogKey(val nonce: ByteArray, val ciphertext: ByteArray)
+internal data class WrappedLogKey(
+    val nonce: ByteArray,
+    val ciphertext: ByteArray,
+)
 
 internal interface LogKeyWrapper {
-    fun wrap(dataKey: ByteArray, aad: ByteArray): WrappedLogKey
-    fun unwrap(wrapped: WrappedLogKey, aad: ByteArray): ByteArray
+    fun wrap(
+        dataKey: ByteArray,
+        aad: ByteArray,
+    ): WrappedLogKey
+
+    fun unwrap(
+        wrapped: WrappedLogKey,
+        aad: ByteArray,
+    ): ByteArray
 }
 
 internal object AesGcmKeyWrapping {
-    fun wrap(key: SecretKey, dataKey: ByteArray, aad: ByteArray): WrappedLogKey {
+    fun wrap(
+        key: SecretKey,
+        dataKey: ByteArray,
+        aad: ByteArray,
+    ): WrappedLogKey {
         val cipher = Cipher.getInstance(EncryptedLogFileManager.TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, key)
         cipher.updateAAD(aad)
         return WrappedLogKey(cipher.iv.copyOf(), cipher.doFinal(dataKey))
     }
 
-    fun unwrap(key: SecretKey, wrapped: WrappedLogKey, aad: ByteArray): ByteArray {
+    fun unwrap(
+        key: SecretKey,
+        wrapped: WrappedLogKey,
+        aad: ByteArray,
+    ): ByteArray {
         val cipher = Cipher.getInstance(EncryptedLogFileManager.TRANSFORMATION)
         cipher.init(
             Cipher.DECRYPT_MODE,
@@ -42,31 +60,36 @@ internal object AesGcmKeyWrapping {
 }
 
 internal class AndroidKeystoreLogKeyWrapper : LogKeyWrapper {
-    override fun wrap(dataKey: ByteArray, aad: ByteArray): WrappedLogKey =
-        AesGcmKeyWrapping.wrap(getOrCreateKey(), dataKey, aad)
+    override fun wrap(
+        dataKey: ByteArray,
+        aad: ByteArray,
+    ): WrappedLogKey = AesGcmKeyWrapping.wrap(getOrCreateKey(), dataKey, aad)
 
-    override fun unwrap(wrapped: WrappedLogKey, aad: ByteArray): ByteArray =
-        AesGcmKeyWrapping.unwrap(getOrCreateKey(), wrapped, aad)
+    override fun unwrap(
+        wrapped: WrappedLogKey,
+        aad: ByteArray,
+    ): ByteArray = AesGcmKeyWrapping.unwrap(getOrCreateKey(), wrapped, aad)
 
     private fun getOrCreateKey(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         if (!keyStore.containsAlias(KEY_ALIAS)) {
-            javax.crypto.KeyGenerator.getInstance("AES", "AndroidKeyStore").apply {
-                init(
-                    android.security.keystore.KeyGenParameterSpec.Builder(
-                        KEY_ALIAS,
-                        android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or
-                            android.security.keystore.KeyProperties.PURPOSE_DECRYPT,
+            javax.crypto.KeyGenerator
+                .getInstance("AES", "AndroidKeyStore")
+                .apply {
+                    init(
+                        android.security.keystore.KeyGenParameterSpec
+                            .Builder(
+                                KEY_ALIAS,
+                                android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or
+                                    android.security.keystore.KeyProperties.PURPOSE_DECRYPT,
+                            ).setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
+                            .setEncryptionPaddings(
+                                android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE,
+                            ).setKeySize(256)
+                            .setUserAuthenticationRequired(false)
+                            .build(),
                     )
-                        .setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
-                        .setEncryptionPaddings(
-                            android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE,
-                        )
-                        .setKeySize(256)
-                        .setUserAuthenticationRequired(false)
-                        .build(),
-                )
-            }.generateKey()
+                }.generateKey()
         }
         return (keyStore.getEntry(KEY_ALIAS, null) as KeyStore.SecretKeyEntry).secretKey
     }
@@ -95,7 +118,11 @@ internal class EncryptedLogFileManager(
         fun destroy() = dataKey.fill(0)
     }
 
-    data class Opened(val fileId: ByteArray, val createdAtMs: Long, val dataKey: ByteArray) {
+    data class Opened(
+        val fileId: ByteArray,
+        val createdAtMs: Long,
+        val dataKey: ByteArray,
+    ) {
         fun destroy() = dataKey.fill(0)
     }
 
@@ -112,26 +139,31 @@ internal class EncryptedLogFileManager(
     fun currentEntry(): Entry {
         val now = nowMs()
         val bucket = now.floorDiv(ONE_DAY_MS)
-        activeEntry?.takeIf {
-            it.file.exists() &&
-                it.createdAtMs.floorDiv(ONE_DAY_MS) == bucket &&
-                it.file.length() < maxFileBytes
-        }?.let { return it }
+        activeEntry
+            ?.takeIf {
+                it.file.exists() &&
+                    it.createdAtMs.floorDiv(ONE_DAY_MS) == bucket &&
+                    it.file.length() < maxFileBytes
+            }?.let { return it }
         cleanup()
         val file = File.createTempFile("log_${bucket}_${now}_", ".log", directory)
-        val entry = try {
-            prepareEntry(file, now).also { writeHeader(file, it) }
-        } catch (error: Throwable) {
-            file.delete()
-            throw error
-        }
+        val entry =
+            try {
+                prepareEntry(file, now).also { writeHeader(file, it) }
+            } catch (error: Throwable) {
+                file.delete()
+                throw error
+            }
         activeEntry?.destroy()
         activeEntry = entry
         cleanup()
         return entry
     }
 
-    fun prepareEntry(file: File, createdAtMs: Long): Entry {
+    fun prepareEntry(
+        file: File,
+        createdAtMs: Long,
+    ): Entry {
         val fileId = ByteArray(FILE_ID_BYTES).also(random::nextBytes)
         val dataKey = ByteArray(DATA_KEY_BYTES).also(random::nextBytes)
         return try {
@@ -145,7 +177,10 @@ internal class EncryptedLogFileManager(
         }
     }
 
-    fun writeHeader(file: File, entry: Entry) {
+    fun writeHeader(
+        file: File,
+        entry: Entry,
+    ) {
         DataOutputStream(FileOutputStream(file, false).buffered()).use { out ->
             out.writeInt(FILE_MAGIC)
             out.writeInt(FILE_VERSION)
@@ -165,12 +200,14 @@ internal class EncryptedLogFileManager(
         val fileId = ByteArray(FILE_ID_BYTES).also(input::readFully)
         val createdAtMs = input.readLong()
         val nonce = ByteArray(input.readInt().checkedExact(NONCE_BYTES)).also(input::readFully)
-        val wrappedBytes = ByteArray(input.readInt().checkedMax(MAX_WRAPPED_KEY_BYTES))
-            .also(input::readFully)
-        val key = keyWrapper.unwrap(
-            WrappedLogKey(nonce, wrappedBytes),
-            headerAad(fileId, createdAtMs),
-        )
+        val wrappedBytes =
+            ByteArray(input.readInt().checkedMax(MAX_WRAPPED_KEY_BYTES))
+                .also(input::readFully)
+        val key =
+            keyWrapper.unwrap(
+                WrappedLogKey(nonce, wrappedBytes),
+                headerAad(fileId, createdAtMs),
+            )
         if (key.size != DATA_KEY_BYTES) {
             key.fill(0)
             throw IllegalArgumentException("Invalid data key")
@@ -178,8 +215,13 @@ internal class EncryptedLogFileManager(
         return Opened(fileId, createdAtMs, key)
     }
 
-    fun recordAad(fileId: ByteArray, sequence: Long, level: Int): ByteArray =
-        java.nio.ByteBuffer.allocate(4 + 4 + FILE_ID_BYTES + 8 + 1)
+    fun recordAad(
+        fileId: ByteArray,
+        sequence: Long,
+        level: Int,
+    ): ByteArray =
+        java.nio.ByteBuffer
+            .allocate(4 + 4 + FILE_ID_BYTES + 8 + 1)
             .putInt(FILE_MAGIC)
             .putInt(FILE_VERSION)
             .put(fileId)
@@ -187,30 +229,32 @@ internal class EncryptedLogFileManager(
             .put(level.toByte())
             .array()
 
-    fun listLogFiles(): List<File> = directory.listFiles()
-        ?.filter {
-            it.isFile &&
-                it.extension == LOG_EXTENSION &&
-                it.canonicalFile.parentFile == directory.canonicalFile
-        }
-        ?.sortedWith(compareBy(File::lastModified, File::getName))
-        .orEmpty()
+    fun listLogFiles(): List<File> =
+        directory
+            .listFiles()
+            ?.filter {
+                it.isFile &&
+                    it.extension == LOG_EXTENSION &&
+                    it.canonicalFile.parentFile == directory.canonicalFile
+            }?.sortedWith(compareBy(File::lastModified, File::getName))
+            .orEmpty()
 
-    fun countRecords(file: File): Int = runCatching {
-        DataInputStream(FileInputStream(file).buffered()).use { input ->
-            skipHeader(input)
-            var count = 0
-            while (true) {
-                try {
-                    input.skipRecord()
-                    count++
-                } catch (_: EOFException) {
-                    break
+    fun countRecords(file: File): Int =
+        runCatching {
+            DataInputStream(FileInputStream(file).buffered()).use { input ->
+                skipHeader(input)
+                var count = 0
+                while (true) {
+                    try {
+                        input.skipRecord()
+                        count++
+                    } catch (_: EOFException) {
+                        break
+                    }
                 }
+                count
             }
-            count
-        }
-    }.getOrDefault(0)
+        }.getOrDefault(0)
 
     fun cleanup() {
         val cutoff = nowMs() - RETENTION_MS
@@ -220,7 +264,8 @@ internal class EncryptedLogFileManager(
             .forEach { runCatching { it.delete() } }
         val files = listLogFiles()
         val excessCount = (files.size - maxFiles).coerceAtLeast(0)
-        files.filter { it.canonicalFile != activeFile }
+        files
+            .filter { it.canonicalFile != activeFile }
             .sortedWith(compareBy(File::lastModified, File::getName))
             .take(excessCount)
             .forEach { runCatching { it.delete() } }
@@ -265,8 +310,12 @@ internal class EncryptedLogFileManager(
         readFully(ByteArray(readInt().checkedMax(LogRecordCodec.MAX_RECORD_BYTES + GCM_TAG_BYTES)))
     }
 
-    private fun headerAad(fileId: ByteArray, createdAtMs: Long): ByteArray =
-        java.nio.ByteBuffer.allocate(4 + 4 + FILE_ID_BYTES + 8)
+    private fun headerAad(
+        fileId: ByteArray,
+        createdAtMs: Long,
+    ): ByteArray =
+        java.nio.ByteBuffer
+            .allocate(4 + 4 + FILE_ID_BYTES + 8)
             .putInt(FILE_MAGIC)
             .putInt(FILE_VERSION)
             .put(fileId)
@@ -274,6 +323,7 @@ internal class EncryptedLogFileManager(
             .array()
 
     private fun Int.checkedMax(max: Int): Int = also { require(it in 1..max) }
+
     private fun Int.checkedExact(expected: Int): Int = also { require(it == expected) }
 
     companion object {
@@ -291,6 +341,5 @@ internal class EncryptedLogFileManager(
         const val ONE_DAY_MS = 24 * 60 * 60 * 1000L
         const val RETENTION_MS = 3 * ONE_DAY_MS
         const val TRANSFORMATION = "AES/GCM/NoPadding"
-
     }
 }

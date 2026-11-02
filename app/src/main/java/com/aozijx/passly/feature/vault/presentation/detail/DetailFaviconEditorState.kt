@@ -2,11 +2,15 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 sealed interface DetailFaviconSource {
     data object InferredDefault : DetailFaviconSource
+
     data class BuiltIn(
         val key: String,
         val colorToken: String?,
     ) : DetailFaviconSource
-    data class PrivateImage(val localPath: String) : DetailFaviconSource
+
+    data class PrivateImage(
+        val localPath: String,
+    ) : DetailFaviconSource
 }
 
 enum class DetailFaviconTab {
@@ -44,11 +48,16 @@ sealed interface DetailFaviconEditorState {
 
 sealed interface DetailFaviconWorkState {
     data object Idle : DetailFaviconWorkState
+
     data object Processing : DetailFaviconWorkState
-    data class Failed(val error: DetailFaviconProcessingError) : DetailFaviconWorkState
+
+    data class Failed(
+        val error: DetailFaviconProcessingError,
+    ) : DetailFaviconWorkState
 }
 
 sealed interface DetailFaviconOverlay {
     data object None : DetailFaviconOverlay
+
     data object ConfirmDiscard : DetailFaviconOverlay
 }

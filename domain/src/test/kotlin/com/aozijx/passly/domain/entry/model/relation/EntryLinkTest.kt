@@ -8,13 +8,14 @@ import org.junit.Test
 class EntryLinkTest {
     @Test
     fun `related link canonicalizes endpoints`() {
-        val link = EntryLink.create(
-            id = EntryLinkId("link"),
-            sourceEntryId = EntryId("z"),
-            targetEntryId = EntryId("a"),
-            relationType = EntryRelationType.RELATED_TO,
-            createdAt = 1L
-        )
+        val link =
+            EntryLink.create(
+                id = EntryLinkId("link"),
+                sourceEntryId = EntryId("z"),
+                targetEntryId = EntryId("a"),
+                relationType = EntryRelationType.RELATED_TO,
+                createdAt = 1L,
+            )
 
         assertEquals(EntryId("a"), link.sourceEntryId)
         assertEquals(EntryId("z"), link.targetEntryId)
@@ -22,13 +23,14 @@ class EntryLinkTest {
 
     @Test
     fun `directional link preserves direction`() {
-        val link = EntryLink.create(
-            id = EntryLinkId("link"),
-            sourceEntryId = EntryId("login"),
-            targetEntryId = EntryId("account"),
-            relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
-            createdAt = 1L
-        )
+        val link =
+            EntryLink.create(
+                id = EntryLinkId("link"),
+                sourceEntryId = EntryId("login"),
+                targetEntryId = EntryId("account"),
+                relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                createdAt = 1L,
+            )
 
         assertEquals(EntryId("login"), link.sourceEntryId)
         assertEquals(EntryId("account"), link.targetEntryId)
@@ -42,7 +44,7 @@ class EntryLinkTest {
                 sourceEntryId = EntryId("same"),
                 targetEntryId = EntryId("same"),
                 relationType = EntryRelationType.OTP_FOR,
-                createdAt = 1L
+                createdAt = 1L,
             )
         }
     }

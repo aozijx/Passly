@@ -1,7 +1,9 @@
 package com.aozijx.passly.domain.entry.policy
 
 sealed interface WifiQrParseResult {
-    data class Parsed(val payload: WifiQrPayload) : WifiQrParseResult
+    data class Parsed(
+        val payload: WifiQrPayload,
+    ) : WifiQrParseResult
 
     data object NotWifi : WifiQrParseResult
 

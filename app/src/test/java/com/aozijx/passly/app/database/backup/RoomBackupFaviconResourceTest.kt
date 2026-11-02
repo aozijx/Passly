@@ -2,6 +2,7 @@ package com.aozijx.passly.app.database.backup
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord
+import java.io.File
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -10,7 +11,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class RoomBackupFaviconResourceTest {
     @get:Rule
@@ -21,17 +21,19 @@ class RoomBackupFaviconResourceTest {
         val sourceRoot = temporaryFolder.newFolder("source-icons")
         val restoredRoot = temporaryFolder.newFolder("restored-icons")
         val sourceBytes = byteArrayOf(0x52, 0x49, 0x46, 0x46, 0x01, 0x02, 0x03)
-        val source = File(sourceRoot, "private-icon.webp").apply {
-            writeBytes(sourceBytes)
-        }
+        val source =
+            File(sourceRoot, "private-icon.webp").apply {
+                writeBytes(sourceBytes)
+            }
 
-        val exported = requireNotNull(
-            RoomBackupFaviconResource.export(
-                entryId = "entry-1",
-                iconPath = source.absolutePath,
-                iconRoot = sourceRoot,
+        val exported =
+            requireNotNull(
+                RoomBackupFaviconResource.export(
+                    entryId = "entry-1",
+                    iconPath = source.absolutePath,
+                    iconRoot = sourceRoot,
+                ),
             )
-        )
 
         assertEquals(BackupResourceKind.ICON, exported.record.kind)
         assertEquals("image/webp", exported.record.mimeType)
@@ -40,12 +42,13 @@ class RoomBackupFaviconResourceTest {
         assertArrayEquals(sourceBytes, exported.content)
 
         val journal = RestoreFileJournal()
-        val restored = RoomBackupFaviconResource.restore(
-            record = exported.record,
-            content = exported.content,
-            iconRoot = restoredRoot,
-            fileJournal = journal,
-        )
+        val restored =
+            RoomBackupFaviconResource.restore(
+                record = exported.record,
+                content = exported.content,
+                iconRoot = restoredRoot,
+                fileJournal = journal,
+            )
         journal.commit()
 
         assertEquals("webp", restored.extension)
@@ -68,15 +71,16 @@ class RoomBackupFaviconResourceTest {
             )
         }
 
-        val record = BackupResourceRecord(
-            id = "icon_entry-1",
-            entryId = "entry-1",
-            kind = BackupResourceKind.ICON,
-            fileName = "legacy-icon.png",
-            mimeType = "image/png",
-            size = 1,
-            sha256 = "00",
-        )
+        val record =
+            BackupResourceRecord(
+                id = "icon_entry-1",
+                entryId = "entry-1",
+                kind = BackupResourceKind.ICON,
+                fileName = "legacy-icon.png",
+                mimeType = "image/png",
+                size = 1,
+                sha256 = "00",
+            )
         assertThrows(IllegalArgumentException::class.java) {
             RoomBackupFaviconResource.restore(
                 record = record,

@@ -22,17 +22,18 @@ import com.aozijx.passly.presentation.shared.entry.labelRes
 @Composable
 fun RelatedEntriesSection(
     entries: List<RelatedEntryUiModel>,
-    onOpenEntry: (String) -> Unit
+    onOpenEntry: (String) -> Unit,
 ) {
     if (entries.isEmpty()) return
     InfoGroupCard(title = stringResource(R.string.related_entries)) {
         Column(modifier = Modifier.fillMaxWidth()) {
             entries.forEachIndexed { index, entry ->
                 ListItem(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenEntry(entry.id) }
-                        .padding(horizontal = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenEntry(entry.id) }
+                            .padding(horizontal = 4.dp),
                     leadingContent = null,
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)

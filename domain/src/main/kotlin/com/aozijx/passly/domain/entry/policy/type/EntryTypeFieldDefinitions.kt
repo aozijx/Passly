@@ -36,23 +36,25 @@ internal fun high(
     sensitiveFieldKey = sensitiveFieldKey,
 )
 
-internal fun loginFields() = listOf(
-    titleField(),
-    secret(FieldKey.USERNAME),
-    secret(FieldKey.EMAIL),
-    high(FieldKey.PASSWORD, SensitiveFieldKey.PASSWORD, required = true),
-    field(FieldKey.PRIMARY_URL),
-    field(FieldKey.DOMAINS, EntryFieldValueType.TEXT_LIST),
-    field(FieldKey.APPLICATION_IDS, EntryFieldValueType.TEXT_LIST),
-    secret(FieldKey.NOTES),
-    field(FieldKey.TAGS, EntryFieldValueType.TEXT_LIST),
-)
+internal fun loginFields() =
+    listOf(
+        titleField(),
+        secret(FieldKey.USERNAME),
+        secret(FieldKey.EMAIL),
+        high(FieldKey.PASSWORD, SensitiveFieldKey.PASSWORD, required = true),
+        field(FieldKey.PRIMARY_URL),
+        field(FieldKey.DOMAINS, EntryFieldValueType.TEXT_LIST),
+        field(FieldKey.APPLICATION_IDS, EntryFieldValueType.TEXT_LIST),
+        secret(FieldKey.NOTES),
+        field(FieldKey.TAGS, EntryFieldValueType.TEXT_LIST),
+    )
 
-internal fun identityFields() = listOf(
-    titleField(),
-    high(FieldKey.ID_NUMBER, SensitiveFieldKey.IDENTITY_NUMBER, required = true),
-    secret(FieldKey.SECURITY_QUESTION),
-    secret(FieldKey.SECURITY_ANSWER),
-    secret(FieldKey.NOTES),
-    field(FieldKey.TAGS, EntryFieldValueType.TEXT_LIST),
-)
+internal fun identityFields() =
+    listOf(
+        titleField(),
+        high(FieldKey.ID_NUMBER, SensitiveFieldKey.IDENTITY_NUMBER, required = true),
+        secret(FieldKey.SECURITY_QUESTION),
+        secret(FieldKey.SECURITY_ANSWER),
+        secret(FieldKey.NOTES),
+        field(FieldKey.TAGS, EntryFieldValueType.TEXT_LIST),
+    )

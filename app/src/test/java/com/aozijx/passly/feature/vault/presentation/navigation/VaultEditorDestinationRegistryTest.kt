@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.navigation
 
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.app.navigation.AppRoute
+import com.aozijx.passly.domain.entry.model.EntryType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

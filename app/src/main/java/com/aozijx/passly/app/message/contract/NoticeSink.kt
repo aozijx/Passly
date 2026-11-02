@@ -4,10 +4,16 @@ import com.aozijx.passly.app.message.model.AppNotice
 
 sealed interface SinkResult {
     data object Delivered : SinkResult
+
     data object PermissionMissing : SinkResult
+
     data object Disabled : SinkResult
+
     data object AppNotVisible : SinkResult
-    data class Failed(val errorCode: String) : SinkResult
+
+    data class Failed(
+        val errorCode: String,
+    ) : SinkResult
 }
 
 /**
@@ -16,5 +22,6 @@ sealed interface SinkResult {
  */
 interface NoticeSink {
     val target: NoticeTarget
+
     suspend fun deliver(notice: AppNotice): SinkResult
 }

@@ -26,7 +26,10 @@ class LocalAlertPolicyTest {
         assertNull(policy.observe(record(600_004, "trace_dddddddd")))
     }
 
-    private fun record(timestamp: Long, traceId: String) = SanitizedLogRecord(
+    private fun record(
+        timestamp: Long,
+        traceId: String,
+    ) = SanitizedLogRecord(
         eventId = EventId("event_${timestamp}_value"),
         timestampMs = timestamp,
         elapsedRealtimeMs = timestamp,
@@ -37,10 +40,11 @@ class LocalAlertPolicyTest {
         secureSessionId = null,
         trace = TraceSnapshot(TraceId(traceId), SpanId("span_123456789"), null),
         fields = LogFields.Empty,
-        error = ErrorPayload(
-            ErrorCodes.Database.DatabaseSessionOpenFailed,
-            Reasons.SessionOpenFailed,
-            null,
-        ),
+        error =
+            ErrorPayload(
+                ErrorCodes.Database.DatabaseSessionOpenFailed,
+                Reasons.SessionOpenFailed,
+                null,
+            ),
     )
 }

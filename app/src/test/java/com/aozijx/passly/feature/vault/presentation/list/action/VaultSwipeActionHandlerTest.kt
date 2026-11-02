@@ -1,29 +1,29 @@
 package com.aozijx.passly.feature.vault.presentation.list.action
 
-import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VaultSwipeActionHandlerTest {
-
-    private val item = VaultListItemUiModel(
-        id = "entry",
-        entryType = EntryType.LOGIN,
-        title = "Example",
-        username = "user",
-        category = null,
-        favorite = false,
-        associatedDomain = null,
-        associatedAppPackage = null,
-        iconName = null,
-        iconCustomPath = null,
-        hasPassword = true,
-        hasOtp = false,
-        otpKind = null,
-        otpPreview = null,
-    )
+    private val item =
+        VaultListItemUiModel(
+            id = "entry",
+            entryType = EntryType.LOGIN,
+            title = "Example",
+            username = "user",
+            category = null,
+            favorite = false,
+            associatedDomain = null,
+            associatedAppPackage = null,
+            iconName = null,
+            iconCustomPath = null,
+            hasPassword = true,
+            hasOtp = false,
+            otpKind = null,
+            otpPreview = null,
+        )
 
     @Test
     fun copyAndDeleteOnlyDispatchTheirRequestedActions() {
@@ -33,18 +33,18 @@ class VaultSwipeActionHandlerTest {
             actionType = SwipeActionType.COPY_PASSWORD,
             item = item,
             onQuickDelete = { events += "delete" },
-            onCopy = { events += "copy" }
+            onCopy = { events += "copy" },
         )
         handleSwipeAction(
             actionType = SwipeActionType.DELETE,
             item = item,
             onQuickDelete = { events += "delete" },
-            onCopy = { events += "copy" }
+            onCopy = { events += "copy" },
         )
 
         assertEquals(
             listOf("copy", "delete"),
-            events
+            events,
         )
     }
 
@@ -73,6 +73,7 @@ class VaultSwipeActionHandlerTest {
             resolveCopyRequest(item, com.aozijx.passly.domain.entry.model.FieldKey.USERNAME),
         )
     }
+
     @Test
     fun passwordCopyTargetsOtpWhenTheEntryHasOtp() {
         val otpItem = item.copy(hasOtp = true)

@@ -1,6 +1,8 @@
 package com.aozijx.passly.domain.entry.model.query
 
-enum class MatchType(val score: Int) {
+enum class MatchType(
+    val score: Int,
+) {
     APPLICATION_ID(100),
     VERIFIED_ASSOCIATION(90),
     WEB_DOMAIN(80),

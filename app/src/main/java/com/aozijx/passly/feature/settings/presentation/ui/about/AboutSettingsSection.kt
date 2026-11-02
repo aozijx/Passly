@@ -19,29 +19,30 @@ internal fun AboutSettingsSection(
 ) {
     SettingsSectionTitle(text = stringResource(R.string.settings_about_section))
     SegmentedSettingsGroup(
-        items = listOf(
-            navigationSettingsGroupItem(
-                key = "about.app",
-                icon = Icons.Default.Info,
-                title = stringResource(R.string.settings_about_app, stringResource(R.string.app_name)),
-                value = appVersion,
-                onClick = onAppDetailsClick,
+        items =
+            listOf(
+                navigationSettingsGroupItem(
+                    key = "about.app",
+                    icon = Icons.Default.Info,
+                    title = stringResource(R.string.settings_about_app, stringResource(R.string.app_name)),
+                    value = appVersion,
+                    onClick = onAppDetailsClick,
+                ),
+                navigationSettingsGroupItem(
+                    key = "about.terms",
+                    title = stringResource(R.string.settings_about_terms),
+                    onClick = onTermsClick,
+                ),
+                navigationSettingsGroupItem(
+                    key = "about.privacy_policy",
+                    title = stringResource(R.string.settings_about_privacy_policy),
+                    onClick = onPrivacyPolicyClick,
+                ),
+                navigationSettingsGroupItem(
+                    key = "about.open_source",
+                    title = stringResource(R.string.settings_about_open_source_licenses),
+                    onClick = onOpenSourceLicensesClick,
+                ),
             ),
-            navigationSettingsGroupItem(
-                key = "about.terms",
-                title = stringResource(R.string.settings_about_terms),
-                onClick = onTermsClick,
-            ),
-            navigationSettingsGroupItem(
-                key = "about.privacy_policy",
-                title = stringResource(R.string.settings_about_privacy_policy),
-                onClick = onPrivacyPolicyClick,
-            ),
-            navigationSettingsGroupItem(
-                key = "about.open_source",
-                title = stringResource(R.string.settings_about_open_source_licenses),
-                onClick = onOpenSourceLicensesClick,
-            ),
-        ),
     )
 }

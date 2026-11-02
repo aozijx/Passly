@@ -1,12 +1,13 @@
 package com.aozijx.passly.feature.vault.otp
 
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.runtime.session.SessionLockedException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * TOTP 状态协调器。
@@ -37,7 +37,7 @@ internal class OtpCodeRuntime(
     private val consumeHotpCode: suspend (String) -> OtpResult = {
         OtpResult.Failure(OtpGenerationError.InvalidSecret)
     },
-    initiallyUnlocked: Boolean = true
+    initiallyUnlocked: Boolean = true,
 ) : OtpCodeInvalidator {
     private val _states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
     val states: StateFlow<Map<String, OtpCodeState>> = _states
@@ -46,7 +46,7 @@ internal class OtpCodeRuntime(
     private data class OtpSchedule(
         val type: OtpType,
         val periodSeconds: Int,
-        val movingFactor: Long
+        val movingFactor: Long,
     )
 
     private val schedules = mutableMapOf<String, OtpSchedule>()
@@ -57,7 +57,10 @@ internal class OtpCodeRuntime(
     private var nextEntryEpoch = 0L
     private var sessionEpoch = 0L
 
-    private data class ActivationToken(val sessionEpoch: Long, val entryEpoch: Long)
+    private data class ActivationToken(
+        val sessionEpoch: Long,
+        val entryEpoch: Long,
+    )
 
     @Volatile
     private var sessionUnlocked = initiallyUnlocked
@@ -84,15 +87,16 @@ internal class OtpCodeRuntime(
 
             val movingFactor = nowSeconds / schedule.periodSeconds
             if (movingFactor != schedule.movingFactor) {
-                val config = try {
-                    loadOtpConfig(entryId)
-                } catch (_: FreshAuthenticationRequiredException) {
-                    pauseUntilFreshAuthentication(entryId)
-                    continue
-                } catch (_: SessionLockedException) {
-                    handleSessionLocked()
-                    return
-                }
+                val config =
+                    try {
+                        loadOtpConfig(entryId)
+                    } catch (_: FreshAuthenticationRequiredException) {
+                        pauseUntilFreshAuthentication(entryId)
+                        continue
+                    } catch (_: SessionLockedException) {
+                        handleSessionLocked()
+                        return
+                    }
                 if (!isCurrent(entryId, token)) continue
                 if (config == null || config.secret.isNullOrBlank()) {
                     _states.update { states ->
@@ -113,9 +117,12 @@ internal class OtpCodeRuntime(
                         schedules[entryId] == schedule &&
                         existing is OtpCodeState.Ready
                     ) {
-                        states + (entryId to existing.copy(
-                            progress = computeProgress(nowSeconds, schedule.periodSeconds)
-                        ))
+                        states + (
+                            entryId to
+                                existing.copy(
+                                    progress = computeProgress(nowSeconds, schedule.periodSeconds),
+                                )
+                        )
                     } else {
                         states
                     }
@@ -127,32 +134,39 @@ internal class OtpCodeRuntime(
     private suspend fun generateUiState(
         config: OtpConfig,
         nowSeconds: Long,
-        period: Int
-    ): OtpCodeState = when (val genResult = codeGenerator(config)) {
-        is OtpResult.Success -> OtpCodeState.Ready(
-            code = genResult.code,
-            progress = computeProgress(nowSeconds, period)
-        )
+        period: Int,
+    ): OtpCodeState =
+        when (val genResult = codeGenerator(config)) {
+            is OtpResult.Success -> {
+                OtpCodeState.Ready(
+                    code = genResult.code,
+                    progress = computeProgress(nowSeconds, period),
+                )
+            }
 
-        is OtpResult.Failure -> OtpCodeState.Failed(genResult.error)
-    }
+            is OtpResult.Failure -> {
+                OtpCodeState.Failed(genResult.error)
+            }
+        }
 
     /**
      * 生成 HOTP 验证码（用户主动触发）。
      */
     suspend fun generateHotpCode(entryId: String): OtpResult {
         if (!sessionUnlocked) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        val token = currentActivationToken(entryId)
-            ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        val result = try {
-            consumeHotpCode(entryId)
-        } catch (_: FreshAuthenticationRequiredException) {
-            pauseUntilFreshAuthentication(entryId)
-            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        } catch (_: SessionLockedException) {
-            handleSessionLocked()
-            return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-        }
+        val token =
+            currentActivationToken(entryId)
+                ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        val result =
+            try {
+                consumeHotpCode(entryId)
+            } catch (_: FreshAuthenticationRequiredException) {
+                pauseUntilFreshAuthentication(entryId)
+                return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            } catch (_: SessionLockedException) {
+                handleSessionLocked()
+                return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            }
 
         if (!isCurrent(entryId, token)) {
             return OtpResult.Failure(OtpGenerationError.InvalidSecret)
@@ -169,13 +183,17 @@ internal class OtpCodeRuntime(
     }
 
     /** Returns a fresh, consumed HOTP code or the current time-based code for authorized copy. */
-    suspend fun codeForCopy(entryId: String): String? = when (schedules[entryId]?.type) {
-        OtpType.HOTP -> (generateHotpCode(entryId) as? OtpResult.Success)?.code
-        OtpType.TOTP, OtpType.STEAM -> (states.value[entryId] as? OtpCodeState.Ready)?.code
-        null -> null
-    }
+    suspend fun codeForCopy(entryId: String): String? =
+        when (schedules[entryId]?.type) {
+            OtpType.HOTP -> (generateHotpCode(entryId) as? OtpResult.Success)?.code
+            OtpType.TOTP, OtpType.STEAM -> (states.value[entryId] as? OtpCodeState.Ready)?.code
+            null -> null
+        }
 
-    private fun computeProgress(nowSeconds: Long, period: Int): Float {
+    private fun computeProgress(
+        nowSeconds: Long,
+        period: Int,
+    ): Float {
         val remaining = period - (nowSeconds % period)
         return remaining.toFloat() / period
     }
@@ -192,18 +210,20 @@ internal class OtpCodeRuntime(
     }
 
     private suspend fun activateTrackedEntry(entryId: String) {
-        val token = ActivationToken(sessionEpoch, ++nextEntryEpoch).also {
-            entryEpochs[entryId] = it.entryEpoch
-        }
-        val config = try {
-            loadOtpConfig(entryId)
-        } catch (_: FreshAuthenticationRequiredException) {
-            pauseUntilFreshAuthentication(entryId)
-            return
-        } catch (_: SessionLockedException) {
-            handleSessionLocked()
-            return
-        }
+        val token =
+            ActivationToken(sessionEpoch, ++nextEntryEpoch).also {
+                entryEpochs[entryId] = it.entryEpoch
+            }
+        val config =
+            try {
+                loadOtpConfig(entryId)
+            } catch (_: FreshAuthenticationRequiredException) {
+                pauseUntilFreshAuthentication(entryId)
+                return
+            } catch (_: SessionLockedException) {
+                handleSessionLocked()
+                return
+            }
         if (!isCurrent(entryId, token)) return
         if (config == null || config.secret.isNullOrBlank()) {
             _states.update {
@@ -228,16 +248,18 @@ internal class OtpCodeRuntime(
             return
         }
 
-        val period = if (config.type == OtpType.STEAM) {
-            30
-        } else {
-            config.periodSeconds?.coerceAtLeast(1) ?: 30
-        }
-        val schedule = OtpSchedule(
-            type = config.type,
-            periodSeconds = period,
-            movingFactor = nowSeconds / period
-        )
+        val period =
+            if (config.type == OtpType.STEAM) {
+                30
+            } else {
+                config.periodSeconds?.coerceAtLeast(1) ?: 30
+            }
+        val schedule =
+            OtpSchedule(
+                type = config.type,
+                periodSeconds = period,
+                movingFactor = nowSeconds / period,
+            )
         val state = generateUiState(config, nowSeconds, period)
         if (!isCurrent(entryId, token)) return
         schedules[entryId] = schedule
@@ -253,13 +275,14 @@ internal class OtpCodeRuntime(
         }
     }
 
-    private fun isRequested(entryId: String): Boolean =
-        entryId in activeEntryIds || entryId in subscriptionCounts
+    private fun isRequested(entryId: String): Boolean = entryId in activeEntryIds || entryId in subscriptionCounts
 
-    private fun currentActivationToken(entryId: String): ActivationToken? =
-        entryEpochs[entryId]?.let { ActivationToken(sessionEpoch, it) }
+    private fun currentActivationToken(entryId: String): ActivationToken? = entryEpochs[entryId]?.let { ActivationToken(sessionEpoch, it) }
 
-    private fun isCurrent(entryId: String, token: ActivationToken): Boolean =
+    private fun isCurrent(
+        entryId: String,
+        token: ActivationToken,
+    ): Boolean =
         sessionUnlocked &&
             isRequested(entryId) &&
             sessionEpoch == token.sessionEpoch &&

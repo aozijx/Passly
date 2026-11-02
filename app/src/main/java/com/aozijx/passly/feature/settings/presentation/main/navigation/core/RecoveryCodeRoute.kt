@@ -8,8 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeSettingsViewModel
@@ -17,17 +17,16 @@ import com.aozijx.passly.feature.settings.presentation.ui.security.RecoveryCodeS
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 @Composable
-internal fun RecoveryCodeRoute(
-    onBack: (() -> Unit)?,
-) {
+internal fun RecoveryCodeRoute(onBack: (() -> Unit)?) {
     val viewModel = hiltViewModel<RecoveryCodeSettingsViewModel>()
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val copySuccessMessage = stringResource(
-        R.string.field_copy_success_message,
-        stringResource(R.string.recovery_code_label),
-    )
+    val copySuccessMessage =
+        stringResource(
+            R.string.field_copy_success_message,
+            stringResource(R.string.recovery_code_label),
+        )
 
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
@@ -37,11 +36,14 @@ internal fun RecoveryCodeRoute(
     LaunchedEffect(viewModel, lifecycle, context, copySuccessMessage) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
             when (effect) {
-                RecoveryCodeSettingsEffect.Copied -> Toast.makeText(
-                    context,
-                    copySuccessMessage,
-                    Toast.LENGTH_SHORT,
-                ).show()
+                RecoveryCodeSettingsEffect.Copied -> {
+                    Toast
+                        .makeText(
+                            context,
+                            copySuccessMessage,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                }
             }
         }
     }

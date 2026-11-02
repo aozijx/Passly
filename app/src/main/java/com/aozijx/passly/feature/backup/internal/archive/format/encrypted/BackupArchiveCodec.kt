@@ -20,12 +20,16 @@ object BackupArchiveCodec {
     const val DOCUMENT_ENTRY_NAME = "document.json"
     const val RESOURCE_ENTRY_PREFIX = "resources/"
 
-    fun buildZip(documentJson: ByteArray, resources: Map<String, ByteArray>): ByteArray =
+    fun buildZip(
+        documentJson: ByteArray,
+        resources: Map<String, ByteArray>,
+    ): ByteArray =
         ByteArrayOutputStream().use { bytes ->
             ZipOutputStream(bytes).use { zip ->
                 require(documentJson.size <= MAX_DOCUMENT_BYTES) { "备份文档过大" }
                 require(resources.size < MAX_ENTRY_COUNT) { "备份资源数量过多" }
-                val totalBytes = documentJson.size.toLong() +
+                val totalBytes =
+                    documentJson.size.toLong() +
                         resources.values.sumOf { it.size.toLong() }
                 require(totalBytes <= MAX_ARCHIVE_BYTES) { "备份归档解压后过大" }
                 zip.putNextEntry(ZipEntry(DOCUMENT_ENTRY_NAME))
@@ -78,7 +82,7 @@ object BackupArchiveCodec {
             }
             return ZipContent(
                 documentJson = requireNotNull(documentJson) { "备份缺少文档条目" },
-                resources = resources
+                resources = resources,
             )
         } catch (error: Throwable) {
             documentJson?.fill(0)
@@ -89,7 +93,7 @@ object BackupArchiveCodec {
 
     data class ZipContent(
         val documentJson: ByteArray,
-        val resources: Map<String, ByteArray>
+        val resources: Map<String, ByteArray>,
     )
 
     private fun validateEntryName(name: String) {

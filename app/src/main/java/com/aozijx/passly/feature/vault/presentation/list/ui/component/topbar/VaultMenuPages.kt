@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,8 +9,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -29,10 +28,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.shared.components.menu.selectedMenuModifier
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 
 @Composable
 internal fun MainMenuContent(
@@ -46,20 +46,23 @@ internal fun MainMenuContent(
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_sort)) },
         onClick = onSortClick,
-        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Sort, null) }
+        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Sort, null) },
     )
     DropdownMenuItem(
         text = { Text(stringResource(R.string.vault_menu_filter)) },
         onClick = onCategoryFilterClick,
-        leadingIcon = { Icon(Icons.Default.FilterList, null) }
+        leadingIcon = { Icon(Icons.Default.FilterList, null) },
     )
     DropdownMenuItem(
         text = {
             Text(
                 stringResource(
-                    if (showTOTPCode) R.string.vault_menu_hide_totp
-                    else R.string.vault_menu_show_totp
-                )
+                    if (showTOTPCode) {
+                        R.string.vault_menu_hide_totp
+                    } else {
+                        R.string.vault_menu_show_totp
+                    },
+                ),
             )
         },
         onClick = {
@@ -69,9 +72,9 @@ internal fun MainMenuContent(
         leadingIcon = {
             Icon(
                 if (showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                null
+                null,
             )
-        }
+        },
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     DropdownMenuItem(
@@ -88,7 +91,7 @@ internal fun MainMenuContent(
             onDismissRequest()
             onRouteRequest(VaultRouteRequest.OpenSettings)
         },
-        leadingIcon = { Icon(Icons.Default.Settings, null) }
+        leadingIcon = { Icon(Icons.Default.Settings, null) },
     )
 }
 
@@ -96,25 +99,28 @@ internal fun MainMenuContent(
 internal fun SortSubMenu(
     selectedSort: VaultSortUiModel,
     onSortSelected: (VaultSortUiModel) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     BackMenuItem(onBack)
     VaultSortUiModel.presets.forEach { preset ->
         val selected = preset.option == selectedSort.option
-        val direction = if (selected) {
-            if (selectedSort.descending) " \u2193" else " \u2191"
-        } else ""
+        val direction =
+            if (selected) {
+                if (selectedSort.descending) " \u2193" else " \u2191"
+            } else {
+                ""
+            }
         DropdownMenuItem(
             text = {
                 MenuOptionText(
                     text = stringResource(preset.labelResId()) + direction,
-                    selected = selected
+                    selected = selected,
                 )
             },
             onClick = {
                 onSortSelected(if (selected) selectedSort.toggled() else preset)
             },
-            modifier = Modifier.selectedMenuModifier(selected)
+            modifier = Modifier.selectedMenuModifier(selected),
         )
     }
 }
@@ -132,31 +138,36 @@ internal fun FilterSubMenu(
     selectedItem: String?,
     itemText: (String) -> String,
     onItemSelected: (String?) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     DropdownMenuItem(
         text = { Text(stringResource(R.string.back)) },
         onClick = onBack,
         leadingIcon = {
             Icon(
-                if (isSearchVisible) Icons.Default.Close
-                else Icons.AutoMirrored.Filled.ArrowBack,
-                null
+                if (isSearchVisible) {
+                    Icons.Default.Close
+                } else {
+                    Icons.AutoMirrored.Filled.ArrowBack
+                },
+                null,
             )
-        }
+        },
     )
     AnimatedVisibility(isSearchVisible) {
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .fillMaxWidth()
-                .focusRequester(focusRequester).excludeFromAutofill(),
+            modifier =
+                Modifier
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .excludeFromAutofill(),
             placeholder = {
                 Text(
                     stringResource(searchHintRes),
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             },
             leadingIcon = {
@@ -164,29 +175,30 @@ internal fun FilterSubMenu(
             },
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            )
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                ),
         )
     }
     if (!isSearchVisible) {
         DropdownMenuItem(
             text = { Text(stringResource(searchLabelRes)) },
             onClick = { onToggleSearch(true) },
-            leadingIcon = { Icon(Icons.Default.Search, null) }
+            leadingIcon = { Icon(Icons.Default.Search, null) },
         )
     }
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     EntryTypeMenuItem(
         text = stringResource(R.string.tab_all),
         selected = selectedItem == null,
-        onClick = { onItemSelected(null) }
+        onClick = { onItemSelected(null) },
     )
     items.forEach { item ->
         EntryTypeMenuItem(
             text = itemText(item),
             selected = selectedItem == item,
-            onClick = { onItemSelected(item) }
+            onClick = { onItemSelected(item) },
         )
     }
 }
@@ -196,21 +208,25 @@ private fun BackMenuItem(onBack: () -> Unit) {
     DropdownMenuItem(
         text = { Text(stringResource(R.string.back)) },
         onClick = onBack,
-        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
+        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) },
     )
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 }
 
 @Composable
-private fun EntryTypeMenuItem(text: String, selected: Boolean, onClick: () -> Unit) {
+private fun EntryTypeMenuItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     DropdownMenuItem(
         text = {
             MenuOptionText(
                 text = text,
-                selected = selected
+                selected = selected,
             )
         },
         onClick = onClick,
-        modifier = Modifier.selectedMenuModifier(selected)
+        modifier = Modifier.selectedMenuModifier(selected),
     )
 }

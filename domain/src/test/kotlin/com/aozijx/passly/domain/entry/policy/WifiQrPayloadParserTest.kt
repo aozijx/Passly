@@ -40,9 +40,10 @@ class WifiQrPayloadParserTest {
 
     @Test
     fun `escaped delimiters and backslash are restored exactly once`() {
-        val payload = parsed(
-            "WIFI:P:p\\;a\\\\s\\,s\\\"w\\:d;H:TrUe;S:Office\\; East;T:WPA;;",
-        )
+        val payload =
+            parsed(
+                "WIFI:P:p\\;a\\\\s\\,s\\\"w\\:d;H:TrUe;S:Office\\; East;T:WPA;;",
+            )
 
         assertEquals("Office; East", payload.ssid)
         assertEquals("p;a\\s,s\"w:d", payload.password)

@@ -71,18 +71,21 @@ class AutofillSaveDraftExtractorTest {
 
     @Test
     fun `focused password wins when the page contains multiple password candidates`() {
-        val extractor = AutofillSaveDraftExtractor(
-            strategy(
-                "old-pass" to FieldRole.PASSWORD,
-                "active-pass" to FieldRole.PASSWORD,
-            ),
-        )
-        val request = request(
-            fields = listOf(
-                field("old-pass", "old-secret"),
-                field("active-pass", "new-secret", isFocused = true),
-            ),
-        )
+        val extractor =
+            AutofillSaveDraftExtractor(
+                strategy(
+                    "old-pass" to FieldRole.PASSWORD,
+                    "active-pass" to FieldRole.PASSWORD,
+                ),
+            )
+        val request =
+            request(
+                fields =
+                    listOf(
+                        field("old-pass", "old-secret"),
+                        field("active-pass", "new-secret", isFocused = true),
+                    ),
+            )
 
         val result = extractor(request)
 
@@ -91,18 +94,21 @@ class AutofillSaveDraftExtractorTest {
 
     @Test
     fun `multiple unfocused password candidates are rejected instead of depending on tree order`() {
-        val extractor = AutofillSaveDraftExtractor(
-            strategy(
-                "first-pass" to FieldRole.PASSWORD,
-                "second-pass" to FieldRole.PASSWORD,
-            ),
-        )
-        val request = request(
-            fields = listOf(
-                field("first-pass", "first-secret"),
-                field("second-pass", "second-secret"),
-            ),
-        )
+        val extractor =
+            AutofillSaveDraftExtractor(
+                strategy(
+                    "first-pass" to FieldRole.PASSWORD,
+                    "second-pass" to FieldRole.PASSWORD,
+                ),
+            )
+        val request =
+            request(
+                fields =
+                    listOf(
+                        field("first-pass", "first-secret"),
+                        field("second-pass", "second-secret"),
+                    ),
+            )
 
         val result = extractor(request)
 
@@ -114,20 +120,23 @@ class AutofillSaveDraftExtractorTest {
 
     @Test
     fun `multiple unfocused username candidates are omitted instead of being paired by tree order`() {
-        val extractor = AutofillSaveDraftExtractor(
-            strategy(
-                "first-user" to FieldRole.USERNAME,
-                "second-user" to FieldRole.USERNAME,
-                "pass" to FieldRole.PASSWORD,
-            ),
-        )
-        val request = request(
-            fields = listOf(
-                field("first-user", "alice"),
-                field("second-user", "bob"),
-                field("pass", "secret"),
-            ),
-        )
+        val extractor =
+            AutofillSaveDraftExtractor(
+                strategy(
+                    "first-user" to FieldRole.USERNAME,
+                    "second-user" to FieldRole.USERNAME,
+                    "pass" to FieldRole.PASSWORD,
+                ),
+            )
+        val request =
+            request(
+                fields =
+                    listOf(
+                        field("first-user", "alice"),
+                        field("second-user", "bob"),
+                        field("pass", "secret"),
+                    ),
+            )
 
         val result = extractor(request)
 
@@ -142,14 +151,19 @@ class AutofillSaveDraftExtractorTest {
     ) = AutofillRequest(
         packageName = packageName,
         domain = "example.com",
-        fields = fields ?: buildList {
-            username?.let { add(field("user", it)) }
-            password?.let { add(field("pass", it)) }
-        },
+        fields =
+            fields ?: buildList {
+                username?.let { add(field("user", it)) }
+                password?.let { add(field("pass", it)) }
+            },
         source = AutofillSource.AUTOFILL_SERVICE,
     )
 
-    private fun field(id: String, text: String, isFocused: Boolean = false) = AutofillField(
+    private fun field(
+        id: String,
+        text: String,
+        isFocused: Boolean = false,
+    ) = AutofillField(
         id = id,
         hints = emptySet(),
         inputType = null,
@@ -157,10 +171,12 @@ class AutofillSaveDraftExtractorTest {
         text = text,
     )
 
-    private fun strategy(vararg roles: Pair<String, FieldRole>) = object : FieldMatchStrategy {
-        override fun match(request: AutofillRequest): MatchResult = MatchResult(
-            roleMap = roles.toMap(),
-            hasCredentials = roles.any { it.second == FieldRole.PASSWORD },
-        )
-    }
+    private fun strategy(vararg roles: Pair<String, FieldRole>) =
+        object : FieldMatchStrategy {
+            override fun match(request: AutofillRequest): MatchResult =
+                MatchResult(
+                    roleMap = roles.toMap(),
+                    hasCredentials = roles.any { it.second == FieldRole.PASSWORD },
+                )
+        }
 }

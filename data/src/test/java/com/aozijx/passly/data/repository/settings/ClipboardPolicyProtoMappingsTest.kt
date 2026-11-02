@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClipboardPolicyProtoMappingsTest {
-
     @Test
     fun `proto defaults map to enabled thirty second policy`() {
         val settings = readSecurity(SecurityPreferences.getDefaultInstance())
@@ -17,10 +16,12 @@ class ClipboardPolicyProtoMappingsTest {
 
     @Test
     fun `unsupported stored delay maps to default delay`() {
-        val proto = SecurityPreferences.newBuilder()
-            .setClipboardClearEnabled(true)
-            .setClipboardClearDelaySeconds(17)
-            .build()
+        val proto =
+            SecurityPreferences
+                .newBuilder()
+                .setClipboardClearEnabled(true)
+                .setClipboardClearDelaySeconds(17)
+                .build()
 
         val settings = readSecurity(proto)
 

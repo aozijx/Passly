@@ -7,9 +7,10 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class EntryEditorSeedStoreTest {
-    private val wifi = EntryEditorSeed.Wifi(
-        WifiQrPayload("Office", "secret-password", WifiSecurityType.WpaPersonal, false),
-    )
+    private val wifi =
+        EntryEditorSeed.Wifi(
+            WifiQrPayload("Office", "secret-password", WifiSecurityType.WpaPersonal, false),
+        )
 
     @Test
     fun `staged seed is consumed exactly once`() {

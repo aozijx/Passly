@@ -1,14 +1,14 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionSheetUiModel
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionSheetUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
@@ -26,8 +26,8 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectio
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 
 internal fun detailHeaderUiModel(
@@ -46,25 +46,28 @@ internal fun detailContentUiModel(
     entry: Entry,
     state: DetailUiState,
 ) = DetailContentUiModel(
-    relatedEntries = state.relatedEntries.map {
-        RelatedEntryUiModel(it.id.value, it.title, it.type)
-    },
+    relatedEntries =
+        state.relatedEntries.map {
+            RelatedEntryUiModel(it.id.value, it.title, it.type)
+        },
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
-    activities = state.history.map {
-        DetailActivityUiModel(
-            type = it.activityType,
-            context = it.context,
-            createdAt = it.createdAt,
-        )
-    },
+    activities =
+        state.history.map {
+            DetailActivityUiModel(
+                type = it.activityType,
+                context = it.context,
+                createdAt = it.createdAt,
+            )
+        },
 )
 
-internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? = when (otp) {
-    null -> null
-    OtpCodeState.Pending -> DetailOtpUiModel.Pending
-    is OtpCodeState.Ready -> DetailOtpUiModel.Ready(otp.code, otp.progress)
-    is OtpCodeState.Failed -> DetailOtpUiModel.Failed
-}
+internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? =
+    when (otp) {
+        null -> null
+        OtpCodeState.Pending -> DetailOtpUiModel.Pending
+        is OtpCodeState.Ready -> DetailOtpUiModel.Ready(otp.code, otp.progress)
+        is OtpCodeState.Failed -> DetailOtpUiModel.Failed
+    }
 
 internal fun toDetailPresentationModel(
     state: DetailUiState,
@@ -80,110 +83,147 @@ internal fun toDetailPresentationModel(
 
     return DetailPresentationModel(
         header = detailHeaderUiModel(entry, state),
-        content = DetailBodyUiModel(
-            icon = DetailIconCardUiModel(
-                iconName = entry.icon.name,
-                iconCustomPath = entry.icon.customReference,
-                iconColor = entry.icon.color,
-                associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
-                entryType = entry.type,
-                title = entry.detailDisplayTitle,
-                username = entry.username,
-                associatedDomain = entry.associatedDomain,
-            ),
-            sections = state.sections.mapNotNullTo(linkedSetOf(), DetailSectionKey::toUiModel),
-            credential = if (DetailSectionKey.CREDENTIAL in state.sections) {
-                CredentialSectionUiState(
-                    username = CredentialFieldUiState(
-                        visible = entry.type != EntryType.WIFI && (
-                            entry.username.isNotBlank() ||
-                                SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
-                            ),
-                        revealedValue = revealedUsername?.asScopedSensitiveText(),
-                        isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
-                        editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
-                        valueForEditing = revealedUsername.copyToString() ?: entry.username,
+        content =
+            DetailBodyUiModel(
+                icon =
+                    DetailIconCardUiModel(
+                        iconName = entry.icon.name,
+                        iconCustomPath = entry.icon.customReference,
+                        iconColor = entry.icon.color,
+                        associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
+                        entryType = entry.type,
+                        title = entry.detailDisplayTitle,
+                        username = entry.username,
+                        associatedDomain = entry.associatedDomain,
                     ),
-                    password = CredentialFieldUiState(
-                        visible = if (entry.type == EntryType.WIFI) {
-                            !entry.secret.wifi?.password.isNullOrBlank()
-                        } else {
-                            password.present || entry.type != EntryType.LOGIN
-                        },
-                        revealedValue = revealedPassword?.asScopedSensitiveText(),
-                        isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
-                        editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
-                        valueForEditing = revealedPassword.copyToString().orEmpty(),
+                sections = state.sections.mapNotNullTo(linkedSetOf(), DetailSectionKey::toUiModel),
+                credential =
+                    if (DetailSectionKey.CREDENTIAL in state.sections) {
+                        CredentialSectionUiState(
+                            username =
+                                CredentialFieldUiState(
+                                    visible =
+                                        entry.type != EntryType.WIFI && (
+                                            entry.username.isNotBlank() ||
+                                                SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
+                                        ),
+                                    revealedValue = revealedUsername?.asScopedSensitiveText(),
+                                    isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
+                                    editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
+                                    valueForEditing = revealedUsername.copyToString() ?: entry.username,
+                                ),
+                            password =
+                                CredentialFieldUiState(
+                                    visible =
+                                        if (entry.type == EntryType.WIFI) {
+                                            !entry.secret.wifi
+                                                ?.password
+                                                .isNullOrBlank()
+                                        } else {
+                                            password.present || entry.type != EntryType.LOGIN
+                                        },
+                                    revealedValue = revealedPassword?.asScopedSensitiveText(),
+                                    isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
+                                    editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
+                                    valueForEditing = revealedPassword.copyToString().orEmpty(),
+                                ),
+                        )
+                    } else {
+                        null
+                    },
+                otp = detailOtpUiModel(otp),
+                canShowWifiQr = entry.type == EntryType.WIFI,
+                bankCard =
+                    if (DetailSectionKey.BANK_CARD in state.sections) {
+                        detailBankCardUiModel(entry, state, fields)
+                    } else {
+                        null
+                    },
+                identity =
+                    if (DetailSectionKey.IDENTITY in state.sections) {
+                        detailIdentityUiModel(entry, fields)
+                    } else {
+                        null
+                    },
+                ssh =
+                    if (DetailSectionKey.SSH in state.sections) {
+                        detailSshUiModel(entry, state, fields)
+                    } else {
+                        null
+                    },
+                seedPhrase =
+                    if (DetailSectionKey.SEED_PHRASE in state.sections) {
+                        detailSeedPhraseUiModel(fields)
+                    } else {
+                        null
+                    },
+                passkey =
+                    if (DetailSectionKey.PASSKEY in state.sections) {
+                        detailPasskeyUiModel(entry, fields)
+                    } else {
+                        null
+                    },
+                relatedEntries = shared.relatedEntries,
+                tags = entry.tags,
+                associations =
+                    DetailAssociatedInfoUiModel(
+                        domain = entry.associatedDomain,
+                        editedDomain = state.fieldEdits.draft(DetailDraftKey.Domain),
+                        isEditingDomain = state.fieldEdits.isEditing(DetailDraftKey.Domain),
                     ),
-                )
-            } else null,
-            otp = detailOtpUiModel(otp),
-            canShowWifiQr = entry.type == EntryType.WIFI,
-            bankCard = if (DetailSectionKey.BANK_CARD in state.sections) {
-                detailBankCardUiModel(entry, state, fields)
-            } else null,
-            identity = if (DetailSectionKey.IDENTITY in state.sections) {
-                detailIdentityUiModel(entry, fields)
-            } else null,
-            ssh = if (DetailSectionKey.SSH in state.sections) {
-                detailSshUiModel(entry, state, fields)
-            } else null,
-            seedPhrase = if (DetailSectionKey.SEED_PHRASE in state.sections) {
-                detailSeedPhraseUiModel(fields)
-            } else null,
-            passkey = if (DetailSectionKey.PASSKEY in state.sections) {
-                detailPasskeyUiModel(entry, fields)
-            } else null,
-            relatedEntries = shared.relatedEntries,
-            tags = entry.tags,
-            associations = DetailAssociatedInfoUiModel(
-                domain = entry.associatedDomain,
-                editedDomain = state.fieldEdits.draft(DetailDraftKey.Domain),
-                isEditingDomain = state.fieldEdits.isEditing(DetailDraftKey.Domain),
+                associatedApps = state.associatedApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
+                packagePickerApps = state.packagePickerApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
+                packagePickerAppsLoadFailed = state.packagePickerAppsLoadFailed,
+                notes =
+                    DetailNotesUiModel(
+                        notes = entry.secret.notes,
+                        editedNotes = state.fieldEdits.draft(DetailDraftKey.Notes),
+                        isEditing = state.fieldEdits.isEditing(DetailDraftKey.Notes),
+                    ),
+                metadata = shared.metadata,
+                activities = shared.activities,
+                activityHistory = state.activityHistory,
+                snapshotState = state.snapshotState,
             ),
-            associatedApps = state.associatedApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
-            packagePickerApps = state.packagePickerApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
-            packagePickerAppsLoadFailed = state.packagePickerAppsLoadFailed,
-            notes = DetailNotesUiModel(
-                notes = entry.secret.notes,
-                editedNotes = state.fieldEdits.draft(DetailDraftKey.Notes),
-                isEditing = state.fieldEdits.isEditing(DetailDraftKey.Notes),
+        overlays =
+            DetailEditorOverlaysUiModel(
+                tagEditor = state.tagEditor.toTagEditorUiModel(),
+                faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
+                savingTags = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Tags),
+                savingIcon = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Icon),
+                revisionHistory = state.revisions.toRevisionSheetUiModel(revisionReveals),
             ),
-            metadata = shared.metadata,
-            activities = shared.activities,
-            activityHistory = state.activityHistory,
-            snapshotState = state.snapshotState,
-        ),
-        overlays = DetailEditorOverlaysUiModel(
-            tagEditor = state.tagEditor.toTagEditorUiModel(),
-            faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
-            savingTags = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Tags),
-            savingIcon = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Icon),
-            revisionHistory = state.revisions.toRevisionSheetUiModel(revisionReveals),
-        ),
     )
 }
 
-internal fun DetailInstalledApp.toPackagePickerItemUiModel() = AppPackagePickerItemUiModel(
-    label = label,
-    packageName = packageName,
-)
-
-internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel = when (this) {
-    DetailTagEditorState.Closed -> DetailTagEditorUiModel.Hidden
-    is DetailTagEditorState.Open -> DetailTagEditorUiModel.Visible(
-        initialTags = initialTags,
-        draftTags = draftTags,
-        availableTags = availableTags,
-        input = input,
-        suggestions = suggestions,
-        validationError = validationError?.toUiModel(),
-        overlay = when (overlay) {
-            DetailTagEditorOverlay.None -> TagEditorOverlayUiState.None
-            DetailTagEditorOverlay.ConfirmDiscard -> TagEditorOverlayUiState.ConfirmDiscard
-        },
+internal fun DetailInstalledApp.toPackagePickerItemUiModel() =
+    AppPackagePickerItemUiModel(
+        label = label,
+        packageName = packageName,
     )
-}
+
+internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel =
+    when (this) {
+        DetailTagEditorState.Closed -> {
+            DetailTagEditorUiModel.Hidden
+        }
+
+        is DetailTagEditorState.Open -> {
+            DetailTagEditorUiModel.Visible(
+                initialTags = initialTags,
+                draftTags = draftTags,
+                availableTags = availableTags,
+                input = input,
+                suggestions = suggestions,
+                validationError = validationError?.toUiModel(),
+                overlay =
+                    when (overlay) {
+                        DetailTagEditorOverlay.None -> TagEditorOverlayUiState.None
+                        DetailTagEditorOverlay.ConfirmDiscard -> TagEditorOverlayUiState.ConfirmDiscard
+                    },
+            )
+        }
+    }
 
 internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
     val source = this ?: return ScopedSensitiveText.Empty
@@ -203,22 +243,32 @@ internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
     }
 }
 
-private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? = when (this) {
-    DetailSectionKey.CREDENTIAL -> DetailSectionUiModel.CREDENTIAL
-    DetailSectionKey.OTP -> DetailSectionUiModel.OTP
-    DetailSectionKey.BANK_CARD -> DetailSectionUiModel.BANK_CARD
-    DetailSectionKey.IDENTITY -> DetailSectionUiModel.IDENTITY
-    DetailSectionKey.SSH -> DetailSectionUiModel.SSH
-    DetailSectionKey.SEED_PHRASE -> DetailSectionUiModel.SEED_PHRASE
-    DetailSectionKey.PASSKEY -> DetailSectionUiModel.PASSKEY
-    DetailSectionKey.ENTRY_TYPE,
-    DetailSectionKey.ASSOCIATED_INFO,
-    DetailSectionKey.NOTES,
-    DetailSectionKey.METADATA,
-    DetailSectionKey.ACTIVITY -> null
-}
+private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? =
+    when (this) {
+        DetailSectionKey.CREDENTIAL -> DetailSectionUiModel.CREDENTIAL
 
-private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel = when (this) {
-    DetailTagValidationError.TOO_MANY_TAGS -> TagEditorValidationErrorUiModel.TOO_MANY_TAGS
-    DetailTagValidationError.TAG_TOO_LONG -> TagEditorValidationErrorUiModel.TAG_TOO_LONG
-}
+        DetailSectionKey.OTP -> DetailSectionUiModel.OTP
+
+        DetailSectionKey.BANK_CARD -> DetailSectionUiModel.BANK_CARD
+
+        DetailSectionKey.IDENTITY -> DetailSectionUiModel.IDENTITY
+
+        DetailSectionKey.SSH -> DetailSectionUiModel.SSH
+
+        DetailSectionKey.SEED_PHRASE -> DetailSectionUiModel.SEED_PHRASE
+
+        DetailSectionKey.PASSKEY -> DetailSectionUiModel.PASSKEY
+
+        DetailSectionKey.ENTRY_TYPE,
+        DetailSectionKey.ASSOCIATED_INFO,
+        DetailSectionKey.NOTES,
+        DetailSectionKey.METADATA,
+        DetailSectionKey.ACTIVITY,
+        -> null
+    }
+
+private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel =
+    when (this) {
+        DetailTagValidationError.TOO_MANY_TAGS -> TagEditorValidationErrorUiModel.TOO_MANY_TAGS
+        DetailTagValidationError.TAG_TOO_LONG -> TagEditorValidationErrorUiModel.TAG_TOO_LONG
+    }

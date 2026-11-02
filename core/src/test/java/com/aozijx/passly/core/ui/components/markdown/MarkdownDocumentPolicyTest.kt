@@ -5,7 +5,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class MarkdownDocumentPolicyTest {
-
     @Test
     fun `normalization removes outer whitespace and preserves markdown structure`() {
         assertEquals(

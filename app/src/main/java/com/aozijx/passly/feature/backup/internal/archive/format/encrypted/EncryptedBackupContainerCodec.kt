@@ -52,13 +52,13 @@ object EncryptedBackupContainerCodec {
         val salt: ByteArray,
         val nonce: ByteArray,
         val tagLengthBits: Int,
-        val ciphertextLength: Int
+        val ciphertextLength: Int,
     )
 
     private data class ParsedContainer(
         val header: ContainerHeader,
         val authenticatedHeader: ByteArray,
-        val ciphertext: ByteArray
+        val ciphertext: ByteArray,
     )
 
     fun encrypt(
@@ -69,8 +69,8 @@ object EncryptedBackupContainerCodec {
         deriveKey: (
             CharArray,
             ByteArray,
-            KeyDerivation.Argon2idParameters
-        ) -> ByteArray = KeyDerivation::deriveKeyBytesArgon2id
+            KeyDerivation.Argon2idParameters,
+        ) -> ByteArray = KeyDerivation::deriveKeyBytesArgon2id,
     ): ByteArray {
         require(password.isNotEmpty()) { "备份密码不能为空" }
         require(plaintext.size <= MAX_CONTAINER_BYTES - 256) { "备份内容过大" }
@@ -79,16 +79,17 @@ object EncryptedBackupContainerCodec {
         val salt = KeyDerivation.generateSalt()
         val nonce = ByteArray(NONCE_LENGTH).also(secureRandom::nextBytes)
         val expectedCiphertextLength = plaintext.size + TAG_LENGTH_BITS / Byte.SIZE_BITS
-        val header = ContainerHeader(
-            formatVersion = FORMAT_VERSION,
-            kdfId = KDF_ARGON2ID,
-            cipherId = CIPHER_AES_256_GCM,
-            kdfParameters = parameters,
-            salt = salt,
-            nonce = nonce,
-            tagLengthBits = TAG_LENGTH_BITS,
-            ciphertextLength = expectedCiphertextLength
-        )
+        val header =
+            ContainerHeader(
+                formatVersion = FORMAT_VERSION,
+                kdfId = KDF_ARGON2ID,
+                cipherId = CIPHER_AES_256_GCM,
+                kdfParameters = parameters,
+                salt = salt,
+                nonce = nonce,
+                tagLengthBits = TAG_LENGTH_BITS,
+                ciphertextLength = expectedCiphertextLength,
+            )
         val authenticatedHeader = encodeHeader(header)
         val keyBytes = deriveKey(password, salt, parameters)
         return try {
@@ -121,8 +122,8 @@ object EncryptedBackupContainerCodec {
         deriveKey: (
             CharArray,
             ByteArray,
-            KeyDerivation.Argon2idParameters
-        ) -> ByteArray = KeyDerivation::deriveKeyBytesArgon2id
+            KeyDerivation.Argon2idParameters,
+        ) -> ByteArray = KeyDerivation::deriveKeyBytesArgon2id,
     ): ByteArray {
         require(password.isNotEmpty()) { "备份密码不能为空" }
         val parsed = parse(container)
@@ -138,7 +139,7 @@ object EncryptedBackupContainerCodec {
                 cipher.init(
                     Cipher.DECRYPT_MODE,
                     key,
-                    GCMParameterSpec(header.tagLengthBits, header.nonce)
+                    GCMParameterSpec(header.tagLengthBits, header.nonce),
                 )
                 cipher.updateAAD(parsed.authenticatedHeader)
                 cipher.doFinal(parsed.ciphertext)
@@ -153,7 +154,7 @@ object EncryptedBackupContainerCodec {
 
     fun hasMagic(container: ByteArray): Boolean =
         container.size >= MAGIC_NUMBER.size &&
-                MAGIC_NUMBER.indices.all { container[it] == MAGIC_NUMBER[it] }
+            MAGIC_NUMBER.indices.all { container[it] == MAGIC_NUMBER[it] }
 
     /** 无需密码即可读取的非敏感、自描述容器参数。 */
     fun inspectHeader(container: ByteArray): ContainerHeader = parse(container).header
@@ -185,8 +186,7 @@ object EncryptedBackupContainerCodec {
 
     private fun parse(container: ByteArray): ParsedContainer {
         require(
-            container.size in (FIXED_HEADER_LENGTH + NONCE_LENGTH + KeyDerivation.SALT_LENGTH + 1)
-                    ..MAX_CONTAINER_BYTES
+            container.size in (FIXED_HEADER_LENGTH + NONCE_LENGTH + KeyDerivation.SALT_LENGTH + 1)..MAX_CONTAINER_BYTES,
         ) { "备份容器长度无效" }
 
         val prefixInput = DataInputStream(ByteArrayInputStream(container))
@@ -201,9 +201,10 @@ object EncryptedBackupContainerCodec {
         require(headerLength < container.size) { "备份头或密文不完整" }
 
         val authenticatedHeader = container.copyOfRange(0, headerLength)
-        val headerInput = DataInputStream(
-            ByteArrayInputStream(authenticatedHeader, PREFIX_LENGTH, headerLength - PREFIX_LENGTH)
-        )
+        val headerInput =
+            DataInputStream(
+                ByteArrayInputStream(authenticatedHeader, PREFIX_LENGTH, headerLength - PREFIX_LENGTH),
+            )
         val kdfId = headerInput.readInt()
         val cipherId = headerInput.readInt()
         require(kdfId == KDF_ARGON2ID) { "不支持的 KDF: $kdfId" }
@@ -236,34 +237,36 @@ object EncryptedBackupContainerCodec {
         readFullyOrThrow(headerInput, nonce, "nonce")
         require(headerInput.read() == -1) { "备份头包含未知数据" }
 
-        val kdfParameters = KeyDerivation.Argon2idParameters(
-            version = argonVersion,
-            iterations = iterations,
-            memoryKiB = memoryKiB,
-            parallelism = parallelism,
-            keyLengthBits = keyLengthBits
-        )
+        val kdfParameters =
+            KeyDerivation.Argon2idParameters(
+                version = argonVersion,
+                iterations = iterations,
+                memoryKiB = memoryKiB,
+                parallelism = parallelism,
+                keyLengthBits = keyLengthBits,
+            )
         validateContainerKdf(kdfParameters)
         return ParsedContainer(
-            header = ContainerHeader(
-                formatVersion = formatVersion,
-                kdfId = kdfId,
-                cipherId = cipherId,
-                kdfParameters = kdfParameters,
-                salt = salt,
-                nonce = nonce,
-                tagLengthBits = tagLengthBits,
-                ciphertextLength = ciphertextLength
-            ),
+            header =
+                ContainerHeader(
+                    formatVersion = formatVersion,
+                    kdfId = kdfId,
+                    cipherId = cipherId,
+                    kdfParameters = kdfParameters,
+                    salt = salt,
+                    nonce = nonce,
+                    tagLengthBits = tagLengthBits,
+                    ciphertextLength = ciphertextLength,
+                ),
             authenticatedHeader = authenticatedHeader,
-            ciphertext = container.copyOfRange(headerLength, container.size)
+            ciphertext = container.copyOfRange(headerLength, container.size),
         )
     }
 
     private fun readFullyOrThrow(
         input: InputStream,
         target: ByteArray,
-        fieldName: String
+        fieldName: String,
     ) {
         var offset = 0
         while (offset < target.size) {

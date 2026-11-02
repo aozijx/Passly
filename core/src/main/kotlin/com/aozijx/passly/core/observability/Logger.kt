@@ -3,7 +3,10 @@ package com.aozijx.passly.core.observability
 import com.aozijx.passly.core.observability.trace.TraceToken
 
 sealed interface TraceResumeResult<out T> {
-    data class Resumed<T>(val value: T) : TraceResumeResult<T>
+    data class Resumed<T>(
+        val value: T,
+    ) : TraceResumeResult<T>
+
     data object Unavailable : TraceResumeResult<Nothing>
 }
 
@@ -16,8 +19,15 @@ interface TraceScope {
 interface Logger {
     fun log(statement: LogStatement) = statement.writeTo(this)
 
-    fun debug(event: EventKey, fields: LogFields = LogFields.Empty)
-    fun info(event: EventKey, fields: LogFields = LogFields.Empty)
+    fun debug(
+        event: EventKey,
+        fields: LogFields = LogFields.Empty,
+    )
+
+    fun info(
+        event: EventKey,
+        fields: LogFields = LogFields.Empty,
+    )
 
     fun degraded(
         event: EventKey,

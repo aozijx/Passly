@@ -1,20 +1,24 @@
 package com.aozijx.passly.security.authentication
 
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 class SingleThreadKdfRunner(
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "passly-kdf").apply { isDaemon = true }
-    }
+    private val executor: ExecutorService =
+        Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "passly-kdf").apply { isDaemon = true }
+        },
 ) : KdfRunner {
-    override suspend fun <T> execute(secret: SecretChars, operation: KdfOperation<T>): T {
+    override suspend fun <T> execute(
+        secret: SecretChars,
+        operation: KdfOperation<T>,
+    ): T {
         coroutineContext.ensureActive()
         val workerSecret = secret.copyForWorker()
         return suspendCancellableCoroutine { continuation ->

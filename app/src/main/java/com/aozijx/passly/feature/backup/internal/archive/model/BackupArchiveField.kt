@@ -28,14 +28,20 @@ data class BackupFieldValue(
         const val KIND_CUSTOM_FIELDS = "custom_fields"
 
         fun text(value: String) = BackupFieldValue(kind = KIND_TEXT, text = value)
+
         fun texts(values: List<String>) = BackupFieldValue(kind = KIND_TEXT_LIST, texts = values)
+
         fun boolean(value: Boolean) = BackupFieldValue(kind = KIND_BOOLEAN, booleanValue = value)
+
         fun integer(value: Int) = BackupFieldValue(kind = KIND_INTEGER, integerValue = value)
+
         fun long(value: Long) = BackupFieldValue(kind = KIND_LONG, longValue = value)
-        fun customFields(values: List<BackupCustomFieldValue>) = BackupFieldValue(
-            kind = KIND_CUSTOM_FIELDS,
-            customFields = values,
-        )
+
+        fun customFields(values: List<BackupCustomFieldValue>) =
+            BackupFieldValue(
+                kind = KIND_CUSTOM_FIELDS,
+                customFields = values,
+            )
     }
 }
 

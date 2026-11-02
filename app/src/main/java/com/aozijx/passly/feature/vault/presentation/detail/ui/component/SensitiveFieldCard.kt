@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,9 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.core.ui.components.MaskedText
-import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun SensitiveFieldCard(
@@ -44,28 +44,31 @@ fun SensitiveFieldCard(
     onCopy: () -> Unit,
     onSave: (String) -> Unit,
     modifier: Modifier = Modifier,
-    maskStyle: MaskStyle = MaskStyle.DEFAULT
+    maskStyle: MaskStyle = MaskStyle.DEFAULT,
 ) {
     val haptic = LocalHapticFeedback.current
     InfoGroupCard(title = title) {
         Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .then(
-                    if (isEditing) Modifier
-                    else Modifier.combinedClickable(
-                        onLongClick = {
-                            if (revealedValue != null) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onValueChange(revealedValue)
-                                onEditToggle(true)
-                            }
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (isEditing) {
+                            Modifier
+                        } else {
+                            Modifier.combinedClickable(
+                                onLongClick = {
+                                    if (revealedValue != null) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onValueChange(revealedValue)
+                                        onEditToggle(true)
+                                    }
+                                },
+                                onClick = onReveal,
+                            )
                         },
-                        onClick = onReveal
-                    )
-                )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (isEditing) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -74,18 +77,18 @@ fun SensitiveFieldCard(
                         onValueChange = onValueChange,
                         modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
                         label = { Text(stringResource(R.string.field_edit_action, title)) },
-                        singleLine = true
+                        singleLine = true,
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (revealedValue != null && (editedValue != revealedValue)) {
                             Text(
                                 stringResource(R.string.vault_edit_modified_hint),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.secondary,
                             )
                         }
                         Spacer(modifier = Modifier.weight(1f))
@@ -99,7 +102,7 @@ fun SensitiveFieldCard(
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     MaskedText(
                         text = revealedValue,
@@ -107,7 +110,7 @@ fun SensitiveFieldCard(
                         maskStyle = maskStyle,
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Start,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
 
                     IconButton(onClick = onCopy, modifier = Modifier.size(36.dp)) {
@@ -115,7 +118,7 @@ fun SensitiveFieldCard(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = stringResource(R.string.copy),
                             modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.outline
+                            tint = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }

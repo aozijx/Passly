@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedInfoUiModel
 
@@ -63,7 +63,7 @@ fun AssociatedInfoSection(
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AssociatedDomainCard(
             value = model.domain,
@@ -81,7 +81,7 @@ fun AssociatedInfoSection(
             onSave = {
                 focusManager.clearFocus()
                 onDomainSaved(domainInput.text)
-            }
+            },
         )
 
         AssociatedAppsCard(
@@ -90,10 +90,11 @@ fun AssociatedInfoSection(
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onPackagePickerRequested()
-            }
+            },
         )
     }
 }
+
 @Composable
 private fun AssociatedDomainCard(
     value: String?,
@@ -101,35 +102,39 @@ private fun AssociatedDomainCard(
     editing: Boolean,
     onLongClick: () -> Unit,
     onValueChange: (TextFieldValue) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
 ) {
     InfoGroupCard(title = stringResource(R.string.vault_detail_associated_domain)) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (editing) Modifier
-                    else Modifier.combinedClickable(onLongClick = onLongClick, onClick = {})
-                )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (editing) {
+                            Modifier
+                        } else {
+                            Modifier.combinedClickable(onLongClick = onLongClick, onClick = {})
+                        },
+                    ).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (editing) {
                 DomainEditor(
                     value = editedValue,
                     onValueChange = onValueChange,
-                    onDone = onSave
+                    onDone = onSave,
                 )
             } else {
                 Text(
                     text = value ?: stringResource(R.string.not_set),
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
     }
 }
+
 @Composable
 private fun AssociatedAppsCard(
     apps: List<AppPackagePickerItemUiModel>,
@@ -138,17 +143,18 @@ private fun AssociatedAppsCard(
 ) {
     InfoGroupCard(title = stringResource(R.string.vault_detail_associated_package)) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(onLongClick = onLongClick, onClick = {})
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(onLongClick = onLongClick, onClick = {})
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (apps.isEmpty()) {
                 Text(
                     text = stringResource(R.string.not_set),
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             } else {
                 apps.forEach { app ->
@@ -169,22 +175,23 @@ private fun AssociatedAppRow(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
             Image(
                 bitmap = icon,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Fit
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape),
+                contentScale = ContentScale.Fit,
             )
         }
         Text(
             text = app.label,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
     }
 }
@@ -193,7 +200,7 @@ private fun AssociatedAppRow(
 private fun DomainEditor(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
@@ -204,7 +211,7 @@ private fun DomainEditor(
             placeholder = { Text(stringResource(R.string.vault_detail_domain_placeholder)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onDone() })
+            keyboardActions = KeyboardActions(onDone = { onDone() }),
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -219,4 +226,3 @@ private fun DomainEditor(
         }
     }
 }
-

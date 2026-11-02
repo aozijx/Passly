@@ -12,10 +12,11 @@ internal class LoginEntryPayloadAdapter : EntryPayloadAdapter {
     override fun encode(credential: EntryCredential): SecretPayload {
         require(credential is LoginCredential) { "LOGIN adapter requires LoginCredential" }
         return SecretPayload(
-            login = LoginCredentialPayload(
-                email = credential.email,
-                password = credential.password,
-            ),
+            login =
+                LoginCredentialPayload(
+                    email = credential.email,
+                    password = credential.password,
+                ),
         )
     }
 

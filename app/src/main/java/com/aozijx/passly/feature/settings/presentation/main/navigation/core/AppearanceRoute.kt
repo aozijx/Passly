@@ -4,19 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.aozijx.passly.app.theme.LocalAppearanceSettings
 import com.aozijx.passly.feature.settings.presentation.appearance.AppearanceSettingsAction
 import com.aozijx.passly.feature.settings.presentation.appearance.AppearanceSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.appearance.toAppearanceUiModel
 import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
-import com.aozijx.passly.app.theme.LocalAppearanceSettings
-import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
-import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.AppearanceDetail
+import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
+import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 
 @Composable
-internal fun AppearanceRoute(
-    onBack: (() -> Unit)?,
-) {
+internal fun AppearanceRoute(onBack: (() -> Unit)?) {
     val viewModel: AppearanceSettingsViewModel = hiltViewModel()
     val appearance = LocalAppearanceSettings.current
     DisposableEffect(viewModel) {
@@ -26,7 +24,7 @@ internal fun AppearanceRoute(
     ObserveSettingsWriteErrors(viewModel.errors)
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.APPEARANCE.titleRes),
-        onBack = onBack
+        onBack = onBack,
     ) {
         item {
             AppearanceDetail(
@@ -45,7 +43,7 @@ internal fun AppearanceRoute(
                 },
                 onFontFamilyChange = {
                     viewModel.onAction(AppearanceSettingsAction.SetFontFamily(it))
-                }
+                },
             )
         }
     }

@@ -6,7 +6,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailRevealStoreTest {
-
     @Test
     fun `hiding a revealed field wipes its owned value`() {
         val store = DetailRevealStore()

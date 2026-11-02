@@ -31,7 +31,7 @@ data class OtpConfig(
     val counter: Long? = null,
     val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
     val issuer: String? = null,
-    val accountName: String? = null
+    val accountName: String? = null,
 ) {
     init {
         require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
@@ -43,14 +43,18 @@ data class OtpConfig(
     }
 
     companion object {
-        fun steamDefaults(secret: String, issuer: String? = null): OtpConfig = OtpConfig(
-            type = OtpType.STEAM,
-            secret = secret,
-            algorithm = OtpHashAlgorithm.SHA1,
-            digits = 5,
-            periodSeconds = 30,
-            encoding = OtpSecretEncoding.BASE32,
-            issuer = issuer,
-        )
+        fun steamDefaults(
+            secret: String,
+            issuer: String? = null,
+        ): OtpConfig =
+            OtpConfig(
+                type = OtpType.STEAM,
+                secret = secret,
+                algorithm = OtpHashAlgorithm.SHA1,
+                digits = 5,
+                periodSeconds = 30,
+                encoding = OtpSecretEncoding.BASE32,
+                issuer = issuer,
+            )
     }
 }

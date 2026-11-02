@@ -5,12 +5,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SwipeActionContainerTest {
-
     @Test
     fun revealDistance_scalesWithContainerWidth() {
-        val revealDistance = calculateSwipeRevealDistance(
-            containerWidth = 400f
-        )
+        val revealDistance =
+            calculateSwipeRevealDistance(
+                containerWidth = 400f,
+            )
 
         assertEquals(112f, revealDistance, 0.001f)
     }
@@ -22,10 +22,11 @@ class SwipeActionContainerTest {
 
     @Test
     fun triggerThreshold_scalesWithContainerWidthAndStaysInsideRevealDistance() {
-        val triggerThreshold = calculateSwipeTriggerThreshold(
-            containerWidth = 400f,
-            revealDistance = 112f
-        )
+        val triggerThreshold =
+            calculateSwipeTriggerThreshold(
+                containerWidth = 400f,
+                revealDistance = 112f,
+            )
 
         assertEquals(88f, triggerThreshold, 0.001f)
         assertTrue(triggerThreshold < 112f)
@@ -34,11 +35,12 @@ class SwipeActionContainerTest {
     @Test
     fun visualOffset_isResistedBeforeTheRevealLimit() {
         val rawOffset = 48f
-        val visualOffset = calculateSwipeVisualOffset(
-            rawOffset = rawOffset,
-            minOffset = -96f,
-            maxOffset = 96f
-        )
+        val visualOffset =
+            calculateSwipeVisualOffset(
+                rawOffset = rawOffset,
+                minOffset = -96f,
+                maxOffset = 96f,
+            )
 
         assertTrue(visualOffset > 0f)
         assertTrue(visualOffset < rawOffset)
@@ -46,11 +48,12 @@ class SwipeActionContainerTest {
 
     @Test
     fun visualOffset_appliesOverflowDampingAndCapAfterTheRevealLimit() {
-        val visualOffset = calculateSwipeVisualOffset(
-            rawOffset = 400f,
-            minOffset = -96f,
-            maxOffset = 96f
-        )
+        val visualOffset =
+            calculateSwipeVisualOffset(
+                rawOffset = 400f,
+                minOffset = -96f,
+                maxOffset = 96f,
+            )
 
         assertTrue(visualOffset > 96f)
         assertTrue(visualOffset <= 96f * 1.35f)
@@ -58,29 +61,32 @@ class SwipeActionContainerTest {
 
     @Test
     fun visualOffset_blocksUnavailableDirections() {
-        val visualOffset = calculateSwipeVisualOffset(
-            rawOffset = -100f,
-            minOffset = 0f,
-            maxOffset = 96f
-        )
+        val visualOffset =
+            calculateSwipeVisualOffset(
+                rawOffset = -100f,
+                minOffset = 0f,
+                maxOffset = 96f,
+            )
 
         assertEquals(0f, visualOffset, 0.001f)
     }
 
     @Test
     fun rawOffset_doesNotAccumulateInAnUnavailableDirection() {
-        val blocked = accumulateSwipeRawOffset(
-            currentRawOffset = 0f,
-            dragAmount = -100f,
-            minOffset = 0f,
-            maxOffset = 96f,
-        )
-        val reversed = accumulateSwipeRawOffset(
-            currentRawOffset = blocked,
-            dragAmount = 20f,
-            minOffset = 0f,
-            maxOffset = 96f,
-        )
+        val blocked =
+            accumulateSwipeRawOffset(
+                currentRawOffset = 0f,
+                dragAmount = -100f,
+                minOffset = 0f,
+                maxOffset = 96f,
+            )
+        val reversed =
+            accumulateSwipeRawOffset(
+                currentRawOffset = blocked,
+                dragAmount = 20f,
+                minOffset = 0f,
+                maxOffset = 96f,
+            )
 
         assertEquals(0f, blocked, 0.001f)
         assertEquals(20f, reversed, 0.001f)

@@ -12,20 +12,21 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class PreferenceWriteFeedbackTest {
     @Test
-    fun `success feedback waits until preference storage acknowledges write`() = runTest {
-        val stored = CompletableDeferred<Unit>()
-        val feedback = mutableListOf<String>()
-        backgroundScope.launch {
-            writePreferenceWithFeedback(
-                failureRes = R.string.ui_error_generic,
-                onFailure = { feedback += "failed" },
-                onSuccess = { feedback += "saved" },
-            ) { stored.await() }
+    fun `success feedback waits until preference storage acknowledges write`() =
+        runTest {
+            val stored = CompletableDeferred<Unit>()
+            val feedback = mutableListOf<String>()
+            backgroundScope.launch {
+                writePreferenceWithFeedback(
+                    failureRes = R.string.ui_error_generic,
+                    onFailure = { feedback += "failed" },
+                    onSuccess = { feedback += "saved" },
+                ) { stored.await() }
+            }
+            runCurrent()
+            assertEquals(emptyList<String>(), feedback)
+            stored.complete(Unit)
+            runCurrent()
+            assertEquals(listOf("saved"), feedback)
         }
-        runCurrent()
-        assertEquals(emptyList<String>(), feedback)
-        stored.complete(Unit)
-        runCurrent()
-        assertEquals(listOf("saved"), feedback)
-    }
 }

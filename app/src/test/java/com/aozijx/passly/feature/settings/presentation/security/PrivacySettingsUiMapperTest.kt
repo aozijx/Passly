@@ -1,21 +1,23 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class PrivacySettingsUiMapperTest {
     @Test
     fun mapsEveryPrivacyFlagToPassiveUiModel() {
-        val model = PrivacySettingsUiState.Ready(
-            isSecureContentEnabled = false,
-            isFlipToLockEnabled = true,
-            isFlipExitAndClearStackEnabled = true,
-            reauthenticateSensitiveCopies = false,
-            clipboardClearEnabled = true,
-            clipboardClearDelaySeconds = 60,
-        ).toPrivacySettingsUiModel()
+        val model =
+            PrivacySettingsUiState
+                .Ready(
+                    isSecureContentEnabled = false,
+                    isFlipToLockEnabled = true,
+                    isFlipExitAndClearStackEnabled = true,
+                    reauthenticateSensitiveCopies = false,
+                    clipboardClearEnabled = true,
+                    clipboardClearDelaySeconds = 60,
+                ).toPrivacySettingsUiModel()
 
         assertFalse(model.isSecureContentEnabled)
         assertTrue(model.isFlipToLockEnabled)

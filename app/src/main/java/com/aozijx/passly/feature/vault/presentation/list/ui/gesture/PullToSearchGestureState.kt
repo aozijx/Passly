@@ -7,7 +7,10 @@ internal class PullToSearchGestureState(
 ) {
     private var distance = 0f
 
-    fun onPull(deltaY: Float, isAtTop: Boolean) {
+    fun onPull(
+        deltaY: Float,
+        isAtTop: Boolean,
+    ) {
         if (!isAtTop) {
             clearDistance()
             return
@@ -27,7 +30,10 @@ internal class PullToSearchGestureState(
         return consumed
     }
 
-    fun onPostScroll(deltaY: Float, isAtTop: Boolean): Float {
+    fun onPostScroll(
+        deltaY: Float,
+        isAtTop: Boolean,
+    ): Float {
         val reverseConsumed = consumeReversePull(deltaY)
         if (reverseConsumed != 0f) return reverseConsumed
 

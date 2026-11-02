@@ -35,83 +35,92 @@ import org.junit.Test
 
 class DetailPresentationLoaderTest {
     @Test
-    fun openBuildsOneCompleteDetailSession() = runTest {
-        val account = entry("account", EntryType.ACCOUNT, setOf("com.unknown", "com.named"))
-        val member = entry("member", EntryType.LOGIN)
-        val sensitiveFields = FakeSensitiveFieldRepository(
-            SensitiveFieldPresence(account.id, setOf(SensitiveFieldKey.PASSWORD)),
-        )
-        val loader = loader(
-            entries = mapOf(account.id to account, member.id to member),
-            sensitiveFields = sensitiveFields,
-            links = listOf(link("member", "account")),
-        )
+    fun openBuildsOneCompleteDetailSession() =
+        runTest {
+            val account = entry("account", EntryType.ACCOUNT, setOf("com.unknown", "com.named"))
+            val member = entry("member", EntryType.LOGIN)
+            val sensitiveFields =
+                FakeSensitiveFieldRepository(
+                    SensitiveFieldPresence(account.id, setOf(SensitiveFieldKey.PASSWORD)),
+                )
+            val loader =
+                loader(
+                    entries = mapOf(account.id to account, member.id to member),
+                    sensitiveFields = sensitiveFields,
+                    links = listOf(link("member", "account")),
+                )
 
-        val session = requireNotNull(loader.open(account.id))
+            val session = requireNotNull(loader.open(account.id))
 
-        assertEquals(account, session.presentation.entry)
-        assertEquals(DetailSectionResolver.resolve(account), session.presentation.sections)
-        assertEquals(
-            listOf(
-                DetailInstalledApp("Named", "com.named"),
-                DetailInstalledApp("com.unknown", "com.unknown"),
-            ),
-            session.presentation.associatedApps,
-        )
-        assertEquals(setOf(SensitiveFieldKey.PASSWORD), session.presentation.sensitiveFieldKeys)
-        assertEquals(listOf(member), session.relatedEntries)
-        assertEquals(listOf(account.id), sensitiveFields.presenceRequests)
-    }
-
-    @Test
-    fun missingEntryStopsBeforeLoadingDependentSessionData() = runTest {
-        val sensitiveFields = FakeSensitiveFieldRepository(
-            SensitiveFieldPresence(EntryId("unused"), emptySet()),
-        )
-        val loader = loader(entries = emptyMap(), sensitiveFields = sensitiveFields)
-
-        assertNull(loader.open(EntryId("missing")))
-        assertEquals(emptyList<EntryId>(), sensitiveFields.presenceRequests)
-    }
+            assertEquals(account, session.presentation.entry)
+            assertEquals(DetailSectionResolver.resolve(account), session.presentation.sections)
+            assertEquals(
+                listOf(
+                    DetailInstalledApp("Named", "com.named"),
+                    DetailInstalledApp("com.unknown", "com.unknown"),
+                ),
+                session.presentation.associatedApps,
+            )
+            assertEquals(setOf(SensitiveFieldKey.PASSWORD), session.presentation.sensitiveFieldKeys)
+            assertEquals(listOf(member), session.relatedEntries)
+            assertEquals(listOf(account.id), sensitiveFields.presenceRequests)
+        }
 
     @Test
-    fun presentRebuildsAnalysisAndAssociatedAppsAfterAnEdit() = runTest {
-        val loader = loader(entries = emptyMap())
-        val updated = entry("entry", EntryType.LOGIN, setOf("com.named"))
+    fun missingEntryStopsBeforeLoadingDependentSessionData() =
+        runTest {
+            val sensitiveFields =
+                FakeSensitiveFieldRepository(
+                    SensitiveFieldPresence(EntryId("unused"), emptySet()),
+                )
+            val loader = loader(entries = emptyMap(), sensitiveFields = sensitiveFields)
 
-        val presentation = loader.present(updated)
-
-        assertEquals(updated, presentation.entry)
-        assertEquals(DetailSectionResolver.resolve(updated), presentation.sections)
-        assertEquals(
-            listOf(DetailInstalledApp("Named", "com.named")),
-            presentation.associatedApps,
-        )
-    }
+            assertNull(loader.open(EntryId("missing")))
+            assertEquals(emptyList<EntryId>(), sensitiveFields.presenceRequests)
+        }
 
     @Test
-    fun launchableAppsExposePresentationModelsOnly() = runTest {
-        assertEquals(
-            listOf(
-                DetailInstalledApp("First", "com.first"),
-                DetailInstalledApp("Second", "com.second"),
-            ),
-            loader(entries = emptyMap()).launchableApps(),
-        )
-    }
+    fun presentRebuildsAnalysisAndAssociatedAppsAfterAnEdit() =
+        runTest {
+            val loader = loader(entries = emptyMap())
+            val updated = entry("entry", EntryType.LOGIN, setOf("com.named"))
+
+            val presentation = loader.present(updated)
+
+            assertEquals(updated, presentation.entry)
+            assertEquals(DetailSectionResolver.resolve(updated), presentation.sections)
+            assertEquals(
+                listOf(DetailInstalledApp("Named", "com.named")),
+                presentation.associatedApps,
+            )
+        }
+
+    @Test
+    fun launchableAppsExposePresentationModelsOnly() =
+        runTest {
+            assertEquals(
+                listOf(
+                    DetailInstalledApp("First", "com.first"),
+                    DetailInstalledApp("Second", "com.second"),
+                ),
+                loader(entries = emptyMap()).launchableApps(),
+            )
+        }
 
     private fun loader(
         entries: Map<EntryId, Entry>,
-        sensitiveFields: FakeSensitiveFieldRepository = FakeSensitiveFieldRepository(
-            SensitiveFieldPresence(EntryId("unused"), emptySet()),
-        ),
+        sensitiveFields: FakeSensitiveFieldRepository =
+            FakeSensitiveFieldRepository(
+                SensitiveFieldPresence(EntryId("unused"), emptySet()),
+            ),
         links: List<EntryLink> = emptyList(),
     ) = DetailPresentationLoader(
-        sessionQuery = DetailSessionQuery(
-            entryQueryRepository = FakeEntryQueryRepository(entries),
-            sensitiveFieldRepository = sensitiveFields,
-            entryLinkRepository = FakeEntryLinkRepository(links),
-        ),
+        sessionQuery =
+            DetailSessionQuery(
+                entryQueryRepository = FakeEntryQueryRepository(entries),
+                sensitiveFieldRepository = sensitiveFields,
+                entryLinkRepository = FakeEntryLinkRepository(links),
+            ),
         installedAppDirectory = FakeInstalledAppDirectory(),
     )
 
@@ -120,23 +129,29 @@ class DetailPresentationLoaderTest {
         type: EntryType,
         applicationIds: Set<String> = emptySet(),
     ) = Entry(
-        identity = EntryIdentity(
-            id = EntryId(id),
-            type = type,
-            version = EntryVersion.INITIAL,
-            timestamps = EntryTimestamps(1L),
-        ),
-        profile = EntryProfile(
-            title = id,
-            associations = EntryAssociations(applicationIds = applicationIds),
-        ),
-        secret = when (type) {
-            EntryType.LOGIN -> EntrySecret(LoginCredential())
-            else -> EntrySecret()
-        },
+        identity =
+            EntryIdentity(
+                id = EntryId(id),
+                type = type,
+                version = EntryVersion.INITIAL,
+                timestamps = EntryTimestamps(1L),
+            ),
+        profile =
+            EntryProfile(
+                title = id,
+                associations = EntryAssociations(applicationIds = applicationIds),
+            ),
+        secret =
+            when (type) {
+                EntryType.LOGIN -> EntrySecret(LoginCredential())
+                else -> EntrySecret()
+            },
     )
 
-    private fun link(source: String, target: String) = EntryLink.create(
+    private fun link(
+        source: String,
+        target: String,
+    ) = EntryLink.create(
         id = EntryLinkId("link"),
         sourceEntryId = EntryId(source),
         targetEntryId = EntryId(target),
@@ -181,21 +196,26 @@ class DetailPresentationLoaderTest {
         override suspend fun metadataFor(packageName: String): InstalledAppMetadata? =
             if (packageName == "com.named") InstalledAppMetadata("Named", packageName) else null
 
-        override suspend fun launchableApps() = listOf(
-            InstalledAppMetadata("First", "com.first"),
-            InstalledAppMetadata("Second", "com.second"),
-        )
+        override suspend fun launchableApps() =
+            listOf(
+                InstalledAppMetadata("First", "com.first"),
+                InstalledAppMetadata("Second", "com.second"),
+            )
     }
 
     private class FakeEntryLinkRepository(
         private val links: List<EntryLink>,
     ) : EntryLinkRepository {
         override fun observeAll(): Flow<List<EntryLink>> = flowOf(links)
+
         override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = flowOf(links)
+
         override suspend fun getAll(): List<EntryLink> = links
+
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> = links
+
         override suspend fun upsert(link: EntryLink) = AppResult.Success(Unit)
+
         override suspend fun delete(linkId: EntryLinkId) = AppResult.Success(Unit)
     }
-
 }

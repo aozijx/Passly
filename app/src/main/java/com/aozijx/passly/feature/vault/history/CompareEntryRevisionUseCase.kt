@@ -9,24 +9,27 @@ import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
-internal class CompareEntryRevisionUseCase @Inject constructor(
-    private val repository: EntryRevisionRepository,
-) {
-    suspend operator fun invoke(
-        entryId: EntryId,
-        revisionId: EntryRevisionId,
-    ): RevisionOperationResult<List<EntryRevisionDifference>> {
-        val latest = repository.observeMetadata(entryId).first().maxByOrNull { it.version.value }
-            ?: return RevisionOperationResult.Missing
-        val historical = repository.loadRedacted(entryId, revisionId)
-        if (historical is AppResult.Failure) return historical.toRevisionOperationResult()
-        val current = repository.loadRedacted(entryId, latest.id)
-        if (current is AppResult.Failure) return current.toRevisionOperationResult()
-        return RevisionOperationResult.Succeeded(
-            EntryRevisionComparator.compare(
-                historical = (historical as AppResult.Success).data,
-                current = (current as AppResult.Success).data,
-            ),
-        )
+internal class CompareEntryRevisionUseCase
+    @Inject
+    constructor(
+        private val repository: EntryRevisionRepository,
+    ) {
+        suspend operator fun invoke(
+            entryId: EntryId,
+            revisionId: EntryRevisionId,
+        ): RevisionOperationResult<List<EntryRevisionDifference>> {
+            val latest =
+                repository.observeMetadata(entryId).first().maxByOrNull { it.version.value }
+                    ?: return RevisionOperationResult.Missing
+            val historical = repository.loadRedacted(entryId, revisionId)
+            if (historical is AppResult.Failure) return historical.toRevisionOperationResult()
+            val current = repository.loadRedacted(entryId, latest.id)
+            if (current is AppResult.Failure) return current.toRevisionOperationResult()
+            return RevisionOperationResult.Succeeded(
+                EntryRevisionComparator.compare(
+                    historical = (historical as AppResult.Success).data,
+                    current = (current as AppResult.Success).data,
+                ),
+            )
+        }
     }
-}

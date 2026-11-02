@@ -42,145 +42,153 @@ fun LockAuthSettingsSection(
     onAppPasswordClick: () -> Unit,
     onBiometricEnabledChange: (Boolean) -> Unit,
     onInvalidateKeyOnBioChangeToggle: (Boolean) -> Unit,
-    onLockOnBackgroundChange: (Boolean) -> Unit
+    onLockOnBackgroundChange: (Boolean) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val currentSeconds = (state.lockTimeoutMs / 1000L).toFloat()
-        .coerceIn(state.sliderMinSeconds, state.sliderMaxSeconds)
-    val sliderState = rememberSliderState(
-        value = currentSeconds,
-        steps = 0,
-        trackRange = state.sliderMinSeconds..state.sliderMaxSeconds,
-    )
+    val currentSeconds =
+        (state.lockTimeoutMs / 1000L)
+            .toFloat()
+            .coerceIn(state.sliderMinSeconds, state.sliderMaxSeconds)
+    val sliderState =
+        rememberSliderState(
+            value = currentSeconds,
+            steps = 0,
+            trackRange = state.sliderMinSeconds..state.sliderMaxSeconds,
+        )
     LaunchedEffect(currentSeconds) {
         sliderState.value = currentSeconds
     }
 
     SettingsSectionTitle(text = stringResource(R.string.authentication_label))
     SegmentedSettingsGroup(
-        items = listOf(
-
-            switchSettingsGroupItem(
-                key = "security.lock_on_background",
-                icon = Icons.Default.Lock,
-                title = stringResource(R.string.settings_security_lock_on_background),
-                subtitle = stringResource(R.string.settings_security_lock_on_background_description),
-                checked = state.isLockOnBackground,
-                onCheckedChange = onLockOnBackgroundChange
-            ),
-            navigationSettingsGroupItem(
-                key = "security.lock_timeout",
-                icon = Icons.Default.Timer,
-                title = stringResource(R.string.settings_security_auto_lock),
-                value = formatLockTimeoutText(state.lockTimeoutMs),
-                onClick = { expanded = !expanded }
-            ),
-            SegmentedSettingsItem(
-                key = "security.lock_timeout_slider",
-                visible = expanded
-            ) { shapes ->
-                SegmentedListItem(
-                    shapes = shapes,
-                    colors = settingsSegmentedColors(),
-                    contentPadding = PaddingValues(16.dp),
-                    content = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_security_auto_lock_delay),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = formatLockTimeoutText(sliderState.value.toLong() * 1000L),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    },
-                    supportingContent = {
-                        Column {
-                            Slider(
-                                state = sliderState,
-                                onValueChange = { sliderState.value = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                onValueChangeFinished = {
-                                    val rounded =
-                                        ((sliderState.value / state.sliderStepSeconds).roundToInt() *
-                                                state.sliderStepSeconds)
-                                            .coerceIn(
-                                                state.sliderMinSeconds,
-                                                state.sliderMaxSeconds
-                                            )
-                                    sliderState.value = rounded
-                                    onLockTimeoutChange(rounded.toLong() * 1000L)
-                                },
-                            )
+        items =
+            listOf(
+                switchSettingsGroupItem(
+                    key = "security.lock_on_background",
+                    icon = Icons.Default.Lock,
+                    title = stringResource(R.string.settings_security_lock_on_background),
+                    subtitle = stringResource(R.string.settings_security_lock_on_background_description),
+                    checked = state.isLockOnBackground,
+                    onCheckedChange = onLockOnBackgroundChange,
+                ),
+                navigationSettingsGroupItem(
+                    key = "security.lock_timeout",
+                    icon = Icons.Default.Timer,
+                    title = stringResource(R.string.settings_security_auto_lock),
+                    value = formatLockTimeoutText(state.lockTimeoutMs),
+                    onClick = { expanded = !expanded },
+                ),
+                SegmentedSettingsItem(
+                    key = "security.lock_timeout_slider",
+                    visible = expanded,
+                ) { shapes ->
+                    SegmentedListItem(
+                        shapes = shapes,
+                        colors = settingsSegmentedColors(),
+                        contentPadding = PaddingValues(16.dp),
+                        content = {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = pluralStringResource(
-                                        R.plurals.settings_duration_seconds,
-                                        state.sliderMinSeconds.roundToInt(),
-                                        state.sliderMinSeconds.roundToInt()
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline
+                                    text = stringResource(R.string.settings_security_auto_lock_delay),
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
                                 Text(
-                                    text = pluralStringResource(
-                                        R.plurals.settings_duration_minutes,
-                                        (state.sliderMaxSeconds / 60f).roundToInt(),
-                                        (state.sliderMaxSeconds / 60f).roundToInt()
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.outline
+                                    text = formatLockTimeoutText(sliderState.value.toLong() * 1000L),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
                                 )
                             }
-                        }
-                    },
-                )
-            },
-            navigationSettingsGroupItem(
-                key = "security.app_password",
-                icon = Icons.Default.Lock,
-                title = stringResource(R.string.settings_security_app_password),
-                subtitle = stringResource(R.string.app_password_unlock_description),
-                value = stringResource(
-                    if (state.isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set
+                        },
+                        supportingContent = {
+                            Column {
+                                Slider(
+                                    state = sliderState,
+                                    onValueChange = { sliderState.value = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onValueChangeFinished = {
+                                        val rounded =
+                                            (
+                                                (sliderState.value / state.sliderStepSeconds).roundToInt() *
+                                                    state.sliderStepSeconds
+                                            ).coerceIn(
+                                                state.sliderMinSeconds,
+                                                state.sliderMaxSeconds,
+                                            )
+                                        sliderState.value = rounded
+                                        onLockTimeoutChange(rounded.toLong() * 1000L)
+                                    },
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Text(
+                                        text =
+                                            pluralStringResource(
+                                                R.plurals.settings_duration_seconds,
+                                                state.sliderMinSeconds.roundToInt(),
+                                                state.sliderMinSeconds.roundToInt(),
+                                            ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                    Text(
+                                        text =
+                                            pluralStringResource(
+                                                R.plurals.settings_duration_minutes,
+                                                (state.sliderMaxSeconds / 60f).roundToInt(),
+                                                (state.sliderMaxSeconds / 60f).roundToInt(),
+                                            ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline,
+                                    )
+                                }
+                            }
+                        },
+                    )
+                },
+                navigationSettingsGroupItem(
+                    key = "security.app_password",
+                    icon = Icons.Default.Lock,
+                    title = stringResource(R.string.settings_security_app_password),
+                    subtitle = stringResource(R.string.app_password_unlock_description),
+                    value =
+                        stringResource(
+                            if (state.isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set,
+                        ),
+                    onClick = onAppPasswordClick,
                 ),
-                onClick = onAppPasswordClick
-            ),
-            switchSettingsGroupItem(
-                key = "security.biometric_enabled",
-                enabled = !state.isAuthenticationChangeInProgress,
-                icon = Icons.Default.Fingerprint,
-                title = stringResource(R.string.settings_security_biometric_unlock),
-                subtitle = stringResource(R.string.settings_security_biometric_enabled_description),
-                checked = state.isBiometricEnabled,
-                onCheckedChange = onBiometricEnabledChange
-            ),
-            switchSettingsGroupItem(
-                key = "security.invalidate_biometric",
-                enabled = !state.isAuthenticationChangeInProgress,
-                visible = state.isBiometricEnabled,
-                reserveLeadingIconSpace = true,
-                title = stringResource(R.string.settings_security_invalidate_biometric_key),
-                subtitle = stringResource(
-                    if (state.isInvalidateKeyOnBioChange) {
-                        R.string.settings_security_invalidate_biometric_key_enabled
-                    } else {
-                        R.string.settings_security_invalidate_biometric_key_disabled
-                    }
+                switchSettingsGroupItem(
+                    key = "security.biometric_enabled",
+                    enabled = !state.isAuthenticationChangeInProgress,
+                    icon = Icons.Default.Fingerprint,
+                    title = stringResource(R.string.settings_security_biometric_unlock),
+                    subtitle = stringResource(R.string.settings_security_biometric_enabled_description),
+                    checked = state.isBiometricEnabled,
+                    onCheckedChange = onBiometricEnabledChange,
                 ),
-                checked = state.isInvalidateKeyOnBioChange,
-                onCheckedChange = onInvalidateKeyOnBioChangeToggle
-            )
-        )
+                switchSettingsGroupItem(
+                    key = "security.invalidate_biometric",
+                    enabled = !state.isAuthenticationChangeInProgress,
+                    visible = state.isBiometricEnabled,
+                    reserveLeadingIconSpace = true,
+                    title = stringResource(R.string.settings_security_invalidate_biometric_key),
+                    subtitle =
+                        stringResource(
+                            if (state.isInvalidateKeyOnBioChange) {
+                                R.string.settings_security_invalidate_biometric_key_enabled
+                            } else {
+                                R.string.settings_security_invalidate_biometric_key_disabled
+                            },
+                        ),
+                    checked = state.isInvalidateKeyOnBioChange,
+                    onCheckedChange = onInvalidateKeyOnBioChangeToggle,
+                ),
+            ),
     )
 }
 
@@ -188,23 +196,28 @@ fun LockAuthSettingsSection(
 private fun formatLockTimeoutText(timeoutMs: Long): String {
     val seconds = (timeoutMs / 1000L).coerceAtLeast(1L)
     return when {
-        seconds < 60L -> pluralStringResource(
-            R.plurals.settings_duration_seconds,
-            seconds.toInt(),
-            seconds,
-        )
+        seconds < 60L -> {
+            pluralStringResource(
+                R.plurals.settings_duration_seconds,
+                seconds.toInt(),
+                seconds,
+            )
+        }
 
-        seconds % 60L == 0L ->
+        seconds % 60L == 0L -> {
             pluralStringResource(
                 R.plurals.settings_duration_minutes,
                 (seconds / 60L).toInt(),
                 seconds / 60L,
             )
+        }
 
-        else -> stringResource(
-            R.string.settings_duration_minutes_seconds,
-            seconds / 60L,
-            seconds % 60L
-        )
+        else -> {
+            stringResource(
+                R.string.settings_duration_minutes_seconds,
+                seconds / 60L,
+                seconds % 60L,
+            )
+        }
     }
 }

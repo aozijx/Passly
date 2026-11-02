@@ -10,14 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.newAppNotice
-import com.aozijx.passly.presentation.shared.event.collectPageEffects
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.presentation.ui.BackupRestoreSheet
+import com.aozijx.passly.presentation.shared.event.collectPageEffects
 
 /**
  * Public settings entry point for the Backup feature.
@@ -45,46 +45,53 @@ fun BackupOperationRoute(
         val owner = pageOwner.value
         val requestId = exportRequestId.value
         exportRequestId.value = null
-        if (owner != null && requestId != null) viewModel.onAction(
-            BackupUiAction.StartExport(
-                uri = uri?.toString(),
-                pageOwner = owner,
-                requestId = requestId,
-                deleteOnFailure = true,
-            ),
-        )
+        if (owner != null && requestId != null) {
+            viewModel.onAction(
+                BackupUiAction.StartExport(
+                    uri = uri?.toString(),
+                    pageOwner = owner,
+                    requestId = requestId,
+                    deleteOnFailure = true,
+                ),
+            )
+        }
     }
 
-    val encryptedExportPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/octet-stream"),
-        ::startManualExport,
-    )
-    val jsonExportPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json"),
-        ::startManualExport,
-    )
-    val textExportPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain"),
-        ::startManualExport,
-    )
-    val importPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument(),
-    ) { uri ->
-        val owner = pageOwner.value
-        val requestId = importRequestId.value
-        if (owner != null && requestId != null) {
-            viewModel.onAction(BackupUiAction.StartImport(uri?.toString(), owner, requestId))
+    val encryptedExportPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/octet-stream"),
+            ::startManualExport,
+        )
+    val jsonExportPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/json"),
+            ::startManualExport,
+        )
+    val textExportPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("text/plain"),
+            ::startManualExport,
+        )
+    val importPicker =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            val owner = pageOwner.value
+            val requestId = importRequestId.value
+            if (owner != null && requestId != null) {
+                viewModel.onAction(BackupUiAction.StartImport(uri?.toString(), owner, requestId))
+            }
+            importRequestId.value = null
         }
-        importRequestId.value = null
-    }
 
     LaunchedEffect(viewModel, lifecycle, noticePublisher) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
             when (effect) {
-                is BackupNoticeEffect ->
+                is BackupNoticeEffect -> {
                     noticePublisher.publish(
                         newAppNotice(effect.toNoticeCode(), effect.toNoticeArguments()),
                     )
+                }
 
                 is BackupEffect.SelectImportDocument -> {
                     importRequestId.value = effect.requestId
@@ -138,9 +145,10 @@ fun BackupOperationRoute(
     )
 
     BackupRestoreSheet(
-        state = state.toSheetUiState(
-            configuredDirectoryLabel = directoryLabel.takeIf { !directoryUri.isNullOrBlank() },
-        ),
+        state =
+            state.toSheetUiState(
+                configuredDirectoryLabel = directoryLabel.takeIf { !directoryUri.isNullOrBlank() },
+            ),
         onAction = viewModel::onAction,
     )
 }

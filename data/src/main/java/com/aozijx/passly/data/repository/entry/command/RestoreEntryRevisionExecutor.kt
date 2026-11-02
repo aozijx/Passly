@@ -11,41 +11,46 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import javax.inject.Inject
 
-internal class RestoreEntryRevisionExecutor @Inject constructor(
-    private val databaseTransactions: DatabaseTransactionRunner,
-    private val transaction: EntryRevisionRestoreTransaction,
-    private val clock: DatabaseClock,
-    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
-    private val entryResourceCleaner: EntryResourceCleaner,
-    private val postCommitCleanup: PostCommitCleanup,
-) {
-    suspend fun execute(
-        entryId: EntryId,
-        revisionId: EntryRevisionId,
-        expectedVersion: EntryVersion,
-        permit: AuthorizationPermit?,
-    ): AppResult<EntryVersion> {
-        val result = databaseTransactions.write("entry_revision_restore") {
-            transaction.restoreWithResources(
-                db = this,
-                entryId = entryId,
-                revisionId = revisionId,
-                expectedVersion = expectedVersion,
-                permit = permit,
-                now = clock.now(),
-            ).also {
-                attachmentGarbageCollector.scheduleInTransaction(this)
-            }
+internal class RestoreEntryRevisionExecutor
+    @Inject
+    constructor(
+        private val databaseTransactions: DatabaseTransactionRunner,
+        private val transaction: EntryRevisionRestoreTransaction,
+        private val clock: DatabaseClock,
+        private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+        private val entryResourceCleaner: EntryResourceCleaner,
+        private val postCommitCleanup: PostCommitCleanup,
+    ) {
+        suspend fun execute(
+            entryId: EntryId,
+            revisionId: EntryRevisionId,
+            expectedVersion: EntryVersion,
+            permit: AuthorizationPermit?,
+        ): AppResult<EntryVersion> {
+            val result =
+                databaseTransactions.write("entry_revision_restore") {
+                    transaction
+                        .restoreWithResources(
+                            db = this,
+                            entryId = entryId,
+                            revisionId = revisionId,
+                            expectedVersion = expectedVersion,
+                            permit = permit,
+                            now = clock.now(),
+                        ).also {
+                            attachmentGarbageCollector.scheduleInTransaction(this)
+                        }
+                }
+            val cleaned =
+                postCommitCleanup.afterCommit(result) { restored ->
+                    postCommitCleanup.run { attachmentGarbageCollector.drain() }
+                    postCommitCleanup.run {
+                        entryResourceCleaner.cleanReplacedIcon(
+                            oldPath = restored.previousIconPath,
+                            newPath = restored.restoredIconPath,
+                        )
+                    }
+                }
+            return cleaned.map { it.version }
         }
-        val cleaned = postCommitCleanup.afterCommit(result) { restored ->
-            postCommitCleanup.run { attachmentGarbageCollector.drain() }
-            postCommitCleanup.run {
-                entryResourceCleaner.cleanReplacedIcon(
-                    oldPath = restored.previousIconPath,
-                    newPath = restored.restoredIconPath,
-                )
-            }
-        }
-        return cleaned.map { it.version }
     }
-}

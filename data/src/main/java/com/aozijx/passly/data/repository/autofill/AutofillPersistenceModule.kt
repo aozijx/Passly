@@ -12,22 +12,15 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AutofillPersistenceModule {
+    @Binds
+    @Singleton
+    abstract fun bindAutofillCandidateRepository(impl: RoomAutofillCandidateRepository): AutofillCandidateRepository
 
     @Binds
     @Singleton
-    abstract fun bindAutofillCandidateRepository(
-        impl: RoomAutofillCandidateRepository,
-    ): AutofillCandidateRepository
+    abstract fun bindAutofillCredentialResolver(impl: RoomAutofillCredentialResolver): AutofillCredentialResolver
 
     @Binds
     @Singleton
-    abstract fun bindAutofillCredentialResolver(
-        impl: RoomAutofillCredentialResolver,
-    ): AutofillCredentialResolver
-
-    @Binds
-    @Singleton
-    abstract fun bindAutofillEntryWriter(
-        impl: RoomAutofillEntryWriter,
-    ): AutofillEntryWriter
+    abstract fun bindAutofillEntryWriter(impl: RoomAutofillEntryWriter): AutofillEntryWriter
 }

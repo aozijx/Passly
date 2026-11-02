@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -26,7 +26,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
-import androidx.compose.material3.OutlinedTextField
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailHeaderUiModel
 import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
@@ -62,24 +62,25 @@ fun DetailTopBar(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = stringResource(R.string.save),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
-                    }
+                    },
                 )
             } else {
                 Text(
                     text = model.title,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.combinedClickable(
-                        interactionSource = titleInteractionSource,
-                        indication = null,
-                        onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onTitleEditStarted()
-                        },
-                        onClick = {}
-                    )
+                    modifier =
+                        Modifier.combinedClickable(
+                            interactionSource = titleInteractionSource,
+                            indication = null,
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onTitleEditStarted()
+                            },
+                            onClick = {},
+                        ),
                 )
             }
         },
@@ -87,7 +88,7 @@ fun DetailTopBar(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back)
+                    contentDescription = stringResource(R.string.back),
                 )
             }
         },
@@ -106,11 +107,11 @@ fun DetailTopBar(
                 Icon(
                     imageVector = if (model.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "收藏",
-                    tint = if (model.favorite) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                    tint = if (model.favorite) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                 )
             }
         },
         scrollBehavior = scrollBehavior,
-        colors = passlyTopAppBarColors()
+        colors = passlyTopAppBarColors(),
     )
 }

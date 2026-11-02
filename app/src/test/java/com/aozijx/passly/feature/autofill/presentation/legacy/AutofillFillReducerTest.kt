@@ -10,23 +10,24 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 class AutofillFillReducerTest {
-
     @Test
     fun `loading replaces a previous terminal state`() {
-        val result = AutofillFillReducer.reduce(
-            AutofillFillUiState.Error("old"),
-            AutofillFillMutation.Loading,
-        )
+        val result =
+            AutofillFillReducer.reduce(
+                AutofillFillUiState.Error("old"),
+                AutofillFillMutation.Loading,
+            )
 
         assertSame(AutofillFillUiState.Loading, result)
     }
 
     @Test
     fun `authentication cancellation completes explicitly`() {
-        val result = AutofillFillReducer.reduce(
-            AutofillFillUiState.Loading,
-            AutofillFillMutation.Completed(AutofillFillResult.Cancelled),
-        )
+        val result =
+            AutofillFillReducer.reduce(
+                AutofillFillUiState.Loading,
+                AutofillFillMutation.Completed(AutofillFillResult.Cancelled),
+            )
 
         val completed = result as AutofillFillUiState.Result
         assertSame(AutofillFillResult.Cancelled, completed.result)
@@ -34,9 +35,10 @@ class AutofillFillReducerTest {
 
     @Test
     fun `successful platform delivery clears the retained terminal result`() {
-        val terminal = AutofillFillUiState.Result(
-            AutofillFillResult.Cancelled,
-        )
+        val terminal =
+            AutofillFillUiState.Result(
+                AutofillFillResult.Cancelled,
+            )
 
         val cleared = AutofillFillReducer.reduce(terminal, AutofillFillMutation.ResultDelivered)
 
@@ -45,55 +47,61 @@ class AutofillFillReducerTest {
 
     @Test
     fun `successful cancellation delivery clears an error terminal state`() {
-        val cleared = AutofillFillReducer.reduce(
-            AutofillFillUiState.Error("failed"),
-            AutofillFillMutation.ResultDelivered,
-        )
+        val cleared =
+            AutofillFillReducer.reduce(
+                AutofillFillUiState.Error("failed"),
+                AutofillFillMutation.ResultDelivered,
+            )
 
         assertSame(AutofillFillUiState.Initial, cleared)
     }
 
     @Test
     fun `selection terminal retains semantic credential and delivery receipt`() {
-        val payload = AutofillCredentialPayload(
-            entryId = EntryId("entry-1"),
-            username = "alice",
-            password = "secret",
-            otpCode = "123456",
-        )
+        val payload =
+            AutofillCredentialPayload(
+                entryId = EntryId("entry-1"),
+                username = "alice",
+                password = "secret",
+                otpCode = "123456",
+            )
         val receipt = AutofillSelectionReceipt(AutofillInteractionId("interaction-1"), payload.entryId)
-        val selected = AutofillFillResult.SelectedCredential(
-            payload = payload,
-            receipt = receipt,
-            target = LegacyAutofillResultTarget.DATASET,
-        )
+        val selected =
+            AutofillFillResult.SelectedCredential(
+                payload = payload,
+                receipt = receipt,
+                target = LegacyAutofillResultTarget.DATASET,
+            )
 
-        val state = AutofillFillReducer.reduce(
-            AutofillFillUiState.Loading,
-            AutofillFillMutation.Completed(selected),
-        ) as AutofillFillUiState.Result
+        val state =
+            AutofillFillReducer.reduce(
+                AutofillFillUiState.Loading,
+                AutofillFillMutation.Completed(selected),
+            ) as AutofillFillUiState.Result
 
         assertSame(selected, state.result)
     }
 
     @Test
     fun `failure exposes the workflow message`() {
-        val result = AutofillFillReducer.reduce(
-            AutofillFillUiState.Loading,
-            AutofillFillMutation.Failed("Entry not found"),
-        )
+        val result =
+            AutofillFillReducer.reduce(
+                AutofillFillUiState.Loading,
+                AutofillFillMutation.Failed("Entry not found"),
+            )
 
         assertEquals("Entry not found", (result as AutofillFillUiState.Error).message)
     }
 
     @Test
     fun `non candidate workflow states render an explicit hidden display state`() {
-        val states = listOf(
-            AutofillFillUiState.Initial,
-            AutofillFillUiState.Loading,
-            AutofillFillUiState.Result(AutofillFillResult.Cancelled),
-            AutofillFillUiState.Error("failed"),
-        )
+        val states =
+            listOf(
+                AutofillFillUiState.Initial,
+                AutofillFillUiState.Loading,
+                AutofillFillUiState.Result(AutofillFillResult.Cancelled),
+                AutofillFillUiState.Error("failed"),
+            )
 
         states.forEach { state ->
             assertSame(AutofillFillDisplayState.Hidden, state.toDisplayState())

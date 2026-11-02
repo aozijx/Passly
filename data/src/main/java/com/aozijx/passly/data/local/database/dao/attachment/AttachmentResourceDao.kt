@@ -25,33 +25,46 @@ interface AttachmentResourceDao {
             SELECT 1 FROM revision_attachment_refs AS history_refs
             WHERE history_refs.resourceId = resources.resourceId
         )
-        """
+        """,
     )
     suspend fun getUnreferenced(): List<AttachmentResourceEntity>
 
     @Query("UPDATE attachment_resources SET lifecycleState = :state WHERE resourceId IN (:resourceIds)")
-    suspend fun updateState(resourceIds: List<String>, state: String): Int
+    suspend fun updateState(
+        resourceIds: List<String>,
+        state: String,
+    ): Int
 
     @Query("UPDATE attachment_resources SET lifecycleState = :state WHERE resourceId = :resourceId")
-    suspend fun updateState(resourceId: String, state: String): Int
+    suspend fun updateState(
+        resourceId: String,
+        state: String,
+    ): Int
 
     @Query(
         """
         UPDATE attachment_resources
         SET lifecycleState = :state, enqueuedAt = :now, attemptCount = 0, lastAttemptAt = NULL
         WHERE resourceId IN (:resourceIds)
-        """
+        """,
     )
-    suspend fun markPendingGc(resourceIds: List<String>, state: String, now: Long): Int
+    suspend fun markPendingGc(
+        resourceIds: List<String>,
+        state: String,
+        now: Long,
+    ): Int
 
     @Query(
         """
         UPDATE attachment_resources
         SET lifecycleState = :state, enqueuedAt = NULL, attemptCount = 0, lastAttemptAt = NULL
         WHERE resourceId = :resourceId
-        """
+        """,
     )
-    suspend fun reactivate(resourceId: String, state: String): Int
+    suspend fun reactivate(
+        resourceId: String,
+        state: String,
+    ): Int
 
     @Query(
         """
@@ -59,18 +72,24 @@ interface AttachmentResourceDao {
         WHERE lifecycleState = :state
         ORDER BY enqueuedAt
         LIMIT :limit
-        """
+        """,
     )
-    suspend fun getPendingGc(limit: Int, state: String = AttachmentResourceState.PENDING_GC): List<AttachmentResourceEntity>
+    suspend fun getPendingGc(
+        limit: Int,
+        state: String = AttachmentResourceState.PENDING_GC,
+    ): List<AttachmentResourceEntity>
 
     @Query(
         """
         UPDATE attachment_resources
         SET attemptCount = attemptCount + 1, lastAttemptAt = :now
         WHERE resourceId = :resourceId
-        """
+        """,
     )
-    suspend fun recordAttempt(resourceId: String, now: Long): Int
+    suspend fun recordAttempt(
+        resourceId: String,
+        now: Long,
+    ): Int
 
     @Query("SELECT COUNT(*) FROM attachment_refs WHERE resourceId = :resourceId")
     suspend fun currentRefCount(resourceId: String): Int
@@ -79,6 +98,8 @@ interface AttachmentResourceDao {
     suspend fun revisionRefCount(resourceId: String): Int
 
     @Query("DELETE FROM attachment_resources WHERE resourceId = :resourceId AND lifecycleState = :pendingState")
-    suspend fun deletePending(resourceId: String, pendingState: String = AttachmentResourceState.PENDING_GC): Int
-
+    suspend fun deletePending(
+        resourceId: String,
+        pendingState: String = AttachmentResourceState.PENDING_GC,
+    ): Int
 }

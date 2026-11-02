@@ -15,7 +15,11 @@ data class AutofillCredentialPayload(
 )
 
 sealed interface AutofillCredentialResolution {
-    data class Resolved(val payload: AutofillCredentialPayload) : AutofillCredentialResolution
+    data class Resolved(
+        val payload: AutofillCredentialPayload,
+    ) : AutofillCredentialResolution
+
     data object NotFound : AutofillCredentialResolution
+
     data object NotFillable : AutofillCredentialResolution
 }

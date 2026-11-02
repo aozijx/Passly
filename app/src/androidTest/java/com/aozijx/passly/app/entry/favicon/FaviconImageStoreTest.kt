@@ -41,8 +41,9 @@ class FaviconImageStoreTest {
     @Test
     fun stagedOperations_rejectTraversalAndCommittedFiles() {
         val outside = File(context.cacheDir, "outside.webp").apply { writeText("keep") }
-        val committed = File(VaultResourcePaths.vaultImagesDir(context).apply(File::mkdirs), "favicon_keep.webp")
-            .apply { writeText("keep") }
+        val committed =
+            File(VaultResourcePaths.vaultImagesDir(context).apply(File::mkdirs), "favicon_keep.webp")
+                .apply { writeText("keep") }
 
         assertThrows(FaviconImageException::class.java) { store.requireStaged(outside.absolutePath) }
         store.discard(committed.absolutePath)
@@ -55,8 +56,9 @@ class FaviconImageStoreTest {
     @Test
     fun cleanupStaging_removesOnlyStaleStagedFiles() {
         val staged = File(store.stage(ByteArrayInputStream(byteArrayOf(1))))
-        val committed = File(VaultResourcePaths.vaultImagesDir(context), "favicon_keep.webp")
-            .apply { writeText("keep") }
+        val committed =
+            File(VaultResourcePaths.vaultImagesDir(context), "favicon_keep.webp")
+                .apply { writeText("keep") }
 
         store.cleanupStaging()
 
@@ -66,10 +68,11 @@ class FaviconImageStoreTest {
 
     @Test
     fun startupRecoveryIncludesBackupRestoresAndLegacyRestoredNames() {
-        val root = VaultResourcePaths.vaultImagesDir(context).apply {
-            deleteRecursively()
-            mkdirs()
-        }
+        val root =
+            VaultResourcePaths.vaultImagesDir(context).apply {
+                deleteRecursively()
+                mkdirs()
+            }
         val promoted = File(root, "favicon_orphan.webp").apply { writeText("promoted") }
         val restored = File(root, "favicon_restored_orphan.webp").apply { writeText("restored") }
         val legacyRestored = File(root, "restored_legacy.webp").apply { writeText("legacy") }

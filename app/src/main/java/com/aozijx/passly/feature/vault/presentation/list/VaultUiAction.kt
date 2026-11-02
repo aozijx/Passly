@@ -7,20 +7,47 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 
 sealed interface VaultUiAction {
-    data class SearchQueryChanged(val query: String) : VaultUiAction
-    data class CategorySelected(val category: String?) : VaultUiAction
+    data class SearchQueryChanged(
+        val query: String,
+    ) : VaultUiAction
+
+    data class CategorySelected(
+        val category: String?,
+    ) : VaultUiAction
+
     data object ClearCategory : VaultUiAction
-    data class SortOptionSelected(val sort: EntrySort) : VaultUiAction
-    data class FilterToggled(val filter: AddType?) : VaultUiAction
-    data class SearchToggled(val active: Boolean) : VaultUiAction
+
+    data class SortOptionSelected(
+        val sort: EntrySort,
+    ) : VaultUiAction
+
+    data class FilterToggled(
+        val filter: AddType?,
+    ) : VaultUiAction
+
+    data class SearchToggled(
+        val active: Boolean,
+    ) : VaultUiAction
+
     data object ToggleShowTotpCode : VaultUiAction
-    data class ItemToDeleteSelected(val item: EntryListItem?) : VaultUiAction
+
+    data class ItemToDeleteSelected(
+        val item: EntryListItem?,
+    ) : VaultUiAction
+
     data object ConfirmDelete : VaultUiAction
-    data class QuickDelete(val entryId: String) : VaultUiAction
+
+    data class QuickDelete(
+        val entryId: String,
+    ) : VaultUiAction
+
     data class CopyField(
         val entryId: String,
         val entryType: EntryType,
         val fieldKey: FieldKey,
     ) : VaultUiAction
-    data class CopyOtp(val entryId: String) : VaultUiAction
+
+    data class CopyOtp(
+        val entryId: String,
+    ) : VaultUiAction
 }

@@ -38,23 +38,26 @@ internal fun PermissionsRoute(
 
     val permissionDeniedMessage = stringResource(R.string.settings_permissions_request_denied)
     val permissionBusyMessage = stringResource(R.string.settings_permissions_request_busy)
-    val permissionUnavailableMessage = stringResource(
-        R.string.settings_permissions_request_unavailable,
-    )
-    val settingsUnavailableMessage = stringResource(
-        R.string.settings_permissions_system_settings_unavailable,
-    )
+    val permissionUnavailableMessage =
+        stringResource(
+            R.string.settings_permissions_request_unavailable,
+        )
+    val settingsUnavailableMessage =
+        stringResource(
+            R.string.settings_permissions_system_settings_unavailable,
+        )
 
     fun showMessage(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    val permissionHost = rememberPermissionRequestHost("settings.permissions") { _, result ->
-        permissionResultGeneration++
-        if (result is PermissionRequestOutcome.Denied) {
-            showMessage(permissionDeniedMessage)
+    val permissionHost =
+        rememberPermissionRequestHost("settings.permissions") { _, result ->
+            permissionResultGeneration++
+            if (result is PermissionRequestOutcome.Denied) {
+                showMessage(permissionDeniedMessage)
+            }
         }
-    }
 
     fun refreshRuntimeAccess() {
         viewModel.runtimeAccessUpdated(
@@ -80,16 +83,34 @@ internal fun PermissionsRoute(
     fun handleRuntimePermission(permission: RuntimePermission) {
         when (permissionHost.access(permission)) {
             RuntimePermissionAccess.GRANTED,
-            RuntimePermissionAccess.SETTINGS_REQUIRED -> openApplicationSettings()
-            RuntimePermissionAccess.NOT_APPLICABLE -> showMessage(permissionUnavailableMessage)
+            RuntimePermissionAccess.SETTINGS_REQUIRED,
+            -> {
+                openApplicationSettings()
+            }
+
+            RuntimePermissionAccess.NOT_APPLICABLE -> {
+                showMessage(permissionUnavailableMessage)
+            }
+
             RuntimePermissionAccess.REQUESTABLE -> {
                 when (permissionHost.request(permission)) {
-                    PermissionRequestStart.Launched -> Unit
-                    PermissionRequestStart.AlreadyGranted -> permissionResultGeneration++
-                    PermissionRequestStart.Busy -> showMessage(permissionBusyMessage)
+                    PermissionRequestStart.Launched -> {
+                        Unit
+                    }
+
+                    PermissionRequestStart.AlreadyGranted -> {
+                        permissionResultGeneration++
+                    }
+
+                    PermissionRequestStart.Busy -> {
+                        showMessage(permissionBusyMessage)
+                    }
+
                     PermissionRequestStart.NotApplicable,
-                    PermissionRequestStart.HostUnavailable ->
+                    PermissionRequestStart.HostUnavailable,
+                    -> {
                         showMessage(permissionUnavailableMessage)
+                    }
                 }
             }
         }
@@ -110,10 +131,13 @@ internal fun PermissionsRoute(
         onBack = onBack,
         onAction = { action ->
             when (action) {
-                is PermissionManagementScreenAction.RuntimePermissionSelected ->
+                is PermissionManagementScreenAction.RuntimePermissionSelected -> {
                     handleRuntimePermission(action.permission)
-                PermissionManagementScreenAction.OpenBackupSettings ->
+                }
+
+                PermissionManagementScreenAction.OpenBackupSettings -> {
                     onOpenBackupSettings()
+                }
             }
         },
     )

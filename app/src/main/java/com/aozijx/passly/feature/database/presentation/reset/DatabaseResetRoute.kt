@@ -8,9 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.database.presentation.reset.ui.DatabaseResetSheet
 
 @Composable
-internal fun DatabaseResetRoute(
-    onDismiss: () -> Unit,
-) {
+internal fun DatabaseResetRoute(onDismiss: () -> Unit) {
     val viewModel: DatabaseResetViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     DisposableEffect(viewModel) {

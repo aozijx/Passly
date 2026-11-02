@@ -3,9 +3,9 @@ package com.aozijx.passly.data.local.database
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
-import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.entity.RevisionAttachmentRefEntity
@@ -25,9 +25,11 @@ class AttachmentReferenceLifecycleDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            TestDatabaseFactory
+                .inMemoryDatabaseBuilder(context)
+                .allowMainThreadQueries()
+                .build()
     }
 
     @After
@@ -36,82 +38,89 @@ class AttachmentReferenceLifecycleDaoTest {
     }
 
     @Test
-    fun identicalContentIsShared_andResourceIsRestrictedWhileReferenced() = runBlocking {
-        insertEntry("entry-a")
-        insertEntry("entry-b")
-        database.attachmentResourceDao().insertStrict(resource())
-        database.attachmentRefCommandDao().insertStrict(currentRef("attachment-a", "entry-a"))
-        database.attachmentRefCommandDao().insertStrict(currentRef("attachment-b", "entry-b"))
+    fun identicalContentIsShared_andResourceIsRestrictedWhileReferenced() =
+        runBlocking {
+            insertEntry("entry-a")
+            insertEntry("entry-b")
+            database.attachmentResourceDao().insertStrict(resource())
+            database.attachmentRefCommandDao().insertStrict(currentRef("attachment-a", "entry-a"))
+            database.attachmentRefCommandDao().insertStrict(currentRef("attachment-b", "entry-b"))
 
-        assertTrue(
-            runCatching {
-                database.openHelper.writableDatabase.execSQL(
-                    "DELETE FROM attachment_resources WHERE resourceId = ?",
-                    arrayOf(RESOURCE_ID),
-                )
-            }.isFailure
-        )
-        database.attachmentRefCommandDao().deleteById("attachment-a")
-        assertTrue(database.attachmentResourceDao().getUnreferenced().isEmpty())
-        database.attachmentRefCommandDao().deleteById("attachment-b")
-        assertEquals(listOf(RESOURCE_ID), database.attachmentResourceDao().getUnreferenced().map { it.resourceId })
-    }
+            assertTrue(
+                runCatching {
+                    database.openHelper.writableDatabase.execSQL(
+                        "DELETE FROM attachment_resources WHERE resourceId = ?",
+                        arrayOf(RESOURCE_ID),
+                    )
+                }.isFailure,
+            )
+            database.attachmentRefCommandDao().deleteById("attachment-a")
+            assertTrue(database.attachmentResourceDao().getUnreferenced().isEmpty())
+            database.attachmentRefCommandDao().deleteById("attachment-b")
+            assertEquals(listOf(RESOURCE_ID), database.attachmentResourceDao().getUnreferenced().map { it.resourceId })
+        }
 
     @Test
-    fun revisionReferenceRetainsContentUntilRevisionIsDeleted() = runBlocking {
-        insertEntry("entry-a")
-        database.attachmentResourceDao().insertStrict(resource())
-        database.attachmentRefCommandDao().insertStrict(currentRef("attachment-a", "entry-a"))
-        database.entryRevisionCommandDao().insertStrict(
-            EntryRevisionEntity(
-                revisionId = "revision-a",
-                entryId = "entry-a",
-                version = 1,
-                entryContentCipher = byteArrayOf(1),
-                sensitiveFieldCipherSet = byteArrayOf(1),
-                changeType = "value_changed",
-                createdAt = 1L,
-            )
-        )
-        database.revisionAttachmentRefDao().insertAllStrict(
-            listOf(
-                RevisionAttachmentRefEntity(
+    fun revisionReferenceRetainsContentUntilRevisionIsDeleted() =
+        runBlocking {
+            insertEntry("entry-a")
+            database.attachmentResourceDao().insertStrict(resource())
+            database.attachmentRefCommandDao().insertStrict(currentRef("attachment-a", "entry-a"))
+            database.entryRevisionCommandDao().insertStrict(
+                EntryRevisionEntity(
                     revisionId = "revision-a",
-                    attachmentId = "attachment-a",
-                    resourceId = RESOURCE_ID,
-                    fileName = "shared.bin",
-                    mimeType = "application/octet-stream",
-                    displayOrder = 0,
+                    entryId = "entry-a",
+                    version = 1,
+                    entryContentCipher = byteArrayOf(1),
+                    sensitiveFieldCipherSet = byteArrayOf(1),
+                    changeType = "value_changed",
                     createdAt = 1L,
-                )
+                ),
             )
-        )
+            database.revisionAttachmentRefDao().insertAllStrict(
+                listOf(
+                    RevisionAttachmentRefEntity(
+                        revisionId = "revision-a",
+                        attachmentId = "attachment-a",
+                        resourceId = RESOURCE_ID,
+                        fileName = "shared.bin",
+                        mimeType = "application/octet-stream",
+                        displayOrder = 0,
+                        createdAt = 1L,
+                    ),
+                ),
+            )
 
-        database.attachmentRefCommandDao().deleteById("attachment-a")
-        assertTrue(database.attachmentResourceDao().getUnreferenced().isEmpty())
-        database.entryRevisionCommandDao().deleteByEntryId("entry-a")
-        assertEquals(0, database.revisionAttachmentRefDao().countByResourceId(RESOURCE_ID))
-        assertEquals(listOf(RESOURCE_ID), database.attachmentResourceDao().getUnreferenced().map { it.resourceId })
-    }
+            database.attachmentRefCommandDao().deleteById("attachment-a")
+            assertTrue(database.attachmentResourceDao().getUnreferenced().isEmpty())
+            database.entryRevisionCommandDao().deleteByEntryId("entry-a")
+            assertEquals(0, database.revisionAttachmentRefDao().countByResourceId(RESOURCE_ID))
+            assertEquals(listOf(RESOURCE_ID), database.attachmentResourceDao().getUnreferenced().map { it.resourceId })
+        }
 
     @Test
-    fun databaseRequiresAnExistingEntryAndActiveResource() = runBlocking {
-        insertEntry("entry-a")
-        database.attachmentResourceDao().insertStrict(resource())
-        assertTrue(runCatching {
-            database.attachmentRefCommandDao().insertStrict(currentRef("missing-entry", "missing-entry"))
-        }.isFailure)
-
-        val pendingResourceId = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-        database.attachmentResourceDao().insertStrict(
-            resource(resourceId = pendingResourceId, lifecycleState = AttachmentResourceState.PENDING_GC),
-        )
-        assertTrue(runCatching {
-            database.attachmentRefCommandDao().insertStrict(
-                currentRef("inactive-resource", "entry-a").copy(resourceId = pendingResourceId),
+    fun databaseRequiresAnExistingEntryAndActiveResource() =
+        runBlocking {
+            insertEntry("entry-a")
+            database.attachmentResourceDao().insertStrict(resource())
+            assertTrue(
+                runCatching {
+                    database.attachmentRefCommandDao().insertStrict(currentRef("missing-entry", "missing-entry"))
+                }.isFailure,
             )
-        }.isFailure)
-    }
+
+            val pendingResourceId = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            database.attachmentResourceDao().insertStrict(
+                resource(resourceId = pendingResourceId, lifecycleState = AttachmentResourceState.PENDING_GC),
+            )
+            assertTrue(
+                runCatching {
+                    database.attachmentRefCommandDao().insertStrict(
+                        currentRef("inactive-resource", "entry-a").copy(resourceId = pendingResourceId),
+                    )
+                }.isFailure,
+            )
+        }
 
     private suspend fun insertEntry(id: String) {
         database.entryCommandDao().insertStrict(
@@ -121,7 +130,7 @@ class AttachmentReferenceLifecycleDaoTest {
                 title = "entry",
                 createdAt = 1L,
                 updatedAt = 1L,
-            )
+            ),
         )
     }
 
@@ -135,7 +144,10 @@ class AttachmentReferenceLifecycleDaoTest {
         createdAt = 1L,
     )
 
-    private fun currentRef(id: String, entryId: String) = AttachmentRefEntity(
+    private fun currentRef(
+        id: String,
+        entryId: String,
+    ) = AttachmentRefEntity(
         attachmentId = id,
         entryId = entryId,
         resourceId = RESOURCE_ID,

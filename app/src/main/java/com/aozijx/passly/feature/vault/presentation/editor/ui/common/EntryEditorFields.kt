@@ -20,23 +20,23 @@ fun EntryEditorSection(
     title: String,
     modifier: Modifier = Modifier,
     supportingText: String? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
             if (!supportingText.isNullOrBlank()) {
                 Text(
                     text = supportingText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

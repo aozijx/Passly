@@ -33,9 +33,10 @@ fun SeedPhraseSection(
     onCopy: () -> Unit,
     onReveal: () -> Unit,
 ) {
-    val wordList = remember(revealedSeedPhrase) {
-        revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
-    }
+    val wordList =
+        remember(revealedSeedPhrase) {
+            revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
+        }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
@@ -51,18 +52,18 @@ fun SeedPhraseSection(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.word_index_hint),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        modifier = Modifier.padding(bottom = 12.dp),
                     )
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         itemsIndexed(wordList) { index, word ->
                             SeedWordChip(index = index + 1, word = word)
@@ -76,7 +77,7 @@ fun SeedPhraseSection(
             Button(
                 onClick = onReveal,
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Icon(Icons.Default.Visibility, null)
                 Spacer(Modifier.width(8.dp))
@@ -87,26 +88,29 @@ fun SeedPhraseSection(
 }
 
 @Composable
-private fun SeedWordChip(index: Int, word: String) {
+private fun SeedWordChip(
+    index: Int,
+    word: String,
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        shape = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "$index.",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                modifier = Modifier.padding(end = 4.dp)
+                modifier = Modifier.padding(end = 4.dp),
             )
             Text(
                 text = word,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }

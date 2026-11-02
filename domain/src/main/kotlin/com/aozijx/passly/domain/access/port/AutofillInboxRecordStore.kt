@@ -14,7 +14,13 @@ interface AutofillInboxRecordStore {
 
     suspend fun pending(keyId: ByteArray): List<AutofillInboxStoredRecord>
 
-    suspend fun remove(keyId: ByteArray, draftId: AutofillInboxDraftId)
+    suspend fun remove(
+        keyId: ByteArray,
+        draftId: AutofillInboxDraftId,
+    )
 
-    suspend fun quarantine(keyId: ByteArray, draftId: AutofillInboxDraftId)
+    suspend fun quarantine(
+        keyId: ByteArray,
+        draftId: AutofillInboxDraftId,
+    )
 }

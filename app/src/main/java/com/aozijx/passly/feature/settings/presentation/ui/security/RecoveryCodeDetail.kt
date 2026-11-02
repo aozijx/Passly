@@ -27,15 +27,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.crypto.MemoryCleaner
-import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.ActionButtonPhase
+import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeDraftUiState
-import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeVerificationUiState
 import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeSettingsAction
 import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeSettingsUiState
+import com.aozijx.passly.feature.settings.presentation.security.RecoveryCodeVerificationUiState
 
 @Composable
 fun RecoveryCodeDetail(
@@ -46,35 +46,42 @@ fun RecoveryCodeDetail(
     var isExpanded by remember { mutableStateOf(false) }
     val verification = state.verification
     val verifyInput = verification.input.toUiString()
-    val verificationPhase = when (verification) {
-        is RecoveryCodeVerificationUiState.Accepted -> ActionButtonPhase.Succeeded
-        is RecoveryCodeVerificationUiState.Rejected,
-        is RecoveryCodeVerificationUiState.Failed -> ActionButtonPhase.Failed
-        is RecoveryCodeVerificationUiState.Editing -> ActionButtonPhase.Idle
-        is RecoveryCodeVerificationUiState.Verifying -> ActionButtonPhase.InProgress
-    }
+    val verificationPhase =
+        when (verification) {
+            is RecoveryCodeVerificationUiState.Accepted -> ActionButtonPhase.Succeeded
+
+            is RecoveryCodeVerificationUiState.Rejected,
+            is RecoveryCodeVerificationUiState.Failed,
+            -> ActionButtonPhase.Failed
+
+            is RecoveryCodeVerificationUiState.Editing -> ActionButtonPhase.Idle
+
+            is RecoveryCodeVerificationUiState.Verifying -> ActionButtonPhase.InProgress
+        }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         // 安全提示
         Text(
             text = stringResource(R.string.settings_recovery_code_warning),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error
+            color = MaterialTheme.colorScheme.error,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = stringResource(
-                R.string.settings_recovery_code_save_hint,
-                stringResource(R.string.app_name)
-            ),
+            text =
+                stringResource(
+                    R.string.settings_recovery_code_save_hint,
+                    stringResource(R.string.app_name),
+                ),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -84,7 +91,7 @@ fun RecoveryCodeDetail(
                 text = stringResource(R.string.settings_recovery_code_saved),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.height(12.dp))
         }
@@ -94,7 +101,7 @@ fun RecoveryCodeDetail(
                 onClick = { onAction(RecoveryCodeSettingsAction.Generate) },
                 enabled = state.draft !is RecoveryCodeDraftUiState.Creating,
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
             ) {
                 Text(stringResource(R.string.settings_recovery_code_create))
             }
@@ -107,31 +114,37 @@ fun RecoveryCodeDetail(
             Text(
                 text = stringResource(R.string.recovery_code_verify),
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             InputActionButton(
-                state = InputActionButtonState(
-                    value = verifyInput,
-                    expanded = isExpanded,
-                    phase = verificationPhase,
-                ),
-                config = InputActionButtonConfig(
-                    icon = Icons.Default.Restore,
-                    containerColor = when (verificationPhase) {
-                        ActionButtonPhase.Succeeded -> MaterialTheme.colorScheme.secondaryContainer
-                        ActionButtonPhase.Failed -> MaterialTheme.colorScheme.errorContainer
-                        ActionButtonPhase.Idle,
-                        ActionButtonPhase.InProgress -> null
-                    },
-                    collapsedText = stringResource(R.string.restore_access),
-                    expandedText = stringResource(R.string.recovery_code_verify),
-                    inputLabel = stringResource(R.string.recovery_code_label),
-                    successText = stringResource(R.string.settings_recovery_code_verify_valid),
-                    errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
-                ),
+                state =
+                    InputActionButtonState(
+                        value = verifyInput,
+                        expanded = isExpanded,
+                        phase = verificationPhase,
+                    ),
+                config =
+                    InputActionButtonConfig(
+                        icon = Icons.Default.Restore,
+                        containerColor =
+                            when (verificationPhase) {
+                                ActionButtonPhase.Succeeded -> MaterialTheme.colorScheme.secondaryContainer
+
+                                ActionButtonPhase.Failed -> MaterialTheme.colorScheme.errorContainer
+
+                                ActionButtonPhase.Idle,
+                                ActionButtonPhase.InProgress,
+                                -> null
+                            },
+                        collapsedText = stringResource(R.string.restore_access),
+                        expandedText = stringResource(R.string.recovery_code_verify),
+                        inputLabel = stringResource(R.string.recovery_code_label),
+                        successText = stringResource(R.string.settings_recovery_code_verify_valid),
+                        errorText = stringResource(R.string.settings_recovery_code_verify_invalid),
+                    ),
                 onValueChange = {
                     onAction(RecoveryCodeSettingsAction.VerificationInputChanged(it))
                 },
@@ -150,9 +163,10 @@ fun RecoveryCodeDetail(
                 onClick = { showRegenerateConfirm = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
             ) {
                 Icon(Icons.Default.Restore, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
@@ -177,7 +191,7 @@ fun RecoveryCodeDetail(
                 }) {
                     Text(
                         stringResource(R.string.settings_confirm),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
@@ -185,7 +199,7 @@ fun RecoveryCodeDetail(
                 TextButton(onClick = { showRegenerateConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 }

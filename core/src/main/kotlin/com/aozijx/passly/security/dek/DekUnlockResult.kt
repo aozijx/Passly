@@ -8,7 +8,9 @@ sealed interface DekUnlockResult {
     data object Success : DekUnlockResult
 
     /** 解锁失败 */
-    data class Failed(val reason: DekUnlockError) : DekUnlockResult
+    data class Failed(
+        val reason: DekUnlockError,
+    ) : DekUnlockResult
 }
 
 /**
@@ -31,5 +33,5 @@ enum class DekUnlockError {
     DATABASE_CORRUPTED,
 
     /** 未知错误 */
-    UNKNOWN
+    UNKNOWN,
 }

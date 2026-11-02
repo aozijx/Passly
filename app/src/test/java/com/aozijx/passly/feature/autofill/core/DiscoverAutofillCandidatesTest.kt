@@ -43,94 +43,104 @@ import org.junit.Test
 
 class DiscoverAutofillCandidatesTest {
     @Test
-    fun disabledSourceDoesNotCreateOrQueryInteraction() = runBlocking {
-        val fixture = fixture(settings = AutofillSettings(enabled = false))
+    fun disabledSourceDoesNotCreateOrQueryInteraction() =
+        runBlocking {
+            val fixture = fixture(settings = AutofillSettings(enabled = false))
 
-        val outcome = fixture.operation(request())
+            val outcome = fixture.operation(request())
 
-        assertEquals(AutofillDiscoveryOutcome.Disabled, outcome)
-        assertEquals(0, fixture.repository.searchCalls)
-    }
-
-    @Test
-    fun requestWithoutCredentialFieldsIsUnsupported() = runBlocking {
-        val fixture = fixture(hasCredentials = false)
-
-        val outcome = fixture.operation(request())
-
-        assertEquals(AutofillDiscoveryOutcome.UnsupportedFields, outcome)
-        assertEquals(0, fixture.repository.searchCalls)
-    }
+            assertEquals(AutofillDiscoveryOutcome.Disabled, outcome)
+            assertEquals(0, fixture.repository.searchCalls)
+        }
 
     @Test
-    fun lockedVaultRequiresUnlockBeforeMetadataQuery() = runBlocking {
-        val fixture = fixture(vaultState = AuthenticationState.Locked)
+    fun requestWithoutCredentialFieldsIsUnsupported() =
+        runBlocking {
+            val fixture = fixture(hasCredentials = false)
 
-        val outcome = fixture.operation(request())
+            val outcome = fixture.operation(request())
 
-        assertTrue(outcome is AutofillDiscoveryOutcome.RequiresUnlock)
-        assertEquals(0, fixture.repository.searchCalls)
-    }
-
-    @Test
-    fun unlockedVaultReturnsExplicitNoCandidates() = runBlocking {
-        val fixture = fixture(candidates = emptyList())
-
-        val outcome = fixture.operation(request())
-
-        assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
-        assertEquals(1, fixture.repository.searchCalls)
-    }
+            assertEquals(AutofillDiscoveryOutcome.UnsupportedFields, outcome)
+            assertEquals(0, fixture.repository.searchCalls)
+        }
 
     @Test
-    fun legacyDiscoveryCarriesSavePreferenceIndependentlyFromCredentialManager() = runBlocking {
-        val fixture = fixture(
-            settings = AutofillSettings(
-                requireAuthentication = false,
-                savePromptsEnabled = false,
-                credentialManagerEnabled = false,
-            ),
-        )
+    fun lockedVaultRequiresUnlockBeforeMetadataQuery() =
+        runBlocking {
+            val fixture = fixture(vaultState = AuthenticationState.Locked)
 
-        val outcome = fixture.operation(request())
+            val outcome = fixture.operation(request())
 
-        assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
-        outcome as AutofillDiscoveryOutcome.NoCandidates
-        assertEquals(false, outcome.context.savePromptsEnabled)
-        assertEquals(1, fixture.repository.searchCalls)
-    }
+            assertTrue(outcome is AutofillDiscoveryOutcome.RequiresUnlock)
+            assertEquals(0, fixture.repository.searchCalls)
+        }
 
     @Test
-    fun unlockedVaultRecordsAndReturnsMetadataCandidates() = runBlocking {
-        val candidate = candidate("entry-1")
-        val fixture = fixture(candidates = listOf(candidate))
+    fun unlockedVaultReturnsExplicitNoCandidates() =
+        runBlocking {
+            val fixture = fixture(candidates = emptyList())
 
-        val outcome = fixture.operation(request())
+            val outcome = fixture.operation(request())
 
-        assertTrue(outcome is AutofillDiscoveryOutcome.Candidates)
-        outcome as AutofillDiscoveryOutcome.Candidates
-        assertEquals(listOf(candidate), outcome.candidates)
-        assertEquals(setOf(EntryId("entry-1")), outcome.snapshot.presentedCandidateIds)
-    }
+            assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
+            assertEquals(1, fixture.repository.searchCalls)
+        }
 
     @Test
-    fun directSelectionResumesExistingCandidatesWithoutSearchingAgain() = runBlocking {
-        val candidate = candidate("entry-1")
-        val fixture = fixture(candidates = listOf(candidate))
-        val first = fixture.operation(request()) as AutofillDiscoveryOutcome.Candidates
+    fun legacyDiscoveryCarriesSavePreferenceIndependentlyFromCredentialManager() =
+        runBlocking {
+            val fixture =
+                fixture(
+                    settings =
+                        AutofillSettings(
+                            requireAuthentication = false,
+                            savePromptsEnabled = false,
+                            credentialManagerEnabled = false,
+                        ),
+                )
 
-        val resumed = fixture.operation(
-            request = request(),
-            interactionId = first.snapshot.id,
-            directEntryId = candidate.entry.id,
-        )
+            val outcome = fixture.operation(request())
 
-        assertTrue(resumed is AutofillDiscoveryOutcome.ResumeSelection)
-        resumed as AutofillDiscoveryOutcome.ResumeSelection
-        assertEquals(first.snapshot.id, resumed.snapshot.id)
-        assertEquals(candidate.entry.id, resumed.entryId)
-        assertEquals(1, fixture.repository.searchCalls)
-    }
+            assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
+            outcome as AutofillDiscoveryOutcome.NoCandidates
+            assertEquals(false, outcome.context.savePromptsEnabled)
+            assertEquals(1, fixture.repository.searchCalls)
+        }
+
+    @Test
+    fun unlockedVaultRecordsAndReturnsMetadataCandidates() =
+        runBlocking {
+            val candidate = candidate("entry-1")
+            val fixture = fixture(candidates = listOf(candidate))
+
+            val outcome = fixture.operation(request())
+
+            assertTrue(outcome is AutofillDiscoveryOutcome.Candidates)
+            outcome as AutofillDiscoveryOutcome.Candidates
+            assertEquals(listOf(candidate), outcome.candidates)
+            assertEquals(setOf(EntryId("entry-1")), outcome.snapshot.presentedCandidateIds)
+        }
+
+    @Test
+    fun directSelectionResumesExistingCandidatesWithoutSearchingAgain() =
+        runBlocking {
+            val candidate = candidate("entry-1")
+            val fixture = fixture(candidates = listOf(candidate))
+            val first = fixture.operation(request()) as AutofillDiscoveryOutcome.Candidates
+
+            val resumed =
+                fixture.operation(
+                    request = request(),
+                    interactionId = first.snapshot.id,
+                    directEntryId = candidate.entry.id,
+                )
+
+            assertTrue(resumed is AutofillDiscoveryOutcome.ResumeSelection)
+            resumed as AutofillDiscoveryOutcome.ResumeSelection
+            assertEquals(first.snapshot.id, resumed.snapshot.id)
+            assertEquals(candidate.entry.id, resumed.entryId)
+            assertEquals(1, fixture.repository.searchCalls)
+        }
 
     private fun fixture(
         settings: AutofillSettings = AutofillSettings(requireAuthentication = false),
@@ -143,58 +153,68 @@ class DiscoverAutofillCandidatesTest {
         val store = AutofillInteractionStore()
         val lease = AutofillUnlockLease(authentication)
         val repository = RecordingCandidateRepository(candidates)
-        val fieldMatchStrategy = object : FieldMatchStrategy {
-            override fun match(request: AutofillRequest) = MatchResult(
-                roleMap = mapOf("password" to FieldRole.PASSWORD),
-                hasCredentials = hasCredentials,
-            )
-        }
+        val fieldMatchStrategy =
+            object : FieldMatchStrategy {
+                override fun match(request: AutofillRequest) =
+                    MatchResult(
+                        roleMap = mapOf("password" to FieldRole.PASSWORD),
+                        hasCredentials = hasCredentials,
+                    )
+            }
         return Fixture(
-            operation = DiscoverAutofillCandidates(
-                settingsSource = FixedSettingsSource(settings),
-                candidateRepository = repository,
-                legacyFieldMatchStrategy = fieldMatchStrategy,
-                credentialFieldMatchStrategy = fieldMatchStrategy,
-                startInteraction = StartAutofillInteraction(store, lease, vault),
-                interactionStore = store,
-                finishInteraction = FinishAutofillInteraction(store, lease),
-            ),
+            operation =
+                DiscoverAutofillCandidates(
+                    settingsSource = FixedSettingsSource(settings),
+                    candidateRepository = repository,
+                    legacyFieldMatchStrategy = fieldMatchStrategy,
+                    credentialFieldMatchStrategy = fieldMatchStrategy,
+                    startInteraction = StartAutofillInteraction(store, lease, vault),
+                    interactionStore = store,
+                    finishInteraction = FinishAutofillInteraction(store, lease),
+                ),
             repository = repository,
         )
     }
 
-    private fun request() = AutofillRequest(
-        packageName = "com.example.app",
-        domain = "example.com",
-        fields = listOf(
-            AutofillField(
-                id = "password",
-                hints = setOf("password"),
-                inputType = null,
-                isFocused = true,
-            ),
-        ),
-        source = AutofillSource.AUTOFILL_SERVICE,
-    )
+    private fun request() =
+        AutofillRequest(
+            packageName = "com.example.app",
+            domain = "example.com",
+            fields =
+                listOf(
+                    AutofillField(
+                        id = "password",
+                        hints = setOf("password"),
+                        inputType = null,
+                        isFocused = true,
+                    ),
+                ),
+            source = AutofillSource.AUTOFILL_SERVICE,
+        )
 
-    private fun candidate(id: String) = AutofillCandidateSummary(
-        entry = EntryListItem(
-            identity = EntryIdentity(
-                id = EntryId(id),
-                type = EntryType.LOGIN,
-                timestamps = EntryTimestamps(1L),
-            ),
-            profile = EntryProfile(title = "Example", username = "user"),
-        ),
-        match = CredentialMatch(MatchType.WEB_DOMAIN, domain = "example.com"),
-    )
+    private fun candidate(id: String) =
+        AutofillCandidateSummary(
+            entry =
+                EntryListItem(
+                    identity =
+                        EntryIdentity(
+                            id = EntryId(id),
+                            type = EntryType.LOGIN,
+                            timestamps = EntryTimestamps(1L),
+                        ),
+                    profile = EntryProfile(title = "Example", username = "user"),
+                ),
+            match = CredentialMatch(MatchType.WEB_DOMAIN, domain = "example.com"),
+        )
 
     private data class Fixture(
         val operation: DiscoverAutofillCandidates,
         val repository: RecordingCandidateRepository,
     )
 
-    private class FixedSettingsSource(settings: AutofillSettings) : InteractionSettingsSource {
+    private class FixedSettingsSource(
+        settings: AutofillSettings,
+    ) : InteractionSettingsSource {
         override val interaction: Flow<InteractionSettings> = flowOf(InteractionSettings(autofill = settings))
     }
 
@@ -209,17 +229,23 @@ class DiscoverAutofillCandidatesTest {
         }
     }
 
-    private class FakeVault(state: AuthenticationState) : SecureSessionAccessState {
+    private class FakeVault(
+        state: AuthenticationState,
+    ) : SecureSessionAccessState {
         private val mutableState = MutableStateFlow(state)
         override val authenticationState: StateFlow<AuthenticationState> = mutableState
+
         override fun isUnlocked(): Boolean = mutableState.value is AuthenticationState.Authenticated
     }
 
     private class NoOpAuthentication(
         private val vault: FakeVault,
-    ) : AuthenticationRequester, SessionLockController {
-        override suspend fun authenticate(request: AuthenticationRequest, input: AuthInput): AuthenticationResult =
-            error("Authentication is not expected in discovery")
+    ) : AuthenticationRequester,
+        SessionLockController {
+        override suspend fun authenticate(
+            request: AuthenticationRequest,
+            input: AuthInput,
+        ): AuthenticationResult = error("Authentication is not expected in discovery")
 
         override suspend fun lock(request: SessionLockRequest) = Unit
     }

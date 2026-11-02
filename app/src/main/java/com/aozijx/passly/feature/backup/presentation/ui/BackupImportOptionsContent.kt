@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.backup.presentation.ui
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,8 +25,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.backup.contract.ImportMode
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.presentation.BackupUiAction
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
 
@@ -119,9 +119,10 @@ private fun ImportChoiceCard(
     onClick: () -> Unit,
 ) {
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton),
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             RadioButton(selected = selected, onClick = onClick)

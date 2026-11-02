@@ -15,61 +15,80 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 
 /** Pure conversion with input checks; callers own complete credential validation, identity creation, access and persistence. */
 class EntryDraftMaterializer {
-    fun materialize(draft: EntryDraft, identity: EntryIdentity): Entry {
+    fun materialize(
+        draft: EntryDraft,
+        identity: EntryIdentity,
+    ): Entry {
         require(identity.type == draft.type) { "Draft and identity types must match" }
-        val materialize = when (identity.type) {
-            EntryType.LOGIN -> ::materializeLogin
-            EntryType.OTP -> ::materializeOtp
-            EntryType.BANK_CARD -> ::materializeBankCard
-            EntryType.WIFI -> ::materializeWifi
-            EntryType.ACCOUNT,
-            EntryType.NOTE,
-            EntryType.ID_CARD,
-            EntryType.PASSPORT,
-            EntryType.DRIVER_LICENSE,
-            EntryType.SSH_KEY,
-            EntryType.PASSKEY,
-            EntryType.DATABASE_CREDENTIAL,
-            EntryType.SERVER_CREDENTIAL,
-            EntryType.API_KEY,
-            EntryType.CRYPTO_WALLET,
-            EntryType.SEED_PHRASE,
-            EntryType.RECOVERY_CODE -> throw UnsupportedEntryDraft(identity.type)
-        }
+        val materialize =
+            when (identity.type) {
+                EntryType.LOGIN -> ::materializeLogin
+
+                EntryType.OTP -> ::materializeOtp
+
+                EntryType.BANK_CARD -> ::materializeBankCard
+
+                EntryType.WIFI -> ::materializeWifi
+
+                EntryType.ACCOUNT,
+                EntryType.NOTE,
+                EntryType.ID_CARD,
+                EntryType.PASSPORT,
+                EntryType.DRIVER_LICENSE,
+                EntryType.SSH_KEY,
+                EntryType.PASSKEY,
+                EntryType.DATABASE_CREDENTIAL,
+                EntryType.SERVER_CREDENTIAL,
+                EntryType.API_KEY,
+                EntryType.CRYPTO_WALLET,
+                EntryType.SEED_PHRASE,
+                EntryType.RECOVERY_CODE,
+                -> throw UnsupportedEntryDraft(identity.type)
+            }
         val definition = EntryTypeDefinitions[identity.type]
         val invalidFields = draft.invalidProvidedFields(definition) + draft.missingRequiredFields(definition)
         if (invalidFields.isNotEmpty()) throw InvalidEntryDraft(invalidFields)
         return materialize(draft, identity)
     }
 
-    private fun materializeLogin(draft: EntryDraft, identity: EntryIdentity) = Entry(
+    private fun materializeLogin(
+        draft: EntryDraft,
+        identity: EntryIdentity,
+    ) = Entry(
         identity = identity,
-        profile = draft.profile(
-            username = draft.text(FieldKey.USERNAME).orEmpty(),
-            associations = EntryAssociations(
-                primaryUrl = draft.text(FieldKey.PRIMARY_URL),
-                domains = draft.textList(FieldKey.DOMAINS).toCollection(linkedSetOf()),
-                applicationIds = draft.textList(FieldKey.APPLICATION_IDS).toCollection(linkedSetOf()),
+        profile =
+            draft.profile(
+                username = draft.text(FieldKey.USERNAME).orEmpty(),
+                associations =
+                    EntryAssociations(
+                        primaryUrl = draft.text(FieldKey.PRIMARY_URL),
+                        domains = draft.textList(FieldKey.DOMAINS).toCollection(linkedSetOf()),
+                        applicationIds = draft.textList(FieldKey.APPLICATION_IDS).toCollection(linkedSetOf()),
+                    ),
             ),
-        ),
-        secret = EntrySecret(
-            credential = LoginCredential(
-                email = draft.text(FieldKey.EMAIL),
-                password = draft.text(FieldKey.PASSWORD),
+        secret =
+            EntrySecret(
+                credential =
+                    LoginCredential(
+                        email = draft.text(FieldKey.EMAIL),
+                        password = draft.text(FieldKey.PASSWORD),
+                    ),
+                notes = draft.text(FieldKey.NOTES),
             ),
-            notes = draft.text(FieldKey.NOTES),
-        ),
     )
 
-    private fun materializeOtp(draft: EntryDraft, identity: EntryIdentity): Entry {
+    private fun materializeOtp(
+        draft: EntryDraft,
+        identity: EntryIdentity,
+    ): Entry {
         val type = draft.otpType()
         val algorithm = draft.otpAlgorithm()
         val encoding = draft.otpEncoding()
@@ -78,62 +97,74 @@ class EntryDraftMaterializer {
         val counter = if (type == OtpType.HOTP) draft.longNumber(FieldKey.OTP_COUNTER) ?: 0L else null
         val invalidParameters = OtpConfigValidation.validateParameters(type, algorithm, digits, period, counter)
         if (invalidParameters.isNotEmpty()) throw InvalidEntryDraft(invalidParameters)
-        val config = OtpConfig(
-            type = type,
-            secret = draft.text(FieldKey.OTP_SECRET),
-            algorithm = algorithm,
-            digits = digits,
-            periodSeconds = period,
-            counter = counter,
-            encoding = encoding,
-            issuer = draft.text(FieldKey.OTP_ISSUER),
-            accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME),
-        )
+        val config =
+            OtpConfig(
+                type = type,
+                secret = draft.text(FieldKey.OTP_SECRET),
+                algorithm = algorithm,
+                digits = digits,
+                periodSeconds = period,
+                counter = counter,
+                encoding = encoding,
+                issuer = draft.text(FieldKey.OTP_ISSUER),
+                accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME),
+            )
         return Entry(
             identity = identity,
             profile = draft.profile(),
-            secret = EntrySecret(
-                credential = OtpCredential(config),
-                notes = draft.text(FieldKey.NOTES),
-            ),
+            secret =
+                EntrySecret(
+                    credential = OtpCredential(config),
+                    notes = draft.text(FieldKey.NOTES),
+                ),
         )
     }
 
-    private fun materializeBankCard(draft: EntryDraft, identity: EntryIdentity) = Entry(
+    private fun materializeBankCard(
+        draft: EntryDraft,
+        identity: EntryIdentity,
+    ) = Entry(
         identity = identity,
         profile = draft.profile(),
-        secret = EntrySecret(
-            credential = CardCredential(
-                cardType = draft.text(FieldKey.CARD_TYPE),
-                cardNumber = draft.text(FieldKey.CARD_NUMBER),
-                cardExpiry = draft.text(FieldKey.CARD_EXPIRATION),
-                cardCvv = draft.text(FieldKey.CARD_CVV),
-                cardHolder = draft.text(FieldKey.CARD_HOLDER),
-                paymentPin = draft.text(FieldKey.PAYMENT_PIN),
-                paymentPlatform = draft.text(FieldKey.PAYMENT_PLATFORM),
-                billingAddress = draft.text(FieldKey.BILLING_ADDRESS),
-                issuingBank = draft.text(FieldKey.CARD_ISSUING_BANK),
-                bankBranch = draft.text(FieldKey.CARD_BANK_BRANCH),
-                cardProduct = draft.text(FieldKey.CARD_PRODUCT),
-                currency = draft.text(FieldKey.CARD_CURRENCY),
-                bankPhone = draft.text(FieldKey.CARD_BANK_PHONE),
+        secret =
+            EntrySecret(
+                credential =
+                    CardCredential(
+                        cardType = draft.text(FieldKey.CARD_TYPE),
+                        cardNumber = draft.text(FieldKey.CARD_NUMBER),
+                        cardExpiry = draft.text(FieldKey.CARD_EXPIRATION),
+                        cardCvv = draft.text(FieldKey.CARD_CVV),
+                        cardHolder = draft.text(FieldKey.CARD_HOLDER),
+                        paymentPin = draft.text(FieldKey.PAYMENT_PIN),
+                        paymentPlatform = draft.text(FieldKey.PAYMENT_PLATFORM),
+                        billingAddress = draft.text(FieldKey.BILLING_ADDRESS),
+                        issuingBank = draft.text(FieldKey.CARD_ISSUING_BANK),
+                        bankBranch = draft.text(FieldKey.CARD_BANK_BRANCH),
+                        cardProduct = draft.text(FieldKey.CARD_PRODUCT),
+                        currency = draft.text(FieldKey.CARD_CURRENCY),
+                        bankPhone = draft.text(FieldKey.CARD_BANK_PHONE),
+                    ),
+                notes = draft.text(FieldKey.NOTES),
             ),
-            notes = draft.text(FieldKey.NOTES),
-        ),
     )
 
-    private fun materializeWifi(draft: EntryDraft, identity: EntryIdentity) = Entry(
+    private fun materializeWifi(
+        draft: EntryDraft,
+        identity: EntryIdentity,
+    ) = Entry(
         identity = identity,
         profile = draft.profile(),
-        secret = EntrySecret(
-            credential = WifiCredential(
-                ssid = requireNotNull(draft.text(FieldKey.WIFI_SSID)),
-                password = draft.text(FieldKey.PASSWORD),
-                securityType = draft.text(FieldKey.WIFI_SECURITY).requireWifiSecurityType(),
-                isHidden = draft.toggle(FieldKey.WIFI_HIDDEN),
+        secret =
+            EntrySecret(
+                credential =
+                    WifiCredential(
+                        ssid = requireNotNull(draft.text(FieldKey.WIFI_SSID)),
+                        password = draft.text(FieldKey.PASSWORD),
+                        securityType = draft.text(FieldKey.WIFI_SECURITY).requireWifiSecurityType(),
+                        isHidden = draft.toggle(FieldKey.WIFI_HIDDEN),
+                    ),
+                notes = draft.text(FieldKey.NOTES),
             ),
-            notes = draft.text(FieldKey.NOTES),
-        ),
     )
 
     private fun EntryDraft.profile(
@@ -146,28 +177,24 @@ class EntryDraftMaterializer {
         tags = textList(FieldKey.TAGS).toCollection(linkedSetOf()),
     )
 
-    private fun EntryDraft.text(key: FieldKey): String? =
-        (this[key] as? EntryDraftValue.Text)?.value
+    private fun EntryDraft.text(key: FieldKey): String? = (this[key] as? EntryDraftValue.Text)?.value
 
-    private fun EntryDraft.textList(key: FieldKey): List<String> =
-        (this[key] as? EntryDraftValue.TextList)?.values.orEmpty()
+    private fun EntryDraft.textList(key: FieldKey): List<String> = (this[key] as? EntryDraftValue.TextList)?.values.orEmpty()
 
-    private fun EntryDraft.number(key: FieldKey): Int? =
-        (this[key] as? EntryDraftValue.Number)?.value
+    private fun EntryDraft.number(key: FieldKey): Int? = (this[key] as? EntryDraftValue.Number)?.value
 
-    private fun EntryDraft.longNumber(key: FieldKey): Long? =
-        (this[key] as? EntryDraftValue.LongNumber)?.value
+    private fun EntryDraft.longNumber(key: FieldKey): Long? = (this[key] as? EntryDraftValue.LongNumber)?.value
 
-    private fun EntryDraft.toggle(key: FieldKey): Boolean =
-        (this[key] as? EntryDraftValue.Toggle)?.enabled ?: false
+    private fun EntryDraft.toggle(key: FieldKey): Boolean = (this[key] as? EntryDraftValue.Toggle)?.enabled ?: false
 
-    private fun EntryDraft.otpType(): OtpType = when (text(FieldKey.OTP_TYPE)) {
-        null -> OtpType.TOTP
-        "TOTP" -> OtpType.TOTP
-        "HOTP" -> OtpType.HOTP
-        "STEAM" -> OtpType.STEAM
-        else -> throw InvalidEntryDraft(setOf(FieldKey.OTP_TYPE))
-    }
+    private fun EntryDraft.otpType(): OtpType =
+        when (text(FieldKey.OTP_TYPE)) {
+            null -> OtpType.TOTP
+            "TOTP" -> OtpType.TOTP
+            "HOTP" -> OtpType.HOTP
+            "STEAM" -> OtpType.STEAM
+            else -> throw InvalidEntryDraft(setOf(FieldKey.OTP_TYPE))
+        }
 
     private fun EntryDraft.otpAlgorithm(): OtpHashAlgorithm =
         when (text(FieldKey.OTP_ALGORITHM)) {
@@ -188,15 +215,22 @@ class EntryDraftMaterializer {
 
     private fun String?.requireWifiSecurityType(): WifiSecurityType =
         when (val result = WifiSecurityType.parseStoredValue(this)) {
-            is WifiSecurityTypeParseResult.Supported -> result.value
+            is WifiSecurityTypeParseResult.Supported -> {
+                result.value
+            }
+
             WifiSecurityTypeParseResult.Missing,
-            is WifiSecurityTypeParseResult.Unsupported ->
+            is WifiSecurityTypeParseResult.Unsupported,
+            -> {
                 throw InvalidEntryDraft(setOf(FieldKey.WIFI_SECURITY))
+            }
         }
 }
 
 /** Expected input failure. Carries field identifiers only, never draft values. */
-class InvalidEntryDraft(fields: Set<FieldKey>) : IllegalArgumentException("Invalid entry draft") {
+class InvalidEntryDraft(
+    fields: Set<FieldKey>,
+) : IllegalArgumentException("Invalid entry draft") {
     val fields: Set<FieldKey> = fields.toSet()
 
     init {
@@ -204,4 +238,6 @@ class InvalidEntryDraft(fields: Set<FieldKey>) : IllegalArgumentException("Inval
     }
 }
 
-class UnsupportedEntryDraft(type: EntryType) : IllegalArgumentException("Entry creation is not supported for $type")
+class UnsupportedEntryDraft(
+    type: EntryType,
+) : IllegalArgumentException("Entry creation is not supported for $type")

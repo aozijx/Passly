@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,10 +14,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items as lazyRowItems
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -38,10 +37,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
@@ -55,17 +54,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.components.VaultIconColorToken
-import com.aozijx.passly.presentation.shared.components.VaultIcons
-import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconDraftSourceUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconEditorTabUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconProcessingErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconWorkUiState
-import coil.compose.AsyncImage
+import com.aozijx.passly.presentation.shared.components.VaultIconColorToken
+import com.aozijx.passly.presentation.shared.components.VaultIcons
+import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
 import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 import kotlinx.coroutines.launch
 
@@ -87,11 +87,12 @@ fun FaviconEditorSheet(
 ) {
     val processing = state.work == FaviconWorkUiState.Processing
     val dismissAllowed by rememberUpdatedState(!isSaving && !processing)
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed },
-    )
+    val sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+            confirmValueChange = { target -> target != SheetValue.Hidden || dismissAllowed },
+        )
     val scope = rememberCoroutineScope()
     val keepEditing: () -> Unit = {
         onKeepEditing()
@@ -104,12 +105,13 @@ fun FaviconEditorSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.92f)
-                .imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
+                    .imePadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(
@@ -135,19 +137,24 @@ fun FaviconEditorSheet(
                     }
                 }
                 when (state.selectedTab) {
-                    FaviconEditorTabUiModel.ICON_LIBRARY -> FaviconIconLibrary(
-                        state = state,
-                        onSearchChanged = onSearchChanged,
-                        onSourceSelected = onSourceSelected,
-                        modifier = Modifier.weight(1f),
-                    )
-                    FaviconEditorTabUiModel.CUSTOM_IMAGE -> FaviconCustomImage(
-                        state = state,
-                        onUploadRequested = onUploadRequested,
-                        onImageUrlChanged = onImageUrlChanged,
-                        onDownloadRequested = onDownloadRequested,
-                        modifier = Modifier.weight(1f),
-                    )
+                    FaviconEditorTabUiModel.ICON_LIBRARY -> {
+                        FaviconIconLibrary(
+                            state = state,
+                            onSearchChanged = onSearchChanged,
+                            onSourceSelected = onSourceSelected,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    FaviconEditorTabUiModel.CUSTOM_IMAGE -> {
+                        FaviconCustomImage(
+                            state = state,
+                            onUploadRequested = onUploadRequested,
+                            onImageUrlChanged = onImageUrlChanged,
+                            onDownloadRequested = onDownloadRequested,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
             (state.work as? FaviconWorkUiState.Failed)?.error?.let { error ->
@@ -212,9 +219,10 @@ private fun FaviconCustomImage(
 ) {
     val processing = state.work == FaviconWorkUiState.Processing
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         FilledTonalButton(
@@ -256,25 +264,36 @@ private fun FaviconCustomImage(
     }
 }
 
-private fun FaviconProcessingErrorUiModel.messageRes(): Int = when (this) {
-    FaviconProcessingErrorUiModel.INVALID_URL -> R.string.vault_detail_favicon_error_invalid_url
-    FaviconProcessingErrorUiModel.URL_NOT_ALLOWED -> R.string.vault_detail_favicon_error_url_not_allowed
-    FaviconProcessingErrorUiModel.DOWNLOAD_FAILED -> R.string.vault_detail_favicon_error_download_failed
-    FaviconProcessingErrorUiModel.NOT_IMAGE -> R.string.vault_detail_favicon_error_not_image
-    FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE -> R.string.vault_detail_favicon_error_too_large
-    FaviconProcessingErrorUiModel.INVALID_IMAGE -> R.string.vault_detail_favicon_error_invalid_image
-    FaviconProcessingErrorUiModel.SAVE_FAILED -> R.string.vault_detail_favicon_error_save_failed
-}
+private fun FaviconProcessingErrorUiModel.messageRes(): Int =
+    when (this) {
+        FaviconProcessingErrorUiModel.INVALID_URL -> R.string.vault_detail_favicon_error_invalid_url
+        FaviconProcessingErrorUiModel.URL_NOT_ALLOWED -> R.string.vault_detail_favicon_error_url_not_allowed
+        FaviconProcessingErrorUiModel.DOWNLOAD_FAILED -> R.string.vault_detail_favicon_error_download_failed
+        FaviconProcessingErrorUiModel.NOT_IMAGE -> R.string.vault_detail_favicon_error_not_image
+        FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE -> R.string.vault_detail_favicon_error_too_large
+        FaviconProcessingErrorUiModel.INVALID_IMAGE -> R.string.vault_detail_favicon_error_invalid_image
+        FaviconProcessingErrorUiModel.SAVE_FAILED -> R.string.vault_detail_favicon_error_save_failed
+    }
 
 @Composable
 private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
-    val text = when (source) {
-        FaviconDraftSourceUiModel.InferredDefault -> stringResource(R.string.vault_detail_favicon_default)
-        is FaviconDraftSourceUiModel.BuiltIn -> VaultIcons.findDefinition(source.key)
-            ?.let { stringResource(it.labelRes) }
-            ?: stringResource(R.string.vault_detail_favicon_built_in)
-        is FaviconDraftSourceUiModel.PrivateImage -> stringResource(R.string.vault_detail_favicon_custom_image)
-    }
+    val text =
+        when (source) {
+            FaviconDraftSourceUiModel.InferredDefault -> {
+                stringResource(R.string.vault_detail_favicon_default)
+            }
+
+            is FaviconDraftSourceUiModel.BuiltIn -> {
+                VaultIcons
+                    .findDefinition(source.key)
+                    ?.let { stringResource(it.labelRes) }
+                    ?: stringResource(R.string.vault_detail_favicon_built_in)
+            }
+
+            is FaviconDraftSourceUiModel.PrivateImage -> {
+                stringResource(R.string.vault_detail_favicon_custom_image)
+            }
+        }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -286,21 +305,29 @@ private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (source) {
-                is FaviconDraftSourceUiModel.PrivateImage -> AsyncImage(
-                    model = toLocalIconImageModel(source.localPath),
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    contentScale = ContentScale.Fit,
-                )
-                is FaviconDraftSourceUiModel.BuiltIn -> VaultIcons.findDefinition(source.key)?.let { definition ->
-                    Icon(
-                        imageVector = definition.imageVector,
+                is FaviconDraftSourceUiModel.PrivateImage -> {
+                    AsyncImage(
+                        model = toLocalIconImageModel(source.localPath),
                         contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = iconColorForStorageToken(source.colorToken, MaterialTheme.colorScheme.onSurfaceVariant),
+                        modifier = Modifier.size(44.dp),
+                        contentScale = ContentScale.Fit,
                     )
                 }
-                FaviconDraftSourceUiModel.InferredDefault -> Unit
+
+                is FaviconDraftSourceUiModel.BuiltIn -> {
+                    VaultIcons.findDefinition(source.key)?.let { definition ->
+                        Icon(
+                            imageVector = definition.imageVector,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = iconColorForStorageToken(source.colorToken, MaterialTheme.colorScheme.onSurfaceVariant),
+                        )
+                    }
+                }
+
+                FaviconDraftSourceUiModel.InferredDefault -> {
+                    Unit
+                }
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(

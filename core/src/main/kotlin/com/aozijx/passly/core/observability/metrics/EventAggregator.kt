@@ -74,7 +74,10 @@ class EventAggregator(
         return snapshot
     }
 
-    private fun shouldEmit(record: SanitizedLogRecord, firstInWindow: Boolean): Boolean {
+    private fun shouldEmit(
+        record: SanitizedLogRecord,
+        firstInWindow: Boolean,
+    ): Boolean {
         if (record.isUnchangedLowSeverityState()) return firstInWindow
         if (record.level != LogLevel.DEBUG || record.event in NEVER_SAMPLE_EVENTS) return true
         if (debugSamplePercent == 0) return false
@@ -93,14 +96,15 @@ class EventAggregator(
         val reason: com.aozijx.passly.core.observability.ReasonCode?,
     ) {
         companion object {
-            fun from(record: SanitizedLogRecord) = MetricKey(
-                record.event,
-                record.level,
-                record.category,
-                record.fields,
-                record.error?.errorCode,
-                record.error?.reason,
-            )
+            fun from(record: SanitizedLogRecord) =
+                MetricKey(
+                    record.event,
+                    record.level,
+                    record.category,
+                    record.fields,
+                    record.error?.errorCode,
+                    record.error?.reason,
+                )
         }
     }
 
@@ -119,20 +123,21 @@ class EventAggregator(
             record.metricElapsedMs()?.let(::addElapsed)
         }
 
-        fun snapshot(key: MetricKey) = MetricSnapshot(
-            event = key.event,
-            level = key.level,
-            category = key.category,
-            dimensions = key.fields,
-            errorCode = key.errorCode,
-            reason = key.reason,
-            count = count,
-            firstTimestampMs = firstTimestampMs,
-            lastTimestampMs = lastTimestampMs,
-            minElapsedMs = minElapsedMs,
-            maxElapsedMs = maxElapsedMs,
-            averageElapsedMs = elapsedCount.takeIf { it > 0 }?.let { elapsedTotalMs.toDouble() / it },
-        )
+        fun snapshot(key: MetricKey) =
+            MetricSnapshot(
+                event = key.event,
+                level = key.level,
+                category = key.category,
+                dimensions = key.fields,
+                errorCode = key.errorCode,
+                reason = key.reason,
+                count = count,
+                firstTimestampMs = firstTimestampMs,
+                lastTimestampMs = lastTimestampMs,
+                minElapsedMs = minElapsedMs,
+                maxElapsedMs = maxElapsedMs,
+                averageElapsedMs = elapsedCount.takeIf { it > 0 }?.let { elapsedTotalMs.toDouble() / it },
+            )
 
         private fun addElapsed(value: Long) {
             elapsedCount++
@@ -142,15 +147,16 @@ class EventAggregator(
         }
 
         companion object {
-            fun from(record: SanitizedLogRecord): Bucket = Bucket(
-                count = 1,
-                firstTimestampMs = record.timestampMs,
-                lastTimestampMs = record.timestampMs,
-                elapsedCount = 0,
-                elapsedTotalMs = 0,
-                minElapsedMs = null,
-                maxElapsedMs = null,
-            ).also { bucket -> record.metricElapsedMs()?.let(bucket::addElapsed) }
+            fun from(record: SanitizedLogRecord): Bucket =
+                Bucket(
+                    count = 1,
+                    firstTimestampMs = record.timestampMs,
+                    lastTimestampMs = record.timestampMs,
+                    elapsedCount = 0,
+                    elapsedTotalMs = 0,
+                    minElapsedMs = null,
+                    maxElapsedMs = null,
+                ).also { bucket -> record.metricElapsedMs()?.let(bucket::addElapsed) }
         }
     }
 
@@ -158,16 +164,16 @@ class EventAggregator(
         const val DEFAULT_CAPACITY = 256
         const val DEFAULT_WINDOW_MS = 60_000L
         const val DEFAULT_DEBUG_SAMPLE_PERCENT = 25
-        val NEVER_SAMPLE_EVENTS = setOf(
-            Events.Autofill.ResultDeliveryStarted,
-            Events.Autofill.ResultDelivered,
-            Events.Autofill.ResultDeliveryFailed,
-        )
+        val NEVER_SAMPLE_EVENTS =
+            setOf(
+                Events.Autofill.ResultDeliveryStarted,
+                Events.Autofill.ResultDelivered,
+                Events.Autofill.ResultDeliveryFailed,
+            )
     }
 }
 
-private fun SanitizedLogRecord.metricElapsedMs(): Long? =
-    (fields.values[LogFieldKeys.ElapsedMs] as? LogValue.DurationMs)?.value
+private fun SanitizedLogRecord.metricElapsedMs(): Long? = (fields.values[LogFieldKeys.ElapsedMs] as? LogValue.DurationMs)?.value
 
 private fun SanitizedLogRecord.isUnchangedLowSeverityState(): Boolean {
     if (level != LogLevel.DEBUG && level != LogLevel.INFO) return false

@@ -8,7 +8,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupExportOptionsTest {
-
     @Test
     fun defaultsProduceACompleteVaultBackup() {
         val options = BackupExportOptions()
@@ -22,12 +21,13 @@ class BackupExportOptionsTest {
     @Test
     fun optionsAllowResourcesDeletedEntriesAndTypesToBeExcluded() {
         val selectedTypes = setOf(EntryType.LOGIN, EntryType.OTP)
-        val options = BackupExportOptions(
-            includeIcons = false,
-            includeAttachments = false,
-            includeDeleted = false,
-            includedEntryTypes = selectedTypes
-        )
+        val options =
+            BackupExportOptions(
+                includeIcons = false,
+                includeAttachments = false,
+                includeDeleted = false,
+                includedEntryTypes = selectedTypes,
+            )
 
         assertFalse(options.includeIcons)
         assertFalse(options.includeAttachments)

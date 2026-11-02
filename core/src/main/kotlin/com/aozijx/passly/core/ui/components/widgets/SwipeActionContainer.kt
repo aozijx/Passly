@@ -36,27 +36,27 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 data class SwipeActionSpec(
     val icon: ImageVector,
     val backgroundColor: Color,
     val iconTint: Color,
-    val onAction: () -> Unit
+    val onAction: () -> Unit,
 )
 
-private const val SwipeRevealWidthFraction = 0.28f
-private const val SwipeTriggerWidthFraction = 0.22f
-private const val SwipeTriggerRevealFraction = 0.9f
-private const val SwipeOverflowResistance = 0.22f
-private const val SwipeOverflowCap = 1.35f
-private const val SwipeResistancePower = 0.82f
-private const val SwipeSettledEpsilon = 0.5f
+private const val SWIPE_REVEAL_WIDTH_FRACTION = 0.28f
+private const val SWIPE_TRIGGER_WIDTH_FRACTION = 0.22f
+private const val SWIPE_TRIGGER_REVEAL_FRACTION = 0.9f
+private const val SWIPE_OVERFLOW_RESISTANCE = 0.22f
+private const val SWIPE_OVERFLOW_CAP = 1.35f
+private const val SWIPE_RESISTANCE_POWER = 0.82f
+private const val SWIPE_SETTLED_EPSILON = 0.5f
 
 @Composable
 fun SwipeActionContainer(
@@ -66,27 +66,30 @@ fun SwipeActionContainer(
     enabled: Boolean = true,
     shape: Shape = MaterialTheme.shapes.extraLarge,
     foregroundColor: Color = MaterialTheme.colorScheme.surface,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
     val currentLeftAction = rememberUpdatedState(leftAction)
     val currentRightAction = rememberUpdatedState(rightAction)
-    val settleSpec = spring<Float>(
-        dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMediumLow
-    )
+    val settleSpec =
+        spring<Float>(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        )
 
     var widthPx by remember { mutableFloatStateOf(0f) }
-    val maxSwipePx = remember(widthPx) {
-        calculateSwipeRevealDistance(containerWidth = widthPx)
-    }
-    val triggerThresholdPx = remember(widthPx, maxSwipePx) {
-        calculateSwipeTriggerThreshold(
-            containerWidth = widthPx,
-            revealDistance = maxSwipePx
-        )
-    }
+    val maxSwipePx =
+        remember(widthPx) {
+            calculateSwipeRevealDistance(containerWidth = widthPx)
+        }
+    val triggerThresholdPx =
+        remember(widthPx, maxSwipePx) {
+            calculateSwipeTriggerThreshold(
+                containerWidth = widthPx,
+                revealDistance = maxSwipePx,
+            )
+        }
     var rawDragOffset by remember { mutableFloatStateOf(0f) }
     var swipeOffset by remember { mutableFloatStateOf(0f) }
     var thresholdHapticSent by remember { mutableStateOf(false) }
@@ -94,22 +97,23 @@ fun SwipeActionContainer(
 
     fun settleToRest() {
         settleJob?.cancel()
-        settleJob = scope.launch {
-            val initialOffset = swipeOffset
-            rawDragOffset = 0f
-            if (abs(initialOffset) <= SwipeSettledEpsilon) {
+        settleJob =
+            scope.launch {
+                val initialOffset = swipeOffset
+                rawDragOffset = 0f
+                if (abs(initialOffset) <= SWIPE_SETTLED_EPSILON) {
+                    swipeOffset = 0f
+                    return@launch
+                }
+                animate(
+                    initialValue = initialOffset,
+                    targetValue = 0f,
+                    animationSpec = settleSpec,
+                ) { value, _ ->
+                    swipeOffset = value
+                }
                 swipeOffset = 0f
-                return@launch
             }
-            animate(
-                initialValue = initialOffset,
-                targetValue = 0f,
-                animationSpec = settleSpec
-            ) { value, _ ->
-                swipeOffset = value
-            }
-            swipeOffset = 0f
-        }
     }
 
     LaunchedEffect(enabled) {
@@ -119,92 +123,99 @@ fun SwipeActionContainer(
         }
     }
 
-    val dragModifier = Modifier.pointerInput(
-        enabled,
-        leftAction,
-        rightAction,
-        maxSwipePx,
-        triggerThresholdPx
-    ) {
-        if (!enabled) return@pointerInput
+    val dragModifier =
+        Modifier.pointerInput(
+            enabled,
+            leftAction,
+            rightAction,
+            maxSwipePx,
+            triggerThresholdPx,
+        ) {
+            if (!enabled) return@pointerInput
 
-        detectHorizontalDragGestures(
-            onDragStart = {
-                settleJob?.cancel()
-                rawDragOffset = swipeOffset
-                thresholdHapticSent = false
-            },
-            onDragCancel = {
-                thresholdHapticSent = false
-                settleToRest()
-            },
-            onDragEnd = {
-                val action = when {
-                    swipeOffset <= -triggerThresholdPx -> currentLeftAction.value
-                    swipeOffset >= triggerThresholdPx -> currentRightAction.value
-                    else -> null
-                }
-                thresholdHapticSent = false
-                if (action != null) {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
-                action?.onAction?.invoke()
-                settleToRest()
-            },
-            onHorizontalDrag = { change, dragAmount ->
-                change.consume()
-                val minOffset = if (currentLeftAction.value != null) -maxSwipePx else 0f
-                val maxOffset = if (currentRightAction.value != null) maxSwipePx else 0f
-                rawDragOffset = accumulateSwipeRawOffset(
-                    currentRawOffset = rawDragOffset,
-                    dragAmount = dragAmount,
-                    minOffset = minOffset,
-                    maxOffset = maxOffset,
-                )
-                swipeOffset = calculateSwipeVisualOffset(
-                    rawOffset = rawDragOffset,
-                    minOffset = minOffset,
-                    maxOffset = maxOffset,
-                )
+            detectHorizontalDragGestures(
+                onDragStart = {
+                    settleJob?.cancel()
+                    rawDragOffset = swipeOffset
+                    thresholdHapticSent = false
+                },
+                onDragCancel = {
+                    thresholdHapticSent = false
+                    settleToRest()
+                },
+                onDragEnd = {
+                    val action =
+                        when {
+                            swipeOffset <= -triggerThresholdPx -> currentLeftAction.value
+                            swipeOffset >= triggerThresholdPx -> currentRightAction.value
+                            else -> null
+                        }
+                    thresholdHapticSent = false
+                    if (action != null) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    action?.onAction?.invoke()
+                    settleToRest()
+                },
+                onHorizontalDrag = { change, dragAmount ->
+                    change.consume()
+                    val minOffset = if (currentLeftAction.value != null) -maxSwipePx else 0f
+                    val maxOffset = if (currentRightAction.value != null) maxSwipePx else 0f
+                    rawDragOffset =
+                        accumulateSwipeRawOffset(
+                            currentRawOffset = rawDragOffset,
+                            dragAmount = dragAmount,
+                            minOffset = minOffset,
+                            maxOffset = maxOffset,
+                        )
+                    swipeOffset =
+                        calculateSwipeVisualOffset(
+                            rawOffset = rawDragOffset,
+                            minOffset = minOffset,
+                            maxOffset = maxOffset,
+                        )
 
-                val thresholdReached = abs(swipeOffset) >= triggerThresholdPx
-                if (thresholdReached && !thresholdHapticSent) {
-                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
-                thresholdHapticSent = thresholdReached
-            }
-        )
-    }
+                    val thresholdReached = abs(swipeOffset) >= triggerThresholdPx
+                    if (thresholdReached && !thresholdHapticSent) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    thresholdHapticSent = thresholdReached
+                },
+            )
+        }
 
-    val activeAction = when {
-        swipeOffset > SwipeSettledEpsilon -> rightAction
-        swipeOffset < -SwipeSettledEpsilon -> leftAction
-        else -> null
-    }
+    val activeAction =
+        when {
+            swipeOffset > SWIPE_SETTLED_EPSILON -> rightAction
+            swipeOffset < -SWIPE_SETTLED_EPSILON -> leftAction
+            else -> null
+        }
     val progress = calculateSwipeProgress(swipeOffset, triggerThresholdPx)
 
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .onSizeChanged { widthPx = it.width.toFloat() }
-            .then(dragModifier)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .onSizeChanged { widthPx = it.width.toFloat() }
+                .then(dragModifier),
     ) {
         ActionBackground(
             action = activeAction,
             offset = swipeOffset,
             progress = progress,
-            shape = shape
+            shape = shape,
         )
 
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset { IntOffset(swipeOffset.roundToInt(), 0) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .offset { IntOffset(swipeOffset.roundToInt(), 0) },
             shape = shape,
             color = foregroundColor,
             tonalElevation = 0.dp,
-            shadowElevation = 0.dp
+            shadowElevation = 0.dp,
         ) {
             content()
         }
@@ -216,57 +227,57 @@ private fun BoxScope.ActionBackground(
     action: SwipeActionSpec?,
     offset: Float,
     progress: Float,
-    shape: Shape
+    shape: Shape,
 ) {
     if (action == null) return
 
     Box(
-        modifier = Modifier
-            .matchParentSize()
-            .clip(shape)
-            .background(action.backgroundColor),
-        contentAlignment = if (offset > 0f) Alignment.CenterStart else Alignment.CenterEnd
+        modifier =
+            Modifier
+                .matchParentSize()
+                .clip(shape)
+                .background(action.backgroundColor),
+        contentAlignment = if (offset > 0f) Alignment.CenterStart else Alignment.CenterEnd,
     ) {
         Icon(
             imageVector = action.icon,
             contentDescription = null,
             tint = action.iconTint.copy(alpha = progress),
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .size(24.dp)
-                .graphicsLayer {
-                    alpha = progress
-                    val scale = 0.82f + progress * 0.18f
-                    scaleX = scale
-                    scaleY = scale
-                }
+            modifier =
+                Modifier
+                    .padding(horizontal = 24.dp)
+                    .size(24.dp)
+                    .graphicsLayer {
+                        alpha = progress
+                        val scale = 0.82f + progress * 0.18f
+                        scaleX = scale
+                        scaleY = scale
+                    },
         )
     }
 }
 
-internal fun calculateSwipeRevealDistance(
-    containerWidth: Float
-): Float {
+internal fun calculateSwipeRevealDistance(containerWidth: Float): Float {
     if (containerWidth <= 0f) return 0f
-    return containerWidth * SwipeRevealWidthFraction
+    return containerWidth * SWIPE_REVEAL_WIDTH_FRACTION
 }
 
 internal fun calculateSwipeTriggerThreshold(
     containerWidth: Float,
-    revealDistance: Float
+    revealDistance: Float,
 ): Float {
     if (containerWidth <= 0f || revealDistance <= 0f) return 0f
 
     return min(
-        containerWidth * SwipeTriggerWidthFraction,
-        revealDistance * SwipeTriggerRevealFraction
+        containerWidth * SWIPE_TRIGGER_WIDTH_FRACTION,
+        revealDistance * SWIPE_TRIGGER_REVEAL_FRACTION,
     )
 }
 
 internal fun calculateSwipeVisualOffset(
     rawOffset: Float,
     minOffset: Float,
-    maxOffset: Float
+    maxOffset: Float,
 ): Float {
     if (rawOffset == 0f) return 0f
 
@@ -275,14 +286,15 @@ internal fun calculateSwipeVisualOffset(
 
     val sign = if (rawOffset > 0f) 1f else -1f
     val absoluteRaw = abs(rawOffset)
-    val resisted = if (absoluteRaw <= directionLimit) {
-        val progress = (absoluteRaw / directionLimit).coerceIn(0f, 1f)
-        directionLimit * (1f - (1f - progress).pow(SwipeResistancePower))
-    } else {
-        val overflow = absoluteRaw - directionLimit
-        directionLimit + overflow * SwipeOverflowResistance
-    }
-    val capped = min(resisted, directionLimit * SwipeOverflowCap)
+    val resisted =
+        if (absoluteRaw <= directionLimit) {
+            val progress = (absoluteRaw / directionLimit).coerceIn(0f, 1f)
+            directionLimit * (1f - (1f - progress).pow(SWIPE_RESISTANCE_POWER))
+        } else {
+            val overflow = absoluteRaw - directionLimit
+            directionLimit + overflow * SWIPE_OVERFLOW_RESISTANCE
+        }
+    val capped = min(resisted, directionLimit * SWIPE_OVERFLOW_CAP)
 
     return sign * capped
 }
@@ -292,16 +304,16 @@ internal fun accumulateSwipeRawOffset(
     dragAmount: Float,
     minOffset: Float,
     maxOffset: Float,
-): Float = (currentRawOffset + dragAmount).coerceIn(
-    minimumValue = if (minOffset < 0f) Float.NEGATIVE_INFINITY else 0f,
-    maximumValue = if (maxOffset > 0f) Float.POSITIVE_INFINITY else 0f,
-)
+): Float =
+    (currentRawOffset + dragAmount).coerceIn(
+        minimumValue = if (minOffset < 0f) Float.NEGATIVE_INFINITY else 0f,
+        maximumValue = if (maxOffset > 0f) Float.POSITIVE_INFINITY else 0f,
+    )
 
 internal fun calculateSwipeProgress(
     offset: Float,
-    triggerThreshold: Float
+    triggerThreshold: Float,
 ): Float {
     if (triggerThreshold <= 0f) return 0f
     return (abs(offset) / triggerThreshold).coerceIn(0f, 1f)
 }
-

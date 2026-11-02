@@ -14,14 +14,14 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
             childColumns = ["entryId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["entryId", "createdAt"]),
         Index(value = ["createdAt"]),
-        Index(value = ["activityType", "entryId", "createdAt"])
-    ]
+        Index(value = ["activityType", "entryId", "createdAt"]),
+    ],
 )
 data class EntryActivityEntity(
     @PrimaryKey
@@ -30,5 +30,5 @@ data class EntryActivityEntity(
     @ColumnInfo(name = "activityType")
     val activityType: ActivityType,
     val revisionVersion: Int? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
 )

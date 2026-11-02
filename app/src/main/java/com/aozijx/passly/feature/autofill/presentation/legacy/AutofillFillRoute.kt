@@ -29,6 +29,7 @@ internal fun AutofillFillRoute(
         onCancel = { viewModel.onAction(AutofillFillUiAction.Cancel) },
     )
 }
+
 @Composable
 private fun AutofillCompletionEffect(
     state: AutofillFillUiState,
@@ -37,7 +38,9 @@ private fun AutofillCompletionEffect(
     LaunchedEffect(state) {
         when (state) {
             is AutofillFillUiState.Result -> onResult(state.result)
+
             is AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
+
             AutofillFillUiState.Initial,
             AutofillFillUiState.Loading,
             is AutofillFillUiState.ShowCandidates,
@@ -53,11 +56,16 @@ private fun AutofillFillContent(
     onCancel: () -> Unit,
 ) {
     when (displayState) {
-        AutofillFillDisplayState.Hidden -> Unit
-        is AutofillFillDisplayState.Candidates -> AutofillCandidateBottomSheet(
-            candidates = displayState.candidates.map(AutofillCandidateSummary::toUiItem),
-            onCandidateSelected = onCandidateSelected,
-            onCancel = onCancel,
-        )
+        AutofillFillDisplayState.Hidden -> {
+            Unit
+        }
+
+        is AutofillFillDisplayState.Candidates -> {
+            AutofillCandidateBottomSheet(
+                candidates = displayState.candidates.map(AutofillCandidateSummary::toUiItem),
+                onCandidateSelected = onCandidateSelected,
+                onCancel = onCancel,
+            )
+        }
     }
 }

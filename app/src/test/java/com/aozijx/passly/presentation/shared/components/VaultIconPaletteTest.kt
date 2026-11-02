@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class VaultIconPaletteTest {
-
     @Test
     fun storageTokensRoundTripAndUnknownValuesUseAutomaticColor() {
         val tokens = listOf("primary", "secondary", "tertiary", "error", "neutral")

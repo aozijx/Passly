@@ -18,11 +18,11 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -34,81 +34,89 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RevealEntryFieldsUseCaseTest {
+    @Test
+    fun `wifi password is read as low sensitivity without field authorization`() =
+        runTest {
+            val gate = RecordingAuthorizationGate(allowed = true)
+            val recorder = RecordingActivityRecorder()
+            val reader = RecordingFieldReader("wifi-secret")
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = gate,
+                    entryFieldReader = reader,
+                    sensitiveFieldRepository = RevealingRepository(),
+                    activityRecorder = recorder,
+                )
+
+            val result =
+                useCase.reveal(
+                    entry = entry(EntryType.WIFI),
+                    requestedFields = setOf(FieldKey.PASSWORD),
+                    recordLowSensitivityAccess = false,
+                )
+
+            assertEquals("wifi-secret", String(result.getValue(FieldKey.PASSWORD).toCharArray()))
+            result.values.forEach { it.wipe() }
+            assertNull(gate.scope)
+            assertEquals(listOf(FieldKey.PASSWORD), reader.keys)
+            assertTrue(recorder.activities.isEmpty())
+        }
 
     @Test
-    fun `wifi password is read as low sensitivity without field authorization`() = runTest {
-        val gate = RecordingAuthorizationGate(allowed = true)
-        val recorder = RecordingActivityRecorder()
-        val reader = RecordingFieldReader("wifi-secret")
-        val useCase = RevealEntryFieldsUseCase(
-            authorizationGate = gate,
-            entryFieldReader = reader,
-            sensitiveFieldRepository = RevealingRepository(),
-            activityRecorder = recorder,
-        )
+    fun `login password uses exact reveal scope and records one view`() =
+        runTest {
+            val gate = RecordingAuthorizationGate(allowed = true)
+            val recorder = RecordingActivityRecorder()
+            val reader = RecordingFieldReader("must-not-read")
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = gate,
+                    entryFieldReader = reader,
+                    sensitiveFieldRepository = RevealingRepository(),
+                    activityRecorder = recorder,
+                )
 
-        val result = useCase.reveal(
-            entry = entry(EntryType.WIFI),
-            requestedFields = setOf(FieldKey.PASSWORD),
-            recordLowSensitivityAccess = false,
-        )
+            val result =
+                useCase.reveal(
+                    entry = entry(EntryType.LOGIN),
+                    requestedFields = setOf(FieldKey.PASSWORD),
+                    recordLowSensitivityAccess = false,
+                )
 
-        assertEquals("wifi-secret", String(result.getValue(FieldKey.PASSWORD).toCharArray()))
-        result.values.forEach { it.wipe() }
-        assertNull(gate.scope)
-        assertEquals(listOf(FieldKey.PASSWORD), reader.keys)
-        assertTrue(recorder.activities.isEmpty())
-    }
-
-    @Test
-    fun `login password uses exact reveal scope and records one view`() = runTest {
-        val gate = RecordingAuthorizationGate(allowed = true)
-        val recorder = RecordingActivityRecorder()
-        val reader = RecordingFieldReader("must-not-read")
-        val useCase = RevealEntryFieldsUseCase(
-            authorizationGate = gate,
-            entryFieldReader = reader,
-            sensitiveFieldRepository = RevealingRepository(),
-            activityRecorder = recorder,
-        )
-
-        val result = useCase.reveal(
-            entry = entry(EntryType.LOGIN),
-            requestedFields = setOf(FieldKey.PASSWORD),
-            recordLowSensitivityAccess = false,
-        )
-
-        assertEquals("PASSWORD", String(result.getValue(FieldKey.PASSWORD).toCharArray()))
-        result.values.forEach { it.wipe() }
-        assertEquals(
-            AuthorizationScope.SensitiveFields(
-                entryId = ENTRY_ID,
-                fieldKeys = setOf(SensitiveFieldKey.PASSWORD),
-                action = SensitiveAccessAction.REVEAL,
-            ),
-            gate.scope,
-        )
-        assertTrue(reader.keys.isEmpty())
-        assertEquals(listOf(ActivityType.VIEW), recorder.activities)
-    }
+            assertEquals("PASSWORD", String(result.getValue(FieldKey.PASSWORD).toCharArray()))
+            result.values.forEach { it.wipe() }
+            assertEquals(
+                AuthorizationScope.SensitiveFields(
+                    entryId = ENTRY_ID,
+                    fieldKeys = setOf(SensitiveFieldKey.PASSWORD),
+                    action = SensitiveAccessAction.REVEAL,
+                ),
+                gate.scope,
+            )
+            assertTrue(reader.keys.isEmpty())
+            assertEquals(listOf(ActivityType.VIEW), recorder.activities)
+        }
 
     @Test
-    fun `denied high sensitivity reveal returns no plaintext`() = runTest {
-        val useCase = RevealEntryFieldsUseCase(
-            authorizationGate = RecordingAuthorizationGate(allowed = false),
-            entryFieldReader = RecordingFieldReader("must-not-read"),
-            sensitiveFieldRepository = RevealingRepository(),
-            activityRecorder = RecordingActivityRecorder(),
-        )
+    fun `denied high sensitivity reveal returns no plaintext`() =
+        runTest {
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = RecordingAuthorizationGate(allowed = false),
+                    entryFieldReader = RecordingFieldReader("must-not-read"),
+                    sensitiveFieldRepository = RevealingRepository(),
+                    activityRecorder = RecordingActivityRecorder(),
+                )
 
-        assertTrue(
-            useCase.reveal(
-                entry = entry(EntryType.LOGIN),
-                requestedFields = setOf(FieldKey.PASSWORD),
-                recordLowSensitivityAccess = false,
-            ).isEmpty(),
-        )
-    }
+            assertTrue(
+                useCase
+                    .reveal(
+                        entry = entry(EntryType.LOGIN),
+                        requestedFields = setOf(FieldKey.PASSWORD),
+                        recordLowSensitivityAccess = false,
+                    ).isEmpty(),
+            )
+        }
 
     private class RecordingAuthorizationGate(
         private val allowed: Boolean,
@@ -136,7 +144,11 @@ class RevealEntryFieldsUseCaseTest {
     ) : EntryFieldReader {
         val keys = mutableListOf<FieldKey>()
 
-        override fun getFieldValue(profile: EntryProfile, secret: EntrySecret, key: FieldKey): String {
+        override fun getFieldValue(
+            profile: EntryProfile,
+            secret: EntrySecret,
+            key: FieldKey,
+        ): String {
             keys += key
             return value
         }
@@ -148,12 +160,12 @@ class RevealEntryFieldsUseCaseTest {
             keys: Set<SensitiveFieldKey>,
             action: SensitiveAccessAction,
             permit: AuthorizationPermit,
-        ): List<RevealedSensitiveField> = keys.map { key ->
-            RevealedSensitiveField(entryId, key, OwnedChars.fromString(key.name))
-        }
+        ): List<RevealedSensitiveField> =
+            keys.map { key ->
+                RevealedSensitiveField(entryId, key, OwnedChars.fromString(key.name))
+            }
 
-        override suspend fun getPresence(entryId: EntryId) =
-            SensitiveFieldPresence(entryId, emptySet())
+        override suspend fun getPresence(entryId: EntryId) = SensitiveFieldPresence(entryId, emptySet())
 
         override suspend fun reveal(
             entryId: EntryId,
@@ -168,30 +180,38 @@ class RevealEntryFieldsUseCaseTest {
     private class RecordingActivityRecorder : ActivityRecorder {
         val activities = mutableListOf<ActivityType>()
 
-        override suspend fun recordUsage(entryId: String, type: ActivityType): AppResult<Unit> {
+        override suspend fun recordUsage(
+            entryId: String,
+            type: ActivityType,
+        ): AppResult<Unit> {
             activities += type
             return AppResult.Success(Unit)
         }
 
         override suspend fun deleteByEntryId(entryId: String) = Unit
+
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 
-    private fun entry(type: EntryType) = Entry(
-        identity = EntryIdentity(
-            id = ENTRY_ID,
-            type = type,
-            timestamps = EntryTimestamps(1L),
-        ),
-        profile = EntryProfile(title = "Entry"),
-        secret = EntrySecret(
-            credential = when (type) {
-                EntryType.LOGIN -> LoginCredential()
-                EntryType.WIFI -> WifiCredential(ssid = "network", password = "wifi-secret")
-                else -> error("Unsupported fixture type: $type")
-            },
-        ),
-    )
+    private fun entry(type: EntryType) =
+        Entry(
+            identity =
+                EntryIdentity(
+                    id = ENTRY_ID,
+                    type = type,
+                    timestamps = EntryTimestamps(1L),
+                ),
+            profile = EntryProfile(title = "Entry"),
+            secret =
+                EntrySecret(
+                    credential =
+                        when (type) {
+                            EntryType.LOGIN -> LoginCredential()
+                            EntryType.WIFI -> WifiCredential(ssid = "network", password = "wifi-secret")
+                            else -> error("Unsupported fixture type: $type")
+                        },
+                ),
+        )
 
     private companion object {
         val ENTRY_ID = EntryId("entry-1")

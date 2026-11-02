@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
  * 字段匹配策略接口。
  */
 interface FieldMatchStrategy {
-
     /**
      * @param request 解析后的填充请求
      * @return 字段到角色的映射。

@@ -39,10 +39,18 @@ internal data class BackupImportOperationRequest(
 
 internal sealed interface BackupExecutionResult {
     data object DirectoryWritable : BackupExecutionResult
+
     data object ExportSucceeded : BackupExecutionResult
-    data class ImportSucceeded(val result: BackupImportResult) : BackupExecutionResult
+
+    data class ImportSucceeded(
+        val result: BackupImportResult,
+    ) : BackupExecutionResult
+
     data object Cancelled : BackupExecutionResult
-    data class Failure(val error: AppError) : BackupExecutionResult
+
+    data class Failure(
+        val error: AppError,
+    ) : BackupExecutionResult
 }
 
 internal enum class BackupOperation {

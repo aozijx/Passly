@@ -17,6 +17,7 @@ internal class DetailFaviconSession(
 ) {
     sealed interface Preparation {
         data object Closed : Preparation
+
         class Active internal constructor() : Preparation
     }
 
@@ -54,12 +55,17 @@ internal class DetailFaviconSession(
             result.fold(
                 onSuccess = { newPath ->
                     when (use) {
-                        PreparedImageUse.CROP_INPUT -> files.discardEditorResources(
-                            stagedPath = null,
-                            pendingInputPath = editor.pendingInputPath?.takeUnless { it == newPath },
-                            promotedCandidatePath = null,
-                        )
-                        PreparedImageUse.SOURCE -> releaseReplacedSource(editor, DetailFaviconSource.PrivateImage(newPath))
+                        PreparedImageUse.CROP_INPUT -> {
+                            files.discardEditorResources(
+                                stagedPath = null,
+                                pendingInputPath = editor.pendingInputPath?.takeUnless { it == newPath },
+                                promotedCandidatePath = null,
+                            )
+                        }
+
+                        PreparedImageUse.SOURCE -> {
+                            releaseReplacedSource(editor, DetailFaviconSource.PrivateImage(newPath))
+                        }
                     }
                     onSuccess(newPath)
                 },
@@ -84,7 +90,10 @@ internal class DetailFaviconSession(
         releaseReplacedSource(editor, replacement)
     }
 
-    private fun releaseReplacedSource(editor: DetailFaviconEditorState.Open, replacement: DetailFaviconSource) {
+    private fun releaseReplacedSource(
+        editor: DetailFaviconEditorState.Open,
+        replacement: DetailFaviconSource,
+    ) {
         val retained = (replacement as? DetailFaviconSource.PrivateImage)?.localPath
         files.discardEditorResources(
             stagedPath = editor.privateImagePath()?.takeUnless { it == retained },

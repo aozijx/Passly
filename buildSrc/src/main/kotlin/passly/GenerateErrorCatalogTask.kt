@@ -44,40 +44,46 @@ internal object ErrorCatalogParser {
         root.requireKeys(setOf("schema_version", "reasons", "errors"), "catalog")
         val schemaVersion = root.requiredNumber("schema_version").toInt()
         require(schemaVersion == 1) { "Unsupported error catalog schema $schemaVersion" }
-        val reasons = root.requiredList("reasons").mapIndexed { index, value ->
-            val item = value.asStringMap("reasons[$index]")
-            item.requireKeys(setOf("symbol", "code", "description"), "reasons[$index]")
-            ReasonCatalogEntry(
-                symbol = item.requiredString("symbol"),
-                code = item.requiredString("code"),
-                description = item.requiredString("description"),
-            )
-        }
-        val errors = root.requiredList("errors").mapIndexed { index, value ->
-            val item = value.asStringMap("errors[$index]")
-            item.requireKeys(
-                setOf("symbol", "code", "default_reason", "category", "exposure", "description", "message_key"),
-                "errors[$index]",
-                optional = setOf("message_key"),
-            )
-            ErrorCatalogEntry(
-                symbol = item.requiredString("symbol"),
-                code = item.requiredString("code"),
-                defaultReason = item.requiredString("default_reason"),
-                category = item.requiredString("category"),
-                exposure = item.requiredString("exposure"),
-                description = item.requiredString("description"),
-                messageKey = item["message_key"]?.let {
-                    require(it is String && it.isNotBlank()) { "message_key must be a non-empty string" }
-                    it
-                },
-            )
-        }
+        val reasons =
+            root.requiredList("reasons").mapIndexed { index, value ->
+                val item = value.asStringMap("reasons[$index]")
+                item.requireKeys(setOf("symbol", "code", "description"), "reasons[$index]")
+                ReasonCatalogEntry(
+                    symbol = item.requiredString("symbol"),
+                    code = item.requiredString("code"),
+                    description = item.requiredString("description"),
+                )
+            }
+        val errors =
+            root.requiredList("errors").mapIndexed { index, value ->
+                val item = value.asStringMap("errors[$index]")
+                item.requireKeys(
+                    setOf("symbol", "code", "default_reason", "category", "exposure", "description", "message_key"),
+                    "errors[$index]",
+                    optional = setOf("message_key"),
+                )
+                ErrorCatalogEntry(
+                    symbol = item.requiredString("symbol"),
+                    code = item.requiredString("code"),
+                    defaultReason = item.requiredString("default_reason"),
+                    category = item.requiredString("category"),
+                    exposure = item.requiredString("exposure"),
+                    description = item.requiredString("description"),
+                    messageKey =
+                        item["message_key"]?.let {
+                            require(it is String && it.isNotBlank()) { "message_key must be a non-empty string" }
+                            it
+                        },
+                )
+            }
         validate(reasons, errors)
         return ErrorCatalog(schemaVersion, reasons, errors)
     }
 
-    private fun validate(reasons: List<ReasonCatalogEntry>, errors: List<ErrorCatalogEntry>) {
+    private fun validate(
+        reasons: List<ReasonCatalogEntry>,
+        errors: List<ErrorCatalogEntry>,
+    ) {
         require(reasons.isNotEmpty()) { "At least one reason is required" }
         require(errors.isNotEmpty()) { "At least one error is required" }
         reasons.forEach {
@@ -95,11 +101,16 @@ internal object ErrorCatalogParser {
                 "Unknown default reason ${it.defaultReason} for ${it.code}"
             }
             when (it.exposure) {
-                "USER_ACTIONABLE" -> requireNotNull(it.messageKey) {
-                    "USER_ACTIONABLE error ${it.code} requires message_key"
+                "USER_ACTIONABLE" -> {
+                    requireNotNull(it.messageKey) {
+                        "USER_ACTIONABLE error ${it.code} requires message_key"
+                    }
                 }
-                "INTERNAL" -> require(it.messageKey == null) {
-                    "INTERNAL error ${it.code} cannot declare message_key"
+
+                "INTERNAL" -> {
+                    require(it.messageKey == null) {
+                        "INTERNAL error ${it.code} cannot declare message_key"
+                    }
                 }
             }
             it.messageKey?.let { key ->
@@ -112,8 +123,16 @@ internal object ErrorCatalogParser {
         requireUnique("error codes", errors.map(ErrorCatalogEntry::code))
     }
 
-    private fun requireUnique(label: String, values: List<String>) {
-        val duplicates = values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+    private fun requireUnique(
+        label: String,
+        values: List<String>,
+    ) {
+        val duplicates =
+            values
+                .groupingBy { it }
+                .eachCount()
+                .filterValues { it > 1 }
+                .keys
         require(duplicates.isEmpty()) { "Duplicate $label: ${duplicates.sorted().joinToString()}" }
     }
 
@@ -153,90 +172,96 @@ internal data class RenderedErrorCatalog(
 )
 
 internal object ErrorCatalogRenderer {
-    fun render(catalog: ErrorCatalog): RenderedErrorCatalog = RenderedErrorCatalog(
-        coreKotlin = renderCore(catalog),
-        appKotlin = renderApp(catalog),
-        markdown = renderMarkdown(catalog),
-    )
+    fun render(catalog: ErrorCatalog): RenderedErrorCatalog =
+        RenderedErrorCatalog(
+            coreKotlin = renderCore(catalog),
+            appKotlin = renderApp(catalog),
+            markdown = renderMarkdown(catalog),
+        )
 
-    private fun renderCore(catalog: ErrorCatalog): String = buildString {
-        appendLine("// Generated from config/observability/error-catalog.json. Do not edit.")
-        appendLine("package com.aozijx.passly.core.observability")
-        appendLine()
-        appendLine("enum class ErrorExposure { INTERNAL, USER_ACTIONABLE }")
-        appendLine()
-        appendLine("data class RegisteredError(")
-        appendLine("    val code: ErrorCode,")
-        appendLine("    val defaultReason: ReasonCode,")
-        appendLine("    val category: LogCategory,")
-        appendLine("    val exposure: ErrorExposure,")
-        appendLine(")")
-        appendLine()
-        appendLine("object ErrorCodes {")
-        catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
-            appendLine("    object ${category.categoryObjectName()} {")
-            errors.forEach { appendLine("        val ${it.symbol} = ErrorCode(\"${it.code}\")") }
-            appendLine("    }")
-        }
-        appendLine("}")
-        appendLine()
-        appendLine("object Reasons {")
-        catalog.reasons.forEach { appendLine("    val ${it.symbol} = ReasonCode(\"${it.code}\")") }
-        appendLine("}")
-        appendLine()
-        appendLine("object ErrorCatalog {")
-        appendLine("    val All: List<RegisteredError> = listOf(")
-        catalog.errors.forEach {
-            val reasonSymbol = catalog.reasons.single { reason -> reason.code == it.defaultReason }.symbol
-            appendLine("        RegisteredError(ErrorCodes.${it.category.categoryObjectName()}.${it.symbol}, Reasons.$reasonSymbol, LogCategory.${it.category}, ErrorExposure.${it.exposure}),")
-        }
-        appendLine("    )")
-        appendLine("}")
-    }
-
-    private fun renderApp(catalog: ErrorCatalog): String = buildString {
-        appendLine("// Generated from config/observability/error-catalog.json. Do not edit.")
-        appendLine("package com.aozijx.passly.app.message.presentation")
-        appendLine()
-        appendLine("import androidx.annotation.StringRes")
-        appendLine("import com.aozijx.passly.R")
-        appendLine("import com.aozijx.passly.core.observability.ErrorCode")
-        appendLine("import com.aozijx.passly.core.observability.ErrorCodes")
-        appendLine()
-        appendLine("object GeneratedErrorMessageResolver {")
-        appendLine("    @StringRes")
-        appendLine("    fun resolve(errorCode: ErrorCode): Int? = when (errorCode) {")
-        catalog.errors.filter { it.messageKey != null }.forEach {
-            appendLine("        ErrorCodes.${it.category.categoryObjectName()}.${it.symbol} -> R.string.${it.messageKey}")
-        }
-        appendLine("        else -> null")
-        appendLine("    }")
-        appendLine("}")
-    }
-
-    private fun renderMarkdown(catalog: ErrorCatalog): String = buildString {
-        appendLine("# Passly Error Codes")
-        appendLine()
-        appendLine("> Generated from `config/observability/error-catalog.json`. Do not edit by hand.")
-        appendLine()
-        appendLine("## Errors by category")
-        catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
+    private fun renderCore(catalog: ErrorCatalog): String =
+        buildString {
+            appendLine("// Generated from config/observability/error-catalog.json. Do not edit.")
+            appendLine("package com.aozijx.passly.core.observability")
             appendLine()
-            appendLine("### ${category.categoryObjectName()}")
+            appendLine("enum class ErrorExposure { INTERNAL, USER_ACTIONABLE }")
             appendLine()
-            appendLine("| Code | Default reason | Exposure | Description |")
-            appendLine("|---|---|---|---|")
-            errors.forEach {
-                appendLine("| `${it.code}` | `${it.defaultReason}` | ${it.exposure} | ${it.description} |")
+            appendLine("data class RegisteredError(")
+            appendLine("    val code: ErrorCode,")
+            appendLine("    val defaultReason: ReasonCode,")
+            appendLine("    val category: LogCategory,")
+            appendLine("    val exposure: ErrorExposure,")
+            appendLine(")")
+            appendLine()
+            appendLine("object ErrorCodes {")
+            catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
+                appendLine("    object ${category.categoryObjectName()} {")
+                errors.forEach { appendLine("        val ${it.symbol} = ErrorCode(\"${it.code}\")") }
+                appendLine("    }")
             }
+            appendLine("}")
+            appendLine()
+            appendLine("object Reasons {")
+            catalog.reasons.forEach { appendLine("    val ${it.symbol} = ReasonCode(\"${it.code}\")") }
+            appendLine("}")
+            appendLine()
+            appendLine("object ErrorCatalog {")
+            appendLine("    val All: List<RegisteredError> = listOf(")
+            catalog.errors.forEach {
+                val reasonSymbol = catalog.reasons.single { reason -> reason.code == it.defaultReason }.symbol
+                appendLine(
+                    "        RegisteredError(ErrorCodes.${it.category.categoryObjectName()}.${it.symbol}, Reasons.$reasonSymbol, LogCategory.${it.category}, ErrorExposure.${it.exposure}),",
+                )
+            }
+            appendLine("    )")
+            appendLine("}")
         }
-        appendLine()
-        appendLine("## Reasons")
-        appendLine()
-        appendLine("| Code | Description |")
-        appendLine("|---|---|")
-        catalog.reasons.forEach { appendLine("| `${it.code}` | ${it.description} |") }
-    }
+
+    private fun renderApp(catalog: ErrorCatalog): String =
+        buildString {
+            appendLine("// Generated from config/observability/error-catalog.json. Do not edit.")
+            appendLine("package com.aozijx.passly.app.message.presentation")
+            appendLine()
+            appendLine("import androidx.annotation.StringRes")
+            appendLine("import com.aozijx.passly.R")
+            appendLine("import com.aozijx.passly.core.observability.ErrorCode")
+            appendLine("import com.aozijx.passly.core.observability.ErrorCodes")
+            appendLine()
+            appendLine("object GeneratedErrorMessageResolver {")
+            appendLine("    @StringRes")
+            appendLine("    fun resolve(errorCode: ErrorCode): Int? = when (errorCode) {")
+            catalog.errors.filter { it.messageKey != null }.forEach {
+                appendLine("        ErrorCodes.${it.category.categoryObjectName()}.${it.symbol} -> R.string.${it.messageKey}")
+            }
+            appendLine("        else -> null")
+            appendLine("    }")
+            appendLine("}")
+        }
+
+    private fun renderMarkdown(catalog: ErrorCatalog): String =
+        buildString {
+            appendLine("# Passly Error Codes")
+            appendLine()
+            appendLine("> Generated from `config/observability/error-catalog.json`. Do not edit by hand.")
+            appendLine()
+            appendLine("## Errors by category")
+            catalog.errors.groupBy(ErrorCatalogEntry::category).forEach { (category, errors) ->
+                appendLine()
+                appendLine("### ${category.categoryObjectName()}")
+                appendLine()
+                appendLine("| Code | Default reason | Exposure | Description |")
+                appendLine("|---|---|---|---|")
+                errors.forEach {
+                    appendLine("| `${it.code}` | `${it.defaultReason}` | ${it.exposure} | ${it.description} |")
+                }
+            }
+            appendLine()
+            appendLine("## Reasons")
+            appendLine()
+            appendLine("| Code | Description |")
+            appendLine("|---|---|")
+            catalog.reasons.forEach { appendLine("| `${it.code}` | ${it.description} |") }
+        }
 
     private fun String.categoryObjectName(): String = lowercase().replaceFirstChar(Char::uppercase)
 }
@@ -260,10 +285,12 @@ abstract class GenerateErrorCatalogTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val rendered = ErrorCatalogRenderer.render(ErrorCatalogParser.parse(catalogFile.get().asFile))
-        coreOutputDirectory.orNull?.asFile
+        coreOutputDirectory.orNull
+            ?.asFile
             ?.resolve("com/aozijx/passly/core/observability/GeneratedErrorCatalog.kt")
             ?.writeGenerated(rendered.coreKotlin)
-        appOutputDirectory.orNull?.asFile
+        appOutputDirectory.orNull
+            ?.asFile
             ?.resolve("com/aozijx/passly/app/message/presentation/GeneratedErrorMessageResolver.kt")
             ?.writeGenerated(rendered.appKotlin)
         markdownOutputFile.orNull?.asFile?.writeGenerated(rendered.markdown)

@@ -4,8 +4,16 @@ import android.content.Context
 import android.content.Intent
 
 interface AutofillLaunchTarget {
-    fun legacyFillIntent(context: Context, requestId: String): Intent
-    fun credentialResponseIntent(context: Context, requestId: String): Intent
+    fun legacyFillIntent(
+        context: Context,
+        requestId: String,
+    ): Intent
+
+    fun credentialResponseIntent(
+        context: Context,
+        requestId: String,
+    ): Intent
+
     fun accessibilityFillIntent(context: Context): Intent
 }
 

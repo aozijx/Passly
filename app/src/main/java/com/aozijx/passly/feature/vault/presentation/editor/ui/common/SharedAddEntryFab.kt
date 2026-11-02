@@ -30,7 +30,7 @@ fun SharedAddEntryExtendedFab(
     expanded: Boolean = true,
     labelVisible: Boolean = expanded,
     containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
     ExtendedFloatingActionButton(
         onClick = { if (enabled) onClick() },
@@ -44,26 +44,26 @@ fun SharedAddEntryExtendedFab(
         text = {
             AnimatedVisibility(
                 visible = labelVisible,
-                enter = fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                    expandHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
-                exit = fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                    shrinkHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
+                enter =
+                    fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                        expandHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
+                exit =
+                    fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                        shrinkHorizontally(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()),
             ) {
                 Text(
                     text = label,
                     maxLines = 1,
                     softWrap = false,
-                    overflow = TextOverflow.Clip
+                    overflow = TextOverflow.Clip,
                 )
             }
-        }
+        },
     )
 }
 
 @Composable
-fun rememberSharedFabLabelVisible(
-    visible: Boolean
-): Boolean {
+fun rememberSharedFabLabelVisible(visible: Boolean): Boolean {
     var labelVisible by remember { mutableStateOf(false) }
     LaunchedEffect(visible) {
         labelVisible = visible

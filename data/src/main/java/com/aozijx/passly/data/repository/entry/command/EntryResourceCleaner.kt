@@ -1,22 +1,22 @@
 package com.aozijx.passly.data.repository.entry.command
 
 import android.content.Context
-import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
-import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
+import com.aozijx.passly.core.platform.VaultResourcePaths
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
+import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 
 internal data class DeletedEntryResources(
     val customIconPath: String?,
@@ -30,41 +30,48 @@ internal data class DeletedEntryResources(
  * 这里只记录结构化诊断事件，不把已经成功的数据库删除伪装成失败。
  */
 @Singleton
-internal class EntryResourceCleaner @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
-    private val databaseTransactions: DatabaseTransactionRunner,
-    private val logger: Logger,
-    private val postCommitCleanup: PostCommitCleanup,
-    access: SecureSessionAccessState,
-    databaseSession: AppDatabaseSession,
-) : EntryIconResourceCleaner {
-    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val cleanupQueue = IconResourceCleanupQueue(cleanupScope, access, databaseSession) { path ->
-        logger.inSpan(Operations.ResourceCleanup) {
-            attachmentGarbageCollector.withMutationLock {
-                databaseTransactions.write("entry_icon_reclaim") {
-                    withContext(Dispatchers.IO) { EntryIconReclaimTransaction.reclaim(this@write, imageRoot, path) }
+internal class EntryResourceCleaner
+    @Inject
+    constructor(
+        @param:ApplicationContext private val context: Context,
+        private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
+        private val databaseTransactions: DatabaseTransactionRunner,
+        private val logger: Logger,
+        private val postCommitCleanup: PostCommitCleanup,
+        access: SecureSessionAccessState,
+        databaseSession: AppDatabaseSession,
+    ) : EntryIconResourceCleaner {
+        private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val cleanupQueue =
+            IconResourceCleanupQueue(cleanupScope, access, databaseSession) { path ->
+                logger.inSpan(Operations.ResourceCleanup) {
+                    attachmentGarbageCollector.withMutationLock {
+                        databaseTransactions.write("entry_icon_reclaim") {
+                            withContext(Dispatchers.IO) { EntryIconReclaimTransaction.reclaim(this@write, imageRoot, path) }
+                        }
+                    }
                 }
             }
+
+        override fun discardUnreferencedIcon(path: String) = cleanupQueue.request(path)
+
+        suspend fun drainPendingIcons() = cleanupQueue.drain()
+
+        private val imageRoot: File
+            get() = VaultResourcePaths.vaultImagesDir(context)
+
+        suspend fun clean(resources: Collection<DeletedEntryResources>) {
+            resources.mapNotNull(DeletedEntryResources::customIconPath).forEach(cleanupQueue::request)
+            resources.flatMap(DeletedEntryResources::revisionIconPaths).forEach(cleanupQueue::request)
+            postCommitCleanup.run { attachmentGarbageCollector.drain() }
+            postCommitCleanup.run { cleanupQueue.drain() }
+        }
+
+        suspend fun cleanReplacedIcon(
+            oldPath: String?,
+            newPath: String?,
+        ) {
+            oldPath?.takeIf { it.isNotBlank() && it != newPath }?.let(cleanupQueue::request)
+            postCommitCleanup.run { cleanupQueue.drain() }
         }
     }
-
-    override fun discardUnreferencedIcon(path: String) = cleanupQueue.request(path)
-
-    suspend fun drainPendingIcons() = cleanupQueue.drain()
-    private val imageRoot: File
-        get() = VaultResourcePaths.vaultImagesDir(context)
-
-    suspend fun clean(resources: Collection<DeletedEntryResources>) {
-        resources.mapNotNull(DeletedEntryResources::customIconPath).forEach(cleanupQueue::request)
-        resources.flatMap(DeletedEntryResources::revisionIconPaths).forEach(cleanupQueue::request)
-        postCommitCleanup.run { attachmentGarbageCollector.drain() }
-        postCommitCleanup.run { cleanupQueue.drain() }
-    }
-
-    suspend fun cleanReplacedIcon(oldPath: String?, newPath: String?) {
-        oldPath?.takeIf { it.isNotBlank() && it != newPath }?.let(cleanupQueue::request)
-        postCommitCleanup.run { cleanupQueue.drain() }
-    }
-}

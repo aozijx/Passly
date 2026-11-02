@@ -16,18 +16,23 @@ class AutofillInboxBootstrapMappingTest {
 
     @Test
     fun keyMaterialRoundTripsWithoutChangingExistingBootstrapFields() {
-        val material = AutofillInboxKeyMaterial(
-            formatVersion = 1,
-            keyId = byteArrayOf(1, 2, 3),
-            publicKey = byteArrayOf(4, 5, 6),
-            publicKeySha256 = byteArrayOf(7, 8, 9),
-            privateKeyEnvelope = byteArrayOf(10, 11, 12),
-        )
-        val data = BootstrapData.newBuilder()
-            .setVersion(1)
-            .setVerificationTag(com.google.protobuf.ByteString.copyFrom(byteArrayOf(42)))
-            .setAutofillInboxKeyMaterial(material)
-            .build()
+        val material =
+            AutofillInboxKeyMaterial(
+                formatVersion = 1,
+                keyId = byteArrayOf(1, 2, 3),
+                publicKey = byteArrayOf(4, 5, 6),
+                publicKeySha256 = byteArrayOf(7, 8, 9),
+                privateKeyEnvelope = byteArrayOf(10, 11, 12),
+            )
+        val data =
+            BootstrapData
+                .newBuilder()
+                .setVersion(1)
+                .setVerificationTag(
+                    com.google.protobuf.ByteString
+                        .copyFrom(byteArrayOf(42)),
+                ).setAutofillInboxKeyMaterial(material)
+                .build()
 
         val decoded = BootstrapData.parseFrom(data.toByteArray()).readAutofillInboxKeyMaterial()
 
@@ -38,11 +43,13 @@ class AutofillInboxBootstrapMappingTest {
 
     @Test
     fun malformedButPresentMaterialIsNotSilentlyTreatedAsMissing() {
-        val data = BootstrapData.newBuilder()
-            .setAutofillInboxKey(
-                com.aozijx.passly.data.crypto.proto.AutofillInboxKeyMaterial.getDefaultInstance(),
-            )
-            .build()
+        val data =
+            BootstrapData
+                .newBuilder()
+                .setAutofillInboxKey(
+                    com.aozijx.passly.data.crypto.proto.AutofillInboxKeyMaterial
+                        .getDefaultInstance(),
+                ).build()
 
         val decoded = data.readAutofillInboxKeyMaterial()
 
@@ -53,14 +60,18 @@ class AutofillInboxBootstrapMappingTest {
 
     @Test
     fun clearingInboxMaterialPreservesOtherBootstrapFields() {
-        val data = BootstrapData.newBuilder()
-            .setVersion(1)
-            .setVerificationTag(com.google.protobuf.ByteString.copyFrom(byteArrayOf(42)))
-            .setAutofillInboxKey(
-                com.aozijx.passly.data.crypto.proto.AutofillInboxKeyMaterial.newBuilder()
-                    .setFormatVersion(1),
-            )
-            .build()
+        val data =
+            BootstrapData
+                .newBuilder()
+                .setVersion(1)
+                .setVerificationTag(
+                    com.google.protobuf.ByteString
+                        .copyFrom(byteArrayOf(42)),
+                ).setAutofillInboxKey(
+                    com.aozijx.passly.data.crypto.proto.AutofillInboxKeyMaterial
+                        .newBuilder()
+                        .setFormatVersion(1),
+                ).build()
 
         val cleared = data.toBuilder().clearAutofillInboxKeyMaterial().build()
 

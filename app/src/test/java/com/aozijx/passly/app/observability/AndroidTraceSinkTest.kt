@@ -37,16 +37,33 @@ class AndroidTraceSinkTest {
         sink.onSpanStarted(SpanStarted(Operations.DatabaseSession, first, 10))
         sink.onSpanStarted(SpanStarted(Operations.DatabaseSession, second, 11))
 
-        assertEquals(2, gateway.begins.map { it.second }.distinct().size)
+        assertEquals(
+            2,
+            gateway.begins
+                .map { it.second }
+                .distinct()
+                .size,
+        )
     }
 
     @Test
     fun `trace failure is swallowed without suppressing caller`() {
-        val sink = AndroidTraceSink(object : AndroidTraceGateway {
-            override fun isEnabled(): Boolean = true
-            override fun beginAsyncSection(name: String, cookie: Int) = error("platform unavailable")
-            override fun endAsyncSection(name: String, cookie: Int) = error("platform unavailable")
-        })
+        val sink =
+            AndroidTraceSink(
+                object : AndroidTraceGateway {
+                    override fun isEnabled(): Boolean = true
+
+                    override fun beginAsyncSection(
+                        name: String,
+                        cookie: Int,
+                    ) = error("platform unavailable")
+
+                    override fun endAsyncSection(
+                        name: String,
+                        cookie: Int,
+                    ) = error("platform unavailable")
+                },
+            )
         val trace = TraceSnapshot(TraceId("trace_123"), SpanId("span_1234"), null)
 
         sink.onSpanStarted(SpanStarted(Operations.ApplicationStartup, trace, 10))
@@ -59,11 +76,20 @@ class AndroidTraceSinkTest {
     private class RecordingTraceGateway : AndroidTraceGateway {
         val begins = mutableListOf<Pair<String, Int>>()
         val ends = mutableListOf<Pair<String, Int>>()
+
         override fun isEnabled(): Boolean = true
-        override fun beginAsyncSection(name: String, cookie: Int) {
+
+        override fun beginAsyncSection(
+            name: String,
+            cookie: Int,
+        ) {
             begins += name to cookie
         }
-        override fun endAsyncSection(name: String, cookie: Int) {
+
+        override fun endAsyncSection(
+            name: String,
+            cookie: Int,
+        ) {
             ends += name to cookie
         }
     }

@@ -10,7 +10,5 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 internal abstract class CacheModule {
     @Binds
-    abstract fun bindAppCacheStore(
-        implementation: AndroidAppCacheStore,
-    ): AppCacheStore
+    abstract fun bindAppCacheStore(implementation: AndroidAppCacheStore): AppCacheStore
 }

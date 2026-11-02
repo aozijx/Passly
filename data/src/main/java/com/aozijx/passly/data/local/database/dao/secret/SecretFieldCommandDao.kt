@@ -9,7 +9,6 @@ import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 
 @Dao
 interface SecretFieldCommandDao {
-
     @Upsert
     suspend fun upsert(field: EntrySecretFieldEntity)
 
@@ -23,7 +22,10 @@ interface SecretFieldCommandDao {
         """
         DELETE FROM entry_secret_fields
         WHERE entryId = :entryId AND fieldKey = :fieldKey
-        """
+        """,
     )
-    suspend fun delete(entryId: String, fieldKey: String): Int
+    suspend fun delete(
+        entryId: String,
+        fieldKey: String,
+    ): Int
 }

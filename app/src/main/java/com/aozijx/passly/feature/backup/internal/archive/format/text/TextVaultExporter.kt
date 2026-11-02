@@ -11,11 +11,13 @@ import javax.inject.Singleton
  * 只用于导出（export），不实现导入（import）。
  */
 @Singleton
-class TextVaultExporter @Inject constructor(
-    private val renderer: TextVaultRenderer
-) {
-    fun export(
-        records: List<BackupEntryRecord>,
-        options: TextExportOptions = TextExportOptions()
-    ): String = renderer.render(records, options = options)
-}
+class TextVaultExporter
+    @Inject
+    constructor(
+        private val renderer: TextVaultRenderer,
+    ) {
+        fun export(
+            records: List<BackupEntryRecord>,
+            options: TextExportOptions = TextExportOptions(),
+        ): String = renderer.render(records, options = options)
+    }

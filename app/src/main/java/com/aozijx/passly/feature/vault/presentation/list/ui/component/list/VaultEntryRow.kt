@@ -39,62 +39,70 @@ internal fun VaultEntryRow(
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val totpState = if (item.hasOtp) {
-        observeVaultOtpState(
-            entryId = item.id,
-            provider = otpStateProvider,
-            enabled = content.showTotpCode,
-        )
-    } else {
-        null
-    }
-    val cardStyle = remember(
-        item.entryType,
-        item.hasPassword,
-        item.hasOtp,
-        content.cardPresentations,
-    ) {
-        CardStyleRegistry.resolveStyle(item, content.cardPresentations)
-    }
+    val totpState =
+        if (item.hasOtp) {
+            observeVaultOtpState(
+                entryId = item.id,
+                provider = otpStateProvider,
+                enabled = content.showTotpCode,
+            )
+        } else {
+            null
+        }
+    val cardStyle =
+        remember(
+            item.entryType,
+            item.hasPassword,
+            item.hasOtp,
+            content.cardPresentations,
+        ) {
+            CardStyleRegistry.resolveStyle(item, content.cardPresentations)
+        }
     val colorScheme = MaterialTheme.colorScheme
     val motionScheme = MaterialTheme.motionScheme
-    val visibleState = remember(item.id) {
-        MutableTransitionState(!animateInitialAppearance).apply { targetState = true }
-    }
+    val visibleState =
+        remember(item.id) {
+            MutableTransitionState(!animateInitialAppearance).apply { targetState = true }
+        }
     val currentItem by rememberUpdatedState(item)
-    val leftAction = remember(item.id, content.swipeLeftAction, onAction, colorScheme) {
-        createAppSwipeActionSpec(
-            actionType = content.swipeLeftAction,
-            onAction = {
-                onAction(VaultListItemAction.Swiped(currentItem, content.swipeLeftAction))
-            },
-            backgroundColor = if (content.swipeLeftAction == SwipeActionType.DELETE) {
-                colorScheme.error
-            } else {
-                colorScheme.primary
-            },
-            iconTint = Color.White,
-        )
-    }
-    val rightAction = remember(item.id, content.swipeRightAction, onAction, colorScheme) {
-        createAppSwipeActionSpec(
-            actionType = content.swipeRightAction,
-            onAction = {
-                onAction(VaultListItemAction.Swiped(currentItem, content.swipeRightAction))
-            },
-            backgroundColor = if (content.swipeRightAction == SwipeActionType.DELETE) {
-                colorScheme.error
-            } else {
-                colorScheme.secondary
-            },
-            iconTint = Color.White,
-        )
-    }
+    val leftAction =
+        remember(item.id, content.swipeLeftAction, onAction, colorScheme) {
+            createAppSwipeActionSpec(
+                actionType = content.swipeLeftAction,
+                onAction = {
+                    onAction(VaultListItemAction.Swiped(currentItem, content.swipeLeftAction))
+                },
+                backgroundColor =
+                    if (content.swipeLeftAction == SwipeActionType.DELETE) {
+                        colorScheme.error
+                    } else {
+                        colorScheme.primary
+                    },
+                iconTint = Color.White,
+            )
+        }
+    val rightAction =
+        remember(item.id, content.swipeRightAction, onAction, colorScheme) {
+            createAppSwipeActionSpec(
+                actionType = content.swipeRightAction,
+                onAction = {
+                    onAction(VaultListItemAction.Swiped(currentItem, content.swipeRightAction))
+                },
+                backgroundColor =
+                    if (content.swipeRightAction == SwipeActionType.DELETE) {
+                        colorScheme.error
+                    } else {
+                        colorScheme.secondary
+                    },
+                iconTint = Color.White,
+            )
+        }
 
     AnimatedVisibility(
         visibleState = visibleState,
         modifier = modifier,
-        enter = fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
+        enter =
+            fadeIn(animationSpec = motionScheme.fastEffectsSpec()) +
                 slideInVertically(
                     animationSpec = motionScheme.defaultSpatialSpec(),
                     initialOffsetY = { height -> height / 4 },
@@ -127,9 +135,10 @@ internal fun observeVaultOtpState(
         provider.subscribe(entryId)
         onDispose { provider.unsubscribe(entryId) }
     }
-    val stateFlow = remember(entryId, provider) {
-        provider.state(entryId).distinctUntilChanged()
-    }
+    val stateFlow =
+        remember(entryId, provider) {
+            provider.state(entryId).distinctUntilChanged()
+        }
     val current by stateFlow.collectAsStateWithLifecycle(initialValue = null)
     return current
 }
@@ -140,12 +149,13 @@ private fun createAppSwipeActionSpec(
     backgroundColor: Color,
     iconTint: Color,
 ): SwipeActionSpec? {
-    val icon = when (actionType) {
-        SwipeActionType.DISABLED -> return null
-        SwipeActionType.DELETE -> Icons.Default.Delete
-        SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
-        SwipeActionType.COPY_USERNAME -> Icons.Default.Person
-    }
+    val icon =
+        when (actionType) {
+            SwipeActionType.DISABLED -> return null
+            SwipeActionType.DELETE -> Icons.Default.Delete
+            SwipeActionType.COPY_PASSWORD -> Icons.Default.ContentCopy
+            SwipeActionType.COPY_USERNAME -> Icons.Default.Person
+        }
     return SwipeActionSpec(
         icon = icon,
         backgroundColor = backgroundColor,

@@ -19,11 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
-import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.presentation.shared.components.topbar.PasslyNavigationTopBar
-import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 
 @Composable
 internal fun SettingsMainPage(
@@ -40,36 +40,38 @@ internal fun SettingsMainPage(
                 title = stringResource(com.aozijx.passly.R.string.settings_title),
                 onNavigateBack = onBack,
             )
-        }
+        },
     ) { innerPadding ->
         val sections = SettingsGroup.entries.groupBy { it.sectionTitleRes }.toList()
         LazyVerticalGrid(
             state = listState,
             columns = GridCells.Fixed(1),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                end = 16.dp,
-                bottom = innerPadding.calculateBottomPadding() + 16.dp
-            ),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    top = innerPadding.calculateTopPadding() + 8.dp,
+                    end = 16.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(sections, key = { it.first }) { (sectionTitleRes, groups) ->
                 Column {
                     SettingsSectionTitle(text = stringResource(sectionTitleRes))
                     SegmentedSettingsGroup(
-                        items = groups.map { group ->
-                            navigationSettingsGroupItem(
-                                key = group.routeKey,
-                                icon = group.icon,
-                                title = stringResource(group.titleRes),
-                                subtitle = stringResource(group.subtitleRes),
-                                selected = group.routeKey == selectedRouteKey,
-                                onClick = { onGroupClick(group.routeKey) }
-                            )
-                        }
+                        items =
+                            groups.map { group ->
+                                navigationSettingsGroupItem(
+                                    key = group.routeKey,
+                                    icon = group.icon,
+                                    title = stringResource(group.titleRes),
+                                    subtitle = stringResource(group.subtitleRes),
+                                    selected = group.routeKey == selectedRouteKey,
+                                    onClick = { onGroupClick(group.routeKey) },
+                                )
+                            },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
@@ -85,12 +87,12 @@ internal fun SettingsMainPage(
 internal fun SettingsDetailPlaceholder() {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = stringResource(com.aozijx.passly.R.string.settings_select_item_hint),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

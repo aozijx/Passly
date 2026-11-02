@@ -9,7 +9,6 @@ import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 
 @Dao
 interface EntryRevisionCommandDao {
-
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(revision: EntryRevisionEntity)
 
@@ -25,8 +24,13 @@ interface EntryRevisionCommandDao {
     @Query("DELETE FROM entry_revisions WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String): Int
 
-    @Query("DELETE FROM entry_revisions WHERE entryId = :entryId AND version <= (SELECT version FROM entry_revisions WHERE entryId = :entryId ORDER BY version DESC LIMIT 1 OFFSET :keepCount)")
-    suspend fun deleteOldVersions(entryId: String, keepCount: Int): Int
+    @Query(
+        "DELETE FROM entry_revisions WHERE entryId = :entryId AND version <= (SELECT version FROM entry_revisions WHERE entryId = :entryId ORDER BY version DESC LIMIT 1 OFFSET :keepCount)",
+    )
+    suspend fun deleteOldVersions(
+        entryId: String,
+        keepCount: Int,
+    ): Int
 
     /**
      * 全局仅保留最新的 [keepCount] 条修订。
@@ -43,7 +47,7 @@ interface EntryRevisionCommandDao {
             ORDER BY createdAt DESC, revisionId DESC
             LIMIT -1 OFFSET :keepCount
         )
-        """
+        """,
     )
     suspend fun deleteOldestBeyondGlobalLimit(keepCount: Int): Int
 
@@ -52,7 +56,7 @@ interface EntryRevisionCommandDao {
         """
         DELETE FROM entry_revisions
         WHERE entryId IN (SELECT entryId FROM entries WHERE deletedAt IS NOT NULL)
-        """
+        """,
     )
     suspend fun deleteForDeletedEntries(): Int
 

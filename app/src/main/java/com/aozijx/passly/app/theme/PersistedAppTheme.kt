@@ -7,9 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /** Renders only after the persisted appearance and interface preferences are available. */
 @Composable
-internal fun PersistedAppTheme(
-    content: @Composable () -> Unit,
-) {
+internal fun PersistedAppTheme(content: @Composable () -> Unit) {
     val viewModel: AppThemeSettingsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val settings = state as? AppThemeSettingsState.Ready ?: return

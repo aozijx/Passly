@@ -22,9 +22,11 @@ class EntryLinkConstraintDaoTest {
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = TestDatabaseFactory.inMemoryDatabaseBuilder(context)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            TestDatabaseFactory
+                .inMemoryDatabaseBuilder(context)
+                .allowMainThreadQueries()
+                .build()
     }
 
     @After
@@ -33,24 +35,43 @@ class EntryLinkConstraintDaoTest {
     }
 
     @Test
-    fun endpointTripleIsUnique_andDeletingEndpointCascadesLink() = runBlocking {
-        database.entryCommandDao().insertStrict(entry("login", EntryType.LOGIN))
-        database.entryCommandDao().insertStrict(entry("account", EntryType.ACCOUNT))
-        database.entryLinkCommandDao().upsert(link("link-1"))
+    fun endpointTripleIsUnique_andDeletingEndpointCascadesLink() =
+        runBlocking {
+            database.entryCommandDao().insertStrict(entry("login", EntryType.LOGIN))
+            database.entryCommandDao().insertStrict(entry("account", EntryType.ACCOUNT))
+            database.entryLinkCommandDao().upsert(link("link-1"))
 
-        val duplicate = runCatching {
-            database.entryLinkCommandDao().upsert(link("link-2"))
+            val duplicate =
+                runCatching {
+                    database.entryLinkCommandDao().upsert(link("link-2"))
+                }
+            assertTrue(duplicate.isFailure)
+            assertEquals(
+                "link-1",
+                database
+                    .entryLinkQueryDao()
+                    .getAll()
+                    .single()
+                    .linkId,
+            )
+            database.entryLinkCommandDao().upsert(link("link-1").copy(updatedAt = 2L))
+            assertEquals(
+                2L,
+                database
+                    .entryLinkQueryDao()
+                    .getAll()
+                    .single()
+                    .updatedAt,
+            )
+
+            assertEquals(1, database.entryCommandDao().deleteById("account"))
+            assertTrue(database.entryLinkQueryDao().getAll().isEmpty())
         }
-        assertTrue(duplicate.isFailure)
-        assertEquals("link-1", database.entryLinkQueryDao().getAll().single().linkId)
-        database.entryLinkCommandDao().upsert(link("link-1").copy(updatedAt = 2L))
-        assertEquals(2L, database.entryLinkQueryDao().getAll().single().updatedAt)
 
-        assertEquals(1, database.entryCommandDao().deleteById("account"))
-        assertTrue(database.entryLinkQueryDao().getAll().isEmpty())
-    }
-
-    private fun entry(id: String, type: EntryType) = EntryEntity(
+    private fun entry(
+        id: String,
+        type: EntryType,
+    ) = EntryEntity(
         entryId = id,
         entryType = type,
         title = id,
@@ -58,12 +79,13 @@ class EntryLinkConstraintDaoTest {
         updatedAt = 1L,
     )
 
-    private fun link(id: String) = EntryLinkEntity(
-        linkId = id,
-        sourceEntryId = "login",
-        targetEntryId = "account",
-        relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
-        createdAt = 1L,
-        updatedAt = 1L,
-    )
+    private fun link(id: String) =
+        EntryLinkEntity(
+            linkId = id,
+            sourceEntryId = "login",
+            targetEntryId = "account",
+            relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
 }

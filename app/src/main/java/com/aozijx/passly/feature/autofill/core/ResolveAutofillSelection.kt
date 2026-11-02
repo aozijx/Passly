@@ -17,55 +17,64 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 
 @Singleton
-class ResolveAutofillSelection @Inject constructor(
-    private val interactionStore: AutofillInteractionStore,
-    private val credentialResolver: AutofillCredentialResolver,
-) {
-    suspend operator fun invoke(
-        interactionId: AutofillInteractionId,
-        scope: AutofillGrantContext,
-        entryId: EntryId,
-        includeOtp: Boolean,
-    ): AutofillSelectionOutcome {
-        val snapshot = interactionStore.snapshot(interactionId)
-            ?: return AutofillSelectionOutcome.Rejected(
-                AutofillInteractionRejection.INTERACTION_NOT_FOUND,
-            )
-        if (snapshot.scope != scope.normalized()) return AutofillSelectionOutcome.ScopeMismatch
-        when (snapshot.state) {
-            AutofillInteractionState.RequiresUnlock,
-            AutofillInteractionState.Authenticating,
-            -> return AutofillSelectionOutcome.Unauthorized
-            AutofillInteractionState.Cancelled -> return AutofillSelectionOutcome.Cancelled
-            else -> Unit
-        }
+class ResolveAutofillSelection
+    @Inject
+    constructor(
+        private val interactionStore: AutofillInteractionStore,
+        private val credentialResolver: AutofillCredentialResolver,
+    ) {
+        suspend operator fun invoke(
+            interactionId: AutofillInteractionId,
+            scope: AutofillGrantContext,
+            entryId: EntryId,
+            includeOtp: Boolean,
+        ): AutofillSelectionOutcome {
+            val snapshot =
+                interactionStore.snapshot(interactionId)
+                    ?: return AutofillSelectionOutcome.Rejected(
+                        AutofillInteractionRejection.INTERACTION_NOT_FOUND,
+                    )
+            if (snapshot.scope != scope.normalized()) return AutofillSelectionOutcome.ScopeMismatch
+            when (snapshot.state) {
+                AutofillInteractionState.RequiresUnlock,
+                AutofillInteractionState.Authenticating,
+                -> return AutofillSelectionOutcome.Unauthorized
 
-        return when (val selection = interactionStore.beginSelection(interactionId, entryId)) {
-            is AutofillInteractionUpdate.Rejected -> AutofillSelectionOutcome.Rejected(selection.reason)
-            is AutofillInteractionUpdate.Updated -> resolve(entryId, includeOtp)
-        }
-    }
+                AutofillInteractionState.Cancelled -> return AutofillSelectionOutcome.Cancelled
 
-    private suspend fun resolve(
-        entryId: EntryId,
-        includeOtp: Boolean,
-    ): AutofillSelectionOutcome = try {
-        when (
-            val resolution = credentialResolver.resolve(
-                AutofillCredentialSelection(entryId, includeOtp),
-            )
-        ) {
-            is AutofillCredentialResolution.Resolved -> {
-                AutofillSelectionOutcome.Filled(resolution.payload)
+                else -> Unit
             }
 
-            AutofillCredentialResolution.NotFound,
-            AutofillCredentialResolution.NotFillable,
-            -> AutofillSelectionOutcome.CandidateUnavailable
+            return when (val selection = interactionStore.beginSelection(interactionId, entryId)) {
+                is AutofillInteractionUpdate.Rejected -> AutofillSelectionOutcome.Rejected(selection.reason)
+                is AutofillInteractionUpdate.Updated -> resolve(entryId, includeOtp)
+            }
         }
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        AutofillSelectionOutcome.Failed(AutofillOperationFailure.CREDENTIAL_RESOLUTION_FAILED)
+
+        private suspend fun resolve(
+            entryId: EntryId,
+            includeOtp: Boolean,
+        ): AutofillSelectionOutcome =
+            try {
+                when (
+                    val resolution =
+                        credentialResolver.resolve(
+                            AutofillCredentialSelection(entryId, includeOtp),
+                        )
+                ) {
+                    is AutofillCredentialResolution.Resolved -> {
+                        AutofillSelectionOutcome.Filled(resolution.payload)
+                    }
+
+                    AutofillCredentialResolution.NotFound,
+                    AutofillCredentialResolution.NotFillable,
+                    -> {
+                        AutofillSelectionOutcome.CandidateUnavailable
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                AutofillSelectionOutcome.Failed(AutofillOperationFailure.CREDENTIAL_RESOLUTION_FAILED)
+            }
     }
-}

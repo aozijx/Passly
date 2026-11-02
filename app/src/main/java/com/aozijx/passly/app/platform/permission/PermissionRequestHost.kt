@@ -1,9 +1,9 @@
 package com.aozijx.passly.app.platform.permission
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -30,17 +30,18 @@ import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 data class PermissionServices(
     val statusReader: PermissionStatusReader,
     val requestArbiter: PermissionRequestArbiter,
-    val requestHistory: PermissionRequestHistory
+    val requestHistory: PermissionRequestHistory,
 )
 
-val LocalPermissionServices = compositionLocalOf<PermissionServices> {
-    error("PermissionServices must be provided at the application UI root")
-}
+val LocalPermissionServices =
+    compositionLocalOf<PermissionServices> {
+        error("PermissionServices must be provided at the application UI root")
+    }
 
 @Composable
 fun ProvidePermissionServices(
     services: PermissionServices,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(LocalPermissionServices provides services, content = content)
 }
@@ -48,56 +49,61 @@ fun ProvidePermissionServices(
 @Stable
 interface PermissionRequestHost {
     fun status(permission: RuntimePermission): PermissionStatus
+
     fun access(permission: RuntimePermission): RuntimePermissionAccess
+
     fun shouldShowRationale(permission: RuntimePermission): Boolean
+
     fun request(permission: RuntimePermission): PermissionRequestStart
 }
 
 @Composable
 fun rememberPermissionRequestHost(
     owner: String,
-    onResult: (RuntimePermission, PermissionRequestOutcome) -> Unit
+    onResult: (RuntimePermission, PermissionRequestOutcome) -> Unit,
 ): PermissionRequestHost {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
     val services = LocalPermissionServices.current
-    val session = remember(owner, activity, services) {
-        PermissionRequestSession(owner, services.requestArbiter, services.requestHistory)
-    }
-    val launcher = key(session) {
-        val currentOnResult = rememberUpdatedState(onResult)
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            session.complete { permission, androidName, requestedBefore ->
-                val canAskAgain = !granted && activity != null &&
-                    ActivityCompat.shouldShowRequestPermissionRationale(activity, androidName)
-                currentOnResult.value(
-                    permission,
-                    if (granted) {
-                        PermissionRequestOutcome.Granted
-                    } else {
-                        PermissionRequestOutcome.Denied(
-                            canAskAgain = canAskAgain,
-                            permanentlyDenied = requestedBefore && !canAskAgain,
-                        )
-                    },
-                )
+    val session =
+        remember(owner, activity, services) {
+            PermissionRequestSession(owner, services.requestArbiter, services.requestHistory)
+        }
+    val launcher =
+        key(session) {
+            val currentOnResult = rememberUpdatedState(onResult)
+            rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                session.complete { permission, androidName, requestedBefore ->
+                    val canAskAgain =
+                        !granted && activity != null &&
+                            ActivityCompat.shouldShowRequestPermissionRationale(activity, androidName)
+                    currentOnResult.value(
+                        permission,
+                        if (granted) {
+                            PermissionRequestOutcome.Granted
+                        } else {
+                            PermissionRequestOutcome.Denied(
+                                canAskAgain = canAskAgain,
+                                permanentlyDenied = requestedBefore && !canAskAgain,
+                            )
+                        },
+                    )
+                }
             }
         }
-    }
     DisposableEffect(session) {
         onDispose { session.close() }
     }
 
     return remember(session, activity, services, launcher) {
         object : PermissionRequestHost {
-            override fun status(permission: RuntimePermission): PermissionStatus =
-                services.statusReader.status(permission)
+            override fun status(permission: RuntimePermission): PermissionStatus = services.statusReader.status(permission)
 
             override fun access(permission: RuntimePermission): RuntimePermissionAccess =
                 RuntimePermissionAccessResolver.resolve(
                     status = status(permission),
                     requestedBefore = services.requestHistory.wasRequested(permission),
-                    shouldShowRationale = shouldShowRationale(permission)
+                    shouldShowRationale = shouldShowRationale(permission),
                 )
 
             override fun shouldShowRationale(permission: RuntimePermission): Boolean {
@@ -115,8 +121,9 @@ fun rememberPermissionRequestHost(
                     PermissionStatus.DENIED -> Unit
                 }
                 if (activity == null) return PermissionRequestStart.HostUnavailable
-                val androidName = RuntimePermissionCatalog.androidName(permission)
-                    ?: return PermissionRequestStart.NotApplicable
+                val androidName =
+                    RuntimePermissionCatalog.androidName(permission)
+                        ?: return PermissionRequestStart.NotApplicable
                 return session.request(permission, androidName) { name ->
                     try {
                         launcher.launch(name)
@@ -132,8 +139,9 @@ fun rememberPermissionRequestHost(
     }
 }
 
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }

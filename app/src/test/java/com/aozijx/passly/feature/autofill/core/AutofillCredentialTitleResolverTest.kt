@@ -10,16 +10,18 @@ import org.junit.Test
 class AutofillCredentialTitleResolverTest {
     @Test
     fun draftNormalizesLookupAssociationsAndPreservesCredentialValues() {
-        val draft = buildAutofillCredentialDraft(
-            draft = AutofillSaveDraft(
-                packageName = " COM.Example.Mail ",
-                webDomain = "https://Login.Example.com/path",
-                pageTitle = "Example Login",
-                username = " alice ",
-                password = " secret ",
-            ),
-            applicationLabelResolver = ApplicationLabelResolver { "Example Mail" },
-        )
+        val draft =
+            buildAutofillCredentialDraft(
+                draft =
+                    AutofillSaveDraft(
+                        packageName = " COM.Example.Mail ",
+                        webDomain = "https://Login.Example.com/path",
+                        pageTitle = "Example Login",
+                        username = " alice ",
+                        password = " secret ",
+                    ),
+                applicationLabelResolver = ApplicationLabelResolver { "Example Mail" },
+            )
 
         assertEquals(EntryDraftValue.Text("Example Login"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("alice"), draft[FieldKey.USERNAME])
@@ -36,52 +38,56 @@ class AutofillCredentialTitleResolverTest {
 
     @Test
     fun nativeAppUsesApplicationLabelInsteadOfWindowPackageName() {
-        val title = resolveAutofillCredentialTitle(
-            applicationId = "com.example.mail",
-            appLabel = "Example Mail",
-            domain = null,
-            pageTitle = "com.example.mail",
-            usernameValue = "user@example.com",
-        )
+        val title =
+            resolveAutofillCredentialTitle(
+                applicationId = "com.example.mail",
+                appLabel = "Example Mail",
+                domain = null,
+                pageTitle = "com.example.mail",
+                usernameValue = "user@example.com",
+            )
 
         assertEquals("Example Mail", title)
     }
 
     @Test
     fun webFormKeepsWebsiteTitleInsteadOfBrowserApplicationLabel() {
-        val title = resolveAutofillCredentialTitle(
-            applicationId = "com.android.chrome",
-            appLabel = "Chrome",
-            domain = "example.com",
-            pageTitle = "Example Account",
-            usernameValue = "user@example.com",
-        )
+        val title =
+            resolveAutofillCredentialTitle(
+                applicationId = "com.android.chrome",
+                appLabel = "Chrome",
+                domain = "example.com",
+                pageTitle = "Example Account",
+                usernameValue = "user@example.com",
+            )
 
         assertEquals("Example Account", title)
     }
 
     @Test
     fun packageLikeWebTitleFallsBackToDomain() {
-        val title = resolveAutofillCredentialTitle(
-            applicationId = "com.android.chrome",
-            appLabel = "Chrome",
-            domain = "example.com",
-            pageTitle = "com.android.chrome/MainActivity",
-            usernameValue = "user@example.com",
-        )
+        val title =
+            resolveAutofillCredentialTitle(
+                applicationId = "com.android.chrome",
+                appLabel = "Chrome",
+                domain = "example.com",
+                pageTitle = "com.android.chrome/MainActivity",
+                usernameValue = "user@example.com",
+            )
 
         assertEquals("example.com", title)
     }
 
     @Test
     fun unavailableApplicationLabelNeverExposesPackageNameAsTitle() {
-        val title = resolveAutofillCredentialTitle(
-            applicationId = "com.example.hidden",
-            appLabel = "com.example.hidden",
-            domain = null,
-            pageTitle = "com.example.hidden",
-            usernameValue = "account",
-        )
+        val title =
+            resolveAutofillCredentialTitle(
+                applicationId = "com.example.hidden",
+                appLabel = "com.example.hidden",
+                domain = null,
+                pageTitle = "com.example.hidden",
+                usernameValue = "account",
+            )
 
         assertEquals("account", title)
     }

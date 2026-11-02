@@ -18,10 +18,12 @@ import org.junit.Test
 
 class EntryFieldEditorTest {
     private val card = CardCredential(cardHolder = "Before", cardNumber = "4111111111111111", cardCvv = "123", bankBranch = "Old branch")
-    private val entry = Entry(
-        EntryIdentity(EntryId("card"), EntryType.BANK_CARD, timestamps = EntryTimestamps(1)),
-        EntryProfile(title = "Card", username = "profile-user"), EntrySecret(card, notes = "Keep notes"),
-    )
+    private val entry =
+        Entry(
+            EntryIdentity(EntryId("card"), EntryType.BANK_CARD, timestamps = EntryTimestamps(1)),
+            EntryProfile(title = "Card", username = "profile-user"),
+            EntrySecret(card, notes = "Keep notes"),
+        )
 
     @Test
     fun `card number edits reject missing invalid and malformed values`() {
@@ -51,14 +53,15 @@ class EntryFieldEditorTest {
 
     @Test
     fun `each card metadata edit changes only its logical field`() {
-        val expected = listOf(
-            FieldKey.CARD_HOLDER to card.copy(cardHolder = "Updated"),
-            FieldKey.CARD_ISSUING_BANK to card.copy(issuingBank = "Updated"),
-            FieldKey.CARD_BANK_BRANCH to card.copy(bankBranch = "Updated"),
-            FieldKey.CARD_PRODUCT to card.copy(cardProduct = "Updated"),
-            FieldKey.CARD_CURRENCY to card.copy(currency = "Updated"),
-            FieldKey.CARD_BANK_PHONE to card.copy(bankPhone = "Updated"),
-        )
+        val expected =
+            listOf(
+                FieldKey.CARD_HOLDER to card.copy(cardHolder = "Updated"),
+                FieldKey.CARD_ISSUING_BANK to card.copy(issuingBank = "Updated"),
+                FieldKey.CARD_BANK_BRANCH to card.copy(bankBranch = "Updated"),
+                FieldKey.CARD_PRODUCT to card.copy(cardProduct = "Updated"),
+                FieldKey.CARD_CURRENCY to card.copy(currency = "Updated"),
+                FieldKey.CARD_BANK_PHONE to card.copy(bankPhone = "Updated"),
+            )
         for ((field, credential) in expected) {
             val result = EntryFieldEditor.edit(entry, field, " Updated ") as EntryEditResult.Updated
             assertEquals(entry.copy(secret = entry.secret.copy(credential = credential)), result.entry)
@@ -74,7 +77,11 @@ class EntryFieldEditorTest {
 
     @Test
     fun `fields from another credential type are rejected without creating a replacement credential`() {
-        val login = entry.copy(identity = entry.identity.copy(type = EntryType.LOGIN), secret = EntrySecret(LoginCredential(password = "keep")))
+        val login =
+            entry.copy(
+                identity = entry.identity.copy(type = EntryType.LOGIN),
+                secret = EntrySecret(LoginCredential(password = "keep")),
+            )
         assertEquals(EntryEditResult.Unsupported, EntryFieldEditor.edit(login, FieldKey.CARD_NUMBER, "5555555555554444"))
         assertEquals(EntryEditResult.Unsupported, EntryFieldEditor.edit(entry, FieldKey.PASSWORD, "new"))
         assertEquals(EntryEditResult.Unsupported, EntryFieldEditor.edit(entry, FieldKey.USERNAME, "new"))

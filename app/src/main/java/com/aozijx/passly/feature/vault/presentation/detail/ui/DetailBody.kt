@@ -1,10 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,14 +13,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
-import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
+import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.ActivityTimelineSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.AssociatedInfoSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.BankCardSection
@@ -58,23 +58,31 @@ fun DetailBody(
 
     Column(modifier = modifier.fillMaxSize()) {
         when (model.snapshotState) {
-            DetailSnapshotState.RefreshingAfterRestore -> Text(
-                text = stringResource(R.string.vault_detail_refreshing_after_restore),
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            DetailSnapshotState.RefreshFailedAfterRestore -> Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            ) {
+            DetailSnapshotState.RefreshingAfterRestore -> {
                 Text(
-                    text = stringResource(R.string.vault_detail_refresh_failed_after_restore),
-                    color = MaterialTheme.colorScheme.error,
+                    text = stringResource(R.string.vault_detail_refreshing_after_restore),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = { onAction(DetailUiAction.RetrySnapshotRefresh) }) {
-                    Text(stringResource(R.string.retry))
+            }
+
+            DetailSnapshotState.RefreshFailedAfterRestore -> {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.vault_detail_refresh_failed_after_restore),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    TextButton(onClick = { onAction(DetailUiAction.RetrySnapshotRefresh) }) {
+                        Text(stringResource(R.string.retry))
+                    }
                 }
             }
-            else -> Unit
+
+            else -> {
+                Unit
+            }
         }
 
         DetailScrollableContent(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -244,9 +252,12 @@ fun DetailBody(
     if (showPackagePicker) {
         AppPackagePickerBottomSheet(
             apps = model.packagePickerApps,
-            loadErrorMessage = if (model.packagePickerAppsLoadFailed) {
-                stringResource(R.string.app_package_picker_load_failed)
-            } else null,
+            loadErrorMessage =
+                if (model.packagePickerAppsLoadFailed) {
+                    stringResource(R.string.app_package_picker_load_failed)
+                } else {
+                    null
+                },
             onRetry = { onAction(DetailUiAction.LoadPackagePickerApps) },
             appIcon = { rememberInstalledAppIconBitmap(it) },
             onSelect = {

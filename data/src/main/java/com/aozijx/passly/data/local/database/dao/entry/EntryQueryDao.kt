@@ -6,22 +6,21 @@ import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 import com.aozijx.passly.data.local.database.entity.EntryActivityEntity
-import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.model.EntryPagingRow
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EntryQueryDao {
-
     // ---- observe (Flow) ----
 
     @Query("SELECT * FROM entries WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun observeDeleted(): Flow<List<EntryEntity>>
 
     @RawQuery(
-        observedEntities = [EntryEntity::class, EntryActivityEntity::class, EntryLinkEntity::class]
+        observedEntities = [EntryEntity::class, EntryActivityEntity::class, EntryLinkEntity::class],
     )
     fun paging(query: SupportSQLiteQuery): PagingSource<Int, EntryPagingRow>
 
@@ -59,7 +58,7 @@ interface EntryQueryDao {
           )
         ORDER BY updatedAt DESC
         LIMIT :limit
-        """
+        """,
     )
     suspend fun getAutofillCandidatesByApplicationId(
         applicationId: String,
@@ -80,7 +79,7 @@ interface EntryQueryDao {
           )
         ORDER BY updatedAt DESC
         LIMIT :limit
-        """
+        """,
     )
     suspend fun getAutofillCandidatesByDomain(
         domain: String,
@@ -97,5 +96,4 @@ interface EntryQueryDao {
 
     @Query("SELECT COUNT(*) FROM entries WHERE iconCustomReference = :path")
     suspend fun countByIconCustomReference(path: String): Int
-
 }

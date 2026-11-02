@@ -61,7 +61,8 @@ class CredentialAttemptLimiterTest {
         assertNull(limiter.beforeAttempt(AuthenticationMethod.RECOVERY_CODE, request))
     }
 
-    private fun request() = AuthenticationRequest(
-        purpose = AuthenticationPurpose.UNLOCK_VAULT,
-    )
+    private fun request() =
+        AuthenticationRequest(
+            purpose = AuthenticationPurpose.UNLOCK_VAULT,
+        )
 }

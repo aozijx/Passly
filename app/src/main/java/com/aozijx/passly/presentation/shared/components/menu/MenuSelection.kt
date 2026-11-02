@@ -38,13 +38,13 @@ fun MenuOptionText(
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     selectedColor: Color = MaterialTheme.colorScheme.primary,
-    unselectedColor: Color = MaterialTheme.colorScheme.onSurface
+    unselectedColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Text(
         text = text,
         style = style,
         color = if (selected) selectedColor else unselectedColor,
         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        modifier = modifier
+        modifier = modifier,
     )
 }

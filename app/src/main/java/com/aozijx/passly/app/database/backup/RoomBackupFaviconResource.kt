@@ -13,7 +13,11 @@ internal object RoomBackupFaviconResource {
         val content: ByteArray,
     )
 
-    fun export(entryId: String, iconPath: String, iconRoot: File): Exported? {
+    fun export(
+        entryId: String,
+        iconPath: String,
+        iconRoot: File,
+    ): Exported? {
         val root = iconRoot.canonicalFile
         val iconFile = File(iconPath).canonicalFile
         require(iconFile != root && iconFile.toPath().startsWith(root.toPath())) {
@@ -29,15 +33,16 @@ internal object RoomBackupFaviconResource {
 
         val content = iconFile.readBytes()
         return Exported(
-            record = BackupResourceRecord(
-                id = "icon_$entryId",
-                entryId = entryId,
-                kind = BackupResourceKind.ICON,
-                fileName = iconFile.name,
-                mimeType = MIME_TYPE_WEBP,
-                size = content.size.toLong(),
-                sha256 = BackupBundleValidator.sha256Hex(content),
-            ),
+            record =
+                BackupResourceRecord(
+                    id = "icon_$entryId",
+                    entryId = entryId,
+                    kind = BackupResourceKind.ICON,
+                    fileName = iconFile.name,
+                    mimeType = MIME_TYPE_WEBP,
+                    size = content.size.toLong(),
+                    sha256 = BackupBundleValidator.sha256Hex(content),
+                ),
             content = content,
         )
     }
@@ -51,12 +56,13 @@ internal object RoomBackupFaviconResource {
         require(record.kind == BackupResourceKind.ICON) { "资源不是图标: ${record.id}" }
         require(record.mimeType == MIME_TYPE_WEBP) { "图标不是 WebP 格式: ${record.id}" }
         val root = iconRoot.canonicalFile.apply { mkdirs() }
-        val target = File(
-            root,
-            "favicon_restored_${
-                BackupBundleValidator.sha256Hex(record.id.toByteArray()).take(32)
-            }.webp",
-        )
+        val target =
+            File(
+                root,
+                "favicon_restored_${
+                    BackupBundleValidator.sha256Hex(record.id.toByteArray()).take(32)
+                }.webp",
+            )
         fileJournal.replace(target, content)
         return target.canonicalFile
     }

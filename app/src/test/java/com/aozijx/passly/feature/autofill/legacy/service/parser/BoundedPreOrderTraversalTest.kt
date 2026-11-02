@@ -12,12 +12,13 @@ class BoundedPreOrderTraversalTest {
         val second = node("second")
         val visited = mutableListOf<String>()
 
-        val result = traverseBoundedPreOrder(
-            roots = listOf(first, second),
-            maxDepth = 8,
-            maxNodes = 16,
-            children = Node::children,
-        ) { visited += it.name }
+        val result =
+            traverseBoundedPreOrder(
+                roots = listOf(first, second),
+                maxDepth = 8,
+                maxNodes = 16,
+                children = Node::children,
+            ) { visited += it.name }
 
         assertEquals(listOf("first", "first-child", "second-child", "second"), visited)
         assertEquals(4, result.visitedCount)
@@ -28,12 +29,13 @@ class BoundedPreOrderTraversalTest {
     fun `stops at the node budget and reports truncation`() {
         val visited = mutableListOf<String>()
 
-        val result = traverseBoundedPreOrder(
-            roots = listOf(node("one"), node("two"), node("three")),
-            maxDepth = 8,
-            maxNodes = 2,
-            children = Node::children,
-        ) { visited += it.name }
+        val result =
+            traverseBoundedPreOrder(
+                roots = listOf(node("one"), node("two"), node("three")),
+                maxDepth = 8,
+                maxNodes = 2,
+                children = Node::children,
+            ) { visited += it.name }
 
         assertEquals(listOf("one", "two"), visited)
         assertEquals(2, result.visitedCount)
@@ -45,12 +47,13 @@ class BoundedPreOrderTraversalTest {
         val visited = mutableListOf<String>()
         val root = node("root", node("child", node("too-deep")))
 
-        val result = traverseBoundedPreOrder(
-            roots = listOf(root),
-            maxDepth = 1,
-            maxNodes = 16,
-            children = Node::children,
-        ) { visited += it.name }
+        val result =
+            traverseBoundedPreOrder(
+                roots = listOf(root),
+                maxDepth = 1,
+                maxNodes = 16,
+                children = Node::children,
+            ) { visited += it.name }
 
         assertEquals(listOf("root", "child"), visited)
         assertTrue(result.truncated)
@@ -61,5 +64,8 @@ class BoundedPreOrderTraversalTest {
         val children: List<Node>,
     )
 
-    private fun node(name: String, vararg children: Node) = Node(name, children.toList())
+    private fun node(
+        name: String,
+        vararg children: Node,
+    ) = Node(name, children.toList())
 }

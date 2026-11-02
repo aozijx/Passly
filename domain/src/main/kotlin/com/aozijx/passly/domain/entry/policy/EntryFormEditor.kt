@@ -8,43 +8,53 @@ import com.aozijx.passly.domain.entry.model.EntryType
 class EntryFormEditor(
     private val materializer: EntryDraftMaterializer = EntryDraftMaterializer(),
 ) {
-    fun apply(entry: Entry, draft: EntryDraft): EntryEditResult {
+    fun apply(
+        entry: Entry,
+        draft: EntryDraft,
+    ): EntryEditResult {
         if (entry.type != draft.type) return EntryEditResult.Unsupported
 
-        val replacement = try {
-            materializer.materialize(draft, entry.identity)
-        } catch (_: UnsupportedEntryDraft) {
-            return EntryEditResult.Unsupported
-        } catch (invalid: InvalidEntryDraft) {
-            val required = draft.missingRequiredFields(EntryTypeDefinitions[draft.type])
-            return EntryEditResult.Invalid(
-                invalid.fields.mapTo(linkedSetOf()) { field ->
-                    EntryViolation(
-                        field = field,
-                        code = if (field in required) EntryViolationCode.REQUIRED
-                        else EntryViolationCode.INVALID_FORMAT,
-                    )
-                },
-            )
-        }
+        val replacement =
+            try {
+                materializer.materialize(draft, entry.identity)
+            } catch (_: UnsupportedEntryDraft) {
+                return EntryEditResult.Unsupported
+            } catch (invalid: InvalidEntryDraft) {
+                val required = draft.missingRequiredFields(EntryTypeDefinitions[draft.type])
+                return EntryEditResult.Invalid(
+                    invalid.fields.mapTo(linkedSetOf()) { field ->
+                        EntryViolation(
+                            field = field,
+                            code =
+                                if (field in required) {
+                                    EntryViolationCode.REQUIRED
+                                } else {
+                                    EntryViolationCode.INVALID_FORMAT
+                                },
+                        )
+                    },
+                )
+            }
 
-        val profile = replacement.profile.copy(
-            username = if (draft.type == EntryType.LOGIN) replacement.profile.username else entry.profile.username,
-            associations = if (draft.type == EntryType.LOGIN) {
-                replacement.profile.associations.copy(domains = entry.profile.associations.domains)
-            } else {
-                entry.profile.associations
-            },
-            icon = entry.profile.icon,
-            favorite = entry.profile.favorite,
-            expiresAtMs = entry.profile.expiresAtMs,
-        )
-        val updated = replacement.copy(
-            profile = profile,
-            secret = replacement.secret.copy(customFields = entry.secret.customFields),
-        )
+        val profile =
+            replacement.profile.copy(
+                username = if (draft.type == EntryType.LOGIN) replacement.profile.username else entry.profile.username,
+                associations =
+                    if (draft.type == EntryType.LOGIN) {
+                        replacement.profile.associations.copy(domains = entry.profile.associations.domains)
+                    } else {
+                        entry.profile.associations
+                    },
+                icon = entry.profile.icon,
+                favorite = entry.profile.favorite,
+                expiresAtMs = entry.profile.expiresAtMs,
+            )
+        val updated =
+            replacement.copy(
+                profile = profile,
+                secret = replacement.secret.copy(customFields = entry.secret.customFields),
+            )
         val violations = EntryValidation.validate(updated)
         return if (violations.isEmpty()) EntryEditResult.Updated(updated) else EntryEditResult.Invalid(violations)
     }
-
 }

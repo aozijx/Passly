@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -32,14 +32,14 @@ fun SegmentedSettingsGroup(
 ) {
     val enterTransition =
         fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                expandVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
-                )
+            expandVertically(
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>(),
+            )
     val exitTransition =
         fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                shrinkVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>()
-                )
+            shrinkVertically(
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntSize>(),
+            )
     val keys = HashSet<String>(items.size)
     var visibleCount = 0
     items.forEach { item ->
@@ -61,7 +61,7 @@ fun SegmentedSettingsGroup(
                 AnimatedVisibility(
                     visible = item.visible,
                     enter = enterTransition,
-                    exit = exitTransition
+                    exit = exitTransition,
                 ) {
                     Column {
                         item.content(shapes)
@@ -76,10 +76,9 @@ fun SegmentedSettingsGroup(
 }
 
 @Composable
-internal fun settingsSegmentedColors(
-    selectedContainerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
-): ListItemColors = ListItemDefaults.segmentedColors(
-    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    selectedContainerColor = selectedContainerColor,
-)
+internal fun settingsSegmentedColors(selectedContainerColor: Color = MaterialTheme.colorScheme.secondaryContainer): ListItemColors =
+    ListItemDefaults.segmentedColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        selectedContainerColor = selectedContainerColor,
+    )

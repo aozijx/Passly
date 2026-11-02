@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.backup.internal.model
 
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.ImportMode
+import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 
 data class BackupExportOptions(
     val includeIcons: Boolean = true,
     val includeAttachments: Boolean = true,
     val includeDeleted: Boolean = true,
-    val includedEntryTypes: Set<EntryType> = BackupArchiveKeyRegistry.archiveEntryTypes
+    val includedEntryTypes: Set<EntryType> = BackupArchiveKeyRegistry.archiveEntryTypes,
 ) {
     init {
         require(includedEntryTypes.isNotEmpty()) {
@@ -28,7 +28,7 @@ class BackupExportRequest(
     val targetUri: String,
     val format: BackupFormatId,
     val password: CharArray? = null,
-    val options: BackupExportOptions = BackupExportOptions()
+    val options: BackupExportOptions = BackupExportOptions(),
 )
 
 /**

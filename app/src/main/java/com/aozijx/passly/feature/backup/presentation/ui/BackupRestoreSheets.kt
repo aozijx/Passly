@@ -15,21 +15,32 @@ internal fun BackupRestoreSheet(
     onAction: (BackupUiAction) -> Unit,
 ) {
     when (state) {
-        BackupRestoreSheetUiState.Hidden -> return
-        BackupRestoreSheetUiState.FormatPicker -> BackupSheetFrame(
-            onDismiss = { onAction(BackupUiAction.DismissOptions) },
-        ) {
-            BackupFormatPickerContent { onAction(BackupUiAction.SelectExportFormat(it)) }
+        BackupRestoreSheetUiState.Hidden -> {
+            return
         }
-        is BackupRestoreSheetUiState.ExportOptions -> BackupSheetFrame(
-            onDismiss = { onAction(BackupUiAction.DismissOptions) },
-        ) {
-            BackupExportOptionsContent(state, onAction)
+
+        BackupRestoreSheetUiState.FormatPicker -> {
+            BackupSheetFrame(
+                onDismiss = { onAction(BackupUiAction.DismissOptions) },
+            ) {
+                BackupFormatPickerContent { onAction(BackupUiAction.SelectExportFormat(it)) }
+            }
         }
-        is BackupRestoreSheetUiState.ImportOptions -> BackupSheetFrame(
-            onDismiss = { onAction(BackupUiAction.DismissOptions) },
-        ) {
-            BackupImportOptionsContent(state, onAction)
+
+        is BackupRestoreSheetUiState.ExportOptions -> {
+            BackupSheetFrame(
+                onDismiss = { onAction(BackupUiAction.DismissOptions) },
+            ) {
+                BackupExportOptionsContent(state, onAction)
+            }
+        }
+
+        is BackupRestoreSheetUiState.ImportOptions -> {
+            BackupSheetFrame(
+                onDismiss = { onAction(BackupUiAction.DismissOptions) },
+            ) {
+                BackupImportOptionsContent(state, onAction)
+            }
         }
     }
 }
@@ -42,10 +53,11 @@ private fun BackupSheetFrame(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
+        sheetState =
+            rememberBottomSheetState(
+                initialValue = SheetValue.Hidden,
+                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+            ),
         content = { content() },
     )
 }

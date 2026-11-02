@@ -24,13 +24,14 @@ internal fun rememberPullToSearchNestedScrollConnection(
     val currentEnabled by rememberUpdatedState(enabled)
     val currentOnProgressChanged by rememberUpdatedState(onProgressChanged)
     val currentOnTriggered by rememberUpdatedState(onTriggered)
-    val gestureState = remember(thresholdPx) {
-        PullToSearchGestureState(
-            thresholdPx = thresholdPx,
-            onProgressChanged = { currentOnProgressChanged(it) },
-            onTriggered = { currentOnTriggered() },
-        )
-    }
+    val gestureState =
+        remember(thresholdPx) {
+            PullToSearchGestureState(
+                thresholdPx = thresholdPx,
+                onProgressChanged = { currentOnProgressChanged(it) },
+                onTriggered = { currentOnTriggered() },
+            )
+        }
 
     LaunchedEffect(enabled, gestureState) {
         if (!enabled) gestureState.reset()
@@ -53,10 +54,11 @@ internal fun rememberPullToSearchNestedScrollConnection(
                 source: NestedScrollSource,
             ): Offset {
                 if (currentEnabled && source == NestedScrollSource.UserInput) {
-                    val consumedY = gestureState.onPostScroll(
-                        deltaY = available.y,
-                        isAtTop = !gridState.canScrollBackward,
-                    )
+                    val consumedY =
+                        gestureState.onPostScroll(
+                            deltaY = available.y,
+                            isAtTop = !gridState.canScrollBackward,
+                        )
                     return Offset(x = 0f, y = consumedY)
                 } else {
                     gestureState.reset()
@@ -64,9 +66,7 @@ internal fun rememberPullToSearchNestedScrollConnection(
                 return Offset.Zero
             }
 
-            override suspend fun onPreFling(
-                available: Velocity,
-            ): Velocity {
+            override suspend fun onPreFling(available: Velocity): Velocity {
                 if (currentEnabled) {
                     gestureState.onRelease()
                 } else {

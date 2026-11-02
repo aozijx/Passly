@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface EntryActivityQueryDao {
-
     // ---- observe (Flow) ----
 
     @Query("SELECT * FROM entry_activities WHERE entryId = :entryId ORDER BY createdAt DESC, activityId DESC")
@@ -32,13 +31,13 @@ interface EntryActivityQueryDao {
     @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun observeUsageForEntry(
         entryId: String,
-        types: List<ActivityType>
+        types: List<ActivityType>,
     ): Flow<List<EntryActivityEntity>>
 
     @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun observeMutationForEntry(
         entryId: String,
-        types: List<ActivityType>
+        types: List<ActivityType>,
     ): Flow<List<EntryActivityEntity>>
 
     @Query("SELECT * FROM entry_activities WHERE activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
@@ -58,13 +57,13 @@ interface EntryActivityQueryDao {
     @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun pagingUsageForEntry(
         entryId: String,
-        types: List<ActivityType>
+        types: List<ActivityType>,
     ): PagingSource<Int, EntryActivityEntity>
 
     @Query("SELECT * FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types) ORDER BY createdAt DESC, activityId DESC")
     fun pagingMutationForEntry(
         entryId: String,
-        types: List<ActivityType>
+        types: List<ActivityType>,
     ): PagingSource<Int, EntryActivityEntity>
 
     // ---- get (suspend) ----
@@ -89,11 +88,20 @@ interface EntryActivityQueryDao {
     suspend fun countByEntryId(entryId: String): Int
 
     @Query("SELECT COUNT(*) FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types)")
-    suspend fun countUsageByEntryId(entryId: String, types: List<ActivityType>): Int
+    suspend fun countUsageByEntryId(
+        entryId: String,
+        types: List<ActivityType>,
+    ): Int
 
     @Query("SELECT COUNT(*) FROM entry_activities WHERE entryId = :entryId AND activityType IN (:types)")
-    suspend fun countMutationByEntryId(entryId: String, types: List<ActivityType>): Int
+    suspend fun countMutationByEntryId(
+        entryId: String,
+        types: List<ActivityType>,
+    ): Int
 
     @Query("SELECT COUNT(*) FROM entry_activities WHERE entryId = :entryId AND activityType = :activityType")
-    suspend fun countByEntryIdAndType(entryId: String, activityType: ActivityType): Int
+    suspend fun countByEntryIdAndType(
+        entryId: String,
+        activityType: ActivityType,
+    ): Int
 }

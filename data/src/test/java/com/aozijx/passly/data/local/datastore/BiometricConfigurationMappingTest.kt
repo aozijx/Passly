@@ -10,22 +10,32 @@ import org.junit.Test
 class BiometricConfigurationMappingTest {
     @Test
     fun `prepared rotation cannot pretend to be a committed configuration`() {
-        val data = BootstrapData.newBuilder().setBiometricRotation(
-            BiometricRotationJournal.newBuilder().setCandidateAlias("candidate")
-                .setPhase(BiometricRotationJournal.Phase.PREPARED),
-        ).build()
+        val data =
+            BootstrapData
+                .newBuilder()
+                .setBiometricRotation(
+                    BiometricRotationJournal
+                        .newBuilder()
+                        .setCandidateAlias("candidate")
+                        .setPhase(BiometricRotationJournal.Phase.PREPARED),
+                ).build()
         assertEquals(BiometricConfiguration.NotConfigured, readBiometricConfiguration(data))
     }
 
     @Test
     fun `projection uses committed policy regardless of rotation journal`() {
         for (policy in listOf(false, true)) {
-            val data = BootstrapData.newBuilder().setBiometricBinding(
-                BiometricBinding.newBuilder().setActiveAlias("active").setInvalidateOnEnrollment(policy),
-            ).setBiometricRotation(
-                BiometricRotationJournal.newBuilder().setCandidateAlias("candidate")
-                    .setPhase(BiometricRotationJournal.Phase.PREPARED),
-            ).build()
+            val data =
+                BootstrapData
+                    .newBuilder()
+                    .setBiometricBinding(
+                        BiometricBinding.newBuilder().setActiveAlias("active").setInvalidateOnEnrollment(policy),
+                    ).setBiometricRotation(
+                        BiometricRotationJournal
+                            .newBuilder()
+                            .setCandidateAlias("candidate")
+                            .setPhase(BiometricRotationJournal.Phase.PREPARED),
+                    ).build()
             assertEquals(BiometricConfiguration.Configured(policy), readBiometricConfiguration(data))
         }
     }

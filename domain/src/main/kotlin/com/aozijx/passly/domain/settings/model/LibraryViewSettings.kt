@@ -1,13 +1,13 @@
 package com.aozijx.passly.domain.settings.model
 
-import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntrySort
 
 data class LibraryViewSettings(
     val sort: EntrySort,
     val entryCardPresentations: List<EntryCardPresentation> = emptyList(),
     val entryHierarchyDisplayMode: EntryHierarchyDisplayMode =
-        EntryHierarchyDisplayMode.COLLAPSED
+        EntryHierarchyDisplayMode.COLLAPSED,
 )
 
 data class EntryCardPresentation(
@@ -17,7 +17,7 @@ data class EntryCardPresentation(
     val showIcon: Boolean = true,
     val showFavorite: Boolean = true,
     val showSecondaryText: Boolean = true,
-    val showQuickAction: Boolean = true
+    val showQuickAction: Boolean = true,
 )
 
 enum class CardDensity { COMPACT, STANDARD, COMFORTABLE }

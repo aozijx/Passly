@@ -14,14 +14,14 @@ class EntryLinkPolicyTest {
                 EntryRelationType.MEMBER_OF_ACCOUNT,
                 EntryType.LOGIN,
                 EntryType.ACCOUNT,
-            )
+            ),
         )
         assertFalse(
             EntryLinkPolicy.isAllowed(
                 EntryRelationType.MEMBER_OF_ACCOUNT,
                 EntryType.ACCOUNT,
                 EntryType.LOGIN,
-            )
+            ),
         )
     }
 
@@ -32,28 +32,28 @@ class EntryLinkPolicyTest {
                 EntryRelationType.OTP_FOR,
                 EntryType.OTP,
                 EntryType.LOGIN,
-            )
+            ),
         )
         assertTrue(
             EntryLinkPolicy.isAllowed(
                 EntryRelationType.RECOVERY_FOR,
                 EntryType.RECOVERY_CODE,
                 EntryType.LOGIN,
-            )
+            ),
         )
         assertFalse(
             EntryLinkPolicy.isAllowed(
                 EntryRelationType.OTP_FOR,
                 EntryType.LOGIN,
                 EntryType.OTP,
-            )
+            ),
         )
         assertFalse(
             EntryLinkPolicy.isAllowed(
                 EntryRelationType.RECOVERY_FOR,
                 EntryType.RECOVERY_CODE,
                 EntryType.ACCOUNT,
-            )
+            ),
         )
     }
 
@@ -64,7 +64,7 @@ class EntryLinkPolicyTest {
                 EntryRelationType.RELATED_TO,
                 EntryType.ACCOUNT,
                 EntryType.OTP,
-            )
+            ),
         )
     }
 }

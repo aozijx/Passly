@@ -8,7 +8,9 @@ import com.aozijx.passly.domain.autofill.port.AutofillHintProvider
 /**
  * Priority 1: Standard Autofill Hints (Highest confidence)
  */
-class StandardHintRule(private val hintProvider: AutofillHintProvider) : FieldRoleClassifier {
+class StandardHintRule(
+    private val hintProvider: AutofillHintProvider,
+) : FieldRoleClassifier {
     override fun classify(field: AutofillField): FieldRole {
         val hintRoleMap = hintProvider.getHintRoleMap()
         for (hint in field.hints) {
@@ -21,7 +23,9 @@ class StandardHintRule(private val hintProvider: AutofillHintProvider) : FieldRo
 /**
  * Priority 2: Input Type (High confidence for passwords)
  */
-class InputTypeRule(private val confirmationPattern: Regex) : FieldRoleClassifier {
+class InputTypeRule(
+    private val confirmationPattern: Regex,
+) : FieldRoleClassifier {
     override fun classify(field: AutofillField): FieldRole {
         val inputType = field.inputType.orEmpty()
         val isPwdType = AutofillConstants.PASSWORD_INPUT_TYPES.any { it in inputType }
@@ -31,8 +35,9 @@ class InputTypeRule(private val confirmationPattern: Regex) : FieldRoleClassifie
             val resourceId = field.resourceId.orEmpty()
             val rawId = resourceId.substringAfterLast("/", resourceId)
             val combinedText = "${field.hint.orEmpty()} ${field.contentDescription.orEmpty()}".lowercase()
-            val isConfirmation = confirmationPattern.containsMatchIn(rawId) ||
-                                confirmationPattern.containsMatchIn(combinedText)
+            val isConfirmation =
+                confirmationPattern.containsMatchIn(rawId) ||
+                    confirmationPattern.containsMatchIn(combinedText)
             return if (isConfirmation) FieldRole.UNKNOWN else FieldRole.PASSWORD
         }
         if (isUserType) return FieldRole.USERNAME
@@ -48,7 +53,7 @@ class IdKeywordRule(
     private val usernamePattern: Regex,
     private val passwordPattern: Regex,
     private val otpPattern: Regex,
-    private val confirmationPattern: Regex
+    private val confirmationPattern: Regex,
 ) : FieldRoleClassifier {
     override fun classify(field: AutofillField): FieldRole {
         val rawId = field.resourceId.orEmpty()
@@ -56,8 +61,9 @@ class IdKeywordRule(
 
         if (passwordPattern.containsMatchIn(shortId)) {
             val combinedText = "${field.hint.orEmpty()} ${field.contentDescription.orEmpty()}".lowercase()
-            val isConfirmation = confirmationPattern.containsMatchIn(shortId) ||
-                                confirmationPattern.containsMatchIn(combinedText)
+            val isConfirmation =
+                confirmationPattern.containsMatchIn(shortId) ||
+                    confirmationPattern.containsMatchIn(combinedText)
             return if (isConfirmation) FieldRole.UNKNOWN else FieldRole.PASSWORD
         }
         if (otpPattern.containsMatchIn(shortId)) return FieldRole.OTP
@@ -75,7 +81,7 @@ class TextContentRule(
     private val passwordPattern: Regex,
     private val otpPattern: Regex,
     private val confirmationPattern: Regex,
-    private val submitPattern: Regex
+    private val submitPattern: Regex,
 ) : FieldRoleClassifier {
     override fun classify(field: AutofillField): FieldRole {
         val className = field.className.orEmpty().lowercase()
@@ -88,8 +94,9 @@ class TextContentRule(
         val isButtonLike = className.contains("button") || className.contains("imageview")
         if (!isButtonLike) {
             if (passwordPattern.containsMatchIn(combinedText)) {
-                val isConfirmation = confirmationPattern.containsMatchIn(rawId) ||
-                                    confirmationPattern.containsMatchIn(combinedText)
+                val isConfirmation =
+                    confirmationPattern.containsMatchIn(rawId) ||
+                        confirmationPattern.containsMatchIn(combinedText)
                 return if (isConfirmation) FieldRole.UNKNOWN else FieldRole.PASSWORD
             }
             if (usernamePattern.containsMatchIn(combinedText)) return FieldRole.USERNAME

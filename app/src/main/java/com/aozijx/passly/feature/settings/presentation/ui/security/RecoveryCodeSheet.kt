@@ -36,18 +36,19 @@ fun RecoveryCodeSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = stringResource(R.string.recovery_code_label),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -56,22 +57,24 @@ fun RecoveryCodeSheet(
                 text = stringResource(R.string.settings_recovery_code_warning),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = recoveryCode,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 2.sp
-                ),
+                style =
+                    MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 2.sp,
+                    ),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -84,7 +87,7 @@ fun RecoveryCodeSheet(
                 onClick = onCopy,
                 enabled = !isCommitting,
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
             ) {
                 Text(stringResource(R.string.settings_recovery_code_copy))
             }
@@ -95,7 +98,7 @@ fun RecoveryCodeSheet(
                 onClick = onConfirm,
                 enabled = !isCommitting,
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
             ) {
                 Text(stringResource(R.string.settings_recovery_code_confirm_saved))
             }
@@ -105,11 +108,11 @@ fun RecoveryCodeSheet(
             TextButton(
                 onClick = onDismiss,
                 enabled = !isCommitting,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     stringResource(R.string.settings_recovery_code_discard_draft),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

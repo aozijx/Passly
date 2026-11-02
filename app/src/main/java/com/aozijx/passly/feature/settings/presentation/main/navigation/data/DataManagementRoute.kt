@@ -19,8 +19,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetRoute
@@ -71,16 +71,25 @@ internal fun DataManagementRoute(
     ) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
             when (effect) {
-                StorageSettingsEffect.CacheCleared ->
+                StorageSettingsEffect.CacheCleared -> {
                     Toast.makeText(context, cacheClearedMessage, Toast.LENGTH_SHORT).show()
-                StorageSettingsEffect.CacheClearFailed ->
+                }
+
+                StorageSettingsEffect.CacheClearFailed -> {
                     Toast.makeText(context, cacheClearFailedMessage, Toast.LENGTH_SHORT).show()
-                StorageSettingsEffect.LogsCleared ->
+                }
+
+                StorageSettingsEffect.LogsCleared -> {
                     Toast.makeText(context, logsClearedMessage, Toast.LENGTH_SHORT).show()
-                StorageSettingsEffect.LogClearFailed ->
+                }
+
+                StorageSettingsEffect.LogClearFailed -> {
                     Toast.makeText(context, logClearFailedMessage, Toast.LENGTH_SHORT).show()
-                StorageSettingsEffect.LogRecordingSettingsSaveFailed ->
+                }
+
+                StorageSettingsEffect.LogRecordingSettingsSaveFailed -> {
                     Toast.makeText(context, logRecordingSettingsSaveFailedMessage, Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

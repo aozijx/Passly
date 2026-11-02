@@ -1,20 +1,31 @@
 package com.aozijx.passly.feature.vault.presentation.navigation
 
 import com.aozijx.passly.app.navigation.AppRoute
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
-import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 
 internal sealed interface VaultDestinationRequest {
     data object OpenSettings : VaultDestinationRequest
-    data class OpenDetail(val entryId: String) : VaultDestinationRequest
-    data class OpenEditor(val type: VaultAddTypeUiModel) : VaultDestinationRequest
-    data class EditScannedWifi(val payload: WifiQrPayload) : VaultDestinationRequest
+
+    data class OpenDetail(
+        val entryId: String,
+    ) : VaultDestinationRequest
+
+    data class OpenEditor(
+        val type: VaultAddTypeUiModel,
+    ) : VaultDestinationRequest
+
+    data class EditScannedWifi(
+        val payload: WifiQrPayload,
+    ) : VaultDestinationRequest
 }
 
 internal sealed interface VaultNavigationResult {
     data object Navigated : VaultNavigationResult
+
     data object UnsupportedDestination : VaultNavigationResult
+
     data object AccessDenied : VaultNavigationResult
 }
 
@@ -25,24 +36,34 @@ internal class VaultNavigation(
 ) {
     fun navigate(request: VaultDestinationRequest): VaultNavigationResult {
         when (request) {
-            VaultDestinationRequest.OpenSettings -> navigateToRoute(AppRoute.Settings.route)
+            VaultDestinationRequest.OpenSettings -> {
+                navigateToRoute(AppRoute.Settings.route)
+            }
+
             is VaultDestinationRequest.OpenDetail -> {
                 navigateToRoute(AppRoute.Detail.createRoute(request.entryId))
             }
+
             is VaultDestinationRequest.OpenEditor -> {
-                val route = VaultEditorDestinationRegistry.routeFor(request.type)
-                    ?: return VaultNavigationResult.UnsupportedDestination
+                val route =
+                    VaultEditorDestinationRegistry.routeFor(request.type)
+                        ?: return VaultNavigationResult.UnsupportedDestination
                 navigateToSingleTopRoute(route)
             }
+
             is VaultDestinationRequest.EditScannedWifi -> {
                 when (
                     val staged = seedStager.stage(EntryEditorSeed.Wifi(request.payload))
                 ) {
-                    is EntryEditorSeedStageResult.Staged -> navigateToSingleTopRoute(
-                        AppRoute.AddWifiFromSeed.createRoute(staged.token.value),
-                    )
-                    EntryEditorSeedStageResult.AccessDenied ->
+                    is EntryEditorSeedStageResult.Staged -> {
+                        navigateToSingleTopRoute(
+                            AppRoute.AddWifiFromSeed.createRoute(staged.token.value),
+                        )
+                    }
+
+                    EntryEditorSeedStageResult.AccessDenied -> {
                         return VaultNavigationResult.AccessDenied
+                    }
                 }
             }
         }

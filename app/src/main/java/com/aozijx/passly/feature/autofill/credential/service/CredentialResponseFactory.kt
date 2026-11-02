@@ -12,8 +12,10 @@ import androidx.credentials.provider.PendingIntentHandler
  * Credential 响应工厂：负责构建 GetCredentialResponse 返回给系统。
  */
 internal object CredentialResponseFactory {
-
-    fun buildPasswordResponse(username: String, password: String): Intent {
+    fun buildPasswordResponse(
+        username: String,
+        password: String,
+    ): Intent {
         val result = Intent()
         PendingIntentHandler.setGetCredentialResponse(
             result,
@@ -22,21 +24,18 @@ internal object CredentialResponseFactory {
         return result
     }
 
-    fun buildGetException(exception: GetCredentialException): Intent {
-        return Intent().also {
+    fun buildGetException(exception: GetCredentialException): Intent =
+        Intent().also {
             PendingIntentHandler.setGetCredentialException(it, exception)
         }
-    }
 
-    fun buildPasswordCreateResponse(): Intent {
-        return Intent().also {
+    fun buildPasswordCreateResponse(): Intent =
+        Intent().also {
             PendingIntentHandler.setCreateCredentialResponse(it, CreatePasswordResponse())
         }
-    }
 
-    fun buildCreateException(exception: CreateCredentialException): Intent {
-        return Intent().also {
+    fun buildCreateException(exception: CreateCredentialException): Intent =
+        Intent().also {
             PendingIntentHandler.setCreateCredentialException(it, exception)
         }
-    }
 }

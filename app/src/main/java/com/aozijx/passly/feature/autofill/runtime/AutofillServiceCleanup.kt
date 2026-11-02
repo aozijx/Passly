@@ -17,8 +17,9 @@ internal fun launchAutofillServiceCleanup(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     cleanup: suspend () -> Unit,
     afterCleanup: () -> Unit = {},
-): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
-    withContext(NonCancellable + dispatcher) { cleanup() }
-    currentCoroutineContext().ensureActive()
-    afterCleanup()
-}
+): Job =
+    scope.launch(start = CoroutineStart.UNDISPATCHED) {
+        withContext(NonCancellable + dispatcher) { cleanup() }
+        currentCoroutineContext().ensureActive()
+        afterCleanup()
+    }

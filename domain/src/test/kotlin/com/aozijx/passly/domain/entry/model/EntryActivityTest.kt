@@ -23,7 +23,10 @@ class EntryActivityTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun `usage event cannot claim to create a content revision`() {
-        EntryActivity(entryId = "entry", activityType = ActivityType.AUTOFILL,
-            context = EntryActivityContext.ContentRevision(EntryVersion(2)))
+        EntryActivity(
+            entryId = "entry",
+            activityType = ActivityType.AUTOFILL,
+            context = EntryActivityContext.ContentRevision(EntryVersion(2)),
+        )
     }
 }

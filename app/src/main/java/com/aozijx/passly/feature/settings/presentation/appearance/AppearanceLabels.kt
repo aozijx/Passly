@@ -23,17 +23,19 @@ fun AppLanguage.localizedDisplayName(): String {
 }
 
 @Composable
-fun languagePickerOptions(): List<LanguageOptionUiModel> = AppLanguage.entries.map { language ->
-    LanguageOptionUiModel(language, language.localizedDisplayName())
-}
+fun languagePickerOptions(): List<LanguageOptionUiModel> =
+    AppLanguage.entries.map { language ->
+        LanguageOptionUiModel(language, language.localizedDisplayName())
+    }
 
 @Composable
-fun AppearanceSettings.toAppearanceUiModel(): AppearanceUiModel = AppearanceUiModel(
-    themeMode = themeMode,
-    isDynamicColor = isDynamicColor,
-    themeKey = themeKey,
-    language = language,
-    languageLabel = language.localizedDisplayName(),
-    languageOptions = languagePickerOptions(),
-    fontFamily = fontFamily,
-)
+fun AppearanceSettings.toAppearanceUiModel(): AppearanceUiModel =
+    AppearanceUiModel(
+        themeMode = themeMode,
+        isDynamicColor = isDynamicColor,
+        themeKey = themeKey,
+        language = language,
+        languageLabel = language.localizedDisplayName(),
+        languageOptions = languagePickerOptions(),
+        fontFamily = fontFamily,
+    )

@@ -16,7 +16,5 @@ internal abstract class CryptoModule {
 
     @Binds
     @Singleton
-    abstract fun bindAttachmentContentProtector(
-        implementation: AttachmentContentCrypto,
-    ): AttachmentContentProtector
+    abstract fun bindAttachmentContentProtector(implementation: AttachmentContentCrypto): AttachmentContentProtector
 }

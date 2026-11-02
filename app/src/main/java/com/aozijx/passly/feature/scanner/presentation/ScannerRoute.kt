@@ -44,9 +44,10 @@ internal fun ScannerRoute(
     val importUnavailableMessage = stringResource(R.string.scanner_import_unavailable)
     val imageNoBarcodeMessage = stringResource(R.string.scanner_image_no_barcode)
     val imageDecodeFailedMessage = stringResource(R.string.scanner_image_decode_failed)
-    val pickPhoto = rememberImagePicker { uri, _ ->
-        viewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
-    }
+    val pickPhoto =
+        rememberImagePicker { uri, _ ->
+            viewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
+        }
 
     LaunchedEffect(viewModel, lifecycleOwner, context, copySucceededMessage, imageNoBarcodeMessage, imageDecodeFailedMessage) {
         collectScannerRouteEffects(
@@ -56,19 +57,21 @@ internal fun ScannerRoute(
             onHostStopped = { viewModel.onAction(ScannerUiAction.HostStopped) },
             onScanSucceeded = {
                 (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
-                    .defaultVibrator.vibrate(
+                    .defaultVibrator
+                    .vibrate(
                         VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE),
                     )
             },
             onUiEffect = { effect ->
-                val message = when (effect) {
-                    ScannerEffect.CopySucceeded -> copySucceededMessage
-                    ScannerEffect.ImageNoBarcode -> imageNoBarcodeMessage
-                    ScannerEffect.ImageDecodeFailed -> imageDecodeFailedMessage
-                    ScannerEffect.ScanSucceeded -> return@collectScannerRouteEffects
-                }
+                val message =
+                    when (effect) {
+                        ScannerEffect.CopySucceeded -> copySucceededMessage
+                        ScannerEffect.ImageNoBarcode -> imageNoBarcodeMessage
+                        ScannerEffect.ImageDecodeFailed -> imageDecodeFailedMessage
+                        ScannerEffect.ScanSucceeded -> return@collectScannerRouteEffects
+                    }
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            }
+            },
         )
     }
 
@@ -84,7 +87,9 @@ internal fun ScannerRoute(
             if (importSession.phase.value == ScannerImportPhase.Closed) return@ScannerScreen
             if (importSession.phase.value == ScannerImportPhase.Importing &&
                 action != ScannerScreenAction.Dismiss && action != ScannerScreenAction.CameraPermissionDenied
-            ) return@ScannerScreen
+            ) {
+                return@ScannerScreen
+            }
             when (action) {
                 ScannerScreenAction.Dismiss,
                 ScannerScreenAction.CameraPermissionDenied,
@@ -93,57 +98,77 @@ internal fun ScannerRoute(
                     onDismiss()
                 }
 
-                is ScannerScreenAction.CameraFailure ->
+                is ScannerScreenAction.CameraFailure -> {
                     viewModel.onAction(ScannerUiAction.CameraFailure(action.error))
+                }
 
                 ScannerScreenAction.PickPhoto -> {
                     viewModel.onAction(ScannerUiAction.StartScanning)
                     pickPhoto(ImageType.SCREEN)
                 }
 
-                ScannerScreenAction.ScanAgain ->
+                ScannerScreenAction.ScanAgain -> {
                     viewModel.onAction(ScannerUiAction.StartScanning)
+                }
 
-                is ScannerScreenAction.BarcodeDetected ->
+                is ScannerScreenAction.BarcodeDetected -> {
                     viewModel.onAction(ScannerUiAction.BarcodeDetected(action.rawValue))
+                }
 
                 ScannerScreenAction.ConfirmResult -> {
                     val result = (state as? ScannerUiState.ShowingResult)?.result ?: return@ScannerScreen
                     when (result) {
                         is ScannerResult.Otp,
                         is ScannerResult.Wifi,
-                        -> when (val resolution = purpose.resolveImport(result)) {
-                            is ScannerImportResolution.Available -> {
-                                scope.launch {
-                                    when (importSession.confirm { onImport(resolution.value) }) {
-                                        ScannerImportOutcome.Applied -> onDismiss()
-                                        ScannerImportOutcome.Ignored -> Unit
-                                        ScannerImportOutcome.Rejected -> Toast.makeText(
-                                            context,
-                                            importUnavailableMessage,
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
+                        -> {
+                            when (val resolution = purpose.resolveImport(result)) {
+                                is ScannerImportResolution.Available -> {
+                                    scope.launch {
+                                        when (importSession.confirm { onImport(resolution.value) }) {
+                                            ScannerImportOutcome.Applied -> {
+                                                onDismiss()
+                                            }
+
+                                            ScannerImportOutcome.Ignored -> {
+                                                Unit
+                                            }
+
+                                            ScannerImportOutcome.Rejected -> {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        importUnavailableMessage,
+                                                        Toast.LENGTH_SHORT,
+                                                    ).show()
+                                            }
+                                        }
                                     }
                                 }
+
+                                ScannerImportResolution.Unavailable -> {
+                                    Unit
+                                }
                             }
-
-                            ScannerImportResolution.Unavailable -> Unit
                         }
 
-                        is ScannerResult.WebLink -> try {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, result.uri.toString().toUri()),
-                            )
-                        } catch (_: Exception) {
-                            Toast.makeText(
-                                context,
-                                openLinkFailedMessage,
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                        is ScannerResult.WebLink -> {
+                            try {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, result.uri.toString().toUri()),
+                                )
+                            } catch (_: Exception) {
+                                Toast
+                                    .makeText(
+                                        context,
+                                        openLinkFailedMessage,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                            }
                         }
 
-                        is ScannerResult.PlainText ->
+                        is ScannerResult.PlainText -> {
                             viewModel.onAction(ScannerUiAction.CopyText)
+                        }
                     }
                 }
             }

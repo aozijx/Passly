@@ -19,33 +19,35 @@ internal suspend fun runAppPasswordProvisioning(
     requestId: String,
     persist: suspend () -> Unit,
     reconcileSession: suspend () -> Unit,
-): AuthenticationResult = try {
-    persist()
-    reconcileSession()
-    AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
-} catch (cancelled: CancellationException) {
-    throw cancelled
-} catch (_: Exception) {
-    if (hasCommittedAppPasswordEnvelope(store, salt)) {
+): AuthenticationResult =
+    try {
+        persist()
+        reconcileSession()
         AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
-    } else {
-        AuthenticationResult.Failure(
-            AuthenticationFailure(
-                AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
-                AuthenticationRequestId(requestId),
-            ),
-        )
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        if (hasCommittedAppPasswordEnvelope(store, salt)) {
+            AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+        } else {
+            AuthenticationResult.Failure(
+                AuthenticationFailure(
+                    AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
+                    AuthenticationRequestId(requestId),
+                ),
+            )
+        }
     }
-}
 
 private suspend fun hasCommittedAppPasswordEnvelope(
     store: VaultBootstrapStore,
     salt: ByteArray,
-): Boolean = withContext(NonCancellable) {
-    val persisted = store.load(EnvelopeType.APP_PASSWORD) ?: return@withContext false
-    try {
-        persisted.salt.contentEquals(salt)
-    } finally {
-        KeyEnvelope.destroy(persisted)
+): Boolean =
+    withContext(NonCancellable) {
+        val persisted = store.load(EnvelopeType.APP_PASSWORD) ?: return@withContext false
+        try {
+            persisted.salt.contentEquals(salt)
+        } finally {
+            KeyEnvelope.destroy(persisted)
+        }
     }
-}

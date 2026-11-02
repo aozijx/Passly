@@ -9,9 +9,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
@@ -28,33 +28,56 @@ internal class EditorWriteSession(
 ) {
     private sealed interface Phase {
         data object Closed : Phase
+
         data object Destroyed : Phase
-        class Editing(val authentication: AuthenticationState.Authenticated) : Phase
-        class Saving(val authentication: AuthenticationState.Authenticated) : Phase
-        class Finished(val attempt: Saving) : Phase
+
+        class Editing(
+            val authentication: AuthenticationState.Authenticated,
+        ) : Phase
+
+        class Saving(
+            val authentication: AuthenticationState.Authenticated,
+        ) : Phase
+
+        class Finished(
+            val attempt: Saving,
+        ) : Phase
     }
 
-    private data class Delivery(val attempt: Phase.Saving, val effect: EditorSaveEffect)
+    private data class Delivery(
+        val attempt: Phase.Saving,
+        val effect: EditorSaveEffect,
+    )
+
     private var phase: Phase = Phase.Closed
     private var saveJob: Job? = null
+
     // A new edit or attempt invalidates previous outcomes, so only the latest delivery is useful.
     private val deliveries = Channel<Delivery>(Channel.CONFLATED)
-    val effects: Flow<EditorSaveEffect> = deliveries.receiveAsFlow().filter { delivery ->
-        (phase as? Phase.Finished)?.attempt === delivery.attempt &&
-            authentication() === delivery.attempt.authentication
-    }.map { it.effect }
+    val effects: Flow<EditorSaveEffect> =
+        deliveries
+            .receiveAsFlow()
+            .filter { delivery ->
+                (phase as? Phase.Finished)?.attempt === delivery.attempt &&
+                    authentication() === delivery.attempt.authentication
+            }.map { it.effect }
 
-    private val accessJob = scope.launch {
-        access.authenticationState.collect {
-            val current = authentication()
-            val previous = owner()
-            if (current == null || (previous != null && previous !== current)) clear()
+    private val accessJob =
+        scope.launch {
+            access.authenticationState.collect {
+                val current = authentication()
+                val previous = owner()
+                if (current == null || (previous != null && previous !== current)) clear()
+            }
         }
-    }
 
     fun canEdit(): Boolean {
         if (phase == Phase.Destroyed) return false
-        val current = authentication() ?: run { clear(); return false }
+        val current =
+            authentication() ?: run {
+                clear()
+                return false
+            }
         if (owner()?.let { it !== current } == true) clear()
         if (phase is Phase.Saving) return false
         phase = Phase.Editing(current)
@@ -63,7 +86,11 @@ internal class EditorWriteSession(
 
     fun save(draft: () -> EntryDraft) {
         if (phase == Phase.Destroyed) return
-        val current = authentication() ?: run { clear(); return }
+        val current =
+            authentication() ?: run {
+                clear()
+                return
+            }
         if (owner() !== current) {
             clear()
             return
@@ -72,38 +99,42 @@ internal class EditorWriteSession(
         val attempt = Phase.Saving(current)
         phase = attempt
         onSaving()
-        saveJob = scope.launch {
-            if (!isCurrent(attempt)) {
-                if (phase === attempt) clear()
-                return@launch
-            }
-            val effect = try {
-                when (write(draft())) {
-                    is AppResult.Success -> EditorSaveEffect.Saved
-                    is AppResult.Failure -> EditorSaveEffect.Failed
+        saveJob =
+            scope.launch {
+                if (!isCurrent(attempt)) {
+                    if (phase === attempt) clear()
+                    return@launch
                 }
-            } catch (cancelled: CancellationException) {
-                if (phase === attempt) {
-                    if (authentication() === attempt.authentication) {
-                        phase = Phase.Editing(attempt.authentication)
-                        onIdle()
-                    } else clear()
+                val effect =
+                    try {
+                        when (write(draft())) {
+                            is AppResult.Success -> EditorSaveEffect.Saved
+                            is AppResult.Failure -> EditorSaveEffect.Failed
+                        }
+                    } catch (cancelled: CancellationException) {
+                        if (phase === attempt) {
+                            if (authentication() === attempt.authentication) {
+                                phase = Phase.Editing(attempt.authentication)
+                                onIdle()
+                            } else {
+                                clear()
+                            }
+                        }
+                        throw cancelled
+                    } catch (_: Exception) {
+                        EditorSaveEffect.Failed
+                    }
+                if (!isCurrent(attempt) || !currentCoroutineContext().isActive) {
+                    if (phase === attempt) clear()
+                    return@launch
                 }
-                throw cancelled
-            } catch (_: Exception) {
-                EditorSaveEffect.Failed
+                phase = Phase.Finished(attempt)
+                when (effect) {
+                    EditorSaveEffect.Saved -> onClear()
+                    EditorSaveEffect.Failed -> onIdle()
+                }
+                deliveries.trySend(Delivery(attempt, effect))
             }
-            if (!isCurrent(attempt) || !currentCoroutineContext().isActive) {
-                if (phase === attempt) clear()
-                return@launch
-            }
-            phase = Phase.Finished(attempt)
-            when (effect) {
-                EditorSaveEffect.Saved -> onClear()
-                EditorSaveEffect.Failed -> onIdle()
-            }
-            deliveries.trySend(Delivery(attempt, effect))
-        }
     }
 
     fun clear() {
@@ -124,18 +155,18 @@ internal class EditorWriteSession(
         onClear()
     }
 
-    private fun isCurrent(attempt: Phase.Saving): Boolean =
-        phase === attempt && authentication() === attempt.authentication
+    private fun isCurrent(attempt: Phase.Saving): Boolean = phase === attempt && authentication() === attempt.authentication
 
     private fun authentication(): AuthenticationState.Authenticated? =
         if (access.hasFullSecureSessionAccess()) access.authenticationState.value as? AuthenticationState.Authenticated else null
 
-    private fun owner(): AuthenticationState.Authenticated? = when (val current = phase) {
-        Phase.Closed, Phase.Destroyed -> null
-        is Phase.Editing -> current.authentication
-        is Phase.Saving -> current.authentication
-        is Phase.Finished -> current.attempt.authentication
-    }
+    private fun owner(): AuthenticationState.Authenticated? =
+        when (val current = phase) {
+            Phase.Closed, Phase.Destroyed -> null
+            is Phase.Editing -> current.authentication
+            is Phase.Saving -> current.authentication
+            is Phase.Finished -> current.attempt.authentication
+        }
 }
 
 enum class EditorLoadPhase { NotRequested, Loading, Ready, Failed }

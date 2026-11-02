@@ -4,9 +4,11 @@ import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 
 internal fun ByteArray.decodeStrictUtf8(fieldName: String): String {
-    val decoder = Charsets.UTF_8.newDecoder()
-        .onMalformedInput(CodingErrorAction.REPORT)
-        .onUnmappableCharacter(CodingErrorAction.REPORT)
+    val decoder =
+        Charsets.UTF_8
+            .newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT)
     return try {
         decoder.decode(ByteBuffer.wrap(this)).toString()
     } catch (error: Exception) {

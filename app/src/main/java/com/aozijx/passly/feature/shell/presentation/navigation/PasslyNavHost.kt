@@ -7,8 +7,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.app.navigation.ShellNavigationContext
@@ -24,13 +24,14 @@ internal fun PasslyNavHost(
     navController: NavHostController,
     registerFeatureGraphs: FeatureGraphRegistration,
 ) {
-    val navigationContext = ShellNavigationContext(
-        navigateBack = { navController.popBackStack() },
-        navigateToRoute = navController::navigate,
-        navigateToSingleTopRoute = { route ->
-            navController.navigate(route) { launchSingleTop = true }
-        },
-    )
+    val navigationContext =
+        ShellNavigationContext(
+            navigateBack = { navController.popBackStack() },
+            navigateToRoute = navController::navigate,
+            navigateToSingleTopRoute = { route ->
+                navController.navigate(route) { launchSingleTop = true }
+            },
+        )
 
     Surface(
         modifier = Modifier.fillMaxSize(),

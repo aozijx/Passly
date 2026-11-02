@@ -13,26 +13,29 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class TrashUiMapperTest {
-
     @Test
     fun `maps deleted domain entries to ui-only trash items`() {
-        val entry = EntryListItem(
-            identity = EntryIdentity(
-                id = EntryId("entry-1"),
-                type = EntryType.LOGIN,
-                version = EntryVersion(3),
-                timestamps = EntryTimestamps(10L, deletedAtMs = 20L),
-            ),
-            profile = EntryProfile(
-                title = "Mail",
-                username = "person@example.com",
-                associations = EntryAssociations(
-                    primaryUrl = "example.com",
-                    applicationIds = setOf("com.example"),
-                ),
-                icon = EntryIcon(customReference = "icons/mail.png"),
-            ),
-        )
+        val entry =
+            EntryListItem(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("entry-1"),
+                        type = EntryType.LOGIN,
+                        version = EntryVersion(3),
+                        timestamps = EntryTimestamps(10L, deletedAtMs = 20L),
+                    ),
+                profile =
+                    EntryProfile(
+                        title = "Mail",
+                        username = "person@example.com",
+                        associations =
+                            EntryAssociations(
+                                primaryUrl = "example.com",
+                                applicationIds = setOf("com.example"),
+                            ),
+                        icon = EntryIcon(customReference = "icons/mail.png"),
+                    ),
+            )
 
         val result = TrashContentState.Loaded(listOf(entry)).toUiModels().single()
 

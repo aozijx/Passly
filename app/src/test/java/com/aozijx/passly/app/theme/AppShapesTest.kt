@@ -6,7 +6,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AppShapesTest {
-
     @Test
     fun `application corner radius drives the expressive shape scale`() {
         val shapes = appShapes(cornerRadiusDp = 20f)

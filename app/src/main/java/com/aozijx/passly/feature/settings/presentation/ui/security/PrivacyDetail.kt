@@ -15,13 +15,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.settingsGroupItem
-import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
-import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
+import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.settingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 
 @Composable
 internal fun PrivacyDetail(
@@ -35,13 +35,15 @@ internal fun PrivacyDetail(
     onClearClipboard: () -> Unit,
 ) {
     var showClipboardDelayMenu by remember { mutableStateOf(false) }
-    val delayOptions = state.clipboardClearDelayOptions.map { seconds ->
-        seconds to pluralStringResource(
-            R.plurals.settings_privacy_clipboard_delay_seconds,
-            seconds,
-            seconds,
-        )
-    }
+    val delayOptions =
+        state.clipboardClearDelayOptions.map { seconds ->
+            seconds to
+                pluralStringResource(
+                    R.plurals.settings_privacy_clipboard_delay_seconds,
+                    seconds,
+                    seconds,
+                )
+        }
     SettingsSection {
         SecurityProtectionSettingsSection(
             isSecureContentEnabled = state.isSecureContentEnabled,
@@ -49,59 +51,65 @@ internal fun PrivacyDetail(
             isFlipExitAndClearStackEnabled = state.isFlipExitAndClearStackEnabled,
             onSecureContentEnabledChange = onSecureContentEnabledChange,
             onFlipToLockEnabledChange = onFlipToLockEnabledChange,
-            onFlipExitAndClearStackEnabledChange = onFlipExitAndClearStackEnabledChange
+            onFlipExitAndClearStackEnabledChange = onFlipExitAndClearStackEnabledChange,
         )
         Spacer(modifier = Modifier.height(24.dp))
         SettingsSectionTitle(
-            text = stringResource(R.string.settings_privacy_sensitive_access_section)
+            text = stringResource(R.string.settings_privacy_sensitive_access_section),
         )
         SegmentedSettingsGroup(
-            items = listOf(
-                switchSettingsGroupItem(
-                    key = "privacy.reauthenticate_sensitive_copies",
-                    icon = Icons.Default.VerifiedUser,
-                    title = stringResource(
-                        R.string.settings_security_reauthenticate_sensitive_copies
+            items =
+                listOf(
+                    switchSettingsGroupItem(
+                        key = "privacy.reauthenticate_sensitive_copies",
+                        icon = Icons.Default.VerifiedUser,
+                        title =
+                            stringResource(
+                                R.string.settings_security_reauthenticate_sensitive_copies,
+                            ),
+                        subtitle =
+                            stringResource(
+                                R.string.settings_security_reauthenticate_sensitive_copies_description,
+                            ),
+                        checked = state.reauthenticateSensitiveCopies,
+                        onCheckedChange = onSensitiveCopyReauthenticationChange,
                     ),
-                    subtitle = stringResource(
-                        R.string.settings_security_reauthenticate_sensitive_copies_description
+                    switchSettingsGroupItem(
+                        key = "privacy.clipboard_protection",
+                        icon = Icons.Default.ContentPasteOff,
+                        title = stringResource(R.string.settings_privacy_clipboard_protection),
+                        subtitle =
+                            stringResource(
+                                R.string.settings_privacy_clipboard_protection_description,
+                            ),
+                        checked = state.clipboardClearEnabled,
+                        onCheckedChange = onClipboardClearEnabledChange,
                     ),
-                    checked = state.reauthenticateSensitiveCopies,
-                    onCheckedChange = onSensitiveCopyReauthenticationChange
+                    dropdownSettingsGroupItem(
+                        key = "privacy.clipboard_clear_delay",
+                        title = stringResource(R.string.settings_privacy_clipboard_delay),
+                        selected = state.clipboardClearDelaySeconds,
+                        selectedLabel =
+                            pluralStringResource(
+                                R.plurals.settings_privacy_clipboard_delay_seconds,
+                                state.clipboardClearDelaySeconds,
+                                state.clipboardClearDelaySeconds,
+                            ),
+                        options = delayOptions,
+                        expanded = showClipboardDelayMenu,
+                        onExpandedChange = { showClipboardDelayMenu = it },
+                        onSelect = onClipboardClearDelayChange,
+                    ),
+                    settingsGroupItem(
+                        key = "privacy.clear_clipboard_now",
+                        title = stringResource(R.string.settings_privacy_clear_clipboard_now),
+                        subtitle =
+                            stringResource(
+                                R.string.settings_privacy_clear_clipboard_now_description,
+                            ),
+                        onClick = onClearClipboard,
+                    ),
                 ),
-                switchSettingsGroupItem(
-                    key = "privacy.clipboard_protection",
-                    icon = Icons.Default.ContentPasteOff,
-                    title = stringResource(R.string.settings_privacy_clipboard_protection),
-                    subtitle = stringResource(
-                        R.string.settings_privacy_clipboard_protection_description
-                    ),
-                    checked = state.clipboardClearEnabled,
-                    onCheckedChange = onClipboardClearEnabledChange,
-                ),
-                dropdownSettingsGroupItem(
-                    key = "privacy.clipboard_clear_delay",
-                    title = stringResource(R.string.settings_privacy_clipboard_delay),
-                    selected = state.clipboardClearDelaySeconds,
-                    selectedLabel = pluralStringResource(
-                        R.plurals.settings_privacy_clipboard_delay_seconds,
-                        state.clipboardClearDelaySeconds,
-                        state.clipboardClearDelaySeconds,
-                    ),
-                    options = delayOptions,
-                    expanded = showClipboardDelayMenu,
-                    onExpandedChange = { showClipboardDelayMenu = it },
-                    onSelect = onClipboardClearDelayChange,
-                ),
-                settingsGroupItem(
-                    key = "privacy.clear_clipboard_now",
-                    title = stringResource(R.string.settings_privacy_clear_clipboard_now),
-                    subtitle = stringResource(
-                        R.string.settings_privacy_clear_clipboard_now_description
-                    ),
-                    onClick = onClearClipboard,
-                )
-            )
         )
     }
 }

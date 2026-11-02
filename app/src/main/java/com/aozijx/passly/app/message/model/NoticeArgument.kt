@@ -16,35 +16,45 @@ enum class ArgumentKey {
     PRUNED_RESOURCE_COUNT,
     DURATION_MS,
     REASON_CODE,
-    OPERATION_CODE
+    OPERATION_CODE,
 }
 
 sealed interface ArgumentValue {
-    data class Count(val value: Long) : ArgumentValue {
+    data class Count(
+        val value: Long,
+    ) : ArgumentValue {
         init {
             require(value >= 0) { "Count must not be negative" }
         }
     }
 
-    data class DurationMs(val value: Long) : ArgumentValue {
+    data class DurationMs(
+        val value: Long,
+    ) : ArgumentValue {
         init {
             require(value >= 0) { "Duration must not be negative" }
         }
     }
 
-    data class EnumCode(val value: String) : ArgumentValue {
+    data class EnumCode(
+        val value: String,
+    ) : ArgumentValue {
         init {
             require(value.matches(SAFE_CODE)) { "Invalid enum code" }
         }
     }
 
-    data class ReasonCode(val value: String) : ArgumentValue {
+    data class ReasonCode(
+        val value: String,
+    ) : ArgumentValue {
         init {
             require(value.matches(SAFE_CODE)) { "Invalid reason code" }
         }
     }
 
-    data class Flag(val value: Boolean) : ArgumentValue
+    data class Flag(
+        val value: Boolean,
+    ) : ArgumentValue
 
     private companion object {
         val SAFE_CODE = Regex("[a-z][a-z0-9_.-]{0,95}")

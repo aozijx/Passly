@@ -2,10 +2,13 @@ package com.aozijx.passly.security.authentication
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-class SecretChars private constructor(private var value: CharArray?) : AutoCloseable {
-    fun copyForWorker(): CharArray = synchronized(this) {
-        checkNotNull(value) { "Secret has been destroyed" }.copyOf()
-    }
+class SecretChars private constructor(
+    private var value: CharArray?,
+) : AutoCloseable {
+    fun copyForWorker(): CharArray =
+        synchronized(this) {
+            checkNotNull(value) { "Secret has been destroyed" }.copyOf()
+        }
 
     override fun close() {
         synchronized(this) {
@@ -29,14 +32,18 @@ interface DiscardableResult {
     fun discard()
 }
 
-class OwnedBytes(bytes: ByteArray) : DiscardableResult, AutoCloseable {
+class OwnedBytes(
+    bytes: ByteArray,
+) : DiscardableResult,
+    AutoCloseable {
     private var value: ByteArray? = bytes
     private val consumed = AtomicBoolean(false)
 
-    fun consume(): ByteArray = synchronized(this) {
-        check(consumed.compareAndSet(false, true)) { "Bytes already consumed" }
-        checkNotNull(value).also { value = null }
-    }
+    fun consume(): ByteArray =
+        synchronized(this) {
+            check(consumed.compareAndSet(false, true)) { "Bytes already consumed" }
+            checkNotNull(value).also { value = null }
+        }
 
     override fun discard() {
         synchronized(this) {

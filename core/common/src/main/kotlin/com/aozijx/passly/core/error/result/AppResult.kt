@@ -5,29 +5,36 @@ import com.aozijx.passly.core.error.model.AppError
 import java.util.concurrent.CancellationException
 
 sealed class AppResult<out T> {
+    data class Success<T>(
+        val data: T,
+    ) : AppResult<T>()
 
-    data class Success<T>(val data: T) : AppResult<T>()
-    data class Failure(val error: AppError) : AppResult<Nothing>()
+    data class Failure(
+        val error: AppError,
+    ) : AppResult<Nothing>()
 
     // ── 状态查询 ──
     val isSuccess: Boolean get() = this is Success
     val isFailure: Boolean get() = this is Failure
 
     // ── 取值 ──
-    fun getOrNull(): T? = when (this) {
-        is Success -> data
-        is Failure -> null
-    }
+    fun getOrNull(): T? =
+        when (this) {
+            is Success -> data
+            is Failure -> null
+        }
 
-    inline fun getOrElse(defaultBlock: (AppError) -> @UnsafeVariance T): T = when (this) {
-        is Success -> data
-        is Failure -> defaultBlock(error)
-    }
+    inline fun getOrElse(defaultBlock: (AppError) -> @UnsafeVariance T): T =
+        when (this) {
+            is Success -> data
+            is Failure -> defaultBlock(error)
+        }
 
-    fun getOrThrow(): T = when (this) {
-        is Success -> data
-        is Failure -> throw error
-    }
+    fun getOrThrow(): T =
+        when (this) {
+            is Success -> data
+            is Failure -> throw error
+        }
 
     // ── 副作用回调 ──
     fun onSuccess(action: (T) -> Unit): AppResult<T> {
@@ -46,40 +53,41 @@ sealed class AppResult<out T> {
     }
 
     // ── 变换 ──
-    fun <R> map(transform: (T) -> R): AppResult<R> = when (this) {
-        is Success -> Success(transform(data))
-        is Failure -> this
-    }
+    fun <R> map(transform: (T) -> R): AppResult<R> =
+        when (this) {
+            is Success -> Success(transform(data))
+            is Failure -> this
+        }
 
-    fun <R> flatMap(transform: (T) -> AppResult<R>): AppResult<R> = when (this) {
-        is Success -> transform(data)
-        is Failure -> this
-    }
+    fun <R> flatMap(transform: (T) -> AppResult<R>): AppResult<R> =
+        when (this) {
+            is Success -> transform(data)
+            is Failure -> this
+        }
 
     // ── 折叠 ──
     fun <R> fold(
         onSuccess: (T) -> R,
-        onFailure: (AppError) -> R
-    ): R = when (this) {
-        is Success -> onSuccess(data)
-        is Failure -> onFailure(error)
-    }
+        onFailure: (AppError) -> R,
+    ): R =
+        when (this) {
+            is Success -> onSuccess(data)
+            is Failure -> onFailure(error)
+        }
 
     // ── 构造器 ──
     companion object {
         fun <T> success(data: T): AppResult<T> = Success(data)
+
         fun failure(error: AppError): AppResult<Nothing> = Failure(error)
 
-        suspend inline fun <T> runSuspendCatching(
-            crossinline block: suspend () -> T
-        ): AppResult<T> {
-            return try {
+        suspend inline fun <T> runSuspendCatching(crossinline block: suspend () -> T): AppResult<T> =
+            try {
                 success(block())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 failure(AppError.fromThrowable(e))
             }
-        }
     }
 }

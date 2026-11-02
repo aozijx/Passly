@@ -21,10 +21,10 @@ import androidx.room.Index
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
             childColumns = ["entryId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index(value = ["entryId"])]
+    indices = [Index(value = ["entryId"])],
 )
 data class EntrySecretFieldEntity(
     val entryId: String,
@@ -32,5 +32,5 @@ data class EntrySecretFieldEntity(
     @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
     val valueCipher: ByteArray,
     val keyVersion: Int,
-    val updatedAt: Long
+    val updatedAt: Long,
 )

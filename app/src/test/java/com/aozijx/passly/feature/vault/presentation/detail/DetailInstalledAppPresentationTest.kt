@@ -6,10 +6,11 @@ import org.junit.Test
 class DetailInstalledAppPresentationTest {
     @Test
     fun `presentation mapping converts feature app metadata at the ui boundary`() {
-        val app = DetailInstalledApp(
-            label = "Browser",
-            packageName = "com.example.browser",
-        )
+        val app =
+            DetailInstalledApp(
+                label = "Browser",
+                packageName = "com.example.browser",
+            )
 
         val actual = app.toPackagePickerItemUiModel()
 

@@ -11,24 +11,27 @@ import org.junit.Test
 class KeyedBackupWireModelTest {
     @Test
     fun documentUsesNewFormatVersionOneAndKeyedFields() {
-        val document = BackupDocument(
-            format = BackupDocument.FORMAT,
-            version = BackupDocument.CURRENT_VERSION,
-            exportedAt = 10L,
-            entries = listOf(
-                BackupEntryRecord(
-                    id = "entry-1",
-                    type = "login",
-                    revision = 3,
-                    createdAt = 1L,
-                    updatedAt = 2L,
-                    fields = listOf(
-                        BackupFieldRecord("title", BackupFieldValue.text("Example")),
-                        BackupFieldRecord("favorite", BackupFieldValue.boolean(true)),
+        val document =
+            BackupDocument(
+                format = BackupDocument.FORMAT,
+                version = BackupDocument.CURRENT_VERSION,
+                exportedAt = 10L,
+                entries =
+                    listOf(
+                        BackupEntryRecord(
+                            id = "entry-1",
+                            type = "login",
+                            revision = 3,
+                            createdAt = 1L,
+                            updatedAt = 2L,
+                            fields =
+                                listOf(
+                                    BackupFieldRecord("title", BackupFieldValue.text("Example")),
+                                    BackupFieldRecord("favorite", BackupFieldValue.boolean(true)),
+                                ),
+                        ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val json = BackupJson.encodeToString(document)
 

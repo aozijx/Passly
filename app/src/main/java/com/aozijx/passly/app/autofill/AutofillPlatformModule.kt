@@ -14,19 +14,13 @@ import javax.inject.Singleton
 internal abstract class AutofillPlatformModule {
     @Binds
     @Singleton
-    abstract fun bindAutofillInboxDraftImporter(
-        impl: AutofillInboxCredentialImporter,
-    ): AutofillInboxDraftImporter
+    abstract fun bindAutofillInboxDraftImporter(impl: AutofillInboxCredentialImporter): AutofillInboxDraftImporter
 
     @Binds
     @Singleton
-    abstract fun bindAutofillLaunchTarget(
-        impl: AndroidAutofillLaunchTarget,
-    ): AutofillLaunchTarget
+    abstract fun bindAutofillLaunchTarget(impl: AndroidAutofillLaunchTarget): AutofillLaunchTarget
 
     @Binds
     @Singleton
-    abstract fun bindAutofillServiceStatusSource(
-        impl: AndroidAutofillServiceStatusSource,
-    ): AutofillServiceStatusSource
+    abstract fun bindAutofillServiceStatusSource(impl: AndroidAutofillServiceStatusSource): AutofillServiceStatusSource
 }

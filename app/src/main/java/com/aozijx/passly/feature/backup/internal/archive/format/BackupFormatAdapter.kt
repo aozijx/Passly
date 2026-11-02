@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.backup.internal.archive.format
 
+import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
-import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 
 /**
  * Encodes the canonical [BackupBundle] into one external format.
@@ -15,7 +15,10 @@ internal interface BackupExportAdapter {
     val supportsIcons: Boolean
     val requiresPassword: Boolean
 
-    fun encode(bundle: BackupBundle, password: CharArray?): ByteArray
+    fun encode(
+        bundle: BackupBundle,
+        password: CharArray?,
+    ): ByteArray
 }
 
 /**

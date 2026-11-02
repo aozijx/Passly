@@ -12,8 +12,8 @@ import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.credential.service.CredentialPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
-import com.aozijx.passly.feature.autofill.presentation.credential.CredentialResponseActivity
 import com.aozijx.passly.feature.autofill.presentation.accessibility.AccessibilityFillActivity
+import com.aozijx.passly.feature.autofill.presentation.credential.CredentialResponseActivity
 import com.aozijx.passly.feature.autofill.presentation.legacy.AutofillFillActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -77,21 +77,24 @@ class AutofillLaunchTargetFactoryTest {
         val factory = CredentialPendingIntentFactory(AndroidAutofillLaunchTarget())
         val interactionId = AutofillInteractionId("interaction-1")
 
-        val first = factory.createPasswordGetPendingIntent(
-            context,
-            interactionId,
-            EntryId("entry-1"),
-        )
-        val same = factory.createPasswordGetPendingIntent(
-            context,
-            interactionId,
-            EntryId("entry-1"),
-        )
-        val other = factory.createPasswordGetPendingIntent(
-            context,
-            interactionId,
-            EntryId("entry-2"),
-        )
+        val first =
+            factory.createPasswordGetPendingIntent(
+                context,
+                interactionId,
+                EntryId("entry-1"),
+            )
+        val same =
+            factory.createPasswordGetPendingIntent(
+                context,
+                interactionId,
+                EntryId("entry-1"),
+            )
+        val other =
+            factory.createPasswordGetPendingIntent(
+                context,
+                interactionId,
+                EntryId("entry-2"),
+            )
 
         assertEquals(first, same)
         assertNotEquals(first, other)
@@ -102,15 +105,20 @@ class AutofillLaunchTargetFactoryTest {
         private val delegate = AndroidAutofillLaunchTarget()
         val requestIds = mutableListOf<String>()
 
-        override fun legacyFillIntent(context: Context, requestId: String): Intent {
+        override fun legacyFillIntent(
+            context: Context,
+            requestId: String,
+        ): Intent {
             requestIds += requestId
             return delegate.legacyFillIntent(context, requestId)
         }
 
-        override fun accessibilityFillIntent(context: Context): Intent =
-            delegate.accessibilityFillIntent(context)
+        override fun accessibilityFillIntent(context: Context): Intent = delegate.accessibilityFillIntent(context)
 
-        override fun credentialResponseIntent(context: Context, requestId: String): Intent {
+        override fun credentialResponseIntent(
+            context: Context,
+            requestId: String,
+        ): Intent {
             requestIds += requestId
             return delegate.credentialResponseIntent(context, requestId)
         }

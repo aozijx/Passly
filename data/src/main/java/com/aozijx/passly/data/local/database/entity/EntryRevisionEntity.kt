@@ -13,14 +13,14 @@ import androidx.room.PrimaryKey
             entity = EntryEntity::class,
             parentColumns = ["entryId"],
             childColumns = ["entryId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["entryId", "version"], unique = true),
         Index(value = ["createdAt"]),
-        Index(value = ["iconCustomReference"])
-    ]
+        Index(value = ["iconCustomReference"]),
+    ],
 )
 data class EntryRevisionEntity(
     @PrimaryKey

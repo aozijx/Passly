@@ -24,10 +24,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -58,8 +58,14 @@ internal data class TrashEntryUiModel(
 
 internal sealed interface TrashErrorUiState {
     data object Hidden : TrashErrorUiState
-    data class LoadFailed(val message: String) : TrashErrorUiState
-    data class OperationFailed(val message: String) : TrashErrorUiState
+
+    data class LoadFailed(
+        val message: String,
+    ) : TrashErrorUiState
+
+    data class OperationFailed(
+        val message: String,
+    ) : TrashErrorUiState
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,67 +94,90 @@ internal fun TrashBottomSheet(
         onDismissRequest = {
             if (!isBusy) onDismiss()
         },
-        sheetState = rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        )
+        sheetState =
+            rememberBottomSheetState(
+                initialValue = SheetValue.Hidden,
+                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+            ),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(bottom = 16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
         ) {
             TrashHeader(
                 count = entries.size,
                 isEmptying = isEmptying,
                 enabled = !isLoading && entries.isNotEmpty() && !isBusy,
-                onEmpty = { confirmEmpty = true }
+                onEmpty = { confirmEmpty = true },
             )
             Text(
                 text = stringResource(R.string.settings_trash_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
 
             when (error) {
-                TrashErrorUiState.Hidden -> Unit
-                is TrashErrorUiState.LoadFailed -> TrashError(
-                    message = error.message,
-                    actionLabel = stringResource(R.string.settings_trash_retry),
-                    onAction = onRetryLoad,
-                )
-                is TrashErrorUiState.OperationFailed -> TrashError(
-                    message = error.message,
-                    actionLabel = stringResource(R.string.settings_trash_error_dismiss),
-                    onAction = onClearError,
-                )
+                TrashErrorUiState.Hidden -> {
+                    Unit
+                }
+
+                is TrashErrorUiState.LoadFailed -> {
+                    TrashError(
+                        message = error.message,
+                        actionLabel = stringResource(R.string.settings_trash_retry),
+                        onAction = onRetryLoad,
+                    )
+                }
+
+                is TrashErrorUiState.OperationFailed -> {
+                    TrashError(
+                        message = error.message,
+                        actionLabel = stringResource(R.string.settings_trash_error_dismiss),
+                        onAction = onClearError,
+                    )
+                }
             }
 
             when {
-                isLoading -> TrashLoading()
-                error is TrashErrorUiState.LoadFailed -> Unit
-                entries.isEmpty() -> TrashEmpty()
-                else -> LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        top = 12.dp,
-                        end = 16.dp,
-                        bottom = 8.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(entries, key = { entry -> entry.id }) { entry ->
-                        TrashEntryCard(
-                            entry = entry,
-                            busy = isBusy,
-                            isOperating = activeEntryId == entry.id,
-                            onRestore = { onRestore(entry) },
-                            onDelete = { pendingDelete = entry }
-                        )
+                isLoading -> {
+                    TrashLoading()
+                }
+
+                error is TrashErrorUiState.LoadFailed -> {
+                    Unit
+                }
+
+                entries.isEmpty() -> {
+                    TrashEmpty()
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(),
+                        contentPadding =
+                            PaddingValues(
+                                start = 16.dp,
+                                top = 12.dp,
+                                end = 16.dp,
+                                bottom = 8.dp,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        items(entries, key = { entry -> entry.id }) { entry ->
+                            TrashEntryCard(
+                                entry = entry,
+                                busy = isBusy,
+                                isOperating = activeEntryId == entry.id,
+                                onRestore = { onRestore(entry) },
+                                onDelete = { pendingDelete = entry },
+                            )
+                        }
                     }
                 }
             }
@@ -172,22 +201,22 @@ internal fun TrashBottomSheet(
                     onClick = {
                         pendingDelete = null
                         onDelete(entry)
-                    }
+                    },
                 ) {
                     Text(
                         text = stringResource(R.string.settings_trash_delete),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
                 TextButton(
                     enabled = !isBusy,
-                    onClick = { pendingDelete = null }
+                    onClick = { pendingDelete = null },
                 ) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 
@@ -202,8 +231,8 @@ internal fun TrashBottomSheet(
                     pluralStringResource(
                         R.plurals.settings_trash_empty_confirm_message,
                         entries.size,
-                        entries.size
-                    )
+                        entries.size,
+                    ),
                 )
             },
             confirmButton = {
@@ -212,22 +241,22 @@ internal fun TrashBottomSheet(
                     onClick = {
                         confirmEmpty = false
                         onEmpty()
-                    }
+                    },
                 ) {
                     Text(
                         text = stringResource(R.string.settings_trash_empty_action),
-                        color = MaterialTheme.colorScheme.error
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
                 TextButton(
                     enabled = !isBusy,
-                    onClick = { confirmEmpty = false }
+                    onClick = { confirmEmpty = false },
                 ) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 }
@@ -238,23 +267,24 @@ private fun TrashHeader(
     count: Int,
     isEmptying: Boolean,
     enabled: Boolean,
-    onEmpty: () -> Unit
+    onEmpty: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            shape = MaterialTheme.shapes.medium
+            shape = MaterialTheme.shapes.medium,
         ) {
             Icon(
                 imageVector = Icons.Default.DeleteSweep,
                 contentDescription = null,
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(12.dp),
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
@@ -262,46 +292,48 @@ private fun TrashHeader(
             Text(
                 text = stringResource(R.string.settings_trash_title),
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             if (count > 0) {
                 Text(
                     text = pluralStringResource(R.plurals.settings_trash_count, count, count),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
         TextButton(
             enabled = enabled,
-            onClick = onEmpty
+            onClick = onEmpty,
         ) {
             if (isEmptying) {
                 LoadingIndicator(
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             } else {
                 Icon(
                     imageVector = Icons.Default.DeleteSweep,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
-                text = stringResource(
-                    if (isEmptying) {
-                        R.string.settings_trash_emptying
+                text =
+                    stringResource(
+                        if (isEmptying) {
+                            R.string.settings_trash_emptying
+                        } else {
+                            R.string.settings_trash_empty_action
+                        },
+                    ),
+                color =
+                    if (enabled) {
+                        MaterialTheme.colorScheme.error
                     } else {
-                        R.string.settings_trash_empty_action
-                    }
-                ),
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                }
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    },
             )
         }
     }
@@ -313,13 +345,14 @@ private fun TrashLoading() {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 20.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 20.dp),
     ) {
         Box(
             modifier = Modifier.padding(40.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             ContainedLoadingIndicator()
         }
@@ -329,34 +362,36 @@ private fun TrashLoading() {
 @Composable
 private fun TrashEmpty() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 48.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            shape = MaterialTheme.shapes.extraLarge
+            shape = MaterialTheme.shapes.extraLarge,
         ) {
             Icon(
                 imageVector = Icons.Default.DeleteSweep,
                 contentDescription = null,
-                modifier = Modifier
-                    .padding(20.dp)
-                    .size(36.dp)
+                modifier =
+                    Modifier
+                        .padding(20.dp)
+                        .size(36.dp),
             )
         }
         Text(
             text = stringResource(R.string.settings_trash_empty),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
         Text(
             text = stringResource(R.string.settings_trash_empty_description),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -370,25 +405,26 @@ private fun TrashError(
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
         shape = MaterialTheme.shapes.large,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Default.ErrorOutline,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer
+                tint = MaterialTheme.colorScheme.onErrorContainer,
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onAction) {
                 Text(actionLabel)

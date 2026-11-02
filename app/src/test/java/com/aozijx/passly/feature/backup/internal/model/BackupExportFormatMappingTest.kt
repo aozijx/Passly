@@ -10,10 +10,13 @@ class BackupExportFormatMappingTest {
         assertEquals(BackupFormats.PASSLY_ENCRYPTED, BackupExportFormat.ENCRYPTED.toFormatId())
         assertEquals(BackupFormats.PASSLY_JSON, BackupExportFormat.JSON.toFormatId())
         assertEquals(BackupFormats.READABLE_TEXT, BackupExportFormat.TEXT.toFormatId())
-        assertEquals(BackupExportFormat.entries.toSet(), setOf(
-            BackupExportFormat.ENCRYPTED,
-            BackupExportFormat.JSON,
-            BackupExportFormat.TEXT,
-        ))
+        assertEquals(
+            BackupExportFormat.entries.toSet(),
+            setOf(
+                BackupExportFormat.ENCRYPTED,
+                BackupExportFormat.JSON,
+                BackupExportFormat.TEXT,
+            ),
+        )
     }
 }

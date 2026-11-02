@@ -13,7 +13,6 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 class AppShellReducerTest {
-
     @Test
     fun `startup window policy protects content without fabricating persisted system bar settings`() {
         val state = AppShellUiState()
@@ -27,16 +26,18 @@ class AppShellReducerTest {
     @Test
     fun `session projection changes without overwriting database failure state`() {
         val error = IllegalStateException("failure")
-        val result = AppShellReducer.reduce(
-            AppShellUiState(
-                sessionMode = AppShellSessionMode.VAULT,
-                databaseState = AppShellDatabaseState.Failed(
-                    cause = error,
-                    retryPhase = DatabaseRetryPhase.Retrying,
+        val result =
+            AppShellReducer.reduce(
+                AppShellUiState(
+                    sessionMode = AppShellSessionMode.VAULT,
+                    databaseState =
+                        AppShellDatabaseState.Failed(
+                            cause = error,
+                            retryPhase = DatabaseRetryPhase.Retrying,
+                        ),
                 ),
-            ),
-            AppShellMutation.SessionChanged(AppShellSessionMode.RECOVERY),
-        )
+                AppShellMutation.SessionChanged(AppShellSessionMode.RECOVERY),
+            )
 
         assertEquals(AppShellSessionMode.RECOVERY, result.sessionMode)
         val databaseState = result.databaseState as AppShellDatabaseState.Failed
@@ -47,14 +48,16 @@ class AppShellReducerTest {
     @Test
     fun `database retry keeps authoritative error visible and marks retry in progress`() {
         val error = IllegalStateException("failure")
-        val initial = AppShellUiState(
-            databaseState = AppShellDatabaseState.Failed(error),
-        )
+        val initial =
+            AppShellUiState(
+                databaseState = AppShellDatabaseState.Failed(error),
+            )
 
-        val retry = AppShellReducer.reduce(
-            initial,
-            AppShellMutation.DatabaseRetryStarted,
-        )
+        val retry =
+            AppShellReducer.reduce(
+                initial,
+                AppShellMutation.DatabaseRetryStarted,
+            )
 
         val databaseState = retry.databaseState as AppShellDatabaseState.Failed
         assertEquals(DatabaseRetryPhase.Retrying, databaseState.retryPhase)
@@ -63,15 +66,17 @@ class AppShellReducerTest {
 
     @Test
     fun `database failure stream clears error and retry state together`() {
-        val result = AppShellReducer.reduce(
-            AppShellUiState(
-                databaseState = AppShellDatabaseState.Failed(
-                    cause = IllegalStateException("failure"),
-                    retryPhase = DatabaseRetryPhase.Retrying,
+        val result =
+            AppShellReducer.reduce(
+                AppShellUiState(
+                    databaseState =
+                        AppShellDatabaseState.Failed(
+                            cause = IllegalStateException("failure"),
+                            retryPhase = DatabaseRetryPhase.Retrying,
+                        ),
                 ),
-            ),
-            AppShellMutation.DatabaseAvailable,
-        )
+                AppShellMutation.DatabaseAvailable,
+            )
 
         assertSame(AppShellDatabaseState.Available, result.databaseState)
     }
@@ -79,15 +84,17 @@ class AppShellReducerTest {
     @Test
     fun `database retry completion only ends busy state`() {
         val error = IllegalStateException("failure")
-        val result = AppShellReducer.reduce(
-            AppShellUiState(
-                databaseState = AppShellDatabaseState.Failed(
-                    cause = error,
-                    retryPhase = DatabaseRetryPhase.Retrying,
+        val result =
+            AppShellReducer.reduce(
+                AppShellUiState(
+                    databaseState =
+                        AppShellDatabaseState.Failed(
+                            cause = error,
+                            retryPhase = DatabaseRetryPhase.Retrying,
+                        ),
                 ),
-            ),
-            AppShellMutation.DatabaseRetryFinished,
-        )
+                AppShellMutation.DatabaseRetryFinished,
+            )
 
         val databaseState = result.databaseState as AppShellDatabaseState.Failed
         assertEquals(DatabaseRetryPhase.Idle, databaseState.retryPhase)
@@ -97,25 +104,28 @@ class AppShellReducerTest {
     @Test
     fun `settings projection changes shell appearance and window policy`() {
         val error = IllegalStateException("keep")
-        val appearance = AppearanceSettings(
-            themeMode = ThemeMode.DARK,
-            isDynamicColor = false,
-            language = AppLanguage.EN,
-            fontFamily = FontFamilyMode.SYSTEM,
-        )
-        val result = AppShellReducer.reduce(
-            AppShellUiState(
-                sessionMode = AppShellSessionMode.VAULT,
-                databaseState = AppShellDatabaseState.Failed(error),
-            ),
-            AppShellMutation.SettingsChanged(
-                appearance = appearance,
-                interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
-                securitySettings = SecuritySettings(
-                    isSecureContentEnabled = false,
+        val appearance =
+            AppearanceSettings(
+                themeMode = ThemeMode.DARK,
+                isDynamicColor = false,
+                language = AppLanguage.EN,
+                fontFamily = FontFamilyMode.SYSTEM,
+            )
+        val result =
+            AppShellReducer.reduce(
+                AppShellUiState(
+                    sessionMode = AppShellSessionMode.VAULT,
+                    databaseState = AppShellDatabaseState.Failed(error),
                 ),
-            ),
-        )
+                AppShellMutation.SettingsChanged(
+                    appearance = appearance,
+                    interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
+                    securitySettings =
+                        SecuritySettings(
+                            isSecureContentEnabled = false,
+                        ),
+                ),
+            )
 
         val settings = result.settings as AppShellSettingsState.Ready
         assertSame(appearance, settings.appearance)

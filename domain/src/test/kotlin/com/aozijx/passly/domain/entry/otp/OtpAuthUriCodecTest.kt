@@ -12,9 +12,10 @@ import org.junit.Test
 class OtpAuthUriCodecTest {
     @Test
     fun `unicode label and issuer use utf8 percent encoding`() {
-        val config = parsed(
-            "otpauth://totp/%E9%82%AE%E4%BB%B6%3A%E5%B0%8F%E6%98%8E?secret=$SECRET&issuer=%E9%82%AE%E4%BB%B6",
-        )
+        val config =
+            parsed(
+                "otpauth://totp/%E9%82%AE%E4%BB%B6%3A%E5%B0%8F%E6%98%8E?secret=$SECRET&issuer=%E9%82%AE%E4%BB%B6",
+            )
         assertEquals("邮件", config.issuer)
         assertEquals("小明", config.accountName)
         assertEquals(config, parsed(formatted(config, "显示标题")))
@@ -33,9 +34,10 @@ class OtpAuthUriCodecTest {
 
     @Test
     fun `labels are decoded once and literal plus signs survive`() {
-        val config = parsed(
-            "otpauth://totp/ACME%20Co%3Aalice+tag%2540example.com?secret=$SECRET&issuer=ACME%20Co",
-        )
+        val config =
+            parsed(
+                "otpauth://totp/ACME%20Co%3Aalice+tag%2540example.com?secret=$SECRET&issuer=ACME%20Co",
+            )
 
         assertEquals("ACME Co", config.issuer)
         assertEquals("alice+tag%40example.com", config.accountName)
@@ -43,10 +45,15 @@ class OtpAuthUriCodecTest {
 
     @Test
     fun `format encodes each component once and prefers account metadata over display title`() {
-        val config = OtpConfig(
-            secret = SECRET, algorithm = OtpHashAlgorithm.SHA256, digits = 8, periodSeconds = 45,
-            issuer = "ACME Co+100%", accountName = "alice+tag%40@example.com",
-        )
+        val config =
+            OtpConfig(
+                secret = SECRET,
+                algorithm = OtpHashAlgorithm.SHA256,
+                digits = 8,
+                periodSeconds = 45,
+                issuer = "ACME Co+100%",
+                accountName = "alice+tag%40@example.com",
+            )
         val uri = formatted(config, "Unrelated display title")
 
         assertEquals(
@@ -59,10 +66,14 @@ class OtpAuthUriCodecTest {
 
     @Test
     fun `base64 export becomes base32 without changing the RFC totp code`() {
-        val config = OtpConfig(
-            secret = Base64.getEncoder().encodeToString("12345678901234567890".toByteArray()),
-            encoding = OtpSecretEncoding.BASE64, digits = 8, issuer = "Example", accountName = "alice",
-        )
+        val config =
+            OtpConfig(
+                secret = Base64.getEncoder().encodeToString("12345678901234567890".toByteArray()),
+                encoding = OtpSecretEncoding.BASE64,
+                digits = 8,
+                issuer = "Example",
+                accountName = "alice",
+            )
 
         val restored = parsed(formatted(config, "Example"))
 
@@ -197,7 +208,10 @@ class OtpAuthUriCodecTest {
         return (result as OtpUriParseResult.Parsed).config
     }
 
-    private fun formatted(config: OtpConfig, title: String): String {
+    private fun formatted(
+        config: OtpConfig,
+        title: String,
+    ): String {
         val result = OtpAuthUriCodec.format(config, title)
         assertTrue(result is OtpUriFormatResult.Formatted)
         return (result as OtpUriFormatResult.Formatted).content

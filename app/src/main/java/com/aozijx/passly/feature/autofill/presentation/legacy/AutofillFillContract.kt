@@ -27,16 +27,20 @@ sealed interface AutofillFillResult {
 
 sealed class AutofillFillUiState {
     data object Initial : AutofillFillUiState()
+
     data object Loading : AutofillFillUiState()
+
     data class ShowCandidates(
-        val candidates: List<AutofillCandidateSummary>
+        val candidates: List<AutofillCandidateSummary>,
     ) : AutofillFillUiState()
 
     data class Result(
-        val result: AutofillFillResult
+        val result: AutofillFillResult,
     ) : AutofillFillUiState()
 
-    data class Error(val message: String) : AutofillFillUiState()
+    data class Error(
+        val message: String,
+    ) : AutofillFillUiState()
 }
 
 sealed interface AutofillFillDisplayState {
@@ -47,14 +51,16 @@ sealed interface AutofillFillDisplayState {
     ) : AutofillFillDisplayState
 }
 
-internal fun AutofillFillUiState.toDisplayState(): AutofillFillDisplayState = when (this) {
-    is AutofillFillUiState.ShowCandidates -> AutofillFillDisplayState.Candidates(candidates)
-    AutofillFillUiState.Initial,
-    AutofillFillUiState.Loading,
-    is AutofillFillUiState.Result,
-    is AutofillFillUiState.Error,
-    -> AutofillFillDisplayState.Hidden
-}
+internal fun AutofillFillUiState.toDisplayState(): AutofillFillDisplayState =
+    when (this) {
+        is AutofillFillUiState.ShowCandidates -> AutofillFillDisplayState.Candidates(candidates)
+
+        AutofillFillUiState.Initial,
+        AutofillFillUiState.Loading,
+        is AutofillFillUiState.Result,
+        is AutofillFillUiState.Error,
+        -> AutofillFillDisplayState.Hidden
+    }
 
 data class AutofillFillRequest(
     val interactionId: AutofillInteractionId,

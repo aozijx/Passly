@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
-import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
@@ -9,8 +9,8 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -18,11 +18,12 @@ import org.junit.Test
 class WifiFormMapperTest {
     @Test
     fun fromEntryRestoresWifiSecurityHiddenAndPasswordFields() {
-        val entry = Entry(
-            EntryIdentity(EntryId("wifi"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
-            EntryProfile("Office"),
-            EntrySecret(credential = WifiCredential("Office", "wifi-secret", WifiSecurityType.Wep, true)),
-        )
+        val entry =
+            Entry(
+                EntryIdentity(EntryId("wifi"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
+                EntryProfile("Office"),
+                EntrySecret(credential = WifiCredential("Office", "wifi-secret", WifiSecurityType.Wep, true)),
+            )
 
         val draft = AddWifiFormState().fromEntry(entry).toEntryDraft()
 
@@ -33,14 +34,15 @@ class WifiFormMapperTest {
 
     @Test
     fun `form maps every wifi and shared field into a typed draft`() {
-        val draft = AddWifiFormState(
-            ssid = "  Passly  ",
-            securityType = WifiSecurityType.Wep,
-            password = "abcde",
-            isHidden = true,
-            notes = "  legacy device  ",
-            tags = " work, network, work, , ",
-        ).toEntryDraft()
+        val draft =
+            AddWifiFormState(
+                ssid = "  Passly  ",
+                securityType = WifiSecurityType.Wep,
+                password = "abcde",
+                isHidden = true,
+                notes = "  legacy device  ",
+                tags = " work, network, work, , ",
+            ).toEntryDraft()
 
         assertEquals(EntryType.WIFI, draft.type)
         assertEquals(EntryDraftValue.Text("  Passly  "), draft[FieldKey.TITLE])
@@ -57,10 +59,11 @@ class WifiFormMapperTest {
 
     @Test
     fun `switching to open security clears the password`() {
-        val form = AddWifiFormState(
-            securityType = WifiSecurityType.WpaPersonal,
-            password = "password",
-        ).withSecurityType(WifiSecurityType.Open)
+        val form =
+            AddWifiFormState(
+                securityType = WifiSecurityType.WpaPersonal,
+                password = "password",
+            ).withSecurityType(WifiSecurityType.Open)
 
         assertEquals("", form.password)
         assertEquals(WifiSecurityType.Open, form.securityType)
@@ -76,21 +79,23 @@ class WifiFormMapperTest {
 
     @Test
     fun `scanned wifi replaces wifi fields but preserves user metadata`() {
-        val original = AddWifiFormState(
-            ssid = "Old",
-            password = "old-password",
-            notes = "keep note",
-            tags = "keep, tags",
-        )
+        val original =
+            AddWifiFormState(
+                ssid = "Old",
+                password = "old-password",
+                notes = "keep note",
+                tags = "keep, tags",
+            )
 
-        val updated = original.applyScanned(
-            WifiQrPayload(
-                ssid = "Guest",
-                password = "must-be-cleared",
-                securityType = WifiSecurityType.Open,
-                isHidden = true,
-            ),
-        )
+        val updated =
+            original.applyScanned(
+                WifiQrPayload(
+                    ssid = "Guest",
+                    password = "must-be-cleared",
+                    securityType = WifiSecurityType.Open,
+                    isHidden = true,
+                ),
+            )
 
         assertEquals("Guest", updated.ssid)
         assertEquals("", updated.password)

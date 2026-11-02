@@ -16,19 +16,23 @@ import kotlinx.coroutines.withContext
 @Composable
 fun rememberInstalledAppIconBitmap(packageName: String?): ImageBitmap? {
     val context = LocalContext.current
-    val iconLoader = remember(context.applicationContext) {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            InstalledAppServicesProvider::class.java,
-        ).getInstalledAppIconLoader()
-    }
-    val bitmapState = remember(iconLoader, packageName) {
-        mutableStateOf<Bitmap?>(null)
-    }
-    LaunchedEffect(iconLoader, packageName) {
-        bitmapState.value = withContext(Dispatchers.IO) {
-            packageName?.let { iconLoader.loadIcon(it) }
+    val iconLoader =
+        remember(context.applicationContext) {
+            EntryPointAccessors
+                .fromApplication(
+                    context.applicationContext,
+                    InstalledAppServicesProvider::class.java,
+                ).getInstalledAppIconLoader()
         }
+    val bitmapState =
+        remember(iconLoader, packageName) {
+            mutableStateOf<Bitmap?>(null)
+        }
+    LaunchedEffect(iconLoader, packageName) {
+        bitmapState.value =
+            withContext(Dispatchers.IO) {
+                packageName?.let { iconLoader.loadIcon(it) }
+            }
     }
     val bitmap by bitmapState
     return remember(bitmap) { bitmap?.asImageBitmap() }

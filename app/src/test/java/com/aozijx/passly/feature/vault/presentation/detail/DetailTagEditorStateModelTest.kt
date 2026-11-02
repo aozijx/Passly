@@ -18,18 +18,21 @@ class DetailTagEditorStateModelTest {
 
     @Test
     fun `dirty open editor expresses discard confirmation as an overlay`() {
-        val opened = DetailTagEditorReducer.reduce(
-            DetailTagEditorState.Closed,
-            DetailMutation.TagEditorOpened(setOf("Personal"), setOf("Work")),
-        ) as DetailTagEditorState.Open
-        val dirty = DetailTagEditorReducer.reduce(
-            opened,
-            DetailMutation.TagInputChanged("New"),
-        ) as DetailTagEditorState.Open
-        val confirming = DetailTagEditorReducer.reduce(
-            dirty,
-            DetailMutation.TagEditorDismissRequested,
-        ) as DetailTagEditorState.Open
+        val opened =
+            DetailTagEditorReducer.reduce(
+                DetailTagEditorState.Closed,
+                DetailMutation.TagEditorOpened(setOf("Personal"), setOf("Work")),
+            ) as DetailTagEditorState.Open
+        val dirty =
+            DetailTagEditorReducer.reduce(
+                opened,
+                DetailMutation.TagInputChanged("New"),
+            ) as DetailTagEditorState.Open
+        val confirming =
+            DetailTagEditorReducer.reduce(
+                dirty,
+                DetailMutation.TagEditorDismissRequested,
+            ) as DetailTagEditorState.Open
 
         assertTrue(confirming.dirty)
         assertEquals(DetailTagEditorOverlay.ConfirmDiscard, confirming.overlay)

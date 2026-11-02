@@ -6,12 +6,12 @@ import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -22,202 +22,226 @@ class ScannerViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
-    fun `accepted scan publishes one success effect`() = runTest {
-        val model = model { BarcodeImageResult.NoBarcode }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+    fun `accepted scan publishes one success effect`() =
+        runTest {
+            val model = model { BarcodeImageResult.NoBarcode }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
 
-        model.onAction(ScannerUiAction.BarcodeDetected("one scan"))
-        model.onAction(ScannerUiAction.BarcodeDetected("duplicate frame"))
-        runCurrent()
+            model.onAction(ScannerUiAction.BarcodeDetected("one scan"))
+            model.onAction(ScannerUiAction.BarcodeDetected("duplicate frame"))
+            runCurrent()
 
-        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
-    }
-
-    @Test
-    fun `empty scan publishes no success effect`() = runTest {
-        val model = model { BarcodeImageResult.NoBarcode }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-
-        model.onAction(ScannerUiAction.BarcodeDetected(""))
-        runCurrent()
-
-        assertEquals(emptyList<ScannerEffect>(), effects)
-    }
-
-    @Test
-    fun `stopping scanner discards success feedback from a late image decode`() = runTest {
-        val pending = CompletableDeferred<BarcodeImageResult>()
-        val model = model { pending.await() }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
-        runCurrent()
-        model.onAction(ScannerUiAction.StopScanning)
-        pending.complete(BarcodeImageResult.Decoded("too late"))
-        runCurrent()
-
-        assertEquals(ScannerUiState.Stopped, model.uiState.value)
-        assertEquals(emptyList<ScannerEffect>(), effects)
-    }
-
-    @Test
-    fun `older image cannot replace a newer result even if native work ignores cancellation`() = runTest {
-        val old = CompletableDeferred<BarcodeImageResult>()
-        val model = model { image ->
-            if (image.value == "old") withContext(NonCancellable) { old.await() }
-            else BarcodeImageResult.Decoded("current")
+            assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
         }
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("old")))
-        runCurrent()
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("new")))
-        runCurrent()
-        old.complete(BarcodeImageResult.Decoded("stale"))
-        runCurrent()
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("current")), model.uiState.value)
-    }
 
     @Test
-    fun `rescan ignores old image failure and its feedback`() = runTest {
-        val old = CompletableDeferred<BarcodeImageResult>()
-        val model = model { withContext(NonCancellable) { old.await() } }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("old")))
-        runCurrent()
-        model.onAction(ScannerUiAction.StartScanning)
-        old.complete(BarcodeImageResult.Failed(IllegalStateException("decoder failed")))
-        runCurrent()
-        assertEquals(ScannerUiState.Scanning, model.uiState.value)
-        assertEquals(emptyList<ScannerEffect>(), effects)
-    }
+    fun `empty scan publishes no success effect`() =
+        runTest {
+            val model = model { BarcodeImageResult.NoBarcode }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+            model.onAction(ScannerUiAction.BarcodeDetected(""))
+            runCurrent()
+
+            assertEquals(emptyList<ScannerEffect>(), effects)
+        }
 
     @Test
-    fun `camera cannot replace shown result or interrupt image processing`() = runTest {
-        val pending = CompletableDeferred<BarcodeImageResult>()
-        val model = model { pending.await() }
-        model.onAction(ScannerUiAction.BarcodeDetected("first"))
-        model.onAction(ScannerUiAction.BarcodeDetected("second"))
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("first")), model.uiState.value)
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("image")))
-        model.onAction(ScannerUiAction.BarcodeDetected("late camera"))
-        assertEquals(ScannerUiState.ProcessingImage, model.uiState.value)
-        pending.complete(BarcodeImageResult.Decoded("from image"))
-        runCurrent()
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("from image")), model.uiState.value)
-    }
+    fun `stopping scanner discards success feedback from a late image decode`() =
+        runTest {
+            val pending = CompletableDeferred<BarcodeImageResult>()
+            val model = model { pending.await() }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
+            runCurrent()
+            model.onAction(ScannerUiAction.StopScanning)
+            pending.complete(BarcodeImageResult.Decoded("too late"))
+            runCurrent()
+
+            assertEquals(ScannerUiState.Stopped, model.uiState.value)
+            assertEquals(emptyList<ScannerEffect>(), effects)
+        }
 
     @Test
-    fun `stopped and destroyed scanner rejects late input`() = runTest {
-        var decodes = 0
-        val model = model { decodes++; BarcodeImageResult.Decoded("image") }
-        model.onAction(ScannerUiAction.StopScanning)
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
-        model.onAction(ScannerUiAction.BarcodeDetected("late"))
-        runCurrent()
-        assertEquals(0, decodes)
-        assertEquals(ScannerUiState.Stopped, model.uiState.value)
-        model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }.invoke(model)
-        model.onAction(ScannerUiAction.StartScanning)
-        model.onAction(ScannerUiAction.BarcodeDetected("after destroy"))
-        assertEquals(ScannerUiState.Stopped, model.uiState.value)
-    }
+    fun `older image cannot replace a newer result even if native work ignores cancellation`() =
+        runTest {
+            val old = CompletableDeferred<BarcodeImageResult>()
+            val model =
+                model { image ->
+                    if (image.value == "old") {
+                        withContext(NonCancellable) { old.await() }
+                    } else {
+                        BarcodeImageResult.Decoded("current")
+                    }
+                }
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("old")))
+            runCurrent()
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("new")))
+            runCurrent()
+            old.complete(BarcodeImageResult.Decoded("stale"))
+            runCurrent()
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("current")), model.uiState.value)
+        }
 
     @Test
-    fun `empty image result returns to scanning with localized feedback event`() = runTest {
-        val model = model { BarcodeImageResult.NoBarcode }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
-        runCurrent()
-        assertEquals(ScannerUiState.Scanning, model.uiState.value)
-        assertEquals(listOf(ScannerEffect.ImageNoBarcode), effects)
-    }
+    fun `rescan ignores old image failure and its feedback`() =
+        runTest {
+            val old = CompletableDeferred<BarcodeImageResult>()
+            val model = model { withContext(NonCancellable) { old.await() } }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("old")))
+            runCurrent()
+            model.onAction(ScannerUiAction.StartScanning)
+            old.complete(BarcodeImageResult.Failed(IllegalStateException("decoder failed")))
+            runCurrent()
+            assertEquals(ScannerUiState.Scanning, model.uiState.value)
+            assertEquals(emptyList<ScannerEffect>(), effects)
+        }
 
     @Test
-    fun `scan replacement prevents a pending text copy from reaching clipboard`() = runTest {
-        val clipboard = DelayedClipboard()
-        val model = model(clipboardWriter = clipboard) { BarcodeImageResult.NoBarcode }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-        model.onAction(ScannerUiAction.BarcodeDetected("text to copy"))
-        model.onAction(ScannerUiAction.CopyText)
-        runCurrent()
-        clipboard.writeStarted.await()
-        model.onAction(ScannerUiAction.StartScanning)
-        clipboard.finishWrite.complete(Unit)
-        runCurrent()
-        assertNull(clipboard.lastValue)
-        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
-    }
+    fun `camera cannot replace shown result or interrupt image processing`() =
+        runTest {
+            val pending = CompletableDeferred<BarcodeImageResult>()
+            val model = model { pending.await() }
+            model.onAction(ScannerUiAction.BarcodeDetected("first"))
+            model.onAction(ScannerUiAction.BarcodeDetected("second"))
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("first")), model.uiState.value)
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("image")))
+            model.onAction(ScannerUiAction.BarcodeDetected("late camera"))
+            assertEquals(ScannerUiState.ProcessingImage, model.uiState.value)
+            pending.complete(BarcodeImageResult.Decoded("from image"))
+            runCurrent()
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("from image")), model.uiState.value)
+        }
 
     @Test
-    fun `accepted camera result invalidates queued feedback from failed image`() = runTest {
-        val model = model { BarcodeImageResult.NoBarcode }
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
-        runCurrent()
-        model.onAction(ScannerUiAction.BarcodeDetected("current camera result"))
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-        runCurrent()
-        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
-    }
+    fun `stopped and destroyed scanner rejects late input`() =
+        runTest {
+            var decodes = 0
+            val model =
+                model {
+                    decodes++
+                    BarcodeImageResult.Decoded("image")
+                }
+            model.onAction(ScannerUiAction.StopScanning)
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
+            model.onAction(ScannerUiAction.BarcodeDetected("late"))
+            runCurrent()
+            assertEquals(0, decodes)
+            assertEquals(ScannerUiState.Stopped, model.uiState.value)
+            model.javaClass
+                .getDeclaredMethod("onCleared")
+                .apply { isAccessible = true }
+                .invoke(model)
+            model.onAction(ScannerUiAction.StartScanning)
+            model.onAction(ScannerUiAction.BarcodeDetected("after destroy"))
+            assertEquals(ScannerUiState.Stopped, model.uiState.value)
+        }
 
     @Test
-    fun `buffered image feedback is discarded after scan restarts`() = runTest {
-        val model = model { BarcodeImageResult.NoBarcode }
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
-        runCurrent()
-        model.onAction(ScannerUiAction.StartScanning)
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
-        runCurrent()
-        assertEquals(emptyList<ScannerEffect>(), effects)
-    }
+    fun `empty image result returns to scanning with localized feedback event`() =
+        runTest {
+            val model = model { BarcodeImageResult.NoBarcode }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
+            runCurrent()
+            assertEquals(ScannerUiState.Scanning, model.uiState.value)
+            assertEquals(listOf(ScannerEffect.ImageNoBarcode), effects)
+        }
 
     @Test
-    fun `host pause preserves a visible result but restarts a stopped scan`() = runTest {
-        val model = model { BarcodeImageResult.Decoded("selected photo") }
-
-        model.onAction(ScannerUiAction.BarcodeDetected("visible result"))
-        model.onAction(ScannerUiAction.HostStopped)
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
-
-        model.onAction(ScannerUiAction.HostStarted)
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
-
-        model.onAction(ScannerUiAction.StartScanning)
-        model.onAction(ScannerUiAction.HostStopped)
-        assertEquals(ScannerUiState.Stopped, model.uiState.value)
-        model.onAction(ScannerUiAction.HostStarted)
-        model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
-        runCurrent()
-
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("selected photo")), model.uiState.value)
-    }
+    fun `scan replacement prevents a pending text copy from reaching clipboard`() =
+        runTest {
+            val clipboard = DelayedClipboard()
+            val model = model(clipboardWriter = clipboard) { BarcodeImageResult.NoBarcode }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+            model.onAction(ScannerUiAction.BarcodeDetected("text to copy"))
+            model.onAction(ScannerUiAction.CopyText)
+            runCurrent()
+            clipboard.writeStarted.await()
+            model.onAction(ScannerUiAction.StartScanning)
+            clipboard.finishWrite.complete(Unit)
+            runCurrent()
+            assertNull(clipboard.lastValue)
+            assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
+        }
 
     @Test
-    fun `host pause prevents an in-flight copy from writing after foreground loss`() = runTest {
-        val clipboard = DelayedClipboard()
-        val model = model(clipboardWriter = clipboard) { BarcodeImageResult.NoBarcode }
-        val effects = mutableListOf<ScannerEffect>()
-        backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+    fun `accepted camera result invalidates queued feedback from failed image`() =
+        runTest {
+            val model = model { BarcodeImageResult.NoBarcode }
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
+            runCurrent()
+            model.onAction(ScannerUiAction.BarcodeDetected("current camera result"))
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+            runCurrent()
+            assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
+        }
 
-        model.onAction(ScannerUiAction.BarcodeDetected("sensitive text"))
-        model.onAction(ScannerUiAction.CopyText)
-        runCurrent()
-        clipboard.writeStarted.await()
+    @Test
+    fun `buffered image feedback is discarded after scan restarts`() =
+        runTest {
+            val model = model { BarcodeImageResult.NoBarcode }
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("empty")))
+            runCurrent()
+            model.onAction(ScannerUiAction.StartScanning)
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+            runCurrent()
+            assertEquals(emptyList<ScannerEffect>(), effects)
+        }
 
-        model.onAction(ScannerUiAction.HostStopped)
-        clipboard.finishWrite.complete(Unit)
-        runCurrent()
+    @Test
+    fun `host pause preserves a visible result but restarts a stopped scan`() =
+        runTest {
+            val model = model { BarcodeImageResult.Decoded("selected photo") }
 
-        assertNull(clipboard.lastValue)
-        assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
-        assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("sensitive text")), model.uiState.value)
-    }
+            model.onAction(ScannerUiAction.BarcodeDetected("visible result"))
+            model.onAction(ScannerUiAction.HostStopped)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
+
+            model.onAction(ScannerUiAction.HostStarted)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
+
+            model.onAction(ScannerUiAction.StartScanning)
+            model.onAction(ScannerUiAction.HostStopped)
+            assertEquals(ScannerUiState.Stopped, model.uiState.value)
+            model.onAction(ScannerUiAction.HostStarted)
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
+            runCurrent()
+
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("selected photo")), model.uiState.value)
+        }
+
+    @Test
+    fun `host pause prevents an in-flight copy from writing after foreground loss`() =
+        runTest {
+            val clipboard = DelayedClipboard()
+            val model = model(clipboardWriter = clipboard) { BarcodeImageResult.NoBarcode }
+            val effects = mutableListOf<ScannerEffect>()
+            backgroundScope.launch(main.testDispatcher) { model.effects.toList(effects) }
+
+            model.onAction(ScannerUiAction.BarcodeDetected("sensitive text"))
+            model.onAction(ScannerUiAction.CopyText)
+            runCurrent()
+            clipboard.writeStarted.await()
+
+            model.onAction(ScannerUiAction.HostStopped)
+            clipboard.finishWrite.complete(Unit)
+            runCurrent()
+
+            assertNull(clipboard.lastValue)
+            assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("sensitive text")), model.uiState.value)
+        }
 
     private fun model(
         clipboardWriter: SensitiveClipboardWriter = SensitiveClipboardWriter { },
@@ -239,7 +263,10 @@ class ScannerViewModelTest {
             lastValue = text
         }
 
-        override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean {
+        override suspend fun writeSensitiveIf(
+            text: String,
+            canWrite: () -> Boolean,
+        ): Boolean {
             writeStarted.complete(Unit)
             withContext(NonCancellable) { finishWrite.await() }
             if (!canWrite()) return false

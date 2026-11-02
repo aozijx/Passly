@@ -19,8 +19,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchPhase
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
 
@@ -35,14 +35,21 @@ internal fun VaultSearchAction(
     modifier: Modifier = Modifier,
 ) {
     var moreMenuExpanded by remember { mutableStateOf(false) }
-    val action = when {
-        searchStateHolder.uiState.phase == VaultSearchPhase.BROWSING ||
-            searchStateHolder.uiState.phase == VaultSearchPhase.PULLING -> {
-            VaultSearchActionType.MORE
+    val action =
+        when {
+            searchStateHolder.uiState.phase == VaultSearchPhase.BROWSING ||
+                searchStateHolder.uiState.phase == VaultSearchPhase.PULLING -> {
+                VaultSearchActionType.MORE
+            }
+
+            uiState.query.isNotEmpty() -> {
+                VaultSearchActionType.CLEAR
+            }
+
+            else -> {
+                VaultSearchActionType.NONE
+            }
         }
-        uiState.query.isNotEmpty() -> VaultSearchActionType.CLEAR
-        else -> VaultSearchActionType.NONE
-    }
 
     LaunchedEffect(action) {
         if (action != VaultSearchActionType.MORE) moreMenuExpanded = false
@@ -53,20 +60,28 @@ internal fun VaultSearchAction(
 
     Box(modifier = modifier.zIndex(1f)) {
         when (action) {
-            VaultSearchActionType.MORE -> IconButton(
-                onClick = { moreMenuExpanded = true },
-            ) {
-                Icon(Icons.Default.MoreVert, stringResource(R.string.more))
+            VaultSearchActionType.MORE -> {
+                IconButton(
+                    onClick = { moreMenuExpanded = true },
+                ) {
+                    Icon(Icons.Default.MoreVert, stringResource(R.string.more))
+                }
             }
-            VaultSearchActionType.CLEAR -> IconButton(
-                onClick = searchStateHolder::clear,
-            ) {
-                Icon(
-                    Icons.Default.Clear,
-                    stringResource(R.string.vault_clear_filter),
-                )
+
+            VaultSearchActionType.CLEAR -> {
+                IconButton(
+                    onClick = searchStateHolder::clear,
+                ) {
+                    Icon(
+                        Icons.Default.Clear,
+                        stringResource(R.string.vault_clear_filter),
+                    )
+                }
             }
-            VaultSearchActionType.NONE -> Spacer(Modifier.size(VaultSearchActionSize))
+
+            VaultSearchActionType.NONE -> {
+                Spacer(Modifier.size(VaultSearchActionSize))
+            }
         }
         VaultDropdownMenu(
             expanded = moreMenuExpanded,

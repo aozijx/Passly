@@ -5,7 +5,6 @@ import androidx.room.Query
 
 @Dao
 interface DatabaseMaintenanceDao {
-
     @Query("DELETE FROM attachment_refs")
     suspend fun clearAttachments(): Int
 
@@ -26,5 +25,4 @@ interface DatabaseMaintenanceDao {
 
     @Query("DELETE FROM entries")
     suspend fun clearEntries(): Int
-
 }

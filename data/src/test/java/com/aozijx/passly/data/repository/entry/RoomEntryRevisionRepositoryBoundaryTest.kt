@@ -16,15 +16,16 @@ import org.junit.Test
 class RoomEntryRevisionRepositoryBoundaryTest {
     @Test
     fun `metadata mapping never needs encrypted snapshot content`() {
-        val entity = EntryRevisionEntity(
-            revisionId = "revision-7",
-            entryId = "entry-1",
-            version = 7,
-            entryContentCipher = byteArrayOf(),
-            sensitiveFieldCipherSet = byteArrayOf(),
-            changeType = RevisionChange.VERSION_RESTORED.name,
-            createdAt = 42L,
-        )
+        val entity =
+            EntryRevisionEntity(
+                revisionId = "revision-7",
+                entryId = "entry-1",
+                version = 7,
+                entryContentCipher = byteArrayOf(),
+                sensitiveFieldCipherSet = byteArrayOf(),
+                changeType = RevisionChange.VERSION_RESTORED.name,
+                createdAt = 42L,
+            )
 
         val metadata = entity.toRevisionMetadata()
 

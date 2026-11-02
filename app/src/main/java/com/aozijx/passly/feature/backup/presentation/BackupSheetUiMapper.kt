@@ -3,36 +3,39 @@ package com.aozijx.passly.feature.backup.presentation
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
 
-internal fun BackupUiState.toSheetUiState(
-    configuredDirectoryLabel: String?,
-): BackupRestoreSheetUiState = when (val current = workflow) {
-    BackupWorkflow.Idle,
-    is BackupWorkflow.AwaitingExportTarget,
-    is BackupWorkflow.Executing,
-    is BackupWorkflow.Failed -> BackupRestoreSheetUiState.Hidden
-    BackupWorkflow.FormatPicker -> BackupRestoreSheetUiState.FormatPicker
-    is BackupWorkflow.ConfigureExport -> current.options.toUiState(configuredDirectoryLabel)
-    is BackupWorkflow.ConfigureImport -> current.options.toUiState()
-}
+internal fun BackupUiState.toSheetUiState(configuredDirectoryLabel: String?): BackupRestoreSheetUiState =
+    when (val current = workflow) {
+        BackupWorkflow.Idle,
+        is BackupWorkflow.AwaitingExportTarget,
+        is BackupWorkflow.Executing,
+        is BackupWorkflow.Failed,
+        -> BackupRestoreSheetUiState.Hidden
 
-private fun BackupExportOptions.toUiState(
-    configuredDirectoryLabel: String?,
-) = BackupRestoreSheetUiState.ExportOptions(
-    configuredDirectoryLabel = configuredDirectoryLabel,
-    password = password.copyToString(),
-    format = format,
-    includeIcons = includeIcons,
-    includeAttachments = includeAttachments,
-    includeDeleted = includeDeleted,
-    includedEntryTypes = includedEntryTypes,
-    canSubmit = canSubmit,
-)
+        BackupWorkflow.FormatPicker -> BackupRestoreSheetUiState.FormatPicker
 
-private fun BackupImportOptions.toUiState() = BackupRestoreSheetUiState.ImportOptions(
-    password = password.copyToString(),
-    mode = mode,
-    strategy = strategy,
-)
+        is BackupWorkflow.ConfigureExport -> current.options.toUiState(configuredDirectoryLabel)
+
+        is BackupWorkflow.ConfigureImport -> current.options.toUiState()
+    }
+
+private fun BackupExportOptions.toUiState(configuredDirectoryLabel: String?) =
+    BackupRestoreSheetUiState.ExportOptions(
+        configuredDirectoryLabel = configuredDirectoryLabel,
+        password = password.copyToString(),
+        format = format,
+        includeIcons = includeIcons,
+        includeAttachments = includeAttachments,
+        includeDeleted = includeDeleted,
+        includedEntryTypes = includedEntryTypes,
+        canSubmit = canSubmit,
+    )
+
+private fun BackupImportOptions.toUiState() =
+    BackupRestoreSheetUiState.ImportOptions(
+        password = password.copyToString(),
+        mode = mode,
+        strategy = strategy,
+    )
 
 private fun SensitiveValue.copyToString(): String {
     val chars = toCharArray()

@@ -12,24 +12,26 @@ import org.junit.Test
 
 class CredentialResponseResultEventsTest {
     @Test
-    fun `completion produced during route recreation is delivered once without replay`() = runTest {
-        val events = CredentialResponseResultEvents()
-        val completion = CredentialResponseCompletion.Immediate(Intent())
+    fun `completion produced during route recreation is delivered once without replay`() =
+        runTest {
+            val events = CredentialResponseResultEvents()
+            val completion = CredentialResponseCompletion.Immediate(Intent())
 
-        assertTrue(events.publish(completion))
-        assertSame(completion, events.completions.first())
-        assertNull(withTimeoutOrNull(1) { events.completions.first() })
-    }
+            assertTrue(events.publish(completion))
+            assertSame(completion, events.completions.first())
+            assertNull(withTimeoutOrNull(1) { events.completions.first() })
+        }
 
     @Test
-    fun `cancelled route collector does not consume a completion emitted later`() = runTest {
-        val events = CredentialResponseResultEvents()
-        val abandonedCollector = async { events.completions.first() }
-        abandonedCollector.cancel()
-        val completion = CredentialResponseCompletion.Immediate(Intent())
+    fun `cancelled route collector does not consume a completion emitted later`() =
+        runTest {
+            val events = CredentialResponseResultEvents()
+            val abandonedCollector = async { events.completions.first() }
+            abandonedCollector.cancel()
+            val completion = CredentialResponseCompletion.Immediate(Intent())
 
-        assertTrue(events.publish(completion))
-        assertSame(completion, events.completions.first())
-        assertNull(withTimeoutOrNull(1) { events.completions.first() })
-    }
+            assertTrue(events.publish(completion))
+            assertSame(completion, events.completions.first())
+            assertNull(withTimeoutOrNull(1) { events.completions.first() })
+        }
 }

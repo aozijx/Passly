@@ -5,4 +5,6 @@ package com.aozijx.passly.feature.scanner.presentation
  * 避免 MVI Contract 直接依赖 Android 平台类型。
  */
 @JvmInline
-value class ImageRef(val value: String)
+value class ImageRef(
+    val value: String,
+)

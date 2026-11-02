@@ -25,72 +25,78 @@ fun settingsGroupItem(
     selected: Boolean = false,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
-): SegmentedSettingsItem = SegmentedSettingsItem(key = key, visible = visible) { shapes ->
-    val trailingContent: (@Composable () -> Unit)? =
-        if (isLoading) {
-            {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+): SegmentedSettingsItem =
+    SegmentedSettingsItem(key = key, visible = visible) { shapes ->
+        val trailingContent: (@Composable () -> Unit)? =
+            if (isLoading) {
+                {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                trailing
+            }
+        val leadingContent = icon.asLeadingContent(reserveLeadingIconSpace)
+        val supportingText = subtitle
+        val supportingContent: (@Composable () -> Unit)? =
+            if (supportingText != null) {
+                {
+                    Text(
+                        text = supportingText,
+                    )
+                }
+            } else {
+                null
+            }
+        val content: @Composable () -> Unit = {
+            Text(
+                text = title,
+            )
+        }
+        when {
+            onClick != null && selected -> {
+                SegmentedListItem(
+                    selected = true,
+                    onClick = onClick,
+                    shapes = shapes,
+                    colors = settingsSegmentedColors(),
+                    enabled = enabled,
+                    verticalAlignment = Alignment.CenterVertically,
+                    leadingContent = leadingContent,
+                    trailingContent = trailingContent,
+                    supportingContent = supportingContent,
+                    content = content,
                 )
             }
-        } else {
-            trailing
-        }
-    val leadingContent = icon.asLeadingContent(reserveLeadingIconSpace)
-    val supportingText = subtitle
-    val supportingContent: (@Composable () -> Unit)? =
-        if (supportingText != null) {
-            {
-                Text(
-                    text = supportingText,
+
+            onClick != null -> {
+                SegmentedListItem(
+                    onClick = onClick,
+                    shapes = shapes,
+                    colors = settingsSegmentedColors(),
+                    enabled = enabled,
+                    verticalAlignment = Alignment.CenterVertically,
+                    leadingContent = leadingContent,
+                    trailingContent = trailingContent,
+                    supportingContent = supportingContent,
+                    content = content,
                 )
             }
-        } else {
-            null
+
+            else -> {
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = settingsSegmentedColors(),
+                    enabled = enabled,
+                    verticalAlignment = Alignment.CenterVertically,
+                    leadingContent = leadingContent,
+                    trailingContent = trailingContent,
+                    supportingContent = supportingContent,
+                    content = content,
+                )
+            }
         }
-    val content: @Composable () -> Unit = {
-        Text(
-            text = title,
-        )
     }
-    when {
-        onClick != null && selected ->
-            SegmentedListItem(
-                selected = true,
-                onClick = onClick,
-                shapes = shapes,
-                colors = settingsSegmentedColors(),
-                enabled = enabled,
-                verticalAlignment = Alignment.CenterVertically,
-                leadingContent = leadingContent,
-                trailingContent = trailingContent,
-                supportingContent = supportingContent,
-                content = content,
-            )
-        onClick != null ->
-            SegmentedListItem(
-                onClick = onClick,
-                shapes = shapes,
-                colors = settingsSegmentedColors(),
-                enabled = enabled,
-                verticalAlignment = Alignment.CenterVertically,
-                leadingContent = leadingContent,
-                trailingContent = trailingContent,
-                supportingContent = supportingContent,
-                content = content,
-            )
-        else ->
-            SegmentedListItem(
-                shapes = shapes,
-                colors = settingsSegmentedColors(),
-                enabled = enabled,
-                verticalAlignment = Alignment.CenterVertically,
-                leadingContent = leadingContent,
-                trailingContent = trailingContent,
-                supportingContent = supportingContent,
-                content = content,
-            )
-    }
-}

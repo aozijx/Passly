@@ -20,11 +20,12 @@ class SensitiveRevisionFingerprintTest {
         assertEquals(setOf(SensitiveFieldKey.PASSWORD), first.keys)
     }
 
-    private fun field(cipher: ByteArray) = EntrySecretFieldEntity(
-        entryId = "entry",
-        fieldKey = SensitiveFieldKey.PASSWORD.name,
-        valueCipher = cipher,
-        keyVersion = 1,
-        updatedAt = 1L,
-    )
+    private fun field(cipher: ByteArray) =
+        EntrySecretFieldEntity(
+            entryId = "entry",
+            fieldKey = SensitiveFieldKey.PASSWORD.name,
+            valueCipher = cipher,
+            keyVersion = 1,
+            updatedAt = 1L,
+        )
 }

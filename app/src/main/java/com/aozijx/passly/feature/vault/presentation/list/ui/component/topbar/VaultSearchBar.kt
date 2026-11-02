@@ -73,10 +73,11 @@ internal fun VaultSearchBar(
         textFieldState = textFieldState,
         searchBarState = searchBarState,
         onSearch = onSearch,
-        modifier = modifier
-            .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .focusProperties { canFocus = isEditing },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .focusProperties { canFocus = isEditing },
         placeholder = { Text(stringResource(R.string.vault_search_placeholder)) },
         leadingIcon = {
             Icon(

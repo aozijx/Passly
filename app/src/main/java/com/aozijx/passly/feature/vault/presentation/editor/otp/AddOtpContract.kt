@@ -9,16 +9,19 @@ data class AddOtpCodeState(
     val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
-        get() = form.isValid && savePhase == AddOtpSavePhase.Idle &&
-            loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
+        get() =
+            form.isValid && savePhase == AddOtpSavePhase.Idle &&
+                loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
 }
 
 sealed interface AddOtpSavePhase {
     data object Idle : AddOtpSavePhase
+
     data object Saving : AddOtpSavePhase
 }
 
 sealed interface AddOtpEvent {
     data object UriParsed : AddOtpEvent
+
     data object UriParseFailed : AddOtpEvent
 }

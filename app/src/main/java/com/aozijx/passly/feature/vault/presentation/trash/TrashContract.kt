@@ -1,29 +1,43 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
-import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashEntryUiModel
+import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 data class TrashUiState(
     val content: TrashContentState = TrashContentState.Loading,
     val operation: TrashOperationState = TrashOperationState.Idle,
 ) {
     val isBusy: Boolean
-        get() = operation is TrashOperationState.Entry ||
-            operation == TrashOperationState.Emptying
+        get() =
+            operation is TrashOperationState.Entry ||
+                operation == TrashOperationState.Emptying
 }
 
 sealed interface TrashContentState {
     data object Loading : TrashContentState
-    data class Loaded(val entries: List<EntryListItem>) : TrashContentState
-    data class Failed(val message: UiErrorMessage) : TrashContentState
+
+    data class Loaded(
+        val entries: List<EntryListItem>,
+    ) : TrashContentState
+
+    data class Failed(
+        val message: UiErrorMessage,
+    ) : TrashContentState
 }
 
 sealed interface TrashOperationState {
     data object Idle : TrashOperationState
-    data class Entry(val entryId: String) : TrashOperationState
+
+    data class Entry(
+        val entryId: String,
+    ) : TrashOperationState
+
     data object Emptying : TrashOperationState
-    data class Failed(val message: UiErrorMessage) : TrashOperationState
+
+    data class Failed(
+        val message: UiErrorMessage,
+    ) : TrashOperationState
 }
 
 internal fun TrashContentState.toUiModels(): List<TrashEntryUiModel> =
@@ -43,9 +57,19 @@ internal fun TrashContentState.toUiModels(): List<TrashEntryUiModel> =
     }
 
 sealed interface TrashUiAction {
-    data class Restore(val entryId: String, val expectedVersion: Int) : TrashUiAction
-    data class DeletePermanently(val entryId: String, val expectedVersion: Int) : TrashUiAction
+    data class Restore(
+        val entryId: String,
+        val expectedVersion: Int,
+    ) : TrashUiAction
+
+    data class DeletePermanently(
+        val entryId: String,
+        val expectedVersion: Int,
+    ) : TrashUiAction
+
     data object Empty : TrashUiAction
+
     data object ClearError : TrashUiAction
+
     data object RetryLoad : TrashUiAction
 }

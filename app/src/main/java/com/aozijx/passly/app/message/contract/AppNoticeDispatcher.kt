@@ -7,7 +7,7 @@ data class NoticeDispatchReceipt(
     val settingsVersion: Long,
     val plan: NoticeRoutePlan,
     val sinkResults: Map<NoticeTarget, SinkResult>,
-    val status: NoticeDispatchStatus
+    val status: NoticeDispatchStatus,
 )
 
 enum class NoticeDispatchStatus {
@@ -15,7 +15,7 @@ enum class NoticeDispatchStatus {
     PARTIALLY_DELIVERED,
     SUPPRESSED,
     DUPLICATE,
-    FAILED
+    FAILED,
 }
 
 /**

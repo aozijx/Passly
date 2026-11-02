@@ -20,5 +20,4 @@ class CardExpirySelectionTest {
 
         assertTrue(2025 !in years)
     }
-
 }

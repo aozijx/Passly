@@ -18,6 +18,7 @@ internal class IconResourceCleanupQueue(
     private val reclaim: suspend (String) -> AppResult<IconResourceReclaimOutcome>,
 ) {
     private class Request
+
     private val pending = ConcurrentHashMap<String, Request>()
     private val mutex = Mutex()
     private val wakeups = Channel<Unit>(Channel.CONFLATED)
@@ -42,14 +43,15 @@ internal class IconResourceCleanupQueue(
         wakeups.trySend(Unit)
     }
 
-    suspend fun drain() = mutex.withLock {
-        if (!access.hasFullSecureSessionAccess()) return@withLock
-        for ((path, request) in pending.entries.map { it.key to it.value }) {
+    suspend fun drain() =
+        mutex.withLock {
             if (!access.hasFullSecureSessionAccess()) return@withLock
-            when (reclaim(path)) {
-                is AppResult.Success -> pending.remove(path, request)
-                is AppResult.Failure -> Unit
+            for ((path, request) in pending.entries.map { it.key to it.value }) {
+                if (!access.hasFullSecureSessionAccess()) return@withLock
+                when (reclaim(path)) {
+                    is AppResult.Success -> pending.remove(path, request)
+                    is AppResult.Failure -> Unit
+                }
             }
         }
-    }
 }

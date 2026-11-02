@@ -15,7 +15,8 @@ enum class ActivityType(
     UPDATE(isMutation = true, isContentChange = true),
     VERSION_RESTORED(isMutation = true, isContentChange = true),
     DELETE(isMutation = true),
-    RESTORE(isMutation = true);
+    RESTORE(isMutation = true),
+    ;
 
     companion object {
         @JvmStatic

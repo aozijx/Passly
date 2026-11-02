@@ -8,7 +8,10 @@ fun interface SensitiveClipboardWriter {
      * Checks the caller's short-lived authorization before writing. Implementations that suspend
      * before the platform side effect must override this method and check again after suspension.
      */
-    suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean {
+    suspend fun writeSensitiveIf(
+        text: String,
+        canWrite: () -> Boolean,
+    ): Boolean {
         if (!canWrite()) return false
         writeSensitive(text)
         return true

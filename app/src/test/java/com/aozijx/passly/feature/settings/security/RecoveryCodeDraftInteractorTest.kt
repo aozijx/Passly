@@ -18,92 +18,103 @@ import org.junit.Test
 
 class RecoveryCodeDraftInteractorTest {
     @Test
-    fun `generation exposes an owned disclosure while interactor retains draft`() = runTest {
-        val draft = FakeDraft("recovery-code")
-        val interactor = RecoveryCodeDraftInteractor(
-            draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
-            clipboardWriter = RecordingClipboard(),
-        )
+    fun `generation exposes an owned disclosure while interactor retains draft`() =
+        runTest {
+            val draft = FakeDraft("recovery-code")
+            val interactor =
+                RecoveryCodeDraftInteractor(
+                    draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
+                    clipboardWriter = RecordingClipboard(),
+                )
 
-        val result = interactor.generate() as RecoveryCodeDraftResult.Ready
-        val revealed = result.disclosure.toCharArray()
-        try {
-            assertEquals("recovery-code", revealed.concatToString())
-        } finally {
-            revealed.fill('\u0000')
-            result.disclosure.wipe()
-            interactor.close()
+            val result = interactor.generate() as RecoveryCodeDraftResult.Ready
+            val revealed = result.disclosure.toCharArray()
+            try {
+                assertEquals("recovery-code", revealed.concatToString())
+            } finally {
+                revealed.fill('\u0000')
+                result.disclosure.wipe()
+                interactor.close()
+            }
+
+            assertTrue(draft.closed)
         }
 
-        assertTrue(draft.closed)
-    }
+    @Test
+    fun `copy and dismiss never expose draft plaintext to presentation`() =
+        runTest {
+            val draft = FakeDraft("recovery-code")
+            val clipboard = RecordingClipboard()
+            val interactor =
+                RecoveryCodeDraftInteractor(
+                    draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
+                    clipboardWriter = clipboard,
+                )
+            val result = interactor.generate() as RecoveryCodeDraftResult.Ready
+            result.disclosure.wipe()
+
+            assertSame(RecoveryCodeCopyResult.Copied, interactor.copy())
+            assertEquals("recovery-code", clipboard.lastValue)
+
+            interactor.dismiss()
+            assertTrue(draft.closed)
+            assertSame(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
+        }
 
     @Test
-    fun `copy and dismiss never expose draft plaintext to presentation`() = runTest {
-        val draft = FakeDraft("recovery-code")
-        val clipboard = RecordingClipboard()
-        val interactor = RecoveryCodeDraftInteractor(
-            draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
-            clipboardWriter = clipboard,
-        )
-        val result = interactor.generate() as RecoveryCodeDraftResult.Ready
-        result.disclosure.wipe()
+    fun `dismissed recovery draft cannot finish a pending clipboard write`() =
+        runTest {
+            val draft = FakeDraft("recovery-code")
+            val clipboard = DelayedClipboard()
+            val interactor =
+                RecoveryCodeDraftInteractor(
+                    draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
+                    clipboardWriter = clipboard,
+                )
+            interactor.generate().let { (it as RecoveryCodeDraftResult.Ready).disclosure.wipe() }
+            val pendingCopy = async { interactor.copy() }
+            clipboard.writeStarted.await()
 
-        assertSame(RecoveryCodeCopyResult.Copied, interactor.copy())
-        assertEquals("recovery-code", clipboard.lastValue)
+            interactor.dismiss()
+            clipboard.finishWrite.complete(Unit)
 
-        interactor.dismiss()
-        assertTrue(draft.closed)
-        assertSame(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
-    }
-
-    @Test
-    fun `dismissed recovery draft cannot finish a pending clipboard write`() = runTest {
-        val draft = FakeDraft("recovery-code")
-        val clipboard = DelayedClipboard()
-        val interactor = RecoveryCodeDraftInteractor(
-            draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
-            clipboardWriter = clipboard,
-        )
-        interactor.generate().let { (it as RecoveryCodeDraftResult.Ready).disclosure.wipe() }
-        val pendingCopy = async { interactor.copy() }
-        clipboard.writeStarted.await()
-
-        interactor.dismiss()
-        clipboard.finishWrite.complete(Unit)
-
-        assertSame(RecoveryCodeCopyResult.NoActiveDraft, pendingCopy.await())
-        assertNull(clipboard.lastValue)
-        assertTrue(draft.closed)
-    }
+            assertSame(RecoveryCodeCopyResult.NoActiveDraft, pendingCopy.await())
+            assertNull(clipboard.lastValue)
+            assertTrue(draft.closed)
+        }
 
     @Test
-    fun `reconcile commit releases active draft only after durable commit`() = runTest {
-        val draft = FakeDraft("recovery-code")
-        val interactor = RecoveryCodeDraftInteractor(
-            draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
-            clipboardWriter = RecordingClipboard(),
-        )
-        (interactor.generate() as RecoveryCodeDraftResult.Ready).disclosure.wipe()
+    fun `reconcile commit releases active draft only after durable commit`() =
+        runTest {
+            val draft = FakeDraft("recovery-code")
+            val interactor =
+                RecoveryCodeDraftInteractor(
+                    draftFactory = RecoveryCredentialFactory { RecoveryCredentialCreation.Ready(draft) },
+                    clipboardWriter = RecordingClipboard(),
+                )
+            (interactor.generate() as RecoveryCodeDraftResult.Ready).disclosure.wipe()
 
-        assertEquals(false, interactor.reconcileCommit())
-        draft.committed = true
-        assertEquals(true, interactor.reconcileCommit())
-        assertEquals(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
-        assertEquals(false, draft.closed)
-    }
+            assertEquals(false, interactor.reconcileCommit())
+            draft.committed = true
+            assertEquals(true, interactor.reconcileCommit())
+            assertEquals(RecoveryCodeCommitResult.NoActiveDraft, interactor.commit())
+            assertEquals(false, draft.closed)
+        }
 
-    private class FakeDraft(private val value: String) : RecoveryCredentialDraft {
+    private class FakeDraft(
+        private val value: String,
+    ) : RecoveryCredentialDraft {
         override val id = RecoveryCredentialId("draft-id")
         var closed = false
         var committed = false
 
         override fun reveal(): CharArray? = if (closed) null else value.toCharArray()
 
-        override suspend fun commit(): AuthenticationResult = AuthenticationResult.Success(
-            method = AuthenticationMethod.RECOVERY_CODE,
-            reusedSession = false,
-        )
+        override suspend fun commit(): AuthenticationResult =
+            AuthenticationResult.Success(
+                method = AuthenticationMethod.RECOVERY_CODE,
+                reusedSession = false,
+            )
 
         override val isCommitted: Boolean get() = committed
 
@@ -114,6 +125,7 @@ class RecoveryCodeDraftInteractorTest {
 
     private class RecordingClipboard : SensitiveClipboardWriter {
         var lastValue: String? = null
+
         override suspend fun writeSensitive(text: String) {
             lastValue = text
         }
@@ -130,7 +142,10 @@ class RecoveryCodeDraftInteractorTest {
             lastValue = text
         }
 
-        override suspend fun writeSensitiveIf(text: String, canWrite: () -> Boolean): Boolean {
+        override suspend fun writeSensitiveIf(
+            text: String,
+            canWrite: () -> Boolean,
+        ): Boolean {
             writeStarted.complete(Unit)
             finishWrite.await()
             if (!canWrite()) return false

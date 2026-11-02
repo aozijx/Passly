@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 
 object KeyDerivation {
-
     const val SALT_LENGTH = 16
     const val ARGON2_VERSION_13 = 0x13
 
@@ -43,16 +42,17 @@ object KeyDerivation {
         val encodedPassword = StandardCharsets.UTF_8.encode(CharBuffer.wrap(password))
         val passBytes = ByteArray(encodedPassword.remaining()).also(encodedPassword::get)
         try {
-            val rawHash = argon2Kt.hash(
-                mode = Argon2Mode.ARGON2_ID,
-                password = passBytes,
-                salt = salt,
-                tCostInIterations = parameters.iterations,
-                mCostInKibibyte = parameters.memoryKiB,
-                parallelism = parameters.parallelism,
-                hashLengthInBytes = parameters.keyLengthBits / Byte.SIZE_BITS,
-                version = Argon2Version.V13
-            )
+            val rawHash =
+                argon2Kt.hash(
+                    mode = Argon2Mode.ARGON2_ID,
+                    password = passBytes,
+                    salt = salt,
+                    tCostInIterations = parameters.iterations,
+                    mCostInKibibyte = parameters.memoryKiB,
+                    parallelism = parameters.parallelism,
+                    hashLengthInBytes = parameters.keyLengthBits / Byte.SIZE_BITS,
+                    version = Argon2Version.V13,
+                )
             return rawHash.rawHashAsByteArray()
         } finally {
             passBytes.fill(0)

@@ -25,9 +25,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 
 @Composable
-internal fun BackupFormatPickerContent(
-    onFormatSelected: (BackupExportFormat) -> Unit,
-) {
+internal fun BackupFormatPickerContent(onFormatSelected: (BackupExportFormat) -> Unit) {
     BackupSheetColumn {
         Text(
             text = stringResource(R.string.settings_backup_format_picker_title),

@@ -18,13 +18,16 @@ class AndroidAppCacheStoreTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val store = AndroidAppCacheStore(context)
     private val cacheMarker = context.cacheDir.resolve("cache-store-test.tmp")
-    private val vaultImageMarker = VaultResourcePaths.vaultImagesDir(context)
-        .resolve("cache-store-persistent-test.webp")
+    private val vaultImageMarker =
+        VaultResourcePaths
+            .vaultImagesDir(context)
+            .resolve("cache-store-persistent-test.webp")
 
     @Before
-    fun setUp() = runBlocking {
-        store.clear()
-    }
+    fun setUp() =
+        runBlocking {
+            store.clear()
+        }
 
     @After
     fun cleanUp() {
@@ -33,23 +36,25 @@ class AndroidAppCacheStoreTest {
     }
 
     @Test
-    fun sizeBytes_countsOnlyCacheDirectory() = runBlocking {
-        cacheMarker.writeBytes(ByteArray(17))
-        vaultImageMarker.parentFile?.mkdirs()
-        vaultImageMarker.writeBytes(ByteArray(29))
+    fun sizeBytes_countsOnlyCacheDirectory() =
+        runBlocking {
+            cacheMarker.writeBytes(ByteArray(17))
+            vaultImageMarker.parentFile?.mkdirs()
+            vaultImageMarker.writeBytes(ByteArray(29))
 
-        assertEquals(17L, store.sizeBytes())
-    }
+            assertEquals(17L, store.sizeBytes())
+        }
 
     @Test
-    fun clear_preservesPersistentVaultImages() = runBlocking {
-        cacheMarker.writeText("cache")
-        vaultImageMarker.parentFile?.mkdirs()
-        vaultImageMarker.writeText("persistent")
+    fun clear_preservesPersistentVaultImages() =
+        runBlocking {
+            cacheMarker.writeText("cache")
+            vaultImageMarker.parentFile?.mkdirs()
+            vaultImageMarker.writeText("persistent")
 
-        store.clear()
+            store.clear()
 
-        assertFalse(cacheMarker.exists())
-        assertTrue(vaultImageMarker.exists())
-    }
+            assertFalse(cacheMarker.exists())
+            assertTrue(vaultImageMarker.exists())
+        }
 }

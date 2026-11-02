@@ -23,42 +23,45 @@ internal data class DetailSessionData(
     val relatedEntries: List<Entry>,
 )
 
-internal class DetailSessionQuery @Inject constructor(
-    private val entryQueryRepository: EntryQueryRepository,
-    private val sensitiveFieldRepository: SensitiveFieldRepository,
-    private val entryLinkRepository: EntryLinkRepository,
-) {
-    suspend fun open(entryId: EntryId): DetailSessionData? {
-        val entry = entryQueryRepository.getById(entryId) ?: return null
-        return coroutineScope {
-            val detail = async { snapshot(entry) }
-            val relatedEntries = async { relatedEntries(entry) }
-            DetailSessionData(
-                detail = detail.await(),
-                relatedEntries = relatedEntries.await(),
-            )
+internal class DetailSessionQuery
+    @Inject
+    constructor(
+        private val entryQueryRepository: EntryQueryRepository,
+        private val sensitiveFieldRepository: SensitiveFieldRepository,
+        private val entryLinkRepository: EntryLinkRepository,
+    ) {
+        suspend fun open(entryId: EntryId): DetailSessionData? {
+            val entry = entryQueryRepository.getById(entryId) ?: return null
+            return coroutineScope {
+                val detail = async { snapshot(entry) }
+                val relatedEntries = async { relatedEntries(entry) }
+                DetailSessionData(
+                    detail = detail.await(),
+                    relatedEntries = relatedEntries.await(),
+                )
+            }
         }
-    }
 
-    suspend fun snapshot(entry: Entry): DetailEntryData = DetailEntryData(
-        entry = entry,
-        sensitiveFieldKeys = sensitiveFieldRepository.getPresence(entry.id).keys,
-    )
+        suspend fun snapshot(entry: Entry): DetailEntryData =
+            DetailEntryData(
+                entry = entry,
+                sensitiveFieldKeys = sensitiveFieldRepository.getPresence(entry.id).keys,
+            )
 
-    private suspend fun relatedEntries(entry: Entry): List<Entry> {
-        val relatedIds = resolveRelatedEntryIds(
-            entryId = entry.id,
-            entryType = entry.type,
-            links = entryLinkRepository.getAll(),
-        )
-        return buildList {
-            relatedIds.forEach { relatedId ->
-                entryQueryRepository.getById(relatedId)?.let(::add)
+        private suspend fun relatedEntries(entry: Entry): List<Entry> {
+            val relatedIds =
+                resolveRelatedEntryIds(
+                    entryId = entry.id,
+                    entryType = entry.type,
+                    links = entryLinkRepository.getAll(),
+                )
+            return buildList {
+                relatedIds.forEach { relatedId ->
+                    entryQueryRepository.getById(relatedId)?.let(::add)
+                }
             }
         }
     }
-
-}
 
 internal fun resolveRelatedEntryIds(
     entryId: EntryId,
@@ -66,11 +69,12 @@ internal fun resolveRelatedEntryIds(
     links: List<EntryLink>,
 ): Set<EntryId> {
     val graph = EntryAccountGraph(links)
-    val accountId = if (entryType == EntryType.ACCOUNT) {
-        entryId
-    } else {
-        graph.accountFor(entryId)
-    } ?: return emptySet()
+    val accountId =
+        if (entryType == EntryType.ACCOUNT) {
+            entryId
+        } else {
+            graph.accountFor(entryId)
+        } ?: return emptySet()
 
     return buildSet {
         add(accountId)

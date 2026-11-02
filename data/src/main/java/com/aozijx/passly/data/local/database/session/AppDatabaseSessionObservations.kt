@@ -12,6 +12,7 @@ internal fun <T> AppDatabaseSession.observeWhenReadable(
     authorized: Flow<Boolean>,
     emptyValue: () -> T,
     query: suspend AppDatabase.() -> Flow<T>,
-): Flow<T> = observeDatabaseReadAccess(authorized, lockStateFlow).flatMapLatest { readable ->
-    if (readable) observeFlow(query) else flowOf(emptyValue())
-}
+): Flow<T> =
+    observeDatabaseReadAccess(authorized, lockStateFlow).flatMapLatest { readable ->
+        if (readable) observeFlow(query) else flowOf(emptyValue())
+    }

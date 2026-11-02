@@ -3,7 +3,10 @@ package com.aozijx.passly.core.platform.path
 import java.net.URI
 
 object UriDisplayNameFormatter {
-    fun format(rawUri: String?, maxLength: Int = 32): String? {
+    fun format(
+        rawUri: String?,
+        maxLength: Int = 32,
+    ): String? {
         if (rawUri.isNullOrBlank()) return null
         val fileName = extractFileName(rawUri) ?: rawUri
         if (fileName.length <= maxLength) return fileName
@@ -11,7 +14,8 @@ object UriDisplayNameFormatter {
     }
 
     private fun extractFileName(rawUri: String): String? =
-        runCatching { URI(rawUri).path }.getOrNull()
+        runCatching { URI(rawUri).path }
+            .getOrNull()
             ?.substringAfterLast('/')
             ?.let { segment -> segment.substringAfterLast(':', missingDelimiterValue = segment) }
             ?.takeIf { it.isNotBlank() }
@@ -19,7 +23,7 @@ object UriDisplayNameFormatter {
     private fun truncateFileName(
         fileName: String,
         maxLength: Int,
-        ellipsis: String = "..."
+        ellipsis: String = "...",
     ): String {
         val extension = fileName.substringAfterLast('.', missingDelimiterValue = "")
         val suffix = if (extension.isBlank()) "" else ".${extension.take(8)}"

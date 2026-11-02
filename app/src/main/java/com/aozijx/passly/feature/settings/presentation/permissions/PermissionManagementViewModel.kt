@@ -18,51 +18,54 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @HiltViewModel
-class PermissionManagementViewModel @Inject constructor(
-    private val directorySettings: BackupDirectorySettingsSource,
-    private val directoryStatusReader: BackupDirectoryStatusReader,
-) : ViewModel() {
-    private val _uiState = MutableStateFlow(PermissionManagementUiState())
-    val uiState: StateFlow<PermissionManagementUiState> = _uiState.asStateFlow()
+class PermissionManagementViewModel
+    @Inject
+    constructor(
+        private val directorySettings: BackupDirectorySettingsSource,
+        private val directoryStatusReader: BackupDirectoryStatusReader,
+    ) : ViewModel() {
+        private val _uiState = MutableStateFlow(PermissionManagementUiState())
+        val uiState: StateFlow<PermissionManagementUiState> = _uiState.asStateFlow()
 
-    private var runtimeAccess: Map<RuntimePermission, RuntimePermissionAccess> = emptyMap()
-    private var directoryUri: String? = null
-    private var directoryStatus = PersistedDirectoryAccessStatus.NOT_CONFIGURED
+        private var runtimeAccess: Map<RuntimePermission, RuntimePermissionAccess> = emptyMap()
+        private var directoryUri: String? = null
+        private var directoryStatus = PersistedDirectoryAccessStatus.NOT_CONFIGURED
 
-    init {
-        viewModelScope.launch {
-            directorySettings.backupDirectoryUri.collectLatest { uri ->
-                directoryUri = uri
-                directoryStatus = inspectDirectory(uri)
-                publishState()
+        init {
+            viewModelScope.launch {
+                directorySettings.backupDirectoryUri.collectLatest { uri ->
+                    directoryUri = uri
+                    directoryStatus = inspectDirectory(uri)
+                    publishState()
+                }
             }
         }
-    }
 
-    fun runtimeAccessUpdated(access: Map<RuntimePermission, RuntimePermissionAccess>) {
-        runtimeAccess = access.toMap()
-        publishState()
-    }
+        fun runtimeAccessUpdated(access: Map<RuntimePermission, RuntimePermissionAccess>) {
+            runtimeAccess = access.toMap()
+            publishState()
+        }
 
-    fun refreshDirectoryAccess() {
-        viewModelScope.launch {
-            val inspectedUri = directoryUri
-            val status = inspectDirectory(inspectedUri)
-            if (directoryUri == inspectedUri) {
-                directoryStatus = status
-                publishState()
+        fun refreshDirectoryAccess() {
+            viewModelScope.launch {
+                val inspectedUri = directoryUri
+                val status = inspectDirectory(inspectedUri)
+                if (directoryUri == inspectedUri) {
+                    directoryStatus = status
+                    publishState()
+                }
             }
         }
-    }
 
-    private suspend fun inspectDirectory(uri: String?): PersistedDirectoryAccessStatus =
-        withContext(Dispatchers.IO) { directoryStatusReader.inspect(uri) }
+        private suspend fun inspectDirectory(uri: String?): PersistedDirectoryAccessStatus =
+            withContext(Dispatchers.IO) { directoryStatusReader.inspect(uri) }
 
-    private fun publishState() {
-        _uiState.value = PermissionManagementUiMapper.map(
-            runtimeAccess = runtimeAccess,
-            directoryUri = directoryUri,
-            directoryStatus = directoryStatus,
-        )
+        private fun publishState() {
+            _uiState.value =
+                PermissionManagementUiMapper.map(
+                    runtimeAccess = runtimeAccess,
+                    directoryUri = directoryUri,
+                    directoryStatus = directoryStatus,
+                )
+        }
     }
-}

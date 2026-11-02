@@ -12,10 +12,15 @@ sealed interface VaultCopyRequest {
         val fieldKey: FieldKey,
     ) : VaultCopyRequest
 
-    data class Otp(val entryId: String) : VaultCopyRequest
+    data class Otp(
+        val entryId: String,
+    ) : VaultCopyRequest
 }
 
-fun resolveCopyRequest(item: VaultListItemUiModel, fieldKey: FieldKey): VaultCopyRequest =
+fun resolveCopyRequest(
+    item: VaultListItemUiModel,
+    fieldKey: FieldKey,
+): VaultCopyRequest =
     if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
         VaultCopyRequest.Otp(item.id)
     } else {

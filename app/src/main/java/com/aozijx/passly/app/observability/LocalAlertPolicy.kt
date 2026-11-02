@@ -16,52 +16,56 @@ data class LocalDiagnosticAlert(
 )
 
 @Singleton
-class LocalAlertPolicy @Inject constructor() : LogSink {
-    private val databaseOpenFailures = ArrayDeque<Failure>()
-    private var alert: LocalDiagnosticAlert? = null
+class LocalAlertPolicy
+    @Inject
+    constructor() : LogSink {
+        private val databaseOpenFailures = ArrayDeque<Failure>()
+        private var alert: LocalDiagnosticAlert? = null
 
-    override fun emit(record: SanitizedLogRecord) {
-        observe(record)
-    }
+        override fun emit(record: SanitizedLogRecord) {
+            observe(record)
+        }
 
-    @Synchronized
-    fun observe(record: SanitizedLogRecord): LocalDiagnosticAlert? {
-        expire(record.timestampMs)
-        val error = record.error ?: return null
-        if (error.errorCode != ErrorCodes.Database.DatabaseSessionOpenFailed) return null
-        databaseOpenFailures.addLast(Failure(record.timestampMs))
-        prune(record.timestampMs)
-        if (alert == null && databaseOpenFailures.size >= ALERT_THRESHOLD) {
-            alert = LocalDiagnosticAlert(error.errorCode, record.trace.traceId, record.timestampMs)
+        @Synchronized
+        fun observe(record: SanitizedLogRecord): LocalDiagnosticAlert? {
+            expire(record.timestampMs)
+            val error = record.error ?: return null
+            if (error.errorCode != ErrorCodes.Database.DatabaseSessionOpenFailed) return null
+            databaseOpenFailures.addLast(Failure(record.timestampMs))
+            prune(record.timestampMs)
+            if (alert == null && databaseOpenFailures.size >= ALERT_THRESHOLD) {
+                alert = LocalDiagnosticAlert(error.errorCode, record.trace.traceId, record.timestampMs)
+                return alert
+            }
+            return null
+        }
+
+        @Synchronized
+        fun activeAlert(nowMs: Long): LocalDiagnosticAlert? {
+            expire(nowMs)
             return alert
         }
-        return null
-    }
 
-    @Synchronized
-    fun activeAlert(nowMs: Long): LocalDiagnosticAlert? {
-        expire(nowMs)
-        return alert
-    }
-
-    private fun expire(nowMs: Long) {
-        if (alert?.let { nowMs - it.createdAtMs > WINDOW_MS } == true) {
-            alert = null
-            databaseOpenFailures.clear()
+        private fun expire(nowMs: Long) {
+            if (alert?.let { nowMs - it.createdAtMs > WINDOW_MS } == true) {
+                alert = null
+                databaseOpenFailures.clear()
+            }
+            prune(nowMs)
         }
-        prune(nowMs)
-    }
 
-    private fun prune(nowMs: Long) {
-        while (databaseOpenFailures.firstOrNull()?.let { nowMs - it.timestampMs > WINDOW_MS } == true) {
-            databaseOpenFailures.removeFirst()
+        private fun prune(nowMs: Long) {
+            while (databaseOpenFailures.firstOrNull()?.let { nowMs - it.timestampMs > WINDOW_MS } == true) {
+                databaseOpenFailures.removeFirst()
+            }
+        }
+
+        private data class Failure(
+            val timestampMs: Long,
+        )
+
+        private companion object {
+            const val ALERT_THRESHOLD = 3
+            const val WINDOW_MS = 10 * 60 * 1000L
         }
     }
-
-    private data class Failure(val timestampMs: Long)
-
-    private companion object {
-        const val ALERT_THRESHOLD = 3
-        const val WINDOW_MS = 10 * 60 * 1000L
-    }
-}

@@ -4,8 +4,8 @@ import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.ErrorPayload
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionKind
+import com.aozijx.passly.core.observability.ExceptionSnapshot
 import com.aozijx.passly.core.observability.ExceptionType
 import com.aozijx.passly.core.observability.LogCategory
 import com.aozijx.passly.core.observability.LogFieldKey
@@ -28,11 +28,16 @@ class LogcatSinkTest {
     fun `release sink performs zero log calls even for fatal record`() {
         val gateway = RecordingLogGateway(loggable = true)
         var formatCalls = 0
-        val sink = LogcatSink(
-            isDebugBuild = false,
-            gateway = gateway,
-            formatter = LogcatRecordFormatter { formatCalls += 1; "must-not-format" },
-        )
+        val sink =
+            LogcatSink(
+                isDebugBuild = false,
+                gateway = gateway,
+                formatter =
+                    LogcatRecordFormatter {
+                        formatCalls += 1
+                        "must-not-format"
+                    },
+            )
 
         sink.emit(record(level = LogLevel.FATAL))
 
@@ -45,11 +50,16 @@ class LogcatSinkTest {
     fun `disabled tag skips formatting and log call`() {
         val gateway = RecordingLogGateway(loggable = false)
         var formatCalls = 0
-        val sink = LogcatSink(
-            isDebugBuild = true,
-            gateway = gateway,
-            formatter = LogcatRecordFormatter { formatCalls += 1; "must-not-format" },
-        )
+        val sink =
+            LogcatSink(
+                isDebugBuild = true,
+                gateway = gateway,
+                formatter =
+                    LogcatRecordFormatter {
+                        formatCalls += 1
+                        "must-not-format"
+                    },
+            )
 
         sink.emit(record())
 
@@ -78,14 +88,15 @@ class LogcatSinkTest {
     fun `oversized summary emits identifiers and truncated flag in one line`() {
         val gateway = RecordingLogGateway(loggable = true)
         val sink = LogcatSink(isDebugBuild = true, gateway = gateway)
-        val oversizedFields = fields {
-            repeat(40) { index ->
-                operation(
-                    LogFieldKey("safe_field_$index"),
-                    OperationCode("operation_${index}_" + "x".repeat(90)),
-                )
+        val oversizedFields =
+            fields {
+                repeat(40) { index ->
+                    operation(
+                        LogFieldKey("safe_field_$index"),
+                        OperationCode("operation_${index}_" + "x".repeat(90)),
+                    )
+                }
             }
-        }
 
         sink.emit(record(fields = oversizedFields))
 
@@ -115,21 +126,23 @@ class LogcatSinkTest {
         secureSessionId = null,
         trace = TraceSnapshot(TraceId("trace_123"), SpanId("span_1234"), null),
         fields = fields,
-        error = if (withError) {
-            ErrorPayload(
-                errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
-                reason = Reasons.PlatformCallbackFailed,
-                exception = ExceptionSnapshot(
-                    type = ExceptionType("IllegalStateException"),
-                    appStackFrames = emptyList(),
-                    causeTypes = emptyList(),
-                    foreignFrameCount = 2,
-                    kind = ExceptionKind.PLATFORM,
-                ),
-            )
-        } else {
-            null
-        },
+        error =
+            if (withError) {
+                ErrorPayload(
+                    errorCode = ErrorCodes.Autofill.AutofillResultDeliveryFailed,
+                    reason = Reasons.PlatformCallbackFailed,
+                    exception =
+                        ExceptionSnapshot(
+                            type = ExceptionType("IllegalStateException"),
+                            appStackFrames = emptyList(),
+                            causeTypes = emptyList(),
+                            foreignFrameCount = 2,
+                            kind = ExceptionKind.PLATFORM,
+                        ),
+                )
+            } else {
+                null
+            },
     )
 
     private class RecordingLogGateway(
@@ -138,12 +151,19 @@ class LogcatSinkTest {
         var loggableChecks = 0
         val lines = mutableListOf<Line>()
 
-        override fun isLoggable(tag: String, priority: AndroidLogPriority): Boolean {
+        override fun isLoggable(
+            tag: String,
+            priority: AndroidLogPriority,
+        ): Boolean {
             loggableChecks += 1
             return loggable
         }
 
-        override fun println(priority: AndroidLogPriority, tag: String, message: String) {
+        override fun println(
+            priority: AndroidLogPriority,
+            tag: String,
+            message: String,
+        ) {
             lines += Line(priority, tag, message)
         }
     }

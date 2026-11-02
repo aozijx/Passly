@@ -20,39 +20,41 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun PasswordStrengthIndicator(
-    progress: Float,               // 0~1 的进度值，由外部计算提供
-    color: Color,                  // 进度条和文本的颜色
-    text: String,                  // 提示文本
+    progress: Float, // 0~1 的进度值，由外部计算提供
+    color: Color, // 进度条和文本的颜色
+    text: String, // 提示文本
     modifier: Modifier = Modifier,
-    animationDurationMs: Int = 300
+    animationDurationMs: Int = 300,
 ) {
     // 动画进度：当外部 progress 变化时平滑过渡
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = tween(
-            durationMillis = animationDurationMs,
-            easing = FastOutSlowInEasing
-        ),
-        label = "PasswordStrengthProgress"
+        animationSpec =
+            tween(
+                durationMillis = animationDurationMs,
+                easing = FastOutSlowInEasing,
+            ),
+        label = "PasswordStrengthProgress",
     )
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         LinearProgressIndicator(
             progress = { animatedProgress },
             color = color,
             trackColor = color.copy(alpha = 0.15f),
-            modifier = Modifier
-                .weight(1f)
-                .height(6.dp)
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .height(6.dp),
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
             color = color,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }

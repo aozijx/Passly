@@ -8,8 +8,10 @@ import org.junit.Test
 class VaultSearchStateTest {
     @Test
     fun `pull state follows bounded gesture progress`() {
-        val state = VaultSearchState.initial(isSearchActive = false, query = "")
-            .onPullProgressChanged(0.45f)
+        val state =
+            VaultSearchState
+                .initial(isSearchActive = false, query = "")
+                .onPullProgressChanged(0.45f)
 
         assertEquals(VaultSearchPhase.PULLING, state.phase)
         assertEquals(0.45f, state.layoutProgress)
@@ -19,8 +21,10 @@ class VaultSearchStateTest {
 
     @Test
     fun `initial focus loss cannot cancel a pending focus request`() {
-        var state = VaultSearchState.initial(isSearchActive = false, query = "")
-            .startEditing()
+        var state =
+            VaultSearchState
+                .initial(isSearchActive = false, query = "")
+                .startEditing()
 
         state = state.onFocusChanged(focused = false, query = "")
 
@@ -34,8 +38,10 @@ class VaultSearchStateTest {
 
     @Test
     fun `restored focus cannot start editing without an explicit request`() {
-        val state = VaultSearchState.initial(isSearchActive = false, query = "")
-            .onFocusChanged(focused = true, query = "")
+        val state =
+            VaultSearchState
+                .initial(isSearchActive = false, query = "")
+                .onFocusChanged(focused = true, query = "")
 
         assertEquals(VaultSearchPhase.BROWSING, state.phase)
         assertFalse(state.focusAcquired)
@@ -43,19 +49,23 @@ class VaultSearchStateTest {
 
     @Test
     fun `gesture reset cannot cancel editing after pull threshold`() {
-        val state = VaultSearchState.initial(isSearchActive = false, query = "")
-            .onPullProgressChanged(0.9f)
-            .startEditing()
-            .onPullProgressChanged(0f)
+        val state =
+            VaultSearchState
+                .initial(isSearchActive = false, query = "")
+                .onPullProgressChanged(0.9f)
+                .startEditing()
+                .onPullProgressChanged(0f)
 
         assertEquals(VaultSearchPhase.EDITING, state.phase)
     }
 
     @Test
     fun `settling and pausing preserve non blank results without editing focus`() {
-        val editing = VaultSearchState.initial(isSearchActive = true, query = "mail")
-            .startEditing()
-            .onFocusChanged(focused = true, query = "mail")
+        val editing =
+            VaultSearchState
+                .initial(isSearchActive = true, query = "mail")
+                .startEditing()
+                .onFocusChanged(focused = true, query = "mail")
 
         val submitted = editing.settle(query = "mail")
         val paused = editing.onScreenPaused(query = "mail")

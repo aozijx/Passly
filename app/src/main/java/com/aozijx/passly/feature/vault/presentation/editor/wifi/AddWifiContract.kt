@@ -19,12 +19,17 @@ data class AddWifiFormState(
 
 sealed interface AddWifiSavePhase {
     data object Idle : AddWifiSavePhase
+
     data object Saving : AddWifiSavePhase
 }
 
 sealed interface AddWifiInitialContent {
     data object Blank : AddWifiInitialContent
-    data class Scanned(val payload: WifiQrPayload) : AddWifiInitialContent
+
+    data class Scanned(
+        val payload: WifiQrPayload,
+    ) : AddWifiInitialContent
+
     data object SeedUnavailable : AddWifiInitialContent
 }
 
@@ -38,24 +43,26 @@ data class AddWifiUiState(
     val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
-        get() = form.fieldErrors().isEmpty() && savePhase == AddWifiSavePhase.Idle &&
-            loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
+        get() =
+            form.fieldErrors().isEmpty() && savePhase == AddWifiSavePhase.Idle &&
+                loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
 }
 
-internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> = buildMap {
-    WifiCredentialValidation.validate(
-        ssid = ssid,
-        password = password.takeIf(String::isNotEmpty),
-        securityType = securityType,
-    ).forEach { put(it.field, it.code) }
-}
+internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> =
+    buildMap {
+        WifiCredentialValidation
+            .validate(
+                ssid = ssid,
+                password = password.takeIf(String::isNotEmpty),
+                securityType = securityType,
+            ).forEach { put(it.field, it.code) }
+    }
 
 private fun AddWifiFormState.visibleFieldErrors(): Map<FieldKey, EntryViolationCode> =
     fieldErrors().filterValues { it != EntryViolationCode.REQUIRED }
 
-internal fun AddWifiUiState.withForm(form: AddWifiFormState): AddWifiUiState {
-    return copy(
+internal fun AddWifiUiState.withForm(form: AddWifiFormState): AddWifiUiState =
+    copy(
         form = form,
         fieldErrors = form.visibleFieldErrors(),
     )
-}

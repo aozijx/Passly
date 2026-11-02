@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
-import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
+import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 
 fun PrivacySettingsUiState.Ready.toPrivacySettingsUiModel(): PrivacySettingsUiModel =
     PrivacySettingsUiModel(

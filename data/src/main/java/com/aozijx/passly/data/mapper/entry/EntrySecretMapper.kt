@@ -17,30 +17,38 @@ import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 
 object EntrySecretMapper {
-    fun toPayload(secret: EntrySecret, expectedType: EntryType): SecretPayload {
+    fun toPayload(
+        secret: EntrySecret,
+        expectedType: EntryType,
+    ): SecretPayload {
         val credential = secret.credential
         require(credential.kind == expectedType.credentialKind) {
             "Credential kind ${credential.kind} does not match entry type $expectedType"
         }
-        val credentialPayload = when (credential) {
-            EntryCredential.None -> SecretPayload()
-            is LoginCredential -> entryPayloadAdapters.get(EntryCredentialKind.LOGIN).encode(credential)
-            is CardCredential -> entryPayloadAdapters.get(EntryCredentialKind.CARD).encode(credential)
-            is IdentityCredential -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).encode(credential)
-            is SshCredential -> entryPayloadAdapters.get(EntryCredentialKind.SSH).encode(credential)
-            is WifiCredential -> entryPayloadAdapters.get(EntryCredentialKind.WIFI).encode(credential)
-            is PasskeyCredential -> entryPayloadAdapters.get(EntryCredentialKind.PASSKEY).encode(credential)
-            is OtpCredential -> entryPayloadAdapters.get(EntryCredentialKind.OTP).encode(credential)
-        }
+        val credentialPayload =
+            when (credential) {
+                EntryCredential.None -> SecretPayload()
+                is LoginCredential -> entryPayloadAdapters.get(EntryCredentialKind.LOGIN).encode(credential)
+                is CardCredential -> entryPayloadAdapters.get(EntryCredentialKind.CARD).encode(credential)
+                is IdentityCredential -> entryPayloadAdapters.get(EntryCredentialKind.IDENTITY).encode(credential)
+                is SshCredential -> entryPayloadAdapters.get(EntryCredentialKind.SSH).encode(credential)
+                is WifiCredential -> entryPayloadAdapters.get(EntryCredentialKind.WIFI).encode(credential)
+                is PasskeyCredential -> entryPayloadAdapters.get(EntryCredentialKind.PASSKEY).encode(credential)
+                is OtpCredential -> entryPayloadAdapters.get(EntryCredentialKind.OTP).encode(credential)
+            }
         return credentialPayload.copy(
             notes = secret.notes,
-            customFields = secret.customFields.map {
-                CustomFieldPayload(it.name, it.value, if (it.kind == CustomFieldKind.HIDDEN) 1 else 0)
-            },
+            customFields =
+                secret.customFields.map {
+                    CustomFieldPayload(it.name, it.value, if (it.kind == CustomFieldKind.HIDDEN) 1 else 0)
+                },
         )
     }
 
-    fun toDomain(payload: SecretPayload, expectedType: EntryType): EntrySecret {
+    fun toDomain(
+        payload: SecretPayload,
+        expectedType: EntryType,
+    ): EntrySecret {
         require(payload.schemaVersion == 1) { "Unsupported secret payload schema version: ${payload.schemaVersion}" }
         val slotKinds = payload.credentialSlotKinds()
         require(slotKinds.size <= 1) { "Secret payload contains multiple credential kinds" }
@@ -51,13 +59,14 @@ object EntrySecretMapper {
         return EntrySecret(
             credential = payload.toCredential(expectedType.credentialKind),
             notes = payload.notes,
-            customFields = payload.customFields.map {
-                CustomField(
-                    name = it.name,
-                    value = it.value,
-                    kind = if (it.type == 1) CustomFieldKind.HIDDEN else CustomFieldKind.TEXT,
-                )
-            },
+            customFields =
+                payload.customFields.map {
+                    CustomField(
+                        name = it.name,
+                        value = it.value,
+                        kind = if (it.type == 1) CustomFieldKind.HIDDEN else CustomFieldKind.TEXT,
+                    )
+                },
         )
     }
 

@@ -8,10 +8,15 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
  */
 interface AutofillHintProvider {
     fun getUsernamePattern(): Regex
+
     fun getPasswordPattern(): Regex
+
     fun getOtpPattern(): Regex
+
     fun getSubmitPattern(): Regex
+
     fun getSearchPattern(): Regex
+
     fun getConfirmationPattern(): Regex
 
     /**

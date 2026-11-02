@@ -2,6 +2,7 @@ package com.aozijx.passly.runtime.session
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +21,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.time.Duration
 
 internal class SessionLeaseGate<Handle : Any>(
     private val resource: SessionResource<Handle>,
@@ -57,33 +57,35 @@ internal class SessionLeaseGate<Handle : Any>(
         }
     }
 
-    fun <T> observe(block: suspend Handle.() -> Flow<T>): Flow<T> = flow {
-        val owner = acquireLease()
-        try {
-            resolveHandle().block().collect { value ->
-                ensureUnlocked()
-                emit(value)
+    fun <T> observe(block: suspend Handle.() -> Flow<T>): Flow<T> =
+        flow {
+            val owner = acquireLease()
+            try {
+                resolveHandle().block().collect { value ->
+                    ensureUnlocked()
+                    emit(value)
+                }
+            } finally {
+                releaseLease(owner)
             }
-        } finally {
-            releaseLease(owner)
-        }
-    }.flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.IO)
 
-    suspend fun resumeIfOpen(): Boolean = resourceMutex.withLock {
-        if (closeFailure != null) return false
-        if (handle == null) return false
-        val startedAt = elapsedRealtimeMs()
-        val fromState = mutableLockState.value
-        leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
-        emitTransition(
-            startedAt = startedAt,
-            fromState = fromState,
-            toState = SecureSessionState.UNLOCKED,
-            reason = SessionTransitionReason.RESUME,
-            lockType = SessionLockType.NONE,
-        )
-        true
-    }
+    suspend fun resumeIfOpen(): Boolean =
+        resourceMutex.withLock {
+            if (closeFailure != null) return false
+            if (handle == null) return false
+            val startedAt = elapsedRealtimeMs()
+            val fromState = mutableLockState.value
+            leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
+            emitTransition(
+                startedAt = startedAt,
+                fromState = fromState,
+                toState = SecureSessionState.UNLOCKED,
+                reason = SessionTransitionReason.RESUME,
+                lockType = SessionLockType.NONE,
+            )
+            true
+        }
 
     suspend fun open(key: ByteArray): SessionUnlockResult {
         closeFailure()?.let { return SessionUnlockResult.OpenFailed(it) }
@@ -139,50 +141,53 @@ internal class SessionLeaseGate<Handle : Any>(
         opened: Handle?,
         published: Boolean,
         cause: Throwable,
-    ): Error? = withContext(NonCancellable) {
-        var shouldSeal = opened == null
-        var fatalCleanup: Error? = null
-        try {
-            if (opened != null) {
-                if (published) {
-                    resourceMutex.withLock {
-                        if (handle === opened) {
-                            handle = null
-                            shouldSeal = true
-                            fatalCleanup = closeAfterFailedOpen(opened, cause)
-                        }
-                    }
-                } else {
-                    shouldSeal = true
-                    fatalCleanup = closeAfterFailedOpen(opened, cause)
-                }
-            }
-        } finally {
-            if (shouldSeal) {
-                leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
-            }
-        }
-        fatalCleanup
-    }
-
-    private suspend fun closeAfterFailedOpen(opened: Handle, cause: Throwable) =
-        withContext(ioDispatcher) {
+    ): Error? =
+        withContext(NonCancellable) {
+            var shouldSeal = opened == null
+            var fatalCleanup: Error? = null
             try {
-                resource.close(opened)
-                null
-            } catch (cleanupFailure: Error) {
-                if (cause is Error) {
-                    if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
-                    null
-                } else {
-                    if (cause !== cleanupFailure) cleanupFailure.addSuppressed(cause)
-                    cleanupFailure
+                if (opened != null) {
+                    if (published) {
+                        resourceMutex.withLock {
+                            if (handle === opened) {
+                                handle = null
+                                shouldSeal = true
+                                fatalCleanup = closeAfterFailedOpen(opened, cause)
+                            }
+                        }
+                    } else {
+                        shouldSeal = true
+                        fatalCleanup = closeAfterFailedOpen(opened, cause)
+                    }
                 }
-            } catch (cleanupFailure: Exception) {
+            } finally {
+                if (shouldSeal) {
+                    leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
+                }
+            }
+            fatalCleanup
+        }
+
+    private suspend fun closeAfterFailedOpen(
+        opened: Handle,
+        cause: Throwable,
+    ) = withContext(ioDispatcher) {
+        try {
+            resource.close(opened)
+            null
+        } catch (cleanupFailure: Error) {
+            if (cause is Error) {
                 if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
                 null
+            } else {
+                if (cause !== cleanupFailure) cleanupFailure.addSuppressed(cause)
+                cleanupFailure
             }
+        } catch (cleanupFailure: Exception) {
+            if (cleanupFailure !== cause) cause.addSuppressed(cleanupFailure)
+            null
         }
+    }
 
     suspend fun softLock() {
         val startedAt = elapsedRealtimeMs()
@@ -202,14 +207,16 @@ internal class SessionLeaseGate<Handle : Any>(
         val fromState = mutableLockState.value
         leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
 
-        val drained = withTimeoutOrNull(timeout) {
-            while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
-        }
-        val (closeResult, transitionFailure) = if (drained == null) {
-            closeAfterDrainTimeout(startedAt, fromState, timeout)
-        } else {
-            close() to null
-        }
+        val drained =
+            withTimeoutOrNull(timeout) {
+                while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+            }
+        val (closeResult, transitionFailure) =
+            if (drained == null) {
+                closeAfterDrainTimeout(startedAt, fromState, timeout)
+            } else {
+                close() to null
+            }
         transitionFailure?.let { throw it }
         try {
             emitTransition(
@@ -232,35 +239,37 @@ internal class SessionLeaseGate<Handle : Any>(
         fromState: SecureSessionState,
         timeout: Duration,
     ): Pair<Result<Unit>, Throwable?> {
-        var transitionFailure = try {
-            emitTransition(
-                startedAt,
-                fromState,
-                SecureSessionState.SEALED,
-                SessionTransitionReason.DRAIN_TIMEOUT,
-                SessionLockType.SEALED,
-                timeoutMs = timeout.inWholeMilliseconds,
-                activeLeaseCount = activeLeases.get(),
-            )
-            null
-        } catch (failure: CancellationException) {
-            failure
-        } catch (failure: Error) {
-            failure
-        }
+        var transitionFailure =
+            try {
+                emitTransition(
+                    startedAt,
+                    fromState,
+                    SecureSessionState.SEALED,
+                    SessionTransitionReason.DRAIN_TIMEOUT,
+                    SessionLockType.SEALED,
+                    timeoutMs = timeout.inWholeMilliseconds,
+                    activeLeaseCount = activeLeases.get(),
+                )
+                null
+            } catch (failure: CancellationException) {
+                failure
+            } catch (failure: Error) {
+                failure
+            }
         leaseOwners.keys.forEach(Job::cancel)
         var closeThrown: Throwable? = null
-        val closeResult = withContext(NonCancellable) {
-            withTimeoutOrNull(POST_CANCEL_GRACE_MS) {
-                while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+        val closeResult =
+            withContext(NonCancellable) {
+                withTimeoutOrNull(POST_CANCEL_GRACE_MS) {
+                    while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+                }
+                try {
+                    close()
+                } catch (failure: Throwable) {
+                    closeThrown = failure
+                    Result.failure(failure)
+                }
             }
-            try {
-                close()
-            } catch (failure: Throwable) {
-                closeThrown = failure
-                Result.failure(failure)
-            }
-        }
         closeThrown?.let { failure ->
             transitionFailure = transitionFailure?.let { combineFailures(it, failure) } ?: failure
         }
@@ -346,9 +355,10 @@ internal class SessionLeaseGate<Handle : Any>(
         }
     }
 
-    private suspend fun resolveHandle(): Handle = resourceMutex.withLock {
-        handle ?: throw SessionLockedException("Session resource is not open")
-    }
+    private suspend fun resolveHandle(): Handle =
+        resourceMutex.withLock {
+            handle ?: throw SessionLockedException("Session resource is not open")
+        }
 
     private suspend fun emitTransition(
         startedAt: Long,
@@ -381,14 +391,20 @@ internal class SessionLeaseGate<Handle : Any>(
         }
     }
 
-    private fun combineFailures(primary: Throwable, secondary: Throwable): Throwable {
+    private fun combineFailures(
+        primary: Throwable,
+        secondary: Throwable,
+    ): Throwable {
         val result = if (primary is Error || secondary !is Error) primary else secondary
         val suppressed = if (result === primary) secondary else primary
         addSuppressed(result, suppressed)
         return result
     }
 
-    private fun addSuppressed(primary: Throwable, secondary: Throwable) {
+    private fun addSuppressed(
+        primary: Throwable,
+        secondary: Throwable,
+    ) {
         if (primary !== secondary) primary.addSuppressed(secondary)
     }
 

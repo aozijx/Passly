@@ -10,8 +10,7 @@ internal class CredentialResponseResultEvents {
 
     val completions: Flow<CredentialResponseCompletion> = channel.receiveAsFlow()
 
-    fun publish(completion: CredentialResponseCompletion): Boolean =
-        channel.trySend(completion).isSuccess
+    fun publish(completion: CredentialResponseCompletion): Boolean = channel.trySend(completion).isSuccess
 
     fun close() {
         channel.close()

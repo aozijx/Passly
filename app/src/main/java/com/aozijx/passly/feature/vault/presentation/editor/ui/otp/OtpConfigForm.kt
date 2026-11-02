@@ -13,10 +13,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
@@ -82,7 +82,14 @@ fun OtpConfigForm(
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
                     isError = FieldKey.OTP_COUNTER in invalidFields,
-                    supportingText = if (FieldKey.OTP_COUNTER in invalidFields) ({ Text(stringResource(R.string.otp_counter_invalid)) }) else null,
+                    supportingText =
+                        if (FieldKey.OTP_COUNTER in
+                            invalidFields
+                        ) {
+                            ({ Text(stringResource(R.string.otp_counter_invalid)) })
+                        } else {
+                            null
+                        },
                 )
             } else {
                 NextFocusTextField(
@@ -95,7 +102,14 @@ fun OtpConfigForm(
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
                     isError = FieldKey.OTP_PERIOD in invalidFields,
-                    supportingText = if (FieldKey.OTP_PERIOD in invalidFields) ({ Text(stringResource(R.string.otp_period_invalid)) }) else null,
+                    supportingText =
+                        if (FieldKey.OTP_PERIOD in
+                            invalidFields
+                        ) {
+                            ({ Text(stringResource(R.string.otp_period_invalid)) })
+                        } else {
+                            null
+                        },
                 )
             }
             NextFocusTextField(
@@ -108,7 +122,14 @@ fun OtpConfigForm(
                 keyboardType = KeyboardType.Number,
                 enabled = state.type != OtpType.STEAM,
                 isError = FieldKey.OTP_DIGITS in invalidFields,
-                supportingText = if (FieldKey.OTP_DIGITS in invalidFields) ({ Text(stringResource(R.string.otp_digits_invalid)) }) else null,
+                supportingText =
+                    if (FieldKey.OTP_DIGITS in
+                        invalidFields
+                    ) {
+                        ({ Text(stringResource(R.string.otp_digits_invalid)) })
+                    } else {
+                        null
+                    },
             )
         }
         DropdownSelector(

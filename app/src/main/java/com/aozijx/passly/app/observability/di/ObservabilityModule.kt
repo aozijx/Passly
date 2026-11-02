@@ -15,12 +15,13 @@ import com.aozijx.passly.app.observability.DiagnosticsExportStorageGateway
 import com.aozijx.passly.app.observability.DiagnosticsLogRecordingPolicy
 import com.aozijx.passly.app.observability.ExportClock
 import com.aozijx.passly.app.observability.ExportContextProvider
-import com.aozijx.passly.app.observability.LogcatSink
 import com.aozijx.passly.app.observability.LocalAlertPolicy
+import com.aozijx.passly.app.observability.LogcatSink
+import com.aozijx.passly.app.observability.ObservabilityAppErrorReporter
 import com.aozijx.passly.app.observability.ObservabilityExportService
 import com.aozijx.passly.app.observability.ObservabilityRuntimeController
-import com.aozijx.passly.app.observability.PolicyLogRecordStore
 import com.aozijx.passly.app.observability.PlatformCrashHandlerRegistry
+import com.aozijx.passly.app.observability.PolicyLogRecordStore
 import com.aozijx.passly.app.observability.PreviousExitSource
 import com.aozijx.passly.app.observability.PreviousProcessExitReader
 import com.aozijx.passly.app.observability.ProcessTerminator
@@ -36,7 +37,6 @@ import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.ContractViolationBehavior
 import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
-import com.aozijx.passly.app.observability.ObservabilityAppErrorReporter
 import com.aozijx.passly.core.observability.sink.LogRecordStore
 import com.aozijx.passly.core.observability.sink.LogRecordStoreFactory
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsExportGateway
@@ -75,21 +75,25 @@ internal object ObservabilityModule {
         val idGenerator = SecureObservabilityIdGenerator()
         val processSessionId = ProcessSessionId(randomOpaqueId())
         return DefaultLogger(
-            sanitizer = PrivacyPolicy(
-                identifierHasher = AndroidKeystoreIdentifierHasher(),
-                violationBehavior = if (BuildConfig.DEBUG) {
-                    ContractViolationBehavior.THROW
-                } else {
-                    ContractViolationBehavior.REJECT
-                },
-            ),
+            sanitizer =
+                PrivacyPolicy(
+                    identifierHasher = AndroidKeystoreIdentifierHasher(),
+                    violationBehavior =
+                        if (BuildConfig.DEBUG) {
+                            ContractViolationBehavior.THROW
+                        } else {
+                            ContractViolationBehavior.REJECT
+                        },
+                ),
             sinks = listOf(crashCapture, localAlertPolicy, LogcatSink(BuildConfig.DEBUG), store),
             lifecycleSinks = listOf(AndroidTraceSink()),
             idGenerator = idGenerator,
-            timeSource = object : ObservabilityTimeSource {
-                override fun wallTimeMs(): Long = System.currentTimeMillis()
-                override fun elapsedRealtimeMs(): Long = SystemClock.elapsedRealtime()
-            },
+            timeSource =
+                object : ObservabilityTimeSource {
+                    override fun wallTimeMs(): Long = System.currentTimeMillis()
+
+                    override fun elapsedRealtimeMs(): Long = SystemClock.elapsedRealtime()
+                },
             processSessionProvider = ProcessSessionProvider { processSessionId },
             secureSessionProvider = SecureSessionProvider { null },
             aggregator = eventAggregator,
@@ -110,10 +114,11 @@ internal object ObservabilityModule {
     @Singleton
     fun providePreviousExitSource(
         @ApplicationContext context: Context,
-    ): PreviousExitSource = PreviousProcessExitReader(
-        gateway = AndroidPreviousProcessExitGateway(context),
-        cursor = SharedPreferencesPreviousExitCursor(context),
-    )
+    ): PreviousExitSource =
+        PreviousProcessExitReader(
+            gateway = AndroidPreviousProcessExitGateway(context),
+            cursor = SharedPreferencesPreviousExitCursor(context),
+        )
 
     @Provides
     @Singleton
@@ -131,23 +136,18 @@ internal object ObservabilityModule {
     ): DiagnosticsExportStorageGateway = AndroidDiagnosticsExportStorageGateway(context)
 
     @Provides
-    fun provideDiagnosticsLogStore(
-        controller: ObservabilityRuntimeController,
-    ): DiagnosticsLogStore = controller
+    fun provideDiagnosticsLogStore(controller: ObservabilityRuntimeController): DiagnosticsLogStore = controller
 
     @Provides
-    fun provideDiagnosticsExportGateway(
-        service: ObservabilityExportService,
-    ): DiagnosticsExportGateway = service
+    fun provideDiagnosticsExportGateway(service: ObservabilityExportService): DiagnosticsExportGateway = service
 
     @Provides
-    fun provideAppErrorReporter(
-        reporter: ObservabilityAppErrorReporter,
-    ): AppErrorReporter = reporter
+    fun provideAppErrorReporter(reporter: ObservabilityAppErrorReporter): AppErrorReporter = reporter
 
-    private fun randomOpaqueId(): String = Base64.getUrlEncoder().withoutPadding().encodeToString(
-        ByteArray(PROCESS_SESSION_ID_BYTES).also(SecureRandom()::nextBytes),
-    )
+    private fun randomOpaqueId(): String =
+        Base64.getUrlEncoder().withoutPadding().encodeToString(
+            ByteArray(PROCESS_SESSION_ID_BYTES).also(SecureRandom()::nextBytes),
+        )
 
     private const val PROCESS_SESSION_ID_BYTES = 16
 }

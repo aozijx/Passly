@@ -19,10 +19,11 @@ import org.junit.Test
 class KeyedEntryArchiveMapperTest {
     @Test
     fun `wifi export keeps string fields and canonicalizes known security`() {
-        val record = KeyedEntryArchiveMapper.toRecord(
-            wifiEntry(WifiSecurityType.WpaPersonal),
-            attachmentIds = emptyList(),
-        )
+        val record =
+            KeyedEntryArchiveMapper.toRecord(
+                wifiEntry(WifiSecurityType.WpaPersonal),
+                attachmentIds = emptyList(),
+            )
 
         assertEquals("wifi", record.type)
         assertEquals("Office", record.text("wifi_ssid"))
@@ -44,38 +45,42 @@ class KeyedEntryArchiveMapperTest {
         }
     }
 
-    private fun wifiEntry(securityType: WifiSecurityType) = Entry(
-        identity = EntryIdentity(
-            id = EntryId("wifi-1"),
-            type = EntryType.WIFI,
-            timestamps = EntryTimestamps(1L),
-        ),
-        profile = EntryProfile(title = "Office"),
-        secret = EntrySecret(
-            WifiCredential(
-                ssid = "Office",
-                password = "password",
-                securityType = securityType,
-            ),
-        ),
-    )
+    private fun wifiEntry(securityType: WifiSecurityType) =
+        Entry(
+            identity =
+                EntryIdentity(
+                    id = EntryId("wifi-1"),
+                    type = EntryType.WIFI,
+                    timestamps = EntryTimestamps(1L),
+                ),
+            profile = EntryProfile(title = "Office"),
+            secret =
+                EntrySecret(
+                    WifiCredential(
+                        ssid = "Office",
+                        password = "password",
+                        securityType = securityType,
+                    ),
+                ),
+        )
 
-    private fun wifiRecord(security: String?): BackupEntryRecord = BackupEntryRecord(
-        id = "wifi-legacy",
-        type = "wifi",
-        revision = 1,
-        createdAt = 1L,
-        updatedAt = 1L,
-        fields = buildList {
-            add(BackupFieldRecord("title", BackupFieldValue.text("Legacy")))
-            add(BackupFieldRecord("wifi_ssid", BackupFieldValue.text("Legacy")))
-            add(BackupFieldRecord("password", BackupFieldValue.text("password")))
-            security?.let {
-                add(BackupFieldRecord("wifi_security", BackupFieldValue.text(it)))
-            }
-        },
-    )
+    private fun wifiRecord(security: String?): BackupEntryRecord =
+        BackupEntryRecord(
+            id = "wifi-legacy",
+            type = "wifi",
+            revision = 1,
+            createdAt = 1L,
+            updatedAt = 1L,
+            fields =
+                buildList {
+                    add(BackupFieldRecord("title", BackupFieldValue.text("Legacy")))
+                    add(BackupFieldRecord("wifi_ssid", BackupFieldValue.text("Legacy")))
+                    add(BackupFieldRecord("password", BackupFieldValue.text("password")))
+                    security?.let {
+                        add(BackupFieldRecord("wifi_security", BackupFieldValue.text(it)))
+                    }
+                },
+        )
 
-    private fun BackupEntryRecord.text(key: String): String? =
-        fields.singleOrNull { it.key == key }?.value?.text
+    private fun BackupEntryRecord.text(key: String): String? = fields.singleOrNull { it.key == key }?.value?.text
 }

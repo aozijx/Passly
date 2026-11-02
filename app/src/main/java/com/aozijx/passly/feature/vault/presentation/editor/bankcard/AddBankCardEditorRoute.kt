@@ -13,8 +13,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
-import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.bankcard.AddBankCardEditorScreen
+import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 
 @Composable
 fun AddBankCardEditorRoute(
@@ -29,10 +29,11 @@ fun AddBankCardEditorRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val saveFailedMessage = stringResource(R.string.vault_add_bank_card_save_failed)
     val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
-    val saveActionModifier = Modifier.rememberAddEntryFabTransitionModifier(
-        sharedTransitionScope = sharedTransitionScope,
-        animatedVisibilityScope = animatedVisibilityScope,
-    )
+    val saveActionModifier =
+        Modifier.rememberAddEntryFabTransitionModifier(
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+        )
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     LaunchedEffect(viewModel, editEntryId) {
         editEntryId?.let(viewModel::loadExistingEntry)

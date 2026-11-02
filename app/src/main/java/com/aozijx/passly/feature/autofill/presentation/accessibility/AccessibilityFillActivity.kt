@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.autofill.presentation.accessibility
 
-import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -9,10 +8,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.toUiItem
-import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,6 +21,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AccessibilityFillActivity : FragmentActivity() {
     @Inject lateinit var authenticationHostRegistry: AuthenticationHostRegistry
+
     @Inject lateinit var logger: Logger
 
     private val viewModel: AccessibilityFillViewModel by viewModels()
@@ -40,12 +41,17 @@ class AccessibilityFillActivity : FragmentActivity() {
                     when (val current = state) {
                         AccessibilityFillUiState.Loading,
                         AccessibilityFillUiState.Done,
-                        -> Unit
-                        is AccessibilityFillUiState.Candidates -> AutofillCandidateBottomSheet(
-                            candidates = current.values.map { it.toUiItem() },
-                            onCandidateSelected = viewModel::select,
-                            onCancel = viewModel::cancel,
-                        )
+                        -> {
+                            Unit
+                        }
+
+                        is AccessibilityFillUiState.Candidates -> {
+                            AutofillCandidateBottomSheet(
+                                candidates = current.values.map { it.toUiItem() },
+                                onCandidateSelected = viewModel::select,
+                                onCancel = viewModel::cancel,
+                            )
+                        }
                     }
                 }
             }
@@ -56,5 +62,4 @@ class AccessibilityFillActivity : FragmentActivity() {
         if (isFinishing) viewModel.cancel()
         super.onDestroy()
     }
-
 }

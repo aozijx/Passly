@@ -15,21 +15,23 @@ import javax.inject.Singleton
  * 如果包含资源，资源内容以 Base64 嵌入。
  */
 @Singleton
-class JsonBackupExporter @Inject constructor() {
-
-    fun export(bundle: BackupBundle): String {
-        BackupBundleValidator.validate(
-            bundle,
-            requireResourceData = bundle.document.resources.isNotEmpty()
-        )
-        val encodedResources = bundle.resourceData
-            .toSortedMap()
-            .mapValues { (_, content) -> Base64.getEncoder().encodeToString(content) }
-        return BackupJson.encodeToString(
-            JsonBackupPackage(
-                document = bundle.document,
-                resourcesBase64 = encodedResources
+class JsonBackupExporter
+    @Inject
+    constructor() {
+        fun export(bundle: BackupBundle): String {
+            BackupBundleValidator.validate(
+                bundle,
+                requireResourceData = bundle.document.resources.isNotEmpty(),
             )
-        )
+            val encodedResources =
+                bundle.resourceData
+                    .toSortedMap()
+                    .mapValues { (_, content) -> Base64.getEncoder().encodeToString(content) }
+            return BackupJson.encodeToString(
+                JsonBackupPackage(
+                    document = bundle.document,
+                    resourcesBase64 = encodedResources,
+                ),
+            )
+        }
     }
-}

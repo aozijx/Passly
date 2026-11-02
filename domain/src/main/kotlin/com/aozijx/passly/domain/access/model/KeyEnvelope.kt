@@ -3,7 +3,9 @@ package com.aozijx.passly.domain.access.model
 import java.security.MessageDigest
 
 @JvmInline
-value class EnvelopeType(val value: String) {
+value class EnvelopeType(
+    val value: String,
+) {
     companion object {
         val BIOMETRIC = EnvelopeType("biometric")
         val DEVICE_CREDENTIAL = EnvelopeType("device_credential")
@@ -16,7 +18,9 @@ value class EnvelopeType(val value: String) {
 }
 
 @JvmInline
-value class KdfAlgorithm(val value: String) {
+value class KdfAlgorithm(
+    val value: String,
+) {
     companion object {
         val NONE = KdfAlgorithm("none")
         val ARGON2ID = KdfAlgorithm("argon2id")
@@ -30,17 +34,17 @@ data class KeyEnvelope(
     val iv: ByteArray,
     val salt: ByteArray,
     val algorithm: KdfAlgorithm,
-    val version: Int = 1
+    val version: Int = 1,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is KeyEnvelope) return false
         return type == other.type &&
-                MessageDigest.isEqual(ciphertext, other.ciphertext) &&
-                MessageDigest.isEqual(iv, other.iv) &&
-                MessageDigest.isEqual(salt, other.salt) &&
-                algorithm == other.algorithm &&
-                version == other.version
+            MessageDigest.isEqual(ciphertext, other.ciphertext) &&
+            MessageDigest.isEqual(iv, other.iv) &&
+            MessageDigest.isEqual(salt, other.salt) &&
+            algorithm == other.algorithm &&
+            version == other.version
     }
 
     override fun hashCode(): Int {

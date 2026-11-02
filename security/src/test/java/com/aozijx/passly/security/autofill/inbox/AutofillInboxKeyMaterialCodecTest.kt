@@ -1,11 +1,6 @@
 package com.aozijx.passly.security.autofill.inbox
 
 import com.aozijx.passly.domain.access.model.AutofillInboxKeyMaterial
-import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
-import org.junit.Assert.assertTrue
-import org.junit.Test
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.Key
@@ -15,6 +10,11 @@ import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AutofillInboxKeyMaterialCodecTest {
     private val codec = AutofillInboxKeyMaterialCodec()
@@ -32,9 +32,10 @@ class AutofillInboxKeyMaterialCodecTest {
         val plaintext = byteArrayOf(7, 8, 9)
         val cipher = rsaCipher(Cipher.ENCRYPT_MODE, codec.decodePublicKey(material.publicKey))
         val ciphertext = cipher.doFinal(plaintext)
-        val decrypted = codec.withPrivateKey(material, dek) { privateKey ->
-            rsaCipher(Cipher.DECRYPT_MODE, privateKey).doFinal(ciphertext)
-        }
+        val decrypted =
+            codec.withPrivateKey(material, dek) { privateKey ->
+                rsaCipher(Cipher.DECRYPT_MODE, privateKey).doFinal(ciphertext)
+            }
 
         assertArrayEquals(plaintext, decrypted)
     }
@@ -51,11 +52,13 @@ class AutofillInboxKeyMaterialCodecTest {
     @Test
     fun inconsistentPublicKeyFingerprintIsRejectedBeforeUnwrap() {
         val material = codec.generateAndWrap(dek)
-        val corrupted = material.copy(
-            publicKeySha256 = material.publicKeySha256.clone().also {
-                it[0] = (it[0].toInt() + 1).toByte()
-            },
-        )
+        val corrupted =
+            material.copy(
+                publicKeySha256 =
+                    material.publicKeySha256.clone().also {
+                        it[0] = (it[0].toInt() + 1).toByte()
+                    },
+            )
 
         assertThrows(IllegalArgumentException::class.java) {
             codec.withPrivateKey(corrupted, dek) { Unit }
@@ -65,9 +68,10 @@ class AutofillInboxKeyMaterialCodecTest {
     @Test
     fun modifiedPrivateKeyEnvelopeFailsAuthentication() {
         val material = codec.generateAndWrap(dek)
-        val corruptedEnvelope = material.privateKeyEnvelope.clone().also {
-            it[it.lastIndex] = (it.last().toInt() xor 1).toByte()
-        }
+        val corruptedEnvelope =
+            material.privateKeyEnvelope.clone().also {
+                it[it.lastIndex] = (it.last().toInt() xor 1).toByte()
+            }
 
         assertThrows(AEADBadTagException::class.java) {
             codec.withPrivateKey(material.copy(privateKeyEnvelope = corruptedEnvelope), dek) { Unit }
@@ -100,7 +104,10 @@ class AutofillInboxKeyMaterialCodecTest {
         assertEquals(ciphertextLength + GCM_TAG_BYTES, envelope.remaining())
     }
 
-    private fun rsaCipher(mode: Int, key: Key): Cipher =
+    private fun rsaCipher(
+        mode: Int,
+        key: Key,
+    ): Cipher =
         Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding").apply {
             init(
                 mode,

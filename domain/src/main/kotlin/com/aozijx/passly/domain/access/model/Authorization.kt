@@ -48,7 +48,13 @@ enum class SensitiveRevisionAccessAction {
 interface AuthorizationPermit
 
 sealed interface AuthorizationResult<out T> {
-    data class Allowed<T>(val value: T) : AuthorizationResult<T>
-    data class Denied(val failure: AuthenticationFailure) : AuthorizationResult<Nothing>
+    data class Allowed<T>(
+        val value: T,
+    ) : AuthorizationResult<T>
+
+    data class Denied(
+        val failure: AuthenticationFailure,
+    ) : AuthorizationResult<Nothing>
+
     data object Cancelled : AuthorizationResult<Nothing>
 }

@@ -9,5 +9,5 @@ data class BackupLinkRecord(
     val targetEntryId: String,
     val relationType: String,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
 )

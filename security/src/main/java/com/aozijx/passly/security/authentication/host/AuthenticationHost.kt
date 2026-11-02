@@ -10,8 +10,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.security.authentication.host.ActivityAuthUiHost
 import com.aozijx.passly.security.authentication.host.AuthenticationDialogRequest
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
@@ -24,33 +24,43 @@ fun AuthenticationHost(
     content: @Composable () -> Unit,
 ) {
     val owner: AuthenticationHostOwnerViewModel = viewModel(viewModelStoreOwner = activity)
-    val host = remember(activity, owner.ownerId, logger) {
-        ActivityAuthUiHost(activity, owner.ownerId, logger)
-    }
+    val host =
+        remember(activity, owner.ownerId, logger) {
+            ActivityAuthUiHost(activity, owner.ownerId, logger)
+        }
     val dialog by host.dialog.collectAsStateWithLifecycle()
 
     DisposableEffect(activity, host, registry) {
-        var registration = if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
-            registry.register(host)
-        } else {
-            null
-        }
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> registration = registry.register(host)
-                Lifecycle.Event.ON_PAUSE -> {
-                    registration?.let(registry::unregister)
-                    registration = null
-                }
-                Lifecycle.Event.ON_DESTROY -> {
-                    registration?.let(registry::unregister)
-                    registration = null
-                    host.cancelOwnedRequests()
-                    if (!activity.isChangingConfigurations) registry.invalidateOwner(host.ownerId)
-                }
-                else -> Unit
+        var registration =
+            if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                registry.register(host)
+            } else {
+                null
             }
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> {
+                        registration = registry.register(host)
+                    }
+
+                    Lifecycle.Event.ON_PAUSE -> {
+                        registration?.let(registry::unregister)
+                        registration = null
+                    }
+
+                    Lifecycle.Event.ON_DESTROY -> {
+                        registration?.let(registry::unregister)
+                        registration = null
+                        host.cancelOwnedRequests()
+                        if (!activity.isChangingConfigurations) registry.invalidateOwner(host.ownerId)
+                    }
+
+                    else -> {
+                        Unit
+                    }
+                }
+            }
         activity.lifecycle.addObserver(observer)
         onDispose {
             activity.lifecycle.removeObserver(observer)
@@ -62,43 +72,58 @@ fun AuthenticationHost(
     Box { content() }
     AuthenticationDialogs(
         state = dialog.toUiState(),
-        events = remember(host) {
-            object : AuthenticationDialogEventHandler {
-                override fun onMethodSelected(
-                    identity: AuthUiRequestId,
-                    method: AuthenticationMethodUiModel?,
-                ) {
-                    host.submitMethod(identity, method?.toDomainModel())
+        events =
+            remember(host) {
+                object : AuthenticationDialogEventHandler {
+                    override fun onMethodSelected(
+                        identity: AuthUiRequestId,
+                        method: AuthenticationMethodUiModel?,
+                    ) {
+                        host.submitMethod(identity, method?.toDomainModel())
+                    }
+
+                    override fun onSecretSubmitted(
+                        identity: AuthUiRequestId,
+                        secret: CharArray?,
+                    ) {
+                        host.submitSecret(identity, secret)
+                    }
                 }
-
-                override fun onSecretSubmitted(identity: AuthUiRequestId, secret: CharArray?) {
-                    host.submitSecret(identity, secret)
-                }
-            }
-        },
+            },
     )
 }
 
-private fun AuthenticationDialogRequest?.toUiState(): AuthenticationDialogUiState? = when (this) {
-    is AuthenticationDialogRequest.ChooseMethod -> AuthenticationDialogUiState.ChooseMethod(
-        identity = identity,
-        methods = methods.map(AuthenticationMethod::toUiModel),
-    )
-    is AuthenticationDialogRequest.Secret -> AuthenticationDialogUiState.Secret(
-        identity = identity,
-        method = method.toUiModel(),
-    )
-    null -> null
-}
+private fun AuthenticationDialogRequest?.toUiState(): AuthenticationDialogUiState? =
+    when (this) {
+        is AuthenticationDialogRequest.ChooseMethod -> {
+            AuthenticationDialogUiState.ChooseMethod(
+                identity = identity,
+                methods = methods.map(AuthenticationMethod::toUiModel),
+            )
+        }
 
-private fun AuthenticationMethod.toUiModel(): AuthenticationMethodUiModel = when (this) {
-    AuthenticationMethod.BIOMETRIC -> AuthenticationMethodUiModel.BIOMETRIC
-    AuthenticationMethod.APP_PASSWORD -> AuthenticationMethodUiModel.APP_PASSWORD
-    AuthenticationMethod.RECOVERY_CODE -> AuthenticationMethodUiModel.RECOVERY_CODE
-}
+        is AuthenticationDialogRequest.Secret -> {
+            AuthenticationDialogUiState.Secret(
+                identity = identity,
+                method = method.toUiModel(),
+            )
+        }
 
-private fun AuthenticationMethodUiModel.toDomainModel(): AuthenticationMethod = when (this) {
-    AuthenticationMethodUiModel.BIOMETRIC -> AuthenticationMethod.BIOMETRIC
-    AuthenticationMethodUiModel.APP_PASSWORD -> AuthenticationMethod.APP_PASSWORD
-    AuthenticationMethodUiModel.RECOVERY_CODE -> AuthenticationMethod.RECOVERY_CODE
-}
+        null -> {
+            null
+        }
+    }
+
+private fun AuthenticationMethod.toUiModel(): AuthenticationMethodUiModel =
+    when (this) {
+        AuthenticationMethod.BIOMETRIC -> AuthenticationMethodUiModel.BIOMETRIC
+        AuthenticationMethod.APP_PASSWORD -> AuthenticationMethodUiModel.APP_PASSWORD
+        AuthenticationMethod.RECOVERY_CODE -> AuthenticationMethodUiModel.RECOVERY_CODE
+    }
+
+private fun AuthenticationMethodUiModel.toDomainModel(): AuthenticationMethod =
+    when (this) {
+        AuthenticationMethodUiModel.BIOMETRIC -> AuthenticationMethod.BIOMETRIC
+        AuthenticationMethodUiModel.APP_PASSWORD -> AuthenticationMethod.APP_PASSWORD
+        AuthenticationMethodUiModel.RECOVERY_CODE -> AuthenticationMethod.RECOVERY_CODE
+    }

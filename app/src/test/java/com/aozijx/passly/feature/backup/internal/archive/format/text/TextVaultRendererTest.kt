@@ -10,18 +10,20 @@ import org.junit.Test
 class TextVaultRendererTest {
     @Test
     fun `text export omits favorite metadata`() {
-        val entry = BackupEntryRecord(
-            id = "entry-1",
-            type = "login",
-            revision = 1,
-            createdAt = 1L,
-            updatedAt = 2L,
-            fields = listOf(
-                BackupFieldRecord("title", BackupFieldValue.text("Example")),
-                BackupFieldRecord("favorite", BackupFieldValue.boolean(true)),
-                BackupFieldRecord("username", BackupFieldValue.text("user")),
-            ),
-        )
+        val entry =
+            BackupEntryRecord(
+                id = "entry-1",
+                type = "login",
+                revision = 1,
+                createdAt = 1L,
+                updatedAt = 2L,
+                fields =
+                    listOf(
+                        BackupFieldRecord("title", BackupFieldValue.text("Example")),
+                        BackupFieldRecord("favorite", BackupFieldValue.boolean(true)),
+                        BackupFieldRecord("username", BackupFieldValue.text("user")),
+                    ),
+            )
 
         val output = TextVaultRenderer().render(listOf(entry))
 

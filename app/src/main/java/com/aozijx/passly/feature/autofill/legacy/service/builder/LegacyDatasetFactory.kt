@@ -15,7 +15,6 @@ import android.widget.RemoteViews
  * Legacy Dataset Factory for building individual Autofill datasets.
  */
 internal object LegacyDatasetFactory {
-
     fun createAuthenticatedPickerDataset(
         ids: List<AutofillId>,
         authentication: IntentSender,
@@ -34,12 +33,15 @@ internal object LegacyDatasetFactory {
         password: String,
         totpCode: String?,
         presentation: RemoteViews? = null,
-        existingBuilder: Dataset.Builder? = null
+        existingBuilder: Dataset.Builder? = null,
     ): Dataset? {
         val builder = existingBuilder ?: Dataset.Builder()
         var added = false
 
-        fun addField(id: AutofillId, text: String?) {
+        fun addField(
+            id: AutofillId,
+            text: String?,
+        ) {
             if (text.isNullOrBlank()) return
             val value = AutofillValue.forText(text)
 
@@ -47,7 +49,7 @@ internal object LegacyDatasetFactory {
                 val fieldBuilder = Field.Builder().setValue(value)
                 if (presentation != null) {
                     fieldBuilder.setPresentations(
-                        Presentations.Builder().setMenuPresentation(presentation).build()
+                        Presentations.Builder().setMenuPresentation(presentation).build(),
                     )
                 }
                 builder.setField(id, fieldBuilder.build())
@@ -77,9 +79,13 @@ internal object LegacyDatasetFactory {
         inlinePresentation: InlinePresentation? = null,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val presentations = Presentations.Builder().setMenuPresentation(presentation).apply {
-                inlinePresentation?.let(::setInlinePresentation)
-            }.build()
+            val presentations =
+                Presentations
+                    .Builder()
+                    .setMenuPresentation(presentation)
+                    .apply {
+                        inlinePresentation?.let(::setInlinePresentation)
+                    }.build()
             builder.setAuthentication(ids, intentSender, presentations)
         } else {
             @Suppress("DEPRECATION")
@@ -94,11 +100,17 @@ internal object LegacyDatasetFactory {
         inlinePresentation: InlinePresentation? = null,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val field = Field.Builder().setPresentations(
-                Presentations.Builder().setMenuPresentation(presentation).apply {
-                    inlinePresentation?.let(::setInlinePresentation)
-                }.build()
-            ).build()
+            val field =
+                Field
+                    .Builder()
+                    .setPresentations(
+                        Presentations
+                            .Builder()
+                            .setMenuPresentation(presentation)
+                            .apply {
+                                inlinePresentation?.let(::setInlinePresentation)
+                            }.build(),
+                    ).build()
             ids.forEach { builder.setField(it, field) }
         } else {
             @Suppress("DEPRECATION")

@@ -1,10 +1,10 @@
 package com.aozijx.passly.feature.settings.presentation.main.data
 
+import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
-import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.feature.settings.data.AppCacheStore
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
@@ -32,251 +32,276 @@ class StorageSettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `changing recording mode persists from data management settings`() = runTest {
-        val settings = RecordingLogSettingsRepository()
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = settings,
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
+    fun `changing recording mode persists from data management settings`() =
+        runTest {
+            val settings = RecordingLogSettingsRepository()
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = settings,
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
 
-        viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE))
-        runCurrent()
+            viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE))
+            runCurrent()
 
-        assertEquals(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE, settings.savedMode)
-        assertEquals(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE, viewModel.uiState.value.logRecordingMode)
-    }
-
-    @Test
-    fun `recording mode save failure emits user feedback`() = runTest {
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
-
-        viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DISABLED))
-        runCurrent()
-
-        assertEquals(StorageSettingsEffect.LogRecordingSettingsSaveFailed, effect.await())
-    }
+            assertEquals(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE, settings.savedMode)
+            assertEquals(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE, viewModel.uiState.value.logRecordingMode)
+        }
 
     @Test
-    fun `late exit from previous page does not disable a reentered page`() = runTest {
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
-            secureSessionAccessState = FullAccess,
-        )
-        val oldOwner = viewModel.onPageEntered()
-        runCurrent()
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { withTimeoutOrNull(1) { viewModel.effects.first() } }
+    fun `recording mode save failure emits user feedback`() =
+        runTest {
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
 
-        viewModel.onPageExited(oldOwner)
-        viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DISABLED))
-        runCurrent()
+            viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DISABLED))
+            runCurrent()
 
-        assertEquals(StorageSettingsEffect.LogRecordingSettingsSaveFailed, effect.await())
-    }
-
-    @Test
-    fun `opening data management loads cache and log sizes`() = runTest {
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 2_048L),
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 1_024L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-
-        assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
-        assertEquals(StorageSizeUiState.Available("1.0 KB"), viewModel.uiState.value.logs)
-    }
+            assertEquals(StorageSettingsEffect.LogRecordingSettingsSaveFailed, effect.await())
+        }
 
     @Test
-    fun `clearing logs refreshes displayed size`() = runTest {
-        val store = RecordingLogStore(sizeBytes = 1_024L)
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = store,
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
+    fun `late exit from previous page does not disable a reentered page`() =
+        runTest {
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(saveFailure = IOException()),
+                    secureSessionAccessState = FullAccess,
+                )
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { withTimeoutOrNull(1) { viewModel.effects.first() } }
 
-        viewModel.onAction(StorageSettingsAction.ClearLogs)
-        runCurrent()
+            viewModel.onPageExited(oldOwner)
+            viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(DiagnosticsLogRecordingMode.DISABLED))
+            runCurrent()
 
-        assertEquals(StorageSettingsEffect.LogsCleared, effect.await())
-        assertEquals(1, store.clearCount)
-        assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
-    }
-
-    @Test
-    fun `clearing cache reports success and refreshes displayed size`() = runTest {
-        val store = RecordingCacheStore(sizeBytes = 1_024L)
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = store,
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
-
-        viewModel.onAction(StorageSettingsAction.ClearCache)
-        runCurrent()
-
-        assertEquals(StorageSettingsEffect.CacheCleared, effect.await())
-        assertEquals(1, store.clearCount)
-        assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.cache)
-    }
+            assertEquals(StorageSettingsEffect.LogRecordingSettingsSaveFailed, effect.await())
+        }
 
     @Test
-    fun `failed cache clear reports failure and rereads the actual size`() = runTest {
-        val store = RecordingCacheStore(sizeBytes = 2_048L, clearFailure = IOException())
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = store,
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
+    fun `opening data management loads cache and log sizes`() =
+        runTest {
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 2_048L),
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 1_024L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
 
-        viewModel.onAction(StorageSettingsAction.ClearCache)
-        runCurrent()
-
-        assertEquals(StorageSettingsEffect.CacheClearFailed, effect.await())
-        assertEquals(1, store.clearCount)
-        assertEquals(2, store.sizeReadCount)
-        assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
-    }
+            assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
+            assertEquals(StorageSizeUiState.Available("1.0 KB"), viewModel.uiState.value.logs)
+        }
 
     @Test
-    fun `cache clear cancellation propagates without failure feedback`() = runTest {
-        val store = RecordingCacheStore(
-            sizeBytes = 1_024L,
-            clearFailure = CancellationException("clear cancelled"),
-        )
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = store,
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
+    fun `clearing logs refreshes displayed size`() =
+        runTest {
+            val store = RecordingLogStore(sizeBytes = 1_024L)
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = store,
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
 
-        viewModel.onAction(StorageSettingsAction.ClearCache)
-        runCurrent()
+            viewModel.onAction(StorageSettingsAction.ClearLogs)
+            runCurrent()
 
-        assertEquals(1, store.clearCount)
-        assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
-    }
-
-    @Test
-    fun `late cache clear failure refreshes reentered page without replaying old feedback`() = runTest {
-        val store = DeferredClearCacheStore(sizeBytes = 3_072L)
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = store,
-            diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        val oldOwner = viewModel.onPageEntered()
-        runCurrent()
-
-        viewModel.onAction(StorageSettingsAction.ClearCache)
-        store.clearStarted.await()
-        viewModel.onPageExited(oldOwner)
-        viewModel.onPageEntered()
-        store.clearResult.completeExceptionally(IOException())
-        runCurrent()
-
-        assertEquals(StorageSizeUiState.Available("3.0 KB"), viewModel.uiState.value.cache)
-        assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
-    }
+            assertEquals(StorageSettingsEffect.LogsCleared, effect.await())
+            assertEquals(1, store.clearCount)
+            assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
+        }
 
     @Test
-    fun `restricted session cannot clear logs`() = runTest {
-        val store = RecordingLogStore(sizeBytes = 1_024L)
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = store,
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = NoAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
+    fun `clearing cache reports success and refreshes displayed size`() =
+        runTest {
+            val store = RecordingCacheStore(sizeBytes = 1_024L)
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = store,
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
 
-        viewModel.onAction(StorageSettingsAction.ClearLogs)
-        runCurrent()
+            viewModel.onAction(StorageSettingsAction.ClearCache)
+            runCurrent()
 
-        assertEquals(StorageSettingsEffect.LogClearFailed, effect.await())
-        assertEquals(0, store.clearCount)
-        assertEquals(StorageSizeUiState.Available("1.0 KB"), viewModel.uiState.value.logs)
-    }
-
-    @Test
-    fun `failed log clear reports failure and does not show stale size as available`() = runTest {
-        val store = RecordingLogStore(sizeBytes = 1_024L, clearResult = LogClearResult.Failed)
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = store,
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        viewModel.onPageEntered()
-        runCurrent()
-        val effect = async { viewModel.effects.first() }
-
-        viewModel.onAction(StorageSettingsAction.ClearLogs)
-        runCurrent()
-
-        assertEquals(StorageSettingsEffect.LogClearFailed, effect.await())
-        assertEquals(1, store.clearCount)
-        assertEquals(StorageSizeUiState.Unavailable, viewModel.uiState.value.logs)
-    }
+            assertEquals(StorageSettingsEffect.CacheCleared, effect.await())
+            assertEquals(1, store.clearCount)
+            assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.cache)
+        }
 
     @Test
-    fun `reentry refreshes logs after clear without replaying old feedback`() = runTest {
-        val store = DeferredClearLogStore()
-        val viewModel = StorageSettingsViewModel(
-            cacheStore = RecordingCacheStore(sizeBytes = 0L),
-            diagnosticsLogStore = store,
-            diagnosticsLogSettings = RecordingLogSettingsRepository(),
-            secureSessionAccessState = FullAccess,
-        )
-        val oldOwner = viewModel.onPageEntered()
-        runCurrent()
+    fun `failed cache clear reports failure and rereads the actual size`() =
+        runTest {
+            val store = RecordingCacheStore(sizeBytes = 2_048L, clearFailure = IOException())
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = store,
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
 
-        viewModel.onAction(StorageSettingsAction.ClearLogs)
-        store.clearStarted.await()
-        viewModel.onPageExited(oldOwner)
-        viewModel.onPageEntered()
-        store.clearResult.complete(LogClearResult.Cleared)
-        runCurrent()
+            viewModel.onAction(StorageSettingsAction.ClearCache)
+            runCurrent()
 
-        assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
-        assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
-    }
+            assertEquals(StorageSettingsEffect.CacheClearFailed, effect.await())
+            assertEquals(1, store.clearCount)
+            assertEquals(2, store.sizeReadCount)
+            assertEquals(StorageSizeUiState.Available("2.0 KB"), viewModel.uiState.value.cache)
+        }
+
+    @Test
+    fun `cache clear cancellation propagates without failure feedback`() =
+        runTest {
+            val store =
+                RecordingCacheStore(
+                    sizeBytes = 1_024L,
+                    clearFailure = CancellationException("clear cancelled"),
+                )
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = store,
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(StorageSettingsAction.ClearCache)
+            runCurrent()
+
+            assertEquals(1, store.clearCount)
+            assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+        }
+
+    @Test
+    fun `late cache clear failure refreshes reentered page without replaying old feedback`() =
+        runTest {
+            val store = DeferredClearCacheStore(sizeBytes = 3_072L)
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = store,
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(StorageSettingsAction.ClearCache)
+            store.clearStarted.await()
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            store.clearResult.completeExceptionally(IOException())
+            runCurrent()
+
+            assertEquals(StorageSizeUiState.Available("3.0 KB"), viewModel.uiState.value.cache)
+            assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+        }
+
+    @Test
+    fun `restricted session cannot clear logs`() =
+        runTest {
+            val store = RecordingLogStore(sizeBytes = 1_024L)
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = store,
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = NoAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
+
+            viewModel.onAction(StorageSettingsAction.ClearLogs)
+            runCurrent()
+
+            assertEquals(StorageSettingsEffect.LogClearFailed, effect.await())
+            assertEquals(0, store.clearCount)
+            assertEquals(StorageSizeUiState.Available("1.0 KB"), viewModel.uiState.value.logs)
+        }
+
+    @Test
+    fun `failed log clear reports failure and does not show stale size as available`() =
+        runTest {
+            val store = RecordingLogStore(sizeBytes = 1_024L, clearResult = LogClearResult.Failed)
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = store,
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+            val effect = async { viewModel.effects.first() }
+
+            viewModel.onAction(StorageSettingsAction.ClearLogs)
+            runCurrent()
+
+            assertEquals(StorageSettingsEffect.LogClearFailed, effect.await())
+            assertEquals(1, store.clearCount)
+            assertEquals(StorageSizeUiState.Unavailable, viewModel.uiState.value.logs)
+        }
+
+    @Test
+    fun `reentry refreshes logs after clear without replaying old feedback`() =
+        runTest {
+            val store = DeferredClearLogStore()
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = store,
+                    diagnosticsLogSettings = RecordingLogSettingsRepository(),
+                    secureSessionAccessState = FullAccess,
+                )
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(StorageSettingsAction.ClearLogs)
+            store.clearStarted.await()
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            store.clearResult.complete(LogClearResult.Cleared)
+            runCurrent()
+
+            assertEquals(StorageSizeUiState.Available("0 B"), viewModel.uiState.value.logs)
+            assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+        }
 
     private class RecordingCacheStore(
         private var sizeBytes: Long,
@@ -297,7 +322,9 @@ class StorageSettingsViewModelTest {
         }
     }
 
-    private class DeferredClearCacheStore(private val sizeBytes: Long) : AppCacheStore {
+    private class DeferredClearCacheStore(
+        private val sizeBytes: Long,
+    ) : AppCacheStore {
         val clearStarted = CompletableDeferred<Unit>()
         val clearResult = CompletableDeferred<Unit>()
 
@@ -316,7 +343,9 @@ class StorageSettingsViewModelTest {
         var clearCount = 0
 
         override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> = emptyList()
+
         override suspend fun storageBytes(): Long = sizeBytes
+
         override suspend fun clear(): LogClearResult {
             clearCount++
             if (clearResult == LogClearResult.Cleared) sizeBytes = 0L

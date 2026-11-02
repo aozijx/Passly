@@ -19,43 +19,47 @@ import org.junit.Test
 
 class ResetDatabaseUseCaseTest {
     @Test
-    fun `reset executes inside exact clear database authorization scope`() = runTest {
-        val gateway = RecordingGateway()
-        val gate = RecordingGate(AuthorizationDecision.ALLOW)
-        gateway.gate = gate
-        val useCase = ResetDatabaseUseCase(FullAccess, gate, gateway)
+    fun `reset executes inside exact clear database authorization scope`() =
+        runTest {
+            val gateway = RecordingGateway()
+            val gate = RecordingGate(AuthorizationDecision.ALLOW)
+            gateway.gate = gate
+            val useCase = ResetDatabaseUseCase(FullAccess, gate, gateway)
 
-        val result = useCase()
+            val result = useCase()
 
-        assertEquals(DatabaseResetResult.Completed, result)
-        assertEquals(AuthorizationScope.Global(AuthenticationPurpose.CLEAR_DATABASE), gate.scope)
-        assertTrue(gateway.calledInsideAuthorization)
-        assertEquals(1, gateway.resetCount)
-    }
-
-    @Test
-    fun `cancelled authorization does not reset database`() = runTest {
-        val gateway = RecordingGateway()
-        val useCase = ResetDatabaseUseCase(
-            FullAccess,
-            RecordingGate(AuthorizationDecision.CANCEL),
-            gateway,
-        )
-
-        assertEquals(DatabaseResetResult.Cancelled, useCase())
-        assertEquals(0, gateway.resetCount)
-    }
+            assertEquals(DatabaseResetResult.Completed, result)
+            assertEquals(AuthorizationScope.Global(AuthenticationPurpose.CLEAR_DATABASE), gate.scope)
+            assertTrue(gateway.calledInsideAuthorization)
+            assertEquals(1, gateway.resetCount)
+        }
 
     @Test
-    fun `restricted session is rejected before authorization`() = runTest {
-        val gate = RecordingGate(AuthorizationDecision.ALLOW)
-        val gateway = RecordingGateway()
-        val useCase = ResetDatabaseUseCase(RestrictedAccess, gate, gateway)
+    fun `cancelled authorization does not reset database`() =
+        runTest {
+            val gateway = RecordingGateway()
+            val useCase =
+                ResetDatabaseUseCase(
+                    FullAccess,
+                    RecordingGate(AuthorizationDecision.CANCEL),
+                    gateway,
+                )
 
-        assertEquals(DatabaseResetResult.SessionRestricted, useCase())
-        assertFalse(gate.authorizeCalled)
-        assertEquals(0, gateway.resetCount)
-    }
+            assertEquals(DatabaseResetResult.Cancelled, useCase())
+            assertEquals(0, gateway.resetCount)
+        }
+
+    @Test
+    fun `restricted session is rejected before authorization`() =
+        runTest {
+            val gate = RecordingGate(AuthorizationDecision.ALLOW)
+            val gateway = RecordingGateway()
+            val useCase = ResetDatabaseUseCase(RestrictedAccess, gate, gateway)
+
+            assertEquals(DatabaseResetResult.SessionRestricted, useCase())
+            assertFalse(gate.authorizeCalled)
+            assertEquals(0, gateway.resetCount)
+        }
 
     private enum class AuthorizationDecision { ALLOW, CANCEL }
 
@@ -98,12 +102,14 @@ class ResetDatabaseUseCaseTest {
     private object FullAccess : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =
             MutableStateFlow(AuthenticationState.Authenticated(1L))
+
         override fun isUnlocked() = true
     }
 
     private object RestrictedAccess : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =
             MutableStateFlow(AuthenticationState.RecoveryMode(1L))
+
         override fun isUnlocked() = true
     }
 }

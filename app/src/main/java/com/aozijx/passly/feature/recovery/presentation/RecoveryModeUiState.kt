@@ -9,6 +9,7 @@ data class RecoveryModeUiState(
 
 sealed interface RecoveryPasswordSetup {
     data object Closed : RecoveryPasswordSetup
+
     data class Editing(
         val newPassword: SensitiveValue = EmptySensitiveValue,
         val confirmPassword: SensitiveValue = EmptySensitiveValue,
@@ -18,8 +19,12 @@ sealed interface RecoveryPasswordSetup {
 
 sealed interface RecoveryPasswordSetupPhase {
     data object Idle : RecoveryPasswordSetupPhase
+
     data object Saving : RecoveryPasswordSetupPhase
-    data class Failed(val reason: RecoveryPasswordSetupFailure) : RecoveryPasswordSetupPhase
+
+    data class Failed(
+        val reason: RecoveryPasswordSetupFailure,
+    ) : RecoveryPasswordSetupPhase
 }
 
 enum class RecoveryPasswordSetupFailure {

@@ -31,84 +31,101 @@ class AppearanceSettingsViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
-    fun `every appearance write reports a localized error without changing persisted state`() = runTest {
-        val repository = Repository { throw IOException("synthetic private diagnostic") }
-        val model = AppearanceSettingsViewModel(repository)
-        model.onPageEntered()
-        val errors = mutableListOf<UiErrorMessage>()
-        backgroundScope.launch { model.errors.toList(errors) }
-        val before = repository.appearance.value
-        val actions = listOf(
-            AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK),
-            AppearanceSettingsAction.SetDynamicColor(false),
-            AppearanceSettingsAction.SetThemeKey("test-theme"),
-            AppearanceSettingsAction.SetLanguage(AppLanguage.EN),
-            AppearanceSettingsAction.SetFontFamily(FontFamilyMode.SYSTEM),
-        )
-        actions.forEach(model::onAction)
-        runCurrent()
-        assertEquals(List(actions.size) { UiErrorMessage(R.string.ui_error_file_io) }, errors)
-        assertEquals(before, repository.appearance.value)
-    }
-
-    @Test
-    fun `successful appearance writes remain silent`() = runTest {
-        val repository = Repository { }
-        val model = AppearanceSettingsViewModel(repository)
-        model.onPageEntered()
-        val errors = mutableListOf<UiErrorMessage>()
-        backgroundScope.launch { model.errors.toList(errors) }
-        model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
-        runCurrent()
-        assertEquals(listOf("language"), repository.writes)
-        assertEquals(emptyList<UiErrorMessage>(), errors)
-    }
-
-    @Test
-    fun `destroyed appearance page discards late failures`() = runTest {
-        val release = CompletableDeferred<Unit>()
-        val repository = Repository {
-            withContext(NonCancellable) { release.await() }
-            throw IOException("synthetic late failure")
+    fun `every appearance write reports a localized error without changing persisted state`() =
+        runTest {
+            val repository = Repository { throw IOException("synthetic private diagnostic") }
+            val model = AppearanceSettingsViewModel(repository)
+            model.onPageEntered()
+            val errors = mutableListOf<UiErrorMessage>()
+            backgroundScope.launch { model.errors.toList(errors) }
+            val before = repository.appearance.value
+            val actions =
+                listOf(
+                    AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK),
+                    AppearanceSettingsAction.SetDynamicColor(false),
+                    AppearanceSettingsAction.SetThemeKey("test-theme"),
+                    AppearanceSettingsAction.SetLanguage(AppLanguage.EN),
+                    AppearanceSettingsAction.SetFontFamily(FontFamilyMode.SYSTEM),
+                )
+            actions.forEach(model::onAction)
+            runCurrent()
+            assertEquals(List(actions.size) { UiErrorMessage(R.string.ui_error_file_io) }, errors)
+            assertEquals(before, repository.appearance.value)
         }
-        val model = AppearanceSettingsViewModel(repository)
-        model.onPageEntered()
-        val errors = mutableListOf<UiErrorMessage>()
-        backgroundScope.launch { model.errors.toList(errors) }
-        model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
-        runCurrent()
-        ViewModelStore().apply { put("appearance", model); clear() }
-        release.complete(Unit)
-        runCurrent()
-        assertEquals(emptyList<UiErrorMessage>(), errors)
-    }
 
     @Test
-    fun `buffered failure from an exited page is skipped after reentry`() = runTest {
-        val repository = Repository { throw IOException("synthetic write failure") }
-        val model = AppearanceSettingsViewModel(repository)
-        val oldOwner = model.onPageEntered()
+    fun `successful appearance writes remain silent`() =
+        runTest {
+            val repository = Repository { }
+            val model = AppearanceSettingsViewModel(repository)
+            model.onPageEntered()
+            val errors = mutableListOf<UiErrorMessage>()
+            backgroundScope.launch { model.errors.toList(errors) }
+            model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
+            runCurrent()
+            assertEquals(listOf("language"), repository.writes)
+            assertEquals(emptyList<UiErrorMessage>(), errors)
+        }
 
-        model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
-        runCurrent()
-        model.onPageExited(oldOwner)
-        model.onPageEntered()
+    @Test
+    fun `destroyed appearance page discards late failures`() =
+        runTest {
+            val release = CompletableDeferred<Unit>()
+            val repository =
+                Repository {
+                    withContext(NonCancellable) { release.await() }
+                    throw IOException("synthetic late failure")
+                }
+            val model = AppearanceSettingsViewModel(repository)
+            model.onPageEntered()
+            val errors = mutableListOf<UiErrorMessage>()
+            backgroundScope.launch { model.errors.toList(errors) }
+            model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
+            runCurrent()
+            ViewModelStore().apply {
+                put("appearance", model)
+                clear()
+            }
+            release.complete(Unit)
+            runCurrent()
+            assertEquals(emptyList<UiErrorMessage>(), errors)
+        }
 
-        val currentError = async { model.errors.first() }
-        model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
-        runCurrent()
+    @Test
+    fun `buffered failure from an exited page is skipped after reentry`() =
+        runTest {
+            val repository = Repository { throw IOException("synthetic write failure") }
+            val model = AppearanceSettingsViewModel(repository)
+            val oldOwner = model.onPageEntered()
 
-        assertEquals(UiErrorMessage(R.string.ui_error_file_io), currentError.await())
-    }
+            model.onAction(AppearanceSettingsAction.SetThemeMode(ThemeMode.DARK))
+            runCurrent()
+            model.onPageExited(oldOwner)
+            model.onPageEntered()
 
-    private class Repository(private val save: suspend () -> Unit) : AppearanceSettingsRepository {
+            val currentError = async { model.errors.first() }
+            model.onAction(AppearanceSettingsAction.SetLanguage(AppLanguage.EN))
+            runCurrent()
+
+            assertEquals(UiErrorMessage(R.string.ui_error_file_io), currentError.await())
+        }
+
+    private class Repository(
+        private val save: suspend () -> Unit,
+    ) : AppearanceSettingsRepository {
         override val appearance = MutableStateFlow(AppearanceSettings())
         val writes = mutableListOf<String>()
+
         override suspend fun setThemeMode(mode: ThemeMode) = write("theme")
+
         override suspend fun setDynamicColor(enabled: Boolean) = write("dynamic")
+
         override suspend fun setThemeKey(key: String) = write("key")
+
         override suspend fun setLanguage(language: AppLanguage) = write("language")
+
         override suspend fun setFontFamily(mode: FontFamilyMode) = write("font")
+
         private suspend fun write(field: String) {
             save()
             writes += field

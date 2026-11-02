@@ -1,14 +1,13 @@
 package com.aozijx.passly.feature.scanner.presentation
 
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import java.net.URI
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScannerResultClassifierTest {
-
     @Test
     fun `blank values do not produce a result`() {
         listOf("", "  ", "\n\t").forEach { rawValue ->
@@ -22,11 +21,12 @@ class ScannerResultClassifierTest {
     @Test
     fun `valid otp uri produces otp result with parsed config`() {
         val rawValue = "otpauth://totp/Example:alice?secret=JBSWY3DPEHPK3PXP"
-        val config = OtpConfig(
-            secret = "JBSWY3DPEHPK3PXP",
-            issuer = "Example",
-            accountName = "alice",
-        )
+        val config =
+            OtpConfig(
+                secret = "JBSWY3DPEHPK3PXP",
+                issuer = "Example",
+                accountName = "alice",
+            )
 
         val result = classified(rawValue)
 
@@ -115,9 +115,9 @@ class ScannerResultClassifierTest {
         }
     }
 
-    private fun classified(rawValue: String): ScannerResult = when (val result = ScannerResultClassifier.classify(rawValue)) {
-        is ScannerClassification.Classified -> result.result
-        ScannerClassification.Empty -> error("Expected a classified scanner result")
-    }
-
+    private fun classified(rawValue: String): ScannerResult =
+        when (val result = ScannerResultClassifier.classify(rawValue)) {
+            is ScannerClassification.Classified -> result.result
+            ScannerClassification.Empty -> error("Expected a classified scanner result")
+        }
 }

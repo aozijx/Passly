@@ -32,66 +32,81 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class ImportScannedOtpUseCaseTest {
     @Test
-    fun `direct import persists full hotp config with readable complete title`() = runTest {
-        val config = OtpConfig(
-            type = OtpType.HOTP, secret = "Zm9v", encoding = OtpSecretEncoding.BASE64,
-            algorithm = OtpHashAlgorithm.SHA256, digits = 8, counter = Long.MAX_VALUE, periodSeconds = null,
-            issuer = " Operations: West ", accountName = " alice:admin ",
-        )
-        val repository = Repository { AppResult.Success(EntryId("saved")) }
-        assertTrue(importer(repository)(config))
-        val entry = repository.entries.single()
-        assertEquals("Operations: West: alice:admin", entry.title)
-        assertEquals(config, entry.secret.otp?.config)
-    }
-
-    @Test
-    fun `import is acknowledged only after repository confirms storage`() = runTest {
-        val stored = CompletableDeferred<AppResult<EntryId>>()
-        val repository = Repository { stored.await() }
-        val result = async { importer(repository)(OtpConfig(secret = "MY")) }
-        runCurrent()
-        assertEquals(1, repository.calls)
-        assertFalse(result.isCompleted)
-        stored.complete(AppResult.Success(EntryId("saved")))
-        assertTrue(result.await())
-    }
-
-    @Test
-    fun `failed writes and unexpected storage errors are rejected`() = runTest {
-        assertFalse(importer(Repository { AppResult.Failure(ValidationError()) })(OtpConfig(secret = "MY")))
-        assertFalse(importer(Repository { error("storage unavailable") })(OtpConfig(secret = "MY")))
-    }
-
-    @Test
-    fun `locked session and unavailable secret never reach persistence`() = runTest {
-        val repository = Repository { AppResult.Success(EntryId("saved")) }
-        assertFalse(importer(repository, AuthenticationState.Locked)(OtpConfig(secret = "MY")))
-        assertFalse(importer(repository)(OtpConfig(secret = null)))
-        assertEquals(0, repository.calls)
-    }
-
-    @Test
-    fun `storage cancellation propagates without a rejection result`() = runTest {
-        val result = async {
-            importer(Repository { throw CancellationException("cancelled") })(OtpConfig(secret = "MY"))
+    fun `direct import persists full hotp config with readable complete title`() =
+        runTest {
+            val config =
+                OtpConfig(
+                    type = OtpType.HOTP,
+                    secret = "Zm9v",
+                    encoding = OtpSecretEncoding.BASE64,
+                    algorithm = OtpHashAlgorithm.SHA256,
+                    digits = 8,
+                    counter = Long.MAX_VALUE,
+                    periodSeconds = null,
+                    issuer = " Operations: West ",
+                    accountName = " alice:admin ",
+                )
+            val repository = Repository { AppResult.Success(EntryId("saved")) }
+            assertTrue(importer(repository)(config))
+            val entry = repository.entries.single()
+            assertEquals("Operations: West: alice:admin", entry.title)
+            assertEquals(config, entry.secret.otp?.config)
         }
-        try {
-            result.await()
-            fail("Expected cancellation")
-        } catch (_: CancellationException) {
-            assertTrue(result.isCancelled)
+
+    @Test
+    fun `import is acknowledged only after repository confirms storage`() =
+        runTest {
+            val stored = CompletableDeferred<AppResult<EntryId>>()
+            val repository = Repository { stored.await() }
+            val result = async { importer(repository)(OtpConfig(secret = "MY")) }
+            runCurrent()
+            assertEquals(1, repository.calls)
+            assertFalse(result.isCompleted)
+            stored.complete(AppResult.Success(EntryId("saved")))
+            assertTrue(result.await())
         }
-    }
+
+    @Test
+    fun `failed writes and unexpected storage errors are rejected`() =
+        runTest {
+            assertFalse(importer(Repository { AppResult.Failure(ValidationError()) })(OtpConfig(secret = "MY")))
+            assertFalse(importer(Repository { error("storage unavailable") })(OtpConfig(secret = "MY")))
+        }
+
+    @Test
+    fun `locked session and unavailable secret never reach persistence`() =
+        runTest {
+            val repository = Repository { AppResult.Success(EntryId("saved")) }
+            assertFalse(importer(repository, AuthenticationState.Locked)(OtpConfig(secret = "MY")))
+            assertFalse(importer(repository)(OtpConfig(secret = null)))
+            assertEquals(0, repository.calls)
+        }
+
+    @Test
+    fun `storage cancellation propagates without a rejection result`() =
+        runTest {
+            val result =
+                async {
+                    importer(Repository { throw CancellationException("cancelled") })(OtpConfig(secret = "MY"))
+                }
+            try {
+                result.await()
+                fail("Expected cancellation")
+            } catch (_: CancellationException) {
+                assertTrue(result.isCancelled)
+            }
+        }
 
     private fun importer(
         repository: EntryCommandRepository,
         authentication: AuthenticationState = AuthenticationState.Authenticated(1L),
     ): ImportScannedOtpUseCase {
-        val session = object : SecureSessionAccessState {
-            override val authenticationState = MutableStateFlow(authentication)
-            override fun isUnlocked() = authentication is AuthenticationState.Authenticated
-        }
+        val session =
+            object : SecureSessionAccessState {
+                override val authenticationState = MutableStateFlow(authentication)
+
+                override fun isUnlocked() = authentication is AuthenticationState.Authenticated
+            }
         return ImportScannedOtpUseCase(
             CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
             session,
@@ -99,18 +114,39 @@ class ImportScannedOtpUseCaseTest {
         )
     }
 
-    private class Repository(val create: suspend () -> AppResult<EntryId>) : EntryCommandRepository {
+    private class Repository(
+        val create: suspend () -> AppResult<EntryId>,
+    ) : EntryCommandRepository {
         var calls = 0
         val entries = mutableListOf<Entry>()
+
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> {
             calls++
             entries += entry
             return create()
         }
-        override suspend fun updateEntry(id: EntryId, expectedVersion: EntryVersion, changes: EntryUpdate) = AppResult.Success(Unit)
-        override suspend fun moveToTrash(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
-        override suspend fun restoreEntry(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
-        override suspend fun deletePermanently(id: EntryId, expectedVersion: EntryVersion) = AppResult.Success(Unit)
+
+        override suspend fun updateEntry(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+            changes: EntryUpdate,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun moveToTrash(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun restoreEntry(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
+        override suspend fun deletePermanently(
+            id: EntryId,
+            expectedVersion: EntryVersion,
+        ) = AppResult.Success(Unit)
+
         override suspend fun emptyTrash() = AppResult.Success(0)
     }
 }

@@ -16,74 +16,82 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class RoomAutofillCandidateRepository @Inject constructor(
-    private val databaseSession: AppDatabaseSession,
-    private val sessionState: SecureSessionAccessState,
-) : AutofillCandidateRepository {
-    override suspend fun search(query: AutofillCandidateQuery): List<AutofillCandidateSummary> {
-        if (!sessionState.hasAutofillSessionAccess()) return emptyList()
-        val applicationId = AutofillScope.normalizeApplicationId(query.packageName)
-        val domain = AutofillScope.normalizeDomain(query.webDomain)
-        val boundedLimit = query.limit.coerceIn(1, MAX_CANDIDATES)
+internal class RoomAutofillCandidateRepository
+    @Inject
+    constructor(
+        private val databaseSession: AppDatabaseSession,
+        private val sessionState: SecureSessionAccessState,
+    ) : AutofillCandidateRepository {
+        override suspend fun search(query: AutofillCandidateQuery): List<AutofillCandidateSummary> {
+            if (!sessionState.hasAutofillSessionAccess()) return emptyList()
+            val applicationId = AutofillScope.normalizeApplicationId(query.packageName)
+            val domain = AutofillScope.normalizeDomain(query.webDomain)
+            val boundedLimit = query.limit.coerceIn(1, MAX_CANDIDATES)
 
-        return databaseSession.query {
-            val matched = buildList {
-                applicationId?.let {
-                    addAll(entryQueryDao().getAutofillCandidatesByApplicationId(it, boundedLimit * 4))
-                }
-                domain?.let {
-                    addAll(entryQueryDao().getAutofillCandidatesByDomain(it, boundedLimit * 4))
-                }
-            }.distinctBy(EntryEntity::entryId)
-            val entities = when {
-                matched.isNotEmpty() -> matched
-                query.allowUnmatched -> entryQueryDao().getActiveByType(EntryType.LOGIN).take(boundedLimit)
-                else -> emptyList()
+            return databaseSession.query {
+                val matched =
+                    buildList {
+                        applicationId?.let {
+                            addAll(entryQueryDao().getAutofillCandidatesByApplicationId(it, boundedLimit * 4))
+                        }
+                        domain?.let {
+                            addAll(entryQueryDao().getAutofillCandidatesByDomain(it, boundedLimit * 4))
+                        }
+                    }.distinctBy(EntryEntity::entryId)
+                val entities =
+                    when {
+                        matched.isNotEmpty() -> matched
+                        query.allowUnmatched -> entryQueryDao().getActiveByType(EntryType.LOGIN).take(boundedLimit)
+                        else -> emptyList()
+                    }
+
+                entities
+                    .asSequence()
+                    .filter { it.deletedAt == null && it.entryType == EntryType.LOGIN }
+                    .mapNotNull { entity ->
+                        val match = entity.autofillMatch(applicationId, domain)
+                        if (match.type == MatchType.UNKNOWN && !query.allowUnmatched) {
+                            null
+                        } else {
+                            entity.toAutofillCandidateSummary(match)
+                        }
+                    }.sortedWith(
+                        compareByDescending<AutofillCandidateSummary> { it.match.score }
+                            .thenByDescending { it.entry.favorite }
+                            .thenByDescending { it.entry.updatedAt },
+                    ).take(boundedLimit)
+                    .toList()
             }
+        }
 
-            entities.asSequence()
-                .filter { it.deletedAt == null && it.entryType == EntryType.LOGIN }
-                .mapNotNull { entity ->
-                    val match = entity.autofillMatch(applicationId, domain)
-                    if (match.type == MatchType.UNKNOWN && !query.allowUnmatched) null
-                    else entity.toAutofillCandidateSummary(match)
-                }
-                .sortedWith(
-                    compareByDescending<AutofillCandidateSummary> { it.match.score }
-                        .thenByDescending { it.entry.favorite }
-                        .thenByDescending { it.entry.updatedAt },
-                )
-                .take(boundedLimit)
-                .toList()
+        private companion object {
+            const val MAX_CANDIDATES = 10
         }
     }
 
-    private companion object {
-        const val MAX_CANDIDATES = 10
-    }
-}
-
-internal fun EntryEntity.toAutofillCandidateSummary(
-    match: CredentialMatch,
-): AutofillCandidateSummary = AutofillCandidateSummary(
-    entry = EntryListItemMapper.assemble(this, EntryProfileMapper.fromEntity(this)),
-    match = match,
-)
+internal fun EntryEntity.toAutofillCandidateSummary(match: CredentialMatch): AutofillCandidateSummary =
+    AutofillCandidateSummary(
+        entry = EntryListItemMapper.assemble(this, EntryProfileMapper.fromEntity(this)),
+        match = match,
+    )
 
 private fun EntryEntity.autofillMatch(
     applicationId: String?,
     domain: String?,
 ): CredentialMatch {
-    if (applicationId != null && applicationIds.any {
+    if (applicationId != null &&
+        applicationIds.any {
             AutofillScope.normalizeApplicationId(it) == applicationId
-        }) {
+        }
+    ) {
         return CredentialMatch(MatchType.APPLICATION_ID, applicationId = applicationId)
     }
     if (domain != null) {
-        val entryDomains = buildSet {
-            addAll(domains)
-            primaryUrl?.let(::add)
-        }
+        val entryDomains =
+            buildSet {
+                addAll(domains)
+                primaryUrl?.let(::add)
+            }
         if (entryDomains.any { AutofillScope.normalizeDomain(it) == domain }) {
             return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
         }

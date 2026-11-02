@@ -8,17 +8,17 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class SegmentedSettingsShapePolicyTest {
-
     @Test
     fun `stable selection keeps the group outline and preserves press feedback`() {
-        val shapes = ListItemShapes(
-            shape = RoundedCornerShape(16.dp),
-            selectedShape = RoundedCornerShape(28.dp),
-            pressedShape = RoundedCornerShape(8.dp),
-            focusedShape = RoundedCornerShape(12.dp),
-            hoveredShape = RoundedCornerShape(14.dp),
-            draggedShape = RoundedCornerShape(20.dp),
-        )
+        val shapes =
+            ListItemShapes(
+                shape = RoundedCornerShape(16.dp),
+                selectedShape = RoundedCornerShape(28.dp),
+                pressedShape = RoundedCornerShape(8.dp),
+                focusedShape = RoundedCornerShape(12.dp),
+                hoveredShape = RoundedCornerShape(14.dp),
+                draggedShape = RoundedCornerShape(20.dp),
+            )
 
         val stableShapes = shapes.withStableSelectionShape()
 

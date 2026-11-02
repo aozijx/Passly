@@ -3,21 +3,21 @@ package com.aozijx.passly.data.repository.entry
 import com.aozijx.passly.data.repository.activity.RoomActivityQueryRepository
 import com.aozijx.passly.data.repository.activity.RoomActivityRecorder
 import com.aozijx.passly.data.repository.entry.RoomEntryCommandRepository
-import com.aozijx.passly.data.repository.entry.RoomEntryListQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryLinkRepository
+import com.aozijx.passly.data.repository.entry.RoomEntryListQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomSensitiveFieldRepository
+import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
 import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
 import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
 import com.aozijx.passly.data.repository.otp.RoomOtpConfigRepository
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.port.EntryLinkRepository
-import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
-import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
+import com.aozijx.passly.domain.entry.port.EntryLinkRepository
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
@@ -49,9 +49,7 @@ internal abstract class EntryPersistenceModule {
 
     @Binds
     @Singleton
-    abstract fun bindEntryRevisionRepository(
-        impl: RoomEntryRevisionRepository,
-    ): EntryRevisionRepository
+    abstract fun bindEntryRevisionRepository(impl: RoomEntryRevisionRepository): EntryRevisionRepository
 
     @Binds
     @Singleton
@@ -59,9 +57,7 @@ internal abstract class EntryPersistenceModule {
 
     @Binds
     @Singleton
-    abstract fun bindSensitiveFieldRepository(
-        impl: RoomSensitiveFieldRepository
-    ): SensitiveFieldRepository
+    abstract fun bindSensitiveFieldRepository(impl: RoomSensitiveFieldRepository): SensitiveFieldRepository
 
     @Binds
     @Singleton
@@ -82,5 +78,4 @@ internal abstract class EntryPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindOtpConfigRepository(impl: RoomOtpConfigRepository): OtpConfigRepository
-
 }

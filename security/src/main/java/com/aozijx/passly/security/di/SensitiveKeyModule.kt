@@ -24,27 +24,23 @@ internal abstract class SensitiveKeyModule {
     @Binds
     @Singleton
     abstract fun bindSessionKeySource(implementation: SecureSessionKeySource): SessionKeySource
+
     @Binds
     @Singleton
     abstract fun bindFieldKeyProvider(implementation: FieldKeyManager): FieldKeyProvider
 
     @Binds
     @Singleton
-    abstract fun bindSensitiveKeyFreshnessState(
-        implementation: SensitiveDataKeyManager,
-    ): SensitiveKeyFreshnessState
+    abstract fun bindSensitiveKeyFreshnessState(implementation: SensitiveDataKeyManager): SensitiveKeyFreshnessState
 
     @Binds
     @Singleton
-    abstract fun bindSensitiveDataKeyClearer(
-        implementation: SensitiveDataKeyManager,
-    ): SensitiveDataKeyClearer
+    abstract fun bindSensitiveDataKeyClearer(implementation: SensitiveDataKeyManager): SensitiveDataKeyClearer
 
     companion object {
         @Provides
         @Singleton
         @SensitiveKeyScope
-        fun provideSensitiveKeyScope(): CoroutineScope =
-            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        fun provideSensitiveKeyScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     }
 }
