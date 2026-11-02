@@ -1,6 +1,8 @@
 package passly
 
 internal object SourceBoundaryPolicy {
+    const val VIEW_MODEL_DEPENDENCY_RULE_ID = "VIEW_MODEL_DEPENDENCY"
+
     val featureIntegrationAllowances =
         listOf(
             FeatureIntegrationAllowance(

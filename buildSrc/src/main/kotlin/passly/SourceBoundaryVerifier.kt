@@ -57,6 +57,7 @@ internal object SourceBoundaryVerifier {
                     }
                 }
             }
+            addAll(ViewModelDependencyVerifier.verify(sources))
         }
 
     private fun SourceBoundaryRule.appliesTo(path: String): Boolean =
@@ -116,7 +117,7 @@ internal object SourceBoundaryVerifier {
         }
     }
 
-    private fun maskCommentsAndStrings(source: String): String = KotlinCodeMasker(source).mask()
+    internal fun maskCommentsAndStrings(source: String): String = KotlinCodeMasker(source).mask()
 
     private fun SourceBoundaryRule.violation(
         path: String,
@@ -221,8 +222,10 @@ private class KotlinCodeMasker(
     private fun skipSimpleTemplate(start: Int): Int {
         var index = start + 1
         if (!source.getOrNull(index).isIdentifierStart()) return index
+        val identifierStart = index
         index++
         while (source.getOrNull(index).isIdentifierPart()) index++
+        for (identifierIndex in identifierStart until index) preserve(identifierIndex)
         return index
     }
 

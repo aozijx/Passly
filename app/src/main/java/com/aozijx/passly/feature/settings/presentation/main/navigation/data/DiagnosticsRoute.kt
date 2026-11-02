@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.settings.presentation.main.navigation.data
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,26 +35,48 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
     val saveCompleted = stringResource(R.string.settings_log_save_completed)
     val clearFailed = stringResource(R.string.settings_log_clear_failed)
 
-    fun onDocumentPicked(uri: Uri?) {
-        val owner = pageOwner.value
-        val requestId = documentRequestId
-        documentRequestId = null
-        if (owner != null && requestId != null) {
-            viewModel.onDocumentSelected(owner, requestId, uri?.toString())
-        }
-    }
     val jsonlPicker =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument(LogFormat.JSONL.mimeType),
-        ) { uri -> onDocumentPicked(uri) }
+        ) { uri ->
+            val owner = pageOwner.value
+            val requestId = documentRequestId
+            documentRequestId = null
+            if (owner != null && requestId != null) {
+                viewModel.onAction(
+                    uri?.let { DiagnosticsAction.SaveToDocument(it.toString(), owner, requestId) }
+                        ?: DiagnosticsAction.SaveDocumentCancelled(owner, requestId),
+                )
+            }
+        }
     val tsvPicker =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument(LogFormat.TSV.mimeType),
-        ) { uri -> onDocumentPicked(uri) }
+        ) { uri ->
+            val owner = pageOwner.value
+            val requestId = documentRequestId
+            documentRequestId = null
+            if (owner != null && requestId != null) {
+                viewModel.onAction(
+                    uri?.let { DiagnosticsAction.SaveToDocument(it.toString(), owner, requestId) }
+                        ?: DiagnosticsAction.SaveDocumentCancelled(owner, requestId),
+                )
+            }
+        }
     val zipPicker =
         rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument(LogFormat.ZIP.mimeType),
-        ) { uri -> onDocumentPicked(uri) }
+        ) { uri ->
+            val owner = pageOwner.value
+            val requestId = documentRequestId
+            documentRequestId = null
+            if (owner != null && requestId != null) {
+                viewModel.onAction(
+                    uri?.let { DiagnosticsAction.SaveToDocument(it.toString(), owner, requestId) }
+                        ?: DiagnosticsAction.SaveDocumentCancelled(owner, requestId),
+                )
+            }
+        }
 
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
@@ -97,16 +118,5 @@ internal fun DiagnosticsRoute(onBack: (() -> Unit)?) {
         state = state,
         onAction = viewModel::onAction,
         onBack = onBack,
-    )
-}
-
-private fun DiagnosticsViewModel.onDocumentSelected(
-    owner: Any,
-    requestId: String,
-    uri: String?,
-) {
-    onAction(
-        uri?.let { DiagnosticsAction.SaveToDocument(it, owner, requestId) }
-            ?: DiagnosticsAction.SaveDocumentCancelled(owner, requestId),
     )
 }

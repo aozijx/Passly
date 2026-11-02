@@ -111,6 +111,7 @@ UseCase，避免把领域规则放进 Compose 或 Android 回调。
 ## 相关文档
 
 - [包边界](package-boundaries.md)
+- [ViewModel 依赖与 owner 边界](viewmodel-ownership.md)
 - [运行时流程](runtime-flows.md)
 - [Presentation 状态管理](../development/architecture-and-state.md)
 - [安全总览](../security/overview.md)

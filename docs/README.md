@@ -14,6 +14,7 @@
 - [架构总览](architecture/overview.md)
 - [条目类型与凭据注册](architecture/entry-type-registration.md)
 - [包与模块边界](architecture/package-boundaries.md)
+- [ViewModel 依赖与 owner 边界](architecture/viewmodel-ownership.md)
 - [运行时流程](architecture/runtime-flows.md)
 - [UI 宿主、导航与命名](architecture/ui-shell-and-naming.md)
 - [错误处理](architecture/error-handling.md)
