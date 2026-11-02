@@ -34,31 +34,56 @@ class AutofillScopeTest {
     }
 
     @Test
-    fun `domain normalization distinguishes missing invalid unicode and punycode`() {
+    fun `domain normalization distinguishes missing invalid IDN and canonical ASCII`() {
         assertEquals(AutofillDomainNormalization.Missing, AutofillScope.normalizeDomain(null))
         assertEquals(AutofillDomainNormalization.Missing, AutofillScope.normalizeDomain("  "))
         assertEquals(AutofillDomainNormalization.Invalid, AutofillScope.normalizeDomain("not a valid domain"))
         assertEquals(AutofillDomainNormalization.Invalid, AutofillScope.normalizeDomain("faß.de"))
         assertEquals(
             AutofillDomainNormalization.Valid("xn--bcher-kva.de"),
+            AutofillScope.normalizeDomain("bücher.de"),
+        )
+        assertEquals(
+            AutofillScope.normalizeDomain("bücher.de"),
+            AutofillScope.normalizeDomain("bu\u0308cher.de"),
+        )
+        assertEquals(
+            AutofillScope.normalizeDomain("bücher.de"),
+            AutofillScope.normalizeDomain("bücher\u3002de"),
+        )
+        assertEquals(
+            AutofillScope.normalizeDomain("bücher.de"),
             AutofillScope.normalizeDomain("xn--bcher-kva.de"),
+        )
+        assertEquals(
+            AutofillDomainNormalization.Invalid,
+            AutofillScope.normalizeDomain("xn--a.de"),
         )
     }
 
     @Test
-    fun `domain normalization accepts bracketed ipv6 without changing identity`() {
+    fun `domain normalization canonicalizes bracketed ipv6 identity`() {
         assertEquals(
             AutofillDomainNormalization.Valid("[2001:db8::1]"),
-            AutofillScope.normalizeDomain("https://[2001:db8::1]:443/login"),
+            AutofillScope.normalizeDomain("https://[2001:0db8:0:0:0:0:0:1]:443/login"),
         )
         assertEquals(
-            AutofillScope.normalizeDomain("https://[2001:db8::1]/"),
+            AutofillDomainNormalization.Valid("[2001:db8::1]"),
             AutofillScope.normalizeDomain("[2001:db8::1]"),
         )
-        assertNotEquals(
-            AutofillScope.normalizeDomain("[2001:db8::1]"),
-            AutofillScope.normalizeDomain("[2001:0db8:0:0:0:0:0:1]"),
+        assertEquals(
+            AutofillDomainNormalization.Valid("[2001::1:0:0:1:1]"),
+            AutofillScope.normalizeDomain("[2001:0:0:1:0:0:1:1]"),
+        )
+        assertEquals(
+            AutofillDomainNormalization.Valid("[::ffff:192.0.2.1]"),
+            AutofillScope.normalizeDomain("[::ffff:192.0.2.1]"),
+        )
+        assertEquals(
+            AutofillScope.normalizeDomain("[::ffff:192.0.2.1]"),
+            AutofillScope.normalizeDomain("[0:0:0:0:0:ffff:c000:201]"),
         )
         assertEquals(AutofillDomainNormalization.Invalid, AutofillScope.normalizeDomain("https://[fe80::1%25eth0]/"))
+        assertEquals(AutofillDomainNormalization.Invalid, AutofillScope.normalizeDomain("[2001:db8:::1]"))
     }
 }

@@ -392,11 +392,13 @@
 ## Task 62：统一 Autofill 交互范围的归一化合同
 
 - [x] 将 package/application ID 的规范化规则归于单一 Domain owner，供 `AutofillGrantContext.normalized()`、交互创建/比较、Data 查询与保存关联共同使用；统一 trim、`Locale.ROOT` lowercase 与空白拒绝。
-- [x] 明确 web-domain scope：精确 host；scheme/port/path 忽略；`www` 保持隔离；移除单个末尾 DNS 根点；接受 ASCII/Punycode 和 bracketed IPv6；拒绝 Unicode IDN、IPv6 zone ID 与畸形 host。IPv6 比较按小写后的输入文本保持，避免 Domain/Data 查询键不一致。
+- [x] 明确 web-domain scope：精确 host；scheme/port/path 忽略；`www` 保持隔离；移除单个末尾 DNS 根点；Unicode IDN 转 ASCII（拒绝平台有损折叠），bracketed IPv6 按 RFC 5952 规范化；拒绝 IPv6 zone ID 与畸形 host。
 - [x] 增加 Domain、Discover、Credential Manager、选择、Data 匹配及保存回归覆盖。无效 scope 返回显式失败或拒绝保存；网页查询/保存不混入浏览器 package association；DAO 子串预筛结果只保留精确 host 命中。保留既有取消/session 所有权。更新 Autofill 安全策略和流程文档。
 - [x] 盘点其他 canonicalization：EntryVisualCategoryClassifier 的 host 处理用于展示分类，语义不同而保留；OTP Base32、Wi-Fi 安全键、银行卡号、标签键、Favicon URL、UI 搜索文本也各自拥有不同字母表、Unicode、格式或持久化合同，保持独立，未添加通用字符串规范化工具。
 
 **Task 62 实施记录（2026-11-02）：** `AutofillScope` 成为 package/domain 唯一规范化 owner，`AutofillGrantContext.normalized()` 统一使用它并将空包名/畸形域名映射为无效 scope；Discover 在 lease/interaction 与候选查询前返回 `INVALID_SCOPE`。候选查询有网站域名时仅使用域名；保存草稿有网站域名时仅写 DOMAINS/PRIMARY_URL，不写浏览器 APPLICATION_IDS，原生应用仍按 package 关联。Data 对 DAO 子串预筛后的完整结果按精确 canonical host 匹配，查询不再先截断近似结果，避免较新的 `evil-example.com` 把较旧精确命中挤出窗口；此做法增加本地候选查询可能读取的行数，实际成本尚未测量。全局未匹配回退只在没有精确命中且设置允许时执行。移除无调用者的 `AutofillScope.matches()`，保留展示分类器自己的不同域名规则。安全与流程文档记录精确 host、IDN/IPv6 和候选关联语义。Domain、Discover、Credential Manager scope comparison、selection scope comparison、save mapping 与 Data exact-host 测试以及最终 KtLint/架构/diff 检查和独立审查结果见 SDD ledger。
+
+**Task 62 规范化 follow-up（2026-11-02）：** 将已批准的 Unicode IDN 规则从“拒绝 U-label”改为转小写 ASCII；为避免 `java.net.IDN` 的 RFC 3490 有损折叠把不同 host 合并（例如 `faß.de` 与 `fass.de`），此类非往返 U-label 与无效 ACE label 返回 `Invalid`。IPv6 compressed/expanded 等价，按 RFC 5952 输出最左最长零段且不保留 zone identifier；IPv4-mapped IPv6 按 RFC 5952 使用点分尾段，其他 embedded IPv4 tail 解析成十六进制组。新增的回归覆盖和验证结果以本 follow-up 提交为准。
 
 ## 最近扫描复核
 - 当前 `app` Flow/StateFlow consumer 重扫未发现待办之外的新长期 collector 缺口；设置/DataStore 与进程 owner 归 Task 30，Room/session 归 Task 31，诊断运行时归 Task 39，Detail 活动/修订观察与根快照加载各自的失败和重试合同，Autofill 设置归 Task 52，Trash Flow 归 Task 66，Diagnostics 页面归 Task 69。此处保留索引，具体证据只维护在对应任务中。
