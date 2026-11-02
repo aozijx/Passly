@@ -21,6 +21,7 @@ import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperationGateway
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveService
 import com.aozijx.passly.feature.backup.internal.archive.platform.BackupStorageSupport
+import com.aozijx.passly.feature.backup.internal.archive.platform.preferBackupCleanupFailure
 import com.aozijx.passly.feature.backup.internal.model.BackupExportOptions
 import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
@@ -49,7 +50,7 @@ internal class DefaultBackupOperationGateway
             return storageSupport.checkDirectoryWritable(uri).fold(
                 onSuccess = { BackupExecutionResult.DirectoryWritable },
                 onFailure = { failure ->
-                    if (failure is CancellationException) throw failure
+                    if (failure is CancellationException || failure is Error) throw failure
                     val error = AppError.fromThrowable(failure)
                     errorReporter.report(
                         error,
@@ -77,7 +78,7 @@ internal class DefaultBackupOperationGateway
                             fileName = request.fileName,
                             mimeType = request.format.mimeType,
                         ).getOrElse { error ->
-                            if (error is CancellationException) throw error
+                            if (error is CancellationException || error is Error) throw error
                             return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
                         }
                 performExport(request, targetUri, deleteOnFailure = true)
@@ -141,28 +142,37 @@ internal class DefaultBackupOperationGateway
                     }
 
                     is AppResult.Failure -> {
-                        if (deleteOnFailure) deleteFailedExport(targetUri)
+                        if (deleteOnFailure) {
+                            val cleanupFailure = tryDeleteFailedExport(targetUri)
+                            if (cleanupFailure is CancellationException || cleanupFailure is Error) throw cleanupFailure
+                        }
                         BackupExecutionResult.Failure(result.error)
                     }
                 }
             } catch (cancelled: CancellationException) {
                 if (deleteOnFailure) {
-                    val cleanupFailure =
-                        withContext(NonCancellable) {
-                            runCatching { deleteFailedExport(targetUri) }.fold(
-                                onSuccess = { deleted ->
-                                    if (deleted) null else IOException("Unable to delete incomplete backup export")
-                                },
-                                onFailure = { it },
-                            )
-                        }
-                    if (cleanupFailure != null && cleanupFailure !== cancelled) {
-                        cancelled.addSuppressed(cleanupFailure)
+                    val cleanupFailure = tryDeleteFailedExport(targetUri)
+                    if (cleanupFailure != null) {
+                        throw preferBackupCleanupFailure(cancelled, cleanupFailure)
                     }
                 }
                 throw cancelled
+            } catch (fatal: Error) {
+                if (deleteOnFailure) {
+                    val cleanupFailure = tryDeleteFailedExport(targetUri)
+                    if (cleanupFailure != null) {
+                        throw preferBackupCleanupFailure(fatal, cleanupFailure)
+                    }
+                }
+                throw fatal
             } catch (error: Exception) {
-                if (deleteOnFailure) deleteFailedExport(targetUri)
+                if (deleteOnFailure) {
+                    val cleanupFailure = tryDeleteFailedExport(targetUri)
+                    if (cleanupFailure != null) {
+                        val preferredFailure = preferBackupCleanupFailure(error, cleanupFailure)
+                        if (preferredFailure !== error) throw preferredFailure
+                    }
+                }
                 BackupExecutionResult.Failure(AppError.fromThrowable(error))
             } finally {
                 password?.fill('\u0000')
@@ -197,4 +207,13 @@ internal class DefaultBackupOperationGateway
         }
 
         private suspend fun deleteFailedExport(targetUri: String): Boolean = storageSupport.deleteDocument(targetUri)
+
+        private suspend fun tryDeleteFailedExport(targetUri: String): Throwable? =
+            withContext(NonCancellable) {
+                try {
+                    if (deleteFailedExport(targetUri)) null else IOException("Unable to delete incomplete backup export")
+                } catch (failure: Throwable) {
+                    failure
+                }
+            }
     }

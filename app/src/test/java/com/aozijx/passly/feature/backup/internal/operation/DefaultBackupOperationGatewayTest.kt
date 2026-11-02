@@ -34,6 +34,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -247,6 +248,76 @@ class DefaultBackupOperationGatewayTest {
         }
 
     @Test
+    fun `fatal export cleanup supersedes cancellation and preserves it`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val fatal = AssertionError("fatal delete failure")
+            val cancellation = CancellationException("export cancelled")
+            val storage = RecordingStorageSupport(gate).apply { deleteFailure = fatal }
+            val target = "content://documents/export"
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = throw cancellation
+                        },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val thrown =
+                try {
+                    gateway.exportToUri(exportRequest(), target, deleteOnFailure = true)
+                    error("Expected cleanup fatal error")
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertSame(fatal, thrown)
+            assertEquals(listOf(cancellation), thrown.suppressed.toList())
+            assertEquals(listOf(target), storage.deletedUris)
+        }
+
+    @Test
+    fun `fatal cleanup supersedes ordinary export failure and preserves it`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val fatal = AssertionError("fatal delete failure")
+            val exportFailure = IOException("export write failed")
+            val storage = RecordingStorageSupport(gate).apply { deleteFailure = fatal }
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = throw exportFailure
+                        },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val thrown =
+                try {
+                    gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+                    error("Expected cleanup fatal error")
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertSame(fatal, thrown)
+            assertEquals(listOf(exportFailure), thrown.suppressed.toList())
+        }
+
+    @Test
     fun `cancellation carried by storage results is not reported as a backup failure`() =
         runTest {
             val gate = RecordingAuthorizationGate()
@@ -324,6 +395,7 @@ class DefaultBackupOperationGatewayTest {
         var targetFailure: Throwable? = null
         var directoryCheckFailure: Throwable? = null
         var deleteResult = true
+        var deleteFailure: Throwable? = null
 
         override fun buildBackupFileName(
             extension: String,
@@ -343,6 +415,7 @@ class DefaultBackupOperationGatewayTest {
             withContext(Dispatchers.IO) {
                 deletedUris += uri
             }
+            deleteFailure?.let { throw it }
             return deleteResult
         }
 

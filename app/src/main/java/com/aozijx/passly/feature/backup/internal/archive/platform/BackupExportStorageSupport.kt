@@ -45,11 +45,11 @@ internal class BackupExportStorageSupport
             fileName: String,
             mimeType: String,
         ): Result<String> =
-            withCreatedDocumentCleanupOnCancellation(
-                ioDispatcher = ioDispatcher,
-                deleteDocument = ::deleteDocument,
-            ) { registerCreatedDocument ->
-                try {
+            try {
+                withCreatedDocumentCleanupOnFailure(
+                    ioDispatcher = ioDispatcher,
+                    deleteDocument = ::deleteDocument,
+                ) { registerCreatedDocument ->
                     val grantedTreeUri = directoryTreeUri.toUri()
                     val resolver = context.contentResolver
                     require(
@@ -79,23 +79,23 @@ internal class BackupExportStorageSupport
                     val createdUri = fileUri.toString()
                     registerCreatedDocument(createdUri)
                     Result.success(createdUri)
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (failure: Throwable) {
-                    Result.failure(failure)
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                Result.failure(failure)
             }
 
         override suspend fun deleteDocument(uri: String): Boolean =
             withContext(ioDispatcher) {
-                runCatching {
+                deleteSafDocument {
                     DocumentsContract.deleteDocument(context.contentResolver, uri.toUri())
-                }.getOrDefault(false)
+                }
             }
 
         override suspend fun checkDirectoryWritable(directoryTreeUri: String): Result<Unit> =
             withContext(ioDispatcher) {
-                runCatching {
+                runSafOperation {
                     require(
                         grantInspector.inspect(directoryTreeUri) == PersistedDirectoryAccessStatus.GRANTED,
                     ) { "目录访问权限已失效，请重新选择备份目录" }
@@ -128,7 +128,7 @@ internal class BackupExportStorageSupport
                         enforceWriteTestCleanup(
                             primaryFailure = primaryFailure,
                             cleanupResult =
-                                runCatching {
+                                captureSafFailure {
                                     DocumentsContract.deleteDocument(resolver, testFile)
                                 },
                         )
@@ -143,7 +143,7 @@ internal class BackupExportStorageSupport
     }
 
 /** Keeps ownership of a created SAF document until the dispatcher handoff succeeds. */
-internal suspend fun <T> withCreatedDocumentCleanupOnCancellation(
+internal suspend fun <T> withCreatedDocumentCleanupOnFailure(
     ioDispatcher: CoroutineDispatcher,
     deleteDocument: suspend (String) -> Boolean,
     operation: suspend (registerCreatedDocument: (String) -> Unit) -> T,
@@ -153,19 +153,16 @@ internal suspend fun <T> withCreatedDocumentCleanupOnCancellation(
         withContext(ioDispatcher) {
             operation { uri -> createdUri = uri }
         }
-    } catch (cancelled: CancellationException) {
+    } catch (operationFailure: Throwable) {
         val cleanupFailure =
             createdUri?.let { uri ->
                 withContext(NonCancellable + ioDispatcher) {
-                    runCatching {
+                    captureSafFailure {
                         if (!deleteDocument(uri)) throw IOException("Unable to delete incomplete backup export")
                     }.exceptionOrNull()
                 }
             }
-        if (cleanupFailure != null && cleanupFailure !== cancelled) {
-            cancelled.addSuppressed(cleanupFailure)
-        }
-        throw cancelled
+        throw cleanupFailure?.let { preferBackupCleanupFailure(operationFailure, it) } ?: operationFailure
     }
 }
 
@@ -180,9 +177,52 @@ internal fun enforceWriteTestCleanup(
             },
             onFailure = { it },
         ) ?: return
-    if (primaryFailure != null) {
-        primaryFailure.addSuppressed(cleanupFailure)
-    } else {
-        throw cleanupFailure
-    }
+    if (primaryFailure == null) throw cleanupFailure
+    val preferredFailure = preferBackupCleanupFailure(primaryFailure, cleanupFailure)
+    if (preferredFailure !== primaryFailure) throw preferredFailure
 }
+
+internal inline fun <T> runSafOperation(operation: () -> T): Result<T> =
+    try {
+        Result.success(operation())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failure: Exception) {
+        Result.failure(failure)
+    }
+
+internal inline fun deleteSafDocument(delete: () -> Boolean): Boolean =
+    try {
+        delete()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        false
+    }
+
+internal inline fun <T> captureSafFailure(operation: () -> T): Result<T> =
+    try {
+        Result.success(operation())
+    } catch (failure: Throwable) {
+        Result.failure(failure)
+    }
+
+internal fun preferBackupCleanupFailure(
+    primaryFailure: Throwable,
+    cleanupFailure: Throwable,
+): Throwable {
+    if (primaryFailure === cleanupFailure) return primaryFailure
+    if (cleanupFailure.backupFailurePriority() > primaryFailure.backupFailurePriority()) {
+        cleanupFailure.addSuppressed(primaryFailure)
+        return cleanupFailure
+    }
+    primaryFailure.addSuppressed(cleanupFailure)
+    return primaryFailure
+}
+
+private fun Throwable.backupFailurePriority(): Int =
+    when (this) {
+        is Error -> 2
+        is CancellationException -> 1
+        else -> 0
+    }

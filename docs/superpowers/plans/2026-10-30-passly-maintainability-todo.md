@@ -447,11 +447,13 @@
 
 ## Task 68：SAF 备份存储边界保留 fatal Error 与临时文档清理
 
-- [ ] 将 `BackupExportStorageSupport.createNamedExportTarget()` 的 `catch(Throwable)`、`deleteDocument()` 的 `runCatching` 和 `checkDirectoryWritable()` 的 `runCatching` 收窄为普通可恢复异常映射；fatal Error 不得作为 `Result.failure` 或 `false` 返回。
-- [ ] 复核 SAF 临时写入探测文件清理的主错/清理错优先级。`enforceWriteTestCleanup()` 当前会把任意 cleanup Throwable（包括 fatal）仅作为 suppressed 加到普通 write failure；外层 `runCatching` 随后把普通错误返回，fatal 被吞。完成必要 `deleteDocument` 后应传播 fatal，并保留主失败证据。`deleteDocument()` 被取消清理调用时也不得将 fatal 删除失败伪装为 false/普通 IOException 后压在 cancellation 下。
-- [ ] 覆盖 SAF create、目录探测 write/delete 和 export target cleanup 的普通异常、CancellationException 与 fatal Error；验证 created document ownership、测试文件删除结果、原始失败和 suppressed 次错。保持普通 provider 错误的 `Result`/localized UI 合同，并与 Task 41 的 Backup operation busy/terminal 状态测试分开。
+- [x] 将 `BackupExportStorageSupport.createNamedExportTarget()` 的 `catch(Throwable)`、`deleteDocument()` 的 `runCatching` 和 `checkDirectoryWritable()` 的 `runCatching` 收窄为普通可恢复异常映射；fatal Error 不得作为 `Result.failure` 或 `false` 返回。
+- [x] 复核 SAF 临时写入探测文件清理的主错/清理错优先级。`enforceWriteTestCleanup()` 当前会把任意 cleanup Throwable（包括 fatal）仅作为 suppressed 加到普通 write failure；外层 `runCatching` 随后把普通错误返回，fatal 被吞。完成必要 `deleteDocument` 后应传播 fatal，并保留主失败证据。`deleteDocument()` 被取消清理调用时也不得将 fatal 删除失败伪装为 false/普通 IOException 后压在 cancellation 下。
+- [x] 覆盖 SAF create、目录探测 write/delete 和 export target cleanup 的普通异常、CancellationException 与 fatal Error；验证 created document ownership、测试文件删除结果、原始失败和 suppressed 次错。保持普通 provider 错误的 `Result`/localized UI 合同，并与 Task 41 的 Backup operation busy/terminal 状态测试分开。
 
 **证据：** `createNamedExportTarget()` 显式重抛 CancellationException，但 catch 其余所有 Throwable 返回 `Result.failure`；`deleteDocument()` 以 `runCatching(...).getOrDefault(false)` 吞下任意 Error。`checkDirectoryWritable()` 将 grant、SAF 创建/写入和 finally cleanup 整段包进 `runCatching`；当写入主错是普通 IOException、删除测试文件抛 AssertionError 时，`enforceWriteTestCleanup()` 只把 Error 加到 primary 的 suppressed 列表，外层仍返回普通 `Result.failure`。此外，`withCreatedDocumentCleanupOnCancellation()` 仅在取消时删除已登记文档，故 fatal 在 create adapter 内被改写后不再能触发 fatal 终态/相应清理所有权。当前 Backup operation 测试覆盖普通失败状态，不覆盖 SAF adapter 的 fatal 分类、删除失败或补偿优先级；此项聚焦平台存储边界，不重复密码/页面退出与 Task 41 的操作 busy 状态。
+
+**实施记录：** SAF 边界现在只把普通 `Exception` 映射为 `Result.failure`/`false`，取消与 `Error` 原样传播。已登记的创建文档在普通失败、取消或 fatal 下均进入 `NonCancellable` 清理；探测文件和导出目标清理按 fatal `Error` > `CancellationException` > 普通异常合并，次级失败作为 suppressed 保留。定向 JVM 测试覆盖 `BackupWriteTestCleanupTest`、`BackupCreatedDocumentCleanupTest`、`BackupSafFailureMappingTest`、`DefaultBackupOperationGatewayTest`；`:app:ktlintCheck`、`verifyArchitecture` 与 `git diff --check` 通过。独立代码 review 为 Ready。未连接设备，未执行真实 DocumentsProvider/ContentResolver 集成验证；provider 行为只由边界 helper 和 fake storage 覆盖。
 
 ## Task 69：让 Diagnostics 刷新失败可见并绑定清理任务到页面 owner
 
