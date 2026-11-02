@@ -26,11 +26,12 @@
 
 ## Task 22：保留通知权限请求在 Activity 重建后的用户意图
 
-- [ ] 增加 Compose/Activity Result 宿主级回归：`AppCompatDelegate.setApplicationLocales()` 引发 Activity recreation、权限弹窗授权/拒绝结果先后到达、用户真实离页后迟到结果、`AnimatedContent` 新旧页面 owner 重叠时旧 `onDispose` 以及回到页面再次开启。证明重建场景只提交一次设置、真实离页场景不消费旧 owner 回调、旧 owner 不会取消新 request、request arbiter lease 最终释放。同步权限中心文档，运行 Notification Settings 测试、`PermissionRequestHostTest` 与 `verifyArchitecture` / `git diff --check`。
+- [x] 修复请求意图在配置重建中丢失及旧页面 owner 取消新请求的状态机问题；ViewModel 回归覆盖同一 request token 恢复且只保存一次、真实离页后旧结果失效、旧 owner dispose 不影响新 owner。权限中心与通知设置文档已同步。
+- [ ] 设备验收 `AppCompatDelegate.setApplicationLocales()` 配置重建与系统授权/拒绝弹窗组合，并确认 PermissionRequestHost arbiter lease 最终释放。现有 `PermissionRequestHostTest` 只覆盖宿主替换和旧结果拒绝，不能代替真实 Activity recreation。
 
-**证据：** NotificationsRoute 在发起请求时把 `NotificationPermissionLaunch.Pending` 放在不可保存的 Compose `remember`，`NotificationSettingsViewModel` 另以进程内 `PermissionRequestState.Pending(request, enableWhenGranted=true)` 持有设置意图；Route 的 `DisposableEffect.onDispose` 无条件先把 launch 重置为 Idle，再派发 `CancelRuntimePermissionRequest`。该 action 将 ViewModel pending 直接改为 Idle，之后的 `RuntimePermissionGranted` 必然因找不到同一 request 而被忽略。`rememberPermissionRequestHost()` 又以 `(owner, activity, services)` 记住 Session，并用 `key(session)` 隔离 launcher；Activity 变化会关闭旧 Session、释放 lease、创建新 Session。与此同时 `PasslyApp` 使用 `AppCompatDelegate.setApplicationLocales()` 应用用户语言，而 MainActivity 未声明处理 `locale` 配置变化，因此语言变更会重建 Activity 并触发这条 dispose 路径。授权后恢复前台只调用 `RefreshSystemNotificationState`；该动作更新系统状态投影，不会提交已丢失的 `enableWhenGranted` 意图，因此可出现系统权限已授予而产品开关仍为关闭。当前 ViewModel 测试验证明确离页后旧 request 应失效，PermissionRequestHost AndroidTest 验证更换 owner 拒绝旧结果；二者都没有覆盖同一用户操作跨 Activity 重建继续完成，需保持“离页取消”并补上“重建恢复”的区分。
+**实现证据（2026-11-01，提交 `ca0e02602`）：** Route 在 Activity 配置变化销毁时通过 `isChangingConfigurations` 保留 ViewModel 中相同的 `NotificationPermissionRequest` 与开通意图；新页面 owner 进入后重绑并重发请求。真正离页会清除其 owner 的待处理请求，迟到的旧 owner dispose/result 不能影响新 owner。`NotificationSettingsViewModelTest` 已覆盖重建后同一 token 恢复并只写一次、真实离页后旧结果作废，以及新 owner 请求不被旧 owner dispose 清理。通知设置及权限中心文档已描述这些合同。实际 locale recreation 与系统弹窗仍缺设备级组合验证。
 
-**新增转场 owner 证据：** `SettingsRoute.AnimatedSettingsDetailRoute` 用带滑动/淡入淡出的 `AnimatedContent(targetState = route)` 保留转场内容；`NotificationsRoute` 在 `DisposableEffect.onDispose` 中先无条件派发不携带 owner/request 的 `CancelRuntimePermissionRequest`，再调用带 owner 的 `onPageExited(owner)`。ViewModel 对无参取消 action 直接把唯一 `permissionRequestState` 置 `Idle`，没有校验发起取消的访问是否仍为 active owner。若快速离开并重新进入通知页导致新页面先注册 owner/request、旧动画内容随后 dispose，旧页面便可能清掉新页面 pending 意图；页面 owner guard 目前只保护 Effect 队列，不保护该取消命令。现有单测在新请求前同步取消旧请求，未覆盖新旧 Route 生命周期重叠。该竞态由现有转场/取消实现可推导，仍需 Compose 导航行为测试确认实际 dispose 顺序。
+**旧证据更正：** 早期记录的无 owner `CancelRuntimePermissionRequest` 分支已删除。当前 Route 只调用 `onPageExited(owner, preservePendingPermissionRequest=...)`；ViewModel 先验证 owner 仍 active，再只修改该 owner 持有的 pending request。`AnimatedContent` 交错目前有 ViewModel owner 回归，但动画实际 dispose 顺序仍未由 Compose 导航测试验证。
 
 ## Task 23：闭合通知分发在设置快照未就绪时的事件所有权
 
@@ -42,9 +43,9 @@
 
 **Task 23 完成记录（2026-11-01）：** provider 在正常完成/普通异常后清除过期 Ready 为 Loading，并每秒重新订阅；integration queue test 覆盖首次读取异常、Loading 时 optional 丢弃、mandatory 不等待设置、恢复后同 eventId 可重试。另修复 mandatory + Ready(`systemNotificationsEnabled=false`) 仍错误禁用系统目标的问题；mandatory 只忽略产品开关，Android 权限、系统总开关和 channel 仍由 platform state 决定。Task 23 剩余未完成项是 Android gateway fatal Error 的平台 adapter 到 dispatcher 覆盖。
 
-**新增异常边界证据：** `DefaultAppNoticeDispatcher.dispatchSerial()` 在成功取得 dedup claim 后，对 router 路由、sink 投递和 fallback 整段使用 `catch (_: Throwable)`；catch 会释放 claim，但不记录异常或区分可恢复失败与 `Error`，而是统一构造普通 `FAILED/NO_AVAILABLE_TARGET` receipt。由于队列 consumer 对每条通知调用 `dispatch()`，被吞掉的 fatal 错误会表现为该事件失败并继续消费队列，运维日志和调用方均无法区分代码/运行时故障与一般投递失败。当前测试只覆盖 Sink 返回 `SinkResult.Failed` 后 fallback 或用同 eventId 重试，没有 sink/router 抛出异常的测试；应定义 mapper 的异常契约并保留 claim 释放，避免静默吞掉 JVM 级错误。
+**异常边界更正：** 当前 `DefaultAppNoticeDispatcher.dispatchSerial()` 在释放 dedup claim 后原样传播 `CancellationException` 与 fatal `Error`；普通 `Exception` 才映射为失败 receipt。`DefaultAppNoticeDispatcherTest.fatalRouterErrorPropagatesAfterReleasingClaimForRetry` 已覆盖 router fatal Error 传播及同事件重试。此前 `catch(Throwable)` 的描述是旧实现证据。
 
-**新增平台 sink 证据：** `AndroidSystemNotificationGateway.deliver()` 在读取权限/系统状态后，以 `runCatching { ensureChannel(); textResolver.resolve(); notificationManager.notify(...) }` 包住实际投递，并把任意失败都转换为 `SinkResult.Failed`。Kotlin `runCatching` 捕获 `Throwable`，因此 fatal `Error` 会像普通通知失败一样交给 dispatcher，可能继续 fallback/处理后续队列消息；Task 原有 dispatcher catch 无法识别已被 sink 降级的 fatal。需要在平台 adapter 界定可恢复 Android `Exception` 与 fatal Error，并从 adapter 到 dispatcher 固定合同。
+**平台适配现状：** 当前 `AndroidSystemNotificationGateway.deliver()` 显式重抛 `CancellationException`，仅把普通 `Exception` 转为 `SinkResult.Failed`；`Error` 自然向 dispatcher 传播，不会触发 fallback。此前 `runCatching` 的描述对应旧实现。剩余工作是为 channel 创建、文案解析和 `notify()` 三个失败点增加平台层注入回归，并验证错误类型从 gateway 到 dispatcher 保持不变。
 
 **新增编码规范证据：** `DefaultNoticeRouter.route()` 用 `policy.level.toMessageLevel().ordinal < topic.minimumLevel.ordinal` 判定最低投递等级；`AppNoticeHostViewModel` 又用 `resolved.level.ordinal >= NoticeLevel.ERROR.ordinal` 判定 Snackbar 长度。当前两个 enum 恰好以 `INFO, SUCCESS, WARNING, ERROR, CRITICAL` 相同顺序声明，映射函数是穷尽 `when`，但等级顺序本身未成为显式 API/策略，新增或重排等级会改变两处业务行为。此处不属于 wire-format enum ordinal 泄漏，记录为内部语义依赖枚举顺序的可维护性问题；应采用显式等级比较并覆盖阈值行为。
 
