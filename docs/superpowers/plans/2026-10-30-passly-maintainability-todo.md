@@ -421,13 +421,13 @@
 
 ## Task 65：保证备份恢复文件 journal 的回滚与数据库状态一致
 
-- [ ] 检查并明确 `RestoreFileJournal.replace()` 的失败补偿结果：现有 catch 对临时文件 `delete()`、目标文件 `delete()` 和旧文件 `renameTo(target)` 的 Boolean 结果不检查；旧文件已移到 `.previous` 后，若写入/rename 失败且恢复 rename 也失败，该 change 尚未加入 `changes`，旧文件会留在隐藏备份名且没有 journal entry 可供后续 rollback。
-- [ ] 让 `rollback()` 在文件操作失败时保留未完成 change 并返回/抛出可辨认的恢复失败；当前逐项忽略 `target.delete()`/`previous.renameTo()` 结果，最后无条件 `changes.clear()`。`RoomBackupSnapshotRestorer` 的 Room transaction 失败后调用 rollback 并重抛原异常；必须记录 rollback 失败，不得让数据库回滚成功却把“新文件仍占据旧路径、旧文件留在 .previous”伪装成完整回滚，也不得用清理异常无条件覆盖原始事务异常。
-- [ ] 定义数据库提交后的 `commit()` 与 `cleanupUnreferencedFiles()` 结果：`commit()` 对 `.previous.delete()` 的失败当前被忽略，随后清空 journal；清库后资源文件清理则由 `runCatching` 吞掉任意异常并仍返回 restore success。区分普通可恢复文件清理失败与 fatal `Error`，确保数据库已经提交后不报告数据库回滚；残留文件需有可验证的重试/启动回收 owner，且不删除仍被 Room 引用的文件。
-- [ ] 在复用已有 attachment 文件前验证其完整性。当前 Restorer 会检查 Room resource row 的明文 `fileSize`，但 `retainRestoredAttachmentFile()` 只看 `target.isFile`；已存在的密文不会经 `AttachmentContentProtector.decrypt/verifyContentId` 校验，归档里已验证的有效正文也会被丢弃。若本机同 resourceId 文件被截断/篡改，Append 或 Overwrite 恢复仍让新引用指向该损坏密文。定义有效密文可复用、损坏密文以 journal 原子替换的合同，并验证替换后数据库失败仍能恢复原文件、提交后引用只对应已验证内容；不因内容地址相同就假定磁盘字节有效。
-- [ ] 增加文件操作故障注入覆盖：旧文件移位成功后写入失败、目标替换失败、rollback 删除/恢复 rename 失败、commit 删除旧文件失败、清理未引用资源普通异常与 fatal Error；验证 Room 结果、目标/previous/temp 文件字节、恢复失败可见性、原始异常与 suppressed 优先级、下次恢复是否能回收残留。保留当前/历史附件引用合同，不改 Room Schema 版本；测试可通过临时目录或确有必要的窄 IO seam 实现，不新增只转发 `File` 操作的 production facade。
+- [x] `replace()` 在暂存旧文件后立即登记 target/temp/previous；检查临时文件和目标删除、旧文件恢复结果。失败补偿仍未完成时保留记录供后续 rollback 重试，并合并错误；fatal `Error` 与取消优先于普通 I/O 异常传播。
+- [x] `rollback()` 检查每次删除和恢复 rename，仅移除已完成的 change；事务失败继续以事务异常为主并附加普通回滚异常，fatal rollback `Error` 优先传播且保留原事务异常。文件操作故障注入覆盖 rollback 删除失败、替换失败后的恢复失败与重试。
+- [x] 把 Room transaction catch 限定在数据库事务本身；成功提交后单独清理 journal 和未引用文件。提交后的普通清理异常会记录，不会回滚 Room；取消与 fatal `Error` 继续传播。失败 `.previous` 会留给后续成功的 `OVERWRITE` 资源清扫回收，当前没有持久化启动恢复记录，不能宣称进程重启后自动恢复。
+- [x] 复用附件前解密现有密文，校验 keyed content ID 与归档明文字节；密文损坏或 ID 校验失败时用归档内容重新加密并经 journal 替换，验证旧字节可由 journal rollback 恢复。未改 Room Schema 或当前/历史附件引用合同。
+- [x] 添加 `RestoreFileOperations` 窄 I/O seam 和临时目录故障注入测试，覆盖回滚删除失败、replace 补偿 rename 失败、commit 删除失败及重试；附件测试覆盖有效复用、损坏修复、错误 keyed ID 修复和缺失文件写入。未添加 Room/磁盘跨进程原子性或设备级故障注入测试。
 
-**证据：** `RestoreFileJournal.replace()` 先将旧目标 rename 到随机 `.previous`，但只在临时文件写完并 rename 为目标后才将 change 放入内存 `changes`；catch 中三次文件补偿都忽略 Boolean 结果。`rollback()` 与 `commit()` 同样忽略 rename/delete 失败并清空内存 journal；该 journal 不是持久化的，故进程退出后 `.previous` 没有 owner。生产 `RoomBackupSnapshotRestorer.restore()` 在 Room transaction 抛错后调用 `fileJournal.rollback()`，成功提交后调用 `fileJournal.commit()`，OVERWRITE 后另以 `runCatching` 包裹 `cleanupUnreferencedFiles()`；这些阶段直接影响旧备份资源恢复、提交结果与残留文件生命周期。附件恢复先校验归档 resourceData SHA-256，再由 `attachmentContentProtector.contentId(content)` 得到 keyed resourceId；对于已存在的 Room resource row 只比较明文 `fileSize`，`retainRestoredAttachmentFile()` 发现目标是普通文件即跳过归档内容写入并记录保留路径，未校验现存密文的 AEAD tag 或 keyed content ID。相对地，`RoomBackupSnapshotReader` 导出时会 decrypt 并执行 `verifyContentId`，证实本机密文完整性是既有读取合同。`RestoredAttachmentFileTest` 只断言已有文件不被改写，尚未区分有效复用与损坏修复；新增验证须确认 restore 的既定语义是否要求由有效备份修复本机损坏，并覆盖 Room rollback/当前与历史引用。`RestoreFileJournalTest` 只覆盖正常 rollback/commit 文件系统路径，未模拟失败的 `renameTo/delete`，也未验证 Room transaction 与文件回滚相互失败的结果优先级。
+**证据：** `RestoreFileJournal` 将每个文件变更在写入临时文件前登记；`replace()` 的失败补偿、`rollback()` 和 `commit()` 都检查文件操作结果，未完成项保留以供同一 journal 重试。`RoomBackupSnapshotRestorer` 只在 Room transaction 失败时调用 rollback，原事务异常保留；数据库提交后的 journal/资源清理异常在独立阶段处理，不会伪装成数据库回滚。`OVERWRITE` 扫描 Vault 资源目录并保留已恢复路径，因而可回收提交失败留下的未引用 `.previous`；这不是持久化启动恢复机制，进程在跨介质提交窗口强制退出仍是已知限制。附件复用需解密并检查 keyed content ID、归档明文长度与字节相等；无效密文从已经验证的归档内容重新加密，密文与明文临时数组均清零。针对 `RestoreFileJournalTest`、`RestoredAttachmentFileTest` 的 10 个定向 JVM 用例、`:app:ktlintCheck` 与 `git diff --check` 通过；未验证真实设备/Room 磁盘崩溃场景。
 
 ## Task 66：Trash Room Flow 的错误映射只覆盖可恢复异常
 

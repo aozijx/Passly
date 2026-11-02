@@ -30,6 +30,7 @@ import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 /**
  * 备份恢复器。
@@ -168,14 +169,14 @@ internal class RoomBackupSnapshotRestorer
                                 }
                                 val target = attachmentGarbageCollector.resourceFile(resourceId)
                                 target.parentFile?.mkdirs()
-                                retainRestoredAttachmentFile(target, restoredFiles) {
-                                    val encryptedContent = attachmentContentProtector.encrypt(content, resourceId)
-                                    try {
-                                        fileJournal.replace(target, encryptedContent)
-                                    } finally {
-                                        encryptedContent.fill(0)
-                                    }
-                                }
+                                retainRestoredAttachmentFile(
+                                    target = target,
+                                    content = content,
+                                    resourceId = resourceId,
+                                    attachmentContentProtector = attachmentContentProtector,
+                                    fileJournal = fileJournal,
+                                    retainedCanonicalPaths = restoredFiles,
+                                )
 
                                 attachmentRefCommandDao().insertStrict(
                                     AttachmentRefEntity(
@@ -211,25 +212,43 @@ internal class RoomBackupSnapshotRestorer
                             }
                         }
                     }
-                    fileJournal.commit()
-                    if (mode == ImportMode.OVERWRITE) {
-                        runCatching {
-                            cleanupUnreferencedFiles(
-                                roots = VaultResourcePaths.resourceDirectories(context),
-                                retainedCanonicalPaths = restoredFiles,
-                            )
-                        }.onFailure { error ->
-                            logger.log(LogStatements.Backup.resourceCleanupFailed(error))
-                        }
-                    }
-                    BackupRestoreResult(
-                        importedEntryCount = importedEntryCount,
-                        existingEntryCount = existingEntryCount,
-                    )
                 } catch (error: Throwable) {
-                    fileJournal.rollback()
+                    try {
+                        fileJournal.rollback()
+                    } catch (rollbackFailure: Throwable) {
+                        val preferredFailure = preferRestoreFailure(error, rollbackFailure)
+                        if (preferredFailure !== error) throw preferredFailure
+                    }
                     throw error
                 }
+
+                try {
+                    fileJournal.commit()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Error) {
+                    throw error
+                } catch (error: Exception) {
+                    logger.log(LogStatements.Backup.resourceCleanupFailed(error))
+                }
+                if (mode == ImportMode.OVERWRITE) {
+                    try {
+                        cleanupUnreferencedFiles(
+                            roots = VaultResourcePaths.resourceDirectories(context),
+                            retainedCanonicalPaths = restoredFiles,
+                        )
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Error) {
+                        throw error
+                    } catch (error: Exception) {
+                        logger.log(LogStatements.Backup.resourceCleanupFailed(error))
+                    }
+                }
+                BackupRestoreResult(
+                    importedEntryCount = importedEntryCount,
+                    existingEntryCount = existingEntryCount,
+                )
             }
         }
 
@@ -256,12 +275,62 @@ internal class RoomBackupSnapshotRestorer
         }
     }
 
-internal inline fun retainRestoredAttachmentFile(
+internal suspend fun retainRestoredAttachmentFile(
     target: File,
+    content: ByteArray,
+    resourceId: String,
+    attachmentContentProtector: AttachmentContentProtector,
+    fileJournal: RestoreFileJournal,
     retainedCanonicalPaths: MutableSet<String>,
-    writeIfMissing: () -> Unit,
 ) {
-    if (!target.isFile) writeIfMissing()
+    require(!target.exists() || target.isFile) { "附件恢复目标不是文件: ${target.name}" }
+    val existingFileIsValid =
+        target.isFile &&
+            existingAttachmentMatches(
+                target = target,
+                content = content,
+                resourceId = resourceId,
+                attachmentContentProtector = attachmentContentProtector,
+            )
+    if (!existingFileIsValid) {
+        val encryptedContent = attachmentContentProtector.encrypt(content, resourceId)
+        try {
+            fileJournal.replace(target, encryptedContent)
+        } finally {
+            encryptedContent.fill(0)
+        }
+    }
     require(target.isFile) { "附件恢复文件缺失: ${target.name}" }
     retainedCanonicalPaths += target.canonicalPath
+}
+
+private suspend fun existingAttachmentMatches(
+    target: File,
+    content: ByteArray,
+    resourceId: String,
+    attachmentContentProtector: AttachmentContentProtector,
+): Boolean {
+    val encryptedContent =
+        try {
+            target.readBytes()
+        } catch (_: IOException) {
+            return false
+        }
+    val restoredContent =
+        try {
+            attachmentContentProtector.decrypt(encryptedContent, resourceId)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            return false
+        } finally {
+            encryptedContent.fill(0)
+        }
+    return try {
+        restoredContent.size == content.size &&
+            restoredContent.contentEquals(content) &&
+            attachmentContentProtector.verifyContentId(restoredContent, resourceId)
+    } finally {
+        restoredContent.fill(0)
+    }
 }
