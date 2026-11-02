@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import android.net.Uri
 import androidx.lifecycle.ViewModelStore
+import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
@@ -135,6 +136,87 @@ class DetailViewModelTest {
 
                 val refreshedCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
                 assertTrue(oldCode.code != refreshedCode.code)
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
+    fun `successful OTP revision restore clears and reloads detail code`() =
+        runTest {
+            val reloadGate = CompletableDeferred<Unit>()
+            val repository =
+                MutableOtpConfigRepository(
+                    config = otpConfig("JBSWY3DPEHPK3PXP"),
+                    blockReadNumber = 2,
+                    readGate = reloadGate,
+                )
+            val fixture =
+                Fixture(
+                    initialEntry = otpEntry(),
+                    otpConfigRepository = repository,
+                    revisionSnapshot = otpRevisionSnapshot("MFRGGZDFMZTWQ2LK"),
+                )
+            fixture.revisions.onRestoreCommitted = { repository.config = otpConfig("MFRGGZDFMZTWQ2LK") }
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                val oldCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                fixture.viewModel.onAction(DetailUiAction.OpenRevisionHistory)
+                runCurrent()
+                fixture.viewModel.onAction(DetailUiAction.SelectRevision(REVISION_ID.value))
+                runCurrent()
+                fixture.viewModel.onAction(DetailUiAction.RequestRevisionRestore)
+                fixture.viewModel.onAction(DetailUiAction.ConfirmRevisionRestore)
+                runCurrent()
+
+                fixture.revisions.releasePostCommitCleanup.complete(Unit)
+                runCurrent()
+
+                assertTrue(fixture.revisions.restoreCompleted)
+                assertEquals(null, fixture.viewModel.otpState.value)
+                assertEquals(2, repository.readCount)
+
+                reloadGate.complete(Unit)
+                runCurrent()
+
+                val restoredCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                assertTrue(oldCode.code != restoredCode.code)
+            } finally {
+                reloadGate.complete(Unit)
+                fixture.revisions.releasePostCommitCleanup.complete(Unit)
+                store.clear()
+            }
+        }
+
+    @Test
+    fun `failed OTP revision restore keeps the current code and config load`() =
+        runTest {
+            val repository =
+                MutableOtpConfigRepository(
+                    config = otpConfig("JBSWY3DPEHPK3PXP"),
+                    blockReadNumber = Int.MAX_VALUE,
+                    readGate = CompletableDeferred(),
+                )
+            val fixture = Fixture(initialEntry = otpEntry(), otpConfigRepository = repository)
+            fixture.revisions.failRestore = true
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                val originalCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                fixture.viewModel.onAction(DetailUiAction.OpenRevisionHistory)
+                runCurrent()
+                fixture.viewModel.onAction(DetailUiAction.SelectRevision(REVISION_ID.value))
+                runCurrent()
+                fixture.viewModel.onAction(DetailUiAction.RequestRevisionRestore)
+                fixture.viewModel.onAction(DetailUiAction.ConfirmRevisionRestore)
+                runCurrent()
+
+                assertTrue(originalCode.code == (fixture.viewModel.otpState.value as OtpCodeState.Ready).code)
+                assertEquals(1, repository.readCount)
+                assertEquals(1, fixture.revisions.restoreCalls)
             } finally {
                 store.clear()
             }
@@ -948,11 +1030,12 @@ class DetailViewModelTest {
         entryLinkRepository: EntryLinkRepository = EmptyEntryLinkRepository,
         initialEntry: Entry = currentEntry(),
         otpConfigRepository: OtpConfigRepository = NoOtpConfigRepository,
+        revisionSnapshot: RedactedEntryRevision = restoredSnapshot(),
     ) {
         val access = AuthenticatedAccess()
         val entries = MutableEntries(initialEntry)
         private val entryQuery = entryQueryRepository(entries)
-        val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow)
+        val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow, revisionSnapshot)
         private val sensitive = sensitiveFieldRepository
         private val authGate = UnusedAuthorizationGate
         private val activity = NoOpActivityRecorder
@@ -1058,11 +1141,13 @@ class DetailViewModelTest {
     private class BlockingRevisionRepository(
         private val entries: MutableEntries,
         private val revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>>,
+        private val revisionSnapshot: RedactedEntryRevision,
     ) : EntryRevisionRepository {
         val restoreEntered = CompletableDeferred<Unit>()
         val releasePostCommitCleanup = CompletableDeferred<Unit>()
         var restoreCompleted = false
         var restoreCalls = 0
+        var failRestore = false
         var onRestoreCommitted: () -> Unit = {}
 
         override suspend fun initializeHistory(): AppResult<Unit> = AppResult.Success(Unit)
@@ -1072,7 +1157,7 @@ class DetailViewModelTest {
         override suspend fun loadRedacted(
             entryId: EntryId,
             revisionId: EntryRevisionId,
-        ): AppResult<RedactedEntryRevision> = AppResult.Success(restoredSnapshot())
+        ): AppResult<RedactedEntryRevision> = AppResult.Success(revisionSnapshot)
 
         override suspend fun reveal(
             entryId: EntryId,
@@ -1088,7 +1173,8 @@ class DetailViewModelTest {
             permit: AuthorizationPermit?,
         ): AppResult<EntryVersion> {
             restoreCalls += 1
-            entries.restoreFrom(restoredSnapshot(), expectedVersion)
+            if (failRestore) return AppResult.Failure(Conflict())
+            entries.restoreFrom(revisionSnapshot, expectedVersion)
             onRestoreCommitted()
             restoreEntered.complete(Unit)
             withContext(NonCancellable) { releasePostCommitCleanup.await() }
@@ -1311,6 +1397,14 @@ class DetailViewModelTest {
                 type = EntryType.LOGIN,
                 profile = EntryProfile("Restored title"),
                 secret = EntrySecret(LoginCredential()),
+            )
+
+        fun otpRevisionSnapshot(secret: String) =
+            RedactedEntryRevision(
+                metadata = revisionMetadata(),
+                type = EntryType.OTP,
+                profile = EntryProfile("Historical OTP"),
+                secret = EntrySecret(OtpCredential(otpConfig(secret))),
             )
     }
 }

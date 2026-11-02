@@ -71,13 +71,14 @@
 
 - [x] 在激活与跨周期刷新边界处理普通配置读取异常：跨周期失败立即清除旧验证码，保留调度供后续刷新重试；激活失败保留请求条目供 ticker 后续重试。`CancellationException` 和 fatal `Error` 仍传播。`OtpCodeRuntimeTest` 覆盖 stale state/copy 清理、显式后续刷新恢复、激活失败后再次激活及异常类型传播。
 - [ ] 成功保存 `EntryType.OTP` 的 `FieldKey.OTP_SECRET` 或成功恢复包含不同 OTP 配置的历史修订后，立即使当前 Detail 工作流中的 OTP schedule/code 失效，并基于已持久化的新配置重新生成；在 OTP 周期边界到达前，展示和复制都不得继续使用旧配置对应的 TOTP。保存失败、无效编辑、同值编辑和页面/认证 owner 替换分别保留正确的缓存与取消行为。
-- [ ] 核验 Vault 列表和 Detail 的独立 Runtime 在 Route `ON_RESUME` 时只刷新各自仍有 owner 的 OTP；覆盖 OTP 编辑页保存返回、列表可见订阅以及无订阅条目不被重新激活，不建立跨 ViewModel 全局广播桥。
+- [ ] 为 Route 生命周期补宿主行为验证：OTP 编辑成功返回时 Detail 刷新当前条目，编辑取消/失败不会触发保存成功路径；Vault 列表恢复时只刷新仍可见订阅，离开后不重新激活无 owner 条目。当前无跨 ViewModel 全局广播桥。
 - [x] 清理未使用的 `OtpCodeInvalidator` 抽象。`entryChanged()`/`entryRemoved()` 由 concrete Runtime 直接拥有；`entryChanged()` 保留原 active/subscription owner 并只为仍被请求的条目重新加载，Detail restore 与两个 Route 的恢复路径已接入。激活读取按 entry epoch 去重；owner 变化仍可立即启动新 epoch，旧读取、刷新和 HOTP 消费异常均不能改变新配置状态。
-- [ ] 增加真实 `start()` ticker 的受控时钟/屏障回归：一个条目 rollover 读取失败后仍继续刷新其他条目，并在后续周期恢复；不能只用显式调用 `refreshStates(nowSeconds)` 证明 ticker job 存活。
-- [ ] 增加 ViewModel/Route 行为回归：先生成旧 TOTP，分别通过 secret 编辑与修订恢复替换配置，立即验证展示和 copy 读到新配置；保存失败与离页/锁定期间迟到结果不得覆盖当前状态。运行 OtpCodeRuntime、DetailViewModel 与 Vault OTP 订阅相关测试、`verifyArchitecture` 和 `git diff --check`。
+- [x] 增加真实 `start()` ticker 的受控时钟回归：单条目 rollover 读取失败会清除旧码但不阻断其他条目刷新，并在下个周期重试恢复；由注入的时钟和 test scheduler 驱动，不依赖真实等待。
+- [x] 增加 Detail ViewModel 行为回归：前台恢复清除旧码并重载；OTP 历史修订成功后清除旧码并加载新配置，恢复失败保留当前码且不额外读取。Route 生命周期仍需宿主验证。
+- [ ] 增加 Route/编辑器宿主行为回归：OTP secret 保存成功后返回 Detail 时展示与 copy 使用新配置；离页/锁定期间迟到结果不得覆盖当前状态。运行 OtpCodeRuntime、DetailViewModel 与 Vault OTP 订阅相关测试、`verifyArchitecture` 和 `git diff --check`。
 
-**实现边界：** Detail 与 Vault List 通过独立 Runtime 持有各自 OTP state。OTP 编辑页保存后返回前台时，Route 刷新本 Runtime 当前仍请求的条目；Detail 的成功历史修订恢复分支也立即刷新当前条目。`entryChanged()` 保留 active/subscription owner，只撤销旧 epoch、schedule 与验证码，再对仍有 owner 的条目异步重载；不会把临时列表订阅提升成永久 active entry。激活读取由 entry epoch 去重，但显式 owner/config 变化可以替换未完成读取的 epoch，旧结果及其认证/锁定异常不能覆盖新配置。现有 ViewModel 测试覆盖 Detail 恢复前台时旧码清除并重新加载；直接的 restore 成功/失败、Route 生命周期、列表重入及锁定期间迟到结果行为测试仍待补齐。
-**剩余 ticker 验证缺口：** 当前实现已在 `refreshStates()` 对单条目普通异常清除旧 state 并继续处理后续条目；保留旧 schedule 后，下一周期会再次尝试。`activateTrackedEntry()` 对普通异常清状态但保留 active/subscription owner，供下一轮 `reactivatePendingEntries()` 重试。JVM 用例直接传入 moving factor 验证 state/copy 清理与第二次显式刷新恢复，并验证激活失败重试、同 epoch 并发去重、owner 变化后替换 epoch、取消/fatal Error 传播；它没有启动 `start()` 循环，也未用屏障证明同批其他条目继续刷新，因此真实 ticker 存活/并行条目行为仍需测试。
+**实现边界：** Detail 与 Vault List 通过独立 Runtime 持有各自 OTP state。OTP 编辑页保存成功返回前台时，Route 刷新本 Runtime 当前仍请求的条目；Detail 的成功历史修订恢复分支也立即刷新当前条目。`entryChanged()` 保留 active/subscription owner，只撤销旧 epoch、schedule 与验证码，再对仍有 owner 的条目异步重载；不会把临时列表订阅提升成永久 active entry。激活读取由 entry epoch 去重，但显式 owner/config 变化可以替换未完成读取的 epoch，旧结果及其认证/锁定异常不能覆盖新配置。Detail ViewModel 现在覆盖前台重载与 restore 成功/失败；未覆盖真实 Route lifecycle、编辑成功返回、锁定或离页期间晚到结果。
+**ticker 验证：** `start()` 现使用可替换的毫秒时钟（生产默认 `System.currentTimeMillis`），测试通过受控时钟与 coroutine test scheduler 驱动周期边界。回归验证一个条目普通读取异常清除旧码、其他条目同轮继续刷新、失败条目下一轮恢复；显式 `refreshStates(nowSeconds)` 测试仍保留，用来验证具体移动因子和 copy 状态。
 
 ## Task 28：明确设备锁后的 task-clear 命令交付所有者
 

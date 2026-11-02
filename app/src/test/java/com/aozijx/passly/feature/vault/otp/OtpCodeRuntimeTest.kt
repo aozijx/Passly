@@ -176,6 +176,48 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
+    fun `ticker continues after one entry fails and retries it on the next period`() =
+        runTest {
+            var nowMillis = 0L
+            val loadCounts = mutableMapOf<String, Int>()
+            val coordinator =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { nowMillis },
+                    loadOtpConfig = { entryId ->
+                        val loadCount = (loadCounts[entryId] ?: 0) + 1
+                        loadCounts[entryId] = loadCount
+                        if (entryId == "failing-entry" && loadCount == 2) {
+                            throw IllegalStateException("temporary config read failure")
+                        }
+                        validTotpConfig().copy(
+                            secret = "$entryId-$loadCount",
+                            periodSeconds = 1,
+                        )
+                    },
+                    codeGenerator = { OtpResult.Success(requireNotNull(it.secret)) },
+                )
+            coordinator.subscribe("failing-entry")
+            coordinator.subscribe("healthy-entry")
+            runCurrent()
+            coordinator.start()
+
+            nowMillis = 1_000
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals(null, coordinator.readyCode("failing-entry"))
+            assertEquals("healthy-entry-2", coordinator.readyCode("healthy-entry"))
+
+            nowMillis = 2_000
+            advanceTimeBy(1_000)
+            runCurrent()
+
+            assertEquals("failing-entry-3", coordinator.readyCode("failing-entry"))
+            assertEquals("healthy-entry-3", coordinator.readyCode("healthy-entry"))
+        }
+
+    @Test
     fun `ordinary activation read failure does not prevent later activation`() =
         runTest {
             var loadCount = 0

@@ -39,6 +39,7 @@ internal class OtpCodeRuntime(
         OtpResult.Failure(OtpGenerationError.InvalidSecret)
     },
     initiallyUnlocked: Boolean = true,
+    private val currentTimeMillis: () -> Long = System::currentTimeMillis,
 ) {
     private val _states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
     val states: StateFlow<Map<String, OtpCodeState>> = _states
@@ -69,12 +70,12 @@ internal class OtpCodeRuntime(
 
     fun start() {
         scope.launch {
-            val now = System.currentTimeMillis()
+            val now = currentTimeMillis()
             delay((1000 - (now % 1000)).milliseconds)
             while (currentCoroutineContext().isActive) {
                 if (sessionUnlocked) {
                     reactivatePendingEntries()
-                    refreshStates(System.currentTimeMillis() / 1000)
+                    refreshStates(currentTimeMillis() / 1000)
                 }
                 delay(1000.milliseconds)
             }
@@ -264,7 +265,7 @@ internal class OtpCodeRuntime(
                 }
                 return
             }
-            val nowSeconds = System.currentTimeMillis() / 1000
+            val nowSeconds = currentTimeMillis() / 1000
             applyConfig(entryId, config, nowSeconds, token)
         } finally {
             if (activationEpochsInFlight[entryId] == token.entryEpoch) {
