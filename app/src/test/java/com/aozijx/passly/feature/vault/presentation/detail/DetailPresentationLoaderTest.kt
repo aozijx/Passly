@@ -175,7 +175,6 @@ class DetailPresentationLoaderTest {
         ): List<RevealedSensitiveField> = error("Not used")
 
         override suspend fun readBundle(entryId: EntryId): EntrySecret = error("Not used")
-        override suspend fun readAll(entryId: EntryId): EntrySecret = error("Not used")
     }
 
     private class FakeInstalledAppDirectory : InstalledAppDirectory {

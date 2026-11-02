@@ -13,9 +13,8 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
  *
  * [reveal]/[revealMany] decrypt only the requested fields and require a consumed permit, so a
  * caller never materializes the whole entry's secrets just to show one value. [readBundle]
- * returns the aggregated low-sensitivity secret (sensitive fields are `null` in it); [readAll]
- * reassembles the complete secret and is only meant for batch flows (revision, backup, recovery)
- * that genuinely need every field.
+ * returns the aggregated low-sensitivity secret (sensitive fields are `null` in it). Complete
+ * backup snapshots use a separate Data-internal boundary and are not exposed through this port.
  */
 interface SensitiveFieldRepository {
     suspend fun getPresence(entryId: EntryId): SensitiveFieldPresence
@@ -36,7 +35,4 @@ interface SensitiveFieldRepository {
 
     /** Low-sensitivity aggregate; every field-level secret is `null` in the returned value. */
     suspend fun readBundle(entryId: EntryId): EntrySecret
-
-    /** Complete secret assembled from the bundle plus every field-level ciphertext. */
-    suspend fun readAll(entryId: EntryId): EntrySecret
 }

@@ -129,7 +129,6 @@ class ExportOtpQrAuthorizationTest {
         ) = emptyList<RevealedSensitiveField>()
 
         override suspend fun readBundle(entryId: EntryId) = EntrySecret()
-        override suspend fun readAll(entryId: EntryId) = EntrySecret()
     }
 
     private class RecordingActivityRecorder(

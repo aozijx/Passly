@@ -99,7 +99,6 @@ internal class EditableEntryUseCaseFixture(
         ): RevealedSensitiveField? = null
 
         override suspend fun readBundle(entryId: EntryId) = EntrySecret()
-        override suspend fun readAll(entryId: EntryId) = EntrySecret()
     }
 
     private class TestCommand(private val query: TestQuery) : EntryCommandRepository {

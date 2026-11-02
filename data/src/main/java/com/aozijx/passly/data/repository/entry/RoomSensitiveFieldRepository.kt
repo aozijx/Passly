@@ -87,11 +87,4 @@ internal class RoomSensitiveFieldRepository @Inject constructor(
             fieldStore.readBundle(this, entryId.value, entryType)
         }
 
-    override suspend fun readAll(entryId: EntryId): EntrySecret =
-        if (!sessionState.hasFullSecureSessionAccess()) EntrySecret()
-        else databaseSession.query {
-            val entryType = entryQueryDao().getById(entryId.value)?.entryType ?: return@query EntrySecret()
-            fieldStore.readAll(this, entryId.value, entryType)
-        }
-
 }

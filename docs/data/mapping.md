@@ -20,8 +20,9 @@ STRUCT_BUNDLE row -> SecretBundleCodec -> EntrySecret (高敏值为 null)
 EntryAssembler -> Entry
 ```
 
-读取已授权单字段时，仅查询对应 `fieldKey` 并经 `SecretFieldCodec` 解密。读取完整凭据时，
-`SecretFieldStore.readAll()` 才把 bundle 与各高敏字段合并。
+读取已授权单字段时，仅查询对应 `fieldKey` 并经 `SecretFieldCodec` 解密。只有 Backup 快照边界会调用
+Data 内部的 `SecretFieldStore.readAll()`，把 bundle 与各高敏字段合并；Feature 不经 Domain Repository
+读取完整 secret。
 
 写入时，Profile 直接映射到 `EntryEntity`；Secret 由 `SensitiveFieldSetMapper` 拆成 bundle 与逐字段值，
 再由各自 Codec 加密。Revision 另有独立的 `EntryContentSnapshotCodec` 和

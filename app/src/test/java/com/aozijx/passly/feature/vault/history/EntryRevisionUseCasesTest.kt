@@ -202,7 +202,6 @@ class EntryRevisionUseCasesTest {
             permit: AuthorizationPermit,
         ): List<RevealedSensitiveField> = error("unused")
         override suspend fun readBundle(entryId: EntryId): EntrySecret = error("unused")
-        override suspend fun readAll(entryId: EntryId): EntrySecret = error("unused")
     }
 
     private fun currentEntry() = Entry(

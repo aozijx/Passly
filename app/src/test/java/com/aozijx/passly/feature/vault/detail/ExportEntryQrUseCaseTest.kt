@@ -128,7 +128,6 @@ class ExportEntryQrUseCaseTest {
                     if (cancelRead) throw CancellationException("cancelled")
                     return EntrySecret(credential = WifiCredential("Office", password, securityType, true))
                 }
-                override suspend fun readAll(entryId: EntryId) = error("Unexpected full read")
                 override suspend fun getPresence(entryId: EntryId) = SensitiveFieldPresence(entryId, emptySet())
                 override suspend fun reveal(
                     entryId: EntryId,

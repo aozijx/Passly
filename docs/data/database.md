@@ -72,7 +72,7 @@ CVV、支付 PIN、身份号码、助记词、恢复码、SSH 私钥/口令、Pa
 
 - 普通详情读取 `entries` Profile 与 `STRUCT_BUNDLE`，不物化高敏字段；
 - 单字段 reveal 只查询并解密对应 `fieldKey`；
-- 备份、恢复和完成授权后的 Autofill 等完整凭据流程，才通过 `readAll()` 合并全部字段；
+- 完整凭据快照仅由 Backup 的 `RoomBackupSnapshotReader` 经 Data 内部 `SecretFieldStore.readAll()` 合并全部字段；
 - 普通更新用 `Preserve / Clear / Replace` 区分未加载、主动清空和替换，避免为了写低敏结构而解密全部
   高敏字段。
 

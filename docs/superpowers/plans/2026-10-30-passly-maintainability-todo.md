@@ -312,12 +312,14 @@
 
 ## Task 56：移除未消费且无 fresh authorization 的完整敏感字段读取端口
 
-- [ ] 从 `SensitiveFieldRepository` 删除无生产调用者的 `readAll(entryId)` 与 `RoomSensitiveFieldRepository` 对应实现，并删除其测试替身中的死 override；仅保留确有消费方的 `getPresence`、携带 permit 的 `reveal/revealMany`、低敏感 `readBundle`。
-- [ ] 保留 `SecretFieldStore.readAll(db, ...)`：它由 `RoomBackupSnapshotReader` 在备份快照边界调用，属于经 Backup 操作授权后的批量导出实现；不要因 Domain Repository 的同名死能力一起删除或让 Feature 绕过备份 gateway。
-- [ ] 核对 SensitiveFieldRepository 的全部生产消费者、Hilt binding、编辑/揭示/复制/二维码/修订恢复授权合同，以及单测 fake；确认任何完整字段读取若新增，应先定义明确用例和 permit/批处理边界，再作为显式最小权限能力暴露。运行 `:app:testDebugUnitTest` 中受影响的 sensitive field、editable-entry、copy/reveal/QR/revision 用例、`:data:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check`。
-- [ ] 同步收窄 `SensitiveFieldRepository.kt` 的 KDoc：删除“完整 `readAll` 只供 revision/backup/recovery batch flow”这条已与生产闭包不符的能力承诺；核对 `docs/security/sensitive-data-access.md` 与功能页继续准确描述低敏 bundle、permit-gated field reveal、Backup 专用完整快照，不把 Data 内部 `SecretFieldStore` 升格成 Feature API。
+- [x] 从 `SensitiveFieldRepository` 删除无生产调用者的 `readAll(entryId)` 与 `RoomSensitiveFieldRepository` 对应实现，并删除其测试替身中的死 override；仅保留确有消费方的 `getPresence`、携带 permit 的 `reveal/revealMany`、低敏感 `readBundle`。
+- [x] 保留 `SecretFieldStore.readAll(db, ...)`：它由 `RoomBackupSnapshotReader` 在备份快照边界调用，属于经 Backup 操作授权后的批量导出实现；不要因 Domain Repository 的同名死能力一起删除或让 Feature 绕过备份 gateway。
+- [x] 核对 SensitiveFieldRepository 的全部生产消费者、Hilt binding、编辑/揭示/复制/二维码/修订恢复授权合同，以及单测 fake；确认任何完整字段读取若新增，应先定义明确用例和 permit/批处理边界，再作为显式最小权限能力暴露。运行 `:app:testDebugUnitTest` 中受影响的 sensitive field、editable-entry、copy/reveal/QR/revision 用例、`:data:testDebugUnitTest`、`verifyArchitecture` 与 `git diff --check`。
+- [x] 同步收窄 `SensitiveFieldRepository.kt` 的 KDoc：删除“完整 `readAll` 只供 revision/backup/recovery batch flow”这条已与生产闭包不符的能力承诺；核对 `docs/security/sensitive-data-access.md` 与功能页继续准确描述低敏 bundle、permit-gated field reveal、Backup 专用完整快照，不把 Data 内部 `SecretFieldStore` 升格成 Feature API。
 
 **证据：** 全仓生产源码只在 `SensitiveFieldRepository` 声明 `readAll(entryId)`、`RoomSensitiveFieldRepository` 实现该方法；所有其他匹配是测试 fake 的 `Not used`/`unused` override。实现只检查 `sessionState.hasFullSecureSessionAccess()`，随后读取 entry type 并调用 `fieldStore.readAll()` 解密 bundle 和全部 per-field rows，不要求 `AuthorizationPermit`；同一接口的 `reveal/revealMany` 则通过 `AuthorizationPermitVerifier.consume()` 校验具体 entry、字段集合和 action。独立的 `SecretFieldStore.readAll(db, ...)` 有真实生产消费者 `RoomBackupSnapshotReader.readBundle()`，经 `RoomBackupSnapshotGateway` 进入 Backup 流程，必须保留该明确批量边界。故 Domain 端口暴露了无人使用且比其他读取方法权限更宽的完整秘密读取能力；收窄接口能同时去掉冗余实现与测试维护负担，不影响数据库格式或 Backup 契约。
+
+**实现进度（2026-11-02）：** 已完成。全仓剩余 `readAll()` 仅为 Data 内部 `SecretFieldStore` 与 `RoomBackupSnapshotReader` 的 Backup 调用；Domain port、Room Repository 和 9 个 App 测试 fake 的无用 API 已移除。核对 Hilt binding 与 edit/reveal/copy/QR/revision 生产调用后，无需修改权限合同。`docs/security/sensitive-data-access.md`、`docs/data/database.md`、`docs/data/mapping.md` 已改为仅 Backup 快照使用完整内部读取。`:app:testDebugUnitTest` 1,019 tests、`:data:testDebugUnitTest` 123 tests 均通过，`verifyArchitecture` 与 `git diff --check` 通过。
 
 ## Task 57：让 Kotlin 编码规范可重复检查
 

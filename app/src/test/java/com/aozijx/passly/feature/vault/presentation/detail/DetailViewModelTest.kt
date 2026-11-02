@@ -911,7 +911,6 @@ class DetailViewModelTest {
         ): List<RevealedSensitiveField> = error("Not used")
 
         override suspend fun readBundle(entryId: EntryId): EntrySecret = error("Not used")
-        override suspend fun readAll(entryId: EntryId): EntrySecret = error("Not used")
     }
 
     private fun sensitiveFields(
@@ -933,7 +932,6 @@ class DetailViewModelTest {
         ): List<RevealedSensitiveField> = error("Not used")
 
         override suspend fun readBundle(entryId: EntryId): EntrySecret = error("Not used")
-        override suspend fun readAll(entryId: EntryId): EntrySecret = error("Not used")
     }
 
     private object EmptyEntryLinkRepository : EntryLinkRepository {

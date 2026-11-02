@@ -260,7 +260,6 @@ class CopyEntryFieldUseCaseTest {
         ) = emptyList<RevealedSensitiveField>()
         override suspend fun getPresence(entryId: EntryId) = SensitiveFieldPresence(entryId, emptySet())
         override suspend fun readBundle(entryId: EntryId) = EntrySecret()
-        override suspend fun readAll(entryId: EntryId) = EntrySecret()
     }
 
     private class RecordingClipboard : SensitiveClipboardWriter {
