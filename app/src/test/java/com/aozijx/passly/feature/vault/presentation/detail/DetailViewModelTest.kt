@@ -29,6 +29,7 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
+import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionDifference
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
@@ -36,6 +37,8 @@ import com.aozijx.passly.domain.entry.model.history.RedactedEntryRevision
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
@@ -64,6 +67,7 @@ import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
@@ -99,6 +103,43 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
+    @Test
+    fun `returning to OTP detail clears old code while reloading current config`() =
+        runTest {
+            val reloadGate = CompletableDeferred<Unit>()
+            val repository =
+                MutableOtpConfigRepository(
+                    config = otpConfig("JBSWY3DPEHPK3PXP"),
+                    blockReadNumber = 2,
+                    readGate = reloadGate,
+                )
+            val fixture = Fixture(initialEntry = otpEntry(), otpConfigRepository = repository)
+            val store = ViewModelStore()
+            try {
+                store.put("detail", fixture.viewModel)
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                val oldCode =
+                    fixture.viewModel.otpState.value as? OtpCodeState.Ready
+                        ?: error("Expected the initial OTP code")
+
+                repository.config = otpConfig("MFRGGZDFMZTWQ2LK")
+                fixture.viewModel.refreshOtpConfiguration()
+                runCurrent()
+
+                assertEquals(null, fixture.viewModel.otpState.value)
+                assertEquals(2, repository.readCount)
+
+                reloadGate.complete(Unit)
+                runCurrent()
+
+                val refreshedCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                assertTrue(oldCode.code != refreshedCode.code)
+            } finally {
+                store.clear()
+            }
+        }
+
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
@@ -906,6 +947,7 @@ class DetailViewModelTest {
         sensitiveFieldRepository: SensitiveFieldRepository = EmptySensitiveFieldRepository(),
         entryLinkRepository: EntryLinkRepository = EmptyEntryLinkRepository,
         initialEntry: Entry = currentEntry(),
+        otpConfigRepository: OtpConfigRepository = NoOtpConfigRepository,
     ) {
         val access = AuthenticatedAccess()
         val entries = MutableEntries(initialEntry)
@@ -949,7 +991,7 @@ class DetailViewModelTest {
                 compareEntryRevision = CompareEntryRevisionUseCase(revisions),
                 revealRevisionFields = RevealRevisionFieldsUseCase(revisions, authGate),
                 restoreEntryRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
-                otpCodeRuntimeFactory = OtpCodeRuntimeFactory(NoOtpConfigRepository, sessionProvider, freshness),
+                otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),
             )
     }
 
@@ -1167,6 +1209,22 @@ class DetailViewModelTest {
         override suspend fun consumeHotpCode(entryId: String) = OtpResult.Failure(OtpGenerationError.InvalidSecret)
     }
 
+    private class MutableOtpConfigRepository(
+        var config: OtpConfig,
+        private val blockReadNumber: Int,
+        private val readGate: CompletableDeferred<Unit>,
+    ) : OtpConfigRepository {
+        var readCount = 0
+
+        override suspend fun getConfig(entryId: String): OtpConfig {
+            readCount++
+            if (readCount == blockReadNumber) readGate.await()
+            return config
+        }
+
+        override suspend fun consumeHotpCode(entryId: String) = OtpResult.Failure(OtpGenerationError.InvalidSecret)
+    }
+
     private class UnlockedSessionProvider : SessionStateProvider {
         override val lockStateFlow = MutableStateFlow(SecureSessionState.UNLOCKED)
         override val lockState get() = lockStateFlow.value
@@ -1221,6 +1279,22 @@ class DetailViewModelTest {
             profile = EntryProfile(title),
             secret = EntrySecret(LoginCredential()),
         )
+
+        fun otpEntry() =
+            Entry(
+                identity = EntryIdentity(ENTRY_ID, EntryType.OTP, EntryVersion(2), EntryTimestamps(1L)),
+                profile = EntryProfile("Current OTP"),
+                secret = EntrySecret(OtpCredential(otpConfig("JBSWY3DPEHPK3PXP"))),
+            )
+
+        fun otpConfig(secret: String) =
+            OtpConfig(
+                type = OtpType.TOTP,
+                secret = secret,
+                digits = 6,
+                periodSeconds = 30,
+                encoding = OtpSecretEncoding.BASE32,
+            )
 
         fun revisionMetadata() =
             EntryRevisionMetadata(

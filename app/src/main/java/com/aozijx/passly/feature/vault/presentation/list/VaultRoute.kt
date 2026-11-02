@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
@@ -62,6 +64,9 @@ internal fun VaultRoute(
     val context = LocalContext.current
     val resources = LocalResources.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        vaultViewModel.refreshVisibleOtp()
+    }
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()

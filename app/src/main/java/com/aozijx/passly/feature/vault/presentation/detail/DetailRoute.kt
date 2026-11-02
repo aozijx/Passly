@@ -71,6 +71,9 @@ fun DetailRoute(
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         viewModel.onAction(DetailUiAction.DismissEntryQr)
     }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshOtpConfiguration()
+    }
 
     val presentation = presentationState
     if (presentation == null) {

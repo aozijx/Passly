@@ -39,7 +39,7 @@ internal class OtpCodeRuntime(
         OtpResult.Failure(OtpGenerationError.InvalidSecret)
     },
     initiallyUnlocked: Boolean = true,
-) : OtpCodeInvalidator {
+) {
     private val _states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
     val states: StateFlow<Map<String, OtpCodeState>> = _states
 
@@ -55,6 +55,7 @@ internal class OtpCodeRuntime(
     private val subscriptionCounts = mutableMapOf<String, Int>()
     private val freshAuthPausedEntryIds = mutableSetOf<String>()
     private val entryEpochs = mutableMapOf<String, Long>()
+    private val activationEpochsInFlight = mutableMapOf<String, Long>()
     private var nextEntryEpoch = 0L
     private var sessionEpoch = 0L
 
@@ -94,11 +95,16 @@ internal class OtpCodeRuntime(
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: FreshAuthenticationRequiredException) {
-                        pauseUntilFreshAuthentication(entryId)
+                        if (isCurrent(entryId, token) && schedules[entryId] == schedule) {
+                            pauseUntilFreshAuthentication(entryId)
+                        }
                         continue
                     } catch (_: SessionLockedException) {
-                        handleSessionLocked()
-                        return
+                        if (isCurrent(entryId, token) && schedules[entryId] == schedule) {
+                            handleSessionLocked()
+                            return
+                        }
+                        continue
                     } catch (_: Exception) {
                         _states.update { states ->
                             if (isCurrent(entryId, token) && schedules[entryId] == schedule) {
@@ -173,10 +179,10 @@ internal class OtpCodeRuntime(
             try {
                 consumeHotpCode(entryId)
             } catch (_: FreshAuthenticationRequiredException) {
-                pauseUntilFreshAuthentication(entryId)
+                if (isCurrent(entryId, token)) pauseUntilFreshAuthentication(entryId)
                 return OtpResult.Failure(OtpGenerationError.InvalidSecret)
             } catch (_: SessionLockedException) {
-                handleSessionLocked()
+                if (isCurrent(entryId, token)) handleSessionLocked()
                 return OtpResult.Failure(OtpGenerationError.InvalidSecret)
             }
 
@@ -222,39 +228,49 @@ internal class OtpCodeRuntime(
     }
 
     private suspend fun activateTrackedEntry(entryId: String) {
+        if (!sessionUnlocked || !isRequested(entryId)) return
+        val currentEpoch = entryEpochs[entryId]
+        if (currentEpoch != null && activationEpochsInFlight[entryId] == currentEpoch) return
         val token =
             ActivationToken(sessionEpoch, ++nextEntryEpoch).also {
                 entryEpochs[entryId] = it.entryEpoch
             }
-        val config =
-            try {
-                loadOtpConfig(entryId)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: FreshAuthenticationRequiredException) {
-                pauseUntilFreshAuthentication(entryId)
-                return
-            } catch (_: SessionLockedException) {
-                handleSessionLocked()
-                return
-            } catch (_: Exception) {
-                if (isCurrent(entryId, token)) {
-                    schedules.remove(entryId)
-                    _states.update { states ->
-                        if (isCurrent(entryId, token)) states - entryId else states
+        activationEpochsInFlight[entryId] = token.entryEpoch
+        try {
+            val config =
+                try {
+                    loadOtpConfig(entryId)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: FreshAuthenticationRequiredException) {
+                    if (isCurrent(entryId, token)) pauseUntilFreshAuthentication(entryId)
+                    return
+                } catch (_: SessionLockedException) {
+                    if (isCurrent(entryId, token)) handleSessionLocked()
+                    return
+                } catch (_: Exception) {
+                    if (isCurrent(entryId, token)) {
+                        schedules.remove(entryId)
+                        _states.update { states ->
+                            if (isCurrent(entryId, token)) states - entryId else states
+                        }
                     }
+                    return
+                }
+            if (!isCurrent(entryId, token)) return
+            if (config == null || config.secret.isNullOrBlank()) {
+                _states.update {
+                    it + (entryId to OtpCodeState.Failed(OtpGenerationError.InvalidSecret))
                 }
                 return
             }
-        if (!isCurrent(entryId, token)) return
-        if (config == null || config.secret.isNullOrBlank()) {
-            _states.update {
-                it + (entryId to OtpCodeState.Failed(OtpGenerationError.InvalidSecret))
+            val nowSeconds = System.currentTimeMillis() / 1000
+            applyConfig(entryId, config, nowSeconds, token)
+        } finally {
+            if (activationEpochsInFlight[entryId] == token.entryEpoch) {
+                activationEpochsInFlight.remove(entryId)
             }
-            return
         }
-        val nowSeconds = System.currentTimeMillis() / 1000
-        applyConfig(entryId, config, nowSeconds, token)
     }
 
     private suspend fun applyConfig(
@@ -297,6 +313,10 @@ internal class OtpCodeRuntime(
         }
     }
 
+    fun refreshRequestedEntries() {
+        (activeEntryIds + subscriptionCounts.keys).toList().forEach(::entryChanged)
+    }
+
     private fun isRequested(entryId: String): Boolean = entryId in activeEntryIds || entryId in subscriptionCounts
 
     private fun currentActivationToken(entryId: String): ActivationToken? = entryEpochs[entryId]?.let { ActivationToken(sessionEpoch, it) }
@@ -327,6 +347,7 @@ internal class OtpCodeRuntime(
         subscriptionCounts.remove(entryId)
         if (entryId !in activeEntryIds) {
             entryEpochs.remove(entryId)
+            activationEpochsInFlight.remove(entryId)
             freshAuthPausedEntryIds.remove(entryId)
             schedules.remove(entryId)
             _states.update { it - entryId }
@@ -343,6 +364,7 @@ internal class OtpCodeRuntime(
         if (!unlocked) {
             sessionEpoch++
             entryEpochs.clear()
+            activationEpochsInFlight.clear()
             clearGeneratedState()
         } else {
             freshAuthPausedEntryIds.clear()
@@ -366,6 +388,7 @@ internal class OtpCodeRuntime(
         sessionUnlocked = false
         sessionEpoch++
         entryEpochs.clear()
+        activationEpochsInFlight.clear()
         clearGeneratedState()
     }
 
@@ -386,11 +409,12 @@ internal class OtpCodeRuntime(
         _states.update { it - entryId }
     }
 
-    override fun entryRemoved(entryId: String) {
+    fun entryRemoved(entryId: String) {
         entryEpochs.remove(entryId)
         freshAuthPausedEntryIds.remove(entryId)
         activeEntryIds.remove(entryId)
         subscriptionCounts.remove(entryId)
+        activationEpochsInFlight.remove(entryId)
         schedules.remove(entryId)
         _states.update { it - entryId }
     }
@@ -398,14 +422,20 @@ internal class OtpCodeRuntime(
     fun clearAllSensitiveState() {
         sessionEpoch++
         entryEpochs.clear()
+        activationEpochsInFlight.clear()
         freshAuthPausedEntryIds.clear()
         activeEntryIds.clear()
         subscriptionCounts.clear()
         clearGeneratedState()
     }
 
-    override fun entryChanged(entryId: String) {
-        entryRemoved(entryId)
-        autoUnlock(entryId)
+    fun entryChanged(entryId: String) {
+        val wasRequested = isRequested(entryId)
+        entryEpochs.remove(entryId)
+        activationEpochsInFlight.remove(entryId)
+        freshAuthPausedEntryIds.remove(entryId)
+        schedules.remove(entryId)
+        _states.update { it - entryId }
+        if (wasRequested && sessionUnlocked) scope.launch { activateTrackedEntry(entryId) }
     }
 }

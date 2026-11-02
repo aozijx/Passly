@@ -8,6 +8,7 @@ import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
@@ -680,6 +681,14 @@ class DetailViewModel
             load(entryId.value, loadedLaunchMode)
         }
 
+        internal fun refreshOtpConfiguration() {
+            val entry = _uiState.value.entry ?: return
+            if (entry.type != EntryType.OTP) return
+            val token = workSession.current(entry.id) ?: return
+            if (!workSession.isCurrent(token)) return
+            otpRuntime.entryChanged(entry.id.value)
+        }
+
         private fun retrySnapshotRefresh() {
             if (_uiState.value.snapshotState != DetailSnapshotState.RefreshFailedAfterRestore) return
             val entryId = _uiState.value.entry?.id ?: return
@@ -993,6 +1002,9 @@ class DetailViewModel
                         is RevisionOperationResult.Succeeded -> {
                             clearRevisionReveals()
                             mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreSucceeded))
+                            if (_uiState.value.entry?.type == EntryType.OTP) {
+                                otpRuntime.entryChanged(entryId.value)
+                            }
                             refreshSnapshotAfterRestore(entryId, token)
                         }
 

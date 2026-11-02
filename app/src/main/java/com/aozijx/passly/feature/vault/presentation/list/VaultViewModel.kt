@@ -173,6 +173,10 @@ class VaultViewModel
             totp.unsubscribe(entryId)
         }
 
+        fun refreshVisibleOtp() {
+            totp.refreshRequestedEntries()
+        }
+
         private fun quickDelete(entryId: String) {
             if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
             moveToTrash(EntryId(entryId))
