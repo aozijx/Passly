@@ -16,6 +16,7 @@ import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.security.SecureRandom
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.RejectedExecutionException
@@ -82,7 +83,12 @@ internal class EncryptedLogRecordStore(
                 val evicted = evictQueuedLowerPriority(record.level)
                 if (evicted != null) {
                     recordDrop(evicted)
-                    if (runCatching { writer.execute(task) }.isSuccess) return@synchronized
+                    try {
+                        writer.execute(task)
+                        return@synchronized
+                    } catch (_: RejectedExecutionException) {
+                        // Continue to emergency storage or record the dropped entry.
+                    }
                 }
                 if (record.level in setOf(LogLevel.ERROR, LogLevel.FATAL) &&
                     overflowEmergencyClaimed.compareAndSet(false, true)
@@ -270,9 +276,15 @@ internal class EncryptedLogRecordStore(
                 false
             }
         val emergencyDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(CLOSE_TIMEOUT_MS)
-        emergencyThreads.toList().forEach { emergencyThread ->
+        for (emergencyThread in emergencyThreads.toList()) {
             val remaining = (emergencyDeadline - System.nanoTime()).coerceAtLeast(0)
-            if (remaining > 0) runCatching { TimeUnit.NANOSECONDS.timedJoin(emergencyThread, remaining) }
+            if (remaining <= 0) break
+            try {
+                TimeUnit.NANOSECONDS.timedJoin(emergencyThread, remaining)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+                break
+            }
         }
         if (terminated && emergencyThreads.isEmpty()) synchronized(writeLock) { manager.close() }
         emergencyEntry.getAndSet(null)?.destroy()
@@ -339,7 +351,11 @@ internal class EncryptedLogRecordStore(
         val completed = AtomicBoolean(false)
         val entry = emergencyEntry.getAndSet(null) ?: return false
         val thread = launchEmergencyWrite(record, prefix, entry, completed)
-        runCatching { thread.join(timeoutMs) }
+        try {
+            thread.join(timeoutMs)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
         return completed.get()
     }
 
@@ -354,6 +370,7 @@ internal class EncryptedLogRecordStore(
                 {
                     var plain: ByteArray? = null
                     var stagingFile: File? = null
+                    var failure: Throwable? = null
                     try {
                         plain = LogRecordCodec.encode(record)
                         val staging =
@@ -364,13 +381,47 @@ internal class EncryptedLogRecordStore(
                         append(staging, entry, 1, record.level.wireId, plain)
                         val completedFile = File(directory, "${staging.nameWithoutExtension}.log")
                         completed.set(staging.renameTo(completedFile))
-                    } catch (_: Throwable) {
+                    } catch (caught: Throwable) {
                         // Logging must never replace the original failure.
+                        failure = caught
                     } finally {
-                        if (completed.get().not()) stagingFile?.delete()
-                        plain?.fill(0)
-                        entry.destroy()
-                        emergencyThreads.remove(Thread.currentThread())
+                        fun capture(cleanupFailure: Throwable) {
+                            val current = failure
+                            failure =
+                                when {
+                                    cleanupFailure is Error && current !is Error -> {
+                                        current?.let { if (it !== cleanupFailure) cleanupFailure.addSuppressed(it) }
+                                        cleanupFailure
+                                    }
+
+                                    current == null -> {
+                                        cleanupFailure
+                                    }
+
+                                    current !== cleanupFailure -> {
+                                        current.addSuppressed(cleanupFailure)
+                                        current
+                                    }
+
+                                    else -> {
+                                        current
+                                    }
+                                }
+                        }
+
+                        fun cleanup(action: () -> Unit) {
+                            try {
+                                action()
+                            } catch (cleanupFailure: Throwable) {
+                                capture(cleanupFailure)
+                            }
+                        }
+
+                        if (!completed.get()) cleanup { stagingFile?.delete() }
+                        cleanup { plain?.fill(0) }
+                        cleanup { entry.destroy() }
+                        cleanup { emergencyThreads.remove(Thread.currentThread()) }
+                        (failure as? Error)?.let { throw it }
                     }
                 },
                 "passly-observability-emergency",
@@ -408,7 +459,25 @@ internal class EncryptedLogRecordStore(
             }
             file.setLastModified(entry.createdAtMs)
         } catch (error: Throwable) {
-            runCatching { RandomAccessFile(file, "rw").use { it.setLength(originalLength) } }
+            try {
+                RandomAccessFile(file, "rw").use { it.setLength(originalLength) }
+            } catch (cleanupFailure: Throwable) {
+                when {
+                    cleanupFailure is Error && error !is Error -> {
+                        cleanupFailure.addSuppressed(error)
+                        throw cleanupFailure
+                    }
+
+                    cleanupFailure is CancellationException && error !is Error && error !is CancellationException -> {
+                        cleanupFailure.addSuppressed(error)
+                        throw cleanupFailure
+                    }
+
+                    cleanupFailure !== error -> {
+                        error.addSuppressed(cleanupFailure)
+                    }
+                }
+            }
             throw error
         } finally {
             encrypted.fill(0)
@@ -439,7 +508,7 @@ internal class EncryptedLogRecordStore(
     ): LogRecordCursor? {
         for (index in start until files.size) {
             val cursor =
-                runCatching {
+                try {
                     RandomAccessFile(files[index], "r").use { input ->
                         val opened = manager.readHeader(input)
                         try {
@@ -448,7 +517,9 @@ internal class EncryptedLogRecordStore(
                             opened.destroy()
                         }
                     }
-                }.getOrNull()
+                } catch (_: Exception) {
+                    null
+                }
             if (cursor != null) return cursor
         }
         return null

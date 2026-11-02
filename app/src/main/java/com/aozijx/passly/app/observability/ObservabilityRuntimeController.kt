@@ -63,12 +63,23 @@ class ObservabilityRuntimeController
                 }
                 try {
                     val record = captureFatal(throwable)
-                    val flushed = runCatching { store.flush(CRASH_FLUSH_TIMEOUT_MS) }.getOrDefault(false)
+                    val flushed =
+                        try {
+                            store.flush(CRASH_FLUSH_TIMEOUT_MS)
+                        } catch (diagnosticFailure: Throwable) {
+                            addDiagnosticFailure(throwable, diagnosticFailure)
+                            false
+                        }
                     if (!flushed && record != null) {
-                        runCatching { store.crashEmergencyWrite(record, CRASH_EMERGENCY_TIMEOUT_MS) }
+                        try {
+                            store.crashEmergencyWrite(record, CRASH_EMERGENCY_TIMEOUT_MS)
+                        } catch (diagnosticFailure: Throwable) {
+                            addDiagnosticFailure(throwable, diagnosticFailure)
+                        }
                     }
-                } catch (_: Throwable) {
+                } catch (diagnosticFailure: Throwable) {
                     // Crash diagnostics must never replace the original failure.
+                    addDiagnosticFailure(throwable, diagnosticFailure)
                 } finally {
                     delegateCrash(thread, throwable)
                 }
@@ -94,21 +105,24 @@ class ObservabilityRuntimeController
         fun flush(timeoutMs: Long = LIFECYCLE_FLUSH_TIMEOUT_MS): Boolean {
             eventAggregator.flush()
             val startedAt = System.nanoTime()
-            if (!runCatching { store.flush(timeoutMs) }.getOrDefault(false)) return false
+            if (!flushStore(timeoutMs)) return false
             val dropped = store.drainDroppedCounts()
             if (dropped.total == 0L) return true
             val summaryRecorded =
-                runCatching {
+                try {
                     runBlocking {
                         logger.withRootTrace(Operations.ApplicationLifecycle) {
                             logger.log(LogStatements.Application.logOverflow(dropped))
                         }
                     }
-                }.isSuccess
+                    true
+                } catch (_: Exception) {
+                    false
+                }
             if (!summaryRecorded) return false
             val elapsedMs = (System.nanoTime() - startedAt) / NANOS_PER_MILLISECOND
             val remainingMs = (timeoutMs - elapsedMs).coerceAtLeast(0)
-            return runCatching { store.flush(remainingMs) }.getOrDefault(false)
+            return flushStore(remainingMs)
         }
 
         override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> =
@@ -143,9 +157,41 @@ class ObservabilityRuntimeController
             if (!shutdown.compareAndSet(false, true)) return
             settingsJob?.cancel()
             settingsScope.cancel()
-            runCatching { flush(LIFECYCLE_FLUSH_TIMEOUT_MS) }
-            if (crashHandlers.current() === crashHandler) crashHandlers.install(previousCrashHandler)
-            runCatching { store.close() }
+            var failure: Throwable? = null
+
+            fun attemptCleanup(action: () -> Unit) {
+                try {
+                    action()
+                } catch (cleanupFailure: Throwable) {
+                    val current = failure
+                    failure =
+                        when {
+                            cleanupFailure is Error && current !is Error -> {
+                                current?.let { if (it !== cleanupFailure) cleanupFailure.addSuppressed(it) }
+                                cleanupFailure
+                            }
+
+                            current == null -> {
+                                cleanupFailure
+                            }
+
+                            current !== cleanupFailure -> {
+                                current.addSuppressed(cleanupFailure)
+                                current
+                            }
+
+                            else -> {
+                                current
+                            }
+                        }
+                }
+            }
+            attemptCleanup { flush(LIFECYCLE_FLUSH_TIMEOUT_MS) }
+            attemptCleanup {
+                if (crashHandlers.current() === crashHandler) crashHandlers.install(previousCrashHandler)
+            }
+            attemptCleanup { store.close() }
+            (failure as? Error)?.let { throw it }
         }
 
         internal fun readRecords(limit: Int): List<com.aozijx.passly.core.observability.SanitizedLogRecord> {
@@ -160,7 +206,7 @@ class ObservabilityRuntimeController
         }
 
         private fun recordPreviousExit(exit: PreviousExit) {
-            runCatching {
+            try {
                 runBlocking {
                     logger.withRootTrace(Operations.ApplicationStartup) {
                         logger.log(
@@ -174,19 +220,37 @@ class ObservabilityRuntimeController
                         )
                     }
                 }
+            } catch (_: Exception) {
+                // A previous-process summary is best-effort; fatal Errors remain visible.
             }
         }
 
         private fun captureFatal(throwable: Throwable): com.aozijx.passly.core.observability.SanitizedLogRecord? {
             crashCapture.clear()
-            runCatching {
+            try {
                 runBlocking {
                     logger.withRootTrace(Operations.ApplicationLifecycle) {
                         logger.log(LogStatements.Application.unhandledException(throwable))
                     }
                 }
+            } catch (loggingFailure: Throwable) {
+                addDiagnosticFailure(throwable, loggingFailure)
             }
             return crashCapture.take()
+        }
+
+        private fun flushStore(timeoutMs: Long): Boolean =
+            try {
+                store.flush(timeoutMs)
+            } catch (_: Exception) {
+                false
+            }
+
+        private fun addDiagnosticFailure(
+            original: Throwable,
+            diagnosticFailure: Throwable,
+        ) {
+            if (diagnosticFailure !== original) original.addSuppressed(diagnosticFailure)
         }
 
         private fun delegateCrash(

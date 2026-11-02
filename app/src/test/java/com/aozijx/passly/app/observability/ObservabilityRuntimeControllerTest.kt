@@ -99,6 +99,64 @@ class ObservabilityRuntimeControllerTest {
     }
 
     @Test
+    fun `crash diagnostics failure stays suppressed under original crash`() {
+        val store = RecordingStore(flushResult = true)
+        val diagnosticFailure = AssertionError("diagnostic flush fatal")
+        store.flushFailure = diagnosticFailure
+        var delegated: Throwable? = null
+        val registry =
+            RecordingCrashHandlerRegistry(
+                previous = Thread.UncaughtExceptionHandler { _, error -> delegated = error },
+            )
+        val controller = controller(store, noPreviousExit, registry)
+        controller.start()
+        val original = IllegalStateException("original crash")
+
+        registry.current!!.uncaughtException(Thread.currentThread(), original)
+
+        assertSame(original, delegated)
+        assertTrue(original.suppressed.contains(diagnosticFailure))
+        assertEquals(listOf(200L), store.emergencyTimeouts)
+    }
+
+    @Test
+    fun `lifecycle flush propagates fatal storage error`() {
+        val store = RecordingStore().apply { flushFailure = AssertionError("flush fatal") }
+        val controller = controller(store, noPreviousExit, RecordingCrashHandlerRegistry())
+
+        val thrown =
+            try {
+                controller.flush()
+                null
+            } catch (failure: AssertionError) {
+                failure
+            }
+
+        assertEquals("flush fatal", thrown?.message)
+    }
+
+    @Test
+    fun `shutdown propagates fatal close error after restoring crash handler`() {
+        val fatal = AssertionError("close fatal")
+        val store = RecordingStore().apply { closeFailure = fatal }
+        val previous = Thread.UncaughtExceptionHandler { _, _ -> }
+        val registry = RecordingCrashHandlerRegistry(previous = previous)
+        val controller = controller(store, noPreviousExit, registry)
+        controller.start()
+
+        val thrown =
+            try {
+                controller.shutdown()
+                null
+            } catch (failure: AssertionError) {
+                failure
+            }
+
+        assertSame(fatal, thrown)
+        assertSame(previous, registry.current)
+    }
+
+    @Test
     fun `reentrant crash delegates without a second fatal or emergency write`() {
         val store = RecordingStore(flushResult = false)
         var delegated = 0
@@ -260,6 +318,9 @@ class ObservabilityRuntimeControllerTest {
         var closeCalls = 0
         var onFlush: () -> Unit = {}
         var dropped = LogDropCounts()
+        var flushFailure: Throwable? = null
+        var emergencyFailure: Throwable? = null
+        var closeFailure: Throwable? = null
 
         override fun write(record: SanitizedLogRecord) {
             records += record
@@ -285,6 +346,7 @@ class ObservabilityRuntimeControllerTest {
         override fun flush(timeoutMs: Long): Boolean {
             flushTimeouts += timeoutMs
             onFlush()
+            flushFailure?.let { throw it }
             return flushResult
         }
 
@@ -295,11 +357,13 @@ class ObservabilityRuntimeControllerTest {
             timeoutMs: Long,
         ): Boolean {
             emergencyTimeouts += timeoutMs
+            emergencyFailure?.let { throw it }
             return true
         }
 
         override fun close() {
             closeCalls++
+            closeFailure?.let { throw it }
         }
     }
 }

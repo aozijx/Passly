@@ -20,6 +20,7 @@ import com.aozijx.passly.core.observability.sink.LogDropCounts
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.file.Files
+import java.security.SecureRandom
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -98,6 +99,108 @@ class EncryptedLogRecordStoreTest {
         overwriteSequence(file, recordIndex = 1, sequence = 7)
 
         assertThrows(IllegalArgumentException::class.java) { store.readPage(null, 10) }
+        store.close()
+    }
+
+    @Test
+    fun `fatal key unwrap error in next page file propagates`() {
+        val wrapper = TestKeyWrapper()
+        val store = newStore(wrapper = wrapper)
+        store.write(sampleRecord(1))
+        assertTrue(store.flush(2_000))
+        now += EncryptedLogFileManager.ONE_DAY_MS
+        store.write(sampleRecord(2))
+        assertTrue(store.flush(2_000))
+        wrapper.failOnUnwrapCall = wrapper.unwrapCalls + 2
+        wrapper.unwrapFailure = AssertionError("fatal unwrap failure")
+
+        assertThrows(AssertionError::class.java) { store.readPage(null, 1) }
+
+        store.close()
+    }
+
+    @Test
+    fun `ordinary next page key unwrap failure remains a skipped corrupt file`() {
+        val wrapper = TestKeyWrapper()
+        val store = newStore(wrapper = wrapper)
+        store.write(sampleRecord(1))
+        assertTrue(store.flush(2_000))
+        now += EncryptedLogFileManager.ONE_DAY_MS
+        store.write(sampleRecord(2))
+        assertTrue(store.flush(2_000))
+        wrapper.failOnUnwrapCall = wrapper.unwrapCalls + 2
+        wrapper.unwrapFailure = IllegalStateException("key wrapper rejected record")
+
+        val page = store.readPage(null, 1)
+
+        assertEquals(listOf(EventId("event_00000001")), page.records.map { it.eventId })
+        assertEquals(null, page.nextCursor)
+        store.close()
+    }
+
+    @Test
+    fun `record counting treats a truncated file as corrupt`() {
+        val file = File(directory, "truncated.log").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        val manager =
+            EncryptedLogFileManager(
+                directory = directory,
+                keyWrapper = TestKeyWrapper(),
+                random = SecureRandom(),
+                nowMs = { now },
+                maxFileBytes = 1024 * 1024,
+            )
+
+        assertEquals(0, manager.countRecords(file))
+
+        manager.close()
+    }
+
+    @Test
+    fun `emergency write cleans temporary data before worker fatal reaches uncaught handler`() {
+        val fatal = AssertionError("emergency nonce failure")
+        val randomCalls = AtomicReference(0)
+        val random =
+            object : SecureRandom() {
+                override fun nextBytes(bytes: ByteArray) {
+                    if (randomCalls.getAndUpdate { it + 1 } == 2) throw fatal
+                    bytes.fill(7)
+                }
+            }
+        val wrapper = TestKeyWrapper()
+        val uncaught = AtomicReference<Throwable?>()
+        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, failure -> uncaught.set(failure) }
+        try {
+            val store = newStore(wrapper = wrapper, random = random)
+
+            assertFalse(store.crashEmergencyWrite(sampleRecord(1), 2_000))
+
+            assertTrue(uncaught.get() === fatal)
+            assertTrue(wrapper.lastWrappedDataKey!!.all { it == 0.toByte() })
+            assertTrue(directory.listFiles()!!.none { it.extension == "tmp" })
+            store.close()
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(originalHandler)
+        }
+    }
+
+    @Test
+    fun `emergency write keeps ordinary failures best effort and wipes key`() {
+        val randomCalls = AtomicReference(0)
+        val random =
+            object : SecureRandom() {
+                override fun nextBytes(bytes: ByteArray) {
+                    if (randomCalls.getAndUpdate { it + 1 } == 2) throw IllegalStateException("nonce unavailable")
+                    bytes.fill(7)
+                }
+            }
+        val wrapper = TestKeyWrapper()
+        val store = newStore(wrapper = wrapper, random = random)
+
+        assertFalse(store.crashEmergencyWrite(sampleRecord(1), 2_000))
+
+        assertTrue(wrapper.lastWrappedDataKey!!.all { it == 0.toByte() })
+        assertTrue(directory.listFiles()!!.none { it.extension == "tmp" })
         store.close()
     }
 
@@ -382,6 +485,7 @@ class EncryptedLogRecordStoreTest {
 
     private fun newStore(
         wrapper: TestKeyWrapper = TestKeyWrapper(),
+        random: SecureRandom = SecureRandom(),
         maxFileBytes: Long = 1024 * 1024,
         maxTotalBytes: Long = 3 * 1024 * 1024,
         maxQueuedRecords: Int = 256,
@@ -391,6 +495,7 @@ class EncryptedLogRecordStoreTest {
         directory = directory,
         keyWrapper = wrapper,
         nowMs = { now },
+        random = random,
         maxFileBytes = maxFileBytes,
         maxTotalBytes = maxTotalBytes,
         maxQueuedRecords = maxQueuedRecords,
@@ -447,17 +552,24 @@ class EncryptedLogRecordStoreTest {
     private class TestKeyWrapper : LogKeyWrapper {
         private val key = SecretKeySpec(ByteArray(32) { 7 }, "AES")
         var unwrapCalls = 0
+        var failOnUnwrapCall: Int? = null
+        var unwrapFailure: Throwable? = null
+        var lastWrappedDataKey: ByteArray? = null
 
         override fun wrap(
             dataKey: ByteArray,
             aad: ByteArray,
-        ): WrappedLogKey = AesGcmKeyWrapping.wrap(key, dataKey, aad)
+        ): WrappedLogKey {
+            lastWrappedDataKey = dataKey
+            return AesGcmKeyWrapping.wrap(key, dataKey, aad)
+        }
 
         override fun unwrap(
             wrapped: WrappedLogKey,
             aad: ByteArray,
         ): ByteArray {
             unwrapCalls++
+            if (unwrapCalls == failOnUnwrapCall) throw requireNotNull(unwrapFailure)
             return AesGcmKeyWrapping.unwrap(key, wrapped, aad)
         }
     }

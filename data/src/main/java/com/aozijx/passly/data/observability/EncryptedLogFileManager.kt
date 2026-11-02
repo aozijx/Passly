@@ -9,6 +9,7 @@ import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.security.KeyStore
 import java.security.SecureRandom
+import java.util.concurrent.CancellationException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -151,7 +152,26 @@ internal class EncryptedLogFileManager(
             try {
                 prepareEntry(file, now).also { writeHeader(file, it) }
             } catch (error: Throwable) {
-                file.delete()
+                try {
+                    file.delete()
+                } catch (cleanupFailure: Throwable) {
+                    when {
+                        cleanupFailure is Error && error !is Error -> {
+                            cleanupFailure.addSuppressed(error)
+                            throw cleanupFailure
+                        }
+
+                        cleanupFailure is CancellationException &&
+                            error !is Error && error !is CancellationException -> {
+                            cleanupFailure.addSuppressed(error)
+                            throw cleanupFailure
+                        }
+
+                        cleanupFailure !== error -> {
+                            error.addSuppressed(cleanupFailure)
+                        }
+                    }
+                }
                 throw error
             }
         activeEntry?.destroy()
@@ -240,7 +260,7 @@ internal class EncryptedLogFileManager(
             .orEmpty()
 
     fun countRecords(file: File): Int =
-        runCatching {
+        try {
             DataInputStream(FileInputStream(file).buffered()).use { input ->
                 skipHeader(input)
                 var count = 0
@@ -254,26 +274,46 @@ internal class EncryptedLogFileManager(
                 }
                 count
             }
-        }.getOrDefault(0)
+        } catch (_: Exception) {
+            0
+        }
 
     fun cleanup() {
         val cutoff = nowMs() - RETENTION_MS
         val activeFile = activeEntry?.file?.canonicalFile
         listLogFiles()
             .filter { it.canonicalFile != activeFile && it.lastModified() < cutoff }
-            .forEach { runCatching { it.delete() } }
+            .forEach { file ->
+                try {
+                    file.delete()
+                } catch (_: Exception) {
+                    // Retention is best-effort for ordinary filesystem failures.
+                }
+            }
         val files = listLogFiles()
         val excessCount = (files.size - maxFiles).coerceAtLeast(0)
         files
             .filter { it.canonicalFile != activeFile }
             .sortedWith(compareBy(File::lastModified, File::getName))
             .take(excessCount)
-            .forEach { runCatching { it.delete() } }
+            .forEach { file ->
+                try {
+                    file.delete()
+                } catch (_: Exception) {
+                    // Retention is best-effort for ordinary filesystem failures.
+                }
+            }
         var total = listLogFiles().sumOf(File::length)
         listLogFiles().filter { it.canonicalFile != activeFile }.forEach { file ->
             if (total > maxTotalBytes) {
                 val length = file.length()
-                if (runCatching { file.delete() }.getOrDefault(false)) total -= length
+                val deleted =
+                    try {
+                        file.delete()
+                    } catch (_: Exception) {
+                        false
+                    }
+                if (deleted) total -= length
             }
         }
     }

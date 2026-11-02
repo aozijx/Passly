@@ -257,6 +257,226 @@ class ObservabilityExportServiceTest {
         }
 
     @Test
+    fun `fatal read failure propagates instead of becoming an export result`() =
+        runTest {
+            val fatal = AssertionError("log reader fatal")
+            val files = RecordingExportStorageGateway(cacheDirectory)
+            val service = service(PageStore(emptyList(), readFailure = fatal), files)
+
+            val thrown =
+                try {
+                    service.export(TestPermit, shareRequest())
+                    null
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
+            assertEquals(null, files.target)
+        }
+
+    @Test
+    fun `ordinary read failure remains an export result`() =
+        runTest {
+            val failure = IllegalStateException("log reader unavailable")
+            val files = RecordingExportStorageGateway(cacheDirectory)
+            val service = service(PageStore(emptyList(), readFailure = failure), files)
+
+            val result = service.export(TestPermit, shareRequest())
+
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() === failure)
+            assertEquals(null, files.target)
+        }
+
+    @Test
+    fun `fatal share exception propagates after plaintext file cleanup`() =
+        runTest {
+            val fatal = AssertionError("share fatal")
+            val files = RecordingExportStorageGateway(cacheDirectory, shareException = fatal)
+            val service = service(PageStore(emptyList()), files)
+
+            val thrown =
+                try {
+                    service.export(TestPermit, shareRequest())
+                    null
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
+            assertFalse(files.target!!.exists())
+        }
+
+    @Test
+    fun `fatal share result propagates after plaintext file cleanup`() =
+        runTest {
+            val fatal = AssertionError("share result fatal")
+            val files = RecordingExportStorageGateway(cacheDirectory, shareResultFailure = fatal)
+            val service = service(PageStore(emptyList()), files)
+
+            val thrown =
+                try {
+                    service.export(TestPermit, shareRequest())
+                    null
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
+            assertFalse(files.target!!.exists())
+        }
+
+    @Test
+    fun `fatal schedule deletion failure propagates and leaves shared export for retention sweep`() =
+        runTest {
+            val fatal = AssertionError("schedule deletion fatal")
+            val files = RecordingExportStorageGateway(cacheDirectory, scheduleDeletionFailure = fatal)
+            val service = service(PageStore(emptyList()), files)
+
+            val thrown =
+                try {
+                    service.export(TestPermit, shareRequest())
+                    null
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
+            assertTrue(files.target!!.exists())
+        }
+
+    @Test
+    fun `schedule deletion cancellation propagates without removing already shared file`() =
+        runTest {
+            val cancelled = CancellationException("schedule deletion cancelled")
+            val files = RecordingExportStorageGateway(cacheDirectory, scheduleDeletionFailure = cancelled)
+            val service = service(PageStore(emptyList()), files)
+
+            val thrown =
+                try {
+                    service.export(TestPermit, shareRequest())
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(files.target!!.exists())
+        }
+
+    @Test
+    fun `fatal document write failure propagates after target deletion`() =
+        runTest {
+            val fatal = AssertionError("document write fatal")
+            val files = RecordingExportStorageGateway(cacheDirectory, documentWriteException = fatal)
+            val service = service(PageStore(emptyList()), files)
+
+            val thrown =
+                try {
+                    service.export(
+                        TestPermit,
+                        DiagnosticsExportRequest(
+                            ExportAction.EXPORT_LOCAL,
+                            LogFormat.JSONL,
+                            "content://documents/log.jsonl",
+                        ),
+                    )
+                    null
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
+            assertTrue(files.documentDeleted)
+        }
+
+    @Test
+    fun `fatal document cleanup failure takes priority over ordinary write failure`() =
+        runTest {
+            val writeFailure = IllegalStateException("document write failed")
+            val cleanupFatal = AssertionError("document delete fatal")
+            val files =
+                RecordingExportStorageGateway(
+                    cacheDirectory,
+                    documentWriteException = writeFailure,
+                    documentDeleteFailure = cleanupFatal,
+                )
+            val service = service(PageStore(emptyList()), files)
+
+            val thrown =
+                try {
+                    service.export(
+                        TestPermit,
+                        DiagnosticsExportRequest(
+                            ExportAction.EXPORT_LOCAL,
+                            LogFormat.JSONL,
+                            "content://documents/log.jsonl",
+                        ),
+                    )
+                    null
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertTrue(thrown is AssertionError)
+            assertEquals(cleanupFatal.message, thrown?.message)
+            assertTrue(cleanupFatal.suppressed.contains(writeFailure))
+            assertTrue(files.documentDeleted)
+        }
+
+    @Test
+    fun `ordinary document cleanup failure is suppressed on ordinary write failure`() =
+        runTest {
+            val writeFailure = IllegalStateException("document write failed")
+            val cleanupFailure = IllegalStateException("document delete unavailable")
+            val files =
+                RecordingExportStorageGateway(
+                    cacheDirectory,
+                    documentWriteException = writeFailure,
+                    documentDeleteFailure = cleanupFailure,
+                )
+            val service = service(PageStore(emptyList()), files)
+
+            val result =
+                service.export(
+                    TestPermit,
+                    DiagnosticsExportRequest(
+                        ExportAction.EXPORT_LOCAL,
+                        LogFormat.JSONL,
+                        "content://documents/log.jsonl",
+                    ),
+                )
+
+            assertTrue(result.exceptionOrNull() === writeFailure)
+            assertTrue(writeFailure.suppressed.contains(cleanupFailure))
+            assertTrue(files.documentDeleted)
+        }
+
+    @Test
+    fun `ordinary share cleanup failure stays a failed export and remains suppressed`() =
+        runTest {
+            val cleanupFailure = IllegalStateException("temporary file delete unavailable")
+            val files =
+                RecordingExportStorageGateway(
+                    cacheDirectory,
+                    shareFailure = true,
+                    fileDeleteFailure = cleanupFailure,
+                )
+            val service = service(PageStore(emptyList()), files)
+
+            val result = service.export(TestPermit, shareRequest())
+
+            assertEquals("share failed", result.exceptionOrNull()?.message)
+            assertTrue(result.exceptionOrNull()!!.suppressed.contains(cleanupFailure))
+        }
+
+    @Test
     fun `coroutine cancellation during record flush stops before export`() =
         runTest {
             var exportJob: Job? = null
@@ -464,6 +684,9 @@ class ObservabilityExportServiceTest {
         private val scheduleDeletionFailure: Throwable? = null,
         private val scheduleDeletionAccepted: Boolean = true,
         private val documentWriteException: Throwable? = null,
+        private val documentDeleteFailure: Throwable? = null,
+        private val shareResultFailure: Throwable? = null,
+        private val fileDeleteFailure: Throwable? = null,
         private val afterCreateFile: (() -> Unit)? = null,
     ) : DiagnosticsExportStorageGateway {
         var target: File? = null
@@ -501,6 +724,7 @@ class ObservabilityExportServiceTest {
             sharedMimeType = mimeType
             sharedBytes = file.readBytes()
             sharedText = sharedBytes!!.toString(Charsets.UTF_8)
+            shareResultFailure?.let { return Result.failure(it) }
             return if (shareFailure) Result.failure(IllegalStateException("share failed")) else Result.success(Unit)
         }
 
@@ -512,6 +736,7 @@ class ObservabilityExportServiceTest {
         }
 
         override fun delete(file: File) {
+            fileDeleteFailure?.let { throw it }
             file.delete()
         }
 
@@ -540,6 +765,7 @@ class ObservabilityExportServiceTest {
 
         override fun deleteDocument(uri: String) {
             documentDeleted = true
+            documentDeleteFailure?.let { throw it }
         }
     }
 

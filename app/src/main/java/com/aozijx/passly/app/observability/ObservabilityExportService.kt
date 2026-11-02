@@ -84,7 +84,7 @@ class ObservabilityExportService
                             )
                     } catch (cancelled: CancellationException) {
                         throw cancelled
-                    } catch (failure: Throwable) {
+                    } catch (failure: Exception) {
                         return@withContext Result.failure(failure)
                     }
                 currentCoroutineContext().ensureActive()
@@ -114,6 +114,7 @@ class ObservabilityExportService
             format: LogFormat,
         ): Result<Unit> {
             var exportFile: File? = null
+            var sharedSuccessfully = false
             return try {
                 currentCoroutineContext().ensureActive()
                 storage.clearStaleExports()
@@ -127,18 +128,29 @@ class ObservabilityExportService
                 if (shareFailure != null) {
                     if (shareFailure is CancellationException) throw shareFailure
                     deleteExportFile(exportFile, shareFailure)
+                    if (shareFailure is Error) throw shareFailure
                     Result.failure(shareFailure)
                 } else {
+                    sharedSuccessfully = true
                     // Sharing already succeeded. If delayed cleanup cannot be scheduled, leave the
                     // file for the age-based sweep instead of invalidating the recipient's URI.
-                    runCatching { storage.scheduleDeletion(exportFile) }
+                    try {
+                        storage.scheduleDeletion(exportFile)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        // The retention sweep owns cleanup when delayed deletion is unavailable.
+                    }
                     Result.success(Unit)
                 }
             } catch (cancelled: CancellationException) {
-                exportFile?.let { deleteExportFile(it, cancelled) }
+                if (!sharedSuccessfully) exportFile?.let { deleteExportFile(it, cancelled) }
                 throw cancelled
+            } catch (fatal: Error) {
+                if (!sharedSuccessfully) exportFile?.let { deleteExportFile(it, fatal) }
+                throw fatal
             } catch (failure: Exception) {
-                exportFile?.let { deleteExportFile(it, failure) }
+                if (!sharedSuccessfully) exportFile?.let { deleteExportFile(it, failure) }
                 Result.failure(failure)
             }
         }
@@ -158,31 +170,26 @@ class ObservabilityExportService
             } catch (cancelled: CancellationException) {
                 deleteDocumentAfterFailure(uri, cancelled)
                 throw cancelled
-            } catch (failure: Throwable) {
+            } catch (failure: Exception) {
                 deleteDocumentAfterFailure(uri, failure)
                 Result.failure(failure)
+            } catch (fatal: Error) {
+                deleteDocumentAfterFailure(uri, fatal)
+                throw fatal
             }
 
         private fun deleteExportFile(
             file: File,
             failure: Throwable,
         ) {
-            try {
-                storage.delete(file)
-            } catch (cleanupFailure: Throwable) {
-                if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
-            }
+            runCleanupPreservingFailure(failure) { storage.delete(file) }
         }
 
         private fun deleteDocumentAfterFailure(
             uri: String,
             failure: Throwable,
         ) {
-            try {
-                storage.deleteDocument(uri)
-            } catch (cleanupFailure: Throwable) {
-                if (cleanupFailure !== failure) failure.addSuppressed(cleanupFailure)
-            }
+            runCleanupPreservingFailure(failure) { storage.deleteDocument(uri) }
         }
 
         private fun writeExport(
@@ -217,6 +224,31 @@ class ObservabilityExportService
         }
     }
 
+private inline fun runCleanupPreservingFailure(
+    failure: Throwable,
+    cleanup: () -> Unit,
+) {
+    try {
+        cleanup()
+    } catch (cleanupFailure: Throwable) {
+        when {
+            cleanupFailure is Error && failure !is Error -> {
+                cleanupFailure.addSuppressed(failure)
+                throw cleanupFailure
+            }
+
+            cleanupFailure is CancellationException && failure !is Error && failure !is CancellationException -> {
+                cleanupFailure.addSuppressed(failure)
+                throw cleanupFailure
+            }
+
+            cleanupFailure !== failure -> {
+                failure.addSuppressed(cleanupFailure)
+            }
+        }
+    }
+}
+
 internal class AndroidDiagnosticsExportStorageGateway
     @Inject
     constructor(
@@ -240,7 +272,7 @@ internal class AndroidDiagnosticsExportStorageGateway
             file: File,
             mimeType: String,
         ): Result<Unit> =
-            runCatching {
+            try {
                 require(file.isFile && file.canonicalFile.parentFile == context.cacheDir.canonicalFile)
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent =
@@ -255,6 +287,9 @@ internal class AndroidDiagnosticsExportStorageGateway
                             null,
                         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
+                Result.success(Unit)
+            } catch (failure: Exception) {
+                Result.failure(failure)
             }
 
         override fun scheduleDeletion(file: File): Boolean = Handler(Looper.getMainLooper()).postDelayed({ file.delete() }, DELETE_DELAY_MS)
@@ -271,7 +306,11 @@ internal class AndroidDiagnosticsExportStorageGateway
         }
 
         override fun deleteDocument(uri: String) {
-            runCatching { DocumentsContract.deleteDocument(context.contentResolver, Uri.parse(uri)) }
+            try {
+                DocumentsContract.deleteDocument(context.contentResolver, Uri.parse(uri))
+            } catch (_: Exception) {
+                // Document compensation is best-effort; fatal Errors still reach the caller.
+            }
         }
 
         private companion object {

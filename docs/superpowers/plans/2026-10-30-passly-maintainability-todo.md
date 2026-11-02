@@ -368,14 +368,16 @@
 
 ## Task 60：诊断日志存储与导出的 best-effort 边界不得吞掉 fatal Error
 
-- [ ] 逐项缩窄 diagnostics storage 中 `runCatching`/`catch(Throwable)` 的边界。`EncryptedLogRecordStore.nextFileCursor()` 把逐文件 header/unwrap 的任意异常都当成损坏文件并静默跳过；`EncryptedLogFileManager.countRecords()` 同样把所有 `Throwable` 映射成 0 条；`EncryptedLogRecordStore.launchEmergencyWrite()` 捕获任意 `Throwable` 后只清理临时文件、明文和 key entry，却不再传播 fatal `Error`。保留损坏文件/IO 普通 `Exception` 的尽力读取语义，fatal `Error` 必须在完成临时资源清理后传播。
-- [ ] 收窄 App 层 diagnostics export 的 fatal 映射：`ObservabilityExportService.export()` 把读取记录阶段任意 `Throwable` 包成 `Result.failure`；`exportToDocument()` 会先删除目标 URI 再把任意 `Throwable` 作为普通失败返回；Android `share()` 和成功分享后的 `scheduleDeletion` 也通过 `runCatching` 吞错。区分可恢复 Exception 与 fatal Error，执行必要文件/文档清理后仍传播 fatal，普通分享/SAF 失败继续遵守现有 Result 与留存合同。
-- [ ] 核查日志文件过期/容量删除中的 `runCatching { file.delete() }`、写入回滚、worker、crash fallback 与 flush/close join 的捕获目的：只吞掉合同明确允许失败的普通异常；回滚/临时文件/数据密钥清理失败按主错与清理错优先级处理，不能让 cleanup fatal 覆盖原始错误，也不能让普通日志 I/O 错误递归写日志。
-- [ ] 为 store 分页跨文件 cursor 注入 `LogKeyWrapper.unwrap()` fatal Error，验证 `nextFileCursor()` 不会把它伪装为“没有下一页”；为 emergency writer 覆盖普通 I/O 异常后的 key wipe/temp deletion 与 fatal Error 清理后传播。为 export/read/share/SAF/document deletion/scheduled cleanup 注入普通异常、取消与 fatal Error，断言调用方结果、目标文档补偿与临时文件清理。另覆盖 corrupt/truncated file、普通 unwrap exception 仍按既有损坏文件语义跳过；运行 observability store/export 定向测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 逐项缩窄 diagnostics storage 中 `runCatching`/`catch(Throwable)` 的边界。`nextFileCursor()` 和 `countRecords()` 将普通损坏/IO/unwrap `Exception` 保留为 best-effort 跳过或 0 条，fatal `Error` 传播；emergency writer 在 fatal 传播前完成临时文件、明文、key entry 和线程登记清理。
+- [x] 收窄 App 层 diagnostics export 的 fatal 映射：普通读取/分享/SAF `Exception` 保留 `Result.failure`；fatal `Error` 清理必要临时文件/目标文档后传播。成功分享后的延迟删除普通失败留给 retention sweep，取消/fatal 传播时保留接收方正在读取的已分享 URI。
+- [x] 核查日志文件过期/容量删除、写入回滚、worker、crash fallback 与 flush/close join 的捕获目的。队列重试只捕获 `RejectedExecutionException`；同步文件 join 只消费 `InterruptedException` 并恢复中断标记；普通 I/O 不递归写日志；清理 fatal 优先于普通失败，原始 fatal 保持主错。Crash diagnostics 的次级失败以 suppressed 附到原始崩溃并仍委托原 handler。
+- [x] 为跨文件 unwrap、损坏/截断记录、emergency 普通失败和 fatal 清理、导出读取/分享/调度/SAF 写入与删除的普通异常、取消及 fatal `Error` 增加行为覆盖，验证 Result/传播、目标补偿、临时文件和密钥清理合同。`:data` 与 `:app` observability 定向测试、KtLint、`verifyArchitecture` 和 `git diff --check` 均通过，Gradle 使用 `--max-workers=32`。
 
 **证据：** `EncryptedLogRecordStore.readPageLocked()` 在一页正好读满且仍有后续文件时会调用 `nextFileCursor()`；该函数包裹 `manager.readHeader()` 的 `runCatching(...).getOrNull()` 会把由 `LogKeyWrapper.unwrap()` 抛出的 `AssertionError` 等 fatal 错误也静默转成无 cursor，调用方将页尾误认为整个日志结束。`EncryptedLogFileManager.countRecords()` 的 `runCatching(...).getOrDefault(0)` 同样不区分截断/IO 异常与 fatal Error。`launchEmergencyWrite()` 的 worker 在 `catch(Throwable)` 注释中说明不应让日志替换原始失败，但其 `finally` 已负责删除未完成 staging file、擦除 plain buffer、销毁 entry 并移除线程；当前 catch 没有在清理后重抛 fatal。现有 `EncryptedLogRecordStoreTest` 覆盖 AEAD 篡改、序号错误、分页/轮转与应急记录常规行为，没有 key wrapper fatal/corrupt-next-file paging 或 emergency fatal cleanup 测试。该项限定在日志 best-effort 边界，不改变一般日志失败不能递归记录的合同。
 
 **新增导出证据：** `ObservabilityExportService.export()` 的 `readRecords()` catch 将任意 `Throwable` 装入 `Result.failure`；`exportToDocument()` 在 `deleteDocumentAfterFailure()` 后也一律返回 `Result.failure`，因此 fatal Error 未沿调用栈传播。分享路径的 `AndroidDiagnosticsExportStorageGateway.share()` 使用 `runCatching`，fatal 会变成普通 `exceptionOrNull()`，随后文件清理并返回普通失败；延迟删除调度的 `runCatching` 甚至可能在 fatal 时仍返回 `Result.success(Unit)`。现有 `ObservabilityExportServiceTest` 需确认对这些错误类别、敏感记录/输出清理与 SAF 删除结果的覆盖；本轮未运行测试。
+
+**Task 60 实施记录（2026-11-02）：** 读取跨文件 cursor、计数和 emergency writer 已改为区分普通 `Exception` 与 fatal `Error`；cleanup fatal 不覆盖更早的 fatal，普通 I/O 仍按既有 best-effort 规则处理且不递归记录。导出将普通失败留在 `Result`，取消继续传播，fatal 完成补偿后传播；成功分享后不会因延迟删除取消/fatal 删除已交付 URI 文件。crash/lifecycle runtime 的 best-effort 边界收窄，诊断子失败附加到原始崩溃原因，shutdown 完成 handler 恢复与 store close 后传播 fatal。测试先观察到跨文件 unwrap/emergency 与导出/flush/crash 的 fatal 行为回归，再修复；最终定向测试、KtLint、架构检查和 diff 检查通过。
 
 ## Task 61：为持久化权限请求历史定义稳定键
 
