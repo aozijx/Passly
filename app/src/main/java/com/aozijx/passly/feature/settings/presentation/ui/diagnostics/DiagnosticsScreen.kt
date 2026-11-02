@@ -113,26 +113,44 @@ internal fun DiagnosticsScreen(
                 }
             }
 
-            state.visibleLines.isEmpty() -> {
-                item { StatusText(stringResource(R.string.settings_log_empty)) }
-            }
-
             else -> {
-                items(state.visibleLines.size) { index ->
-                    val line = state.visibleLines[index]
-                    Text(
-                        text = line.text,
-                        fontFamily = FontFamily.Monospace,
-                        color = line.level.semanticColor(),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = {},
-                                    onLongClick = { selectedLine = line },
-                                ).padding(vertical = 6.dp),
-                    )
+                if (state.isRefreshFailed) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                stringResource(R.string.settings_log_refresh_failed),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            TextButton(onClick = { onAction(DiagnosticsAction.Refresh) }) {
+                                Text(stringResource(R.string.retry))
+                            }
+                        }
+                    }
+                }
+                if (state.visibleLines.isEmpty()) {
+                    if (!state.isRefreshFailed) {
+                        item { StatusText(stringResource(R.string.settings_log_empty)) }
+                    }
+                } else {
+                    items(state.visibleLines.size) { index ->
+                        val line = state.visibleLines[index]
+                        Text(
+                            text = line.text,
+                            fontFamily = FontFamily.Monospace,
+                            color = line.level.semanticColor(),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .combinedClickable(
+                                        onClick = {},
+                                        onLongClick = { selectedLine = line },
+                                    ).padding(vertical = 6.dp),
+                        )
+                    }
                 }
             }
         }
@@ -146,7 +164,10 @@ internal fun DiagnosticsScreen(
         )
     }
     if (state.isClearConfirmationVisible) {
-        ConfirmClearDialog(onAction)
+        ConfirmClearDialog(
+            isClearInProgress = state.isClearInProgress,
+            onAction = onAction,
+        )
     }
     selectedLine?.let { line ->
         CopyDialog(
@@ -251,14 +272,24 @@ private fun FormatOption(
 }
 
 @Composable
-private fun ConfirmClearDialog(onAction: (DiagnosticsAction) -> Unit) {
+private fun ConfirmClearDialog(
+    isClearInProgress: Boolean,
+    onAction: (DiagnosticsAction) -> Unit,
+) {
     AlertDialog(
         onDismissRequest = { onAction(DiagnosticsAction.DismissClear) },
         title = { Text(stringResource(R.string.settings_log_clear_action)) },
         text = { Text(stringResource(R.string.settings_log_clear_confirm_message)) },
         confirmButton = {
-            TextButton(onClick = { onAction(DiagnosticsAction.ConfirmClear) }) {
-                Text(stringResource(R.string.settings_log_clear_confirm_action))
+            TextButton(
+                enabled = !isClearInProgress,
+                onClick = { onAction(DiagnosticsAction.ConfirmClear) },
+            ) {
+                Text(
+                    stringResource(
+                        if (isClearInProgress) R.string.settings_log_clearing else R.string.settings_log_clear_confirm_action,
+                    ),
+                )
             }
         },
         dismissButton = {

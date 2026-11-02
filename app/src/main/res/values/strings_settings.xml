@@ -336,6 +336,8 @@
     <string name="settings_log_save_completed">日志已保存</string>
     <string name="settings_log_export_failed">日志导出失败，请重试</string>
     <string name="settings_log_loading">正在加载日志…</string>
+    <string name="settings_log_refresh_failed">无法加载日志，请重试</string>
+    <string name="settings_log_clearing">正在清理…</string>
     <string name="settings_log_management_title">日志管理</string>
     <string name="settings_log_view_title">查看日志</string>
     <string name="settings_log_view_subtitle">按所选等级加密保存在本机</string>

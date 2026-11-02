@@ -14,6 +14,8 @@ internal sealed interface DiagnosticsMutation {
 
     data object SessionRestricted : DiagnosticsMutation
 
+    data object RefreshFailed : DiagnosticsMutation
+
     data class LevelToggled(
         val level: LogLevel,
     ) : DiagnosticsMutation
@@ -38,6 +40,10 @@ internal sealed interface DiagnosticsMutation {
 
     data object ClearDismissed : DiagnosticsMutation
 
+    data object ClearStarted : DiagnosticsMutation
+
+    data object ClearFinished : DiagnosticsMutation
+
     data object LogsCleared : DiagnosticsMutation
 }
 
@@ -48,12 +54,13 @@ internal object DiagnosticsReducer {
     ): DiagnosticsUiState =
         when (mutation) {
             DiagnosticsMutation.Loading -> {
-                state.copy(isLoading = true, isSessionRestricted = false)
+                state.copy(isLoading = true, isRefreshFailed = false, isSessionRestricted = false)
             }
 
             is DiagnosticsMutation.LinesLoaded -> {
                 state.copy(
                     isLoading = false,
+                    isRefreshFailed = false,
                     isSessionRestricted = false,
                     retainedLines = mutation.lines,
                 )
@@ -62,9 +69,14 @@ internal object DiagnosticsReducer {
             DiagnosticsMutation.SessionRestricted -> {
                 state.copy(
                     isLoading = false,
+                    isRefreshFailed = false,
                     isSessionRestricted = true,
                     retainedLines = emptyList(),
                 )
+            }
+
+            DiagnosticsMutation.RefreshFailed -> {
+                state.copy(isLoading = false, isRefreshFailed = true)
             }
 
             is DiagnosticsMutation.LevelToggled -> {
@@ -104,9 +116,18 @@ internal object DiagnosticsReducer {
                 state.copy(isClearConfirmationVisible = false)
             }
 
+            DiagnosticsMutation.ClearStarted -> {
+                state.copy(isClearInProgress = true)
+            }
+
+            DiagnosticsMutation.ClearFinished -> {
+                state.copy(isClearInProgress = false)
+            }
+
             DiagnosticsMutation.LogsCleared -> {
                 state.copy(
                     retainedLines = emptyList(),
+                    isRefreshFailed = false,
                     isClearConfirmationVisible = false,
                 )
             }

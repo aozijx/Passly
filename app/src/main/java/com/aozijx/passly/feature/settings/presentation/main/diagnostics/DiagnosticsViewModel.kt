@@ -148,6 +148,12 @@ class DiagnosticsViewModel
                         if (pageEffects.isActive(pageOwner) && activeRefreshOwner === owner) {
                             mutate(DiagnosticsMutation.LinesLoaded(lines))
                         }
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        if (pageEffects.isActive(pageOwner) && activeRefreshOwner === owner) {
+                            mutate(DiagnosticsMutation.RefreshFailed)
+                        }
                     } finally {
                         if (activeRefreshOwner === owner) {
                             activeRefreshOwner = null
@@ -241,6 +247,9 @@ class DiagnosticsViewModel
                 pendingLocalDocument = null
                 mutate(DiagnosticsMutation.LocalExportConsumed)
             }
+            if (_uiState.value.isClearConfirmationVisible) {
+                mutate(DiagnosticsMutation.ClearDismissed)
+            }
             activeCopyOwner = null
             copyJob?.cancel()
             copyJob = null
@@ -251,35 +260,41 @@ class DiagnosticsViewModel
 
         private fun clearLogs() {
             val pageOwner = pageEffects.currentOwner ?: return
+            if (_uiState.value.isClearInProgress) return
+            mutate(DiagnosticsMutation.ClearStarted)
             viewModelScope.launch {
-                if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
-                    if (pageEffects.isActive(pageOwner)) {
-                        mutate(DiagnosticsMutation.SessionRestricted)
-                    }
-                    return@launch
-                }
-                refreshJob?.cancelAndJoin()
-                val result =
-                    try {
-                        logStore.clear()
-                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                        throw cancelled
-                    } catch (_: Exception) {
-                        LogClearResult.Failed
-                    }
-                when (result) {
-                    LogClearResult.Cleared -> {
-                        if (pageEffects.currentOwner != null) {
-                            mutate(DiagnosticsMutation.LogsCleared)
+                try {
+                    if (!secureSessionAccessState.hasFullSecureSessionAccess()) {
+                        if (pageEffects.isActive(pageOwner)) {
+                            mutate(DiagnosticsMutation.SessionRestricted)
                         }
+                        return@launch
                     }
+                    refreshJob?.cancelAndJoin()
+                    val result =
+                        try {
+                            logStore.clear()
+                        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            LogClearResult.Failed
+                        }
+                    when (result) {
+                        LogClearResult.Cleared -> {
+                            if (pageEffects.isActive(pageOwner)) {
+                                mutate(DiagnosticsMutation.LogsCleared)
+                            }
+                        }
 
-                    LogClearResult.Failed -> {
-                        if (pageEffects.currentOwner != null) {
-                            mutate(DiagnosticsMutation.ClearDismissed)
+                        LogClearResult.Failed -> {
+                            if (pageEffects.isActive(pageOwner)) {
+                                mutate(DiagnosticsMutation.ClearDismissed)
+                                offerEffect(pageOwner, DiagnosticsEffect.ClearFailed)
+                            }
                         }
-                        offerEffect(pageOwner, DiagnosticsEffect.ClearFailed)
                     }
+                } finally {
+                    mutate(DiagnosticsMutation.ClearFinished)
                 }
             }
         }

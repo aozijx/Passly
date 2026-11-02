@@ -7,7 +7,9 @@ import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 
 data class DiagnosticsUiState(
     val isLoading: Boolean = true,
+    val isRefreshFailed: Boolean = false,
     val isSessionRestricted: Boolean = false,
+    val isClearInProgress: Boolean = false,
     val retainedLines: List<DiagnosticsLogLine> = emptyList(),
     val selectedLevels: Set<LogLevel> = DEFAULT_VISIBLE_LEVELS,
     val searchQuery: String = "",

@@ -457,11 +457,13 @@
 
 ## Task 69：让 Diagnostics 刷新失败可见并绑定清理任务到页面 owner
 
-- [ ] 为 `DiagnosticsViewModel.refresh()` 的 `logStore.readLines()` 普通异常定义可见失败状态和重试路径。当前异常只经过 `finally` 清理 job 所有权，`DiagnosticsReducer.Loading` 没有终态转换，首屏保持 Loading 或手动刷新保留旧内容而无失败反馈；继续传播取消与 fatal `Error`，不要将空列表当作失败状态。
-- [ ] 将 `clearLogs()` 纳入明确的单飞与页面任务所有权：当前每次 `ConfirmClear` 都新建未保存的 job，`onPageExited()` 不取消它，完成后仅检查 `pageEffects.currentOwner != null` 就修改状态，未确认仍是启动该任务的 owner。重复确认可并发执行 clear；旧页面清理迟到时也可影响重进页的新状态。定义页面退出时取消/继续清理的产品合同，并在任何状态/effect 发布前核验同一 owner；不得因 UI 离开而误报取消已提交的存储清理。
-- [ ] 增加 ViewModel 行为测试：刷新首次抛普通异常后显示可辨失败并可重试恢复；上游取消与 fatal Error 不变成页面失败；清理挂起期间离页重进后，旧结果不能更改新 owner 状态或投递旧反馈；重复确认只执行一个清理；验证页面退出与 clear 持久化边界的终态。运行 Diagnostics ViewModel/Route 定向覆盖、`verifyArchitecture` 与 `git diff --check`。
+- [x] 为 `DiagnosticsViewModel.refresh()` 的 `logStore.readLines()` 普通异常定义可见失败状态和重试路径。当前异常只经过 `finally` 清理 job 所有权，`DiagnosticsReducer.Loading` 没有终态转换，首屏保持 Loading 或手动刷新保留旧内容而无失败反馈；继续传播取消与 fatal `Error`，不要将空列表当作失败状态。
+- [x] 将 `clearLogs()` 纳入明确的单飞与页面任务所有权：当前每次 `ConfirmClear` 都新建未保存的 job，`onPageExited()` 不取消它，完成后仅检查 `pageEffects.currentOwner != null` 就修改状态，未确认仍是启动该任务的 owner。重复确认可并发执行 clear；旧页面清理迟到时也可影响重进页的新状态。定义页面退出时取消/继续清理的产品合同，并在任何状态/effect 发布前核验同一 owner；不得因 UI 离开而误报取消已提交的存储清理。
+- [x] 增加 ViewModel 行为测试：刷新首次抛普通异常后显示可辨失败并可重试恢复；上游取消与 fatal Error 不变成页面失败；清理挂起期间离页重进后，旧结果不能更改新 owner 状态或投递旧反馈；重复确认只执行一个清理；验证页面退出与 clear 持久化边界的终态。运行 Diagnostics ViewModel/Route 定向覆盖、`verifyArchitecture` 与 `git diff --check`。
 
 **证据：** `refresh()` 在 `Loading` 后直接调用 `logStore.readLines(MAX_VIEW_LINES)`，只有成功路径发布 `LinesLoaded`；`finally` 只清空 `activeRefreshOwner` 和 `refreshJob`，没有失败 Mutation。`DiagnosticsUiState` 没有刷新错误字段/阶段，测试仅覆盖成功加载、迟到成功结果和 copy/export owner，未覆盖 `readLines()` 抛异常后的终态或重试。`clearLogs()` 每次 action 都启动新的 `viewModelScope.launch`，没有保存/检查 clear job 或操作 token；`onPageExited(owner)` 只取消 refresh/copy。清理完成后 `LogsCleared`/`ClearDismissed` 分支以 `pageEffects.currentOwner != null` 判断能否改状态，而 `offerEffect(pageOwner, ...)` 才使用原 owner，因此页面退出后重进时旧 clear 结果可能改写新访问状态；当前测试验证 clear 返回 `LogClearResult.Failed` 的当前页反馈，但没有离页迟到、重复确认或存储调用异常覆盖。
+
+**实施记录：** 新增 `isRefreshFailed` 状态与通用本地化错误/重试入口；普通读取异常退出 Loading，手动刷新失败保留旧行，刷新成功、会话受限和清理成功会清除失败态，取消重抛、fatal `Error` 自然传播。清理使用单飞状态，页面退出会关闭旧确认框但不取消已确认的 `logStore.clear()`；进行中确认按钮禁用，完成后只允许原页面 owner 发布结果和 effect。Diagnostics ViewModel 15 项、Reducer 5 项定向测试，`:app:ktlintCheck`、`verifyArchitecture` 与 `git diff --check` 通过。独立 review 指出的 stale refresh failure 已修复，review re-check Ready。
 
 ## Task 70：移除 Wi-Fi 编辑器 ViewModel 对 Route seed 闭包的反向调用
 

@@ -91,4 +91,21 @@ class DiagnosticsReducerTest {
         assertTrue(state.visibleLines.isEmpty())
         assertFalse(state.isClearConfirmationVisible)
     }
+
+    @Test
+    fun `clear completion removes a stale refresh failure`() {
+        val state =
+            DiagnosticsReducer.reduce(
+                DiagnosticsUiState(
+                    isRefreshFailed = true,
+                    retainedLines = listOf(error),
+                    isClearConfirmationVisible = true,
+                ),
+                DiagnosticsMutation.LogsCleared,
+            )
+
+        assertFalse(state.isRefreshFailed)
+        assertTrue(state.retainedLines.isEmpty())
+        assertFalse(state.isClearConfirmationVisible)
+    }
 }

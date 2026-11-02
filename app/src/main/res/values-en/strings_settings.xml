@@ -336,6 +336,8 @@
     <string name="settings_log_save_completed">Logs saved</string>
     <string name="settings_log_export_failed">Couldn’t export logs. Try again.</string>
     <string name="settings_log_loading">Loading logs…</string>
+    <string name="settings_log_refresh_failed">Couldn’t load logs. Try again.</string>
+    <string name="settings_log_clearing">Clearing…</string>
     <string name="settings_log_management_title">Logs</string>
     <string name="settings_log_view_title">View logs</string>
     <string name="settings_log_view_subtitle">Encrypted locally at the selected level</string>

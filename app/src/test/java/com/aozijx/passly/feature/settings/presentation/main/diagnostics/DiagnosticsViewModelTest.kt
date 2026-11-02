@@ -29,9 +29,11 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.ExportDiagnosticsUseCase
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.testing.MainDispatcherRule
+import java.io.IOException
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -44,7 +46,10 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -79,6 +84,75 @@ class DiagnosticsViewModelTest {
         }
 
     @Test
+    fun `failed initial read is visible and retry recovers`() =
+        runTest {
+            val lines = listOf(DiagnosticsLogLine(LogLevel.INFO, "recovered", "trace_ok", "application.ok"))
+            val store = ScriptedReadLogStore(lines, failures = mapOf(1 to IOException("read failed")))
+            val viewModel = viewModel(store)
+
+            viewModel.onPageEntered()
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertTrue(viewModel.uiState.value.isRefreshFailed)
+            assertTrue(
+                viewModel.uiState.value.retainedLines
+                    .isEmpty(),
+            )
+
+            viewModel.onAction(DiagnosticsAction.Refresh)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertFalse(viewModel.uiState.value.isRefreshFailed)
+            assertEquals(lines, viewModel.uiState.value.retainedLines)
+        }
+
+    @Test
+    fun `failed refresh preserves previously loaded lines`() =
+        runTest {
+            val lines = listOf(DiagnosticsLogLine(LogLevel.INFO, "existing", "trace_old", "application.old"))
+            val store = ScriptedReadLogStore(lines, failures = mapOf(2 to IOException("refresh failed")))
+            val viewModel = viewModel(store)
+            viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(DiagnosticsAction.Refresh)
+            runCurrent()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+            assertTrue(viewModel.uiState.value.isRefreshFailed)
+            assertEquals(lines, viewModel.uiState.value.retainedLines)
+        }
+
+    @Test
+    fun `cancelled and fatal reads are not converted to refresh failures`() {
+        val fatal = AssertionError("fatal read")
+        val thrown =
+            runCatching {
+                runTest {
+                    val cancelledStore =
+                        ScriptedReadLogStore(
+                            emptyList(),
+                            failures = mapOf(1 to CancellationException("cancelled")),
+                        )
+                    val cancelledViewModel = viewModel(cancelledStore)
+                    cancelledViewModel.onPageEntered()
+                    runCurrent()
+                    assertFalse(cancelledViewModel.uiState.value.isRefreshFailed)
+
+                    val fatalViewModel = viewModel(ScriptedReadLogStore(emptyList(), failures = mapOf(1 to fatal)))
+                    fatalViewModel.onPageEntered()
+                    runCurrent()
+
+                    assertFalse(fatalViewModel.uiState.value.isRefreshFailed)
+                }
+            }.exceptionOrNull()
+
+        assertSame(fatal, thrown)
+    }
+
+    @Test
     fun `failed clear reports failure and keeps retained lines`() =
         runTest {
             val lines =
@@ -98,6 +172,85 @@ class DiagnosticsViewModelTest {
             assertEquals(DiagnosticsEffect.ClearFailed, effect.await())
             assertEquals(lines, viewModel.uiState.value.retainedLines)
             assertEquals(false, viewModel.uiState.value.isClearConfirmationVisible)
+        }
+
+    @Test
+    fun `duplicate clear confirmation starts only one storage operation`() =
+        runTest {
+            val store = DeferredClearLogStore(emptyList())
+            val viewModel = viewModel(store)
+            viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(DiagnosticsAction.RequestClear)
+            viewModel.onAction(DiagnosticsAction.ConfirmClear)
+            viewModel.onAction(DiagnosticsAction.ConfirmClear)
+            runCurrent()
+            store.clearStarted.await()
+
+            assertEquals(1, store.clearCount)
+            assertTrue(viewModel.uiState.value.isClearInProgress)
+
+            store.finishClear.complete(LogClearResult.Cleared)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isClearInProgress)
+        }
+
+    @Test
+    fun `late clear failure cannot affect a reentered page`() =
+        runTest {
+            val oldLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "old", "trace_old", "application.old"))
+            val newLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "new", "trace_new", "application.new"))
+            val store = DeferredClearLogStore(oldLines, reenteredLines = newLines)
+            val viewModel = viewModel(store)
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(DiagnosticsAction.RequestClear)
+            viewModel.onAction(DiagnosticsAction.ConfirmClear)
+            runCurrent()
+            store.clearStarted.await()
+
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            runCurrent()
+            viewModel.onAction(DiagnosticsAction.RequestClear)
+            viewModel.onAction(DiagnosticsAction.ConfirmClear)
+            runCurrent()
+
+            assertTrue(viewModel.uiState.value.isClearInProgress)
+            assertEquals(1, store.clearCount)
+            store.finishClear.complete(LogClearResult.Failed)
+            runCurrent()
+
+            assertEquals(newLines, viewModel.uiState.value.retainedLines)
+            assertTrue(viewModel.uiState.value.isClearConfirmationVisible)
+            assertFalse(viewModel.uiState.value.isClearInProgress)
+            assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
+        }
+
+    @Test
+    fun `late successful clear cannot erase lines loaded by a reentered page`() =
+        runTest {
+            val oldLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "old", "trace_old", "application.old"))
+            val newLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "new", "trace_new", "application.new"))
+            val store = DeferredClearLogStore(oldLines, reenteredLines = newLines)
+            val viewModel = viewModel(store)
+            val oldOwner = viewModel.onPageEntered()
+            runCurrent()
+
+            viewModel.onAction(DiagnosticsAction.RequestClear)
+            viewModel.onAction(DiagnosticsAction.ConfirmClear)
+            runCurrent()
+            store.clearStarted.await()
+
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            runCurrent()
+            store.finishClear.complete(LogClearResult.Cleared)
+            runCurrent()
+
+            assertEquals(newLines, viewModel.uiState.value.retainedLines)
         }
 
     @Test
@@ -306,6 +459,44 @@ class DiagnosticsViewModelTest {
         override suspend fun storageBytes(): Long = 1_024L
 
         override suspend fun clear() = clearResult
+    }
+
+    private class ScriptedReadLogStore(
+        private val lines: List<DiagnosticsLogLine>,
+        private val failures: Map<Int, Throwable>,
+    ) : DiagnosticsLogStore {
+        var readCount = 0
+
+        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> {
+            readCount++
+            failures[readCount]?.let { throw it }
+            return lines.take(limit)
+        }
+
+        override suspend fun storageBytes(): Long = 0
+
+        override suspend fun clear() = LogClearResult.Cleared
+    }
+
+    private class DeferredClearLogStore(
+        private val initialLines: List<DiagnosticsLogLine>,
+        private val reenteredLines: List<DiagnosticsLogLine> = initialLines,
+    ) : DiagnosticsLogStore {
+        val clearStarted = CompletableDeferred<Unit>()
+        val finishClear = CompletableDeferred<LogClearResult>()
+        var clearCount = 0
+        private var readCount = 0
+
+        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> =
+            (if (readCount++ == 0) initialLines else reenteredLines).take(limit)
+
+        override suspend fun storageBytes(): Long = 0
+
+        override suspend fun clear(): LogClearResult {
+            clearCount++
+            clearStarted.complete(Unit)
+            return finishClear.await()
+        }
     }
 
     private class DeferredReadLogStore : DiagnosticsLogStore {
