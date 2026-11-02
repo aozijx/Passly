@@ -47,9 +47,13 @@ class VaultListUiMapperTest {
 
     @Test
     fun readingAndFilteringTypesDoNotRequireACreationRoute() {
-        val model = requireNotNull(VaultUiState(selectedSort = createdAtDescendingSort()).toUiModel(display()))
-        assertTrue(VaultAddTypeUiModel.SSH_KEY in model.navigation.filterOptions)
-        assertNull(VaultEditorDestinationRegistry.routeFor(VaultAddTypeUiModel.SSH_KEY))
+        val state = VaultUiState(selectedSort = createdAtDescendingSort(), selectedFilters = AddType.entries.toSet())
+        val model = requireNotNull(state.toUiModel(display()))
+        assertEquals(VaultAddTypeUiModel.entries.toList(), model.navigation.filterOptions)
+        assertEquals(VaultAddTypeUiModel.entries.toSet(), model.navigation.selectedFilters)
+        model.navigation.filterOptions.filterNot { it in model.navigation.creationOptions }.forEach {
+            assertNull(VaultEditorDestinationRegistry.routeFor(it))
+        }
     }
 
     @Test
@@ -174,7 +178,7 @@ class VaultListUiMapperTest {
 
         addTypes.forEach { (feature, ui) ->
             assertEquals(ui, feature.toUiModel())
-            assertEquals(feature, ui.toFeatureModel())
+            assertEquals(feature, ui.featureType)
         }
     }
 }

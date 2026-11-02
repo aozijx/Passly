@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.paging.PagingData
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
-import com.aozijx.passly.feature.vault.presentation.list.toFeatureModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultFilterBar
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
@@ -60,7 +59,7 @@ internal fun VaultListBody(
                 filters = state.navigation.filterOptions,
                 selectedFilters = state.navigation.selectedFilters,
                 onFilterToggled = { filter ->
-                    onAction(VaultUiAction.FilterToggled(filter?.toFeatureModel()))
+                    onAction(VaultUiAction.FilterToggled(filter?.featureType))
                 },
             )
         }

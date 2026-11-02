@@ -66,23 +66,6 @@ data class VaultSortUiModel(
 
 enum class VaultSortOptionUiModel { TITLE, CREATED_AT, UPDATED_AT, LAST_USED_AT, USAGE_FREQUENCY }
 
-enum class VaultAddTypeUiModel {
-    PASSWORD,
-    TOTP,
-    BANK_CARD,
-    WIFI,
-    SSH_KEY,
-    ID_CARD,
-    SEED_PHRASE,
-    PASSKEY,
-    RECOVERY_CODE,
-    ;
-
-    companion object {
-        val fabMenuOptions = listOf(TOTP, PASSWORD)
-    }
-}
-
 @Immutable
 data class VaultCardPresentationUiModel(
     val entryTypeKey: String,

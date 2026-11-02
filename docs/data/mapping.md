@@ -93,6 +93,6 @@ Wi-Fi 密码保存在加密 bundle 中，没有独立密码行；其密码能力
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 将数据库条目映射为领域 Profile | `EntryProfileMapper.fromEntity()` | [`EntryProfileMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryProfileMapper.kt) |
-| 拆分并组装低敏与高敏字段 | `EntrySecretMapper`、`EntrySecret.toSensitiveFieldUpdates()` | [`EntrySecretMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntrySecretMapper.kt)、[`SensitiveFieldSetMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/SensitiveFieldSetMapper.kt) |
+| 拆分并组装低敏与高敏字段 | `EntrySecret.toSensitiveFieldValues()`、`toSensitiveFieldUpdates()`、`toBundleSecret()`、`mergeSensitiveFields()`（Data 内部） | [`SensitiveFieldSetMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/SensitiveFieldSetMapper.kt) |
 | 按凭据种类注册并转换 Secret payload 槽位 | `EntryPayloadAdapterRegistry`、`EntryPayloadAdapter` | [`EntryPayloadAdapterRegistry.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryPayloadAdapterRegistry.kt)、[`EntryPayloadAdapter.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntryPayloadAdapter.kt) |
 | 编排秘密字段的持久化读取与写入 | `SecretFieldStore.readAll()`、`readField()` | [`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |

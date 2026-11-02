@@ -20,9 +20,6 @@ enum class AddType {
     ;
 
     companion object {
-        /** FAB 快捷菜单只保留直接创建的常用条目。 */
-        val fabMenuOptions: List<AddType> = listOf(TOTP, PASSWORD)
-
         /** ModalBottomSheet 中显示的所有添加类型 */
         val allOptions: List<AddType> = entries.toList()
     }

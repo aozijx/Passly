@@ -122,19 +122,6 @@ internal fun AddType.toUiModel(): VaultAddTypeUiModel =
         AddType.RECOVERY_CODE -> VaultAddTypeUiModel.RECOVERY_CODE
     }
 
-internal fun VaultAddTypeUiModel.toFeatureModel(): AddType =
-    when (this) {
-        VaultAddTypeUiModel.PASSWORD -> AddType.PASSWORD
-        VaultAddTypeUiModel.TOTP -> AddType.TOTP
-        VaultAddTypeUiModel.BANK_CARD -> AddType.BANK_CARD
-        VaultAddTypeUiModel.WIFI -> AddType.WIFI
-        VaultAddTypeUiModel.SSH_KEY -> AddType.SSH_KEY
-        VaultAddTypeUiModel.ID_CARD -> AddType.ID_CARD
-        VaultAddTypeUiModel.SEED_PHRASE -> AddType.SEED_PHRASE
-        VaultAddTypeUiModel.PASSKEY -> AddType.PASSKEY
-        VaultAddTypeUiModel.RECOVERY_CODE -> AddType.RECOVERY_CODE
-    }
-
 internal fun EntryCardPresentation.toUiModel() =
     VaultCardPresentationUiModel(
         entryTypeKey = entryTypeKey,
