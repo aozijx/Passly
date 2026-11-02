@@ -19,6 +19,7 @@ fun AutofillSettings.toAutofillSettingsUiModel(
         includeOtp = includeOtp,
         savePromptsEnabled = savePromptsEnabled,
         allowUnmatchedSuggestions = allowUnmatchedSuggestions,
+        strictDomainMatching = strictDomainMatching,
         maxSuggestions = normalizedMaxSuggestions,
         minSuggestions = AutofillSettings.MIN_SUGGESTIONS,
         maxSuggestionsLimit = AutofillSettings.MAX_SUGGESTIONS,

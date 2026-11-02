@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
@@ -12,6 +13,61 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillCandidateMappingTest {
+    @Test
+    fun `related candidates are filtered from the complete prefilter result before the cap`() {
+        val unrelated =
+            List(50) { index ->
+                EntryEntity(
+                    entryId = "near-$index",
+                    entryType = EntryType.LOGIN,
+                    title = "Near match",
+                    domains = setOf("evil-example.com"),
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                )
+            }
+        val lateRelated =
+            EntryEntity(
+                entryId = "related-late",
+                entryType = EntryType.LOGIN,
+                title = "Related",
+                domains = setOf("login.example.com"),
+                createdAt = 1L,
+                updatedAt = 1L,
+            )
+
+        val matches = (unrelated + lateRelated).toMatchingAutofillCandidates(null, "example.com", strictDomainMatching = false)
+
+        assertEquals(listOf("related-late"), matches.map { it.entry.id.value })
+    }
+
+    @Test
+    fun `web candidate uses same registrable domain only when relaxed matching is enabled`() {
+        val entity =
+            EntryEntity(
+                entryId = "subdomain",
+                entryType = EntryType.LOGIN,
+                title = "Subdomain",
+                domains = setOf("https://login.example.co.uk/path"),
+                createdAt = 1L,
+                updatedAt = 1L,
+            )
+
+        assertEquals(MatchType.UNKNOWN, entity.autofillMatch(null, "example.co.uk").type)
+        assertEquals(
+            MatchType.WEB_DOMAIN,
+            entity.autofillMatch(null, "example.co.uk", strictDomainMatching = false).type,
+        )
+        assertEquals(
+            MatchType.UNKNOWN,
+            entity
+                .copy(domains = setOf("a.blogspot.com"))
+                .autofillMatch(null, "b.blogspot.com", strictDomainMatching = false)
+                .type,
+        )
+        assertFalse(AutofillScope.matchesDomain("evil-example.com", "example.com", strict = false))
+    }
+
     @Test
     fun mapsOnlyCandidateMetadataAndCapabilities() {
         val candidate =

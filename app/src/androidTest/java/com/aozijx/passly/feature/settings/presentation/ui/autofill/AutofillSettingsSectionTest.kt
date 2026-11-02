@@ -35,6 +35,7 @@ class AutofillSettingsSectionTest {
                 includeOtp = true,
                 savePromptsEnabled = true,
                 allowUnmatchedSuggestions = false,
+                strictDomainMatching = true,
                 maxSuggestions = 5,
                 minSuggestions = 1,
                 maxSuggestionsLimit = 10,
@@ -128,6 +129,29 @@ class AutofillSettingsSectionTest {
         )
     }
 
+    @Test
+    fun strictDomainMatchingToggleEmitsItsDedicatedAction() {
+        val actions = mutableListOf<AutofillSettingsAction>()
+        composeRule.setContent {
+            MaterialTheme {
+                AutofillSettingsSection(settings = settings(), onAction = actions::add)
+            }
+        }
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        composeRule
+            .onNodeWithText(context.getString(R.string.settings_autofill_strict_domain_matching))
+            .assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.settings_autofill_strict_domain_matching_summary))
+            .assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.settings_autofill_strict_domain_matching))
+            .performClick()
+
+        assertEquals(listOf(AutofillSettingsAction.SetStrictDomainMatching(false)), actions)
+    }
+
     private fun settings() =
         AutofillSettingsUiModel(
             enabled = true,
@@ -138,6 +162,7 @@ class AutofillSettingsSectionTest {
             includeOtp = true,
             savePromptsEnabled = true,
             allowUnmatchedSuggestions = false,
+            strictDomainMatching = true,
             maxSuggestions = 5,
             minSuggestions = 1,
             maxSuggestionsLimit = 10,

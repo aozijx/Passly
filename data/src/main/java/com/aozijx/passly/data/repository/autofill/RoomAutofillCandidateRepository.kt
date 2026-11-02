@@ -29,6 +29,10 @@ internal class RoomAutofillCandidateRepository
             val domainNormalization = AutofillScope.normalizeDomain(query.webDomain)
             if (domainNormalization == AutofillDomainNormalization.Invalid) return emptyList()
             val domain = (domainNormalization as? AutofillDomainNormalization.Valid)?.host
+            val domainSearchTerm =
+                domain?.let {
+                    if (query.strictDomainMatching) it else AutofillScope.registrableDomain(it) ?: it
+                }
             val candidateApplicationId = applicationId.takeIf { domain == null }
             if (candidateApplicationId == null && domain == null) return emptyList()
             val boundedLimit = query.limit.coerceIn(1, MAX_CANDIDATES)
@@ -39,21 +43,20 @@ internal class RoomAutofillCandidateRepository
                         candidateApplicationId?.let {
                             addAll(entryQueryDao().getAutofillCandidatesByApplicationId(it, boundedLimit * 4))
                         }
-                        domain?.let {
+                        domainSearchTerm?.let {
                             addAll(entryQueryDao().getAutofillCandidatesByDomain(it))
                         }
                     }.distinctBy(EntryEntity::entryId)
-                val exactMatches =
-                    matched.mapNotNull { entity ->
-                        entity
-                            .autofillMatch(candidateApplicationId, domain)
-                            .takeUnless { it.type == MatchType.UNKNOWN }
-                            ?.let { match -> entity.toAutofillCandidateSummary(match) }
-                    }
+                val matchingCandidates =
+                    matched.toMatchingAutofillCandidates(
+                        candidateApplicationId,
+                        domain,
+                        query.strictDomainMatching,
+                    )
                 val candidates =
                     when {
-                        exactMatches.isNotEmpty() -> {
-                            exactMatches
+                        matchingCandidates.isNotEmpty() -> {
+                            matchingCandidates
                         }
 
                         query.allowUnmatched -> {
@@ -93,6 +96,7 @@ internal fun EntryEntity.toAutofillCandidateSummary(match: CredentialMatch): Aut
 internal fun EntryEntity.autofillMatch(
     applicationId: String?,
     domain: String?,
+    strictDomainMatching: Boolean = true,
 ): CredentialMatch {
     if (applicationId != null &&
         applicationIds.any {
@@ -107,9 +111,21 @@ internal fun EntryEntity.autofillMatch(
                 addAll(domains)
                 primaryUrl?.let(::add)
             }
-        if (entryDomains.any { AutofillScope.normalizeDomain(it) == AutofillDomainNormalization.Valid(domain) }) {
+        if (entryDomains.any { AutofillScope.matchesDomain(it, domain, strictDomainMatching) }) {
             return CredentialMatch(MatchType.WEB_DOMAIN, domain = domain)
         }
     }
     return CredentialMatch(MatchType.UNKNOWN)
 }
+
+internal fun Iterable<EntryEntity>.toMatchingAutofillCandidates(
+    applicationId: String?,
+    domain: String?,
+    strictDomainMatching: Boolean,
+): List<AutofillCandidateSummary> =
+    mapNotNull { entity ->
+        entity
+            .autofillMatch(applicationId, domain, strictDomainMatching)
+            .takeUnless { it.type == MatchType.UNKNOWN }
+            ?.let(entity::toAutofillCandidateSummary)
+    }

@@ -2,10 +2,37 @@ package com.aozijx.passly.domain.autofill
 
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillScopeTest {
+    @Test
+    fun `domain matching defaults to exact host and can match registrable domain`() {
+        assertTrue(AutofillScope.matchesDomain("example.com", "example.com", strict = true))
+        assertFalse(AutofillScope.matchesDomain("example.com", "login.example.com", strict = true))
+        assertTrue(AutofillScope.matchesDomain("example.com", "login.example.com", strict = false))
+        assertTrue(AutofillScope.matchesDomain("a.login.example.com", "b.example.com", strict = false))
+        assertFalse(AutofillScope.matchesDomain("example.com", "example.net", strict = false))
+    }
+
+    @Test
+    fun `domain matching respects multi label and private public suffixes`() {
+        assertTrue(AutofillScope.matchesDomain("a.example.co.uk", "b.example.co.uk", strict = false))
+        assertFalse(AutofillScope.matchesDomain("a.blogspot.com", "b.blogspot.com", strict = false))
+        assertTrue(AutofillScope.matchesDomain("a.tenant.blogspot.com", "b.tenant.blogspot.com", strict = false))
+    }
+
+    @Test
+    fun `domain matching never widens unknown suffix public suffix or IP scopes`() {
+        assertFalse(AutofillScope.matchesDomain("a.unknownsuffix", "b.unknownsuffix", strict = false))
+        assertFalse(AutofillScope.matchesDomain("co.uk", "example.co.uk", strict = false))
+        assertFalse(AutofillScope.matchesDomain("192.0.2.1", "192.0.2.2", strict = false))
+        assertTrue(AutofillScope.matchesDomain("192.0.2.1", "192.0.2.1", strict = false))
+        assertFalse(AutofillScope.matchesDomain("[2001:db8::1]", "[2001:db8::2]", strict = false))
+    }
+
     @Test
     fun `application identity trims lowercases and maps blank to missing`() {
         assertEquals("com.example.app", AutofillScope.normalizeApplicationId("  COM.EXAMPLE.APP "))

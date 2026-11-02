@@ -108,6 +108,12 @@ class AutofillSettingsViewModel
                     }
                 }
 
+                is AutofillSettingsAction.SetStrictDomainMatching -> {
+                    saveSetting {
+                        settingsRepository.setAutofillStrictDomainMatching(action.enabled)
+                    }
+                }
+
                 is AutofillSettingsAction.SetMaxSuggestions -> {
                     saveSetting {
                         settingsRepository.setAutofillMaxSuggestions(action.count)

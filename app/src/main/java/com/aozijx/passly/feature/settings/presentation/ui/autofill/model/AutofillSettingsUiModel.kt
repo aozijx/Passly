@@ -12,6 +12,7 @@ data class AutofillSettingsUiModel(
     val includeOtp: Boolean,
     val savePromptsEnabled: Boolean,
     val allowUnmatchedSuggestions: Boolean,
+    val strictDomainMatching: Boolean,
     val maxSuggestions: Int,
     val minSuggestions: Int,
     val maxSuggestionsLimit: Int,

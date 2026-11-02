@@ -8,6 +8,7 @@ data class AutofillCandidateQuery(
     val webDomain: String?,
     val allowUnmatched: Boolean,
     val limit: Int,
+    val strictDomainMatching: Boolean = true,
 )
 
 /** Metadata-only candidate. Protected field values cannot be represented here. */

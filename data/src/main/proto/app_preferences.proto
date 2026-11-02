@@ -81,6 +81,7 @@ message AutofillPreferences {
     optional bool save_prompts_enabled = 6 [default = true];
     optional bool allow_unmatched_suggestions = 7 [default = false];
     optional int32 max_suggestions = 8 [default = 5];
+    optional bool strict_domain_matching = 9 [default = true];
 }
 
 enum AutofillPresentationPreference {

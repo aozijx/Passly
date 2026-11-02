@@ -15,6 +15,7 @@ data class AutofillSettings(
     val savePromptsEnabled: Boolean = true,
     val allowUnmatchedSuggestions: Boolean = false,
     val maxSuggestions: Int = DEFAULT_MAX_SUGGESTIONS,
+    val strictDomainMatching: Boolean = true,
 ) {
     val normalizedMaxSuggestions: Int
         get() = maxSuggestions.coerceIn(MIN_SUGGESTIONS, MAX_SUGGESTIONS)

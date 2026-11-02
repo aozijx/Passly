@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.autofill
 
+import com.google.common.net.InternetDomainName
 import java.net.IDN
 import java.net.URI
 import java.net.URISyntaxException
@@ -9,6 +10,38 @@ import java.util.Locale
 /** Owns canonical package/domain matching for every autofill integration. */
 object AutofillScope {
     fun normalizeApplicationId(value: String?): String? = value?.trim()?.lowercase(Locale.ROOT)?.takeIf(String::isNotEmpty)
+
+    /** Matches canonical hosts exactly or by their PSL registrable domain when strict mode is off. */
+    fun matchesDomain(
+        candidateHost: String,
+        requestHost: String,
+        strict: Boolean,
+    ): Boolean {
+        val candidate = (normalizeDomain(candidateHost) as? AutofillDomainNormalization.Valid)?.host ?: return false
+        val request = (normalizeDomain(requestHost) as? AutofillDomainNormalization.Valid)?.host ?: return false
+        if (candidate == request || strict) return candidate == request
+
+        val candidateRegistrableDomain = candidate.toRegistrableDomain() ?: return false
+        val requestRegistrableDomain = request.toRegistrableDomain() ?: return false
+        return candidateRegistrableDomain == requestRegistrableDomain
+    }
+
+    /** Returns null for IPs, public suffixes, and hosts not recognized by the bundled PSL. */
+    fun registrableDomain(host: String): String? {
+        val canonicalHost = (normalizeDomain(host) as? AutofillDomainNormalization.Valid)?.host ?: return null
+        return canonicalHost.toRegistrableDomain()
+    }
+
+    private fun String.toRegistrableDomain(): String? {
+        if (startsWith('[') || ':' in this) return null
+        return try {
+            InternetDomainName.from(this).topPrivateDomain().toString()
+        } catch (_: IllegalArgumentException) {
+            null
+        } catch (_: IllegalStateException) {
+            null
+        }
+    }
 
     /**
      * Normalizes a host or URL to its exact host scope. URL scheme, port, path, query, and

@@ -14,6 +14,7 @@ kotlin {
 dependencies {
     api(project(":core:common"))
     api(libs.kotlinx.coroutines.core)
+    implementation(libs.guava)
     implementation(libs.uuid.creator)
 
     testImplementation(libs.junit)

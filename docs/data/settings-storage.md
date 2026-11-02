@@ -91,7 +91,8 @@ flowchart LR
 失败经只读 `errors` Flow 发布 `UiErrorMessage`，不暴露内部异常文本。取消继续传播，页面销毁后的迟到失败不再通知。
 `InterfaceRoute` 在 STARTED 生命周期内消费错误，在消费时用当前 `LocalResources` 解析文案。
 
-外观设置的五类偏好、隐私设置的六类偏好以及自动填充设置的八类偏好也使用同一写入边界。
+外观设置的五类偏好、隐私设置的六类偏好以及自动填充设置的九类偏好也使用同一写入边界。
+自动填充严格 host 匹配选项由 Proto optional bool tag 9 保存，默认开启；它只控制候选匹配范围。
 外观继续从 Shell 提供的持久化外观状态渲染，隐私与自动填充继续订阅各自 Repository Flow，
 不通过写入回调直接修改页面选择。写入成功静默；存储失败映射为资源键，不传递异常文本，取消与迟到错误遵守上述规则。
 外观与界面页共用 `ObserveSettingsWriteErrors`；隐私与自动填充在原事件流增加 `SaveFailed`，

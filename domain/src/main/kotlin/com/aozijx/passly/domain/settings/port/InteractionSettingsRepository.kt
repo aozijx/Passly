@@ -32,5 +32,7 @@ interface InteractionSettingsRepository : InteractionSettingsSource {
 
     suspend fun setUnmatchedAutofillSuggestionsEnabled(enabled: Boolean)
 
+    suspend fun setAutofillStrictDomainMatching(enabled: Boolean)
+
     suspend fun setAutofillMaxSuggestions(count: Int)
 }

@@ -100,6 +100,7 @@ class DiscoverAutofillCandidates
                             webDomain = scope.webDomain,
                             allowUnmatched = policy.allowUnmatchedSuggestions,
                             limit = policy.normalizedMaxSuggestions,
+                            strictDomainMatching = policy.strictDomainMatching,
                         ),
                     )
                 } catch (cancelled: CancellationException) {

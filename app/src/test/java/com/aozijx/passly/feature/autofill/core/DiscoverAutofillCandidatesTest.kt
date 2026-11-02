@@ -99,6 +99,34 @@ class DiscoverAutofillCandidatesTest {
         }
 
     @Test
+    fun relaxedDomainMatchingIsPassedToCandidateSearchWithoutWideningInteractionScope() =
+        runBlocking {
+            val fixture = fixture(settings = AutofillSettings(requireAuthentication = false, strictDomainMatching = false))
+
+            val outcome = fixture.operation(request().copy(domain = "login.example.com"))
+
+            assertEquals(false, fixture.repository.lastQuery?.strictDomainMatching)
+            assertEquals("login.example.com", fixture.repository.lastQuery?.webDomain)
+            assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
+            assertEquals("login.example.com", (outcome as AutofillDiscoveryOutcome.NoCandidates).snapshot.scope.webDomain)
+        }
+
+    @Test
+    fun relaxedCandidatePolicyDoesNotResumeAnInteractionOnAnotherHost() =
+        runBlocking {
+            val fixture = fixture(settings = AutofillSettings(requireAuthentication = false, strictDomainMatching = false))
+            val first = fixture.operation(request().copy(domain = "login.example.com")) as AutofillDiscoveryOutcome.NoCandidates
+
+            val resumed = fixture.operation(request().copy(domain = "shop.example.com"), interactionId = first.snapshot.id)
+
+            assertEquals(
+                AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.SCOPE_MISMATCH),
+                resumed,
+            )
+            assertEquals(1, fixture.repository.searchCalls)
+        }
+
+    @Test
     fun nativeCandidateSearchUsesNormalizedApplicationId() =
         runBlocking {
             val fixture = fixture()

@@ -1,6 +1,6 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-10-31）。
+状态：当前实现（代码核对：2026-11-02）。
 
 ## 应用内部输入边界
 
@@ -63,7 +63,10 @@ port、path，保留 `www` 子域，去掉一个末尾 DNS 根点；Unicode IDN 
 有损映射会被拒绝（例如 `faß.de` 及其现代 A-label），避免与 `fass.de` 合并；bracketed IPv6 按 RFC 5952
 规范化并拒绝 zone identifier。这样网页请求按域名检索和保存，不会将浏览器
 包名写成网站凭据的 application ID。
-Data 对 DAO 子串检索结果再做相同的精确 host 比较；允许未匹配建议时，仅在没有精确候选后按设置返回未关联登录项。
+“严格匹配网站主机”默认开启，Data 对 DAO 子串检索结果再做相同的精确 host 比较。关闭后，候选 host 与请求 host 只有在
+Guava Public Suffix List 给出相同可注册域名时才互认；`co.uk` 等多段公共后缀正确计入，`blogspot.com` 等私有后缀继续
+隔离不同租户。未知后缀、公共后缀本身及 IP 仍只允许精确匹配。宽松规则只扩大候选查询，interaction 授权仍绑定请求的
+精确 host，保存关联仍写入规范化的精确 host。允许未匹配建议时，仅在没有精确或可注册域名匹配候选后按设置返回未关联登录项。
 
 Legacy 和手动无障碍入口可用 `HeuristicMatchStrategy` 识别非标准表单；Credential Manager 使用自己的严格 option/request 解析。
 平台 adapter 不直接依赖 Entry repository 或认证实现。

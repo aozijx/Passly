@@ -41,6 +41,17 @@ class InteractionProtoMappingsTest {
     }
 
     @Test
+    fun `autofill strict domain matching defaults to enabled and can be disabled`() {
+        assertTrue(AutofillPreferences.getDefaultInstance().strictDomainMatching)
+        assertTrue(readAutofill(AutofillPreferences.getDefaultInstance()).strictDomainMatching)
+
+        listOf(true, false).forEach { strict ->
+            val settings = readAutofill(AutofillPreferences.newBuilder().setStrictDomainMatching(strict).build())
+            assertEquals(strict, settings.strictDomainMatching)
+        }
+    }
+
+    @Test
     fun `three autofill presentation modes round trip with stable proto values`() {
         val expected =
             mapOf(

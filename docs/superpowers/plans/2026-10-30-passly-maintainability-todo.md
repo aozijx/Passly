@@ -526,3 +526,11 @@
 - [ ] 验证新增/迁移后的可见范围、所有调用点和单一真相源；持久化 key、wire tag、格式版本不得改变，安全限制不得被放宽。补充/迁移对应常量与协议测试；运行受影响模块单测、`verifyArchitecture`、lint 和 `git diff --check`。同步更新 Kotlin 规范中的位置规则；不要建立无 owner 的全局 `Constants.kt`，也不要把资源文本、Gradle 构建值或运行时可调配置复制成 Kotlin 常量。
 
 **约定完成与扫描证据（2026-11-02）：** `docs/development/kotlin-style.md` 新增“常量与固定值归属”规则，`AGENTS.md` 加入简短入口约束；常量按文件私有实现、跨文件同 owner、协议/算法语义、资源/Gradle/运行期配置分别归属。生产源码静态扫描命中 360 个 `const val` 声明，多个声明位于文件尾部 companion；精确字面量聚合发现一批待语义核验的重复（例：observability page size、应用关闭延迟、Favicon 输入上限、Autofill Inbox RSA/SHA 标识）。该扫描同时发现相同数字在不同文件中表达不同策略，故本任务要求核对消费者和行为合同后再集中；本轮只更新规则与 TODO，未移动常量或更改生产代码。
+
+## Task 76：可配置 Autofill 网站 host 匹配范围
+
+- [x] 默认严格匹配规范化后的精确 host；用户关闭严格匹配后，仅在 PSL 给出相同可注册域名时扩展候选范围。设置影响 Legacy、Accessibility 与 Credential Manager 共用的候选查询，但不放宽 interaction 授权 scope、存储的网站关联或 package ID 匹配。
+- [x] 将严格匹配写入 Proto tag 9，显式默认 `true`；在 Autofill 设置页增加中英文说明。Guava Android `InternetDomainName.topPrivateDomain()` 负责 PSL 查询，覆盖多段与 private suffix；IP、未知后缀、public suffix 本身仍精确匹配。
+- [x] 保持 DAO 域名预筛不截断，按 PSL registrable domain 检索后再完整验证候选并应用设置的数量上限；只有没有精确/同可注册域名候选时才走未关联建议回退。
+
+**实施记录（2026-11-02）：** 已新增 Domain PSL 比较、Proto 默认/true/false 映射、ViewModel toggle、Compose 设置项、候选查询传播与精确 interaction scope 回归。独立测试观察到新 Domain API 缺失、Proto tag 缺失和查询属性缺失时均按预期失败，随后补齐实现。Domain/Data/App JVM 测试、三模块 KtLint、`verifyArchitecture` 和 AndroidTest Kotlin 编译通过；未连接 Android 设备，未运行仪器测试。独立 review 为 Ready，无 Critical/Important finding；未做设备级仪器验证。

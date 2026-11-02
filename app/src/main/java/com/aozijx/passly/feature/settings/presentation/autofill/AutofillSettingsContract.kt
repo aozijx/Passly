@@ -60,6 +60,10 @@ sealed interface AutofillSettingsAction {
         val enabled: Boolean,
     ) : AutofillSettingsAction
 
+    data class SetStrictDomainMatching(
+        val enabled: Boolean,
+    ) : AutofillSettingsAction
+
     data class SetMaxSuggestions(
         val count: Int,
     ) : AutofillSettingsAction

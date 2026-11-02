@@ -238,6 +238,27 @@ class AutofillSettingsViewModelTest {
         }
 
     @Test
+    fun `strict domain matching action updates only that preference`() =
+        runTest {
+            val repository = RecordingInteractionSettingsRepository()
+            val viewModel =
+                AutofillSettingsViewModel(
+                    settingsRepository = repository,
+                    autofillServiceStatusSource = AutofillServiceStatusSource { MutableStateFlow(false) },
+                )
+            viewModel.onPageEntered()
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            viewModel.onAction(AutofillSettingsAction.SetStrictDomainMatching(false))
+            advanceUntilIdle()
+
+            assertEquals(listOf(false), repository.strictDomainMatchingWrites)
+            assertEquals(emptyList<Boolean>(), repository.savePromptWrites)
+            assertEquals(0, repository.credentialManagerWrites)
+        }
+
+    @Test
     fun `all autofill preference failures are reported without changing source state or opening settings`() =
         runTest {
             val repository = RecordingInteractionSettingsRepository(save = { throw IOException("synthetic failure") })
@@ -257,6 +278,7 @@ class AutofillSettingsViewModelTest {
                     AutofillSettingsAction.SetOtpEnabled(false),
                     AutofillSettingsAction.SetSavePromptsEnabled(false),
                     AutofillSettingsAction.SetUnmatchedSuggestionsEnabled(true),
+                    AutofillSettingsAction.SetStrictDomainMatching(false),
                     AutofillSettingsAction.SetMaxSuggestions(7),
                 )
             actions.forEach(model::onAction)
@@ -279,6 +301,7 @@ class AutofillSettingsViewModelTest {
     ) : InteractionSettingsRepository {
         val savePromptWrites = mutableListOf<Boolean>()
         var credentialManagerWrites = 0
+        val strictDomainMatchingWrites = mutableListOf<Boolean>()
 
         override suspend fun setAutofillSavePromptsEnabled(enabled: Boolean) {
             save()
@@ -288,6 +311,11 @@ class AutofillSettingsViewModelTest {
         override suspend fun setCredentialManagerEnabled(enabled: Boolean) {
             save()
             credentialManagerWrites++
+        }
+
+        override suspend fun setAutofillStrictDomainMatching(enabled: Boolean) {
+            save()
+            strictDomainMatchingWrites += enabled
         }
 
         override suspend fun setSwipeEnabled(enabled: Boolean) = Unit

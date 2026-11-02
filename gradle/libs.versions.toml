@@ -44,6 +44,7 @@ sqlite = "2.7.1"
 # SQLCipher upgrades require encrypted database compatibility verification.
 sqlcipher = "4.19.1"
 uuidCreator = "6.1.1"
+guava = "33.7.2-android"
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)
 credentials = "1.6.0"
@@ -123,6 +124,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
 uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 javax-inject = { module = "javax.inject:javax.inject", version = "1" }
 
 # 凭据管理器 / 自动填充 (Credentials & Autofill)

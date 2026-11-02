@@ -184,6 +184,18 @@ internal fun AutofillSettingsSection(
                     ),
                 )
                 add(
+                    switchSettingsGroupItem(
+                        key = "autofill.strict_domain_matching",
+                        enabled = enabled,
+                        title = stringResource(R.string.settings_autofill_strict_domain_matching),
+                        subtitle = stringResource(R.string.settings_autofill_strict_domain_matching_summary),
+                        checked = settings.strictDomainMatching,
+                        onCheckedChange = {
+                            onAction(AutofillSettingsAction.SetStrictDomainMatching(it))
+                        },
+                    ),
+                )
+                add(
                     sliderSettingsGroupItem(
                         key = "autofill.candidate_limit",
                         enabled = enabled,

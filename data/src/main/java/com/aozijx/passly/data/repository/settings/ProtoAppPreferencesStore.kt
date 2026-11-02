@@ -177,6 +177,11 @@ internal class ProtoAppPreferencesStore
                 allowUnmatchedSuggestions = enabled
             }
 
+        override suspend fun setAutofillStrictDomainMatching(enabled: Boolean) =
+            updateAutofill {
+                strictDomainMatching = enabled
+            }
+
         override suspend fun setAutofillMaxSuggestions(count: Int) =
             updateAutofill {
                 maxSuggestions = count.coerceIn(AutofillSettings.MIN_SUGGESTIONS, AutofillSettings.MAX_SUGGESTIONS)

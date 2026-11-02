@@ -92,6 +92,7 @@ internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
         includeOtp = p.includeOtp,
         savePromptsEnabled = p.savePromptsEnabled,
         allowUnmatchedSuggestions = p.allowUnmatchedSuggestions,
+        strictDomainMatching = p.strictDomainMatching,
         maxSuggestions =
             p.maxSuggestions.coerceIn(
                 AutofillSettings.MIN_SUGGESTIONS,

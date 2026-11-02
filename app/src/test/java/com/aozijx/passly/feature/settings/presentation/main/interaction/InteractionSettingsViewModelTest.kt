@@ -157,6 +157,8 @@ class InteractionSettingsViewModelTest {
 
         override suspend fun setCredentialManagerEnabled(enabled: Boolean) = Unit
 
+        override suspend fun setAutofillStrictDomainMatching(enabled: Boolean) = Unit
+
         override suspend fun setAutofillAuthenticationRequired(required: Boolean) = Unit
 
         override suspend fun setAutofillOtpEnabled(enabled: Boolean) = Unit
