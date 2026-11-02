@@ -32,6 +32,8 @@ class AddWifiViewModel
         private sealed interface InitializationPhase {
             data object Pending : InitializationPhase
 
+            data object AwaitingContent : InitializationPhase
+
             data object Complete : InitializationPhase
         }
 
@@ -60,6 +62,18 @@ class AddWifiViewModel
                 onClear = ::clearSensitiveContent,
             )
         internal val effects = writeSession.effects
+
+        fun beginInitialization(): AddWifiInitializationGate {
+            if (editingEntryId != null || initializationPhase != InitializationPhase.Pending) {
+                return AddWifiInitializationGate.AlreadyInitialized
+            }
+            initializationPhase = InitializationPhase.AwaitingContent
+            if (!writeSession.canEdit()) {
+                initializationPhase = InitializationPhase.Complete
+                return AddWifiInitializationGate.Unavailable
+            }
+            return AddWifiInitializationGate.NeedsInitialContent
+        }
 
         fun loadExistingEntry(rawEntryId: String) {
             if (editingEntryId != null) return
@@ -140,12 +154,12 @@ class AddWifiViewModel
             }
         }
 
-        fun initialize(loadContent: () -> AddWifiInitialContent): AddWifiInitializationResult {
+        fun initialize(initialContent: AddWifiInitialContent): AddWifiInitializationResult {
             if (editingEntryId != null) return AddWifiInitializationResult.AlreadyInitialized
             if (initializationPhase == InitializationPhase.Complete) return AddWifiInitializationResult.AlreadyInitialized
             initializationPhase = InitializationPhase.Complete
             if (!writeSession.canEdit()) return AddWifiInitializationResult.Unavailable
-            return when (val content = loadContent()) {
+            return when (initialContent) {
                 AddWifiInitialContent.Blank -> {
                     AddWifiInitializationResult.Ready
                 }
@@ -155,7 +169,7 @@ class AddWifiViewModel
                 }
 
                 is AddWifiInitialContent.Scanned -> {
-                    if (tryApplyScannedWifi(content.payload)) {
+                    if (tryApplyScannedWifi(initialContent.payload)) {
                         AddWifiInitializationResult.Ready
                     } else {
                         AddWifiInitializationResult.Unavailable

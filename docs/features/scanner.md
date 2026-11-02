@@ -53,8 +53,10 @@ OTP 与 Wi-Fi 编辑器都通过带接受回执的 ViewModel 方法应用扫码�
 销毁后的协调器拒绝继续暂存或消费。
 Wi-Fi 结果卡和无障碍文本不显示密码，编辑页可重新扫码，只替换 Wi-Fi 专属字段。
 
-导航向 Wi-Fi Route 提供按需读取入口，不在 `remember` 中保留已消费的预填载荷。`AddWifiViewModel.initialize`
-只在首次初始化且允许编辑时调用读取入口，将内容直接写入表单；重复初始化不再次消费，拒绝后也不在解锁时重放。
+Wi-Fi Route 在首次 `LaunchedEffect` 中先向 ViewModel 申请初始化资格；只有 `NeedsInitialContent` 才解析导航 token、消费协调器并将
+`AddWifiInitialContent` 稳定值交回 ViewModel。ViewModel 不持有 Route 的读取闭包、导航参数或协调器。初始化预约会阻止同一 ViewModel
+因 Route 重建而重复消费；锁定时先返回 `Unavailable`，不执行 seed 解析，解锁后不重放。seed 消费仍受协调器的完整会话校验约束，
+ViewModel 应用值前也会再次检查 write session。
 初始化结果为 `Ready / Unavailable / AlreadyInitialized`，页面仅凭结果显示种子不可用提示。
 
 ## Wi-Fi 解析与编辑边界

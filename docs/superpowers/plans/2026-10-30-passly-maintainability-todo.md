@@ -467,10 +467,12 @@
 
 ## Task 70：移除 Wi-Fi 编辑器 ViewModel 对 Route seed 闭包的反向调用
 
-- [ ] 保持 `VaultGraphRegistration`/Route 负责读取导航参数并消费 `EntryEditorSeedCoordinator`，改为将得到的 `AddWifiInitialContent` 值传给 `AddWifiViewModel` 初始化；ViewModel 接收稳定输入并负责状态变更，不再接收或调用 `() -> AddWifiInitialContent` 闭包。保留 seed token 一次性消费、编辑模式优先级、认证检查和重复初始化保护。
-- [ ] 调整初始化覆盖，验证 Blank、有效 Scanned、Missing/AccessDenied/Invalid seed、重复初始化及编辑路由均只消费一次，Route 退出/重组不重复消费，也不把 coordinator、NavBackStackEntry 或导航能力带进 ViewModel。不要为简单改签名额外新增一对一 presenter/adapter。
+- [x] 保持 `VaultGraphRegistration`/Route 负责读取导航参数并消费 `EntryEditorSeedCoordinator`，改为将得到的 `AddWifiInitialContent` 值传给 `AddWifiViewModel` 初始化；ViewModel 接收稳定输入并负责状态变更，不再接收或调用 `() -> AddWifiInitialContent` 闭包。保留 seed token 一次性消费、编辑模式优先级、认证检查和重复初始化保护。
+- [x] 调整初始化覆盖，验证 Blank、有效 Scanned、Missing/AccessDenied/Invalid seed、重复初始化及编辑路由均只消费一次，Route 退出/重组不重复消费，也不把 coordinator、NavBackStackEntry 或导航能力带进 ViewModel。不要为简单改签名额外新增一对一 presenter/adapter。
 
 **证据：** `VaultGraphRegistration` 的 AddWifiFromSeed destination 从 `backStackEntry.arguments` 解析 token，并通过 `vaultGraphSeedCoordinator(...).consume()` 读取一次性导航 seed，再把局部 `loadInitialContent` lambda 传给 `AddWifiEditorRoute`；Route 在 `LaunchedEffect` 内调用 `viewModel.initialize(loadInitialContent)`，由 ViewModel 主动执行闭包获取 Route/navigation owner 的数据。`AddWifiViewModel.initialize()` 随后自行把 Blank/Scanned/Unavailable 映射成状态变更。普通 AddWifi 与编辑路由也共用这个默认闭包参数。现有 `AddWifiViewModelTest` 覆盖初始化重复调用、seed 不可用和扫码表单应用，但没有验证 seed 消费与 Route 重组/离开之间的 owner；这不是已证实的功能故障，而是可收窄的反向依赖和闭包桥接，修改时应只传值并保留 Route 对 NavBackStackEntry/coordinator 的所有权。
+
+**实施记录：** `AddWifiViewModel.initialize()` 现在接收 `AddWifiInitialContent` 值并只映射/应用表单状态，不再执行 Route 闭包；Route 在读取 seed 前调用 `beginInitialization()` 预约一次性资格，只有 `NeedsInitialContent` 才解析 token/消费协调器并传值。Route 重建时相同 ViewModel 会返回 `AlreadyInitialized`，不会再次调用 coordinator；锁定时预约返回 `Unavailable`，Route 不读取 seed。`VaultGraphRegistration` 仍拥有 token 参数与 `EntryEditorSeedCoordinator`，编辑模式仍绕过创建 seed 初始化；协调器 full-session 校验、ViewModel write-session 检查与重复初始化保护保留。ViewModel 测试覆盖 Blank、Scanned、Unavailable、锁定、编辑优先和重复 Route 初始化预约；seed store、coordinator、VaultNavigation 的定向测试覆盖一次消费、访问拒绝和 opaque token。四组定向测试共 33 项、`:app:ktlintCheck`、`verifyArchitecture` 通过。未新增 Nav Compose 集成测试；Route 重建预约由同一 ViewModel 行为测试与 `LaunchedEffect(viewModel, editEntryId)` 调用点审查覆盖，未进行设备 UI 测试。独立 review 提出的重复消费问题已修复，review re-check Ready。
 
 ## Task 71：固定 ViewModel 依赖与函数参数边界
 

@@ -72,6 +72,16 @@ class AddWifiViewModelTest {
             advanceUntilIdle()
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
             assertEquals("wifi-secret", model.uiState.value.form.password)
+            assertEquals(
+                AddWifiInitializationResult.AlreadyInitialized,
+                model.initialize(
+                    AddWifiInitialContent.Scanned(
+                        WifiQrPayload("Replacement", "replacement-password", WifiSecurityType.WpaPersonal, false),
+                    ),
+                ),
+            )
+            assertEquals("Office", model.uiState.value.form.ssid)
+            assertEquals("wifi-secret", model.uiState.value.form.password)
 
             model.onAction(AddWifiAction.HiddenChanged(true))
             model.onAction(AddWifiAction.Save)
@@ -92,44 +102,68 @@ class AddWifiViewModelTest {
         }
 
     @Test
-    fun `initial content is loaded once and not retained for reinitialization`() {
+    fun `initial content is applied once and not retained for reinitialization`() {
         val model = viewModel(RecordingRepository())
-        var loads = 0
-        val load = {
-            loads++
-            AddWifiInitialContent.Scanned(WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false))
-        }
-        assertEquals(AddWifiInitializationResult.Ready, model.initialize(load))
+        val initialContent =
+            AddWifiInitialContent.Scanned(
+                WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false),
+            )
+        assertEquals(AddWifiInitializationResult.Ready, model.initialize(initialContent))
         model.onAction(AddWifiAction.SsidChanged("Edited"))
-        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(load))
-        assertEquals(1, loads)
+        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(initialContent))
         assertEquals("Edited", model.uiState.value.form.ssid)
     }
 
     @Test
-    fun `locked initialization does not consume content or replay it after unlock`() =
+    fun `blank initial content leaves a new form ready`() {
+        val model = viewModel(RecordingRepository())
+
+        assertEquals(AddWifiInitializationResult.Ready, model.initialize(AddWifiInitialContent.Blank))
+        assertEquals(AddWifiFormState(), model.uiState.value.form)
+    }
+
+    @Test
+    fun `initialization reservation prevents a route recreation from resolving seed twice`() {
+        val model = viewModel(RecordingRepository())
+        val scanned =
+            AddWifiInitialContent.Scanned(
+                WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false),
+            )
+        var seedReads = 0
+
+        if (model.beginInitialization() == AddWifiInitializationGate.NeedsInitialContent) {
+            seedReads++
+            assertEquals(AddWifiInitializationResult.Ready, model.initialize(scanned))
+        }
+        assertEquals(AddWifiInitializationGate.AlreadyInitialized, model.beginInitialization())
+
+        assertEquals(1, seedReads)
+        assertEquals("Office", model.uiState.value.form.ssid)
+    }
+
+    @Test
+    fun `locked initialization gate rejects seed resolution and does not replay after unlock`() =
         runTest {
             val session = MutableSession()
             val model = viewModel(RecordingRepository(), session)
-            var loads = 0
-            val load = {
-                loads++
-                AddWifiInitialContent.Scanned(WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false))
-            }
+            val initialContent =
+                AddWifiInitialContent.Scanned(
+                    WifiQrPayload("Office", "password", WifiSecurityType.WpaPersonal, false),
+                )
             session.lock()
-            assertEquals(AddWifiInitializationResult.Unavailable, model.initialize(load))
+            assertEquals(AddWifiInitializationGate.Unavailable, model.beginInitialization())
             session.unlock()
             runCurrent()
-            assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(load))
-            assertEquals(0, loads)
+            assertEquals(AddWifiInitializationGate.AlreadyInitialized, model.beginInitialization())
+            assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(initialContent))
             assertEquals("", model.uiState.value.form.password)
         }
 
     @Test
     fun `unavailable seed is reported only during first initialization`() {
         val model = viewModel(RecordingRepository())
-        assertEquals(AddWifiInitializationResult.Unavailable, model.initialize { AddWifiInitialContent.SeedUnavailable })
-        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize { error("Must not reload") })
+        assertEquals(AddWifiInitializationResult.Unavailable, model.initialize(AddWifiInitialContent.SeedUnavailable))
+        assertEquals(AddWifiInitializationResult.AlreadyInitialized, model.initialize(AddWifiInitialContent.Blank))
     }
 
     @Test
@@ -278,7 +312,7 @@ class AddWifiViewModelTest {
                     AppResult.Success(entry.id)
                 }
             val model = viewModel(repository)
-            model.initialize { AddWifiInitialContent.Scanned(scanned.payload) }
+            model.initialize(AddWifiInitialContent.Scanned(scanned.payload))
             model.onAction(AddWifiAction.Save)
             advanceUntilIdle()
             val wifi = requireNotNull(created.single().secret.wifi)
@@ -429,9 +463,9 @@ class AddWifiViewModelTest {
                 ),
             )
 
-        viewModel.initialize { scanned }
+        viewModel.initialize(scanned)
         viewModel.onAction(AddWifiAction.SsidChanged("Edited"))
-        viewModel.initialize { AddWifiInitialContent.Blank }
+        viewModel.initialize(AddWifiInitialContent.Blank)
 
         assertEquals("Edited", viewModel.uiState.value.form.ssid)
         assertEquals("password", viewModel.uiState.value.form.password)

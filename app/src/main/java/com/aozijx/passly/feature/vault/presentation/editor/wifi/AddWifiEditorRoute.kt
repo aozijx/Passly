@@ -48,8 +48,23 @@ fun AddWifiEditorRoute(
     LaunchedEffect(viewModel, editEntryId) {
         if (editEntryId != null) {
             viewModel.loadExistingEntry(editEntryId)
-        } else if (viewModel.initialize(loadInitialContent) == AddWifiInitializationResult.Unavailable) {
-            snackbarHostState.showSnackbar(seedUnavailableMessage)
+        } else {
+            when (viewModel.beginInitialization()) {
+                AddWifiInitializationGate.NeedsInitialContent -> {
+                    if (viewModel.initialize(loadInitialContent()) == AddWifiInitializationResult.Unavailable) {
+                        snackbarHostState.showSnackbar(seedUnavailableMessage)
+                    }
+                }
+
+                AddWifiInitializationGate.Unavailable -> {
+                    snackbarHostState.showSnackbar(seedUnavailableMessage)
+                }
+
+                AddWifiInitializationGate.AlreadyInitialized,
+                -> {
+                    Unit
+                }
+            }
         }
     }
     LaunchedEffect(uiState.loadFailed, editEntryId) {

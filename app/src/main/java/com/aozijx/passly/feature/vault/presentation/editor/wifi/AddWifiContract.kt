@@ -35,6 +35,8 @@ sealed interface AddWifiInitialContent {
 
 enum class AddWifiInitializationResult { Ready, Unavailable, AlreadyInitialized }
 
+enum class AddWifiInitializationGate { NeedsInitialContent, Unavailable, AlreadyInitialized }
+
 data class AddWifiUiState(
     val form: AddWifiFormState = AddWifiFormState(),
     val fieldErrors: Map<FieldKey, EntryViolationCode> = form.visibleFieldErrors(),
