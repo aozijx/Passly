@@ -17,11 +17,22 @@ internal suspend fun consumeRecoveryCodeOrRollback(
     try {
         consume()
         true
-    } catch (cancelled: CancellationException) {
-        withContext(NonCancellable) { rollback() }
-        throw cancelled
-    } catch (_: Throwable) {
-        withContext(NonCancellable) { rollback() }
+    } catch (failure: Throwable) {
+        val rollbackFailure =
+            try {
+                withContext(NonCancellable) { rollback() }
+                null
+            } catch (secondary: Throwable) {
+                secondary
+            }
+        if (failure is CancellationException || failure is Error) {
+            rollbackFailure?.let(failure::addSuppressedIfDistinct)
+            throw failure
+        }
+        if (rollbackFailure != null) {
+            rollbackFailure.addSuppressedIfDistinct(failure)
+            throw rollbackFailure
+        }
         false
     }
 

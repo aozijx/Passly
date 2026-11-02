@@ -20,7 +20,6 @@ import com.aozijx.passly.security.authentication.host.HostLease
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,7 +27,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 
 internal fun canReuseSession(
     state: AuthenticationState,
@@ -58,7 +56,7 @@ class DefaultAuthenticationManager
         private val securityEvents: SecuritySessionEventLogger,
     ) : AuthenticationManager {
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        private val requestMutex = Mutex()
+        private val requestSlot = AuthenticationRequestSlot()
         private val authenticationMethods = AuthenticationMethodsState()
 
         /** 记录最近一次成功的认证方式，用于会话复用场景。 */
@@ -97,22 +95,32 @@ class DefaultAuthenticationManager
             request: AuthenticationRequest,
             input: AuthInput,
         ): AuthenticationResult =
-            securityEvents.traceAuthentication(request.purpose) {
-                authenticateInternal(request, input, this)
+            withConsumedCredential(input) { credential ->
+                securityEvents.traceAuthentication(request.purpose) {
+                    authenticateInternal(request, credential, this)
+                }
             }
 
         private suspend fun authenticateInternal(
             request: AuthenticationRequest,
-            input: AuthInput,
+            credential: CharArray?,
             traceScope: SecuritySessionEventLogger.AuthenticationTraceScope,
-        ): AuthenticationResult {
-            if (!requestMutex.tryLock()) {
-                return finish(
+        ): AuthenticationResult =
+            requestSlot.withSlot(
+                onBusy = {
                     AuthenticationResult.Failure(
                         AuthenticationFailure(AuthenticationFailureCode.BUSY, request.id),
-                    ),
-                )
+                    )
+                },
+            ) {
+                authenticateWithSlot(request, credential, traceScope)
             }
+
+        private suspend fun authenticateWithSlot(
+            request: AuthenticationRequest,
+            credential: CharArray?,
+            traceScope: SecuritySessionEventLogger.AuthenticationTraceScope,
+        ): AuthenticationResult {
             val previousState = session.authenticationState.value
             val wasUnlocked = session.isUnlocked()
             val wasRecoveryMode = session.isRecoveryMode()
@@ -125,12 +133,10 @@ class DefaultAuthenticationManager
             var hostLease: HostLease? = null
             try {
                 if (wasRecoveryMode && request.purpose !in AuthenticationMethodPolicy.RECOVERY_MODE_PURPOSES) {
-                    return finish(
-                        AuthenticationResult.Failure(
-                            AuthenticationFailure(
-                                AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
-                                request.id,
-                            ),
+                    return AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.SESSION_MODE_RESTRICTED,
+                            request.id,
                         ),
                     )
                 }
@@ -164,14 +170,15 @@ class DefaultAuthenticationManager
                     session.transition(AuthenticationState.AwaitingHost(request.id))
                 }
                 val lease =
-                    hostRegistry.awaitLease() ?: return finish(
-                        AuthenticationResult.Failure(
+                    hostRegistry.awaitLease() ?: run {
+                        if (opensSession) restoreState(previousState)
+                        return AuthenticationResult.Failure(
                             AuthenticationFailure(
                                 AuthenticationFailureCode.HOST_UNAVAILABLE,
                                 request.id,
                             ),
-                        ),
-                    ).also { if (opensSession) restoreState(previousState) }
+                        )
+                    }
                 hostLease = lease
                 // 策略决策：根据目的确定可用的认证方式。
                 // 调用者的 allowedMethods 只能缩小范围，不能扩权。
@@ -182,24 +189,20 @@ class DefaultAuthenticationManager
                         .filter { it in authenticationMethods.value }
                 if (available.isEmpty()) {
                     if (opensSession) restoreState(previousState)
-                    return finish(
-                        AuthenticationResult.Failure(
-                            AuthenticationFailure(
-                                AuthenticationFailureCode.METHOD_UNAVAILABLE,
-                                request.id,
-                            ),
+                    return AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.METHOD_UNAVAILABLE,
+                            request.id,
                         ),
                     )
                 }
                 val host =
                     lease.hostOrNull() ?: run {
                         if (opensSession) restoreState(previousState)
-                        return finish(
-                            AuthenticationResult.Failure(
-                                AuthenticationFailure(
-                                    AuthenticationFailureCode.HOST_UNAVAILABLE,
-                                    request.id,
-                                ),
+                        return AuthenticationResult.Failure(
+                            AuthenticationFailure(
+                                AuthenticationFailureCode.HOST_UNAVAILABLE,
+                                request.id,
                             ),
                         )
                     }
@@ -217,18 +220,16 @@ class DefaultAuthenticationManager
                             host.chooseMethod(request.purpose, available)
                                 ?: run {
                                     if (opensSession) restoreState(previousState)
-                                    return finish(AuthenticationResult.Cancelled(CancellationReason.USER))
+                                    return AuthenticationResult.Cancelled(CancellationReason.USER)
                                 }
                         }
                     }
                 if (!hostRegistry.isCurrent(lease)) {
                     if (opensSession) restoreState(previousState)
-                    return finish(
-                        AuthenticationResult.Failure(
-                            AuthenticationFailure(
-                                AuthenticationFailureCode.HOST_UNAVAILABLE,
-                                request.id,
-                            ),
+                    return AuthenticationResult.Failure(
+                        AuthenticationFailure(
+                            AuthenticationFailureCode.HOST_UNAVAILABLE,
+                            request.id,
                         ),
                     )
                 }
@@ -240,27 +241,22 @@ class DefaultAuthenticationManager
                         ),
                     )
                 }
-                val credential = input.consumeCredential()
                 val execution =
-                    try {
-                        when (method) {
-                            AuthenticationMethod.BIOMETRIC -> {
-                                biometricExecutor.execute(request, host)
-                            }
-
-                            AuthenticationMethod.APP_PASSWORD,
-                            AuthenticationMethod.RECOVERY_CODE,
-                            -> {
-                                credentialExecutor.execute(
-                                    request,
-                                    method,
-                                    host,
-                                    credential,
-                                )
-                            }
+                    when (method) {
+                        AuthenticationMethod.BIOMETRIC -> {
+                            biometricExecutor.execute(request, host)
                         }
-                    } finally {
-                        credential?.fill('\u0000')
+
+                        AuthenticationMethod.APP_PASSWORD,
+                        AuthenticationMethod.RECOVERY_CODE,
+                        -> {
+                            credentialExecutor.execute(
+                                request,
+                                method,
+                                host,
+                                credential,
+                            )
+                        }
                     }
                 val result =
                     when (execution) {
@@ -289,24 +285,17 @@ class DefaultAuthenticationManager
                             AuthenticationResult.Failure(execution.failure)
                         }
                     }
-                return finish(result)
-            } catch (cancelled: CancellationException) {
-                if (opensSession) restoreState(previousState)
-                throw cancelled
+                return result
             } catch (failure: Throwable) {
-                traceScope.recordFailure(failure)
-                if (opensSession) restoreState(previousState)
-                return finish(
-                    AuthenticationResult.Failure(
-                        AuthenticationFailure(
-                            AuthenticationFailureCode.SESSION_TRANSITION_FAILED,
-                            request.id,
-                        ),
-                    ),
+                return recoverAuthenticationFailure(
+                    failure = failure,
+                    requestId = request.id,
+                    opensSession = opensSession,
+                    recordFailure = traceScope::recordFailure,
+                    restoreState = { restoreState(previousState) },
                 )
             } finally {
                 hostLease?.release()
-                requestMutex.unlock()
             }
         }
 
@@ -351,6 +340,4 @@ class DefaultAuthenticationManager
                 }
             }
         }
-
-        private fun finish(result: AuthenticationResult): AuthenticationResult = result
     }

@@ -405,11 +405,11 @@
 - 已完成项的历史验证留在维护审查与正式文档，不重复作为待办：Room reset 刷新桥、Scanner effect 所有权、Credential Manager 单次结果交付、Autofill callback claim 清理、Trash 命令错误处理、扫描导入 owner、条目 post-commit 资源清理。
 ## Task 63：认证失败恢复不得吞掉 fatal Error
 
-- [ ] 收窄 `DefaultAuthenticationManager.authenticateInternal()` 的 `catch(Throwable)`：先完成合同要求的 session 状态恢复与认证请求互斥释放，再传播原始 fatal `Error`，不能将 JVM/链接/断言错误伪装成 `AuthenticationFailureCode.SESSION_TRANSITION_FAILED`。普通可恢复 `Exception` 是否仍映射为业务失败需按认证边界合同确定；`CancellationException` 继续传播，恢复/遥测期间产生的次级错误不得静默覆盖原始 fatal，应按明确优先级保留 suppressed 证据。
-- [ ] 用可控 fake 注入 credential executor、敏感 key 解锁、session transition、trace failure recorder 的普通异常与 `AssertionError`，验证 credential 始终清零、session 恢复尝试符合先前状态、fatal 最终传播、互斥锁可供下一次认证请求使用；避免仅以 `assertThrows` 验证抛出而漏掉状态/敏感资源合同。
-- [ ] 检查 manager 其他认证入口对 `Throwable` 的捕获是否有必须完成的窄清理；勿全局替换为 `Exception` 而破坏 state rollback 或认证 slot 释放。运行认证 manager / session 用例、`verifyArchitecture` 与 `git diff --check`。
+  - [x] 将认证失败恢复归到单一 helper：普通 `Exception` 在 session 恢复后映射为 `SESSION_TRANSITION_FAILED`；`CancellationException` 在 `NonCancellable` 状态恢复后传播；fatal `Error` 恢复后传播。遥测/恢复期间的次级错误按取消、fatal 优先级保留为 suppressed；请求 slot 与 Host lease 各自在 `finally` 释放。
+  - [x] 将凭据消费提升到 `authenticate()` 最外层，使其覆盖 trace 启动、slot 忙/获锁、会话复用、状态转换、executor 和恢复等所有退出路径。测试覆盖 executor 收到的数组、executor fatal、executor 前退出与忙拒绝后的清零；fatal 后请求 slot 可复用、取消上下文中 session 恢复会完成；恢复码 envelope 删除/回滚 fatal 优先级也有行为测试。没有为具体 manager 依赖增加仅供测试的接口：executor、session、key manager 和 trace recorder 当前均为具体类；本轮覆盖生产边界 helper 与 trace logger，未声称完整 manager 集成覆盖。
+  - [x] 修复认证失败终态日志抛错会遮蔽原始认证错误的路径；检查其他认证广捕获，保留其清理后重抛的职责。定向 security unit tests、`verifyArchitecture` 和 `git diff --check` 通过；设备端验证未运行。
 
-**证据：** `authenticateInternal()` 在 credential 执行的内层 `finally` 会清零已消费的 `CharArray`，而外层先处理 `CancellationException`，后以 `catch(failure: Throwable)` 记录 trace、尝试恢复开启前 session state，再返回普通 `SESSION_TRANSITION_FAILED`。因此 `AssertionError` 等 fatal 会被上层当作认证失败接收；若 trace recorder 或 `restoreState()` 在此分支再抛异常，还可能遮蔽最初错误。外层 `finally` 会释放 `requestMutex`，应通过行为测试确保改变异常分类不损害清理与 slot 生命周期。此项是静态代码合同违规，尚未运行相应注入测试。
+  **证据：** `DefaultAuthenticationManager` 的消费凭据路径仍在 `finally` 清零；认证错误统一交给 `recoverAuthenticationFailure()`，显式保留 ordinary exception 映射、取消和 fatal 传播规则。取消时状态恢复进入 `NonCancellable`；请求 slot 通过 `withSlot()` 的 `finally` 解锁，Host lease 仍由认证尝试的 `finally` 释放。外层 `SecuritySessionEventLogger` 在终态日志失败时将其附加到原错误，不覆盖原始 fatal/cancellation。`consumeRecoveryCodeOrRollback()` 现在保留 fatal 删除/回滚错误与原始异常的优先级及 suppressed 关系。测试覆盖 helper 边界、凭据数组、slot 复用、取消恢复、日志失败与恢复码回滚；因 manager 构造依赖具体类且仓库无 mock 框架，本轮没有增加仅供测试的接口，所以完整 manager 集成和真实 Keystore/设备行为仍未验证。
 
 ## Task 64：让附件 GC 解锁后完整排空并在失败后恢复
 

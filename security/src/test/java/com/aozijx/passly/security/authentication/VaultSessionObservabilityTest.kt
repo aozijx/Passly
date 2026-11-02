@@ -5,7 +5,9 @@ import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionKind
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.LogLevel
+import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.LogValue
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.Reasons
@@ -41,6 +43,36 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultSessionObservabilityTest {
+    @Test
+    fun `authentication trace logging failure stays secondary to fatal authentication error`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val traceFailure = AssertionError("authentication fatal")
+            val loggingFailure = AssertionError("logging fatal")
+            val delegate = logger(records)
+            var logCalls = 0
+            val throwingLogger =
+                object : Logger by delegate {
+                    override fun log(statement: LogStatement) {
+                        logCalls += 1
+                        if (logCalls == 2) throw loggingFailure
+                        delegate.log(statement)
+                    }
+                }
+            val events = SecuritySessionEventLogger(throwingLogger)
+
+            val actual =
+                runCatching {
+                    events.traceAuthentication(AuthenticationPurpose.AUTOFILL) {
+                        throw traceFailure
+                    }
+                }.exceptionOrNull()
+
+            assertSame(traceFailure, actual)
+            assertEquals(1, traceFailure.suppressed.size)
+            assertSame(loggingFailure, traceFailure.suppressed.single())
+        }
+
     @Test
     fun `availability refresh failure severity preserves fatal errors`() =
         runTest {

@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.core.observability.LogFields
+import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
@@ -131,7 +132,7 @@ class SecuritySessionEventLogger
                         )
                     }
                 } catch (cancelled: CancellationException) {
-                    logger.log(
+                    logFailurePreservingPrimary(cancelled) {
                         LogStatements.Security.authenticationCancelled(
                             authenticationFields(
                                 purpose,
@@ -139,16 +140,16 @@ class SecuritySessionEventLogger
                                 SecurityResult.CANCELLED,
                                 elapsedSince(startedAt),
                             ),
-                        ),
-                    )
+                        )
+                    }
                     throw cancelled
                 } catch (failure: Throwable) {
-                    logger.log(
+                    logFailurePreservingPrimary(failure) {
                         LogStatements.Security.authenticationFailed(
                             failure,
                             authenticationFields(purpose, method, SecurityResult.FAILURE, elapsedSince(startedAt)),
-                        ),
-                    )
+                        )
+                    }
                     throw failure
                 }
             }
@@ -169,7 +170,7 @@ class SecuritySessionEventLogger
                     try {
                         traceScope.block()
                     } catch (cancelled: CancellationException) {
-                        logger.log(
+                        logFailurePreservingPrimary(cancelled) {
                             LogStatements.Security.authenticationCancelled(
                                 LogStatements.Security.authenticationFields(
                                     method = null,
@@ -177,11 +178,11 @@ class SecuritySessionEventLogger
                                     result = SecurityResult.CANCELLED,
                                     elapsedMs = elapsedSince(startedAt),
                                 ),
-                            ),
-                        )
+                            )
+                        }
                         throw cancelled
                     } catch (failure: Throwable) {
-                        logger.log(
+                        logFailurePreservingPrimary(failure) {
                             LogStatements.Security.authenticationFailed(
                                 failure,
                                 LogStatements.Security.authenticationFields(
@@ -190,8 +191,8 @@ class SecuritySessionEventLogger
                                     result = SecurityResult.FAILURE,
                                     elapsedMs = elapsedSince(startedAt),
                                 ),
-                            ),
-                        )
+                            )
+                        }
                         throw failure
                     }
                 val method = (result as? AuthenticationResult.Success)?.method
@@ -228,6 +229,17 @@ class SecuritySessionEventLogger
                 }
                 result
             }
+
+        private fun logFailurePreservingPrimary(
+            primary: Throwable,
+            statement: () -> LogStatement,
+        ) {
+            try {
+                logger.log(statement())
+            } catch (secondary: Throwable) {
+                if (primary !== secondary) primary.addSuppressed(secondary)
+            }
+        }
 
         class LockTraceScope internal constructor() {
             internal var failure: LockFailure? = null
