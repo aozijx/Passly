@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.runtime.session.SessionLockedException
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -79,7 +80,7 @@ internal class OtpCodeRuntime(
         }
     }
 
-    private suspend fun refreshStates(nowSeconds: Long) {
+    internal suspend fun refreshStates(nowSeconds: Long) {
         for ((entryId, schedule) in schedules.toMap()) {
             val token = currentActivationToken(entryId) ?: continue
             if (!isCurrent(entryId, token)) continue
@@ -90,12 +91,23 @@ internal class OtpCodeRuntime(
                 val config =
                     try {
                         loadOtpConfig(entryId)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (_: FreshAuthenticationRequiredException) {
                         pauseUntilFreshAuthentication(entryId)
                         continue
                     } catch (_: SessionLockedException) {
                         handleSessionLocked()
                         return
+                    } catch (_: Exception) {
+                        _states.update { states ->
+                            if (isCurrent(entryId, token) && schedules[entryId] == schedule) {
+                                states - entryId
+                            } else {
+                                states
+                            }
+                        }
+                        continue
                     }
                 if (!isCurrent(entryId, token)) continue
                 if (config == null || config.secret.isNullOrBlank()) {
@@ -217,11 +229,21 @@ internal class OtpCodeRuntime(
         val config =
             try {
                 loadOtpConfig(entryId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (_: FreshAuthenticationRequiredException) {
                 pauseUntilFreshAuthentication(entryId)
                 return
             } catch (_: SessionLockedException) {
                 handleSessionLocked()
+                return
+            } catch (_: Exception) {
+                if (isCurrent(entryId, token)) {
+                    schedules.remove(entryId)
+                    _states.update { states ->
+                        if (isCurrent(entryId, token)) states - entryId else states
+                    }
+                }
                 return
             }
         if (!isCurrent(entryId, token)) return

@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.OtpResult
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.runtime.session.SessionLockedException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -134,6 +136,82 @@ class OtpCodeRuntimeTest {
             runCurrent()
 
             assertEquals(1, loadCount)
+        }
+
+    @Test
+    fun `failed moving factor reload clears stale code and retries on the next refresh`() =
+        runTest {
+            var loadCount = 0
+            val coordinator =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = {
+                        loadCount++
+                        if (loadCount == 2) throw IllegalStateException("temporary config read failure")
+                        validTotpConfig()
+                    },
+                    codeGenerator = { OtpResult.Success("code-$loadCount") },
+                )
+            coordinator.activate("reload-entry")
+            val initialMovingFactor = System.currentTimeMillis() / 30
+
+            coordinator.refreshStates(nowSeconds = (initialMovingFactor + 1) * 30)
+
+            assertEquals(null, coordinator.codeForCopy("reload-entry"))
+            assertEquals(null, coordinator.states.value["reload-entry"])
+
+            coordinator.refreshStates(nowSeconds = (initialMovingFactor + 2) * 30)
+
+            assertEquals("code-3", coordinator.codeForCopy("reload-entry"))
+            assertEquals(3, loadCount)
+        }
+
+    @Test
+    fun `ordinary activation read failure does not prevent later activation`() =
+        runTest {
+            var loadCount = 0
+            val coordinator =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = {
+                        loadCount++
+                        if (loadCount == 1) throw IllegalStateException("temporary config read failure")
+                        validTotpConfig()
+                    },
+                    codeGenerator = { OtpResult.Success("654321") },
+                )
+
+            coordinator.subscribe("activation-retry")
+            runCurrent()
+            coordinator.activate("activation-retry")
+
+            assertEquals(2, loadCount)
+            assertEquals("654321", coordinator.codeForCopy("activation-retry"))
+        }
+
+    @Test
+    fun `activation propagates cancellation and fatal errors`() =
+        runTest {
+            val fatal = AssertionError("fatal OTP config failure")
+            val cancellation = CancellationException("activation cancelled")
+            val cancelledRuntime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = { throw cancellation },
+                    codeGenerator = { OtpResult.Success("unused") },
+                )
+            val fatalRuntime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = { throw fatal },
+                    codeGenerator = { OtpResult.Success("unused") },
+                )
+
+            val actualCancellation = runCatching { cancelledRuntime.activate("cancelled") }.exceptionOrNull()
+            val actualFatal = runCatching { fatalRuntime.activate("fatal") }.exceptionOrNull()
+
+            assertSame(cancellation, actualCancellation)
+            assertSame(fatal, actualFatal)
         }
 
     @Test

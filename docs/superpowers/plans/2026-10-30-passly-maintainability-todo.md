@@ -69,15 +69,15 @@
 
 ## Task 27：闭合 OTP Runtime 缓存失效与刷新故障恢复合同
 
+- [x] 在激活与跨周期刷新边界处理普通配置读取异常：跨周期失败立即清除旧验证码，保留调度供后续刷新重试；激活失败保留请求条目供 ticker 后续重试。`CancellationException` 和 fatal `Error` 仍传播。`OtpCodeRuntimeTest` 覆盖 stale state/copy 清理、显式后续刷新恢复、激活失败后再次激活及异常类型传播。
 - [ ] 成功保存 `EntryType.OTP` 的 `FieldKey.OTP_SECRET` 或成功恢复包含不同 OTP 配置的历史修订后，立即使当前 Detail 工作流中的 OTP schedule/code 失效，并基于已持久化的新配置重新生成；在 OTP 周期边界到达前，展示和复制都不得继续使用旧配置对应的 TOTP。保存失败、无效编辑、同值编辑和页面/认证 owner 替换分别保留正确的缓存与取消行为。
 - [ ] 核对 Vault 列表和 Detail 各自通过 `OtpCodeRuntimeFactory.create(viewModelScope)` 持有独立 Runtime 的更新合同：若列表行仍订阅同一条目，必须在配置更新后读取新配置；若导航离页保证行已 unsubscribe，则用宿主行为测试证明重进后重新加载，不建立无 owner 的全局广播桥。
 - [ ] 将 OTP 变更/移除失效能力归位到真实消费者可依赖的窄接口或现有 Detail 工作流；`OtpCodeInvalidator.entryChanged()` 当前没有生产调用者，而 `entryRemoved()` 由 VaultViewModel 直接调用 concrete Runtime。若跨边界接口不再必要，清除未使用抽象；若保留，则通过成功持久化路径实际驱动它，不能留一个看似统一但无人调用的 API。
-- [ ] 为 Runtime 的长驻 TOTP ticker 定义逐条目读取失败合同：`loadOtpConfig()` 的普通可恢复异常不得终止唯一的 `start()` 循环或阻断同批其他条目；失败条目的已过期 `Ready` code 必须立即失效，展示/复制都不可返回旧值，并保留可重试/后续时间窗恢复路径。继续将 `CancellationException` 原样传播、fatal `Error` 不映射为普通验证码失败；认证刷新与锁会话仍走现有专门状态迁移。
+- [ ] 增加真实 `start()` ticker 的受控时钟/屏障回归：一个条目 rollover 读取失败后仍继续刷新其他条目，并在后续周期恢复；不能只用显式调用 `refreshStates(nowSeconds)` 证明 ticker job 存活。
 - [ ] 增加 ViewModel/Route 行为回归：先生成旧 TOTP，分别通过 secret 编辑与修订恢复替换配置，立即验证展示和 copy 读到新配置；保存失败与离页/锁定期间迟到结果不得覆盖当前状态。运行 OtpCodeRuntime、DetailViewModel 与 Vault OTP 订阅相关测试、`verifyArchitecture` 和 `git diff --check`。
-- [ ] 补充 Runtime 失败/恢复测试：受控地令 moving-factor rollover 时一个条目的 `loadOtpConfig` 首先抛普通异常、随后成功；断言 ticker 仍活跃、其他订阅条目继续刷新、过期码立即从 state 和 `codeForCopy()` 不可用，恢复后只发布新码。另覆盖 activation 读取异常、取消与 fatal Error，避免通过吞 `Throwable` 保住 ticker。
 
 **证据：** `LoadEditableEntryUseCase` 明确允许 OTP 条目的 `FieldKey.OTP_SECRET` 编辑。`DetailViewModel` 在创建时拥有独立 `otpRuntime`，打开 OTP 条目时调用 `autoUnlock(entryId)`；`DetailWorkSession.persist()` 成功后只将新条目送入 `EntryPresented`，未使该 Runtime 的 `OtpSchedule` 或 `OtpCodeState.Ready` 失效。修订恢复成功后，`restoreSelectedRevision()` 也只重新打开并发布 Detail 条目状态，没有通知 OTP Runtime。`OtpCodeRuntime.refreshStates()` 仅在 moving factor 改变时重新 `loadOtpConfig()`，同一时间窗只更新旧 `Ready.code` 的 progress；Detail mapper 直接将 Ready code 放入页面模型，`copyOtpCode()` 也通过同一 Runtime 的 `codeForCopy()` 读取它。因此 secret 编辑/恢复成功后，在下一周期重载前，当前 Detail 可能继续展示/复制旧配置的代码。`OtpCodeInvalidator.entryChanged()` 的仓库级精确搜索只有接口声明和 `OtpCodeRuntime` 实现，没有调用者；`entryRemoved()` 仅由 `VaultViewModel` 对具体 `totp` 调用。Vault List 与 Detail 使用两个不同 Runtime，Vault list route 是否在 detail 导航期间保留可见行订阅需通过宿主测试裁定，不能假设由 Detail runtime 的失效自动覆盖。
-**新增 ticker 故障证据：** `OtpCodeRuntimeFactory.create()` 只调用一次 `runtime.start()`。`start()` 的独立 `scope.launch` 每秒调用 `reactivatePendingEntries()` 和 `refreshStates()`，整个循环没有异常监督/重试边界；`refreshStates()` 对 `loadOtpConfig(entryId)` 仅捕获 `FreshAuthenticationRequiredException` 与 `SessionLockedException`。生产 `RoomOtpConfigRepository.getConfig()` 先检查 session，再直接调用可能因 Room query、映射或解密失败而抛错的 `databaseSession.query { secretFieldStore.readOtpConfig(...) }`。普通异常因此会从 ticker child coroutine 逸出并终止这唯一循环；在 moving factor 已变化但读取失败的路径，状态未改写，旧 `Ready.code` 会继续留存。`codeForCopy()` 对 TOTP/Steam 直接返回 `states.value[entryId] as? Ready` 的 code，不校验该 code 对应的 moving factor，因此 ticker 终止后过期值仍可能被复制。现有 `OtpCodeRuntimeTest` 覆盖认证过期、锁定、切换条目和迟到生成，但没有 `start()` ticker 的普通加载异常、恢复后重试或 stale-copy 断言。该缺口与本 Task 已有的“配置成功后立即失效旧码”不同：前者由数据读取失败杀死运行时刷新循环，后者由写成功路径未通知 Runtime 导致缓存过期；应共用 Runtime owner，但分别验证故障恢复和变更失效合同。
+**剩余 ticker 验证缺口：** 当前实现已在 `refreshStates()` 对单条目普通异常清除旧 state 并继续处理后续条目；保留旧 schedule 后，下一周期会再次尝试。`activateTrackedEntry()` 对普通异常清状态但保留 active/subscription owner，供下一轮 `reactivatePendingEntries()` 重试。新增 JVM 用例直接传入 moving factor 验证 state/copy 清理与第二次显式刷新恢复，并验证激活失败重试及取消/fatal Error 传播；它没有启动 `start()` 循环，也未用屏障证明同批其他条目继续刷新，因此真实 ticker 存活/并行条目行为仍需测试。成功写入/历史恢复后的配置变更失效则是独立未实现项。
 
 ## Task 28：明确设备锁后的 task-clear 命令交付所有者
 
