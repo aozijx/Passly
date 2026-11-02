@@ -59,7 +59,8 @@ internal object DetailRevisionReducer {
     ): DetailRevisionState =
         when (mutation) {
             is DetailRevisionMutation.Opened -> {
-                DetailRevisionState.Open(mutation.entryId)
+                val open = state as? DetailRevisionState.Open
+                if (open?.entryId == mutation.entryId) state else DetailRevisionState.Open(mutation.entryId)
             }
 
             DetailRevisionMutation.Closed -> {

@@ -32,6 +32,26 @@ class DetailRevisionReducerTest {
     }
 
     @Test
+    fun reopeningHistoryCannotReplaceAnActiveRestore() {
+        val state =
+            DetailRevisionState.Open(
+                entryId = EntryId("entry"),
+                revisions = DetailRevisionListState.Ready(listOf(metadata())),
+                page =
+                    DetailRevisionPage.Comparison(
+                        revisionId = "revision",
+                        phase =
+                            DetailRevisionComparisonPhase.Ready(
+                                differences = emptyList(),
+                                restore = DetailRevisionRestorePhase.Restoring,
+                            ),
+                    ),
+            )
+
+        assertEquals(state, DetailRevisionReducer.reduce(state, DetailRevisionMutation.Opened(EntryId("entry"))))
+    }
+
+    @Test
     fun `cancelled authorization releases a claimed restore so it can be retried`() {
         val idle =
             DetailRevisionState.Open(

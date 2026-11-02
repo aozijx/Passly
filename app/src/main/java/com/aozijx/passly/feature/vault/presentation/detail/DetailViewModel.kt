@@ -818,7 +818,9 @@ class DetailViewModel
         }
 
         private fun openRevisionHistory() {
-            val entryId = _uiState.value.entry?.id ?: return
+            val state = _uiState.value
+            val entryId = state.entry?.id ?: return
+            if ((state.revisions as? DetailRevisionState.Open)?.entryId == entryId) return
             val token = workSession.current(entryId) ?: return
             revisionObservationJob?.cancel()
             revisionOperationJob?.cancel()

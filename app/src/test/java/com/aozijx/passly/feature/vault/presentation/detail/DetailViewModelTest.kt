@@ -781,6 +781,42 @@ class DetailViewModelTest {
         }
 
     @Test
+    fun reopeningRevisionHistoryDoesNotCancelRestoreInProgress() =
+        runTest {
+            val fixture = Fixture()
+            val viewModel = fixture.viewModel
+            val store = ViewModelStore().apply { put("detail", viewModel) }
+            try {
+                startRestore(viewModel)
+                assertTrue(fixture.revisions.restoreEntered.isCompleted)
+
+                viewModel.onAction(DetailUiAction.OpenRevisionHistory)
+                runCurrent()
+
+                assertFalse(fixture.revisions.restoreCompleted)
+                assertEquals(
+                    DetailRevisionRestorePhase.Restoring,
+                    (
+                        ((viewModel.uiState.value.revisions as DetailRevisionState.Open).page as DetailRevisionPage.Comparison)
+                            .phase as DetailRevisionComparisonPhase.Ready
+                    ).restore,
+                )
+
+                fixture.revisions.releasePostCommitCleanup.complete(Unit)
+                runCurrent()
+
+                assertTrue(fixture.revisions.restoreCompleted)
+                assertEquals(
+                    "Restored title",
+                    viewModel.uiState.value.entry
+                        ?.title,
+                )
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
     fun entryReplacementDoesNotPublishLateRestoreIntoTheNewEntry() =
         runTest {
             val fixture = Fixture()
