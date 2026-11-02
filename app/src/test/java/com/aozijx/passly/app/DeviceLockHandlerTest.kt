@@ -12,8 +12,6 @@ import com.aozijx.passly.testing.RecordingTestLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -46,29 +44,6 @@ class DeviceLockHandlerTest {
             logger.events.map { it.event },
         )
     }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Test
-    fun `task clear request is delivered only to an active task collector`() =
-        runTest {
-            val requests = ActiveTaskClearRequests()
-            val received = mutableListOf<Unit>()
-
-            requests.requestClear()
-            val collection =
-                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    requests.events.collect { received += it }
-                }
-            runCurrent()
-
-            assertTrue(received.isEmpty())
-
-            requests.requestClear()
-            runCurrent()
-
-            assertEquals(1, received.size)
-            collection.cancel()
-        }
 
     @Test
     fun `screen off remains pending until its lock operation completes`() {
@@ -128,7 +103,7 @@ class DeviceLockHandlerTest {
         }
 
     @Test
-    fun `screen off follows enabled clear task setting`() =
+    fun `screen off never clears task even when flip settings are enabled`() =
         runTest {
             val handler =
                 handler(
@@ -142,7 +117,7 @@ class DeviceLockHandlerTest {
 
             val result = handler.handle(DeviceLockTrigger.SCREEN_OFF) as DeviceLockResult.Locked
 
-            assertTrue(result.shouldClearTask)
+            assertFalse(result.shouldClearTask)
         }
 
     @Test

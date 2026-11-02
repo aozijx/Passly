@@ -10,6 +10,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.aozijx.passly.app.ActiveTaskClearRequests
+import com.aozijx.passly.app.TaskClearActivityOwner
+import com.aozijx.passly.app.ViewTaskClearCallbackScheduler
+import com.aozijx.passly.app.message.contract.AppNoticePublisher
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
@@ -36,8 +42,15 @@ class CredentialResponseActivity : AppCompatActivity() {
     @Inject
     lateinit var logger: Logger
 
+    @Inject
+    lateinit var activeTaskClearRequests: ActiveTaskClearRequests
+
+    @Inject
+    lateinit var noticePublisher: AppNoticePublisher
+
     private val viewModel: CredentialResponseViewModel by viewModels()
     private val resultClaim = ActivityResultClaim()
+    private lateinit var taskClearActivityOwner: TaskClearActivityOwner
 
     companion object {
         private const val TAG = "CredResponse"
@@ -45,6 +58,13 @@ class CredentialResponseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        taskClearActivityOwner =
+            TaskClearActivityOwner(
+                requests = activeTaskClearRequests,
+                scheduler = ViewTaskClearCallbackScheduler(window.decorView),
+                showReminder = { noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER)) },
+                closeTask = ::finishAndRemoveTask,
+            )
         excludeFromAutofill()
 
         val launch = responseLaunch(intent)
@@ -150,6 +170,16 @@ class CredentialResponseActivity : AppCompatActivity() {
             viewModel.cancelActiveInteraction()
         }
         super.onDestroy()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        taskClearActivityOwner.onResumed()
+    }
+
+    override fun onPause() {
+        taskClearActivityOwner.onPaused()
+        super.onPause()
     }
 
     private fun hideIme() {

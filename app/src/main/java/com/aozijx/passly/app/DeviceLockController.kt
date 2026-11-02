@@ -28,7 +28,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -129,7 +128,8 @@ internal class DeviceLockHandler(
         sessionLockController.lock(request)
         return DeviceLockResult.Locked(
             shouldClearTask =
-                security.isFlipToLockEnabled &&
+                trigger == DeviceLockTrigger.FLIP &&
+                    security.isFlipToLockEnabled &&
                     security.isFlipExitAndClearStackEnabled,
         )
     }
@@ -144,6 +144,7 @@ class DeviceLockController
         sessionAccessState: SecureSessionAccessState,
         sessionLockController: SessionLockController,
         securitySettingsSource: SecuritySettingsSource,
+        private val activeTaskClearRequests: ActiveTaskClearRequests,
         private val logger: Logger,
     ) : SensorEventListener {
         private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -156,8 +157,6 @@ class DeviceLockController
                 sessionLockController = sessionLockController,
                 securitySettings = securitySettings,
             )
-        private val activeTaskClearRequests = ActiveTaskClearRequests()
-        val clearTaskRequests: Flow<Unit> = activeTaskClearRequests.events
         private val screenOffLockTracker = ScreenOffLockTracker()
         private val flipTriggerGate = FlipTriggerGate()
         private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -184,6 +183,10 @@ class DeviceLockController
             }
 
         init {
+            activeTaskClearRequests.onAuthenticationStateChanged(sessionAccessState.authenticationState.value)
+            mainScope.launch {
+                sessionAccessState.authenticationState.collect(activeTaskClearRequests::onAuthenticationStateChanged)
+            }
             mainScope.launch {
                 securitySettingsSource.security.collect { settings ->
                     val flipSettingChanged =

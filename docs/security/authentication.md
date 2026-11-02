@@ -47,6 +47,8 @@ stateDiagram-v2
 关库和密钥擦除。恢复模式退出、屏幕关闭、翻转、用户主动锁定、Autofill 临时会话释放及完整性失败仍按各自策略立即处理。
 系统文件选择器、分享页和 Autofill 认证 Activity 导致的短暂前后台切换因此不会立即截断已授权操作。
 
+设备翻转锁定后的可选“退出并清理 task”仅在 flip-to-lock 和清理设置都开启、且翻转成功锁定会话时触发；屏幕关闭锁定永不清理 task。进程级协调器保留一个尚未消费的请求，由当前 resumed 的 Main、Credential Manager、Legacy Autofill 或 Accessibility Autofill Activity 认领。Activity 暂停或重建会释放认领，替代 Activity 可继续处理该请求；无 resumed Activity 时请求只保留在进程内。收到请求后显示关闭提醒并等待 1 秒，真正执行前再次核对请求、Activity owner 和 Locked 状态。`Authenticated` 或 `AutofillAuthenticated` 会撤销请求和延迟关闭；认证失败或取消并回到 Locked 时，仍 pending 的请求会恢复处理；进程死亡后不会恢复旧请求。
+
 ## Host 与生物识别
 
 认证方式可用性从 `VaultBootstrapStore` 一次读取 `AuthenticationCredentialSnapshot`。DataStore adapter 在同一份 Bootstrap
@@ -199,6 +201,7 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 | --- | --- | --- |
 | 协调认证请求和认证方式 | `DefaultAuthenticationManager` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt) |
 | 管理应用密码设置请求与页面结果归属 | `AppPasswordSettingsViewModel.runChange()`、`AppPasswordSettingsInteractor.execute()` | [`AppPasswordSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/AppPasswordSettingsViewModel.kt)、[`AppPasswordSettingsInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/AppPasswordSettingsInteractor.kt) |
+| 决定翻转锁定后的 task-clear 条件、请求所有者和一次性消费 | `DeviceLockHandler`、`ActiveTaskClearRequests`、`TaskClearActivityOwner` | [`DeviceLockController.kt`](../../app/src/main/java/com/aozijx/passly/app/DeviceLockController.kt)、[`ActiveTaskClearRequests.kt`](../../app/src/main/java/com/aozijx/passly/app/ActiveTaskClearRequests.kt)、[`TaskClearActivityOwner.kt`](../../app/src/main/java/com/aozijx/passly/app/TaskClearActivityOwner.kt) |
 | 提供 Activity 认证宿主和生命周期租约 | `AuthenticationHost`、`AuthenticationHostRegistry` | [`AuthenticationHost.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHost.kt)、[`AuthenticationHostRegistry.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHostRegistry.kt) |
 | 派生和封存 Vault 会话密钥 | `DekManager`、`VaultSessionController` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
 | 区分应用密码 Envelope 提交与会话协调结果 | `runAppPasswordProvisioning()`、`DefaultAuthenticationMethodProvisioner.setAppPassword()` | [`AppPasswordProvisioningCommit.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/AppPasswordProvisioningCommit.kt)、[`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt) |

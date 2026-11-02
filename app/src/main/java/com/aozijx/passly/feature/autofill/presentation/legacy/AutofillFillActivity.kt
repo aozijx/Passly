@@ -9,6 +9,12 @@ import androidx.activity.viewModels
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentActivity
+import com.aozijx.passly.app.ActiveTaskClearRequests
+import com.aozijx.passly.app.TaskClearActivityOwner
+import com.aozijx.passly.app.ViewTaskClearCallbackScheduler
+import com.aozijx.passly.app.message.contract.AppNoticePublisher
+import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.theme.PersistedAppTheme
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
@@ -34,10 +40,24 @@ class AutofillFillActivity : FragmentActivity() {
     @Inject
     lateinit var responseFactory: LegacyResponseFactory
 
+    @Inject
+    lateinit var activeTaskClearRequests: ActiveTaskClearRequests
+
+    @Inject
+    lateinit var noticePublisher: AppNoticePublisher
+
     private val viewModel: AutofillFillViewModel by viewModels()
+    private lateinit var taskClearActivityOwner: TaskClearActivityOwner
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        taskClearActivityOwner =
+            TaskClearActivityOwner(
+                requests = activeTaskClearRequests,
+                scheduler = ViewTaskClearCallbackScheduler(window.decorView),
+                showReminder = { noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER)) },
+                closeTask = ::finishAndRemoveTask,
+            )
         excludeFromAutofill()
         setResult(RESULT_CANCELED)
         val request =
@@ -150,6 +170,16 @@ class AutofillFillActivity : FragmentActivity() {
                 return
             }
         if (!committed) return
+    }
+
+    override fun onResume() {
+        super.onResume()
+        taskClearActivityOwner.onResumed()
+    }
+
+    override fun onPause() {
+        taskClearActivityOwner.onPaused()
+        super.onPause()
     }
 
     private fun finishCancelledAfterDeliveryFailure() {

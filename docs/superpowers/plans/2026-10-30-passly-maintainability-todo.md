@@ -82,13 +82,15 @@
 
 ## Task 28：明确设备锁后的 task-clear 命令交付所有者
 
-- [ ] 明确 `isFlipExitAndClearStackEnabled` 的可见行为合同：命令应由哪个当前 Activity/Task 收到，主入口不在当前 task、Autofill 系统 PendingIntent 启动 Activity、Activity 重建或 collector 暂时不存在时分别如何处理；区分设备锁请求与真正清理 task 的条件，避免旧请求在用户重新认证/进入新交互后误关闭页面。
-- [ ] 令进程级 `DeviceLockController` 到 Android task owner 的命令有明确 claim/ack 或等价生命周期合同。当前不重放 `SharedFlow` 在无 collector 时直接丢失；不能只改为 `replay = 1`，否则消费过的旧锁定命令可能在后续 collector/新 Activity 收到。`tryEmit()` 的成功也不能当作 Activity 已消费。
-- [ ] 增加 owner/生命周期行为回归：锁定命令先于 collector、collector 因 Activity 重建切换、从 Credential Manager/Legacy Autofill/Accessibility Activity 前台触发 flip、命令消费后重新解锁，以及收到命令后 1 秒关闭延迟期间重新认证。验证正确 Activity/task 只执行一次 `finishAndRemoveTask`，无 owner 时按合同保留或显式放弃，旧 owner/旧会话命令不能关闭新页面；延迟关闭需绑定请求/会话并可按产品合同取消或在执行前重新验证。同步维护边界文档与 `git diff --check`。
+- [x] 明确行为合同：只有 flip-to-lock 与 task-clear 都启用且 FLIP 成功锁定才清 task；SCREEN_OFF 永不清 task。当前 resumed Activity（Main、Credential Manager、Legacy Autofill、Accessibility Autofill）拥有请求；无 owner 时进程内暂存，Activity 重建可重新 claim；成功重新认证撤销请求，认证失败/取消并回到 Locked 时恢复仍 pending 的请求；进程死亡不恢复请求。
+- [x] 将 lossy `SharedFlow` 替换为有请求/owner identity 的 claim、release、consume 协调器。旧 owner、已消费请求和认证后的延迟 callback 均无法清理新 task。
+- [x] 增加 handler、协调器和生命周期 owner 回归，覆盖 screen-off 条件、请求暂存与转交、owner 替换、一次性消费、认证撤销、pause 取消及过期延迟 callback。行为通过可控 callback scheduler 的 JVM 单测覆盖，Activity 生命周期 wiring 通过 AndroidTest 编译检查；实体设备已连接，但尚未安装运行验证。
 
-**证据：** `DeviceLockController` 是 Application 注入的 `@Singleton`，在 `PasslyApplication.onCreate()` 注册屏幕关闭接收器；ProcessLifecycle 的 `AppLifecycleObserver.onStart()` 也独立启用设备 flip 监听。`DeviceLockHandler.handle(FLIP)` 在 Vault session 已解锁时返回 `shouldClearTask = isFlipToLockEnabled && isFlipExitAndClearStackEnabled`，`DeviceLockController.dispatch()` 随后调用 `ActiveTaskClearRequests.requestClear()`。该请求由 `MutableSharedFlow(replay = 0, extraBufferCapacity = 1, DROP_OLDEST)` 实现；零个订阅者时没有 replay，缓冲不会替无订阅者保留事件，而 `requestClear()` 丢弃 `tryEmit()` 的返回值。全仓唯一生产 collector 位于 `MainActivity.onCreate()` 的 `lifecycleScope`，收到后才发布关闭提醒并延迟调用 `finishAndRemoveTask()`。但 Credential Manager 与 Legacy Autofill 各自能通过系统 PendingIntent 直接启动其 Activity，ProcessLifecycle/device lock 又是进程级的；因此当前 Activity 可能不是 MainActivity，且 MainActivity 未必已创建。现有 `DeviceLockHandlerTest` 还明确测试并锁定“collector 启动前发出的 task-clear 请求被丢弃”，但没有验证系统 Autofill Activity 作为当前宿主、Activity 重建或锁定后重新认证时的产品语义。应先定义命令的当前 task/session 所有权，再选择保留、确认丢弃或消费机制，不能仅把事件流改成重放流。
+**修复前证据：** `DeviceLockController` 是 Application 注入的 `@Singleton`，在 `PasslyApplication.onCreate()` 注册屏幕关闭接收器；ProcessLifecycle 的 `AppLifecycleObserver.onStart()` 也独立启用设备 flip 监听。旧实现用 `MutableSharedFlow(replay = 0, extraBufferCapacity = 1, DROP_OLDEST)` 且丢弃 `tryEmit()` 结果，因此无 collector 时命令丢失；唯一 collector 在 `MainActivity`，SCREEN_OFF 也会受 flip 清 task 设置影响。Credential Manager 与 Legacy Autofill 可直接通过系统 PendingIntent 启动；故当前 task owner 不保证是 MainActivity。
 
-**新增延迟执行证据：** `MainActivity.closeAndClearTask()` 立即发布提醒，然后直接 `window.decorView.postDelayed(::finishAndRemoveTask, 1_000L)`；返回的 callback 没有持有/取消入口，也没有在执行时复查原 task owner、锁状态或认证 session generation。认证状态由 `AppShellUiState.toAppShellSessionMode()` 在锁定后切回 Unlock 流程，因此用户若在这 1 秒内重新认证，旧的排队 runnable 仍可能结束仍承载新交互的 MainActivity/task。现有 `DeviceLockHandlerTest` 只测 handler 和无 collector 时事件丢弃，没有 Activity/handler 时序测试；将“重新认证发生在延迟关闭到期前”纳入上面的宿主回归。本证据指出未闭合的竞态窗口，尚无运行时复现；需要先定义产品是否允许已触发的关闭不可撤销，再选择在认证恢复时撤销 callback 或执行前验证请求 owner。
+**修复前延迟执行证据：** `MainActivity.closeAndClearTask()` 旧实现立即发布提醒，再直接 post 一个无持有/取消入口的 1 秒关闭 callback，执行前也不校验认证状态与 owner。用户在延迟期间重新认证时，旧 callback 仍可结束新交互。
+
+**完成实现与验证：** `docs/superpowers/specs/2026-11-02-device-lock-task-clear-design.md` 记录已选行为合同；`docs/security/authentication.md` 已同步。聚焦单测覆盖 handler、协调器和 lifecycle owner；`:app:compileDebugAndroidTestKotlin`、App KtLint、`verifyArchitecture` 与 `git diff --check` 均通过。Android 设备当前已连接，但本批未进行安装/运行验证。
 
 ## Task 29：在 Security 页面退出时清除 App Password 对话框草稿
 

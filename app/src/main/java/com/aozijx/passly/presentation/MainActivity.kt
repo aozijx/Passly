@@ -6,9 +6,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.lifecycleScope
 import com.aozijx.passly.R
-import com.aozijx.passly.app.DeviceLockController
+import com.aozijx.passly.app.ActiveTaskClearRequests
+import com.aozijx.passly.app.TaskClearActivityOwner
+import com.aozijx.passly.app.ViewTaskClearCallbackScheduler
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
@@ -21,7 +22,6 @@ import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -41,14 +41,23 @@ class MainActivity : AppCompatActivity() {
     lateinit var permissionRequestHistory: PermissionRequestHistory
 
     @Inject
-    lateinit var deviceLockController: DeviceLockController
+    lateinit var activeTaskClearRequests: ActiveTaskClearRequests
 
     @Inject
     lateinit var logger: Logger
 
+    private lateinit var taskClearActivityOwner: TaskClearActivityOwner
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppContentTheme)
         super.onCreate(savedInstanceState)
+        taskClearActivityOwner =
+            TaskClearActivityOwner(
+                requests = activeTaskClearRequests,
+                scheduler = ViewTaskClearCallbackScheduler(window.decorView),
+                showReminder = { noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER)) },
+                closeTask = ::finishAndRemoveTask,
+            )
         excludeFromAutofill()
         enableEdgeToEdge()
 
@@ -70,20 +79,15 @@ class MainActivity : AppCompatActivity() {
                 permissionServices = permissionServices,
             )
         }
-
-        lifecycleScope.launch {
-            deviceLockController.clearTaskRequests.collect {
-                closeAndClearTask()
-            }
-        }
     }
 
-    private fun closeAndClearTask() {
-        noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
-        window.decorView.postDelayed(::finishAndRemoveTask, APP_CLOSE_MESSAGE_DELAY_MS)
+    override fun onResume() {
+        super.onResume()
+        taskClearActivityOwner.onResumed()
     }
 
-    private companion object {
-        const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L
+    override fun onPause() {
+        taskClearActivityOwner.onPaused()
+        super.onPause()
     }
 }
