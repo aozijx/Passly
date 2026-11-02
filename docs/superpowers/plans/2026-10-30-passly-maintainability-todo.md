@@ -431,10 +431,10 @@
 
 ## Task 66：Trash Room Flow 的错误映射只覆盖可恢复异常
 
-- [ ] 将 `TrashViewModel.observeTrash()` 的 `Flow.catch` 收窄到普通 `Exception`：当前 catch 参数是 `Throwable`，失败后交给 `toUiErrorMessage()`；该 mapper 只特别传播 `CancellationException`，其他 `Throwable`（包括 `AssertionError`/`LinkageError`）会经 `AppError.fromThrowable()` 转成普通 `Unexpected` 页面失败。取消继续传播；fatal `Error` 不得变成可重试的 LoadFailed。保留普通 Room/query `Exception` 可见失败与 `RetryLoad` 对冷源重新订阅的现有合同。
-- [ ] 增加 Flow 层 ViewModel 覆盖：Repository Flow 首次抛普通异常可进入 Failed 并重试恢复；发值后抛异常保留可见失败；Flow 上游独立抛出 `CancellationException` 不转 UI 失败；同一 collector 收到 fatal `Error` 时该 Error 传播且不伪装为 retryable page state。区分这些用例与现有 Trash 命令执行/授权失败测试。
+- [x] 将 `TrashViewModel.observeTrash()` 的 `Flow.catch` 限定为普通 `Exception` 的页面映射：先核对 collector 仍 active，再原样传播 `CancellationException` 和所有非 `Exception` throwable，避免 fatal `Error` 经共享 mapper 变成可重试失败。普通 Room/query 异常继续映射为 `Failed`，`RetryLoad` 仍重订阅冷 Flow。
+- [x] 在 ViewModel 层覆盖发值后普通查询异常仍可见、上游独立取消不变为 Failed、fatal `AssertionError` 原样传播；保留已有普通查询异常后 RetryLoad 重订阅成功及多次失败后恢复用例。命令/授权异常用例独立保留。
 
-**证据：** `TrashViewModel.observeTrash()` 对 `deletedEntries` 调用 `.catch { currentCoroutineContext().ensureActive(); if (isCurrentObservation(ticket)) mutate(LoadFailed(it.toUiErrorMessage(...))) }`；`Throwable.toUiErrorMessage()` 显式重抛 `CancellationException`，但对其余 Throwable 调用 `AppError.fromThrowable()`，该 mapper 的兜底分支把未识别 Throwable 变成 `Unexpected`。Flow `catch` 的静态 lambda 类型是 `Throwable`，因此 fatal upstream error 会被改写为普通 UI 错误。已有 `TrashViewModelTest` 的 repository retry 测试针对 Restore command fake 抛出 `IllegalStateException`；没有 `deletedEntries` Flow 抛 fatal/cancellation 的行为用例。异常恢复状态本身仍属于 Trash ViewModel owner，不需要为修复增设 repository 或转发桥。
+**证据：** `observeTrash()` 保留 collector active 与 ticket 校验，只有普通 `Exception` 才进入 `toUiErrorMessage()` 和 `LoadFailed`；取消和 fatal `Error` 在共享 mapper 前传播。`TrashViewModelTest` 新增发值后普通异常、独立 Flow 取消和 fatal 传播用例；原有 cold Flow 普通异常重试用例继续通过。功能页同步说明异常边界。两位独立只读复审 Ready；未增加转发层或改动共享错误 mapper。
 
 ## Task 67：Favicon adapter 不把 fatal Error 映射成图像失败
 

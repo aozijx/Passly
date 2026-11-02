@@ -1,6 +1,6 @@
 # Vault 列表、搜索与排序
 
-状态：当前实现（代码核对：2026-10-31）。
+状态：当前实现（代码核对：2026-11-02）。
 
 列表只查询可展示摘要；密码、OTP secret、私钥等高敏值通过明确授权的窄入口按需读取。
 修订历史是可恢复的版本快照，访问活动记录查看、复制和 Autofill 等行为，两者不是同一数据源；
@@ -14,7 +14,8 @@
 订阅和页面 effect collector 只由真正的 Vault destination 持有，导航转场期间离开的旧 Vault 页仍遵循
 `VaultViewModel` 的 `PageEffects` owner 过滤规则。
 
-回收站单独订阅 `EntryListQueryRepository.deletedEntries`。加载失败保持明确的失败状态，显示重试入口，
+回收站单独订阅 `EntryListQueryRepository.deletedEntries`。普通查询异常进入明确的失败状态并显示重试入口；
+`CancellationException` 与 fatal `Error` 原样传播，不转成可重试的页面失败。
 不展示“回收站为空”；关闭操作错误也不能将读取失败改成空列表。`RetryLoad` 只在读取失败时重建订阅，
 立即进入 Loading，重复点击不会创建重复订阅；恢复后继续以仓库 Flow 更新列表。
 每次读取有独立任务票据，替换或销毁时取消旧 Job，迟到数据和错误不能发布。销毁后清理列表状态并拒绝重试。
@@ -95,9 +96,9 @@ Vault 展示配置由 [`VaultDisplayViewModel`](../../../app/src/main/java/com/a
 ## 滑动默认值
 
 列表错误事件持有 `UiErrorMessage` 资源键；移动到回收站失败不直接展示内部错误码，会话受限提示也由界面按当前语言解析。
-无生产者的 `ShowToast` 事件已移除。列表与详情的复制标签共用 [`CopyFieldLabels.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/CopyFieldLabels.kt)，
-只映射字段标识到文案资源，不读取或传递凭据值；未列字段保留通用“内容”标签。详情 OTP 复制使用独立 `OtpCopied`，
-不再通过可空字段键区分。Toast 在消费时使用当前 `LocalResources` 解析标签和错误文案。
+列表与详情的复制标签共用 [`CopyFieldLabels.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/CopyFieldLabels.kt)，
+只映射字段标识到文案资源，不读取或传递凭据值；未列字段保留通用“内容”标签。详情 OTP 复制单独发布 `OtpCopied`。
+Toast 在消费时使用当前 `LocalResources` 解析标签和错误文案。
 
 Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删除，不再提供“详情”动作。显示和执行都必须读取
 `InteractionSettings`，不能在 UI 重新定义另一套默认。

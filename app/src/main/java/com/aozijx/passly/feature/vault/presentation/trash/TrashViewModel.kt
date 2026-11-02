@@ -63,6 +63,7 @@ internal class TrashViewModel
                     entryListQueryRepository.deletedEntries
                         .catch {
                             currentCoroutineContext().ensureActive()
+                            if (it is CancellationException || it !is Exception) throw it
                             if (isCurrentObservation(
                                     ticket,
                                 )

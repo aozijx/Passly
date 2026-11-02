@@ -41,6 +41,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -300,6 +302,60 @@ class TrashViewModelTest {
             assertEquals(3, subscriptions)
             assertEquals(TrashContentState.Loaded(emptyList()), model.uiState.value.content)
         }
+
+    @Test
+    fun `query failure after rows remains visible as failed content`() =
+        runTest {
+            val model =
+                model(
+                    flow {
+                        emit(listOf(entry))
+                        error("query failed after first result")
+                    },
+                )
+            runCurrent()
+
+            assertEquals(
+                TrashContentState.Failed(UiErrorMessage(R.string.trash_error_load)),
+                model.uiState.value.content,
+            )
+            clear(model)
+        }
+
+    @Test
+    fun `independent repository cancellation does not become failed content`() =
+        runTest {
+            val model =
+                model(
+                    flow {
+                        emit(listOf(entry))
+                        throw CancellationException("query cancelled")
+                    },
+                )
+            runCurrent()
+
+            assertEquals(TrashContentState.Loaded(listOf(entry)), model.uiState.value.content)
+            clear(model)
+        }
+
+    @Test
+    fun `fatal repository error escapes without becoming failed content`() {
+        val fatal = AssertionError("fatal query failure")
+        val propagated =
+            assertThrows(AssertionError::class.java) {
+                runTest {
+                    val model = model(flow { throw fatal })
+                    try {
+                        runCurrent()
+                        assertTrue(model.uiState.value.content !is TrashContentState.Failed)
+                    } finally {
+                        clear(model)
+                    }
+                }
+            }
+
+        assertSame(fatal, propagated)
+    }
 
     @Test
     fun `destroyed model cancels reading and cannot publish late rows`() =
