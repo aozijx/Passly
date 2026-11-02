@@ -5,22 +5,25 @@ import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.FieldKey
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AutofillCredentialTitleResolverTest {
     @Test
     fun draftNormalizesLookupAssociationsAndPreservesCredentialValues() {
         val draft =
-            buildAutofillCredentialDraft(
-                draft =
-                    AutofillSaveDraft(
-                        packageName = " COM.Example.Mail ",
-                        webDomain = "https://Login.Example.com/path",
-                        pageTitle = "Example Login",
-                        username = " alice ",
-                        password = " secret ",
-                    ),
-                applicationLabelResolver = ApplicationLabelResolver { "Example Mail" },
+            requireNotNull(
+                buildAutofillCredentialDraft(
+                    draft =
+                        AutofillSaveDraft(
+                            packageName = " COM.Example.Mail ",
+                            webDomain = "https://Login.Example.com/path",
+                            pageTitle = "Example Login",
+                            username = " alice ",
+                            password = " secret ",
+                        ),
+                    applicationLabelResolver = ApplicationLabelResolver { "Example Mail" },
+                ),
             )
 
         assertEquals(EntryDraftValue.Text("Example Login"), draft[FieldKey.TITLE])
@@ -30,10 +33,7 @@ class AutofillCredentialTitleResolverTest {
             EntryDraftValue.TextList(listOf("login.example.com")),
             draft[FieldKey.DOMAINS],
         )
-        assertEquals(
-            EntryDraftValue.TextList(listOf("com.example.mail")),
-            draft[FieldKey.APPLICATION_IDS],
-        )
+        assertNull(draft[FieldKey.APPLICATION_IDS])
     }
 
     @Test
@@ -48,6 +48,27 @@ class AutofillCredentialTitleResolverTest {
             )
 
         assertEquals("Example Mail", title)
+    }
+
+    @Test
+    fun nativeCredentialKeepsOnlyApplicationAssociation() {
+        val draft =
+            requireNotNull(
+                buildAutofillCredentialDraft(
+                    draft =
+                        AutofillSaveDraft(
+                            packageName = " COM.EXAMPLE.MAIL ",
+                            webDomain = null,
+                            pageTitle = "Mail",
+                            username = "alice",
+                            password = "secret",
+                        ),
+                    applicationLabelResolver = ApplicationLabelResolver { "Example Mail" },
+                ),
+            )
+
+        assertEquals(EntryDraftValue.TextList(listOf("com.example.mail")), draft[FieldKey.APPLICATION_IDS])
+        assertNull(draft[FieldKey.DOMAINS])
     }
 
     @Test

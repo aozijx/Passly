@@ -41,6 +41,17 @@ class SaveAutofillCredentialTest {
         }
 
     @Test
+    fun invalidWebsiteDomainIsRejectedBeforePersistence() =
+        runBlocking {
+            val fixture = fixture()
+
+            val outcome = fixture.operation(draft(password = "secret", webDomain = "not a valid domain"))
+
+            assertEquals(AutofillSaveOutcome.InvalidDraft, outcome)
+            assertEquals(0, fixture.repository.createCalls)
+        }
+
+    @Test
     fun passwordOnlyDraftCreatesTypedLoginCredential() =
         runBlocking {
             val fixture = fixture()
@@ -100,9 +111,10 @@ class SaveAutofillCredentialTest {
     private fun draft(
         username: String = "alice",
         password: String,
+        webDomain: String? = "example.com",
     ) = AutofillSaveDraft(
         packageName = "com.example.app",
-        webDomain = "example.com",
+        webDomain = webDomain,
         pageTitle = "Example",
         username = username,
         password = password,

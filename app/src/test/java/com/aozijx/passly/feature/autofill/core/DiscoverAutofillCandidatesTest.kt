@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillField
+import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import com.aozijx.passly.domain.autofill.model.FieldRole
@@ -84,6 +85,50 @@ class DiscoverAutofillCandidatesTest {
 
             assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
             assertEquals(1, fixture.repository.searchCalls)
+        }
+
+    @Test
+    fun websiteCandidateSearchUsesDomainWithoutBrowserPackageAssociation() =
+        runBlocking {
+            val fixture = fixture()
+
+            fixture.operation(request())
+
+            assertEquals("example.com", fixture.repository.lastQuery?.webDomain)
+            assertEquals(null, fixture.repository.lastQuery?.packageName)
+        }
+
+    @Test
+    fun nativeCandidateSearchUsesNormalizedApplicationId() =
+        runBlocking {
+            val fixture = fixture()
+
+            fixture.operation(request().copy(packageName = " COM.EXAMPLE.APP ", domain = null))
+
+            assertEquals("com.example.app", fixture.repository.lastQuery?.packageName)
+            assertEquals(null, fixture.repository.lastQuery?.webDomain)
+        }
+
+    @Test
+    fun invalidWebDomainFailsBeforeStartingAnInteractionOrQuery() =
+        runBlocking {
+            val fixture = fixture()
+
+            val outcome = fixture.operation(request().copy(domain = "not a valid domain"))
+
+            assertEquals(AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE), outcome)
+            assertEquals(0, fixture.repository.searchCalls)
+        }
+
+    @Test
+    fun blankApplicationIdFailsBeforeStartingAnInteractionOrQuery() =
+        runBlocking {
+            val fixture = fixture()
+
+            val outcome = fixture.operation(request().copy(packageName = "  ", domain = null))
+
+            assertEquals(AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE), outcome)
+            assertEquals(0, fixture.repository.searchCalls)
         }
 
     @Test
@@ -222,9 +267,11 @@ class DiscoverAutofillCandidatesTest {
         private val candidates: List<AutofillCandidateSummary>,
     ) : AutofillCandidateRepository {
         var searchCalls = 0
+        var lastQuery: AutofillCandidateQuery? = null
 
         override suspend fun search(query: AutofillCandidateQuery): List<AutofillCandidateSummary> {
             searchCalls++
+            lastQuery = query
             return candidates
         }
     }

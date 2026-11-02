@@ -57,6 +57,12 @@ username/password/OTP 语义。`LegacyPlatformAdapter` 将结果映射为平台�
 `DiscoverAutofillCandidates` 原子读取当前设置、规范化目标作用域、创建/恢复 interaction，并只查询
 `AutofillCandidateSummary` 元数据。候选阶段不读取 Entry 聚合、密码或 OTP secret。
 
+包名和网页域名由 Domain `AutofillScope` 统一规范化。包名 trim 后按 Locale.ROOT 小写，空值拒绝；网页域名缺失
+表示原生应用 scope，畸形域名返回 `INVALID_SCOPE`，不会降级为包名搜索。网页 scope 使用精确 host：忽略 scheme、
+port、path，保留 `www` 子域，去掉一个末尾 DNS 根点；ASCII/Punycode host 与 bracketed IPv6 可用，Unicode IDN
+拒绝，IPv6 文字转小写但不同压缩写法保持不同 scope。这样网页请求按域名检索和保存，不会将浏览器包名写成网站凭据的 application ID。
+Data 对 DAO 子串检索结果再做相同的精确 host 比较；允许未匹配建议时，仅在没有精确候选后按设置返回未关联登录项。
+
 Legacy 和手动无障碍入口可用 `HeuristicMatchStrategy` 识别非标准表单；Credential Manager 使用自己的严格 option/request 解析。
 平台 adapter 不直接依赖 Entry repository 或认证实现。
 

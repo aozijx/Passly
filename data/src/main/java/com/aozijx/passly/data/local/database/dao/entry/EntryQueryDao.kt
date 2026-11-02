@@ -78,13 +78,9 @@ interface EntryQueryDao {
               )
           )
         ORDER BY updatedAt DESC
-        LIMIT :limit
         """,
     )
-    suspend fun getAutofillCandidatesByDomain(
-        domain: String,
-        limit: Int,
-    ): List<EntryEntity>
+    suspend fun getAutofillCandidatesByDomain(domain: String): List<EntryEntity>
 
     // ---- exists ----
 

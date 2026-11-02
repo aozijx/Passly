@@ -29,6 +29,30 @@ import org.junit.Test
 
 class ResolveAutofillSelectionTest {
     @Test
+    fun equivalentUrlAndPackageFormattingKeepsTheSameInteractionScope() =
+        runBlocking {
+            val fixture = fixture()
+            val interaction =
+                fixture.start(
+                    AutofillInteractionSource.LEGACY,
+                    scope(),
+                    requireAuthentication = false,
+                )
+            fixture.store.recordCandidates(interaction.id, setOf(EntryId("entry-1")))
+
+            val outcome =
+                fixture.operation(
+                    interaction.id,
+                    AutofillGrantContext(" COM.EXAMPLE.APP ", "HTTPS://EXAMPLE.COM:443/login"),
+                    EntryId("entry-1"),
+                    includeOtp = false,
+                )
+
+            assertEquals(AutofillSelectionOutcome.CandidateUnavailable, outcome)
+            assertEquals(1, fixture.resolver.resolveCalls)
+        }
+
+    @Test
     fun scopeMismatchIsRejectedBeforeCredentialResolution() =
         runBlocking {
             val fixture = fixture()

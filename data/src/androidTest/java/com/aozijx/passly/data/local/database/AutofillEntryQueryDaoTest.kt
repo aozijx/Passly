@@ -62,9 +62,22 @@ class AutofillEntryQueryDaoTest {
                 listOf("url", "domain"),
                 database
                     .entryQueryDao()
-                    .getAutofillCandidatesByDomain("example.com", 10)
+                    .getAutofillCandidatesByDomain("example.com")
                     .map { it.entryId },
             )
+        }
+
+    @Test
+    fun domainPrefilterDoesNotTruncateExactHitBehindSubstringMatches() =
+        runBlocking {
+            repeat(45) { index ->
+                insert(entry("near-$index", domains = setOf("evil-example.com")).copy(updatedAt = 100L - index))
+            }
+            insert(entry("exact", domains = setOf("example.com")).copy(updatedAt = 1L))
+
+            val results = database.entryQueryDao().getAutofillCandidatesByDomain("example.com")
+
+            assertTrue(results.any { it.entryId == "exact" })
         }
 
     private suspend fun insert(entry: EntryEntity) = database.entryCommandDao().insertStrict(entry)

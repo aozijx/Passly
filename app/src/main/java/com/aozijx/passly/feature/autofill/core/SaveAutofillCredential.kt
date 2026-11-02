@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.autofill.core
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.autofill.AutofillDomainNormalization
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
@@ -28,11 +29,12 @@ class SaveAutofillCredential
             inboxDraftId: AutofillInboxDraftId? = null,
         ): AutofillSaveOutcome {
             if (draft.password.isBlank()) return AutofillSaveOutcome.InvalidDraft
+            val entryDraft = buildAutofillCredentialDraft(draft, applicationLabelResolver) ?: return AutofillSaveOutcome.InvalidDraft
 
             return when (
                 val result =
                     createEntry.createFromAutofill(
-                        buildAutofillCredentialDraft(draft, applicationLabelResolver),
+                        entryDraft,
                         inboxDraftId,
                     )
             ) {
@@ -52,9 +54,13 @@ class SaveAutofillCredential
 internal fun buildAutofillCredentialDraft(
     draft: AutofillSaveDraft,
     applicationLabelResolver: ApplicationLabelResolver,
-): EntryDraft {
-    val applicationId = AutofillScope.normalizeApplicationId(draft.packageName)
-    val domain = AutofillScope.normalizeDomain(draft.webDomain)
+): EntryDraft? {
+    val normalizedDomain = AutofillScope.normalizeDomain(draft.webDomain)
+    if (normalizedDomain == AutofillDomainNormalization.Invalid) return null
+    val domain = (normalizedDomain as? AutofillDomainNormalization.Valid)?.host
+    val normalizedApplicationId = AutofillScope.normalizeApplicationId(draft.packageName)
+    if (domain == null && normalizedApplicationId == null) return null
+    val applicationId = normalizedApplicationId.takeIf { domain == null }
     val title =
         resolveAutofillCredentialTitle(
             applicationId = applicationId,
@@ -71,8 +77,10 @@ internal fun buildAutofillCredentialDraft(
     draft.username.trim().takeIf(String::isNotEmpty)?.let {
         entryDraft = entryDraft.withValue(definition, FieldKey.USERNAME, EntryDraftValue.Text(it))
     }
-    draft.webDomain?.trim()?.takeIf(String::isNotEmpty)?.let {
-        entryDraft = entryDraft.withValue(definition, FieldKey.PRIMARY_URL, EntryDraftValue.Text(it))
+    domain?.let {
+        draft.webDomain?.trim()?.takeIf(String::isNotEmpty)?.let { url ->
+            entryDraft = entryDraft.withValue(definition, FieldKey.PRIMARY_URL, EntryDraftValue.Text(url))
+        }
     }
     domain?.let {
         entryDraft =

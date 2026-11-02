@@ -8,6 +8,9 @@
 
 - Android 调用方身份只来自当前 framework request；PendingIntent extras 不能重建调用方授权。
 - interaction 绑定来源、规范化 scope、实际展示的 Entry IDs 和 process-local 生命周期。
+- scope 规范化由 Domain 的 `AutofillScope` 统一拥有：application ID 去首尾空白并按 `Locale.ROOT` 转小写，空值无效；缺失域名与畸形域名分开处理，畸形 scope 在取得解锁 lease 或查询候选前拒绝。
+- 网页身份按精确 host 匹配：scheme、port、path 不参与身份；`www.example.com` 与 `example.com` 保持隔离，单个 DNS 根尾点会规范化移除。只接受 ASCII DNS host 和 bracketed IPv6 literal；Unicode IDN 拒绝，IPv6 转小写并保留文字格式，不做 DNS 查询或不同压缩写法合并，拒绝带 zone 的地址。
+- 有有效网页域名时，候选查询与保存关联只使用该域名，不把浏览器 application ID 作为网站凭据关联。无网页域名时才按 application ID 查询/保存。DAO 的子串结果仍须通过精确 Domain 规范化匹配；允许未匹配建议时，只在没有精确候选后按设置回退到未关联登录项。
 - 候选阶段只读元数据；密码和 OTP 只在最终选择验证后按单条读取。
 - `AutofillAuthenticated` 是窄权限会话，不授权普通 Vault 列表、编辑、备份或设置。
 - 结果提交边界必须包含 `setResult + finish`；提交开始后禁止 lease 新借用，`finish` 返回后才能关闭临时会话。

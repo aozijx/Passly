@@ -160,7 +160,7 @@ class CredentialManagerFlowTest {
             val result =
                 fixture.flow.createPassword(
                     interactionId = interaction.id,
-                    scope = scope(),
+                    scope = scope(" COM.EXAMPLE.APP "),
                     username = "alice",
                     password = "secret",
                 )

@@ -391,12 +391,12 @@
 
 ## Task 62：统一 Autofill 交互范围的归一化合同
 
-- [ ] 将 package/application ID 的规范化规则归于单一 Domain owner，供 `AutofillGrantContext.normalized()`、`AutofillScope.normalizeApplicationId()`、交互创建/比较与候选查询共同使用。当前两个实现都执行 trim/lowercase，但空字符串语义不同：Context 保留 `""`，Scope 返回 `null`。明确空值与大小写策略，确保 `AutofillInteractionStore.create()` 的非空约束、scope equality、repository 查询和保存关联使用相同的 canonical key；不要仅因调用了相同字符串函数就抽成通用工具。
-- [ ] 明确 web-domain scope 的身份边界：`AutofillScope.normalizeDomain()` 当前从 URL 提取 host，同时忽略 scheme、端口和路径、去掉一个 `www.` 前缀及末尾点。逐项裁定这些输入是否代表同一授权/候选范围，并定义 IDN/Punycode 与 IPv6 的行为；归一化不能无意合并本应隔离的站点范围。畸形 URI 要由明确的 Domain/UseCase 结果合同处理，不能让各 Autofill 入口以不同方式异常退出。
-- [ ] 增加 Domain 与跨层回归覆盖：同一规则用于 `AutofillInteractionStore` 创建 scope、Discover 交互比较、Credential Manager scope 比较、Data 候选匹配及保存关联；覆盖空白/大小写包名、含 URL 的 domain、scheme/port/path/`www`/末尾点、IDN、IPv6 与非法输入。断言不匹配时不能扩大到额外候选或错误交互；保留取消和现有 session owner 合同，更新 Autofill 正式文档。
-- [ ] 盘点其他 canonicalization（OTP Base32、Wi-Fi 安全键、银行卡号、标签键、Favicon URL、UI 搜索文本），只合并语义完全相同且共享边界明确的规则；它们的字母表、Unicode、格式保留与持久化语义不同，不建立一个跨域 `String.normalize()` 大工具。
+- [x] 将 package/application ID 的规范化规则归于单一 Domain owner，供 `AutofillGrantContext.normalized()`、交互创建/比较、Data 查询与保存关联共同使用；统一 trim、`Locale.ROOT` lowercase 与空白拒绝。
+- [x] 明确 web-domain scope：精确 host；scheme/port/path 忽略；`www` 保持隔离；移除单个末尾 DNS 根点；接受 ASCII/Punycode 和 bracketed IPv6；拒绝 Unicode IDN、IPv6 zone ID 与畸形 host。IPv6 比较按小写后的输入文本保持，避免 Domain/Data 查询键不一致。
+- [x] 增加 Domain、Discover、Credential Manager、选择、Data 匹配及保存回归覆盖。无效 scope 返回显式失败或拒绝保存；网页查询/保存不混入浏览器 package association；DAO 子串预筛结果只保留精确 host 命中。保留既有取消/session 所有权。更新 Autofill 安全策略和流程文档。
+- [x] 盘点其他 canonicalization：EntryVisualCategoryClassifier 的 host 处理用于展示分类，语义不同而保留；OTP Base32、Wi-Fi 安全键、银行卡号、标签键、Favicon URL、UI 搜索文本也各自拥有不同字母表、Unicode、格式或持久化合同，保持独立，未添加通用字符串规范化工具。
 
-**证据：** `domain/autofill/model/AutofillModels.kt` 的 `AutofillGrantContext.normalized()` 对 `packageName` 直接 `trim().lowercase()`，而 `domain/autofill/AutofillScope.kt` 的 `normalizeApplicationId()` 还将空白映射为 `null`。前者用于 `AutofillInteractionStore.create()` 与 `DiscoverAutofillCandidates`/`CredentialManagerFlow` 的 interaction scope equality；后者用于 Data 候选查询、条目关联匹配和 Autofill 保存映射，因此相同身份规范分别由模型和 scope helper 表达。`normalizeDomain()` 通过 `URI(cleanUrl).host` 去掉 scheme/port/path，并进一步移除 `www.` 与末尾点；当前唯一直接 Domain 测试覆盖常规 `www.accounts.google.com/login` 和畸形输入异常传播，未覆盖边界等价矩阵或 `AutofillGrantContext.normalized()` 与 scope helper 的一致性。匹配规则属于 autofill grant scope，需先确定身份/授权合同，再决定是否重用 canonicalizer，不能把 UI 显示分类中的 NFKC host 处理机械并入。
+**Task 62 实施记录（2026-11-02）：** `AutofillScope` 成为 package/domain 唯一规范化 owner，`AutofillGrantContext.normalized()` 统一使用它并将空包名/畸形域名映射为无效 scope；Discover 在 lease/interaction 与候选查询前返回 `INVALID_SCOPE`。候选查询有网站域名时仅使用域名；保存草稿有网站域名时仅写 DOMAINS/PRIMARY_URL，不写浏览器 APPLICATION_IDS，原生应用仍按 package 关联。Data 对 DAO 子串预筛后的完整结果按精确 canonical host 匹配，查询不再先截断近似结果，避免较新的 `evil-example.com` 把较旧精确命中挤出窗口；此做法增加本地候选查询可能读取的行数，实际成本尚未测量。全局未匹配回退只在没有精确命中且设置允许时执行。移除无调用者的 `AutofillScope.matches()`，保留展示分类器自己的不同域名规则。安全与流程文档记录精确 host、IDN/IPv6 和候选关联语义。Domain、Discover、Credential Manager scope comparison、selection scope comparison、save mapping 与 Data exact-host 测试以及最终 KtLint/架构/diff 检查和独立审查结果见 SDD ledger。
 
 ## 最近扫描复核
 - 当前 `app` Flow/StateFlow consumer 重扫未发现待办之外的新长期 collector 缺口；设置/DataStore 与进程 owner 归 Task 30，Room/session 归 Task 31，诊断运行时归 Task 39，Detail 活动/修订观察与根快照加载各自的失败和重试合同，Autofill 设置归 Task 52，Trash Flow 归 Task 66，Diagnostics 页面归 Task 69。此处保留索引，具体证据只维护在对应任务中。

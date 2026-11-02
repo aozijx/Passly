@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.autofill.model
 
+import com.aozijx.passly.domain.autofill.AutofillDomainNormalization
 import com.aozijx.passly.domain.autofill.AutofillScope
 
 /**
@@ -55,9 +56,14 @@ data class AutofillGrantContext(
     val packageName: String,
     val webDomain: String? = null,
 ) {
-    fun normalized(): AutofillGrantContext =
-        copy(
-            packageName = packageName.trim().lowercase(),
-            webDomain = AutofillScope.normalizeDomain(webDomain),
-        )
+    fun normalized(): AutofillGrantContext? {
+        val applicationId = AutofillScope.normalizeApplicationId(packageName) ?: return null
+        val domain =
+            when (val normalized = AutofillScope.normalizeDomain(webDomain)) {
+                AutofillDomainNormalization.Missing -> null
+                AutofillDomainNormalization.Invalid -> return null
+                is AutofillDomainNormalization.Valid -> normalized.host
+            }
+        return copy(packageName = applicationId, webDomain = domain)
+    }
 }

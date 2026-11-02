@@ -35,12 +35,13 @@ class StartAutofillInteraction
             scope: AutofillGrantContext,
             requireAuthentication: Boolean,
         ): AutofillInteractionSnapshot {
+            val normalizedScope = requireNotNull(scope.normalized()) { "Invalid Autofill interaction scope" }
             unlockLease.awaitReadyForInteraction()
             val hasFullAccess = vaultAccessState.hasFullSecureSessionAccess()
             val snapshot =
                 store.create(
                     source = source,
-                    scope = scope,
+                    scope = normalizedScope,
                     initialState =
                         if (hasFullAccess && !requireAuthentication) {
                             AutofillInteractionState.Authorized

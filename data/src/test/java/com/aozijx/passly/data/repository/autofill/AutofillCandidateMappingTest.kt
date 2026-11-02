@@ -51,4 +51,23 @@ class AutofillCandidateMappingTest {
         assertFalse("password" in fieldNames)
         assertFalse("otpCode" in fieldNames)
     }
+
+    @Test
+    fun candidateDomainMatchUsesExactCanonicalHost() {
+        val nearDomain = entry("evil-example.com").autofillMatch(applicationId = null, domain = "example.com")
+        val exactDomain = entry("WWW.Example.com.").autofillMatch(applicationId = null, domain = "www.example.com")
+
+        assertEquals(MatchType.UNKNOWN, nearDomain.type)
+        assertEquals(MatchType.WEB_DOMAIN, exactDomain.type)
+    }
+
+    private fun entry(domain: String) =
+        EntryEntity(
+            entryId = "entry-$domain",
+            entryType = EntryType.LOGIN,
+            title = domain,
+            domains = setOf(domain),
+            createdAt = 1L,
+            updatedAt = 1L,
+        )
 }

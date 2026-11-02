@@ -62,7 +62,9 @@ class DiscoverAutofillCandidates
                 } ?: request.source.fieldMatchStrategy().match(request)
             if (!match.hasCredentials) return AutofillDiscoveryOutcome.UnsupportedFields
 
-            val scope = AutofillGrantContext(request.packageName, request.domain).normalized()
+            val scope =
+                AutofillGrantContext(request.packageName, request.domain).normalized()
+                    ?: return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE)
             val snapshot =
                 resolveInteraction(request, scope, policy, interactionId)
                     ?: return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INTERACTION_NOT_FOUND)
@@ -94,7 +96,7 @@ class DiscoverAutofillCandidates
                 try {
                     candidateRepository.search(
                         AutofillCandidateQuery(
-                            packageName = scope.packageName,
+                            packageName = scope.packageName.takeIf { scope.webDomain == null },
                             webDomain = scope.webDomain,
                             allowUnmatched = policy.allowUnmatchedSuggestions,
                             limit = policy.normalizedMaxSuggestions,

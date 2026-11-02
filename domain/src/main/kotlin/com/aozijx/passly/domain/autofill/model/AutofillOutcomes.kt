@@ -12,6 +12,7 @@ data class AutofillDiscoveryContext(
 )
 
 enum class AutofillOperationFailure {
+    INVALID_SCOPE,
     INTERACTION_NOT_FOUND,
     INVALID_INTERACTION_STATE,
     SCOPE_MISMATCH,

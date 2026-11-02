@@ -33,8 +33,7 @@ class AutofillInteractionStore
             initialState: AutofillInteractionState,
         ): AutofillInteractionSnapshot =
             mutex.withLock {
-                val normalizedScope = scope.normalized()
-                require(normalizedScope.packageName.isNotBlank()) { "Autofill package name cannot be blank" }
+                val normalizedScope = requireNotNull(scope.normalized()) { "Invalid Autofill interaction scope" }
                 require(
                     initialState == AutofillInteractionState.RequiresUnlock ||
                         initialState == AutofillInteractionState.Authorized,
