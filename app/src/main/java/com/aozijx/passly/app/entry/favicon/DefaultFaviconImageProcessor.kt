@@ -9,6 +9,7 @@ import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -72,12 +73,11 @@ class DefaultFaviconImageProcessor
                     resultOfPreservingCancellation {
                         val input = imageStore.requireStaged(stagedInputPath)
                         val output = imageStore.createTransformOutput()
-                        try {
+                        withFaviconOutputCleanup(output) {
                             bitmapTransformer.transform(input, output, crop)
-                            imageStore.finishTransform(input, output).also { transformedPath = it }
-                        } catch (error: Throwable) {
-                            output.delete()
-                            throw error
+                            imageStore.finishTransform(input, output).also {
+                                transformedPath = it
+                            }
                         }
                     }
                 }
@@ -128,15 +128,58 @@ class DefaultFaviconImageProcessor
                 imageStore.discard(path)
             }
         }
+    }
 
-        private suspend inline fun <T> resultOfPreservingCancellation(block: suspend () -> T): Result<T> =
-            try {
-                Result.success(block())
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Throwable) {
-                Result.failure(error.toFaviconProcessingException())
-            }
+internal inline fun <T> withFaviconOutputCleanup(
+    output: File,
+    block: () -> T,
+): T =
+    try {
+        block()
+    } catch (error: Throwable) {
+        cleanupFaviconFileAfterFailure(output, error)
+        throw error
+    }
+
+internal fun cleanupFaviconFileAfterFailure(
+    file: File,
+    originalFailure: Throwable,
+) {
+    try {
+        file.delete()
+    } catch (cleanupFailure: Throwable) {
+        val preferredFailure = preferFaviconCleanupFailure(originalFailure, cleanupFailure)
+        if (preferredFailure !== originalFailure) throw preferredFailure
+    }
+}
+
+private fun preferFaviconCleanupFailure(
+    originalFailure: Throwable,
+    cleanupFailure: Throwable,
+): Throwable {
+    if (originalFailure === cleanupFailure) return originalFailure
+    if (cleanupFailure.faviconFailurePriority() > originalFailure.faviconFailurePriority()) {
+        cleanupFailure.addSuppressed(originalFailure)
+        return cleanupFailure
+    }
+    originalFailure.addSuppressed(cleanupFailure)
+    return originalFailure
+}
+
+private fun Throwable.faviconFailurePriority(): Int =
+    when (this) {
+        is Error -> 2
+        is CancellationException -> 1
+        else -> 0
+    }
+
+internal suspend fun <T> resultOfPreservingCancellation(block: suspend () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error.toFaviconProcessingException())
     }
 
 internal fun Throwable.toFaviconProcessingException(): FaviconProcessingException =

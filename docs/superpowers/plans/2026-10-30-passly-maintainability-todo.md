@@ -438,10 +438,10 @@
 
 ## Task 67：Favicon adapter 不把 fatal Error 映射成图像失败
 
-- [ ] 将 `DefaultFaviconImageProcessor.resultOfPreservingCancellation()` 的失败映射限于普通 `Exception`：当前它显式重抛 `CancellationException`，随后捕获任何 `Throwable` 并调用 `toFaviconProcessingException()`；未识别 `AssertionError`/`LinkageError` 等会被归为 `INVALID_IMAGE`，对上层表现为可恢复 `Result.failure`。必须保留上传/下载/转换的普通失败映射与取消清理，在处理输出文件后仍传播 fatal。
-- [ ] 增加 processor 层故障覆盖：stage、process、promote 的普通 IOException/domain failure 仍返回既有类型结果；独立 CancellationException 仍触发资源清理并传播；fatal Error 在必需的 `.input/.webp` 临时文件清理后以原错误传播，不经 `FaviconProcessingException` 包装。复核 `FaviconBitmapTransformer` 和 `FaviconImageStore` 的 cleanup catch 保持“清理后重抛”语义，不把所有 `catch(Throwable)` 机械删除。
+- [x] 将 `DefaultFaviconImageProcessor` 的结果边界收窄为只映射普通 `Exception`：`CancellationException` 继续传播，fatal `Error` 不经 `toFaviconProcessingException()` 或 `FaviconProcessingException` 包装。保留上传/下载/转换的普通失败映射。
+- [x] 明确转换输出清理边界并测试：fatal 转换失败会先尝试删除 `.webp` 输出，再传播原错误；若清理自身失败，次级异常不会覆盖主异常，除非清理异常是更高优先级的 fatal/cancellation。`FaviconImageStore.stage()` 对读取失败清理部分 `.input` 后传播原 fatal 的仪器用例已补入。取消仍在既有 `NonCancellable` 路径清理。复核并保留 `FaviconBitmapTransformer` 与 `FaviconImageStore` 窄 cleanup/rethrow，不做机械删除。
 
-**证据：** `resultOfPreservingCancellation()` 的 catch顺序为 cancellation rethrow 后 `catch(error: Throwable) { Result.failure(error.toFaviconProcessingException()) }`；mapper 将非已知 Favicon exception 一律归入 `FaviconProcessingFailure.INVALID_IMAGE`。`process()` 在 transform 失败时先删除 output 再抛出，`FaviconBitmapTransformer` 和 `FaviconImageStore.stage()` 也在 `catch(Throwable)` 中清理临时文件后重抛；这些窄 cleanup 边界应保留。现有 `FaviconProcessingFailureMappingTest` 只验证普通 `IllegalStateException` 的 fallback 分类，没有 processor 对 fatal Error 的传播/临时资源生命周期覆盖。该问题与提交后图标资源回收窗口不同，不重复处理图标 Room 引用或路径恢复。
+**证据：** processor 结果边界现在捕获普通 `Exception`，保留显式取消传播，fatal `Error` 自然穿透；`.webp` 输出、`.input` staging 与位图 transformer 的失败清理共用主异常优先的 cleanup helper，清理 fatal 会优先传播并保留主错。JVM 用例覆盖普通失败映射、取消、fatal 原实例、成功清理、次级删除失败和 cleanup fatal 优先；AndroidTest 覆盖 fatal 输入读取后 `.input` 被删除，并通过 `:app:compileDebugAndroidTestKotlin` 编译。仪器测试未在设备运行。未改 `discard()`/`isStaged()` 的独立 best-effort 行为，也未处理图标 Room 引用或路径恢复。
 
 ## Task 68：SAF 备份存储边界保留 fatal Error 与临时文档清理
 

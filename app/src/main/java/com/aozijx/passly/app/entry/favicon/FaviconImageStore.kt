@@ -65,7 +65,7 @@ class FaviconImageStore
                 }
                 return target.absolutePath
             } catch (error: Throwable) {
-                target.delete()
+                cleanupFaviconFileAfterFailure(target, error)
                 throw error
             }
         }

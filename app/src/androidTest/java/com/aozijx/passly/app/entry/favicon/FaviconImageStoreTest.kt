@@ -6,10 +6,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.InputStream
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -36,6 +38,34 @@ class FaviconImageStoreTest {
         assertTrue(File(promoted).parentFile?.canonicalFile == VaultResourcePaths.vaultImagesDir(context).canonicalFile)
         assertTrue(File(promoted).name.startsWith("favicon_"))
         assertArrayEquals(expected, File(promoted).readBytes())
+    }
+
+    @Test
+    fun stageFatalReadFailure_deletesPartialInputAndPropagatesOriginalError() {
+        val fatal = AssertionError("fatal input failure")
+        val input =
+            object : InputStream() {
+                private var emitted = false
+
+                override fun read(): Int {
+                    if (!emitted) {
+                        emitted = true
+                        return 1
+                    }
+                    throw fatal
+                }
+            }
+
+        val propagated = assertThrows(AssertionError::class.java) { store.stage(input) }
+
+        assertSame(fatal, propagated)
+        assertTrue(
+            VaultResourcePaths
+                .vaultImagesStagingDir(context)
+                .listFiles()
+                .orEmpty()
+                .none { it.extension == "input" },
+        )
     }
 
     @Test

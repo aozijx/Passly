@@ -26,7 +26,9 @@ Release 专用的 Google/DuckDuckGo provider 白名单。下载完成的内容�
 - 响应必须是 2xx 且 `Content-Type` 以 `image/` 开头；下载流最大 10 MiB，空响应被拒绝；
 - 位图解码和裁剪限制输出为 512×512，并重新编码后写入应用私有目录；远端原始 HTML、SVG 或脚本不会作为
   可执行内容保存或展示；
-- staging、转换输出和提升后的候选文件都有明确所有权；取消和失败路径在 `NonCancellable` 清理临时文件；
+- staging、转换输出和提升后的候选文件都有明确所有权；普通 `Exception` 返回类型化处理失败，
+  `CancellationException` 与 fatal `Error` 继续传播。失败时先尝试清理 `.input`/`.webp` 临时文件；取消清理在
+  `NonCancellable` 上下文执行；
 - 图标路径只作为私有资源引用保存，不能用于 WebView、外部文件 Intent 或任意路径读取。
 
 ## 维护约束

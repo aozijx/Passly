@@ -54,7 +54,7 @@ class FaviconBitmapTransformer
                     }
                 }
             } catch (error: Throwable) {
-                output.delete()
+                cleanupFaviconFileAfterFailure(output, error)
                 throw error
             } finally {
                 transformed.recycle()
