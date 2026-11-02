@@ -44,7 +44,7 @@ Data 内部的 `SecretFieldStore.readAll()`，把 bundle 与各高敏字段合�
 
 修订的 `iconCustomReference` 是可查询的资源引用，与快照中的图标路径同步写入并建立索引；当前条目路径也建索引。
 资源回收无需解密修订，必须在写事务内同时确认两种引用均不存在。历史裁剪与条目永久删除先收集路径，
-提交后通过可重试队列回收；附件 `PENDING_GC` 状态在同一事务持久化，并在完整 Vault 会话恢复时重试。
+提交后通过可重试队列回收；附件 `PENDING_GC` 状态在同一事务持久化。完整 Vault 会话解锁期间，collector 以 64 条为上限稳定分页并完整排空；文件/数据库暂态失败按 250 ms 起步、最多 30 s 的指数退避重试。封存后停止数据库访问，下次授权解锁继续处理 durable 队列。
 附件 drain 和图标队列 drain 分阶段执行，某一阶段的普通异常不会阻止另一阶段登记/重试资源。普通 post-commit
 清理异常记录结构化 `ResourceCleanupFailed`（未分类的存储阶段异常使用 `STORAGE_FAILURE`；明确的文件删除失败
 保留 `FILE_DELETE_FAILED`），但保留数据库事务原结果；`CancellationException` 与 fatal `Error`

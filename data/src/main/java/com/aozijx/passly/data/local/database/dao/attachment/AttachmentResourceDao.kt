@@ -70,12 +70,28 @@ interface AttachmentResourceDao {
         """
         SELECT * FROM attachment_resources
         WHERE lifecycleState = :state
-        ORDER BY enqueuedAt
+        ORDER BY enqueuedAt, resourceId
         LIMIT :limit
         """,
     )
     suspend fun getPendingGc(
         limit: Int,
+        state: String = AttachmentResourceState.PENDING_GC,
+    ): List<AttachmentResourceEntity>
+
+    @Query(
+        """
+        SELECT * FROM attachment_resources
+        WHERE lifecycleState = :state
+          AND (enqueuedAt > :afterEnqueuedAt OR (enqueuedAt = :afterEnqueuedAt AND resourceId > :afterResourceId))
+        ORDER BY enqueuedAt, resourceId
+        LIMIT :limit
+        """,
+    )
+    suspend fun getPendingGcAfter(
+        limit: Int,
+        afterEnqueuedAt: Long,
+        afterResourceId: String,
         state: String = AttachmentResourceState.PENDING_GC,
     ): List<AttachmentResourceEntity>
 

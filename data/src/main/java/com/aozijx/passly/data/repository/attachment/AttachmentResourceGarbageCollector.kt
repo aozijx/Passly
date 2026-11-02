@@ -49,7 +49,7 @@ class AttachmentResourceGarbageCollector
             cleanupScope.launch {
                 for (ignored in wakeups) {
                     if (!access.hasFullSecureSessionAccess()) continue
-                    cleanupScope.launch { drainAfterUnlock() }.join()
+                    drainAfterUnlock()
                 }
             }
         }
@@ -84,28 +84,59 @@ class AttachmentResourceGarbageCollector
         }
 
         /** Phase two: idempotent file deletion followed by database finalization. */
-        suspend fun drain(limit: Int = 64) =
-            logger.inSpan(Operations.ResourceCleanup) {
-                withMutationLock {
-                    val pending =
-                        databaseSession.query {
-                            attachmentResourceDao().getPendingGc(limit)
-                        }
-                    pending.forEach { item -> drainOne(item) }
+        suspend fun drain(limit: Int = MAX_BATCH_SIZE) {
+            val result =
+                try {
+                    drainPass(limit)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    if (access.hasFullSecureSessionAccess()) wakeups.trySend(Unit)
+                    throw failure
                 }
-            }
-
-        private suspend fun drainAfterUnlock() {
-            try {
-                drain()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                logger.log(LogStatements.Application.resourceCleanupFailed(error))
+            if (result != AttachmentGcPassResult.COMPLETE && access.hasFullSecureSessionAccess()) {
+                wakeups.trySend(Unit)
             }
         }
 
-        private suspend fun drainOne(item: AttachmentResourceEntity) {
+        private suspend fun drainPass(limit: Int = MAX_BATCH_SIZE): AttachmentGcPassResult {
+            require(limit > 0)
+            val batchSize = limit.coerceAtMost(MAX_BATCH_SIZE)
+            return logger.inSpan(Operations.ResourceCleanup) {
+                withMutationLock {
+                    drainAttachmentGcPass(
+                        batchSize = batchSize,
+                        hasFullAccess = access::hasFullSecureSessionAccess,
+                        onItemFailure = { logger.log(LogStatements.Application.resourceCleanupFailed(it)) },
+                        loadBatch = { afterEnqueuedAt, afterResourceId ->
+                            databaseSession.query {
+                                if (afterEnqueuedAt == null || afterResourceId == null) {
+                                    attachmentResourceDao().getPendingGc(batchSize)
+                                } else {
+                                    attachmentResourceDao().getPendingGcAfter(
+                                        limit = batchSize,
+                                        afterEnqueuedAt = afterEnqueuedAt,
+                                        afterResourceId = afterResourceId,
+                                    )
+                                }
+                            }
+                        },
+                        drainOne = ::drainOne,
+                    )
+                }
+            }
+        }
+
+        private suspend fun drainAfterUnlock() {
+            runAttachmentGcDrain(
+                hasFullAccess = access::hasFullSecureSessionAccess,
+                drainPass = { drainPass() },
+                onFailure = { logger.log(LogStatements.Application.resourceCleanupFailed(it)) },
+            )
+        }
+
+        private suspend fun drainOne(item: AttachmentResourceEntity): Boolean {
+            if (!access.hasFullSecureSessionAccess()) return false
             val stillUnreferenced =
                 databaseSession.transaction {
                     val hasRefs =
@@ -119,7 +150,8 @@ class AttachmentResourceGarbageCollector
                     }
                     !hasRefs
                 }
-            if (!stillUnreferenced) return
+            if (!stillUnreferenced) return true
+            if (!access.hasFullSecureSessionAccess()) return false
 
             val deleted =
                 withContext(Dispatchers.IO) {
@@ -133,6 +165,7 @@ class AttachmentResourceGarbageCollector
                     }
                 }
             if (!deleted) {
+                if (!access.hasFullSecureSessionAccess()) return false
                 databaseSession.transaction {
                     attachmentResourceDao().recordAttempt(item.resourceId, System.currentTimeMillis())
                 }
@@ -141,9 +174,10 @@ class AttachmentResourceGarbageCollector
                         IOException("Attachment resource deletion failed"),
                     ),
                 )
-                return
+                return false
             }
 
+            if (!access.hasFullSecureSessionAccess()) return false
             databaseSession.transaction {
                 val hasRefs =
                     attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
@@ -157,6 +191,7 @@ class AttachmentResourceGarbageCollector
                     attachmentResourceDao().deletePending(item.resourceId)
                 }
             }
+            return true
         }
 
         fun resourceFile(resourceId: String): File {
@@ -170,6 +205,7 @@ class AttachmentResourceGarbageCollector
 
         private companion object {
             const val CONTENT_DIRECTORY = "content"
+            const val MAX_BATCH_SIZE = 64
             val KEYED_ID = Regex("[a-f0-9]{64}")
         }
     }

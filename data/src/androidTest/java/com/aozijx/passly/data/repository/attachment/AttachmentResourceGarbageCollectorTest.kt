@@ -40,6 +40,108 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AttachmentResourceGarbageCollectorTest {
     @Test
+    fun unlockDrainsMoreThanOnePendingBatch() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session = createSession(context, logger)
+            val resources = (1..130).map { index -> createPendingResource(context, index) }
+
+            try {
+                assertNull(session.unlock())
+                session.transaction {
+                    resources.forEach { (id, file) ->
+                        attachmentResourceDao().insertStrict(
+                            AttachmentResourceEntity(
+                                resourceId = id,
+                                fileSize = file.length(),
+                                lifecycleState = AttachmentResourceState.PENDING_GC,
+                                createdAt = 1L,
+                                enqueuedAt = 2L,
+                            ),
+                        )
+                    }
+                }
+                val access = AuthenticatedAccess(session)
+                session.seal()
+                AttachmentResourceGarbageCollector(context, session, access, logger)
+                assertNull(session.unlock())
+
+                withTimeout(20_000L) {
+                    while (
+                        resources.any { (_, file) -> file.exists() } ||
+                        session.query { attachmentResourceDao().getPendingGc(200).isNotEmpty() }
+                    ) {
+                        delay(10L)
+                    }
+                }
+
+                assertTrue(resources.none { (_, file) -> file.exists() })
+                assertTrue(session.query { attachmentResourceDao().getPendingGc(200).isEmpty() })
+            } finally {
+                session.seal()
+                resources.forEach { (_, file) -> file.deleteRecursively() }
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
+    fun failedFileDeletionRetriesWithoutAnotherSessionWakeup() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session = createSession(context, logger)
+            val (resourceId, resourceFile) = createPendingResource(context, 1001)
+            val childFile = File(resourceFile, "still-present")
+
+            try {
+                assertNull(session.unlock())
+                resourceFile.delete()
+                resourceFile.mkdirs()
+                childFile.writeText("prevent directory deletion")
+                session.transaction {
+                    attachmentResourceDao().insertStrict(
+                        AttachmentResourceEntity(
+                            resourceId = resourceId,
+                            fileSize = 1L,
+                            lifecycleState = AttachmentResourceState.PENDING_GC,
+                            createdAt = 1L,
+                            enqueuedAt = 2L,
+                        ),
+                    )
+                }
+                val access = AuthenticatedAccess(session)
+                session.seal()
+                AttachmentResourceGarbageCollector(context, session, access, logger)
+                assertNull(session.unlock())
+
+                withTimeout(10_000L) {
+                    while (session.query { attachmentResourceDao().getById(resourceId)?.attemptCount ?: 0 } == 0) {
+                        delay(10L)
+                    }
+                }
+                childFile.delete()
+
+                withTimeout(10_000L) {
+                    while (resourceFile.exists() || session.query { attachmentResourceDao().getById(resourceId) != null }) {
+                        delay(10L)
+                    }
+                }
+
+                assertFalse(resourceFile.exists())
+                assertNull(session.query { attachmentResourceDao().getById(resourceId) })
+            } finally {
+                session.seal()
+                resourceFile.deleteRecursively()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
     fun unlockAutomaticallyResumesDurablePendingGarbageCollection() =
         runBlocking {
             System.loadLibrary("sqlcipher")
@@ -106,6 +208,32 @@ class AttachmentResourceGarbageCollectorTest {
             )
 
         override fun isUnlocked() = session.lockStateFlow.value == SecureSessionState.UNLOCKED
+    }
+
+    private fun createSession(
+        context: Context,
+        logger: Logger,
+    ): AppDatabaseSession =
+        AppDatabaseSession(
+            resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+            keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+            eventLogger = DatabaseSessionEventLogger(logger),
+        )
+
+    private fun createPendingResource(
+        context: Context,
+        index: Int,
+    ): Pair<String, File> {
+        val resourceId = index.toString().padStart(64, '0')
+        val resourceFile =
+            File(
+                VaultResourcePaths.attachmentDir(context).apply(File::mkdirs),
+                "content/$resourceId.enc",
+            ).apply {
+                parentFile?.mkdirs()
+                writeText("encrypted")
+            }
+        return resourceId to resourceFile
     }
 
     private object NoOpLogger : Logger {

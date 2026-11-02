@@ -413,10 +413,11 @@
 
 ## Task 64：让附件 GC 解锁后完整排空并在失败后恢复
 
-- [ ] 为 `AttachmentResourceGarbageCollector` 的 auth/session wakeup 定义完整排空与重试 owner。每个 `Channel.CONFLATED` wakeup 当前只执行一轮 `drain()`；DAO 按 `enqueuedAt` 最多取 64 条，worker 不检查剩余队列或继续发送 wakeup。批量积压超过 64 时，其余 durable `PENDING_GC` 只能等待新的认证/数据库状态变化或另一个业务调用再次 drain。普通数据库/文件异常在 `drainAfterUnlock()` 只记日志并结束当前尝试；当 session 保持解锁且没有新状态变化时不会重试。定义有界批处理、退避、取消/锁定响应之间的 owner，避免忙循环。
-- [ ] 扩展行为覆盖：>64 条 pending 全部最终处理；首次数据库或文件异常后在同一解锁期重试恢复；锁定中断立即停止继续访问数据库且下次授权后恢复；fatal `Error` 不映射为普通 GC 失败；不得忙循环。运行附件 GC 仪器测试、相关 Data 测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 为 `AttachmentResourceGarbageCollector` 定义完整排空/重试 owner：稳定按 `(enqueuedAt, resourceId)` 游标处理 64 条页，单条文件或 DB 异常不会阻塞后续行；同一完整授权窗口内以 250 ms 起步并倍增到 30 s 上限重试。授权丢失、取消会停止后续 DB 操作；显式 post-commit drain 返回后会唤醒 worker 继续重试；fatal `Error` 保持传播。
+- [x] 增加 Data unit 行为覆盖：130 行跨 64/64/2 全处理且首行普通 DB 异常不饿死后续行；模拟数据库异常与文件失败后同解锁重试；锁定中断、取消、fatal 传播、退避上限和无忙循环均有测试。新增 130 行与文件删除失败的真实 Room/SQLCipher 仪器用例，并编译通过。
+- [ ] 在已连接 Android 设备运行 `AttachmentResourceGarbageCollectorTest` 仪器用例，确认真实 Room/SQLCipher 下跨页排空和文件失败重试。当前 `adb devices` 无连接设备；设备运行结果仍待补验。
 
-**当前证据：** `AttachmentResourceGarbageCollector` 同时收集授权状态和数据库 `lockStateFlow`，用 `Channel.CONFLATED` 合并 wakeup；worker 每个 wakeup 只执行一次默认 `drain(limit = 64)`，`getPendingGc` 最多返回 64 项，故超出部分不会在该次解锁恢复中处理。`drainAfterUnlock()` 对普通 `Exception` 记录后返回，没有同一解锁周期的 retry/backoff owner；DB 与文件暂态失败会等后续状态变化或其他调用再次触发。**已移除的过期子项：** HEAD `5234816` 已将文件 `exists/delete` 处理从 `runCatching` 改为显式传播 `CancellationException`、只把普通 `Exception` 映射为删除失败；fatal `Error` 不再被改写成 attempt failure。维护审查记录该实现与附件 GC 仪器测试通过，但当前 `AttachmentResourceGarbageCollectorTest` 仍只覆盖一条 pending 资源的 unlock 回收，未验证 fatal 路径行为、>64 批次、同解锁期重试或锁定交错。任务保留这些未验证行为合同；不可继续声称生产代码仍吞 fatal。
+**证据：** `AttachmentResourceGarbageCollector` 仍合并 auth/session wakeup，但 worker 现持续 drain 至队列空、锁定或待退避重试；DAO 的 `(enqueuedAt, resourceId)` 游标保证同时间戳稳定分页，且行级失败推进游标，完成整轮后再重试。`runAttachmentGcDrain()` 仅捕获 `CancellationException` 之外的普通 `Exception`，用 250 ms 到 30 s 的 capped exponential backoff 重试；每轮与每行前检查完整 Vault 授权。Data 全部 137 个 unit tests 通过，AndroidTest Kotlin 编译、`:data:ktlintCheck`、`verifyArchitecture` 与 `git diff --check` 通过，独立 review Ready。新增仪器测试尚未在设备运行，因为当前无连接设备。**已移除的过期子项：** HEAD `5234816` 已修复文件删路径吞 fatal；Task64 保留 fatal 传播回归测试，不再把它描述成现存生产 bug。
 
 ## Task 65：保证备份恢复文件 journal 的回滚与数据库状态一致
 
