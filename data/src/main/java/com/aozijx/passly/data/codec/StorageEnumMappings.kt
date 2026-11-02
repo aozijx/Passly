@@ -3,6 +3,8 @@ package com.aozijx.passly.data.codec
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -155,6 +157,34 @@ internal fun otpTypeFromStorageKey(key: String): OtpType =
         "HOTP" -> OtpType.HOTP
         "STEAM" -> OtpType.STEAM
         else -> invalidStorageKey("OTP type", key)
+    }
+
+internal fun OtpHashAlgorithm.toStorageKey(): String =
+    when (this) {
+        OtpHashAlgorithm.SHA1 -> "SHA1"
+        OtpHashAlgorithm.SHA256 -> "SHA256"
+        OtpHashAlgorithm.SHA512 -> "SHA512"
+    }
+
+internal fun otpHashAlgorithmFromStorageKey(key: String): OtpHashAlgorithm =
+    when (key) {
+        "SHA1" -> OtpHashAlgorithm.SHA1
+        "SHA256" -> OtpHashAlgorithm.SHA256
+        "SHA512" -> OtpHashAlgorithm.SHA512
+        else -> invalidStorageKey("OTP hash algorithm", key)
+    }
+
+internal fun OtpSecretEncoding.toStorageKey(): String =
+    when (this) {
+        OtpSecretEncoding.BASE32 -> "BASE32"
+        OtpSecretEncoding.BASE64 -> "BASE64"
+    }
+
+internal fun otpSecretEncodingFromStorageKey(key: String): OtpSecretEncoding =
+    when (key) {
+        "BASE32" -> OtpSecretEncoding.BASE32
+        "BASE64" -> OtpSecretEncoding.BASE64
+        else -> invalidStorageKey("OTP secret encoding", key)
     }
 
 private fun invalidStorageKey(

@@ -1,6 +1,6 @@
 # 诊断导出格式
 
-状态：当前实现（schema 1，代码核对：2026-10-18）。
+状态：当前实现（schema 1，代码核对：2026-11-02）。
 
 一次导出只读取、排序并生成一次 manifest。`JSONL` 是 canonical 事件表示，`TSV` 是其固定的人类可读投影，
 `ZIP` 打包两种表示与一个 manifest。查看筛选和搜索不改变导出内容。
@@ -25,6 +25,15 @@ context, error, trace, session
 缺失的可选对象不写 `null`。`context` 至少含 category，并优先排列 result、purpose、trigger、reason_code、
 elapsed_ms、timeout_ms、retry_count，其余已注册字段按键排序。异常只包含清洗后的 kind、type、应用栈、cause
 类型和外部帧数量。
+
+`level`、`context.category` 和 `error.exception.kind` 的文本值是 schema 1 的稳定导出值，由日志模型显式定义；
+它们不跟随 Kotlin enum 重命名。新增或变更值需作为导出格式变更审查。
+
+| 字段 | 当前值 |
+| --- | --- |
+| `level` | `DEBUG`、`INFO`、`WARN`、`ERROR`、`FATAL` |
+| `context.category` | `APPLICATION`、`DATABASE`、`SECURITY`、`AUTOFILL`、`BACKUP`、`VAULT` |
+| `error.exception.kind` | `DATABASE_IO`、`CRYPTO`、`AUTHENTICATION`、`PLATFORM`、`LIFECYCLE`、`IO`、`UNKNOWN` |
 
 ## TSV
 

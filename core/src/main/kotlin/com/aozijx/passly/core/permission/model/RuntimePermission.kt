@@ -1,8 +1,10 @@
 package com.aozijx.passly.core.permission.model
 
-enum class RuntimePermission {
-    CAMERA,
-    POST_NOTIFICATIONS,
+enum class RuntimePermission(
+    val requestHistoryKey: String,
+) {
+    CAMERA("CAMERA"),
+    POST_NOTIFICATIONS("POST_NOTIFICATIONS"),
 }
 
 enum class PermissionStatus {

@@ -28,9 +28,29 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntrySecretMapperTest {
+    @Test
+    fun `otp payload keeps legacy enum strings across serialization`() {
+        val legacyJson =
+            """{"otp":{"config":{"type":"HOTP","secret":"otp-secret","algorithm":"SHA256","digits":6,"periodSeconds":null,"counter":9,"encoding":"BASE64","issuer":null,"accountName":null}},"schemaVersion":1}"""
+
+        val decodedPayload = AppJson.decodeFromString(SecretPayload.serializer(), legacyJson)
+        val decodedSecret = EntrySecretMapper.toDomain(decodedPayload, EntryType.OTP)
+        val encodedJson =
+            AppJson.encodeToString(
+                SecretPayload.serializer(),
+                EntrySecretMapper.toPayload(decodedSecret, EntryType.OTP),
+            )
+
+        assertEquals(decodedPayload, AppJson.decodeFromString(SecretPayload.serializer(), encodedJson))
+        assertTrue(encodedJson.contains("\"type\":\"HOTP\""))
+        assertTrue(encodedJson.contains("\"algorithm\":\"SHA256\""))
+        assertTrue(encodedJson.contains("\"encoding\":\"BASE64\""))
+    }
+
     @Test
     fun `unsupported schema version is rejected before credential mapping`() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -214,13 +234,13 @@ class EntrySecretMapperTest {
                     OtpCredentialPayload(
                         config =
                             OtpConfigPayload(
-                                type = OtpType.HOTP,
+                                type = "HOTP",
                                 secret = "otp-secret",
-                                algorithm = OtpHashAlgorithm.SHA256,
+                                algorithm = "SHA256",
                                 digits = 8,
                                 periodSeconds = null,
                                 counter = 42,
-                                encoding = OtpSecretEncoding.BASE64,
+                                encoding = "BASE64",
                                 issuer = "issuer",
                                 accountName = "account",
                             ),
@@ -410,9 +430,9 @@ class EntrySecretMapperTest {
                     otp =
                         OtpCredentialPayload(
                             OtpConfigPayload(
-                                type = OtpType.TOTP,
+                                type = "TOTP",
                                 secret = "secret",
-                                algorithm = OtpHashAlgorithm.SHA1,
+                                algorithm = "SHA1",
                                 digits = 6,
                                 periodSeconds = 30,
                                 counter = null,

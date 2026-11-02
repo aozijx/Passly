@@ -3,6 +3,10 @@ package com.aozijx.passly.data.mapper.entry
 import com.aozijx.passly.data.codec.entry.payload.OtpConfigPayload
 import com.aozijx.passly.data.codec.entry.payload.OtpCredentialPayload
 import com.aozijx.passly.data.codec.entry.payload.SecretPayload
+import com.aozijx.passly.data.codec.otpHashAlgorithmFromStorageKey
+import com.aozijx.passly.data.codec.otpSecretEncodingFromStorageKey
+import com.aozijx.passly.data.codec.otpTypeFromStorageKey
+import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.domain.entry.model.credential.EntryCredential
 import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
@@ -23,26 +27,26 @@ internal class OtpEntryPayloadAdapter : EntryPayloadAdapter {
 
     private fun OtpConfig.toPayload() =
         OtpConfigPayload(
-            type = type,
+            type = type.toStorageKey(),
             secret = secret,
-            algorithm = algorithm,
+            algorithm = algorithm.toStorageKey(),
             digits = digits,
             periodSeconds = periodSeconds,
             counter = counter,
-            encoding = encoding,
+            encoding = encoding.toStorageKey(),
             issuer = issuer,
             accountName = accountName,
         )
 
     private fun OtpConfigPayload.toDomain() =
         OtpConfig(
-            type = type,
+            type = otpTypeFromStorageKey(type),
             secret = secret,
-            algorithm = algorithm,
+            algorithm = otpHashAlgorithmFromStorageKey(algorithm),
             digits = digits,
             periodSeconds = periodSeconds,
             counter = counter,
-            encoding = encoding,
+            encoding = otpSecretEncodingFromStorageKey(encoding),
             issuer = issuer,
             accountName = accountName,
         )

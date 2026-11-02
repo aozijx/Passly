@@ -4,12 +4,13 @@ import java.util.UUID
 
 enum class LogLevel(
     val wireId: Int,
+    val exportValue: String,
 ) {
-    DEBUG(0),
-    INFO(1),
-    WARN(2),
-    ERROR(3),
-    FATAL(4),
+    DEBUG(0, "DEBUG"),
+    INFO(1, "INFO"),
+    WARN(2, "WARN"),
+    ERROR(3, "ERROR"),
+    FATAL(4, "FATAL"),
     ;
 
     companion object {
@@ -19,13 +20,14 @@ enum class LogLevel(
 
 enum class LogCategory(
     val wireId: Int,
+    val exportValue: String,
 ) {
-    APPLICATION(0),
-    DATABASE(1),
-    SECURITY(2),
-    AUTOFILL(3),
-    BACKUP(4),
-    VAULT(5),
+    APPLICATION(0, "APPLICATION"),
+    DATABASE(1, "DATABASE"),
+    SECURITY(2, "SECURITY"),
+    AUTOFILL(3, "AUTOFILL"),
+    BACKUP(4, "BACKUP"),
+    VAULT(5, "VAULT"),
     ;
 
     companion object {
@@ -101,14 +103,15 @@ value class ExceptionType(
 
 enum class ExceptionKind(
     val wireId: Int,
+    val exportValue: String,
 ) {
-    DATABASE_IO(0),
-    CRYPTO(1),
-    AUTHENTICATION(2),
-    PLATFORM(3),
-    LIFECYCLE(4),
-    IO(5),
-    UNKNOWN(6),
+    DATABASE_IO(0, "DATABASE_IO"),
+    CRYPTO(1, "CRYPTO"),
+    AUTHENTICATION(2, "AUTHENTICATION"),
+    PLATFORM(3, "PLATFORM"),
+    LIFECYCLE(4, "LIFECYCLE"),
+    IO(5, "IO"),
+    UNKNOWN(6, "UNKNOWN"),
     ;
 
     companion object {

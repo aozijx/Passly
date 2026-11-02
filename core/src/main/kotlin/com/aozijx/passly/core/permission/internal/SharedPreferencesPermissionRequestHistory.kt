@@ -20,9 +20,9 @@ class SharedPreferencesPermissionRequestHistory
                 Context.MODE_PRIVATE,
             )
 
-        override fun wasRequested(permission: RuntimePermission): Boolean = preferences.getBoolean(permission.name, false)
+        override fun wasRequested(permission: RuntimePermission): Boolean = preferences.getBoolean(permission.requestHistoryKey, false)
 
         override fun markRequested(permission: RuntimePermission) {
-            preferences.edit { putBoolean(permission.name, true) }
+            preferences.edit { putBoolean(permission.requestHistoryKey, true) }
         }
     }

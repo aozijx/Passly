@@ -26,13 +26,13 @@ internal data class CanonicalDiagnosticsEvent(
             put("time", isoTime(record.timestampMs))
             put("timestamp_ms", record.timestampMs)
             put("elapsed_realtime_ms", record.elapsedRealtimeMs)
-            put("level", record.level.name)
+            put("level", record.level.exportValue)
             put("event", record.event.value)
             put("event_id", record.eventId.value)
             put(
                 "context",
                 buildJsonObject {
-                    put("category", record.category.name)
+                    put("category", record.category.exportValue)
                     orderedFields(record).forEach { (key, value) -> put(key, value.toJson()) }
                 },
             )
@@ -46,7 +46,7 @@ internal data class CanonicalDiagnosticsEvent(
                             put(
                                 "exception",
                                 buildJsonObject {
-                                    put("kind", exception.kind.name)
+                                    put("kind", exception.kind.exportValue)
                                     put("type", exception.type.value)
                                     put("app_stack", JsonPrimitive(exception.appStackFrames.joinToString(",") { it.value }))
                                     put("cause_kinds", JsonPrimitive(exception.causeTypes.joinToString(",") { it.value }))

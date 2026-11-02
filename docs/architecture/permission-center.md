@@ -47,6 +47,7 @@ flowchart LR
   新 Route 重新绑定该请求并在新 Activity Result host 上发起/接收结果。真正离页会按原 page owner 取消；迟到的旧 owner
   dispose 或旧请求结果不能取消、完成新页面的请求。授权结果仍从系统状态读取器核对实际权限后才保存产品开关。
 - `PermissionRequestHistory` 仅用于区分首次拒绝与永久拒绝，不存储授权真值。
+- `SharedPreferencesPermissionRequestHistory` 在 `runtime_permission_history` 中使用显式键：`CAMERA` 与 `POST_NOTIFICATIONS`。它们保留旧版本已写入的字符串，enum 重命名不得改动这些存储键。
 - requester 返回明确的 start/outcome 类型，不使用 Boolean 表示多种状态。
 - 产品开关与授权状态分离；永久拒绝后由 UI 引导系统设置，中心不自动循环请求。
 - `PermissionRequestHost.access()` 每次从系统状态、请求历史和 rationale 计算

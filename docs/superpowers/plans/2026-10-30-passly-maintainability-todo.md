@@ -381,11 +381,13 @@
 
 ## Task 61：为持久化权限请求历史定义稳定键
 
-- [ ] `SharedPreferencesPermissionRequestHistory` 当前用 `RuntimePermission.name` 作为 `"runtime_permission_history"` 的持久化 key。为每个权限定义显式、稳定的 storage key；保留当前 `CAMERA`/`POST_NOTIFICATIONS` 已写入用户数据的可读值或明确迁移旧值，不能因 enum 重命名让历史查询变成 false。
-- [ ] 核对历史缺失对拒绝结果的影响：`PermissionRequestHost` 以 `requestedBefore && !canAskAgain` 判断永久拒绝；若 key 变更导致已有请求历史丢失，用户被错误标成“可再次请求”，系统弹窗可能不再出现且 UI 无法引导设置页。增加存储适配行为覆盖，验证已有 key 仍可读、首次 mark 与再次读取一致、不同权限互不覆盖。
-- [ ] 静态审查其他 enum name 写入持久化边界的位置，逐项区分仅用于当前进程 draft/UI 的表示与 SharedPreferences/DataStore/Room/文件协议值；只为真实跨进程或跨版本合同补稳定映射，不把错误 message、诊断显示和 transient UI 字符串机械改成 wire key。
+- [x] `SharedPreferencesPermissionRequestHistory` 当前用 `RuntimePermission.name` 作为 `"runtime_permission_history"` 的持久化 key。为每个权限定义显式、稳定的 storage key；保留当前 `CAMERA`/`POST_NOTIFICATIONS` 已写入用户数据的可读值或明确迁移旧值，不能因 enum 重命名让历史查询变成 false。
+- [x] 核对历史缺失对拒绝结果的影响：`PermissionRequestHost` 以 `requestedBefore && !canAskAgain` 判断永久拒绝；若 key 变更导致已有请求历史丢失，用户被错误标成“可再次请求”，系统弹窗可能不再出现且 UI 无法引导设置页。增加存储适配行为覆盖，验证已有 key 仍可读、首次 mark 与再次读取一致、不同权限互不覆盖。
+- [x] 静态审查其他 enum name 写入持久化边界的位置，逐项区分仅用于当前进程 draft/UI 的表示与 SharedPreferences/DataStore/Room/文件协议值；只为真实跨进程或跨版本合同补稳定映射，不把错误 message、诊断显示和 transient UI 字符串机械改成 wire key。
 
 **证据：** `SharedPreferencesPermissionRequestHistory.wasRequested()` 与 `markRequested()` 分别以 `permission.name` 读取/写入 Android 私有 SharedPreferences。`PermissionRequestHost` 使用该历史与平台 rationale 合成 `permanentlyDenied`；权限中心文档也说明 `PermissionRequestHistory` 用于区分首次拒绝与永久拒绝。当前 `RuntimePermission` 是 `CAMERA`、`POST_NOTIFICATIONS` 两项 enum，但名字没有声明为持久化合同，也没有显式 key/映射或 `SharedPreferencesPermissionRequestHistory` 存储测试；现有 Permission Session/Host 测试均注入内存 fake，无法证明用户已经写入的偏好不受 enum 重命名影响。该项是本地持久 key 的演进风险，不将其误称为外部协议或立即可复现的线上故障。
+
+**Task 61 实施记录（2026-11-02）：** `RuntimePermission.requestHistoryKey` 为两个权限显式声明旧字符串，适配器不再读写 `enum.name`；存储测试覆盖旧值读取、首次/重复写入和权限独立性。enum-name 边界审查另外发现 OTP 的加密 `SecretPayload` DTO 直接序列化 `OtpType`、`OtpHashAlgorithm`、`OtpSecretEncoding`；DTO 改用字符串字段，由 `StorageEnumMappings` 穷尽式映射，旧 JSON 的 `TOTP/HOTP/STEAM`、`SHA1/SHA256/SHA512`、`BASE32/BASE64` 值保持不变。schema 1 诊断导出中的等级、类别和异常种类也进入用户文件，改为日志模型显式 `exportValue` 并列出稳定值。其他 Room enum 已由 `StorageEnumMappings` 显式映射；`SortDirection.name` 仅生成受控 SQL 关键字，OTP draft 的 `.name` 在材料化前仅作临时字符串，图标 `name` 是用户/资源字符串。`LogFields.enum()` 保留为开放式诊断文本字段：值以 `EnumName` 存储，不会反序列化为业务 enum；Logcat、错误文本、Compose key 与设置选项也只是展示或当前 UI 标识，均未机械更换。权限历史、旧 OTP JSON、enum mapping、诊断 JSONL/TSV 定向测试以及 Core/Data/App KtLint、架构检查和 `git diff --check` 通过，Gradle 使用 `--max-workers=32`。
 
 ## Task 62：统一 Autofill 交互范围的归一化合同
 

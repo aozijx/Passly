@@ -3,6 +3,8 @@ package com.aozijx.passly.data.codec
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -31,6 +33,15 @@ class StorageEnumMappingsTest {
         OtpType.entries.forEach { value ->
             assertEquals(value, otpTypeFromStorageKey(value.toStorageKey()))
         }
+        OtpHashAlgorithm.entries.forEach { value ->
+            assertEquals(value, otpHashAlgorithmFromStorageKey(value.toStorageKey()))
+        }
+        OtpSecretEncoding.entries.forEach { value ->
+            assertEquals(value, otpSecretEncodingFromStorageKey(value.toStorageKey()))
+        }
+        assertEquals("TOTP", OtpType.TOTP.toStorageKey())
+        assertEquals("SHA1", OtpHashAlgorithm.SHA1.toStorageKey())
+        assertEquals("BASE32", OtpSecretEncoding.BASE32.toStorageKey())
     }
 
     @Test
@@ -43,6 +54,12 @@ class StorageEnumMappingsTest {
         }
         assertThrows(IllegalArgumentException::class.java) {
             otpTypeFromStorageKey("FUTURE_OR_CORRUPT")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            otpHashAlgorithmFromStorageKey("FUTURE_OR_CORRUPT")
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            otpSecretEncodingFromStorageKey("FUTURE_OR_CORRUPT")
         }
     }
 }

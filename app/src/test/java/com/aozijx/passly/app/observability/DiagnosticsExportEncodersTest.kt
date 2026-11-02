@@ -72,6 +72,26 @@ class DiagnosticsExportEncodersTest {
                 .jsonPrimitive.content,
         )
         assertEquals(listOf("event_00000001", "event_00000002"), objects.drop(1).map { it.getValue("event_id").jsonPrimitive.content })
+        val firstEvent = objects[1]
+        assertEquals("ERROR", firstEvent.getValue("level").jsonPrimitive.content)
+        assertEquals(
+            "AUTOFILL",
+            firstEvent
+                .getValue("context")
+                .jsonObject
+                .getValue("category")
+                .jsonPrimitive.content,
+        )
+        assertEquals(
+            "UNKNOWN",
+            firstEvent
+                .getValue("error")
+                .jsonObject
+                .getValue("exception")
+                .jsonObject
+                .getValue("kind")
+                .jsonPrimitive.content,
+        )
         assertEquals(
             listOf("time", "timestamp_ms", "elapsed_realtime_ms", "level", "event", "event_id", "context", "error", "trace", "session"),
             objects.last().keys.toList(),
