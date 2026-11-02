@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
@@ -17,6 +18,8 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenanceResult
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.dek.DekManager
@@ -26,6 +29,8 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 @Singleton
 class DefaultAuthenticationMethodProvisioner
@@ -38,7 +43,7 @@ class DefaultAuthenticationMethodProvisioner
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val hostRegistry: AuthenticationHostRegistry,
         private val rotateBiometricKey: RotateBiometricKeyUseCase,
-        private val cryptoFactory: BiometricCryptoFactory,
+        private val runtimeMaintenance: AuthenticationRuntimeMaintenance,
         private val availabilityResolver: AuthenticationAvailabilityResolver,
     ) : AuthenticationMethodProvisioner {
         override suspend fun authorizeAppPasswordManagement(): AuthenticationResult =
@@ -189,11 +194,15 @@ class DefaultAuthenticationMethodProvisioner
                         AuthenticationFailure(AuthenticationFailureCode.KEY_MISSING, AuthenticationRequestId(correlationId)),
                     )
             vaultBootstrapStore.disableBiometric(activeAlias)
-            if (cryptoFactory.deleteAlias(activeAlias)) {
-                vaultBootstrapStore.clearBiometricCleanupAlias(activeAlias)
-            }
+            val cleanup = withContext(NonCancellable) { runtimeMaintenance.reconcileStartupState() }
             authenticationManager.refreshAvailability()
-            return AuthenticationResult.Success(AuthenticationMethod.BIOMETRIC)
+            return AuthenticationResult.Success(
+                method = AuthenticationMethod.BIOMETRIC,
+                pendingMaintenance =
+                    AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP.takeIf {
+                        cleanup == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED
+                    },
+            )
         }
 
         override suspend fun rotateBiometricPolicy(invalidateOnEnrollment: Boolean): AuthenticationResult {

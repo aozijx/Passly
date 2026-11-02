@@ -112,6 +112,24 @@ class BiometricRotationCandidateTest {
             }
         }
 
+    @Test
+    fun `fatal cleanup error takes priority over an ordinary operation failure`() =
+        runTest {
+            val store = Store()
+            val operationFailure = IllegalStateException("operation failed")
+            val cleanupFailure = AssertionError("fatal key deletion failure")
+            try {
+                withBiometricRotationCandidate(store, "candidate", { throw cleanupFailure }) {
+                    store.prepareBiometricRotation(journal())
+                    throw operationFailure
+                }
+                error("operation failure was swallowed")
+            } catch (actual: AssertionError) {
+                assertEquals(cleanupFailure.message, actual.message)
+                assertEquals(operationFailure.message, actual.suppressed.single().message)
+            }
+        }
+
     private fun journal() = BiometricRotationJournal(BiometricRotationPhase.PREPARED, "old", "candidate")
 
     private class Store : VaultBootstrapStore {

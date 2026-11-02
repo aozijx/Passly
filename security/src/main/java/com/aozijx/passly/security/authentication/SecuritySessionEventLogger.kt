@@ -31,6 +31,14 @@ class SecuritySessionEventLogger
                 )
             }
 
+        suspend fun recordBiometricRotationCleanupDeferred(failure: Throwable? = null) =
+            logger.inSpan(Operations.SecurityAuthentication) {
+                logger.log(
+                    failure?.let(LogStatements.Security::biometricRotationCleanupFailed)
+                        ?: LogStatements.Security.biometricRotationCleanupDeferred(),
+                )
+            }
+
         suspend fun <T> traceLock(
             request: SessionLockRequest,
             timeoutMs: Long,

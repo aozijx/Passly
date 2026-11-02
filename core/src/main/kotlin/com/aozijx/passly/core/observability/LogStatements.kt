@@ -413,6 +413,23 @@ object LogStatements {
                 )
             }
 
+        fun biometricRotationCleanupDeferred(): LogStatement =
+            DegradedStatement(
+                Events.Security.BiometricRotationCleanupDeferred,
+                ErrorCodes.Security.VaultOperationFailed,
+                Reasons.UnknownFailure,
+                LogFields.Empty,
+            )
+
+        fun biometricRotationCleanupFailed(throwable: Throwable): LogStatement =
+            WarningStatement(
+                Events.Security.BiometricRotationCleanupDeferred,
+                ErrorCodes.Security.VaultOperationFailed,
+                Reasons.UnknownFailure,
+                throwable,
+                LogFields.Empty,
+            )
+
         fun vaultInitialized(): LogStatement =
             InfoStatement(
                 Events.Security.VaultInitialized,

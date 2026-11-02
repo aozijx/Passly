@@ -99,6 +99,7 @@ object Events {
         val AuthenticationCancelled = EventKey("security.authentication.cancelled")
         val AuthenticationFailed = EventKey("security.authentication.failed")
         val BiometricPromptFailed = EventKey("security.biometric_prompt.failed")
+        val BiometricRotationCleanupDeferred = EventKey("security.biometric_rotation.cleanup_deferred")
         val VaultInitialized = EventKey("security.vault.initialized")
         val VaultUnlocked = EventKey("security.vault.unlocked")
         val VerificationTagCreated = EventKey("security.verification_tag.created")
@@ -183,6 +184,7 @@ object Events {
             Security.AuthenticationCancelled,
             Security.AuthenticationFailed,
             Security.BiometricPromptFailed,
+            Security.BiometricRotationCleanupDeferred,
             Security.VaultInitialized,
             Security.VaultUnlocked,
             Security.VerificationTagCreated,

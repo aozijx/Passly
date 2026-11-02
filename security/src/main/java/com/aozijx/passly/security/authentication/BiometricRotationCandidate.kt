@@ -2,6 +2,7 @@ package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
@@ -18,7 +19,21 @@ internal suspend fun withBiometricRotationCandidate(
             try {
                 discardUncommittedCandidate(store, candidateAlias, deleteAlias)
             } catch (cleanup: Throwable) {
-                if (cleanup !== error) error.addSuppressed(cleanup)
+                when {
+                    cleanup is Error && error !is Error -> {
+                        cleanup.addSuppressed(error)
+                        throw cleanup
+                    }
+
+                    cleanup is CancellationException && error !is Error && error !is CancellationException -> {
+                        cleanup.addSuppressed(error)
+                        throw cleanup
+                    }
+
+                    cleanup !== error -> {
+                        error.addSuppressed(cleanup)
+                    }
+                }
             }
             throw error
         }

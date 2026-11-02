@@ -13,6 +13,14 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
+internal fun attemptBiometricAliasDeletion(delete: () -> Unit): Boolean =
+    try {
+        delete()
+        true
+    } catch (_: Exception) {
+        false
+    }
+
 internal sealed interface BiometricCryptoPreparation {
     data class Ready(
         val cipher: Cipher,
@@ -95,9 +103,8 @@ class BiometricCryptoFactory
             }
 
         internal fun deleteAlias(alias: String): Boolean =
-            runCatching {
+            attemptBiometricAliasDeletion {
                 val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
                 if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
-                true
-            }.getOrDefault(false)
+            }
     }

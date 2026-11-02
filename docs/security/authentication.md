@@ -160,7 +160,9 @@ BIOMETRIC `Success`，并带 `BIOMETRIC_ROTATION_CLEANUP` pending-maintenance �
 同一 `RotateBiometricKeyUseCase` 串行执行轮换，避免共享 journal 被并发候选覆盖。
 `withBiometricRotationCandidate` 在正常结果、异常和协程取消退出时统一清理，清理在 `NonCancellable` 中执行。
 它先重新读取当前 binding：已原子提交的 candidate 不可删除；未提交的 candidate 删除成功后才清除本次 journal。
-删除失败保留 journal 供 Reconciler 重试，过期清理不能清除其他 candidate 的 journal；清理异常不能替换原始失败或取消。
+删除失败保留 journal 供 Reconciler 重试，过期清理不能清除其他 candidate 的 journal；清理异常不能替换原始失败或取消，清理阶段的 fatal `Error` 优先传播。
+`BiometricRotationReconciler` 串行处理 PREPARED/COMMITTED journal 和 cleanup alias。普通 DataStore/Keystore 异常与删除返回失败会记录结构化 deferred-cleanup 事件并返回 `RETRY_REQUIRED`，持久标记保留；取消和 fatal `Error` 继续传播。应用启动由 Reconciler 自己拥有可恢复失败处理，不会让普通异常成为未处理的 application-scope 异常。
+轮换前也会触发同一 Reconciler；若旧 journal/alias 仍无法清理，则拒绝开始另一笔轮换，避免覆盖单槽 rotation journal。已提交 active binding 可继续用于解锁；用户之后再次进行认证策略变更时会明确重试对账。
 Android 密钥创建将实际策略传入 `setInvalidatedByBiometricEnrollment`；此标志由 Keystore 执行，代码检查和模拟器测试
 不等于已在实体设备完成生物识别录入变更验收。
 

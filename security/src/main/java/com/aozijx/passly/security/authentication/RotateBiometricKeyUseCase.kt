@@ -2,6 +2,7 @@ package com.aozijx.passly.security.authentication
 
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequestId
@@ -11,6 +12,8 @@ import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.BiometricRotationPhase
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenanceResult
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.BiometricHostFailure
@@ -21,8 +24,10 @@ import com.aozijx.passly.security.envelope.EnvelopeManager
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 @Singleton
 class RotateBiometricKeyUseCase
@@ -31,6 +36,7 @@ class RotateBiometricKeyUseCase
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val cryptoFactory: BiometricCryptoFactory,
         private val dekManager: DekManager,
+        private val runtimeMaintenance: AuthenticationRuntimeMaintenance,
     ) {
         private val rotationMutex = Mutex()
 
@@ -49,6 +55,9 @@ class RotateBiometricKeyUseCase
             correlationId: String,
         ): AuthenticationResult {
             if (!dekManager.isUnlocked.value) {
+                return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
+            }
+            if (runtimeMaintenance.reconcileStartupState() == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED) {
                 return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
             }
             val oldAlias = vaultBootstrapStore.loadBiometricState().binding?.activeAlias
@@ -83,20 +92,12 @@ class RotateBiometricKeyUseCase
                             binding = BiometricBinding(candidateAlias, invalidateOnEnrollment),
                             obsoleteAlias = oldAlias?.takeIf { it != candidateAlias },
                         )
-                        val cleanup =
-                            finishCommittedBiometricRotation {
-                                if (oldAlias != null && oldAlias != candidateAlias) {
-                                    if (!cryptoFactory.deleteAlias(oldAlias)) return@finishCommittedBiometricRotation false
-                                    vaultBootstrapStore.clearBiometricCleanupAlias(oldAlias)
-                                }
-                                vaultBootstrapStore.clearBiometricRotationJournal()
-                                true
-                            }
+                        val cleanup = withContext(NonCancellable) { runtimeMaintenance.reconcileStartupState() }
                         AuthenticationResult.Success(
-                            method = com.aozijx.passly.domain.access.model.AuthenticationMethod.BIOMETRIC,
+                            method = AuthenticationMethod.BIOMETRIC,
                             pendingMaintenance =
                                 AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP.takeIf {
-                                    cleanup == BiometricRotationCleanupOutcome.PENDING
+                                    cleanup == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED
                                 },
                         )
                     }
