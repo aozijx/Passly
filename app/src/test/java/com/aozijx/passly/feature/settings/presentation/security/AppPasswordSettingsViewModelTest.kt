@@ -151,6 +151,33 @@ class AppPasswordSettingsViewModelTest {
             assertEquals(false, viewModel.uiState.value.isOperationInProgress)
         }
 
+    @Test
+    fun `authorization result from exited page is not delivered to the reentered page`() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val provisioner =
+                Provisioner(
+                    authorize = {
+                        gate.await()
+                        AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+                    },
+                )
+            val viewModel = viewModel(provisioner)
+            val oldOwner = viewModel.onPageEntered()
+            val effects = mutableListOf<AppPasswordSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.toList(effects) }
+            runCurrent()
+
+            viewModel.onAction(AppPasswordSettingsAction.RequestAppPasswordEntry)
+            runCurrent()
+            viewModel.onPageExited(oldOwner)
+            viewModel.onPageEntered()
+            gate.complete(Unit)
+            runCurrent()
+
+            assertTrue(effects.isEmpty())
+        }
+
     private fun viewModel(provisioner: Provisioner) =
         AppPasswordSettingsViewModel(
             AppPasswordSettingsInteractor(
@@ -163,13 +190,16 @@ class AppPasswordSettingsViewModelTest {
         )
 
     private class Provisioner(
+        private val authorize: suspend () -> AuthenticationResult = {
+            AuthenticationResult.Cancelled(CancellationReason.USER)
+        },
         private val setPassword: suspend () -> AuthenticationResult = {
             AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
         },
     ) : AuthenticationMethodProvisioner {
         var setCalls = 0
 
-        override suspend fun authorizeAppPasswordManagement() = AuthenticationResult.Cancelled(CancellationReason.USER)
+        override suspend fun authorizeAppPasswordManagement() = authorize()
 
         override suspend fun setAppPassword(password: CharArray): AuthenticationResult {
             setCalls++

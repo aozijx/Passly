@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,27 +11,28 @@ import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 
 internal class AppPasswordDialogCoordinator {
     private var activeDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
-    private var currentPassword by mutableStateOf("")
-    private var newPassword by mutableStateOf("")
-    private var confirmPassword by mutableStateOf("")
+    private val currentPassword = SensitivePasswordDraft()
+    private val newPassword = SensitivePasswordDraft()
+    private val confirmPassword = SensitivePasswordDraft()
 
     val model: AppPasswordDialogsModel
         get() =
             AppPasswordDialogsModel(
                 activeAppPasswordDialog = activeDialog,
-                appPasswordCurrent = currentPassword,
-                appPasswordNew = newPassword,
-                appPasswordConfirm = confirmPassword,
+                appPasswordCurrent = currentPassword.snapshot(),
+                appPasswordNew = newPassword.snapshot(),
+                appPasswordConfirm = confirmPassword.snapshot(),
                 isSetPasswordConfirmEnabled =
                     passwordPolicyAcceptsNewPassword() &&
-                        newPassword == confirmPassword,
+                        newPassword.contentEquals(confirmPassword),
                 isChangePasswordConfirmEnabled =
-                    currentPassword.isNotEmpty() &&
+                    currentPassword.isNotEmpty &&
                         passwordPolicyAcceptsNewPassword() &&
-                        newPassword == confirmPassword,
+                        newPassword.contentEquals(confirmPassword),
             )
 
     fun onAppPasswordEntryAuthorized(alreadyEnabled: Boolean) {
+        clearDrafts()
         activeDialog =
             if (alreadyEnabled) {
                 AppPasswordDialogState.Action
@@ -50,67 +52,107 @@ internal class AppPasswordDialogCoordinator {
         if (isBusy) return null
         return when (event) {
             AppPasswordDialogEvent.DismissAction -> {
-                activeDialog = AppPasswordDialogState.None
+                if (activeDialog == AppPasswordDialogState.Action) closeAndClear()
                 null
             }
 
             AppPasswordDialogEvent.ShowChange -> {
-                activeDialog = AppPasswordDialogState.Change
+                if (activeDialog == AppPasswordDialogState.Action) {
+                    activeDialog = AppPasswordDialogState.Change
+                }
                 null
             }
 
             AppPasswordDialogEvent.ShowDisable -> {
-                AppPasswordChangeRequest.Disable
+                AppPasswordChangeRequest.Disable.takeIf { activeDialog == AppPasswordDialogState.Action }
             }
 
             AppPasswordDialogEvent.DismissSet,
             AppPasswordDialogEvent.DismissChange,
             -> {
-                closeAndClear()
+                val isActiveDismissal =
+                    (event == AppPasswordDialogEvent.DismissSet && activeDialog == AppPasswordDialogState.Set) ||
+                        (event == AppPasswordDialogEvent.DismissChange && activeDialog == AppPasswordDialogState.Change)
+                if (isActiveDismissal) closeAndClear()
                 null
             }
 
             is AppPasswordDialogEvent.CurrentChanged -> {
-                currentPassword = event.value
+                if (activeDialog == AppPasswordDialogState.Change) {
+                    currentPassword.replace(event.value.toCharArray())
+                }
                 null
             }
 
             is AppPasswordDialogEvent.NewChanged -> {
-                newPassword = event.value
+                if (activeDialog == AppPasswordDialogState.Set || activeDialog == AppPasswordDialogState.Change) {
+                    newPassword.replace(event.value.toCharArray())
+                }
                 null
             }
 
             is AppPasswordDialogEvent.ConfirmChanged -> {
-                confirmPassword = event.value
+                if (activeDialog == AppPasswordDialogState.Set || activeDialog == AppPasswordDialogState.Change) {
+                    confirmPassword.replace(event.value.toCharArray())
+                }
                 null
             }
 
             AppPasswordDialogEvent.ConfirmSet -> {
-                AppPasswordChangeRequest.Set(
-                    password = newPassword.toCharArray(),
-                    confirmation = confirmPassword.toCharArray(),
-                )
+                if (activeDialog == AppPasswordDialogState.Set) {
+                    val request =
+                        AppPasswordChangeRequest.Set(
+                            password = newPassword.copy(),
+                            confirmation = confirmPassword.copy(),
+                        )
+                    clearDrafts()
+                    request
+                } else {
+                    null
+                }
             }
 
             AppPasswordDialogEvent.ConfirmChange -> {
-                AppPasswordChangeRequest.Change(
-                    currentPassword = currentPassword.toCharArray(),
-                    newPassword = newPassword.toCharArray(),
-                    confirmation = confirmPassword.toCharArray(),
-                )
+                if (activeDialog == AppPasswordDialogState.Change) {
+                    val request =
+                        AppPasswordChangeRequest.Change(
+                            currentPassword = currentPassword.copy(),
+                            newPassword = newPassword.copy(),
+                            confirmation = confirmPassword.copy(),
+                        )
+                    clearDrafts()
+                    request
+                } else {
+                    null
+                }
             }
         }
     }
 
-    private fun passwordPolicyAcceptsNewPassword(): Boolean = AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.length)
+    fun clear() {
+        closeAndClear()
+    }
+
+    private fun passwordPolicyAcceptsNewPassword(): Boolean = AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.size)
 
     private fun closeAndClear() {
         activeDialog = AppPasswordDialogState.None
-        currentPassword = ""
-        newPassword = ""
-        confirmPassword = ""
+        clearDrafts()
+    }
+
+    private fun clearDrafts() {
+        currentPassword.clear()
+        newPassword.clear()
+        confirmPassword.clear()
     }
 }
 
 @Composable
 internal fun rememberAppPasswordDialogCoordinator(): AppPasswordDialogCoordinator = remember { AppPasswordDialogCoordinator() }
+
+@Composable
+internal fun AppPasswordDialogCoordinatorOwner(coordinator: AppPasswordDialogCoordinator) {
+    DisposableEffect(coordinator) {
+        onDispose(coordinator::clear)
+    }
+}

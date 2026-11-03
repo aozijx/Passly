@@ -94,11 +94,11 @@
 
 ## Task 29：在 Security 页面退出时清除 App Password 对话框草稿
 
-- [ ] 为 `AppPasswordDialogCoordinator` 的当前密码、新密码和确认密码草稿定义明确的页面所有权及退出清理合同。`SecurityRoute` 离页时清除 coordinator 持有的所有敏感输入与活动对话框；Activity 配置重建若保留页面 owner，则按实际页面生命周期合同处理，不能把临时 dispose 混作用户离页。
-- [ ] 收敛密码草稿与提交请求的复制/销毁路径：Coordinator 当前以不可擦除的 `String` 保存字段，确认时再复制成 `CharArray`；将草稿暴露面和存活时间压到最小，清理必须覆盖 dismiss、成功、路由退出及 ViewModel/宿主销毁，并确保忙碌操作期间不会让重复输入重新进入草稿状态。
-- [ ] 增加 Coordinator/Compose Route 生命周期回归，验证输入后真实离开 Security 页面会清空对话框与草稿、迟到授权或操作结果不能在重进后打开旧对话框、配置重建遵守选定的恢复策略；保留现有提交期间页面 owner 和 `CharArray` `finally` 清理合同。同步认证/安全文档，运行 App Password Coordinator/ViewModel 与 Route 行为测试、`verifyArchitecture` 和 `git diff --check`。
+- [x] 为 `AppPasswordDialogCoordinator` 的当前密码、新密码和确认密码草稿定义明确的页面所有权及退出清理合同。`SecurityRoute` 离页和 Activity 配置重建都会清空 coordinator 持有的所有敏感输入与活动对话框。
+- [x] 收敛密码草稿与提交请求的复制/销毁路径：Coordinator 以可擦除 `CharArray` 持有其草稿并在字段替换、提交、dismiss、成功与路由退出时清理；ViewModel/Interactor 继续单独清理提交请求。Compose 和文本字段仍需不可变 `String` 快照，不能宣称 JVM 底层内存已擦除。忙碌操作期间仍拒绝输入和重复请求。
+- [ ] 增加 Coordinator/Compose Route 生命周期回归，验证输入后真实离开 Security 页面会清空对话框与草稿、迟到输入/授权或操作结果不能在重进后重新写入旧状态或打开旧对话框、配置重建遵守选定的恢复策略；保留现有提交期间页面 owner 和 `CharArray` `finally` 清理合同。同步认证/安全文档，运行 App Password Coordinator/ViewModel 与 Route 行为测试、`verifyArchitecture` 和 `git diff --check`。（Compose 生命周期仪器测试已编写；待设备连接后执行。）
 
-**证据：** `AppPasswordDialogCoordinator` 用 Compose `mutableStateOf<String>` 保存 `currentPassword`、`newPassword`、`confirmPassword`，并在 Confirm 时复制为请求 `CharArray`；`closeAndClear()` 只在显式 dismiss 或操作成功时调用，没有公开页面退出清理入口。`SecurityRoute` 的 `DisposableEffect` 离开时只调用两个 ViewModel 的 `onPageExited(owner)`，而 coordinator 由 `rememberAppPasswordDialogCoordinator()` 在 Route composition 内记住，不参与该退出回调。由于 Settings detail 由单个外层 Settings Navigation entry 的 `AnimatedContent` 切换，Security 页面离开不会自然清除整个 Settings ViewModelStore；现有 `AppPasswordDialogCoordinatorTest` 覆盖提交/成功清理和对话框转换，但没有页面退出、Compose dispose 或重进用例。故敏感 String 草稿至少会继续被 coordinator 引用至对象回收，且代码没有可验证的离页清除合同；需要明确配置重建与真正离页的区分后补宿主测试，不把 immutable String 的置空宣称为底层内存擦除。
+**当前实现与验证：** `SecurityRoute` 记住 route-scoped coordinator 并挂载 `AppPasswordDialogCoordinatorOwner`；其 `DisposableEffect.onDispose` 在导航离开和 Activity 配置重建时清空三个草稿、关闭对话框。`SensitivePasswordDraft` 负责接管、覆盖并清除 `CharArray`；Set/Change 提交都复制独立 request arrays 后立即清空 Coordinator 草稿。Coordinator 也只接受当前活动对话框的输入/确认事件，避免 dismiss 后迟到 TextField callback 重新填入草稿。ViewModel 的页面 owner、异步提交和 request `finally` 清理合同保留。单元回归与 Android-test 源码编译通过，`verifyArchitecture`、KtLint、`git diff --check` 通过；Compose 生命周期仪器测试已修正并编译，但尚未运行。当前 `adb devices` 无设备，且连接测试任务在配置阶段因 Protobuf plugin 0.10.0 抛出 `No such property: sourceSets for class: java.lang.String`，无法进入设备发现；该版本清单修改是既有用户改动，本批未触碰。真实 Compose dispose/recreation 行为仍待连接设备并修复该连接测试配置后验证。
 
 ## Task 30：为 DataStore 设置观察流定义可恢复的读取失败合同
 

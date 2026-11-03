@@ -90,6 +90,8 @@ store 在写入后抛错，会读回并比较完整 envelope。`RecoveryCredenti
 页面退出使当前结果 owner 失效，但不会主动取消已启动的操作；旧结果不会投递给之后重新进入的页面。
 若 ViewModel 被销毁，操作协程会取消并执行请求缓冲区清理。
 
+Security Route 每次离开 Composition 都会清空应用密码设置/修改对话框的当前、新密码和确认输入，并关闭活动对话框；Activity 配置重建也会走此清理，重建后的 Route 从空草稿开始。Coordinator 用可擦除 `CharArray` 保存其所有草稿，字段替换、提交、关闭和 Route dispose 会覆盖其拥有的数组；提交时另建请求副本并立即清理 Coordinator 草稿，ViewModel/Interactor 仍各自负责已提交请求缓冲区的最终清理。Compose 文本输入 API 和渲染模型仍使用 `String`，其不可变副本只能等待回收，因此这项清理不代表 JVM/Compose 内存已完全擦除。
+
 应用密码和恢复码的连续错误次数由认证中心记录。当前策略是每种凭据方式最多连续错误 5 次；第 5 次起返回
 `RATE_LIMITED`，30 秒后允许再次尝试。成功认证会清除该方式的计数。计数只保存在进程内存中，不写入
 DataStore、数据库或日志；页面只展示 `AuthenticationFailure` 中的剩余次数或等待时间，不能自行判断密码是否正确。
