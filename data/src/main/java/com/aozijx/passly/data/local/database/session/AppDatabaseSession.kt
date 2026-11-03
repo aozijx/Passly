@@ -42,6 +42,8 @@ class AppDatabaseSession
 
         override val lockStateFlow = runtime.lockStateFlow
 
+        override val lockGenerationFlow = runtime.lockGenerationFlow
+
         suspend fun <T> query(block: suspend AppDatabase.() -> T): T = runtime.read(block)
 
         suspend fun <T> transaction(block: suspend AppDatabase.() -> T): T = runtime.write(block)

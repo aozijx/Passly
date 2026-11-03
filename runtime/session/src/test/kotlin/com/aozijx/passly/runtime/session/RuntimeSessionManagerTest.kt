@@ -733,6 +733,26 @@ class RuntimeSessionManagerTest {
         }
 
     @Test
+    fun `lock generation advances for each state transition`() =
+        runBlocking {
+            val manager =
+                RuntimeSessionManager(
+                    resource = FakeResource(),
+                    keySource = SessionKeySource { byteArrayOf(9) },
+                )
+
+            assertEquals(0L, manager.lockGenerationFlow.value)
+            manager.unlock()
+            assertEquals(1L, manager.lockGenerationFlow.value)
+            manager.softLock()
+            assertEquals(2L, manager.lockGenerationFlow.value)
+            manager.unlock()
+            assertEquals(3L, manager.lockGenerationFlow.value)
+            manager.seal()
+            assertEquals(4L, manager.lockGenerationFlow.value)
+        }
+
+    @Test
     fun `seal cancels long lived observers before closing resource`() =
         runBlocking {
             val started = CompletableDeferred<Unit>()

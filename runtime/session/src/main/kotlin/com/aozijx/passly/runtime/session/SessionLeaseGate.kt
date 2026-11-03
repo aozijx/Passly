@@ -29,6 +29,8 @@ internal class SessionLeaseGate<Handle : Any>(
 ) {
     private val mutableLockState = MutableStateFlow(SecureSessionState.SEALED)
     val lockState: StateFlow<SecureSessionState> = mutableLockState.asStateFlow()
+    private val mutableLockGeneration = MutableStateFlow(0L)
+    val lockGeneration: StateFlow<Long> = mutableLockGeneration.asStateFlow()
 
     private val activeLeases = AtomicInteger(0)
     private val leaseOwners = ConcurrentHashMap<Job, Int>()
@@ -76,7 +78,7 @@ internal class SessionLeaseGate<Handle : Any>(
             if (handle == null) return false
             val startedAt = elapsedRealtimeMs()
             val fromState = mutableLockState.value
-            leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
+            leaseMutex.withLock { publishLockState(SecureSessionState.UNLOCKED) }
             emitTransition(
                 startedAt = startedAt,
                 fromState = fromState,
@@ -102,7 +104,7 @@ internal class SessionLeaseGate<Handle : Any>(
                 published = true
             }
             currentCoroutineContext().ensureActive()
-            leaseMutex.withLock { mutableLockState.value = SecureSessionState.UNLOCKED }
+            leaseMutex.withLock { publishLockState(SecureSessionState.UNLOCKED) }
             emitTransition(
                 startedAt,
                 fromState,
@@ -162,7 +164,7 @@ internal class SessionLeaseGate<Handle : Any>(
                 }
             } finally {
                 if (shouldSeal) {
-                    leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
+                    leaseMutex.withLock { publishLockState(SecureSessionState.SEALED) }
                 }
             }
             fatalCleanup
@@ -192,7 +194,7 @@ internal class SessionLeaseGate<Handle : Any>(
     suspend fun softLock() {
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
-        leaseMutex.withLock { mutableLockState.value = SecureSessionState.SOFT_LOCKED }
+        leaseMutex.withLock { publishLockState(SecureSessionState.SOFT_LOCKED) }
         emitTransition(
             startedAt,
             fromState,
@@ -205,7 +207,7 @@ internal class SessionLeaseGate<Handle : Any>(
     suspend fun seal(timeout: Duration): Result<Unit> {
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
-        leaseMutex.withLock { mutableLockState.value = SecureSessionState.SEALED }
+        leaseMutex.withLock { publishLockState(SecureSessionState.SEALED) }
 
         val drained =
             withTimeoutOrNull(timeout) {
@@ -352,6 +354,17 @@ internal class SessionLeaseGate<Handle : Any>(
         val state = mutableLockState.value
         if (state != SecureSessionState.UNLOCKED) {
             throw SessionLockedException("Session is ${state.name}")
+        }
+    }
+
+    private fun publishLockState(state: SecureSessionState) {
+        if (mutableLockState.value == state) return
+        if (state == SecureSessionState.UNLOCKED) {
+            mutableLockGeneration.value++
+            mutableLockState.value = state
+        } else {
+            mutableLockState.value = state
+            mutableLockGeneration.value++
         }
     }
 

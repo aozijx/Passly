@@ -56,10 +56,13 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -390,6 +393,126 @@ class RoomObservationSessionTest {
             } finally {
                 jobs.forEach(Job::cancel)
                 scope.cancel()
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
+    fun roomObservationCancelsBlockedDaoEmissionAndResubscribesAfterSoftLockAndSeal() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                )
+            val access = FixedAuthenticatedAccess()
+            val attempts = AtomicInteger()
+            val daoEmissionStarted = CompletableDeferred<Unit>()
+            val releaseDaoEmission = CompletableDeferred<Unit>()
+            val oldCollectorFinished = CompletableDeferred<Unit>()
+            val values = Channel<String>(Channel.UNLIMITED)
+            val observation =
+                session.observeWhenReadable(
+                    authorized = access.isAuthorized,
+                    emptyValue = { "locked" },
+                ) {
+                    if (attempts.incrementAndGet() == 1) {
+                        flow {
+                            try {
+                                daoEmissionStarted.complete(Unit)
+                                releaseDaoEmission.await()
+                                emit("stale")
+                            } finally {
+                                oldCollectorFinished.complete(Unit)
+                            }
+                        }
+                    } else {
+                        flowOf("reopened")
+                    }
+                }
+            val collector = launch { observation.collect(values::send) }
+
+            try {
+                assertNull(session.unlock())
+                daoEmissionStarted.await()
+                session.softLock()
+                assertEquals("locked", values.receive())
+                withTimeout(10_000L) { oldCollectorFinished.await() }
+                releaseDaoEmission.complete(Unit)
+
+                session.seal()
+                assertNull(session.unlock())
+
+                assertEquals("reopened", withTimeout(10_000L) { values.receive() })
+                assertEquals(2, attempts.get())
+                assertTrue(values.tryReceive().isFailure)
+
+                access.authenticationState.value = AuthenticationState.Locked
+                assertEquals("locked", withTimeout(10_000L) { values.receive() })
+                assertEquals(2, attempts.get())
+                access.authenticationState.value = AuthenticationState.Authenticated(authenticatedAtMs = 2L)
+                assertEquals("reopened", withTimeout(10_000L) { values.receive() })
+                assertEquals(3, attempts.get())
+            } finally {
+                collector.cancelAndJoin()
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
+    fun roomObservationContainsSessionLockedRaceAndResubscribesAfterReopen() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                )
+            val access = FixedAuthenticatedAccess()
+            val attempts = AtomicInteger()
+            val values = Channel<String>(Channel.UNLIMITED)
+            val failures = Channel<Throwable>(Channel.UNLIMITED)
+            val observation =
+                session.observeWhenReadable(
+                    authorized = access.isAuthorized,
+                    emptyValue = { "locked" },
+                ) {
+                    if (attempts.incrementAndGet() == 1) {
+                        flow { throw SessionLockedException("simulated lock/emission race") }
+                    } else {
+                        flowOf("reopened")
+                    }
+                }
+            val collector =
+                launch {
+                    observation
+                        .catch { failures.send(it) }
+                        .collect(values::send)
+                }
+
+            try {
+                assertNull(session.unlock())
+                assertEquals("locked", withTimeout(10_000L) { values.receive() })
+                session.seal()
+                assertEquals("locked", withTimeout(10_000L) { values.receive() })
+                assertNull(session.unlock())
+
+                assertEquals("reopened", withTimeout(10_000L) { values.receive() })
+                assertEquals(2, attempts.get())
+                assertTrue(failures.tryReceive().isFailure)
+            } finally {
+                collector.cancelAndJoin()
                 session.seal()
                 context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             }

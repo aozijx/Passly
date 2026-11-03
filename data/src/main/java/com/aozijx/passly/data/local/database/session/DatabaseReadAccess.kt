@@ -5,10 +5,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+internal data class DatabaseReadAccess(
+    val readable: Boolean,
+    val lockGeneration: Long,
+)
+
 internal fun observeDatabaseReadAccess(
     isAuthorized: Flow<Boolean>,
     databaseLockState: Flow<SecureSessionState>,
-): Flow<Boolean> =
-    combine(isAuthorized, databaseLockState) { authorized, state ->
-        authorized && state == SecureSessionState.UNLOCKED
+    lockGeneration: Flow<Long>,
+): Flow<DatabaseReadAccess> =
+    combine(isAuthorized, databaseLockState, lockGeneration) { authorized, state, generation ->
+        val readable = authorized && state == SecureSessionState.UNLOCKED
+        DatabaseReadAccess(
+            readable = readable,
+            lockGeneration = if (readable) generation else 0L,
+        )
     }.distinctUntilChanged()

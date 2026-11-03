@@ -143,8 +143,11 @@ session 永久保持 `SEALED`：保留失败句柄作为未关闭的资源事实
 
 数据库重置与认证锁定、解锁共用 Security 会话互斥。重置期间不报告完整 Vault 访问；重开成功后恢复会话，
 重开失败则撤销授权、清除敏感数据密钥并转入锁定状态。活动查询流同时要求认证授权和数据库会话为 `UNLOCKED`；
-数据库封存时取消 Room 观察并发出空结果，重开后重新订阅，不依赖认证状态先发生一次虚假变化。Vault Paging
-直接随数据库 session state 重建 Pager，不再从重置控制器另发列表刷新事件。
+Room 长期观察同时依赖认证授权和数据库 `UNLOCKED` 状态。认证撤权会立即切换到空结果并取消当前查询；数据库
+`SOFT_LOCKED`/`SEALED` 也会取消旧 collector、释放 session lease、发出空结果，并在重新解锁后订阅新 Room Flow。
+如果锁定恰好与 DAO emission 交错，`SessionLeaseGate` 的 `SessionLockedException` 只转换成空结果，不能终止外层可读状态观察；
+SQLite/磁盘等其他查询异常仍原样传播，不能吞成空数据。Vault Paging 直接随数据库 session state 重建 Pager，不再从重置控制器另发列表刷新事件。
+Session owner 同时发布单调递增的锁代次；观察 gate 把代次纳入可读状态，使快速 lock/reopen 即使被 `StateFlow` 合并，重开的状态仍会建立新的 Room 查询。
 
 Database Reset Sheet 由其可见 Route owner 注册/退出。关闭 Sheet 或离开 Data Management 时，终态回到 `Idle`，
 因此重新打开后可再次提交；如果退出时状态为 `Resetting`，ViewModel scope 继续完成已确认的重置，不因 dismiss/锁定收尾而取消。仍在执行时重新进入会继续显示进行中；完成后再次打开则从新一轮 `Idle` 开始。

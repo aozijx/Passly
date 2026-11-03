@@ -21,6 +21,9 @@ interface SessionStateProvider {
     val lockState: SecureSessionState
     val lockStateFlow: StateFlow<SecureSessionState>
 
+    /** Monotonic version for lock transitions, including transitions conflated by StateFlow collectors. */
+    val lockGenerationFlow: StateFlow<Long>
+
     val isWritable: Boolean
         get() = lockState == SecureSessionState.UNLOCKED
 }

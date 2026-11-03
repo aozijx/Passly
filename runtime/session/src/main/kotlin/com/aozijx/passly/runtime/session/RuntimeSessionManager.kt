@@ -24,6 +24,8 @@ class RuntimeSessionManager<Handle : Any>(
 
     override val lockStateFlow = leaseGate.lockState
 
+    override val lockGenerationFlow = leaseGate.lockGeneration
+
     suspend fun <T> read(block: suspend Handle.() -> T): T = leaseGate.read(block)
 
     suspend fun <T> write(block: suspend Handle.() -> T): T = leaseGate.write(block)

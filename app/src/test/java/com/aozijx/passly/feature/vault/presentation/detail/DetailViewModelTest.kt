@@ -1313,6 +1313,7 @@ class DetailViewModelTest {
 
     private class UnlockedSessionProvider : SessionStateProvider {
         override val lockStateFlow = MutableStateFlow(SecureSessionState.UNLOCKED)
+        override val lockGenerationFlow = MutableStateFlow(0L)
         override val lockState get() = lockStateFlow.value
     }
 

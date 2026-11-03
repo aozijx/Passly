@@ -186,6 +186,7 @@ class IconResourceCleanupQueueTest {
         access,
         object : SessionStateProvider {
             override val lockStateFlow = access.databaseState
+            override val lockGenerationFlow = MutableStateFlow(0L)
             override val lockState get() = lockStateFlow.value
         },
         reclaim,
