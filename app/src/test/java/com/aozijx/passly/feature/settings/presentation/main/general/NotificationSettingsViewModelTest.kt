@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
@@ -14,10 +15,12 @@ import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -34,6 +37,48 @@ import org.junit.Test
 class NotificationSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `message preference read failure is visible and retry re-subscribes`() =
+        runTest {
+            var starts = 0
+            val repository =
+                RecordingMessageSettingsRepository(
+                    messages =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(MessageSettings())
+                            awaitCancellation()
+                        },
+                )
+            val model = viewModel(repository, availableState())
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            assertEquals(NotificationSettingsUiState.Failed(ReadFailure.IO), model.uiState.value)
+            model.onAction(NotificationSettingsAction.RetryRead)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(true, model.uiState.value is NotificationSettingsUiState.Ready)
+        }
+
+    @Test
+    fun `message preference writes are rejected while persisted settings are failed`() =
+        runTest {
+            val repository = RecordingMessageSettingsRepository(messages = flow { throw IOException("read failure") })
+            val model = viewModel(repository, availableState())
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            model.onAction(NotificationSettingsAction.SetOptionalMessagesEnabled(true))
+            model.onAction(NotificationSettingsAction.SetTopicEnabled(MessageTopic.SECURITY, true))
+            runCurrent()
+
+            assertTrue(repository.systemNotificationWrites.isEmpty())
+            assertTrue(repository.topicWrites.isEmpty())
+        }
 
     @Test
     fun `remains loading until persisted message preferences arrive`() =
@@ -85,6 +130,8 @@ class NotificationSettingsViewModelTest {
                     settingsRepository = repository,
                     systemNotificationStateProvider = SystemNotificationStateProvider { systemState },
                 ).also { it.onPageEntered() }
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
             viewModel.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             val request = viewModel.nextPermissionRequest()
             systemState = availableState()
@@ -113,6 +160,8 @@ class NotificationSettingsViewModelTest {
             val model =
                 NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
                     .also { it.onPageEntered() }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             val request = model.nextPermissionRequest()
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(false))
@@ -131,6 +180,8 @@ class NotificationSettingsViewModelTest {
             val model =
                 NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
                     .also { it.onPageEntered() }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             val effects = mutableListOf<NotificationSettingsEffect>()
             backgroundScope.launch { model.effects.toList(effects) }
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
@@ -151,6 +202,8 @@ class NotificationSettingsViewModelTest {
         runTest {
             val repository = RecordingMessageSettingsRepository()
             val model = viewModel(repository, unavailableState(false))
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             val effects = mutableListOf<NotificationSettingsEffect>()
             backgroundScope.launch { model.effects.toList(effects) }
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
@@ -172,6 +225,8 @@ class NotificationSettingsViewModelTest {
             var system = unavailableState(false)
             val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
             val owner = model.onPageEntered()
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             val oldRequest = model.nextPermissionRequest()
             model.onPageExited(owner)
@@ -225,6 +280,8 @@ class NotificationSettingsViewModelTest {
             val model =
                 NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
                     .also { it.onPageEntered() }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             val request = model.nextPermissionRequest()
             val effects = mutableListOf<NotificationSettingsEffect>()
@@ -265,6 +322,8 @@ class NotificationSettingsViewModelTest {
         runTest {
             val repository = RecordingMessageSettingsRepository()
             val viewModel = viewModel(repository, availableState())
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
 
             viewModel.onAction(NotificationSettingsAction.SetTopicEnabled(MessageTopic.SECURITY, false))
             advanceUntilIdle()
@@ -279,6 +338,8 @@ class NotificationSettingsViewModelTest {
             var system = unavailableState(runtimePermissionGranted = false)
             val model = NotificationSettingsViewModel(repository, SystemNotificationStateProvider { system })
             val oldOwner = model.onPageEntered()
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             model.onAction(NotificationSettingsAction.SetSystemNotificationsEnabled(true))
             val request = model.nextPermissionRequest()
 

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.shell.presentation
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 
@@ -11,6 +12,10 @@ data class AppShellUiState(
 
 sealed interface AppShellSettingsState {
     data object Loading : AppShellSettingsState
+
+    data class Failed(
+        val failure: ReadFailure,
+    ) : AppShellSettingsState
 
     data class Ready(
         val appearance: AppearanceSettings,

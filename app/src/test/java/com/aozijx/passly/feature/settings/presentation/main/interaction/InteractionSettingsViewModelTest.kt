@@ -13,7 +13,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -27,6 +30,33 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class InteractionSettingsViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
+
+    @Test
+    fun `preference read failure is visible and explicit retry re-subscribes`() =
+        runTest {
+            var starts = 0
+            val repository =
+                Repository(
+                    save = {},
+                    source =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(InteractionSettings())
+                            awaitCancellation()
+                        },
+                )
+            val model = InteractionSettingsViewModel(repository)
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            assertEquals(true, model.uiState.value is InteractionSettingsUiState.Failed)
+            model.onAction(InteractionSettingsAction.RetryRead)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(true, model.uiState.value is InteractionSettingsUiState.Ready)
+        }
 
     @Test
     fun `toggle failures are reported while repository remains the state source`() =
@@ -65,7 +95,7 @@ class InteractionSettingsViewModelTest {
             assertEquals(true, ready.isSwipeEnabled)
             assertEquals(true, ready.isPullToSearchEnabled)
             assertEquals(emptyList<InteractionSettingsEffect>(), effects)
-            repository.interaction.value = InteractionSettings()
+            repository.currentInteraction.value = InteractionSettings()
             runCurrent()
             assertEquals(false, (model.uiState.value as InteractionSettingsUiState.Ready).isSwipeEnabled)
         }
@@ -115,6 +145,8 @@ class InteractionSettingsViewModelTest {
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
             backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeRightAction(SwipeActionType.DELETE))
             runCurrent()
             assertEquals(listOf(InteractionSettingsEffect.SaveFailed(UiErrorMessage(R.string.ui_error_file_io))), effects)
@@ -127,15 +159,19 @@ class InteractionSettingsViewModelTest {
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
             backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
             runCurrent()
             assertEquals(listOf(InteractionSettingsEffect.Saved), effects)
         }
 
     private class Repository(
+        source: Flow<InteractionSettings>? = null,
         private val save: suspend () -> Unit,
     ) : InteractionSettingsRepository {
-        override val interaction = MutableStateFlow(InteractionSettings())
+        val currentInteraction = MutableStateFlow(InteractionSettings())
+        override val interaction: Flow<InteractionSettings> = source ?: currentInteraction
 
         override suspend fun setSwipeLeftAction(action: SwipeActionType) = save()
 
@@ -143,12 +179,12 @@ class InteractionSettingsViewModelTest {
 
         override suspend fun setSwipeEnabled(enabled: Boolean) {
             save()
-            interaction.value = interaction.value.copy(isSwipeEnabled = enabled)
+            currentInteraction.value = currentInteraction.value.copy(isSwipeEnabled = enabled)
         }
 
         override suspend fun setPullToSearchEnabled(enabled: Boolean) {
             save()
-            interaction.value = interaction.value.copy(isPullToSearchEnabled = enabled)
+            currentInteraction.value = currentInteraction.value.copy(isPullToSearchEnabled = enabled)
         }
 
         override suspend fun setAutofillEnabled(enabled: Boolean) = Unit

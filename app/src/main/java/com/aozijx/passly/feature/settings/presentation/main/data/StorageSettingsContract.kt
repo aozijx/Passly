@@ -1,11 +1,12 @@
 package com.aozijx.passly.feature.settings.presentation.main.data
 
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 
 data class StorageSettingsUiState(
     val cache: StorageSizeUiState = StorageSizeUiState.Loading,
     val logs: StorageSizeUiState = StorageSizeUiState.Loading,
-    val logRecordingMode: DiagnosticsLogRecordingMode = DiagnosticsLogRecordingMode.DEFAULT,
+    val logRecordingMode: RecoverableReadState<DiagnosticsLogRecordingMode> = RecoverableReadState.Loading,
 )
 
 sealed interface StorageSizeUiState {
@@ -19,6 +20,8 @@ sealed interface StorageSizeUiState {
 }
 
 sealed interface StorageSettingsAction {
+    data object RetryLogRecordingMode : StorageSettingsAction
+
     data object ClearCache : StorageSettingsAction
 
     data object ClearLogs : StorageSettingsAction

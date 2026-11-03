@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.securityPreferencesDataStore
+import com.aozijx.passly.data.local.datastore.tagCorruptSettingsData
 import com.aozijx.passly.data.preferences.proto.SecurityPreferences
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
@@ -19,10 +20,11 @@ internal class ProtoSecurityPreferencesStore
     ) : SecuritySettingsRepository,
         IdleTimeoutSettings {
         private val dataStore = context.applicationContext.securityPreferencesDataStore
+        private val preferences = dataStore.data.tagCorruptSettingsData()
 
-        override val security = dataStore.data.map(::readSecurity)
-        override val lockTimeout = dataStore.data.map { it.lockTimeoutMs }
-        override val isLockOnBackground = dataStore.data.map { it.lockOnBackground }
+        override val security = preferences.map(::readSecurity)
+        override val lockTimeout = preferences.map { it.lockTimeoutMs }
+        override val isLockOnBackground = preferences.map { it.lockOnBackground }
 
         override suspend fun setSecureContentEnabled(enabled: Boolean) = update { secureContentEnabled = enabled }
 

@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.shell.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
 import com.aozijx.passly.domain.access.model.SessionLockRequest
@@ -11,6 +13,9 @@ import com.aozijx.passly.domain.access.port.DatabaseSessionRecovery
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
@@ -31,6 +36,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private data class AppShellSettingsSnapshot(
+    val appearance: AppearanceSettings,
+    val interfaceSettings: InterfaceSettings,
+    val securitySettings: SecuritySettings,
+)
 
 @HiltViewModel
 class AppShellViewModel
@@ -63,6 +74,19 @@ class AppShellViewModel
         private val _effects = Channel<AppShellEffect>(Channel.BUFFERED)
         val effects = _effects.receiveAsFlow()
 
+        private val settingsRead =
+            RecoverableRead(
+                source =
+                    combine(
+                        appearanceSettingsRepository.appearance,
+                        interfaceSettingsRepository.interfaceSettings,
+                        securitySettingsSource.security,
+                    ) { appearance, interfaceSettings, securitySettings ->
+                        AppShellSettingsSnapshot(appearance, interfaceSettings, securitySettings)
+                    },
+                scope = viewModelScope,
+            )
+
         init {
             observeSettings()
             observeAuthStates()
@@ -80,6 +104,10 @@ class AppShellViewModel
 
                 AppShellUiAction.RetryDatabaseSession -> {
                     retryDatabaseSession()
+                }
+
+                AppShellUiAction.RetrySettings -> {
+                    settingsRead.retry()
                 }
             }
         }
@@ -99,18 +127,28 @@ class AppShellViewModel
 
         private fun observeSettings() {
             viewModelScope.launch {
-                combine(
-                    appearanceSettingsRepository.appearance,
-                    interfaceSettingsRepository.interfaceSettings,
-                    securitySettingsSource.security,
-                ) { appearance, interfaceSettings, securitySettings ->
-                    AppShellMutation.SettingsChanged(
-                        appearance = appearance,
-                        interfaceSettings = interfaceSettings,
-                        securitySettings = securitySettings,
-                    )
-                }.distinctUntilChanged()
-                    .collect(::mutate)
+                settingsRead.state.collect { read ->
+                    when (read) {
+                        RecoverableReadState.Loading -> {
+                            mutate(AppShellMutation.SettingsLoading)
+                        }
+
+                        is RecoverableReadState.Ready -> {
+                            val settings = read.value
+                            mutate(
+                                AppShellMutation.SettingsChanged(
+                                    settings.appearance,
+                                    settings.interfaceSettings,
+                                    settings.securitySettings,
+                                ),
+                            )
+                        }
+
+                        is RecoverableReadState.Failed -> {
+                            mutate(AppShellMutation.SettingsFailed(read.failure))
+                        }
+                    }
+                }
             }
         }
 

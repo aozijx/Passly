@@ -5,9 +5,13 @@ import com.aozijx.passly.feature.settings.backup.BackupDirectoryAccess
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryGrantResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
 import com.aozijx.passly.testing.MainDispatcherRule
+import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -19,6 +23,40 @@ import org.junit.Test
 class DataManagementSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `directory read failure is visible and retry re-subscribes`() =
+        runTest {
+            var starts = 0
+            val repository =
+                object : BackupDirectorySettingsRepository {
+                    override val backupDirectoryUri: Flow<String?> =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(null)
+                            awaitCancellation()
+                        }
+
+                    override suspend fun setBackupDirectoryUri(uri: String) = Unit
+
+                    override suspend fun clearBackupDirectoryUri() = Unit
+                }
+            val viewModel =
+                DataManagementSettingsViewModel(
+                    directorySource = repository,
+                    directorySettings = BackupDirectorySettingsInteractor(repository, NoOpAccess),
+                )
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            assertEquals(true, viewModel.uiState.value is DataManagementSettingsUiState.Failed)
+            viewModel.onAction(DataManagementSettingsUiAction.RetryRead)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(DataManagementSettingsUiState.Ready(null), viewModel.uiState.value)
+        }
 
     @Test
     fun `remains loading until persisted backup preferences arrive`() =
@@ -43,6 +81,7 @@ class DataManagementSettingsViewModelTest {
                     directorySettings = BackupDirectorySettingsInteractor(repository, access),
                 )
             val oldOwner = viewModel.onPageEntered()
+            runCurrent()
             val requestId = viewModel.beginDirectorySelection(oldOwner)
             assertNotNull(requestId)
 
@@ -62,7 +101,7 @@ class DataManagementSettingsViewModelTest {
         }
 
     private object EmptyRepository : BackupDirectorySettingsRepository {
-        override val backupDirectoryUri = emptyFlow<String?>()
+        override val backupDirectoryUri = flow<String?> { awaitCancellation() }
 
         override suspend fun setBackupDirectoryUri(uri: String) = Unit
 

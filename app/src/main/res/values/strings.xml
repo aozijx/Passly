@@ -83,6 +83,7 @@
     <string name="vault_scan">扫码</string>
     <string name="vault_empty_placeholder">你的保险箱空空如也</string>
     <string name="vault_load_failed">无法加载保险箱内容</string>
+    <string name="settings_read_failed">无法读取设置。请重试；已损坏的数据不会被自动替换。</string>
     <string name="retry">重试</string>
     <string name="scanner_title">扫描二维码</string>
     <string name="scanner_action_album">从相册选择</string>

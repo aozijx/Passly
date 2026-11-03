@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.display
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 
@@ -22,6 +23,10 @@ data class VaultInteractionConfig(
 
 sealed interface VaultDisplayUiState {
     data object Loading : VaultDisplayUiState
+
+    data class Failed(
+        val failure: ReadFailure,
+    ) : VaultDisplayUiState
 
     data class Ready(
         val layout: VaultLayoutConfig,

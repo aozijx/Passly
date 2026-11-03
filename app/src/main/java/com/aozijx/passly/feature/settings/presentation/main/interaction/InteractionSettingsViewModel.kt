@@ -3,6 +3,9 @@ package com.aozijx.passly.feature.settings.presentation.main.interaction
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
@@ -22,15 +25,29 @@ class InteractionSettingsViewModel
     ) : ViewModel() {
         private enum class SuccessFeedback { Silent, Saved }
 
+        private val settingsRead =
+            RecoverableRead(
+                source =
+                    settingsRepository.interaction
+                        .map { settings ->
+                            InteractionSettingsUiState.Ready(
+                                isSwipeEnabled = settings.isSwipeEnabled,
+                                isPullToSearchEnabled = settings.isPullToSearchEnabled,
+                                swipeLeftAction = settings.swipeLeftAction,
+                                swipeRightAction = settings.swipeRightAction,
+                            )
+                        },
+                scope = viewModelScope,
+            )
+
         val uiState: StateFlow<InteractionSettingsUiState> =
-            settingsRepository.interaction
-                .map { settings ->
-                    InteractionSettingsUiState.Ready(
-                        isSwipeEnabled = settings.isSwipeEnabled,
-                        isPullToSearchEnabled = settings.isPullToSearchEnabled,
-                        swipeLeftAction = settings.swipeLeftAction,
-                        swipeRightAction = settings.swipeRightAction,
-                    )
+            settingsRead.state
+                .map { state ->
+                    when (state) {
+                        RecoverableReadState.Loading -> InteractionSettingsUiState.Loading
+                        is RecoverableReadState.Ready -> state.value
+                        is RecoverableReadState.Failed -> InteractionSettingsUiState.Failed(state.failure)
+                    }
                 }.stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5_000L),
@@ -42,6 +59,10 @@ class InteractionSettingsViewModel
 
         fun onAction(action: InteractionSettingsAction) {
             when (action) {
+                InteractionSettingsAction.RetryRead -> {
+                    settingsRead.retry()
+                }
+
                 is InteractionSettingsAction.SetSwipeEnabled -> {
                     saveSetting(SuccessFeedback.Silent) {
                         settingsRepository.setSwipeEnabled(action.enabled)
@@ -72,6 +93,7 @@ class InteractionSettingsViewModel
             feedback: SuccessFeedback,
             save: suspend () -> Unit,
         ) {
+            if (uiState.value !is InteractionSettingsUiState.Ready) return
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 writePreferenceWithFeedback(

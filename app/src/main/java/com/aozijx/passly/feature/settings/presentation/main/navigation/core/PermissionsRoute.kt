@@ -135,6 +135,10 @@ internal fun PermissionsRoute(
                     handleRuntimePermission(action.permission)
                 }
 
+                PermissionManagementScreenAction.RetryBackupDirectoryRead -> {
+                    viewModel.retryBackupDirectoryRead()
+                }
+
                 PermissionManagementScreenAction.OpenBackupSettings -> {
                     onOpenBackupSettings()
                 }

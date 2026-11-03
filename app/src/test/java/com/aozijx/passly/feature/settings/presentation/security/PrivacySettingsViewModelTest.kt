@@ -7,8 +7,11 @@ import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -21,6 +24,32 @@ import org.junit.Test
 class PrivacySettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `security preference failure is visible and retry re-subscribes source`() =
+        runTest {
+            var starts = 0
+            val repository =
+                object : SecuritySettingsRepository by EmptySecuritySettingsRepository {
+                    override val security: Flow<SecuritySettings> =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(SecuritySettings())
+                            awaitCancellation()
+                        }
+                }
+            val model = PrivacySettingsViewModel(repository) { false }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            assertEquals(true, model.uiState.value is PrivacySettingsUiState.Failed)
+            model.onAction(PrivacySettingsAction.RetryRead)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(true, model.uiState.value is PrivacySettingsUiState.Ready)
+        }
 
     @Test
     fun `remains loading until persisted security preferences arrive`() =

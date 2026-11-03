@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.scanner.presentation.ScannerImport
 import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
@@ -41,6 +42,7 @@ import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationR
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationResult
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,11 +73,46 @@ internal fun VaultRoute(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
     val vaultDisplayState by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
+    val librarySettingsState by vaultViewModel.librarySettingsState.collectAsStateWithLifecycle()
     val vaultDisplayConfig =
         when (val state = vaultDisplayState) {
-            VaultDisplayUiState.Loading -> return
-            is VaultDisplayUiState.Ready -> state
+            VaultDisplayUiState.Loading -> {
+                return
+            }
+
+            is VaultDisplayUiState.Failed -> {
+                SettingsReadFailureContent(
+                    onRetry = {
+                        vaultDisplayViewModel.retry()
+                        vaultViewModel.retryLibrarySettings()
+                    },
+                )
+                return
+            }
+
+            is VaultDisplayUiState.Ready -> {
+                state
+            }
         }
+    when (librarySettingsState) {
+        RecoverableReadState.Loading -> {
+            return
+        }
+
+        is RecoverableReadState.Failed -> {
+            SettingsReadFailureContent(
+                onRetry = {
+                    vaultDisplayViewModel.retry()
+                    vaultViewModel.retryLibrarySettings()
+                },
+            )
+            return
+        }
+
+        is RecoverableReadState.Ready -> {
+            Unit
+        }
+    }
 
     val display =
         remember(vaultDisplayConfig) {

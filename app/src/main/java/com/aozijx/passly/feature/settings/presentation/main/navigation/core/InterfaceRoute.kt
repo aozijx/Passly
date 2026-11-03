@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.appearance.toInterfaceUiModel
@@ -13,6 +14,7 @@ import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWri
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 @Composable
 internal fun InterfaceRoute(onBack: (() -> Unit)?) {
@@ -31,6 +33,10 @@ internal fun InterfaceRoute(onBack: (() -> Unit)?) {
         when (val readyState = state) {
             InterfaceSettingsUiState.Loading -> {
                 Unit
+            }
+
+            is InterfaceSettingsUiState.Failed -> {
+                item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InterfaceSettingsAction.RetryRead) }) }
             }
 
             is InterfaceSettingsUiState.Ready -> {

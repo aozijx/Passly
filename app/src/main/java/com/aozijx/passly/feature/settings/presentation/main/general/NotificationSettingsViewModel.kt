@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.app.settings.SettingsReadRetrySignal
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
@@ -23,6 +26,7 @@ class NotificationSettingsViewModel
     constructor(
         private val settingsRepository: MessageSettingsRepository,
         private val systemNotificationStateProvider: SystemNotificationStateProvider,
+        settingsReadRetrySignal: SettingsReadRetrySignal = SettingsReadRetrySignal(),
     ) : ViewModel() {
         private sealed interface PermissionRequestState {
             data object Idle : PermissionRequestState
@@ -36,21 +40,39 @@ class NotificationSettingsViewModel
 
         private var permissionRequestState: PermissionRequestState = PermissionRequestState.Idle
         private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
+        private val messagesRead =
+            RecoverableRead(
+                source = settingsRepository.messages,
+                scope = viewModelScope,
+                sharedRetrySignal = settingsReadRetrySignal,
+            )
 
         private val pageEffects = PageEffects<NotificationSettingsEffect>()
         val effects = pageEffects.effects
 
         val uiState: StateFlow<NotificationSettingsUiState> =
-            settingsRepository.messages
-                .combine(systemNotificationState) { messages, system ->
-                    NotificationSettingsUiState.Ready(
-                        optionalMessagesEnabled = messages.optionalMessagesEnabled,
-                        systemNotificationsEnabled = messages.systemNotificationsEnabled,
-                        runtimeNotificationPermissionGranted = system.runtimePermissionGranted,
-                        notificationsEnabledBySystem = system.notificationsEnabledBySystem,
-                        notificationChannelEnabled = system.channelEnabled,
-                        topicSettings = messages.topicSettings,
-                    )
+            messagesRead.state
+                .combine(systemNotificationState) { read, system ->
+                    when (read) {
+                        RecoverableReadState.Loading -> {
+                            NotificationSettingsUiState.Loading
+                        }
+
+                        is RecoverableReadState.Failed -> {
+                            NotificationSettingsUiState.Failed(read.failure)
+                        }
+
+                        is RecoverableReadState.Ready -> {
+                            NotificationSettingsUiState.Ready(
+                                optionalMessagesEnabled = read.value.optionalMessagesEnabled,
+                                systemNotificationsEnabled = read.value.systemNotificationsEnabled,
+                                runtimeNotificationPermissionGranted = system.runtimePermissionGranted,
+                                notificationsEnabledBySystem = system.notificationsEnabledBySystem,
+                                notificationChannelEnabled = system.channelEnabled,
+                                topicSettings = read.value.topicSettings,
+                            )
+                        }
+                    }
                 }.stateIn(
                     scope = viewModelScope,
                     started = SharingStarted.WhileSubscribed(5_000),
@@ -59,6 +81,10 @@ class NotificationSettingsViewModel
 
         internal fun onAction(action: NotificationSettingsAction) {
             when (action) {
+                NotificationSettingsAction.RetryRead -> {
+                    messagesRead.retry()
+                }
+
                 is NotificationSettingsAction.SetSystemNotificationsEnabled -> {
                     if (action.enabled) {
                         requestSystemNotificationsEnabled()
@@ -163,6 +189,7 @@ class NotificationSettingsViewModel
         private fun saveSetting(write: suspend () -> Unit) {
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
+                if (uiState.value !is NotificationSettingsUiState.Ready) return@launch
                 writePreferenceWithFeedback(
                     failureRes = R.string.settings_notifications_save_failed,
                     onFailure = { emitEffect(owner, NotificationSettingsEffect.SaveFailed(it)) },

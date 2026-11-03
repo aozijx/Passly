@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.shell.presentation
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
@@ -13,6 +14,12 @@ internal sealed interface AppShellMutation {
         val appearance: AppearanceSettings,
         val interfaceSettings: InterfaceSettings,
         val securitySettings: SecuritySettings,
+    ) : AppShellMutation
+
+    data object SettingsLoading : AppShellMutation
+
+    data class SettingsFailed(
+        val failure: ReadFailure,
     ) : AppShellMutation
 
     data object DatabaseRetryStarted : AppShellMutation
@@ -50,6 +57,14 @@ internal object AppShellReducer {
                                 ),
                         ),
                 )
+            }
+
+            AppShellMutation.SettingsLoading -> {
+                state.copy(settings = AppShellSettingsState.Loading)
+            }
+
+            is AppShellMutation.SettingsFailed -> {
+                state.copy(settings = AppShellSettingsState.Failed(mutation.failure))
             }
 
             AppShellMutation.DatabaseRetryStarted -> {

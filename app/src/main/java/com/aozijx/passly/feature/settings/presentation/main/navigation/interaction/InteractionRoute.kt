@@ -25,6 +25,7 @@ import com.aozijx.passly.feature.settings.presentation.ui.interaction.SwipeActio
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 private enum class SwipeActionDialog { Left, Right }
 
@@ -61,6 +62,10 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
         when (val readyState = state) {
             InteractionSettingsUiState.Loading -> {
                 Unit
+            }
+
+            is InteractionSettingsUiState.Failed -> {
+                item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InteractionSettingsAction.RetryRead) }) }
             }
 
             is InteractionSettingsUiState.Ready -> {

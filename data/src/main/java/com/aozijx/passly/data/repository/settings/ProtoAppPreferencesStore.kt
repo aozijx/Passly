@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.settings
 
 import android.content.Context
 import com.aozijx.passly.data.local.datastore.appPreferencesDataStore
+import com.aozijx.passly.data.local.datastore.tagCorruptSettingsData
 import com.aozijx.passly.data.preferences.proto.AppPreferences
 import com.aozijx.passly.data.preferences.proto.AppearancePreferences
 import com.aozijx.passly.data.preferences.proto.AutofillPreferences
@@ -48,15 +49,16 @@ internal class ProtoAppPreferencesStore
         MessageSettingsRepository,
         DiagnosticsLogSettingsRepository {
         private val dataStore = context.applicationContext.appPreferencesDataStore
+        private val preferences = dataStore.data.tagCorruptSettingsData()
 
-        override val appearance = dataStore.data.map { readAppearance(it.appearance) }
-        override val backupDirectoryUri = dataStore.data.map { it.backup.directoryTreeUri.ifEmpty { null } }
-        override val interfaceSettings = dataStore.data.map { readInterface(it.interfacePrefs) }
-        override val interaction = dataStore.data.map { readInteraction(it.interaction) }
-        override val libraryViewSettings = dataStore.data.map { readVault(it.vaultView) }
-        override val messages = dataStore.data.map { decodeMessageSettings(it.message) }
+        override val appearance = preferences.map { readAppearance(it.appearance) }
+        override val backupDirectoryUri = preferences.map { it.backup.directoryTreeUri.ifEmpty { null } }
+        override val interfaceSettings = preferences.map { readInterface(it.interfacePrefs) }
+        override val interaction = preferences.map { readInteraction(it.interaction) }
+        override val libraryViewSettings = preferences.map { readVault(it.vaultView) }
+        override val messages = preferences.map { decodeMessageSettings(it.message) }
         override val diagnosticsLogRecordingMode =
-            dataStore.data.map {
+            preferences.map {
                 readDiagnosticsLogRecordingMode(it.diagnostics)
             }
 

@@ -1,6 +1,9 @@
 package com.aozijx.passly.app.observability
 
 import android.os.Process
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.app.settings.SettingsReadRetrySignal
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
@@ -46,10 +49,18 @@ class ObservabilityRuntimeController
         private val eventAggregator: EventAggregator,
         private val diagnosticsLogSettings: DiagnosticsLogSettingsRepository,
         private val recordingPolicy: DiagnosticsLogRecordingPolicy,
+        retrySignal: SettingsReadRetrySignal,
         private val recordEncoder: TsvRecordEncoder = TsvRecordEncoder(),
     ) : DiagnosticsLogStore {
         private val settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val settingsRead =
+            RecoverableRead(
+                source = diagnosticsLogSettings.diagnosticsLogRecordingMode,
+                scope = settingsScope,
+                sharedRetrySignal = retrySignal,
+            )
         private val started = AtomicBoolean(false)
+        private val previousExitProcessed = AtomicBoolean(false)
         private val shutdown = AtomicBoolean(false)
         private val handlingCrash = AtomicBoolean(false)
         private var previousCrashHandler: Thread.UncaughtExceptionHandler? = null
@@ -91,12 +102,20 @@ class ObservabilityRuntimeController
             crashHandlers.install(crashHandler)
             settingsJob =
                 settingsScope.launch {
-                    var initialModeLoaded = false
-                    diagnosticsLogSettings.diagnosticsLogRecordingMode.collect { mode ->
-                        recordingPolicy.update(mode)
-                        if (!initialModeLoaded) {
-                            initialModeLoaded = true
-                            previousExitSource.readUnrecorded()?.let(::recordPreviousExit)
+                    settingsRead.state.collect { state ->
+                        when (state) {
+                            RecoverableReadState.Loading,
+                            is RecoverableReadState.Failed,
+                            -> {
+                                recordingPolicy.update(null)
+                            }
+
+                            is RecoverableReadState.Ready -> {
+                                recordingPolicy.update(state.value)
+                                if (previousExitProcessed.compareAndSet(false, true)) {
+                                    previousExitSource.readUnrecorded()?.let(::recordPreviousExit)
+                                }
+                            }
                         }
                     }
                 }

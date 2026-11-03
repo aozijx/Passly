@@ -22,6 +22,7 @@ import com.aozijx.passly.feature.settings.presentation.security.toPrivacySetting
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.feature.settings.presentation.ui.security.PrivacyDetail
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 @Composable
 internal fun PrivacyRoute(onBack: (() -> Unit)?) {
@@ -54,6 +55,10 @@ internal fun PrivacyRoute(onBack: (() -> Unit)?) {
         when (val readyState = state) {
             PrivacySettingsUiState.Loading -> {
                 Unit
+            }
+
+            is PrivacySettingsUiState.Failed -> {
+                item { SettingsReadFailureContent(onRetry = { viewModel.onAction(PrivacySettingsAction.RetryRead) }) }
             }
 
             is PrivacySettingsUiState.Ready -> {

@@ -15,13 +15,17 @@ import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.app.theme.AppTheme
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
 import com.aozijx.passly.feature.shell.presentation.AppShell
 import com.aozijx.passly.feature.shell.presentation.AppShellSettingsState
+import com.aozijx.passly.feature.shell.presentation.AppShellUiAction
 import com.aozijx.passly.feature.shell.presentation.AppShellViewModel
 import com.aozijx.passly.feature.shell.presentation.AppWindowPolicyEffects
 import com.aozijx.passly.feature.shell.presentation.windowPolicy
 import com.aozijx.passly.feature.unlock.presentation.AuthenticationRoute
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 
@@ -37,7 +41,28 @@ internal fun PasslyApp(
     val shellState by shellViewModel.uiState.collectAsStateWithLifecycle()
     AppWindowPolicyEffects(activity.window, shellState.windowPolicy)
 
-    val settings = shellState.settings as? AppShellSettingsState.Ready ?: return
+    val settings =
+        when (val state = shellState.settings) {
+            AppShellSettingsState.Loading -> {
+                return
+            }
+
+            is AppShellSettingsState.Failed -> {
+                AppTheme(
+                    appearance = AppearanceSettings(),
+                    appCornerRadiusDp = InterfaceSettings().appCornerRadiusDp,
+                ) {
+                    SettingsReadFailureContent(
+                        onRetry = { shellViewModel.onAction(AppShellUiAction.RetrySettings) },
+                    )
+                }
+                return
+            }
+
+            is AppShellSettingsState.Ready -> {
+                state
+            }
+        }
 
     LaunchedEffect(settings.appearance.language) {
         val languageTags = settings.appearance.language.applicationLocaleTags

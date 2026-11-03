@@ -29,6 +29,7 @@ import com.aozijx.passly.feature.settings.presentation.ui.data.BackupDirectoryCl
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,9 +49,23 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state is DataManagementSettingsUiState.Failed) {
+        SettingsSecondaryPage(
+            title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
+            onBack = onBack,
+        ) {
+            item {
+                SettingsReadFailureContent(
+                    onRetry = { viewModel.onAction(DataManagementSettingsUiAction.RetryRead) },
+                )
+            }
+        }
+        return
+    }
     val readyState =
         when (val current = state) {
             DataManagementSettingsUiState.Loading -> return
+            is DataManagementSettingsUiState.Failed -> return
             is DataManagementSettingsUiState.Ready -> current
         }
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }

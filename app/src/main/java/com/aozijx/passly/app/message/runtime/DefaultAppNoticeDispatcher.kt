@@ -69,7 +69,9 @@ class DefaultAppNoticeDispatcher
             val policy = codeRegistry.policyFor(notice.code)
             val settings =
                 when (val snapshot = settingsProvider.current()) {
-                    MessageSettingsSnapshot.Loading -> {
+                    MessageSettingsSnapshot.Loading,
+                    is MessageSettingsSnapshot.Failed,
+                    -> {
                         if (!policy.mandatory) {
                             return receipt(
                                 notice = notice,

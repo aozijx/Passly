@@ -1,5 +1,6 @@
 package com.aozijx.passly.app.message.contract
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.MessageSettings
 
 /**
@@ -31,6 +32,10 @@ data class SystemNotificationState(
 
 sealed interface MessageSettingsSnapshot {
     data object Loading : MessageSettingsSnapshot
+
+    data class Failed(
+        val failure: ReadFailure,
+    ) : MessageSettingsSnapshot
 
     data class Ready(
         val version: Long,

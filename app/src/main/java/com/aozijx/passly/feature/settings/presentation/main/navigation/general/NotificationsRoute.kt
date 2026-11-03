@@ -40,6 +40,7 @@ import com.aozijx.passly.feature.settings.presentation.main.general.toUiModel
 import com.aozijx.passly.feature.settings.presentation.ui.general.NotificationSettingsSection
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 private sealed interface NotificationPermissionLaunch {
     data object Idle : NotificationPermissionLaunch
@@ -165,6 +166,10 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
         when (val readyState = state) {
             NotificationSettingsUiState.Loading -> {
                 Unit
+            }
+
+            is NotificationSettingsUiState.Failed -> {
+                item { SettingsReadFailureContent(onRetry = { viewModel.onAction(NotificationSettingsAction.RetryRead) }) }
             }
 
             is NotificationSettingsUiState.Ready -> {

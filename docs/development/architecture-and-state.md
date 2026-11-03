@@ -49,6 +49,21 @@ Host 拥有 ViewModel、effect、导航和 Domain/UI 映射。被动 UI 文件�
 - About 是无 ViewModel 的静态页面。
 - 简单 Settings 页面直接投影 Proto-backed repository Flow，不为每个开关创建完整 MVI 套件。
 
+## 持久设置读取失败与恢复
+
+Proto-backed Settings Repository Flow 始终是持久化真相源；读取失败不能映射成默认偏好，也不能触发静默重写。DataStore
+磁盘读取 `IOException`、协议损坏和意外普通异常分别形成明确的 `Failed` 原因；`CancellationException` 原样传播，fatal
+`Error` 不捕获。损坏数据必须先由用户可见，只有显式 Retry 才重新订阅冷源；普通 I/O 失败显示失败状态并按有界退避自动重试，页面 Retry 会提前触发下一次订阅。正常 Flow 完成保留最后一个状态。
+
+读取所有者通过共享 `RecoverableRead` 管理一次冷源观察和重新订阅；页面只投影 `Loading`、`Ready`、`Failed` 并调用 Retry，不能各自复制 `catch`/fallback 策略。显式重试同时广播给关联的进程级长读者，让消息快照和诊断记录策略也能从损坏状态重新订阅。设置读取失败时隐藏依赖该设置的可编辑控件，ViewModel 在异步写入前再次确认读取为 Ready，避免直接 Action 或迟到操作写入基于未知状态的变更。短期操作使用 `.first()` 读取仍把异常交给操作调用方处理，不伪造设置默认值。
+
+```text
+Repository cold Flow -> RecoverableRead -> Loading / Ready / Failed
+                                               |              |
+                                               |              +-> Route shows error + Retry
+                                               +-> projection  +-> source is collected again
+```
+
 UI 与 Domain 语义相同的设置选项直接使用 Domain 类型；需要不同展示语义时才建立 UI model，并使用穷尽映射，
 不按枚举名称反射转换。简单设置 Content 直接发送页面 Action，不增加字段一一对应的 Event 转发层。
 页面私有 Sheet、Dialog 和 UiModel 放在拥有其状态的 feature，而不是入口页面目录。
@@ -60,3 +75,5 @@ UI 与 Domain 语义相同的设置选项直接使用 Domain 类型；需要不�
 | Route 收集状态并处理生命周期事件 | `VaultRoute()` | [`VaultRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultRoute.kt) |
 | 维护列表界面状态与业务动作 | `VaultViewModel.onAction()` | [`VaultViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
 | 将语义动作归约为不可变状态 | `VaultReducer.reduce()` | [`VaultReducer.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultReducer.kt) |
+| 重订阅失败的设置冷源并发布读取状态 | `RecoverableRead<T>` | [`RecoverableRead.kt`](../../app/src/main/java/com/aozijx/passly/app/settings/RecoverableRead.kt) |
+| 显示统一的设置读取失败与重试入口 | `SettingsReadFailureContent()` | [`SettingsReadFailureContent.kt`](../../app/src/main/java/com/aozijx/passly/presentation/shared/state/SettingsReadFailureContent.kt) |

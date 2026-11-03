@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySelectionResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
@@ -30,14 +32,17 @@ class DataManagementSettingsViewModel
         val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
         val effects = pageEffects.effects
         private var pendingDirectorySelection: PendingDirectorySelection? = null
+        private val directoryRead = RecoverableRead(directorySource.backupDirectoryUri, viewModelScope)
 
         init {
             viewModelScope.launch {
-                directorySource.backupDirectoryUri.collect { directoryUri ->
+                directoryRead.state.collect { read ->
                     _uiState.value =
-                        DataManagementSettingsUiState.Ready(
-                            directoryUri = directoryUri,
-                        )
+                        when (read) {
+                            RecoverableReadState.Loading -> DataManagementSettingsUiState.Loading
+                            is RecoverableReadState.Ready -> DataManagementSettingsUiState.Ready(read.value)
+                            is RecoverableReadState.Failed -> DataManagementSettingsUiState.Failed(read.failure)
+                        }
                 }
             }
         }
@@ -45,6 +50,10 @@ class DataManagementSettingsViewModel
         fun onAction(action: DataManagementSettingsUiAction) {
             viewModelScope.launch {
                 when (action) {
+                    DataManagementSettingsUiAction.RetryRead -> {
+                        directoryRead.retry()
+                    }
+
                     is DataManagementSettingsUiAction.BackupDirectoryPicked -> {
                         if (pendingDirectorySelection?.matches(action) == true &&
                             pageEffects.isActive(action.pageOwner)
@@ -57,6 +66,7 @@ class DataManagementSettingsViewModel
                     DataManagementSettingsUiAction.ClearBackupDirectory -> {
                         when (_uiState.value) {
                             DataManagementSettingsUiState.Loading -> Unit
+                            is DataManagementSettingsUiState.Failed -> Unit
                             is DataManagementSettingsUiState.Ready -> directorySettings.clear()
                         }
                     }
@@ -102,7 +112,11 @@ class DataManagementSettingsViewModel
         }
 
         fun beginDirectorySelection(owner: Any): String? {
-            if (!pageEffects.isActive(owner) || pendingDirectorySelection != null) return null
+            if (!pageEffects.isActive(owner) || pendingDirectorySelection != null ||
+                _uiState.value !is DataManagementSettingsUiState.Ready
+            ) {
+                return null
+            }
             val requestId = UUID.randomUUID().toString()
             pendingDirectorySelection = PendingDirectorySelection(owner, requestId)
             return requestId

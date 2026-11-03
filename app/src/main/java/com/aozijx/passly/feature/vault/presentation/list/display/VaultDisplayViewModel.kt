@@ -2,6 +2,11 @@ package com.aozijx.passly.feature.vault.presentation.list.display
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.domain.settings.model.InteractionSettings
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsSource
@@ -11,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
@@ -21,35 +27,58 @@ class VaultDisplayViewModel
         librarySettingsSource: LibraryViewSettingsSource,
         interactionSettingsSource: InteractionSettingsSource,
     ) : ViewModel() {
+        private val read =
+            RecoverableRead(
+                source =
+                    combine(
+                        interfaceSettingsRepository.interfaceSettings,
+                        librarySettingsSource.libraryViewSettings,
+                        interactionSettingsSource.interaction,
+                    ) { interfaceSettings, librarySettings, interactionSettings ->
+                        Triple(interfaceSettings, librarySettings, interactionSettings)
+                    },
+                scope = viewModelScope,
+            )
+
         val config: StateFlow<VaultDisplayUiState> =
-            combine(
-                interfaceSettingsRepository.interfaceSettings,
-                librarySettingsSource.libraryViewSettings,
-                interactionSettingsSource.interaction,
-            ) { interfaceSettings, librarySettings, interactionSettings ->
-                VaultDisplayUiState.Ready(
-                    layout =
-                        VaultLayoutConfig(
-                            hideSystemBars = interfaceSettings.hideSystemBars,
-                            collapseTopBarOnScroll = interfaceSettings.collapseTopBarOnScroll,
-                            collapseQuickFilterBarOnScroll = interfaceSettings.collapseQuickFilterBarOnScroll,
-                        ),
-                    style =
-                        VaultStyleConfig(
-                            entryCardPresentations = librarySettings.entryCardPresentations,
-                        ),
-                    interaction =
-                        VaultInteractionConfig(
-                            isSwipeEnabled = interactionSettings.isSwipeEnabled,
-                            isPullToSearchEnabled = interactionSettings.isPullToSearchEnabled,
-                            swipeLeftAction = interactionSettings.swipeLeftAction,
-                            swipeRightAction = interactionSettings.swipeRightAction,
-                        ),
-                )
-            }.distinctUntilChanged()
+            read.state
+                .map { sourceState ->
+                    when (sourceState) {
+                        RecoverableReadState.Loading -> {
+                            VaultDisplayUiState.Loading
+                        }
+
+                        is RecoverableReadState.Failed -> {
+                            VaultDisplayUiState.Failed(sourceState.failure)
+                        }
+
+                        is RecoverableReadState.Ready -> {
+                            val values = sourceState.value
+                            val (interfaceSettings, librarySettings, interactionSettings) = values
+                            VaultDisplayUiState.Ready(
+                                layout =
+                                    VaultLayoutConfig(
+                                        hideSystemBars = interfaceSettings.hideSystemBars,
+                                        collapseTopBarOnScroll = interfaceSettings.collapseTopBarOnScroll,
+                                        collapseQuickFilterBarOnScroll = interfaceSettings.collapseQuickFilterBarOnScroll,
+                                    ),
+                                style = VaultStyleConfig(entryCardPresentations = librarySettings.entryCardPresentations),
+                                interaction =
+                                    VaultInteractionConfig(
+                                        isSwipeEnabled = interactionSettings.isSwipeEnabled,
+                                        isPullToSearchEnabled = interactionSettings.isPullToSearchEnabled,
+                                        swipeLeftAction = interactionSettings.swipeLeftAction,
+                                        swipeRightAction = interactionSettings.swipeRightAction,
+                                    ),
+                            )
+                        }
+                    }
+                }.distinctUntilChanged()
                 .stateIn(
                     viewModelScope,
                     SharingStarted.WhileSubscribed(5_000L),
                     VaultDisplayUiState.Loading,
                 )
+
+        fun retry() = read.retry()
     }

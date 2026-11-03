@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.permissions
 
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
@@ -9,6 +10,7 @@ data class PermissionManagementUiState(
     val runtimePermissions: List<RuntimePermissionUiModel> = emptyList(),
     val backupDirectory: BackupDirectoryUiModel = BackupDirectoryUiModel(),
     val manifestCapabilities: List<ManifestCapabilityUiModel> = emptyList(),
+    val backupDirectoryReadState: RecoverableReadState<String?> = RecoverableReadState.Loading,
 )
 
 data class RuntimePermissionUiModel(
@@ -34,6 +36,8 @@ data class ManifestCapabilityUiModel(
 )
 
 sealed interface PermissionManagementScreenAction {
+    data object RetryBackupDirectoryRead : PermissionManagementScreenAction
+
     data class RuntimePermissionSelected(
         val permission: RuntimePermission,
     ) : PermissionManagementScreenAction

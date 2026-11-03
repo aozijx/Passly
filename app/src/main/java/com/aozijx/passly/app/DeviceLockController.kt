@@ -10,6 +10,8 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
@@ -28,9 +30,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -107,10 +107,15 @@ internal class ScreenOffLockTracker {
 internal class DeviceLockHandler(
     private val sessionAccessState: SecureSessionAccessState,
     private val sessionLockController: SessionLockController,
-    private val securitySettings: StateFlow<SecuritySettings?>,
+    private val securitySettings: StateFlow<RecoverableReadState<SecuritySettings>>,
 ) {
     suspend fun handle(trigger: DeviceLockTrigger): DeviceLockResult {
-        val security = securitySettings.filterNotNull().first()
+        val readState = securitySettings.first { it !is RecoverableReadState.Loading }
+        val security: SecuritySettings? =
+            when (readState) {
+                is RecoverableReadState.Ready -> readState.value
+                else -> null
+            }
         val request =
             when (trigger) {
                 DeviceLockTrigger.SCREEN_OFF -> {
@@ -121,7 +126,7 @@ internal class DeviceLockHandler(
                     if (!sessionAccessState.isUnlocked() && !sessionAccessState.isRecoveryMode()) {
                         return DeviceLockResult.Skipped
                     }
-                    if (!security.isFlipToLockEnabled) return DeviceLockResult.Skipped
+                    if (security?.isFlipToLockEnabled != true) return DeviceLockResult.Skipped
                     SessionLockRequest(LockReason.USER, LockTrigger.DEVICE_FLIP)
                 }
             }
@@ -129,8 +134,7 @@ internal class DeviceLockHandler(
         return DeviceLockResult.Locked(
             shouldClearTask =
                 trigger == DeviceLockTrigger.FLIP &&
-                    security.isFlipToLockEnabled &&
-                    security.isFlipExitAndClearStackEnabled,
+                    security?.let { it.isFlipToLockEnabled && it.isFlipExitAndClearStackEnabled } == true,
         )
     }
 }
@@ -150,7 +154,12 @@ class DeviceLockController
         private val lockScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         private val triggerMutex = Mutex()
-        private val securitySettings = MutableStateFlow<SecuritySettings?>(null)
+        private val securityRead =
+            RecoverableRead(
+                source = securitySettingsSource.security,
+                scope = mainScope,
+            )
+        private val securitySettings: StateFlow<RecoverableReadState<SecuritySettings>> = securityRead.state
         private val handler =
             DeviceLockHandler(
                 sessionAccessState = sessionAccessState,
@@ -188,10 +197,16 @@ class DeviceLockController
                 sessionAccessState.authenticationState.collect(activeTaskClearRequests::onAuthenticationStateChanged)
             }
             mainScope.launch {
-                securitySettingsSource.security.collect { settings ->
-                    val flipSettingChanged =
-                        securitySettings.value?.isFlipToLockEnabled != settings.isFlipToLockEnabled
-                    securitySettings.value = settings
+                var observedFlipEnabled: Boolean? = null
+                securitySettings.collect { state ->
+                    val settings: SecuritySettings? =
+                        when (state) {
+                            is RecoverableReadState.Ready -> state.value
+                            else -> null
+                        }
+                    val flipEnabled = settings?.isFlipToLockEnabled
+                    val flipSettingChanged = observedFlipEnabled != flipEnabled
+                    observedFlipEnabled = flipEnabled
                     if (flipSettingChanged) updateSensorRegistration()
                 }
             }
@@ -210,6 +225,7 @@ class DeviceLockController
 
         fun onAppForeground() {
             appInForeground = true
+            securityRead.retry()
             screenOffLockTracker.pendingGeneration()?.let { generation ->
                 dispatch(
                     trigger = DeviceLockTrigger.SCREEN_OFF,
@@ -244,7 +260,8 @@ class DeviceLockController
         private fun updateSensorRegistration() {
             sensorManager.unregisterListener(this)
             flipTriggerGate.reset()
-            if (!appInForeground || securitySettings.value?.isFlipToLockEnabled != true) return
+            val settings = (securitySettings.value as? RecoverableReadState.Ready)?.value
+            if (!appInForeground || settings?.isFlipToLockEnabled != true) return
             accelerometer?.let { sensor ->
                 sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
             }

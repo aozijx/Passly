@@ -1,9 +1,14 @@
 package com.aozijx.passly.feature.settings.presentation.appearance
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 
 sealed interface InterfaceSettingsUiState {
     data object Loading : InterfaceSettingsUiState
+
+    data class Failed(
+        val failure: ReadFailure,
+    ) : InterfaceSettingsUiState
 
     data class Ready(
         val hideSystemBars: Boolean,
@@ -15,6 +20,8 @@ sealed interface InterfaceSettingsUiState {
 }
 
 sealed interface InterfaceSettingsAction {
+    data object RetryRead : InterfaceSettingsAction
+
     data class SetHideSystemBars(
         val enabled: Boolean,
     ) : InterfaceSettingsAction

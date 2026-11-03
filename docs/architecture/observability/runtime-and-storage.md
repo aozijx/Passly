@@ -19,6 +19,13 @@
 handler；首次 DataStore 采集策略加载后才读取并记录 `ApplicationExitInfo` 的受控数值，避免未加载策略时
 消费并丢弃上次退出记录。系统 description、进程名和原始 ANR trace 不进入标准日志。
 
+长期消费设置 DataStore 的进程 owner 使用共享 `RecoverableRead` 区分 Loading、Ready 与 Failed，并重新订阅失败的冷源。设置页发起的显式 Retry 会广播给关联的进程 owner。
+普通 I/O 错误按有界退避重试，损坏数据等待显式 Retry；取消向上传播。诊断策略在 Ready 前或读取失败期间 fail closed，
+读取恢复后再应用新策略；上次退出记录只有在策略 Ready 后才读取，且每个 owner 生命周期最多消费一次。设备锁设置尚未首发时
+仍等待健康读取；若读取失败，SCREEN_OFF 直接安全锁定并确保 `goAsync()` 的 `PendingResult.finish()` 在 finally 执行，
+FLIP 则跳过。前台设置读取 owner 可显式重试。消息设置快照保留 Loading/Failed/Ready，失败不伪装成默认值；通知 dispatch
+对 Failed 与 Loading 使用相同的既有抑制语义，设置冷源恢复后继续更新快照。
+
 `LogcatSink.kt` 是 observability 生产代码中唯一允许导入 `android.util.Log` 的文件。它只接收已脱敏记录，
 输出有限 Tag 和有界单行摘要，并保留 `event_id/trace_id/span_id`。Release 默认关闭 Logcat；Debug 在格式化前
 检查 `Log.isLoggable`，且永远不把原始 `Throwable` 交给 Android Log API。

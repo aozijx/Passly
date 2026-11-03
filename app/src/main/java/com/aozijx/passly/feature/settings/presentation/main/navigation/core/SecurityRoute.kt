@@ -27,6 +27,7 @@ import com.aozijx.passly.feature.settings.presentation.ui.main.component.Setting
 import com.aozijx.passly.feature.settings.presentation.ui.security.AppPasswordDialogs
 import com.aozijx.passly.feature.settings.presentation.ui.security.SecurityDetail
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
+import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 @Composable
 internal fun SecurityRoute(onBack: (() -> Unit)?) {
@@ -90,6 +91,10 @@ internal fun SecurityRoute(onBack: (() -> Unit)?) {
         when (val state = securityState) {
             SecuritySettingsUiState.Loading -> {
                 Unit
+            }
+
+            is SecuritySettingsUiState.Failed -> {
+                item { SettingsReadFailureContent(onRetry = { securityViewModel.onAction(SecuritySettingsAction.RetryRead) }) }
             }
 
             is SecuritySettingsUiState.Ready -> {

@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -22,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetRoute
 import com.aozijx.passly.feature.settings.presentation.main.data.StorageSettingsAction
@@ -116,13 +118,29 @@ internal fun DataManagementRoute(
                 Spacer(Modifier.height(24.dp))
                 LogSettingsSection(
                     state = state.logs,
-                    logRecordingMode = state.logRecordingMode,
+                    logRecordingMode = (state.logRecordingMode as? RecoverableReadState.Ready)?.value,
                     onOpenDiagnostics = onOpenDiagnostics,
                     onLogRecordingModeChange = { mode ->
                         viewModel.onAction(StorageSettingsAction.SetLogRecordingMode(mode))
                     },
                     onClearLogs = { showLogClearConfirmation = true },
                 )
+                when (state.logRecordingMode) {
+                    RecoverableReadState.Loading -> {
+                        CircularProgressIndicator()
+                    }
+
+                    is RecoverableReadState.Failed -> {
+                        Text(stringResource(R.string.settings_read_failed))
+                        TextButton(onClick = { viewModel.onAction(StorageSettingsAction.RetryLogRecordingMode) }) {
+                            Text(stringResource(R.string.retry))
+                        }
+                    }
+
+                    is RecoverableReadState.Ready -> {
+                        Unit
+                    }
+                }
             }
         }
     }

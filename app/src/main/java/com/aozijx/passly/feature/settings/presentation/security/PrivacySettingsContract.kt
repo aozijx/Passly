@@ -1,9 +1,14 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 sealed interface PrivacySettingsUiState {
     data object Loading : PrivacySettingsUiState
+
+    data class Failed(
+        val failure: ReadFailure,
+    ) : PrivacySettingsUiState
 
     data class Ready(
         val isSecureContentEnabled: Boolean,
@@ -16,6 +21,8 @@ sealed interface PrivacySettingsUiState {
 }
 
 sealed interface PrivacySettingsAction {
+    data object RetryRead : PrivacySettingsAction
+
     data class SetSecureContentEnabled(
         val enabled: Boolean,
     ) : PrivacySettingsAction

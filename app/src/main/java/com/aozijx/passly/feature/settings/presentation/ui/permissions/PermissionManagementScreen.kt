@@ -1,11 +1,15 @@
 package com.aozijx.passly.feature.settings.presentation.ui.permissions
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
@@ -62,33 +66,48 @@ internal fun PermissionManagementScreen(
         }
 
         item {
-            val directoryStatus = stringResource(state.backupDirectory.status.summaryRes)
-            val directorySummary =
-                state.backupDirectory.label?.let { label ->
-                    stringResource(
-                        R.string.settings_permissions_backup_status_with_name,
-                        label,
-                        directoryStatus,
-                    )
-                } ?: directoryStatus
             SettingsSectionTitle(
                 text = stringResource(R.string.settings_permissions_backup_section),
                 modifier = Modifier.padding(top = 24.dp),
             )
-            SegmentedSettingsGroup(
-                items =
-                    listOf(
-                        navigationSettingsGroupItem(
-                            key = "permissions.backup.directory",
-                            title = stringResource(R.string.settings_permissions_backup_directory),
-                            subtitle = directorySummary,
-                            value = stringResource(R.string.settings_permissions_backup_manage),
-                            onClick = {
-                                onAction(PermissionManagementScreenAction.OpenBackupSettings)
-                            },
-                        ),
-                    ),
-            )
+            when (state.backupDirectoryReadState) {
+                RecoverableReadState.Loading -> {
+                    CircularProgressIndicator()
+                }
+
+                is RecoverableReadState.Failed -> {
+                    Text(stringResource(R.string.settings_read_failed))
+                    TextButton(onClick = { onAction(PermissionManagementScreenAction.RetryBackupDirectoryRead) }) {
+                        Text(stringResource(R.string.retry))
+                    }
+                }
+
+                is RecoverableReadState.Ready -> {
+                    val directoryStatus = stringResource(state.backupDirectory.status.summaryRes)
+                    val directorySummary =
+                        state.backupDirectory.label?.let { label ->
+                            stringResource(
+                                R.string.settings_permissions_backup_status_with_name,
+                                label,
+                                directoryStatus,
+                            )
+                        } ?: directoryStatus
+                    SegmentedSettingsGroup(
+                        items =
+                            listOf(
+                                navigationSettingsGroupItem(
+                                    key = "permissions.backup.directory",
+                                    title = stringResource(R.string.settings_permissions_backup_directory),
+                                    subtitle = directorySummary,
+                                    value = stringResource(R.string.settings_permissions_backup_manage),
+                                    onClick = {
+                                        onAction(PermissionManagementScreenAction.OpenBackupSettings)
+                                    },
+                                ),
+                            ),
+                    )
+                }
+            }
         }
 
         item {

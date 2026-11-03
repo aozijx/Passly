@@ -2,6 +2,9 @@ package com.aozijx.passly.feature.settings.presentation.main.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.app.settings.SettingsReadRetrySignal
 import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.core.platform.cache.ByteSizeFormatter
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -28,6 +31,7 @@ class StorageSettingsViewModel
         private val diagnosticsLogStore: DiagnosticsLogStore,
         private val diagnosticsLogSettings: DiagnosticsLogSettingsRepository,
         private val secureSessionAccessState: SecureSessionAccessState,
+        private val settingsReadRetrySignal: SettingsReadRetrySignal = SettingsReadRetrySignal(),
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(StorageSettingsUiState())
         val uiState: StateFlow<StorageSettingsUiState> = _uiState.asStateFlow()
@@ -39,10 +43,16 @@ class StorageSettingsViewModel
         private var logRefreshJob: Job? = null
         private var isCacheClearInProgress = false
         private var isLogClearInProgress = false
+        private val recordingModeRead =
+            RecoverableRead(
+                source = diagnosticsLogSettings.diagnosticsLogRecordingMode,
+                scope = viewModelScope,
+                sharedRetrySignal = settingsReadRetrySignal,
+            )
 
         init {
             viewModelScope.launch {
-                diagnosticsLogSettings.diagnosticsLogRecordingMode.collect { mode ->
+                recordingModeRead.state.collect { mode ->
                     _uiState.update { it.copy(logRecordingMode = mode) }
                 }
             }
@@ -52,11 +62,13 @@ class StorageSettingsViewModel
             when (action) {
                 StorageSettingsAction.ClearCache -> clearCache()
                 StorageSettingsAction.ClearLogs -> clearLogs()
+                StorageSettingsAction.RetryLogRecordingMode -> recordingModeRead.retry()
                 is StorageSettingsAction.SetLogRecordingMode -> setLogRecordingMode(action.mode)
             }
         }
 
         private fun setLogRecordingMode(mode: DiagnosticsLogRecordingMode) {
+            if (_uiState.value.logRecordingMode !is RecoverableReadState.Ready) return
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 try {

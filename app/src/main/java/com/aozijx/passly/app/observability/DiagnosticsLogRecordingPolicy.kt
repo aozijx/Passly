@@ -14,7 +14,7 @@ internal class DiagnosticsLogRecordingPolicy
     constructor() {
         private val mode = AtomicReference<DiagnosticsLogRecordingMode?>(null)
 
-        fun update(value: DiagnosticsLogRecordingMode) {
+        fun update(value: DiagnosticsLogRecordingMode?) {
             mode.set(value)
         }
 

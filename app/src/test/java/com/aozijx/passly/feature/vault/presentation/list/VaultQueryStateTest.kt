@@ -1,10 +1,13 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
+import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +25,44 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class VaultQueryStateTest {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `settings failure invalidates query until recovered settings arrive`() =
+        runTest {
+            val uiState = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
+            val settings =
+                MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
+                    RecoverableReadState.Ready(
+                        LibraryViewSettings(
+                            sort = createdAtDescendingSort,
+                            entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
+                        ),
+                    ),
+                )
+            val observed = mutableListOf<VaultQueryState?>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                buildRecoverableVaultQueryStates(uiState, settings).collect(observed::add)
+            }
+            runCurrent()
+            advanceTimeBy(250L)
+            runCurrent()
+            assertEquals(EntryHierarchyDisplayMode.COLLAPSED, observed.last()?.hierarchyMode)
+
+            settings.value = RecoverableReadState.Failed(ReadFailure.CORRUPT_DATA)
+            runCurrent()
+            assertNull(observed.last())
+
+            settings.value =
+                RecoverableReadState.Ready(
+                    LibraryViewSettings(
+                        sort = createdAtDescendingSort,
+                        entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+                    ),
+                )
+            runCurrent()
+            assertEquals(EntryHierarchyDisplayMode.EXPANDED, observed.last()?.hierarchyMode)
+        }
+
     @Test
     fun `query state normalizes text and applies hierarchy only to all entries`() {
         val state =

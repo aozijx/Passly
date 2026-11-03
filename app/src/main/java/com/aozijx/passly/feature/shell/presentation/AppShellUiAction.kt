@@ -4,4 +4,6 @@ sealed interface AppShellUiAction {
     data object ExitRecovery : AppShellUiAction
 
     data object RetryDatabaseSession : AppShellUiAction
+
+    data object RetrySettings : AppShellUiAction
 }

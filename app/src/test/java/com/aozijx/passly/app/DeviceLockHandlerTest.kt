@@ -1,5 +1,7 @@
 package com.aozijx.passly.app
 
+import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.LockReason
@@ -159,7 +161,7 @@ class DeviceLockHandlerTest {
     fun `lock waits for the persisted security snapshot`() =
         runTest {
             val lockController = RecordingLockController()
-            val settings = MutableStateFlow<SecuritySettings?>(null)
+            val settings = MutableStateFlow<RecoverableReadState<SecuritySettings>>(RecoverableReadState.Loading)
             val handler =
                 DeviceLockHandler(
                     sessionAccessState = FakeSessionState(AuthenticationState.Authenticated(1L)),
@@ -171,10 +173,43 @@ class DeviceLockHandlerTest {
             runCurrent()
             assertNull(lockController.reason)
 
-            settings.value = SecuritySettings(isFlipToLockEnabled = true)
+            settings.value = RecoverableReadState.Ready(SecuritySettings(isFlipToLockEnabled = true))
 
             assertTrue(result.await() is DeviceLockResult.Locked)
             assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
+        }
+
+    @Test
+    fun `screen off locks safely after security read failure`() =
+        runTest {
+            val lockController = RecordingLockController()
+            val handler =
+                DeviceLockHandler(
+                    sessionAccessState = FakeSessionState(AuthenticationState.Authenticated(1L)),
+                    sessionLockController = lockController,
+                    securitySettings = MutableStateFlow(RecoverableReadState.Failed(ReadFailure.IO)),
+                )
+
+            val result = handler.handle(DeviceLockTrigger.SCREEN_OFF) as DeviceLockResult.Locked
+
+            assertFalse(result.shouldClearTask)
+            assertEquals(LockReason.BACKGROUND, lockController.reason)
+            assertEquals(LockTrigger.SCREEN_OFF, lockController.trigger)
+        }
+
+    @Test
+    fun `flip is skipped after security read failure`() =
+        runTest {
+            val lockController = RecordingLockController()
+            val handler =
+                DeviceLockHandler(
+                    sessionAccessState = FakeSessionState(AuthenticationState.Authenticated(1L)),
+                    sessionLockController = lockController,
+                    securitySettings = MutableStateFlow(RecoverableReadState.Failed(ReadFailure.IO)),
+                )
+
+            assertEquals(DeviceLockResult.Skipped, handler.handle(DeviceLockTrigger.FLIP))
+            assertNull(lockController.reason)
         }
 
     @Test
@@ -205,7 +240,7 @@ class DeviceLockHandlerTest {
     ) = DeviceLockHandler(
         sessionAccessState = FakeSessionState(initialState),
         sessionLockController = lockController,
-        securitySettings = MutableStateFlow<SecuritySettings?>(security),
+        securitySettings = MutableStateFlow(RecoverableReadState.Ready(security)),
     )
 
     private class FakeSessionState(

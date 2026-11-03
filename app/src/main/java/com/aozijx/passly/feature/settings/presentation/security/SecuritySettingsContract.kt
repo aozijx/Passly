@@ -1,9 +1,14 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 sealed interface SecuritySettingsUiState {
     data object Loading : SecuritySettingsUiState
+
+    data class Failed(
+        val failure: ReadFailure,
+    ) : SecuritySettingsUiState
 
     data class Ready(
         val lockTimeout: Long,
@@ -15,6 +20,8 @@ sealed interface SecuritySettingsUiState {
 }
 
 sealed interface SecuritySettingsAction {
+    data object RetryRead : SecuritySettingsAction
+
     data class SetLockTimeout(
         val timeoutMs: Long,
     ) : SecuritySettingsAction

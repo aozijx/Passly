@@ -7,13 +7,16 @@ import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.port.CorruptSettingsDataException
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsSource
 import com.aozijx.passly.testing.MainDispatcherRule
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -37,6 +40,50 @@ class VaultDisplayViewModelTest {
                 )
 
             assertEquals(VaultDisplayUiState.Loading, viewModel.config.value)
+        }
+
+    @Test
+    fun `settings failure is visible and retry recollects persisted preferences`() =
+        runTest {
+            var starts = 0
+            val librarySettings =
+                flow {
+                    starts++
+                    if (starts == 1) throw CorruptSettingsDataException(IllegalStateException())
+                    emit(
+                        LibraryViewSettings(
+                            sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                        ),
+                    )
+                    awaitCancellation()
+                }
+            val viewModel =
+                VaultDisplayViewModel(
+                    interfaceSettingsRepository =
+                        TestInterfaceSettingsRepository(
+                            MutableStateFlow(InterfaceSettings()),
+                        ),
+                    librarySettingsSource =
+                        object : LibraryViewSettingsSource {
+                            override val libraryViewSettings = librarySettings
+                        },
+                    interactionSettingsSource =
+                        object : InteractionSettingsSource {
+                            override val interaction = MutableStateFlow(InteractionSettings())
+                        },
+                )
+            backgroundScope.launch { viewModel.config.collect {} }
+            runCurrent()
+
+            assertEquals(
+                VaultDisplayUiState.Failed(com.aozijx.passly.app.settings.ReadFailure.CORRUPT_DATA),
+                viewModel.config.value,
+            )
+            viewModel.retry()
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(true, viewModel.config.value is VaultDisplayUiState.Ready)
         }
 
     @Test

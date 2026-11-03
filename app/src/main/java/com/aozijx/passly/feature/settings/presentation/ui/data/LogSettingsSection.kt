@@ -21,7 +21,7 @@ import com.aozijx.passly.presentation.shared.components.group.navigationSettings
 @Composable
 internal fun LogSettingsSection(
     state: StorageSizeUiState,
-    logRecordingMode: DiagnosticsLogRecordingMode,
+    logRecordingMode: DiagnosticsLogRecordingMode?,
     onOpenDiagnostics: () -> Unit,
     onLogRecordingModeChange: (DiagnosticsLogRecordingMode) -> Unit,
     onClearLogs: () -> Unit,
@@ -30,43 +30,51 @@ internal fun LogSettingsSection(
     SettingsSectionTitle(text = stringResource(R.string.settings_log_management_title))
     SegmentedSettingsGroup(
         items =
-            listOf(
-                dropdownSettingsGroupItem(
-                    key = "logs.recording_settings",
-                    icon = Icons.Default.Settings,
-                    title = stringResource(R.string.settings_diagnostics_recording_title),
-                    selected = logRecordingMode,
-                    selectedLabel = stringResource(R.string.settings_diagnostics_recording_info),
-                    options =
-                        listOf(
-                            DiagnosticsLogRecordingMode.DISABLED to
-                                stringResource(R.string.settings_diagnostics_recording_disabled),
-                            DiagnosticsLogRecordingMode.WARN_AND_ABOVE to
-                                stringResource(R.string.settings_diagnostics_recording_warn),
-                            DiagnosticsLogRecordingMode.INFO_AND_ABOVE to
-                                stringResource(R.string.settings_diagnostics_recording_info),
-                            DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE to
-                                stringResource(R.string.settings_diagnostics_recording_debug),
+            buildList {
+                if (logRecordingMode != null) {
+                    add(
+                        dropdownSettingsGroupItem(
+                            key = "logs.recording_settings",
+                            icon = Icons.Default.Settings,
+                            title = stringResource(R.string.settings_diagnostics_recording_title),
+                            selected = logRecordingMode,
+                            selectedLabel = stringResource(R.string.settings_diagnostics_recording_info),
+                            options =
+                                listOf(
+                                    DiagnosticsLogRecordingMode.DISABLED to
+                                        stringResource(R.string.settings_diagnostics_recording_disabled),
+                                    DiagnosticsLogRecordingMode.WARN_AND_ABOVE to
+                                        stringResource(R.string.settings_diagnostics_recording_warn),
+                                    DiagnosticsLogRecordingMode.INFO_AND_ABOVE to
+                                        stringResource(R.string.settings_diagnostics_recording_info),
+                                    DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE to
+                                        stringResource(R.string.settings_diagnostics_recording_debug),
+                                ),
+                            expanded = recordingModeMenuExpanded,
+                            onExpandedChange = { recordingModeMenuExpanded = it },
+                            onSelect = onLogRecordingModeChange,
                         ),
-                    expanded = recordingModeMenuExpanded,
-                    onExpandedChange = { recordingModeMenuExpanded = it },
-                    onSelect = onLogRecordingModeChange,
-                ),
-                navigationSettingsGroupItem(
-                    key = "logs.view",
-                    icon = Icons.Default.BugReport,
-                    title = stringResource(R.string.settings_log_view_title),
-                    subtitle = stringResource(R.string.settings_log_view_subtitle),
-                    onClick = onOpenDiagnostics,
-                ),
-                navigationSettingsGroupItem(
-                    key = "logs.clear",
-                    icon = Icons.Default.DeleteSweep,
-                    title = stringResource(R.string.settings_log_clear_action),
-                    value = (state as? StorageSizeUiState.Available)?.formattedSize,
-                    isLoading = state is StorageSizeUiState.Loading,
-                    onClick = onClearLogs,
-                ),
-            ),
+                    )
+                }
+                add(
+                    navigationSettingsGroupItem(
+                        key = "logs.view",
+                        icon = Icons.Default.BugReport,
+                        title = stringResource(R.string.settings_log_view_title),
+                        subtitle = stringResource(R.string.settings_log_view_subtitle),
+                        onClick = onOpenDiagnostics,
+                    ),
+                )
+                add(
+                    navigationSettingsGroupItem(
+                        key = "logs.clear",
+                        icon = Icons.Default.DeleteSweep,
+                        title = stringResource(R.string.settings_log_clear_action),
+                        value = (state as? StorageSizeUiState.Available)?.formattedSize,
+                        isLoading = state is StorageSizeUiState.Loading,
+                        onClick = onClearLogs,
+                    ),
+                )
+            },
     )
 }

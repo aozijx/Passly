@@ -47,7 +47,7 @@ class AutofillSettingsViewModelTest {
         }
 
     @Test
-    fun `preference failure preserves last value and does not fail system status`() =
+    fun `preference failure does not expose stale settings and does not fail system status`() =
         runTest {
             val lastSettings = AutofillSettings(enabled = false)
             val repository =
@@ -67,7 +67,7 @@ class AutofillSettingsViewModelTest {
             runCurrent()
 
             assertEquals(
-                AutofillSourceState.Failed(lastSettings),
+                AutofillSourceState.Failed(null),
                 viewModel.uiState.value.preferences,
             )
             assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)

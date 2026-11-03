@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.appearance
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
@@ -16,7 +17,10 @@ import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,6 +34,33 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class InterfaceSettingsViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
+
+    @Test
+    fun `read failure is visible and retry re-subscribes the preferences source`() =
+        runTest {
+            var starts = 0
+            val repository =
+                Repository(
+                    save = {},
+                    interfaceSettings =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(InterfaceSettings())
+                            awaitCancellation()
+                        },
+                )
+            val model = InterfaceSettingsViewModel(repository, repository)
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            assertEquals(InterfaceSettingsUiState.Failed(ReadFailure.IO), model.uiState.value)
+            model.onAction(InterfaceSettingsAction.RetryRead)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(true, model.uiState.value is InterfaceSettingsUiState.Ready)
+        }
 
     @Test
     fun `all interface writes report storage failures and retain repository state`() =
@@ -111,10 +142,10 @@ class InterfaceSettingsViewModelTest {
         }
 
     private class Repository(
+        override val interfaceSettings: Flow<InterfaceSettings> = MutableStateFlow(InterfaceSettings()),
         private val save: suspend () -> Unit,
     ) : InterfaceSettingsRepository,
         LibraryViewSettingsRepository {
-        override val interfaceSettings = MutableStateFlow(InterfaceSettings())
         override val libraryViewSettings =
             MutableStateFlow(
                 LibraryViewSettings(EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)),

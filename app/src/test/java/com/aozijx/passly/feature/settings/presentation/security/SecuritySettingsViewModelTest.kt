@@ -24,7 +24,10 @@ import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -38,6 +41,52 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class SecuritySettingsViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
+
+    @Test
+    fun `security settings read failure is visible and retry restarts source`() =
+        runTest {
+            var starts = 0
+            val fixture =
+                Fixture(
+                    source =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(SecuritySettings())
+                            awaitCancellation()
+                        },
+                ) { AuthenticationResult.Cancelled(CancellationReason.USER) }
+            val model = fixture.model()
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            assertEquals(true, model.uiState.value is SecuritySettingsUiState.Failed)
+            model.onAction(SecuritySettingsAction.RetryRead)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(true, model.uiState.value is SecuritySettingsUiState.Ready)
+        }
+
+    @Test
+    fun `security setting writes are rejected while persisted settings are failed`() =
+        runTest {
+            var writes = 0
+            val fixture =
+                Fixture(
+                    save = { writes++ },
+                    source = flow { throw IOException("read failure") },
+                ) { AuthenticationResult.Cancelled(CancellationReason.USER) }
+            val model = fixture.model()
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            model.onAction(SecuritySettingsAction.SetLockTimeout(1_000))
+            model.onAction(SecuritySettingsAction.ToggleLockOnBackground(true))
+            runCurrent()
+
+            assertEquals(0, writes)
+        }
 
     @Test
     fun `authentication change reserves operation before dispatch and cancellation permits retry`() =
@@ -218,9 +267,10 @@ class SecuritySettingsViewModelTest {
 
     private class Fixture(
         save: suspend () -> Unit = {},
+        source: Flow<SecuritySettings> = MutableStateFlow(SecuritySettings()),
         operation: suspend () -> AuthenticationResult,
     ) {
-        val repository = Repository(save)
+        val repository = Repository(save, source)
         val provisioner = Provisioner(operation)
         val methods = MutableStateFlow(AuthenticationMethods(setOf(AuthenticationMethod.BIOMETRIC)))
         val configuration = MutableStateFlow<BiometricConfiguration>(BiometricConfiguration.Configured(true))
@@ -286,9 +336,8 @@ class SecuritySettingsViewModelTest {
 
     private class Repository(
         private val save: suspend () -> Unit,
+        override val security: Flow<SecuritySettings> = MutableStateFlow(SecuritySettings()),
     ) : SecuritySettingsRepository {
-        override val security = MutableStateFlow(SecuritySettings())
-
         override suspend fun setSecureContentEnabled(enabled: Boolean) = Unit
 
         override suspend fun setFlipToLockEnabled(enabled: Boolean) = Unit

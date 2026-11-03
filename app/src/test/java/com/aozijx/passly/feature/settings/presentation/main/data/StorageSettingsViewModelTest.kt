@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.data
 
+import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
@@ -30,6 +33,43 @@ import org.junit.Test
 class StorageSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `recording mode read failure is visible and retry re-subscribes`() =
+        runTest {
+            var starts = 0
+            val settings =
+                object : DiagnosticsLogSettingsRepository {
+                    override val diagnosticsLogRecordingMode: Flow<DiagnosticsLogRecordingMode> =
+                        flow {
+                            starts++
+                            if (starts == 1) throw IOException("read failure")
+                            emit(DiagnosticsLogRecordingMode.INFO_AND_ABOVE)
+                            kotlinx.coroutines.awaitCancellation()
+                        }
+
+                    override suspend fun setDiagnosticsLogRecordingMode(mode: DiagnosticsLogRecordingMode) = Unit
+                }
+            val viewModel =
+                StorageSettingsViewModel(
+                    cacheStore = RecordingCacheStore(sizeBytes = 0L),
+                    diagnosticsLogStore = RecordingLogStore(sizeBytes = 0L),
+                    diagnosticsLogSettings = settings,
+                    secureSessionAccessState = FullAccess,
+                )
+            viewModel.onPageEntered()
+            runCurrent()
+
+            assertEquals(RecoverableReadState.Failed(ReadFailure.IO), viewModel.uiState.value.logRecordingMode)
+            viewModel.onAction(StorageSettingsAction.RetryLogRecordingMode)
+            runCurrent()
+
+            assertEquals(2, starts)
+            assertEquals(
+                RecoverableReadState.Ready(DiagnosticsLogRecordingMode.INFO_AND_ABOVE),
+                viewModel.uiState.value.logRecordingMode,
+            )
+        }
 
     @Test
     fun `changing recording mode persists from data management settings`() =
@@ -49,7 +89,10 @@ class StorageSettingsViewModelTest {
             runCurrent()
 
             assertEquals(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE, settings.savedMode)
-            assertEquals(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE, viewModel.uiState.value.logRecordingMode)
+            assertEquals(
+                RecoverableReadState.Ready(DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE),
+                viewModel.uiState.value.logRecordingMode,
+            )
         }
 
     @Test

@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.settings.presentation.security
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -43,28 +45,46 @@ class SecuritySettingsViewModel
         val errors = pageEffects.effects.filterIsInstance<SecuritySettingsEffect.Error>().map { it.message }
         val notices = pageEffects.effects.filterIsInstance<SecuritySettingsEffect.Notice>().map { it.notice }
 
-        val uiState: StateFlow<SecuritySettingsUiState> =
-            combine(
-                settingsRepository.security,
-                authenticationSettings.isBiometricEnabled,
-                authenticationWork,
-                biometricConfigurationSource.biometricConfiguration,
-            ) { security, isBiometricEnabled, work, configuration ->
-                SecuritySettingsUiState.Ready(
-                    lockTimeout = security.lockTimeout,
-                    isInvalidateKeyOnBioChange = configuration.invalidateOnEnrollmentForNextKey,
-                    isLockOnBackground = security.isLockOnBackground,
-                    isBiometricEnabled = isBiometricEnabled && configuration is BiometricConfiguration.Configured,
-                    isAuthenticationChangeInProgress = work == AuthenticationWork.Running,
-                )
-            }.stateIn(
+        private val settingsRead =
+            RecoverableRead(
+                source =
+                    combine(
+                        settingsRepository.security,
+                        authenticationSettings.isBiometricEnabled,
+                        authenticationWork,
+                        biometricConfigurationSource.biometricConfiguration,
+                    ) { security, isBiometricEnabled, work, configuration ->
+                        SecuritySettingsUiState.Ready(
+                            lockTimeout = security.lockTimeout,
+                            isInvalidateKeyOnBioChange = configuration.invalidateOnEnrollmentForNextKey,
+                            isLockOnBackground = security.isLockOnBackground,
+                            isBiometricEnabled = isBiometricEnabled && configuration is BiometricConfiguration.Configured,
+                            isAuthenticationChangeInProgress = work == AuthenticationWork.Running,
+                        )
+                    },
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000L),
-                initialValue = SecuritySettingsUiState.Loading,
             )
+
+        val uiState: StateFlow<SecuritySettingsUiState> =
+            settingsRead.state
+                .map { state ->
+                    when (state) {
+                        RecoverableReadState.Loading -> SecuritySettingsUiState.Loading
+                        is RecoverableReadState.Ready -> state.value
+                        is RecoverableReadState.Failed -> SecuritySettingsUiState.Failed(state.failure)
+                    }
+                }.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000L),
+                    initialValue = SecuritySettingsUiState.Loading,
+                )
 
         fun onAction(action: SecuritySettingsAction) {
             when (action) {
+                SecuritySettingsAction.RetryRead -> {
+                    settingsRead.retry()
+                }
+
                 is SecuritySettingsAction.SetLockTimeout -> {
                     saveSetting {
                         settingsRepository.setLockTimeout(action.timeoutMs)
@@ -156,6 +176,7 @@ class SecuritySettingsViewModel
         private fun saveSetting(write: suspend () -> Unit) {
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
+                if (uiState.value !is SecuritySettingsUiState.Ready) return@launch
                 writePreferenceWithFeedback(
                     failureRes = R.string.settings_security_save_failed,
                     onFailure = { emitError(owner, it) },

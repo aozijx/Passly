@@ -8,14 +8,16 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
@@ -38,7 +40,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -69,21 +73,26 @@ class VaultViewModel
 
         private val totp = otpCodeRuntimeFactory.create(viewModelScope)
 
-        private val hierarchyMode: Flow<EntryHierarchyDisplayMode> =
-            settingsRepository.libraryViewSettings
-                .map { settings -> settings.entryHierarchyDisplayMode }
-                .distinctUntilChanged()
+        private val librarySettingsRead =
+            RecoverableRead(
+                source = settingsRepository.libraryViewSettings,
+                scope = viewModelScope,
+            )
 
-        private val queryState: Flow<VaultQueryState> =
-            buildVaultQueryStates(
+        val librarySettingsState = librarySettingsRead.state
+
+        private val queryState: Flow<VaultQueryState?> =
+            buildRecoverableVaultQueryStates(
                 uiStates = uiState,
-                hierarchyModes = hierarchyMode,
+                librarySettings = librarySettingsState,
             )
 
         val entries: Flow<PagingData<VaultListItemUiModel>> =
             queryState
-                .switchQueryGenerations { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) }
-                .map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
+                .switchRecoverableQueryGenerations(
+                    unavailable = flowOf(PagingData.empty<EntryListItem>()),
+                    load = { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) },
+                ).map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
                 .cachedIn(viewModelScope)
 
         /**
@@ -256,9 +265,13 @@ class VaultViewModel
 
         init {
             viewModelScope.launch {
-                settingsRepository.libraryViewSettings
-                    .map { it.sort }
-                    .distinctUntilChanged()
+                librarySettingsState
+                    .mapNotNull { state ->
+                        when (state) {
+                            is RecoverableReadState.Ready -> state.value.sort
+                            else -> null
+                        }
+                    }.distinctUntilChanged()
                     .collect { mutate(VaultMutation.SortChanged(it)) }
             }
 
@@ -274,6 +287,8 @@ class VaultViewModel
         fun onPageExited(owner: Any) {
             pageEffects.exit(owner)
         }
+
+        fun retryLibrarySettings() = librarySettingsRead.retry()
 
         private fun emitEffect(effect: VaultEffect) {
             pageEffects.tryEmit(effect)

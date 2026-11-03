@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
@@ -34,17 +36,22 @@ class AutofillSettingsViewModel
         private val pageEffects = PageEffects<AutofillSettingsEffect>()
         val effects = pageEffects.effects
 
-        private val retryPreferences = MutableStateFlow(0)
         private val retrySystemService = MutableStateFlow(0)
-        private val lastPreferences = MutableStateFlow<AutofillSettings?>(null)
         private val lastSystemServiceEnabled = MutableStateFlow<Boolean?>(null)
 
-        private val preferences =
-            observeSource(
-                retry = retryPreferences,
-                lastValue = lastPreferences,
-                source = { settingsRepository.interaction.map { it.autofill } },
+        private val preferencesRead =
+            RecoverableRead(
+                source = settingsRepository.interaction.map { it.autofill },
+                scope = viewModelScope,
             )
+        private val preferences =
+            preferencesRead.state.map { state ->
+                when (state) {
+                    RecoverableReadState.Loading -> AutofillSourceState.Loading()
+                    is RecoverableReadState.Ready -> AutofillSourceState.Ready(state.value)
+                    is RecoverableReadState.Failed -> AutofillSourceState.Failed(null)
+                }
+            }
         private val systemService =
             observeSource(
                 retry = retrySystemService,
@@ -121,7 +128,7 @@ class AutofillSettingsViewModel
                 }
 
                 AutofillSettingsAction.RetryPreferences -> {
-                    retryPreferences.value++
+                    preferencesRead.retry()
                 }
 
                 AutofillSettingsAction.RetrySystemService -> {

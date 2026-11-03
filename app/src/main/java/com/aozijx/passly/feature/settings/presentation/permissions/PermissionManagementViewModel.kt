@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.permissions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.app.settings.RecoverableRead
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
@@ -30,12 +32,20 @@ class PermissionManagementViewModel
         private var runtimeAccess: Map<RuntimePermission, RuntimePermissionAccess> = emptyMap()
         private var directoryUri: String? = null
         private var directoryStatus = PersistedDirectoryAccessStatus.NOT_CONFIGURED
+        private var directoryReadState: RecoverableReadState<String?> = RecoverableReadState.Loading
+        private val directoryRead = RecoverableRead(directorySettings.backupDirectoryUri, viewModelScope)
 
         init {
             viewModelScope.launch {
-                directorySettings.backupDirectoryUri.collectLatest { uri ->
-                    directoryUri = uri
-                    directoryStatus = inspectDirectory(uri)
+                directoryRead.state.collectLatest { read ->
+                    directoryReadState = read
+                    if (read is RecoverableReadState.Ready) {
+                        directoryUri = read.value
+                        directoryStatus = inspectDirectory(read.value)
+                    } else {
+                        directoryUri = null
+                        directoryStatus = PersistedDirectoryAccessStatus.UNAVAILABLE
+                    }
                     publishState()
                 }
             }
@@ -47,6 +57,10 @@ class PermissionManagementViewModel
         }
 
         fun refreshDirectoryAccess() {
+            if (directoryReadState !is RecoverableReadState.Ready) {
+                directoryRead.retry()
+                return
+            }
             viewModelScope.launch {
                 val inspectedUri = directoryUri
                 val status = inspectDirectory(inspectedUri)
@@ -62,10 +76,15 @@ class PermissionManagementViewModel
 
         private fun publishState() {
             _uiState.value =
-                PermissionManagementUiMapper.map(
-                    runtimeAccess = runtimeAccess,
-                    directoryUri = directoryUri,
-                    directoryStatus = directoryStatus,
-                )
+                PermissionManagementUiMapper
+                    .map(
+                        runtimeAccess = runtimeAccess,
+                        directoryUri = directoryUri,
+                        directoryStatus = directoryStatus,
+                    ).copy(backupDirectoryReadState = directoryReadState)
+        }
+
+        fun retryBackupDirectoryRead() {
+            directoryRead.retry()
         }
     }

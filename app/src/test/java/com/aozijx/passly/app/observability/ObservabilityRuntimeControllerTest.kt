@@ -1,5 +1,6 @@
 package com.aozijx.passly.app.observability
 
+import com.aozijx.passly.app.settings.SettingsReadRetrySignal
 import com.aozijx.passly.core.observability.*
 import com.aozijx.passly.core.observability.internal.*
 import com.aozijx.passly.core.observability.metrics.EventAggregator
@@ -7,9 +8,12 @@ import com.aozijx.passly.core.observability.privacy.*
 import com.aozijx.passly.core.observability.sink.*
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
+import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -76,6 +80,60 @@ class ObservabilityRuntimeControllerTest {
             assertEquals(Events.Application.PreviousProcessExit, store.records.single().event)
         } finally {
             releaseMode.countDown()
+            controller.shutdown()
+        }
+    }
+
+    @Test
+    fun `diagnostics source recovers after read failures and consumes previous exit once`() {
+        val attempts = AtomicInteger()
+        val previousReads = AtomicInteger()
+        val recoveredModes = CountDownLatch(2)
+        val previous =
+            PreviousExitSource {
+                previousReads.incrementAndGet()
+                PreviousExit(1, PreviousExitReason.CRASH, 9, PreviousExitImportance.FOREGROUND, 2, 3)
+            }
+        val recordingPolicy = DiagnosticsLogRecordingPolicy()
+        val mode =
+            flow {
+                when (attempts.incrementAndGet()) {
+                    1 -> {
+                        throw IOException("initial read failed")
+                    }
+
+                    2 -> {
+                        emit(DiagnosticsLogRecordingMode.INFO_AND_ABOVE)
+                        recoveredModes.countDown()
+                        throw IOException("read failed after value")
+                    }
+
+                    else -> {
+                        emit(DiagnosticsLogRecordingMode.DISABLED)
+                        recoveredModes.countDown()
+                        awaitCancellation()
+                    }
+                }
+            }
+        val store = RecordingStore()
+        val controller =
+            controller(
+                store = store,
+                previous = previous,
+                registry = RecordingCrashHandlerRegistry(),
+                recordingMode = mode,
+                recordingPolicy = recordingPolicy,
+            )
+
+        try {
+            controller.start()
+
+            assertTrue(recoveredModes.await(5, TimeUnit.SECONDS))
+            assertTrue(store.logWritten.await(2, TimeUnit.SECONDS))
+            assertEquals(1, previousReads.get())
+            assertEquals(1, store.records.count { it.event == Events.Application.PreviousProcessExit })
+            assertFalse(recordingPolicy.allows(LogLevel.INFO))
+        } finally {
             controller.shutdown()
         }
     }
@@ -236,6 +294,7 @@ class ObservabilityRuntimeControllerTest {
         previous: PreviousExitSource,
         registry: RecordingCrashHandlerRegistry,
         recordingMode: Flow<DiagnosticsLogRecordingMode> = flowOf(DiagnosticsLogRecordingMode.DEFAULT),
+        recordingPolicy: DiagnosticsLogRecordingPolicy = DiagnosticsLogRecordingPolicy(),
         beforeController: (Logger) -> Unit = {},
     ): ObservabilityRuntimeController {
         val crashCapture = CrashRecordCaptureSink()
@@ -273,7 +332,8 @@ class ObservabilityRuntimeControllerTest {
 
                     override suspend fun setDiagnosticsLogRecordingMode(mode: DiagnosticsLogRecordingMode) = Unit
                 },
-            recordingPolicy = DiagnosticsLogRecordingPolicy(),
+            recordingPolicy = recordingPolicy,
+            retrySignal = SettingsReadRetrySignal(),
         )
     }
 
