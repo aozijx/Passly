@@ -22,6 +22,19 @@ enum class AutofillOperationFailure {
 }
 
 sealed interface AutofillDiscoveryOutcome {
+    val presentation: AutofillPresentation?
+        get() =
+            when (this) {
+                is RequiresUnlock -> context.presentation
+                is NoCandidates -> context.presentation
+                is Candidates -> context.presentation
+                Disabled,
+                UnsupportedFields,
+                is Failed,
+                is ResumeSelection,
+                -> null
+            }
+
     data object Disabled : AutofillDiscoveryOutcome
 
     data object UnsupportedFields : AutofillDiscoveryOutcome

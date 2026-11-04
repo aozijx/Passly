@@ -7,7 +7,13 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 data class LegacyResponseBuildResult(
     val response: FillResponse?,
     val observation: LegacyDiscoveryObservation,
-)
+    val summary: Summary,
+) {
+    data class Summary(
+        val datasetCount: Int,
+        val hasSaveInfo: Boolean,
+    )
+}
 
 sealed interface LegacyDiscoveryObservation {
     data class Completed(

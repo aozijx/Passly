@@ -316,6 +316,7 @@ class CredentialManagerFlowTest {
                             startInteraction = start,
                             interactionStore = store,
                             finishInteraction = finish,
+                            logger = testLogger(),
                         ),
                     startInteraction = start,
                     authorizeInteraction =

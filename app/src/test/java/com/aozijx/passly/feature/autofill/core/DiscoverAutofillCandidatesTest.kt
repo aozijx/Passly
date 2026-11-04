@@ -33,6 +33,7 @@ import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
+import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -244,6 +245,7 @@ class DiscoverAutofillCandidatesTest {
                     startInteraction = StartAutofillInteraction(store, lease, vault),
                     interactionStore = store,
                     finishInteraction = FinishAutofillInteraction(store, lease),
+                    logger = testLogger(),
                 ),
             repository = repository,
         )

@@ -26,12 +26,6 @@ class LegacyResponseFactory
     constructor(
         private val pendingIntentFactory: AutofillPendingIntentFactory,
     ) {
-        fun buildFillResponse(
-            context: Context,
-            outcome: AutofillDiscoveryOutcome,
-            parsed: ParsedStructure,
-        ): FillResponse? = buildResult(context, outcome, parsed).response
-
         fun buildResult(
             context: Context,
             outcome: AutofillDiscoveryOutcome,
@@ -55,7 +49,7 @@ class LegacyResponseFactory
                 is AutofillDiscoveryOutcome.RequiresUnlock -> {
                     completed(
                         interactionId = outcome.snapshot.id,
-                        response =
+                        built =
                             buildUnlockResponse(
                                 context,
                                 outcome.snapshot.id,
@@ -67,8 +61,8 @@ class LegacyResponseFactory
                 }
 
                 is AutofillDiscoveryOutcome.NoCandidates -> {
-                    LegacyResponseBuildResult(
-                        response =
+                    result(
+                        built =
                             buildCandidateResponse(
                                 context = context,
                                 interactionId = outcome.snapshot.id,
@@ -84,7 +78,7 @@ class LegacyResponseFactory
                 is AutofillDiscoveryOutcome.Candidates -> {
                     completed(
                         interactionId = outcome.snapshot.id,
-                        response =
+                        built =
                             buildCandidateResponse(
                                 context = context,
                                 interactionId = outcome.snapshot.id,
@@ -122,8 +116,8 @@ class LegacyResponseFactory
             discoveryContext: AutofillDiscoveryContext,
             parsed: ParsedStructure,
             inlineRequest: InlineSuggestionsRequest?,
-        ): FillResponse? {
-            if (parsed.allIds.isEmpty()) return null
+        ): BuiltResponse {
+            if (parsed.allIds.isEmpty()) return BuiltResponse(response = null)
             val builder = FillResponse.Builder()
             val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
             val intent =
@@ -162,8 +156,8 @@ class LegacyResponseFactory
                         null
                     },
             )
-            addSaveInfo(builder, discoveryContext, parsed)
-            return builder.build()
+            val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
+            return BuiltResponse(response = builder.build(), hasSaveInfo = hasSaveInfo)
         }
 
         private fun buildCandidateResponse(
@@ -173,14 +167,15 @@ class LegacyResponseFactory
             discoveryContext: AutofillDiscoveryContext,
             parsed: ParsedStructure,
             inlineRequest: InlineSuggestionsRequest?,
-        ): FillResponse? {
-            if (parsed.allIds.isEmpty()) return null
+        ): BuiltResponse {
+            if (parsed.allIds.isEmpty()) return BuiltResponse(response = null)
 
             val builder = FillResponse.Builder()
             val roleIds = resolveRoleIds(discoveryContext.roleMap, parsed)
-            if (candidates.isNotEmpty() &&
-                discoveryContext.presentation == AutofillPresentation.BOTTOM_SHEET
-            ) {
+            val pickerDataset =
+                candidates.isNotEmpty() &&
+                    discoveryContext.presentation == AutofillPresentation.BOTTOM_SHEET
+            if (pickerDataset) {
                 addPickerAuthentication(
                     builder,
                     context,
@@ -211,8 +206,13 @@ class LegacyResponseFactory
                 }
             }
             val hasSaveInfo = addSaveInfo(builder, discoveryContext, parsed)
-            if (candidates.isEmpty() && !hasSaveInfo) return null
-            return builder.build()
+            if (candidates.isEmpty() && !hasSaveInfo) return BuiltResponse(response = null)
+            val datasetCount = if (pickerDataset) 1 else candidates.size
+            return BuiltResponse(
+                response = builder.build(),
+                datasetCount = datasetCount,
+                hasSaveInfo = hasSaveInfo,
+            )
         }
 
         private fun addSaveInfo(
@@ -335,16 +335,32 @@ class LegacyResponseFactory
         }
 
         private fun unavailable(reason: ReasonCode) =
-            LegacyResponseBuildResult(
-                response = null,
+            result(
+                built = BuiltResponse(response = null),
                 observation = LegacyDiscoveryObservation.Unavailable(reason),
             )
 
         private fun completed(
             interactionId: AutofillInteractionId,
-            response: FillResponse?,
+            built: BuiltResponse,
+        ) = result(built, LegacyDiscoveryObservation.Completed(interactionId))
+
+        private fun result(
+            built: BuiltResponse,
+            observation: LegacyDiscoveryObservation,
         ) = LegacyResponseBuildResult(
-            response = response,
-            observation = LegacyDiscoveryObservation.Completed(interactionId),
+            response = built.response,
+            observation = observation,
+            summary =
+                LegacyResponseBuildResult.Summary(
+                    datasetCount = built.datasetCount,
+                    hasSaveInfo = built.hasSaveInfo,
+                ),
+        )
+
+        private data class BuiltResponse(
+            val response: FillResponse?,
+            val datasetCount: Int = 0,
+            val hasSaveInfo: Boolean = false,
         )
     }

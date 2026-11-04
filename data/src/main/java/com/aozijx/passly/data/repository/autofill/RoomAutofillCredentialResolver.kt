@@ -1,5 +1,7 @@
 package com.aozijx.passly.data.repository.autofill
 
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
@@ -18,6 +20,7 @@ import com.aozijx.passly.domain.entry.otp.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.OtpResult
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 @Singleton
 internal class RoomAutofillCredentialResolver
@@ -26,58 +29,70 @@ internal class RoomAutofillCredentialResolver
         private val databaseSession: AppDatabaseSession,
         private val sessionState: SecureSessionAccessState,
         private val secretFieldStore: SecretFieldStore,
+        private val logger: Logger,
     ) : AutofillCredentialResolver {
         override suspend fun resolve(selection: AutofillCredentialSelection): AutofillCredentialResolution {
             if (!sessionState.hasAutofillSessionAccess()) {
                 return AutofillCredentialResolution.NotFound
             }
-            return databaseSession.query {
-                val entity = entryQueryDao().getById(selection.entryId.value)
-                if (entity == null || entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
-                    return@query resolveAutofillCredential(entity, password = null, otpCode = null)
-                }
-                val password =
-                    secretFieldStore.readField(
-                        db = this,
-                        entryId = entity.entryId,
-                        key = SensitiveFieldKey.PASSWORD,
-                    )
-                val otpCode =
-                    if (selection.includeOtp) {
-                        val otpEntryId =
-                            findLinkedOtpEntryId(
-                                loginEntryId = entity.entryId,
-                                links = entryLinkQueryDao().getByEntryId(entity.entryId),
-                            )
-                        otpEntryId?.let { linkedEntryId ->
-                            val otpEntity = entryQueryDao().getById(linkedEntryId)
-                            if (
-                                otpEntity == null ||
-                                otpEntity.deletedAt != null ||
-                                otpEntity.entryType != EntryType.OTP
-                            ) {
-                                return@let null
-                            }
-                            val config =
-                                secretFieldStore
-                                    .readBundle(
-                                        this,
-                                        linkedEntryId,
-                                        otpEntity.entryType,
-                                    ).otp
-                                    ?.config
-                            val secret =
-                                secretFieldStore.readField(
-                                    db = this,
-                                    entryId = linkedEntryId,
-                                    key = SensitiveFieldKey.OTP_SECRET,
-                                )
-                            generateAutofillOtpCode(true, config, secret)
-                        }
-                    } else {
-                        null
+            return try {
+                databaseSession.query {
+                    val entity = entryQueryDao().getById(selection.entryId.value)
+                    if (entity == null || entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
+                        return@query resolveAutofillCredential(entity, password = null, otpCode = null)
                     }
-                resolveAutofillCredential(entity, password = password, otpCode = otpCode)
+                    val password =
+                        secretFieldStore.readField(
+                            db = this,
+                            entryId = entity.entryId,
+                            key = SensitiveFieldKey.PASSWORD,
+                        )
+                    val otpCode =
+                        if (selection.includeOtp) {
+                            val otpEntryId =
+                                findLinkedOtpEntryId(
+                                    loginEntryId = entity.entryId,
+                                    links = entryLinkQueryDao().getByEntryId(entity.entryId),
+                                )
+                            otpEntryId?.let { linkedEntryId ->
+                                val otpEntity = entryQueryDao().getById(linkedEntryId)
+                                if (
+                                    otpEntity == null ||
+                                    otpEntity.deletedAt != null ||
+                                    otpEntity.entryType != EntryType.OTP
+                                ) {
+                                    return@let null
+                                }
+                                val config =
+                                    secretFieldStore
+                                        .readBundle(
+                                            this,
+                                            linkedEntryId,
+                                            otpEntity.entryType,
+                                        ).otp
+                                        ?.config
+                                val secret =
+                                    secretFieldStore.readField(
+                                        db = this,
+                                        entryId = linkedEntryId,
+                                        key = SensitiveFieldKey.OTP_SECRET,
+                                    )
+                                generateAutofillOtpCode(true, config, secret)
+                            }
+                        } else {
+                            null
+                        }
+                    resolveAutofillCredential(entity, password = password, otpCode = otpCode)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                try {
+                    logger.log(LogStatements.Autofill.discoveryFailed(error))
+                } catch (_: Exception) {
+                    // Diagnostics must not replace the typed resolver failure.
+                }
+                throw error
             }
         }
     }

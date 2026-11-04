@@ -53,13 +53,27 @@ class LogcatSink internal constructor(
         }
 
     private fun truncatedSummary(record: SanitizedLogRecord): String =
-        "event_id=${record.eventId.value} name=${record.event.value} " +
-            "trace_id=${record.trace.traceId.value} span_id=${record.trace.spanId.value} truncated=true"
+        buildString {
+            append("event_id=").append(record.eventId.value)
+            append(" name=").append(record.event.value)
+            append(" level=").append(record.level.name)
+            append(" trace_id=").append(record.trace.traceId.value)
+            append(" span_id=").append(record.trace.spanId.value)
+            record.error?.let { error ->
+                append(" error_code=").append(error.errorCode.value)
+                append(" reason=").append(error.reason.value)
+                error.exception?.let { exception ->
+                    append(" exception_kind=").append(exception.kind.name)
+                    append(" exception_type=").append(exception.type.value)
+                }
+            }
+            append(" truncated=true")
+        }
 
     private fun String.singleLine(): String = replace('\n', ' ').replace('\r', ' ').replace('\u0000', ' ')
 
     companion object {
-        const val MAX_SUMMARY_CHARS = 1_024
+        const val MAX_SUMMARY_CHARS = 3_500
     }
 }
 
@@ -76,9 +90,6 @@ private object SafeLogcatRecordFormatter : LogcatRecordFormatter {
             append(" trace_id=").append(record.trace.traceId.value)
             append(" span_id=").append(record.trace.spanId.value)
             record.trace.parentSpanId?.let { append(" parent_span_id=").append(it.value) }
-            record.fields.values.toSortedMap(compareBy { it.value }).forEach { (key, value) ->
-                append(' ').append(key.value).append('=').append(value.safeText())
-            }
             record.error?.let { error ->
                 append(" error_code=").append(error.errorCode.value)
                 append(" reason=").append(error.reason.value)
@@ -90,6 +101,19 @@ private object SafeLogcatRecordFormatter : LogcatRecordFormatter {
                     append(" foreign_frame_count=").append(exception.foreignFrameCount)
                 }
             }
+            record.fields.values.toSortedMap(
+                compareBy<com.aozijx.passly.core.observability.LogFieldKey> { it.logcatPriority() }
+                    .thenBy { it.value },
+            )
+                .forEach { (key, value) ->
+                    append(' ').append(key.value).append('=').append(value.safeText())
+                }
+        }
+
+    private fun com.aozijx.passly.core.observability.LogFieldKey.logcatPriority(): Int =
+        when (value) {
+            "reason_code", "failure_kind", "result", "purpose", "trigger" -> 0
+            else -> 1
         }
 
     private fun LogValue.safeText(): String =

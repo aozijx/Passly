@@ -10,4 +10,8 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowAnimationStyle">@style/TransparentAuthAnimation</item>
     </style>
+
+    <style name="Theme.Passly.AutofillFill" parent="Theme.Passly.TransparentAuth">
+        <item name="android:windowIsFloating">false</item>
+    </style>
 </resources>

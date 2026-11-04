@@ -29,13 +29,6 @@ internal data class CanonicalDiagnosticsEvent(
             put("level", record.level.exportValue)
             put("event", record.event.value)
             put("event_id", record.eventId.value)
-            put(
-                "context",
-                buildJsonObject {
-                    put("category", record.category.exportValue)
-                    orderedFields(record).forEach { (key, value) -> put(key, value.toJson()) }
-                },
-            )
             record.error?.let { error ->
                 put(
                     "error",
@@ -70,6 +63,13 @@ internal data class CanonicalDiagnosticsEvent(
                 buildJsonObject {
                     put("process_session_id", record.processSessionId.value)
                     record.secureSessionId?.let { put("secure_session_id", it.value) }
+                },
+            )
+            put(
+                "context",
+                buildJsonObject {
+                    put("category", record.category.exportValue)
+                    orderedFields(record).forEach { (key, value) -> put(key, value.toJson()) }
                 },
             )
         }

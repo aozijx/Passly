@@ -6,7 +6,7 @@ import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionMapper
 import com.aozijx.passly.core.observability.IdentifierNamespace
 import com.aozijx.passly.core.observability.LogFieldKey
-import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.LogFieldKind
 import com.aozijx.passly.core.observability.LogFields
 import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.core.observability.LogValue
@@ -75,9 +75,7 @@ class PrivacyPolicy(
         var droppedFieldCount = 0
         val safeFields = linkedMapOf<LogFieldKey, LogValue>()
         for ((key, value) in event.fields.values) {
-            val expectedKind =
-                SAFE_FIELD_CATALOG[key]
-                    ?: return violation(ContractViolation.FIELD_NOT_REGISTERED)
+            val expectedKind = key.kind ?: return violation(ContractViolation.FIELD_NOT_REGISTERED)
             if (kindOf(value) != expectedKind) {
                 return violation(
                     if (value is LogValue.HashedIdentifierValue) {
@@ -193,111 +191,56 @@ class PrivacyPolicy(
             ContractViolationBehavior.REJECT -> SanitizationResult.Rejected(violation)
         }
 
-    private fun kindOf(value: LogValue): FieldKind =
+    private fun kindOf(value: LogValue): LogFieldKind =
         when (value) {
             is LogValue.Count -> {
-                FieldKind.COUNT
+                LogFieldKind.COUNT
             }
 
             is LogValue.DurationMs -> {
-                FieldKind.DURATION
+                LogFieldKind.DURATION
             }
 
             is LogValue.Ratio -> {
-                FieldKind.RATIO
+                LogFieldKind.RATIO
             }
 
             is LogValue.BooleanValue -> {
-                FieldKind.BOOLEAN
+                LogFieldKind.BOOLEAN
             }
 
             is LogValue.EnumValue -> {
-                FieldKind.ENUM
+                LogFieldKind.ENUM
             }
 
             is LogValue.ErrorCodeValue -> {
-                FieldKind.ERROR_CODE
+                LogFieldKind.ERROR_CODE
             }
 
             is LogValue.ReasonCodeValue -> {
-                FieldKind.REASON
+                LogFieldKind.REASON
             }
 
             is LogValue.OperationCodeValue -> {
-                FieldKind.OPERATION
+                LogFieldKind.OPERATION
             }
 
             is LogValue.HashedIdentifierInput -> {
                 when (value.namespace) {
-                    IdentifierNamespace.TARGET_PACKAGE -> FieldKind.HASHED_TARGET_PACKAGE
-                    IdentifierNamespace.BROWSER_PACKAGE -> FieldKind.HASHED_BROWSER_PACKAGE
+                    IdentifierNamespace.TARGET_PACKAGE -> LogFieldKind.HASHED_TARGET_PACKAGE
+                    IdentifierNamespace.BROWSER_PACKAGE -> LogFieldKind.HASHED_BROWSER_PACKAGE
                 }
             }
 
             is LogValue.HashedIdentifierValue -> {
-                FieldKind.PREHASHED_IDENTIFIER
+                LogFieldKind.PREHASHED_IDENTIFIER
             }
         }
 
     private fun isValidIdentifierInput(value: String): Boolean = value.length <= 255 && TARGET_PACKAGE_PATTERN.matches(value)
 
-    private enum class FieldKind(
-        val identifierNamespace: IdentifierNamespace? = null,
-    ) {
-        COUNT,
-        DURATION,
-        RATIO,
-        BOOLEAN,
-        ENUM,
-        ERROR_CODE,
-        REASON,
-        OPERATION,
-        HASHED_TARGET_PACKAGE(IdentifierNamespace.TARGET_PACKAGE),
-        HASHED_BROWSER_PACKAGE(IdentifierNamespace.BROWSER_PACKAGE),
-        PREHASHED_IDENTIFIER,
-    }
-
     private companion object {
         val TARGET_PACKAGE_PATTERN =
             Regex("^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$")
-
-        val SAFE_FIELD_CATALOG =
-            mapOf(
-                LogFieldKeys.RetryCount to FieldKind.COUNT,
-                LogFieldKeys.ElapsedMs to FieldKind.DURATION,
-                LogFieldKeys.TargetPackage to FieldKind.HASHED_TARGET_PACKAGE,
-                LogFieldKeys.BrowserPackage to FieldKind.HASHED_BROWSER_PACKAGE,
-                LogFieldKeys.FromState to FieldKind.ENUM,
-                LogFieldKeys.ToState to FieldKind.ENUM,
-                LogFieldKeys.LockType to FieldKind.ENUM,
-                LogFieldKeys.Reason to FieldKind.REASON,
-                LogFieldKeys.Owner to FieldKind.ENUM,
-                LogFieldKeys.TimeoutMs to FieldKind.DURATION,
-                LogFieldKeys.ActiveLeaseCount to FieldKind.COUNT,
-                LogFieldKeys.LockReason to FieldKind.REASON,
-                LogFieldKeys.Trigger to FieldKind.ENUM,
-                LogFieldKeys.Result to FieldKind.ENUM,
-                LogFieldKeys.AuthenticationMethod to FieldKind.ENUM,
-                LogFieldKeys.AuthenticationPurpose to FieldKind.ENUM,
-                LogFieldKeys.ExitStatus to FieldKind.COUNT,
-                LogFieldKeys.ExitReason to FieldKind.ENUM,
-                LogFieldKeys.Importance to FieldKind.ENUM,
-                LogFieldKeys.PssKb to FieldKind.COUNT,
-                LogFieldKeys.RssKb to FieldKind.COUNT,
-                LogFieldKeys.Source to FieldKind.ENUM,
-                LogFieldKeys.ErrorLayer to FieldKind.ENUM,
-                LogFieldKeys.Severity to FieldKind.ENUM,
-                LogFieldKeys.Recoverable to FieldKind.BOOLEAN,
-                LogFieldKeys.Operation to FieldKind.OPERATION,
-                LogFieldKeys.ClearTask to FieldKind.BOOLEAN,
-                LogFieldKeys.DroppedDebugCount to FieldKind.COUNT,
-                LogFieldKeys.DroppedInfoCount to FieldKind.COUNT,
-                LogFieldKeys.DroppedWarnCount to FieldKind.COUNT,
-                LogFieldKeys.DroppedErrorCount to FieldKind.COUNT,
-                LogFieldKeys.DroppedFatalCount to FieldKind.COUNT,
-                LogFieldKeys.EntryType to FieldKind.ENUM,
-                LogFieldKeys.Presentation to FieldKind.ENUM,
-                LogFieldKeys.InlineAvailable to FieldKind.BOOLEAN,
-            )
     }
 }

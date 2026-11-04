@@ -1,6 +1,6 @@
 # Legacy Autofill Service
 
-状态：当前实现（API 31+，代码核对：2026-10-24）。
+状态：当前实现（API 31+，代码核对：2026-11-04）。
 
 `LegacyAutofillService` 解析 `AssistStructure`、处理取消信号并构造 Legacy `FillResponse`/`Dataset`。它不构造
 Credential Manager response。
@@ -15,12 +15,38 @@ Credential Manager response。
 trace 的 `LegacyDiscoveryObservation`。Service 不再重复解释 `Candidates`、`RequiresUnlock` 等 domain outcome。
 Credential Manager 仍使用自己的 response 合同，不与 Legacy 结果类型合并。
 
-Legacy 服务断连或销毁时会过期其来源的所有活动交互，释放对应的 Autofill 解锁租约。清理在生命周期回调内立即启动，
-并以不可取消的短任务完成；服务销毁随后取消普通请求 scope，不会中断这项状态回收。重复触发安全：交互只有在首次终态转换时释放租约。
+Legacy 服务的 `onDisconnected()` 不是交互结束点：Android 可在 `FillCallback.onSuccess()` 后立即断开服务，随后才显示候选并等待用户选择。此时认证 `PendingIntent` 仍需读取原 interaction，因此断连回调不得过期 Legacy interaction。`onDestroy()` 只取消服务请求 scope，也不批量清理尚未完成的 interaction。
+
+交互的正常完成点是最终认证结果交付给 Android 后。`AutofillResultDelivery` 在平台结果回调返回后记录 `autofill.result.delivered`，完成 selection、关闭交互并释放 Autofill 解锁租约；用户取消或系统没有继续调用认证入口时，由 `AutofillInteractionTimeout` 过期空闲交互。关闭是幂等的，重复终态转换不会重复释放租约。
+
+Android 没有回调确认目标应用控件最终接受了值。`TYPE_DATASET_SELECTED` 表示数据集被选中；API 36 的 `onSessionDestroyed(FillEventHistory)` 表示 Autofill 会话结束，并提供会话事件历史。这些信号都不等同于目标字段写入成功，且 `onSessionDestroyed()` 在 API 31–35 不可用。因此 `autofill.result.delivered` 表示 Android 已收到认证结果，不应命名或解释为字段填充成功。
 
 系统悬浮候选菜单使用 RemoteViews。业务层先生成 `AutofillRemoteItem.SingleLine/DoubleLine`，渲染器只负责选择对应
 XML 并绑定文字；XML 不包含匹配类型徽标、自定义卡片背景或业务判断。这样候选、解锁入口和选择器入口共享同一
 展示协议，而 domain 候选模型不会泄漏到 Android View 渲染器。
+
+应用内 BottomSheet 由 `AutofillFillActivity` 承载，必须使用非浮动窗口主题。`windowIsFloating=true` 会把 Activity 内容限制在浮动窗口尺寸内，Compose 的模态 BottomSheet 无法按屏幕宽度和底边正确布局；其他认证入口仍使用原透明浮动主题。排查时按 `presentation.selected` → `discovery.completed` → 候选状态 → BottomSheet 渲染检查，不能只凭候选 Dataset 已构造就认定应用内选择器已显示。
+
+## Autofill 诊断事件
+
+Legacy 服务按处理阶段记录结构化摘要，便于区分 Android 是否调用服务、结构解析是否找到输入框、角色分类是否成功，
+以及最终是否生成 Dataset 或 `SaveInfo`：
+
+| 事件 | 诊断内容 |
+| --- | --- |
+| `autofill.legacy.fill_request_received` | 回调到达、FillContext 数量、请求 flags、Inline 请求是否存在 |
+| `autofill.legacy.structure_parsed` | Fill/Save 阶段、窗口/节点遍历数量与截断状态、可编辑/有 hint/焦点/密码类型字段数量、包名和网页域是否存在 |
+| `autofill.fields_classified` | 可编辑字段数量、用户名/密码/OTP 角色数量，以及是否识别出凭据字段 |
+| `autofill.discovery.*` | 发现开始/完成或不可用原因；认证后的业务失败会附带枚举字段 `failure_kind`。凭据解析的普通异常会额外记录脱敏异常类型、应用内栈帧和 cause 类型，不记录异常消息或凭据 |
+| `autofill.result.delivery_*`、`autofill.result.delivered`、`autofill.session.close_*` | 最终结果是否交给 Android，以及交付后的交互关闭状态；`result.delivered` 不证明目标控件已写入 |
+| `autofill.legacy.response_built` | Android response 是否存在、Dataset 数量、`SaveInfo` 是否存在 |
+| `autofill.legacy.save_request_received`、`autofill.save.*` | 保存回调是否到达及保存/排队/失败结果 |
+
+事件记录目标包名的脱敏哈希；不记录网页域、节点 ID、字段文字、输入值或凭据。若复现后没有任何
+`autofill.legacy.*` 回调事件，可先判断系统没有调用 Legacy 服务，或当前使用的是其他 Autofill 入口；若出现
+`fill_request_received`，后续阶段计数和 `discovery.unavailable` 原因可定位中断点。诊断结构由
+`AutofillLogSnapshot` 中的请求、遍历、字段、目标范围及响应摘要组成，日志语句不再接收易错的长参数列表。
+诊断页面逐行显示完整持久化记录并自动换行；Logcat 单条长度上限为 3500 字符，先输出错误/异常、trace，再输出按关键字段优先级排序的上下文。超过上限仍会退化为带 `truncated=true` 的摘要，因此排查完整异常时应从诊断页面复制 trace 或导出 JSONL。
 
 键盘 Inline 模式在服务元数据中声明支持，读取 `FillRequest.inlineSuggestionsRequest` 的最大数量和规格，
 仅在键盘规格声明支持 AndroidX v1 模板时，为锁定入口与候选 Dataset 构造 `InlinePresentation`。请求为空、
@@ -39,7 +65,7 @@ Legacy Fill ViewModel 的终态只保留 discovery outcome 或选中凭据语义
 Activity-retained ViewModel 持有一次性结果 claim，使配置重建后未确认的终态仍可交付，而已交付结果不会重放；Activity
 使用当前 request 调用 `LegacyResponseFactory` 构造平台对象，并在 callback 成功后确认清除终态。凭据 payload 在交付前
 暂存在结果状态中以支持 Activity 重建，交付失败时保留以供当前 claim 回滚后的取消收尾；成功后结果状态清空。选中条目
-仍先由 `AutofillResultDelivery` 将平台结果交给 Android，再完成 interaction 与 lease 收尾。
+仍先由 `AutofillResultDelivery` 将平台结果交给 Android，再完成 interaction 与 lease 收尾。手工复测记录：API 36 AVD 上，Legacy 服务构造一个候选，系统断开服务后用户选择候选；认证后恢复 interaction，出现 `autofill.result.delivered` 与 `autofill.session.closed`，测试应用的账号和密码字段均被填入。此复测证明该路径可成功，不代表存在框架级字段写入成功回调，也不覆盖其他 OEM 或系统版本。
 
 底部选择器因此挂在一个需要认证的占位 Dataset 上，而不是 `FillResponse.setAuthentication()`。后者只适用于认证后
 替换整个响应；用于候选选择时会让 Android 只刷新候选而不填充。`AutofillFillRequest` 必须带有效的结果目标，未知或
@@ -61,12 +87,18 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 平台依据：[Build autofill services](https://developer.android.com/identity/autofill/autofill-services)、
 [FillResponse.Builder](https://developer.android.com/reference/android/service/autofill/FillResponse.Builder.html)、
 [Dataset.Builder](https://developer.android.com/reference/android/service/autofill/Dataset.Builder)、
-[SaveInfo](https://developer.android.com/reference/android/service/autofill/SaveInfo)。
+[SaveInfo](https://developer.android.com/reference/android/service/autofill/SaveInfo)、
+[AutofillService lifecycle](https://developer.android.com/reference/android/service/autofill/AutofillService)、
+[FillEventHistory.Event](https://developer.android.com/reference/android/service/autofill/FillEventHistory.Event)。
 
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 处理旧版 Autofill 填充与保存请求 | `LegacyAutofillService.onFillRequest()`、`onSaveRequest()` | [`LegacyAutofillService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt) |
+| 将 Android 请求与解析结果转换为隐私安全的 Autofill 诊断事件 | `LegacyAutofillDiagnostics` | [`LegacyAutofillDiagnostics.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillDiagnostics.kt) |
+| 记录认证后发现/选中失败的安全枚举诊断 | `AutofillFillViewModel` | [`AutofillFillViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt) |
+| 解析候选凭据并报告脱敏异常快照 | `RoomAutofillCredentialResolver.resolve()` | [`RoomAutofillCredentialResolver.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/autofill/RoomAutofillCredentialResolver.kt) |
+| 交付平台结果后完成交互与租约收尾 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
 | 准备旧版保存流程 | `LegacySaveFlow.prepare()` | [`LegacySaveFlow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacySaveFlow.kt) |
 | 密封收件箱的模型与处理流程 | [密封收件箱文档](sealed-inbox.md) | [sealed-inbox.md](sealed-inbox.md) |

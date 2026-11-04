@@ -1,5 +1,8 @@
 package com.aozijx.passly.feature.autofill.core
 
+import com.aozijx.passly.core.observability.AutofillLogSnapshot
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
@@ -38,6 +41,7 @@ class DiscoverAutofillCandidates
         private val startInteraction: StartAutofillInteraction,
         private val interactionStore: AutofillInteractionStore,
         private val finishInteraction: FinishAutofillInteraction,
+        private val logger: Logger,
     ) {
         suspend operator fun invoke(
             request: AutofillRequest,
@@ -60,6 +64,22 @@ class DiscoverAutofillCandidates
                             },
                     )
                 } ?: request.source.fieldMatchStrategy().match(request)
+            logger.log(
+                LogStatements.Autofill.fieldsClassified(
+                    source = request.source,
+                    targetPackage = request.packageName,
+                    snapshot =
+                        AutofillLogSnapshot.Classification(
+                            fieldCount = request.fields.size,
+                            roles =
+                                AutofillLogSnapshot.Classification.Roles(
+                                    username = match.roleMap.values.count { it == FieldRole.USERNAME },
+                                    password = match.roleMap.values.count { it == FieldRole.PASSWORD },
+                                    otp = match.roleMap.values.count { it == FieldRole.OTP },
+                                ),
+                        ),
+                ),
+            )
             if (!match.hasCredentials) return AutofillDiscoveryOutcome.UnsupportedFields
 
             val scope =

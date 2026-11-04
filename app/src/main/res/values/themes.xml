@@ -22,6 +22,10 @@
         <item name="android:windowAnimationStyle">@style/TransparentAuthAnimation</item>
     </style>
 
+    <style name="Theme.Passly.AutofillFill" parent="Theme.Passly.TransparentAuth">
+        <item name="android:windowIsFloating">false</item>
+    </style>
+
     <style name="TransparentAuthAnimation">
         <item name="android:activityOpenEnterAnimation">@android:anim/fade_in</item>
         <item name="android:activityOpenExitAnimation">@android:anim/fade_out</item>

@@ -26,7 +26,14 @@ data class ParsedStructure(
     val webDomain: String? = null,
     /** All editable input fields on the page. */
     val editableFields: List<EditableFieldInfo> = emptyList(),
+    val traversal: Traversal = Traversal(),
 ) {
+    data class Traversal(
+        val windowCount: Int = 0,
+        val visitedNodeCount: Int = 0,
+        val truncated: Boolean = false,
+    )
+
     val allIds: List<AutofillId>
         get() = editableFields.map { it.autofillId }
 }
@@ -45,6 +52,7 @@ object AutofillStructureParser {
                 parser.webDomain
                     ?.takeUnless { it == "127.0.0.1" || it == "localhost" },
             editableFields = parser.editableFields,
+            traversal = parser.traversal,
         )
     }
 
@@ -54,6 +62,7 @@ object AutofillStructureParser {
         var packageName: String? = structure.activityComponent?.packageName
         var webDomain: String? = null
         val editableFields = mutableListOf<EditableFieldInfo>()
+        val traversal: ParsedStructure.Traversal
 
         init {
             val roots =
@@ -62,13 +71,20 @@ object AutofillStructureParser {
                         add(structure.getWindowNodeAt(index).rootViewNode)
                     }
                 }
-            traverseBoundedPreOrder(
-                roots = roots,
-                maxDepth = MAX_TREE_DEPTH,
-                maxNodes = MAX_NODE_COUNT,
-                children = ::childrenOf,
-                visit = ::parseNode,
-            )
+            val traversal =
+                traverseBoundedPreOrder(
+                    roots = roots,
+                    maxDepth = MAX_TREE_DEPTH,
+                    maxNodes = MAX_NODE_COUNT,
+                    children = ::childrenOf,
+                    visit = ::parseNode,
+                )
+            this.traversal =
+                ParsedStructure.Traversal(
+                    windowCount = structure.windowNodeCount,
+                    visitedNodeCount = traversal.visitedCount,
+                    truncated = traversal.truncated,
+                )
         }
 
         private fun parseNode(node: AssistStructure.ViewNode) {

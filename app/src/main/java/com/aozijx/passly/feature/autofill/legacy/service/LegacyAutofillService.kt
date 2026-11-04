@@ -6,15 +6,13 @@ import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
-import com.aozijx.passly.core.observability.LogFields
-import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.AutofillLogSnapshot
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
-import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
@@ -48,6 +46,9 @@ class LegacyAutofillService : AutofillService() {
     lateinit var adapter: LegacyPlatformAdapter
 
     @Inject
+    lateinit var diagnostics: LegacyAutofillDiagnostics
+
+    @Inject
     lateinit var finishInteraction: FinishAutofillInteraction
 
     @Inject
@@ -61,10 +62,6 @@ class LegacyAutofillService : AutofillService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    override fun onCreate() {
-        super.onCreate()
-    }
-
     override fun onFillRequest(
         request: FillRequest,
         cancellationSignal: CancellationSignal,
@@ -73,29 +70,26 @@ class LegacyAutofillService : AutofillService() {
         val job =
             serviceScope.launch {
                 logger.withRootTrace(Operations.AutofillLegacyRequest) {
-                    var requestFields = LogFields.Empty
+                    var discovery: LegacyAutofillDiagnostics.Discovery? = null
                     try {
+                        diagnostics.fillRequestReceived(request)
                         val parsed = AutofillStructureParser.parse(request.fillContexts)
+                        diagnostics.structureParsed(
+                            parsed,
+                            request.fillContexts.size,
+                            AutofillLogSnapshot.Legacy.Structure.Stage.FILL,
+                        )
                         val internalRequest = adapter.buildRequest(parsed)
-                        requestFields = requestFields(internalRequest.packageName)
                         val discoveryStartedAt = monotonicTimeMs()
-                        logger.log(LogStatements.Autofill.discoveryStarted(requestFields))
+                        val discoveryLog = diagnostics.beginDiscovery(internalRequest.packageName)
+                        discovery = discoveryLog
                         val outcome = discoverCandidates(internalRequest)
-                        val presentation =
-                            when (outcome) {
-                                is AutofillDiscoveryOutcome.Candidates -> outcome.context.presentation
-                                is AutofillDiscoveryOutcome.NoCandidates -> outcome.context.presentation
-                                is AutofillDiscoveryOutcome.RequiresUnlock -> outcome.context.presentation
-                                else -> null
-                            }
-                        presentation?.let { mode ->
+                        outcome.presentation?.let { mode ->
                             val inline = request.inlineSuggestionsRequest
-                            logger.log(
-                                LogStatements.Autofill.presentationSelected(
-                                    mode,
-                                    mode == AutofillPresentation.SYSTEM_INLINE &&
-                                        LegacyInlinePresentationFactory.isAvailable(inline),
-                                ),
+                            diagnostics.presentationSelected(
+                                mode,
+                                mode == AutofillPresentation.SYSTEM_INLINE &&
+                                    LegacyInlinePresentationFactory.isAvailable(inline),
                             )
                         }
                         val result =
@@ -105,26 +99,22 @@ class LegacyAutofillService : AutofillService() {
                                 context = this@LegacyAutofillService,
                                 inlineRequest = request.inlineSuggestionsRequest,
                             )
+                        diagnostics.responseBuilt(internalRequest.packageName, result)
                         when (val observation = result.observation) {
                             is LegacyDiscoveryObservation.Completed -> {
                                 traceContinuations.capture(observation.interactionId.value)
-                                logger.log(
-                                    LogStatements.Autofill.discoveryCompleted(
-                                        monotonicTimeMs() - discoveryStartedAt,
-                                        requestFields,
-                                    ),
-                                )
+                                discoveryLog.completed(monotonicTimeMs() - discoveryStartedAt)
                             }
 
                             is LegacyDiscoveryObservation.Unavailable -> {
-                                logDiscoveryUnavailable(observation.reason, requestFields)
+                                discoveryLog.unavailable(observation.reason)
                             }
                         }
                         callback.onSuccess(result.response)
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        logger.log(LogStatements.Autofill.discoveryFailed(e, fields = requestFields))
+                        diagnostics.discoveryFailed(e, discovery)
                         callback.onFailure("Fill request failed")
                     }
                 }
@@ -139,17 +129,23 @@ class LegacyAutofillService : AutofillService() {
         val completion = AtomicBoolean(false)
         serviceScope.launch {
             logger.withRootTrace(Operations.AutofillLegacyRequest) {
-                logger.log(LogStatements.Autofill.saveStarted())
+                diagnostics.saveRequestReceived(request)
+                diagnostics.saveStarted()
                 try {
                     val parsed = AutofillStructureParser.parse(request.fillContexts)
+                    diagnostics.structureParsed(
+                        parsed,
+                        request.fillContexts.size,
+                        AutofillLogSnapshot.Legacy.Structure.Stage.SAVE,
+                    )
                     when (val result = legacySaveFlow.prepare(adapter.buildRequest(parsed))) {
                         LegacySavePreparation.Saved -> {
-                            logger.log(LogStatements.Autofill.saveCompleted())
+                            diagnostics.saveCompleted()
                             if (completion.compareAndSet(false, true)) callback.onSuccess()
                         }
 
                         LegacySavePreparation.Queued -> {
-                            logger.log(LogStatements.Autofill.saveStaged())
+                            diagnostics.saveStaged()
                             if (completion.compareAndSet(false, true)) callback.onSuccess()
                         }
 
@@ -184,7 +180,7 @@ class LegacyAutofillService : AutofillService() {
                     failSave(callback, completion, "Credential saving was cancelled", Reasons.UnknownFailure)
                     throw cancelled
                 } catch (error: Exception) {
-                    logger.log(LogStatements.Autofill.saveFailed(error))
+                    diagnostics.saveFailed(error)
                     if (completion.compareAndSet(false, true)) {
                         callback.onFailure("Credential could not be saved")
                     }
@@ -199,31 +195,18 @@ class LegacyAutofillService : AutofillService() {
         message: String,
         reason: ReasonCode,
     ) {
-        logger.log(LogStatements.Autofill.saveUnavailable(reason))
+        diagnostics.saveUnavailable(reason)
         if (completion.compareAndSet(false, true)) callback.onFailure(message)
     }
 
-    private fun logDiscoveryUnavailable(
-        reason: ReasonCode,
-        logFields: LogFields,
-    ) {
-        logger.log(LogStatements.Autofill.discoveryUnavailable(reason, logFields))
-    }
-
-    private fun requestFields(packageName: String): LogFields =
-        LogStatements.Autofill.context(AutofillInteractionSource.LEGACY, packageName)
-
     override fun onDisconnected() {
-        launchAutofillServiceCleanup(serviceScope, cleanup = {
-            finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
-        })
+        // Android disconnects the service immediately after delivering FillResponse,
+        // before the user selects its authenticated dataset. Keep those interactions
+        // alive for the response PendingIntent; AutofillInteractionTimeout owns expiry.
         super.onDisconnected()
     }
 
     override fun onDestroy() {
-        launchAutofillServiceCleanup(serviceScope, cleanup = {
-            finishInteraction.expireAll(AutofillInteractionSource.LEGACY)
-        })
         serviceScope.cancel()
         super.onDestroy()
     }

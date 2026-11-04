@@ -491,6 +491,101 @@ object LogStatements {
     }
 
     object Autofill {
+        fun fieldsClassified(
+            source: Enum<*>,
+            targetPackage: String?,
+            snapshot: AutofillLogSnapshot.Classification,
+        ): LogStatement =
+            InfoStatement(
+                Events.Autofill.FieldsClassified,
+                fields {
+                    enum(LogFieldKeys.Source, source)
+                    targetPackage?.takeIf(String::isNotBlank)?.let {
+                        hashedIdentifier(LogFieldKeys.TargetPackage, IdentifierNamespace.TARGET_PACKAGE, it)
+                    }
+                    count(LogFieldKeys.Autofill.FieldCount, snapshot.fieldCount)
+                    count(LogFieldKeys.Autofill.UsernameRoleCount, snapshot.roles.username)
+                    count(LogFieldKeys.Autofill.PasswordRoleCount, snapshot.roles.password)
+                    count(LogFieldKeys.Autofill.OtpRoleCount, snapshot.roles.otp)
+                    boolean(LogFieldKeys.Autofill.HasCredentials, snapshot.hasCredentials)
+                },
+            )
+
+        object Legacy {
+            fun fillRequestReceived(
+                targetPackage: String?,
+                request: AutofillLogSnapshot.Legacy.FillRequest,
+            ): LogStatement =
+                InfoStatement(
+                    Events.Autofill.Legacy.FillRequestReceived,
+                    fields {
+                        targetPackage?.takeIf(String::isNotBlank)?.let {
+                            hashedIdentifier(LogFieldKeys.TargetPackage, IdentifierNamespace.TARGET_PACKAGE, it)
+                        }
+                        count(LogFieldKeys.Autofill.Legacy.FillContextCount, request.fillContextCount)
+                        boolean(LogFieldKeys.Autofill.Legacy.InlineRequestAvailable, request.inlineRequestAvailable)
+                        count(LogFieldKeys.Autofill.Legacy.RequestFlags, request.requestFlags)
+                    },
+                )
+
+            fun structureParsed(
+                targetPackage: String?,
+                snapshot: AutofillLogSnapshot.Legacy.Structure,
+            ): LogStatement =
+                InfoStatement(
+                    Events.Autofill.Legacy.StructureParsed,
+                    fields {
+                        targetPackage?.takeIf(String::isNotBlank)?.let {
+                            hashedIdentifier(LogFieldKeys.TargetPackage, IdentifierNamespace.TARGET_PACKAGE, it)
+                        }
+                        enum(LogFieldKeys.Autofill.Legacy.Stage, snapshot.stage)
+                        count(LogFieldKeys.Autofill.Legacy.FillContextCount, snapshot.fillContextCount)
+                        count(LogFieldKeys.Autofill.Legacy.WindowCount, snapshot.traversal.windowCount)
+                        count(LogFieldKeys.Autofill.Legacy.VisitedNodeCount, snapshot.traversal.visitedNodeCount)
+                        boolean(LogFieldKeys.Autofill.Legacy.TraversalTruncated, snapshot.traversal.truncated)
+                        count(LogFieldKeys.Autofill.FieldCount, snapshot.fields.editableCount)
+                        count(LogFieldKeys.Autofill.Legacy.HintedFieldCount, snapshot.fields.hintedCount)
+                        count(LogFieldKeys.Autofill.Legacy.FocusedFieldCount, snapshot.fields.focusedCount)
+                        count(
+                            LogFieldKeys.Autofill.Legacy.PasswordInputTypeFieldCount,
+                            snapshot.fields.passwordInputTypeCount,
+                        )
+                        boolean(LogFieldKeys.Autofill.Legacy.HasPackage, snapshot.target.hasPackage)
+                        boolean(LogFieldKeys.Autofill.Legacy.HasWebDomain, snapshot.target.hasWebDomain)
+                    },
+                )
+
+            fun responseBuilt(
+                targetPackage: String?,
+                response: AutofillLogSnapshot.Legacy.Response,
+            ): LogStatement =
+                InfoStatement(
+                    Events.Autofill.Legacy.ResponseBuilt,
+                    fields {
+                        targetPackage?.takeIf(String::isNotBlank)?.let {
+                            hashedIdentifier(LogFieldKeys.TargetPackage, IdentifierNamespace.TARGET_PACKAGE, it)
+                        }
+                        boolean(LogFieldKeys.Autofill.Legacy.ResponsePresent, response.present)
+                        count(LogFieldKeys.Autofill.Legacy.DatasetCount, response.datasetCount)
+                        boolean(LogFieldKeys.Autofill.Legacy.SaveInfoPresent, response.hasSaveInfo)
+                    },
+                )
+
+            fun saveRequestReceived(
+                targetPackage: String?,
+                fillContextCount: Int,
+            ): LogStatement =
+                InfoStatement(
+                    Events.Autofill.Legacy.SaveRequestReceived,
+                    fields {
+                        targetPackage?.takeIf(String::isNotBlank)?.let {
+                            hashedIdentifier(LogFieldKeys.TargetPackage, IdentifierNamespace.TARGET_PACKAGE, it)
+                        }
+                        count(LogFieldKeys.Autofill.Legacy.FillContextCount, fillContextCount)
+                    },
+                )
+        }
+
         fun presentationSelected(
             mode: Enum<*>,
             inlineAvailable: Boolean,
@@ -559,12 +654,13 @@ object LogStatements {
         fun discoveryUnavailable(
             reason: ReasonCode,
             fields: LogFields = LogFields.Empty,
+            failureKind: Enum<*>? = null,
         ): LogStatement =
             DegradedStatement(
                 Events.Autofill.DiscoveryUnavailable,
                 ErrorCodes.Autofill.AutofillDiscoveryUnavailable,
                 reason,
-                fields,
+                failureKind?.let { fields.withEnum(LogFieldKeys.Autofill.FailureKind, it) } ?: fields,
             )
 
         fun discoveryFailed(

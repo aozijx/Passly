@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill
 
+import com.aozijx.passly.core.observability.AutofillLogSnapshot
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.HashedIdentifier
@@ -59,6 +60,113 @@ class AutofillObservabilityTest {
                 },
             )
             assertFalse(records.joinToString().contains("com.secret.target"))
+        }
+
+    @Test
+    fun `legacy boundary statements expose safe stage counts without field contents`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+
+            logger.withRootTrace(Operations.AutofillLegacyRequest) {
+                logger.log(
+                    LogStatements.Autofill.Legacy.fillRequestReceived(
+                        targetPackage = "com.example.androidproject",
+                        request =
+                            AutofillLogSnapshot.Legacy.FillRequest(
+                                fillContextCount = 1,
+                                inlineRequestAvailable = false,
+                                requestFlags = 0,
+                            ),
+                    ),
+                )
+                logger.log(
+                    LogStatements.Autofill.Legacy.structureParsed(
+                        targetPackage = "com.example.androidproject",
+                        snapshot =
+                            AutofillLogSnapshot.Legacy.Structure(
+                                stage = AutofillLogSnapshot.Legacy.Structure.Stage.FILL,
+                                fillContextCount = 1,
+                                traversal =
+                                    AutofillLogSnapshot.Legacy.Structure.Traversal(
+                                        windowCount = 1,
+                                        visitedNodeCount = 17,
+                                        truncated = false,
+                                    ),
+                                fields =
+                                    AutofillLogSnapshot.Legacy.Structure.Fields(
+                                        editableCount = 2,
+                                        hintedCount = 2,
+                                        focusedCount = 1,
+                                        passwordInputTypeCount = 1,
+                                    ),
+                                target =
+                                    AutofillLogSnapshot.Legacy.Structure.Target(
+                                        hasPackage = true,
+                                        hasWebDomain = false,
+                                    ),
+                            ),
+                    ),
+                )
+                logger.log(
+                    LogStatements.Autofill.fieldsClassified(
+                        source = AutofillInteractionSource.LEGACY,
+                        targetPackage = "com.example.androidproject",
+                        snapshot =
+                            AutofillLogSnapshot.Classification(
+                                fieldCount = 2,
+                                roles =
+                                    AutofillLogSnapshot.Classification.Roles(
+                                        username = 1,
+                                        password = 1,
+                                        otp = 0,
+                                    ),
+                            ),
+                    ),
+                )
+                logger.log(
+                    LogStatements.Autofill.Legacy.responseBuilt(
+                        targetPackage = "com.example.androidproject",
+                        response = AutofillLogSnapshot.Legacy.Response(present = true, datasetCount = 1, hasSaveInfo = true),
+                    ),
+                )
+                logger.log(
+                    LogStatements.Autofill.Legacy.saveRequestReceived(
+                        targetPackage = "com.example.androidproject",
+                        fillContextCount = 2,
+                    ),
+                )
+            }
+
+            assertEquals(
+                listOf(
+                    Events.Autofill.Legacy.FillRequestReceived,
+                    Events.Autofill.Legacy.StructureParsed,
+                    Events.Autofill.FieldsClassified,
+                    Events.Autofill.Legacy.ResponseBuilt,
+                    Events.Autofill.Legacy.SaveRequestReceived,
+                ),
+                records.map { it.event },
+            )
+            assertEquals(
+                LogValue.Count(17),
+                records[1].fields.values[LogFieldKeys.Autofill.Legacy.VisitedNodeCount],
+            )
+            assertEquals(
+                LogValue.Count(1),
+                records[2].fields.values[LogFieldKeys.Autofill.PasswordRoleCount],
+            )
+            assertEquals(
+                LogValue.BooleanValue(true),
+                records[3].fields.values[LogFieldKeys.Autofill.Legacy.SaveInfoPresent],
+            )
+            assertTrue(
+                records.all {
+                    it.fields.values[LogFieldKeys.TargetPackage] is LogValue.HashedIdentifierValue
+                },
+            )
+            assertFalse(records.joinToString().contains("com.example.androidproject"))
+            assertFalse(records.joinToString().contains("请输入密码"))
         }
 
     @Test

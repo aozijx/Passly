@@ -86,6 +86,15 @@ class LogFields private constructor(
         return LogFields(values + (key to LogValue.DurationMs(value)))
     }
 
+    internal fun withEnum(
+        key: LogFieldKey,
+        value: Enum<*>,
+    ): LogFields {
+        require(key !in values) { "Duplicate log field" }
+        require(values.size < MAX_FIELDS) { "Too many log fields" }
+        return LogFields(values + (key to LogValue.EnumValue(EnumName(value.name))))
+    }
+
     class Builder internal constructor() {
         private val values = linkedMapOf<LogFieldKey, LogValue>()
 

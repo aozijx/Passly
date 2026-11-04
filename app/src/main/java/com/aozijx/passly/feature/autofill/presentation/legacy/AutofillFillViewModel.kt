@@ -145,9 +145,16 @@ class AutofillFillViewModel
                     returnDiscoveryResponse(request, discovery)
                 }
 
+                is AutofillDiscoveryOutcome.Failed -> {
+                    fail(
+                        request,
+                        "legacy.discovery_unavailable",
+                        failureKind = discovery.failure,
+                    )
+                }
+
                 AutofillDiscoveryOutcome.Disabled,
                 AutofillDiscoveryOutcome.UnsupportedFields,
-                is AutofillDiscoveryOutcome.Failed,
                 is AutofillDiscoveryOutcome.RequiresUnlock,
                 -> {
                     fail(request, "legacy.discovery_unavailable")
@@ -208,7 +215,11 @@ class AutofillFillViewModel
                 AutofillSelectionOutcome.ScopeMismatch,
                 is AutofillSelectionOutcome.Rejected,
                 is AutofillSelectionOutcome.Failed,
-                -> fail(request, "legacy.selection_unavailable")
+                -> fail(
+                    request,
+                    "legacy.selection_unavailable",
+                    failureKind = outcome.failureKind(),
+                )
             }
         }
 
@@ -249,11 +260,17 @@ class AutofillFillViewModel
             request: AutofillFillRequest,
             event: String,
             error: Exception? = null,
+            failureKind: Enum<*>? = null,
         ) {
             finishInteraction.cancel(request.interactionId)
             traceContinuations.discard(request.interactionId.value)
             if (error == null) {
-                logger.log(LogStatements.Autofill.discoveryUnavailable(Reasons.UnknownFailure))
+                logger.log(
+                    LogStatements.Autofill.discoveryUnavailable(
+                        reason = Reasons.UnknownFailure,
+                        failureKind = failureKind,
+                    ),
+                )
             } else {
                 logger.log(LogStatements.Autofill.discoveryFailed(error))
             }
@@ -273,4 +290,22 @@ class AutofillFillViewModel
                 Operations.AutofillLegacyRequest,
                 block,
             )
+
+        private fun AutofillSelectionOutcome.failureKind(): Enum<*> =
+            when (this) {
+                AutofillSelectionOutcome.Cancelled -> SelectionFailureKind.CANCELLED
+                AutofillSelectionOutcome.Unauthorized -> SelectionFailureKind.UNAUTHORIZED
+                AutofillSelectionOutcome.CandidateUnavailable -> SelectionFailureKind.CANDIDATE_UNAVAILABLE
+                AutofillSelectionOutcome.ScopeMismatch -> SelectionFailureKind.SCOPE_MISMATCH
+                is AutofillSelectionOutcome.Rejected -> reason
+                is AutofillSelectionOutcome.Failed -> failure
+                is AutofillSelectionOutcome.Filled -> error("Filled outcome is not a failure")
+            }
+
+        private enum class SelectionFailureKind {
+            CANCELLED,
+            UNAUTHORIZED,
+            CANDIDATE_UNAVAILABLE,
+            SCOPE_MISMATCH,
+        }
     }

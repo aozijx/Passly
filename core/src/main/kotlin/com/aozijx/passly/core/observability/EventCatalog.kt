@@ -15,13 +15,64 @@ value class EventKey(
     }
 }
 
-@JvmInline
-value class LogFieldKey(
+class LogFieldKey private constructor(
     val value: String,
+    internal val kind: LogFieldKind?,
 ) {
+    constructor(value: String) : this(value, null)
+
     init {
         require(FIELD_PATTERN.matches(value)) { "Invalid log field key" }
     }
+
+    override fun equals(other: Any?): Boolean = other is LogFieldKey && value == other.value
+
+    override fun hashCode(): Int = value.hashCode()
+
+    override fun toString(): String = value
+
+    companion object {
+        internal fun count(value: String) = typed(value, LogFieldKind.COUNT)
+
+        internal fun duration(value: String) = typed(value, LogFieldKind.DURATION)
+
+        internal fun ratio(value: String) = typed(value, LogFieldKind.RATIO)
+
+        internal fun boolean(value: String) = typed(value, LogFieldKind.BOOLEAN)
+
+        internal fun enum(value: String) = typed(value, LogFieldKind.ENUM)
+
+        internal fun errorCode(value: String) = typed(value, LogFieldKind.ERROR_CODE)
+
+        internal fun reason(value: String) = typed(value, LogFieldKind.REASON)
+
+        internal fun operation(value: String) = typed(value, LogFieldKind.OPERATION)
+
+        internal fun targetPackage(value: String) = typed(value, LogFieldKind.HASHED_TARGET_PACKAGE)
+
+        internal fun browserPackage(value: String) = typed(value, LogFieldKind.HASHED_BROWSER_PACKAGE)
+
+        private fun typed(
+            value: String,
+            kind: LogFieldKind,
+        ) = LogFieldKey(value, kind)
+    }
+}
+
+internal enum class LogFieldKind(
+    val identifierNamespace: IdentifierNamespace? = null,
+) {
+    COUNT,
+    DURATION,
+    RATIO,
+    BOOLEAN,
+    ENUM,
+    ERROR_CODE,
+    REASON,
+    OPERATION,
+    HASHED_TARGET_PACKAGE(IdentifierNamespace.TARGET_PACKAGE),
+    HASHED_BROWSER_PACKAGE(IdentifierNamespace.BROWSER_PACKAGE),
+    PREHASHED_IDENTIFIER,
 }
 
 @JvmInline
@@ -113,6 +164,7 @@ object Events {
 
     object Autofill {
         val Error = EventKey("autofill.error.reported")
+        val FieldsClassified = EventKey("autofill.fields_classified")
         val DiscoveryStarted = EventKey("autofill.discovery.started")
         val DiscoveryCompleted = EventKey("autofill.discovery.completed")
         val DiscoveryUnavailable = EventKey("autofill.discovery.unavailable")
@@ -134,6 +186,13 @@ object Events {
         val FallbackUnavailable = EventKey("autofill.accessibility.unavailable")
         val FallbackDelivered = EventKey("autofill.accessibility.delivered")
         val FallbackFailed = EventKey("autofill.accessibility.failed")
+
+        object Legacy {
+            val FillRequestReceived = EventKey("autofill.legacy.fill_request_received")
+            val StructureParsed = EventKey("autofill.legacy.structure_parsed")
+            val ResponseBuilt = EventKey("autofill.legacy.response_built")
+            val SaveRequestReceived = EventKey("autofill.legacy.save_request_received")
+        }
     }
 
     object Backup {
@@ -195,6 +254,11 @@ object Events {
             Security.VaultLockStarted,
             Security.VaultLocked,
             Autofill.Error,
+            Autofill.Legacy.FillRequestReceived,
+            Autofill.Legacy.StructureParsed,
+            Autofill.FieldsClassified,
+            Autofill.Legacy.ResponseBuilt,
+            Autofill.Legacy.SaveRequestReceived,
             Autofill.DiscoveryStarted,
             Autofill.DiscoveryCompleted,
             Autofill.DiscoveryUnavailable,
@@ -255,39 +319,66 @@ object Operations {
 }
 
 object LogFieldKeys {
-    val RetryCount = LogFieldKey("retry_count")
-    val ElapsedMs = LogFieldKey("elapsed_ms")
-    val TargetPackage = LogFieldKey("target_package")
-    val BrowserPackage = LogFieldKey("browser_package")
-    val FromState = LogFieldKey("from_state")
-    val ToState = LogFieldKey("to_state")
-    val LockType = LogFieldKey("lock_type")
-    val Reason = LogFieldKey("reason")
-    val Owner = LogFieldKey("owner")
-    val TimeoutMs = LogFieldKey("timeout_ms")
-    val ActiveLeaseCount = LogFieldKey("active_lease_count")
-    val LockReason = LogFieldKey("lock_reason")
-    val Trigger = LogFieldKey("trigger")
-    val Result = LogFieldKey("result")
-    val AuthenticationMethod = LogFieldKey("authentication_method")
-    val AuthenticationPurpose = LogFieldKey("authentication_purpose")
-    val ExitStatus = LogFieldKey("exit_status")
-    val ExitReason = LogFieldKey("exit_reason")
-    val Importance = LogFieldKey("importance")
-    val PssKb = LogFieldKey("pss_kb")
-    val RssKb = LogFieldKey("rss_kb")
-    val Source = LogFieldKey("source")
-    val ErrorLayer = LogFieldKey("error_layer")
-    val Severity = LogFieldKey("severity")
-    val Recoverable = LogFieldKey("recoverable")
-    val Operation = LogFieldKey("operation")
-    val ClearTask = LogFieldKey("clear_task")
-    val DroppedDebugCount = LogFieldKey("dropped_debug_count")
-    val DroppedInfoCount = LogFieldKey("dropped_info_count")
-    val DroppedWarnCount = LogFieldKey("dropped_warn_count")
-    val DroppedErrorCount = LogFieldKey("dropped_error_count")
-    val DroppedFatalCount = LogFieldKey("dropped_fatal_count")
-    val EntryType = LogFieldKey("entry_type")
-    val Presentation = LogFieldKey("presentation")
-    val InlineAvailable = LogFieldKey("inline_available")
+    val RetryCount = LogFieldKey.count("retry_count")
+    val ElapsedMs = LogFieldKey.duration("elapsed_ms")
+    val TargetPackage = LogFieldKey.targetPackage("target_package")
+    val BrowserPackage = LogFieldKey.browserPackage("browser_package")
+    val FromState = LogFieldKey.enum("from_state")
+    val ToState = LogFieldKey.enum("to_state")
+    val LockType = LogFieldKey.enum("lock_type")
+    val Reason = LogFieldKey.reason("reason")
+    val Owner = LogFieldKey.enum("owner")
+    val TimeoutMs = LogFieldKey.duration("timeout_ms")
+    val ActiveLeaseCount = LogFieldKey.count("active_lease_count")
+    val LockReason = LogFieldKey.reason("lock_reason")
+    val Trigger = LogFieldKey.enum("trigger")
+    val Result = LogFieldKey.enum("result")
+    val AuthenticationMethod = LogFieldKey.enum("authentication_method")
+    val AuthenticationPurpose = LogFieldKey.enum("authentication_purpose")
+    val ExitStatus = LogFieldKey.count("exit_status")
+    val ExitReason = LogFieldKey.enum("exit_reason")
+    val Importance = LogFieldKey.enum("importance")
+    val PssKb = LogFieldKey.count("pss_kb")
+    val RssKb = LogFieldKey.count("rss_kb")
+    val Source = LogFieldKey.enum("source")
+    val ErrorLayer = LogFieldKey.enum("error_layer")
+    val Severity = LogFieldKey.enum("severity")
+    val Recoverable = LogFieldKey.boolean("recoverable")
+    val Operation = LogFieldKey.operation("operation")
+    val ClearTask = LogFieldKey.boolean("clear_task")
+    val DroppedDebugCount = LogFieldKey.count("dropped_debug_count")
+    val DroppedInfoCount = LogFieldKey.count("dropped_info_count")
+    val DroppedWarnCount = LogFieldKey.count("dropped_warn_count")
+    val DroppedErrorCount = LogFieldKey.count("dropped_error_count")
+    val DroppedFatalCount = LogFieldKey.count("dropped_fatal_count")
+    val EntryType = LogFieldKey.enum("entry_type")
+    val Presentation = LogFieldKey.enum("presentation")
+    val InlineAvailable = LogFieldKey.boolean("inline_available")
+
+    object Autofill {
+        val FieldCount = LogFieldKey.count("editable_field_count")
+        val UsernameRoleCount = LogFieldKey.count("username_role_count")
+        val PasswordRoleCount = LogFieldKey.count("password_role_count")
+        val OtpRoleCount = LogFieldKey.count("otp_role_count")
+        val HasCredentials = LogFieldKey.boolean("has_credentials")
+        val FailureKind = LogFieldKey.enum("failure_kind")
+
+        object Legacy {
+            val FillContextCount = LogFieldKey.count("fill_context_count")
+            val RequestFlags = LogFieldKey.count("request_flags")
+            val Stage = LogFieldKey.enum("stage")
+            val WindowCount = LogFieldKey.count("window_count")
+            val VisitedNodeCount = LogFieldKey.count("visited_node_count")
+            val TraversalTruncated = LogFieldKey.boolean("traversal_truncated")
+            val HintedFieldCount = LogFieldKey.count("hinted_field_count")
+            val FocusedFieldCount = LogFieldKey.count("focused_field_count")
+            val PasswordInputTypeFieldCount = LogFieldKey.count("password_input_type_field_count")
+            val HasPackage = LogFieldKey.boolean("has_package")
+            val HasWebDomain = LogFieldKey.boolean("has_web_domain")
+            val ResponsePresent = LogFieldKey.boolean("response_present")
+            val DatasetCount = LogFieldKey.count("dataset_count")
+            val SaveInfoPresent = LogFieldKey.boolean("save_info_present")
+            val InlineRequestAvailable = LogFieldKey.boolean("inline_request_available")
+        }
+    }
 }
