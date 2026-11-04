@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.ui.autofill
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +18,7 @@ import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
 import com.aozijx.passly.feature.settings.presentation.ui.autofill.model.AutofillSettingsUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
@@ -33,7 +32,7 @@ internal fun AutofillSettingsSection(
     var candidateLimit by remember {
         mutableFloatStateOf(settings.maxSuggestions.toFloat())
     }
-    var showPresentationDialog by remember { mutableStateOf(false) }
+    var showPresentationMenu by remember { mutableStateOf(false) }
     LaunchedEffect(settings.maxSuggestions) {
         candidateLimit = settings.maxSuggestions.toFloat()
     }
@@ -93,29 +92,16 @@ internal fun AutofillSettingsSection(
                     ),
                 )
                 add(
-                    navigationSettingsGroupItem(
+                    anchoredSelectionSettingsItem(
                         key = "autofill.presentation",
                         enabled = enabled,
+                        selected = settings.presentation,
+                        selectedLabel = stringResource(settings.presentation.labelRes),
+                        options = AutofillPresentation.entries.map { it to stringResource(it.labelRes) },
+                        expanded = showPresentationMenu,
+                        onExpandedChange = { showPresentationMenu = it },
+                        onSelect = { onAction(AutofillSettingsAction.SetPresentation(it)) },
                         title = stringResource(R.string.settings_autofill_presentation),
-                        value =
-                            stringResource(
-                                when (settings.presentation) {
-                                    AutofillPresentation.FLOATING -> {
-                                        R.string.settings_autofill_mode_floating
-                                    }
-
-                                    AutofillPresentation.SYSTEM_INLINE -> {
-                                        R.string.settings_autofill_mode_inline
-                                    }
-
-                                    AutofillPresentation.BOTTOM_SHEET -> {
-                                        R.string.settings_autofill_mode_bottom_sheet
-                                    }
-                                },
-                            ),
-                        onClick = {
-                            if (enabled) showPresentationDialog = true
-                        },
                     ),
                 )
                 add(
@@ -206,8 +192,7 @@ internal fun AutofillSettingsSection(
                             ),
                         value = candidateLimit,
                         valueLabel = candidateLimit.roundToInt().toString(),
-                        valueRange =
-                            settings.minSuggestions.toFloat()..settings.maxSuggestionsLimit.toFloat(),
+                        valueRange = settings.minSuggestions.toFloat()..settings.maxSuggestionsLimit.toFloat(),
                         steps = settings.maxSuggestionsLimit - settings.minSuggestions - 1,
                         onValueChange = { candidateLimit = it },
                         onValueChangeFinished = {
@@ -221,41 +206,20 @@ internal fun AutofillSettingsSection(
                 )
             },
     )
-    if (showPresentationDialog) {
-        AlertDialog(
-            onDismissRequest = { showPresentationDialog = false },
-            title = { Text(stringResource(R.string.settings_autofill_presentation)) },
-            text = {
-                Column {
-                    AutofillPresentation.entries.forEach { mode ->
-                        val label =
-                            when (mode) {
-                                AutofillPresentation.FLOATING -> R.string.settings_autofill_mode_floating
-                                AutofillPresentation.SYSTEM_INLINE -> R.string.settings_autofill_mode_inline
-                                AutofillPresentation.BOTTOM_SHEET -> R.string.settings_autofill_mode_bottom_sheet
-                            }
-                        TextButton(onClick = {
-                            onAction(AutofillSettingsAction.SetPresentation(mode))
-                            showPresentationDialog = false
-                        }) { Text(stringResource(label)) }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showPresentationDialog = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-        )
-    }
 }
+
+private val AutofillPresentation.labelRes: Int
+    get() =
+        when (this) {
+            AutofillPresentation.FLOATING -> R.string.settings_autofill_mode_floating
+            AutofillPresentation.SYSTEM_INLINE -> R.string.settings_autofill_mode_inline
+            AutofillPresentation.BOTTOM_SHEET -> R.string.settings_autofill_mode_bottom_sheet
+        }
 
 private fun AutofillSourceState<Boolean>.toDisplayString(): Int =
     when (this) {
         is AutofillSourceState.Loading -> {
-            previous?.toDisplayString()
-                ?: R.string.settings_autofill_system_status_loading
+            previous?.toDisplayString() ?: R.string.settings_autofill_system_status_loading
         }
 
         is AutofillSourceState.Ready -> {

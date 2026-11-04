@@ -30,7 +30,7 @@ import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.AppearanceUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import kotlinx.coroutines.launch
@@ -56,7 +56,7 @@ internal fun AppearanceDetail(
         SegmentedSettingsGroup(
             items =
                 listOf(
-                    dropdownSettingsGroupItem(
+                    anchoredSelectionSettingsItem(
                         key = "appearance.theme_mode",
                         icon =
                             when (state.themeMode) {

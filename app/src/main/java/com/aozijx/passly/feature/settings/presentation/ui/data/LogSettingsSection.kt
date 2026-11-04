@@ -38,17 +38,13 @@ internal fun LogSettingsSection(
                             icon = Icons.Default.Settings,
                             title = stringResource(R.string.settings_diagnostics_recording_title),
                             selected = logRecordingMode,
-                            selectedLabel = stringResource(R.string.settings_diagnostics_recording_info),
+                            selectedLabel = "Info",
                             options =
                                 listOf(
-                                    DiagnosticsLogRecordingMode.DISABLED to
-                                        stringResource(R.string.settings_diagnostics_recording_disabled),
-                                    DiagnosticsLogRecordingMode.WARN_AND_ABOVE to
-                                        stringResource(R.string.settings_diagnostics_recording_warn),
-                                    DiagnosticsLogRecordingMode.INFO_AND_ABOVE to
-                                        stringResource(R.string.settings_diagnostics_recording_info),
-                                    DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE to
-                                        stringResource(R.string.settings_diagnostics_recording_debug),
+                                    DiagnosticsLogRecordingMode.DISABLED to "Off",
+                                    DiagnosticsLogRecordingMode.WARN_AND_ABOVE to "Warn",
+                                    DiagnosticsLogRecordingMode.INFO_AND_ABOVE to "Info",
+                                    DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE to "All",
                                 ),
                             expanded = recordingModeMenuExpanded,
                             onExpandedChange = { recordingModeMenuExpanded = it },
