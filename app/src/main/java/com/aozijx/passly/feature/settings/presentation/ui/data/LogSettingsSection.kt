@@ -15,7 +15,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.feature.settings.presentation.main.data.StorageSizeUiState
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 
 @Composable
@@ -33,22 +33,16 @@ internal fun LogSettingsSection(
             buildList {
                 if (logRecordingMode != null) {
                     add(
-                        dropdownSettingsGroupItem(
+                        anchoredSelectionSettingsItem(
                             key = "logs.recording_settings",
-                            icon = Icons.Default.Settings,
                             title = stringResource(R.string.settings_diagnostics_recording_title),
                             selected = logRecordingMode,
-                            selectedLabel = "Info",
-                            options =
-                                listOf(
-                                    DiagnosticsLogRecordingMode.DISABLED to "Off",
-                                    DiagnosticsLogRecordingMode.WARN_AND_ABOVE to "Warn",
-                                    DiagnosticsLogRecordingMode.INFO_AND_ABOVE to "Info",
-                                    DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE to "All",
-                                ),
+                            selectedLabel = logRecordingMode.recordingLabel(),
+                            options = DiagnosticsLogRecordingMode.entries.map { it to it.recordingLabel() },
                             expanded = recordingModeMenuExpanded,
                             onExpandedChange = { recordingModeMenuExpanded = it },
                             onSelect = onLogRecordingModeChange,
+                            icon = Icons.Default.Settings,
                         ),
                     )
                 }
@@ -74,3 +68,23 @@ internal fun LogSettingsSection(
             },
     )
 }
+
+private fun DiagnosticsLogRecordingMode.recordingLabel(): String =
+    when (this) {
+        DiagnosticsLogRecordingMode.DISABLED -> {
+            "Off"
+        }
+
+        DiagnosticsLogRecordingMode.WARN_AND_ABOVE,
+        DiagnosticsLogRecordingMode.INFO_AND_ABOVE,
+        -> {
+            name
+                .substringBefore("_AND_ABOVE")
+                .lowercase()
+                .replaceFirstChar(Char::uppercase)
+        }
+
+        DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE -> {
+            "All"
+        }
+    }

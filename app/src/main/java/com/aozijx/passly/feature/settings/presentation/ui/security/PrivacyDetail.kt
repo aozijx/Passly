@@ -19,7 +19,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.settingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 
@@ -85,7 +85,7 @@ internal fun PrivacyDetail(
                         checked = state.clipboardClearEnabled,
                         onCheckedChange = onClipboardClearEnabledChange,
                     ),
-                    dropdownSettingsGroupItem(
+                    anchoredSelectionSettingsItem(
                         key = "privacy.clipboard_clear_delay",
                         title = stringResource(R.string.settings_privacy_clipboard_delay),
                         selected = state.clipboardClearDelaySeconds,

@@ -20,7 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -31,7 +31,7 @@ class SegmentedSettingsGroupTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun dropdownReadsAndUpdatesExternalState() {
+    fun anchoredSelectionReadsAndUpdatesExternalState() {
         composeRule.setContent {
             var expanded by remember { mutableStateOf(false) }
             var selected by remember { mutableStateOf<Boolean?>(null) }
@@ -40,7 +40,7 @@ class SegmentedSettingsGroupTest {
                 SegmentedSettingsGroup(
                     items =
                         listOf(
-                            dropdownSettingsGroupItem(
+                            anchoredSelectionSettingsItem(
                                 key = "appearance.theme_mode",
                                 title = "外观模式",
                                 selected = selected,

@@ -542,3 +542,10 @@
 - [x] 保持 DAO 域名预筛不截断，按 PSL registrable domain 检索后再完整验证候选并应用设置的数量上限；只有没有精确/同可注册域名候选时才走未关联建议回退。
 
 **实施记录（2026-11-02）：** 已新增 Domain PSL 比较、Proto 默认/true/false 映射、ViewModel toggle、Compose 设置项、候选查询传播与精确 interaction scope 回归。独立测试观察到新 Domain API 缺失、Proto tag 缺失和查询属性缺失时均按预期失败，随后补齐实现。Domain/Data/App JVM 测试、三模块 KtLint、`verifyArchitecture` 和 AndroidTest Kotlin 编译通过；未连接 Android 设备，未运行仪器测试。独立 review 为 Ready，无 Critical/Important finding；未做设备级仪器验证。
+
+## Task 77：核实诊断日志退出时的持久性与周期写入策略
+
+- [ ] 调查日志在普通退后台、用户退出、系统回收及强制停止等情形下的实际持久性，区分尚在内存队列、写入失败、轮转/保留清理和 UI 查询过滤；目前“没有落盘”只是待验证假设。
+- [ ] 评估 `EncryptedLogRecordStore` 的异步单线程队列、队列满时的丢弃/紧急写入、`flush` 等待语义，以及 `AppLifecycleObserver` 在 `onStop` 发起的有限时 flush；明确哪些退出路径没有可靠的生命周期回调或等待完成保证。
+- [ ] 比较逐条写入、周期批量写入与生命周期 flush 的 I/O、掉电/进程终止丢失窗口和队列背压；再决定是否增加周期落盘或批量写入，并为保留上限、加密文件轮转、flush 超时和错误可观测性定义行为测试。
+- [ ] 本条仅记录调查，不在本任务中修改日志写入、flush 或保留逻辑；基于设备日志与可重复的进程终止场景确认根因后再实施。

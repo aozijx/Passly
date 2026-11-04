@@ -1,11 +1,6 @@
 package com.aozijx.passly.presentation.shared.components.group
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -21,11 +16,20 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -39,9 +43,9 @@ import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.shared.components.menu.selectedMenuModifier
 import com.aozijx.passly.presentation.shared.util.rememberClickThrottle
 
-private val SelectionMenuMinimumWidth = 112.dp
-private val SelectionMenuMaximumWidth = 280.dp
-private val SelectionMenuVerticalPadding = 8.dp
+private val SELECTION_MENU_MINIMUM_WIDTH = 112.dp
+private val SELECTION_MENU_MAXIMUM_WIDTH = 280.dp
+private val SELECTION_MENU_VERTICAL_PADDING = 8.dp
 private const val SELECTION_MENU_MAXIMUM_SCREEN_HEIGHT_RATIO = 0.75f
 
 /** Popup behavior shared by compact selection controls. */
@@ -124,38 +128,60 @@ private fun <T> SelectionPopup(
     onDismissRequest: () -> Unit,
     onSelect: (T) -> Unit,
 ) {
-    val visibility = remember { MutableTransitionState(false) }
-    visibility.targetState = expanded
+    val revealFraction by animateFloatAsState(
+        targetValue = if (expanded) 1f else 0f,
+        label = "selectionMenuReveal",
+    )
+    val placement = remember { SelectionMenuPlacement() }
 
-    if (expanded || visibility.currentState) {
+    if (expanded || revealFraction > 0f) {
+        val screenMaxHeight =
+            LocalConfiguration.current.screenHeightDp.dp * SELECTION_MENU_MAXIMUM_SCREEN_HEIGHT_RATIO
+        val maxHeight =
+            if (placement.maxHeightPx > 0) {
+                minOf(screenMaxHeight, with(LocalDensity.current) { placement.maxHeightPx.toDp() })
+            } else {
+                screenMaxHeight
+            }
+        val opensAbove = placement.opensAbove
+
         Popup(
-            popupPositionProvider = RightAlignedPopupPositionProvider,
+            popupPositionProvider = remember(placement) { RightAlignedPopupPositionProvider(placement) },
             onDismissRequest = onDismissRequest,
-            properties = PopupProperties(focusable = expanded),
+            properties = PopupProperties(focusable = true),
         ) {
-            val maxHeight =
-                LocalConfiguration.current.screenHeightDp.dp * SELECTION_MENU_MAXIMUM_SCREEN_HEIGHT_RATIO
-            AnimatedVisibility(
-                visibleState = visibility,
-                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+            Surface(
+                modifier = Modifier.graphicsLayer { alpha = revealFraction },
+                shape = MaterialTheme.shapes.large,
+                color = Color.Transparent,
+                tonalElevation = 0.dp,
+                shadowElevation = 6.dp,
             ) {
                 Surface(
+                    modifier =
+                        Modifier.drawWithContent {
+                            // Keep the popup's measured size fixed so it cannot switch sides mid-animation.
+                            val visibleHeight = size.height * revealFraction
+                            val top = if (opensAbove) size.height - visibleHeight else 0f
+                            clipRect(top = top, bottom = top + visibleHeight) {
+                                this@drawWithContent.drawContent()
+                            }
+                        },
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surfaceContainer,
                     tonalElevation = 6.dp,
-                    shadowElevation = 6.dp,
+                    shadowElevation = 0.dp,
                 ) {
                     Column(
                         modifier =
                             Modifier
                                 .width(IntrinsicSize.Max)
                                 .widthIn(
-                                    min = SelectionMenuMinimumWidth,
-                                    max = SelectionMenuMaximumWidth,
+                                    min = SELECTION_MENU_MINIMUM_WIDTH,
+                                    max = SELECTION_MENU_MAXIMUM_WIDTH,
                                 ).heightIn(max = maxHeight)
                                 .verticalScroll(rememberScrollState())
-                                .padding(vertical = SelectionMenuVerticalPadding),
+                                .padding(vertical = SELECTION_MENU_VERTICAL_PADDING),
                     ) {
                         options.forEach { (value, label) ->
                             val isSelected = value == selected
@@ -175,7 +201,14 @@ private fun <T> SelectionPopup(
     }
 }
 
-private object RightAlignedPopupPositionProvider : PopupPositionProvider {
+private class SelectionMenuPlacement {
+    var opensAbove by mutableStateOf(false)
+    var maxHeightPx by mutableIntStateOf(0)
+}
+
+private class RightAlignedPopupPositionProvider(
+    private val placement: SelectionMenuPlacement,
+) : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,
@@ -184,14 +217,14 @@ private object RightAlignedPopupPositionProvider : PopupPositionProvider {
     ): IntOffset {
         val maxX = (windowSize.width - popupContentSize.width).coerceAtLeast(0)
         val x = (anchorBounds.right - popupContentSize.width).coerceIn(0, maxX)
-        val below = anchorBounds.bottom
-        val above = anchorBounds.top - popupContentSize.height
-        val y =
-            if (below + popupContentSize.height <= windowSize.height || above < 0) {
-                below.coerceAtMost((windowSize.height - popupContentSize.height).coerceAtLeast(0))
-            } else {
-                above
-            }
+        val spaceBelow = (windowSize.height - anchorBounds.bottom).coerceAtLeast(0)
+        val spaceAbove = anchorBounds.top.coerceAtLeast(0)
+        val opensAbove = popupContentSize.height > spaceBelow && spaceAbove > spaceBelow
+        val availableHeight = if (opensAbove) spaceAbove else spaceBelow
+        placement.opensAbove = opensAbove
+        placement.maxHeightPx = availableHeight
+        val maxY = (windowSize.height - popupContentSize.height).coerceAtLeast(0)
+        val y = if (opensAbove) (anchorBounds.top - popupContentSize.height).coerceAtLeast(0) else anchorBounds.bottom.coerceAtMost(maxY)
         return IntOffset(x, y)
     }
 }

@@ -23,7 +23,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
-import com.aozijx.passly.presentation.shared.components.group.dropdownSettingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import kotlin.math.roundToInt
@@ -118,7 +118,7 @@ internal fun InterfaceDetail(
         SegmentedSettingsGroup(
             items =
                 listOf(
-                    dropdownSettingsGroupItem(
+                    anchoredSelectionSettingsItem(
                         key = "interface.entry_hierarchy_display_mode",
                         icon = Icons.Default.SpaceDashboard,
                         title =

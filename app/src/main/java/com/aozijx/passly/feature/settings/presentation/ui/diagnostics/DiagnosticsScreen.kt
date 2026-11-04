@@ -1,21 +1,23 @@
 package com.aozijx.passly.feature.settings.presentation.ui.diagnostics
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -44,9 +45,6 @@ import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsAction
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsUiState
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
-import com.aozijx.passly.presentation.shared.components.group.AnchoredSelectionMenu
-import com.aozijx.passly.presentation.shared.components.group.AnimatedSettingValue
-import com.aozijx.passly.presentation.shared.util.rememberClickThrottle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,18 +100,7 @@ internal fun DiagnosticsScreen(
             )
         }
         item {
-            LevelFilterSelector(
-                state = state,
-                onLevelFilterSelected = { filter ->
-                    LogLevel.entries
-                        .filter { it != LogLevel.FATAL }
-                        .forEach { level ->
-                            if ((level in state.selectedLevels) != (level in filter.levels)) {
-                                onAction(DiagnosticsAction.ToggleLevel(level))
-                            }
-                        }
-                },
-            )
+            LevelFilters(state, onAction)
         }
         when {
             state.isLoading -> {
@@ -198,61 +185,25 @@ internal fun DiagnosticsScreen(
 }
 
 @Composable
-private fun LevelFilterSelector(
+private fun LevelFilters(
     state: DiagnosticsUiState,
-    onLevelFilterSelected: (DiagnosticsLevelFilter) -> Unit,
+    onAction: (DiagnosticsAction) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val allowToggle = rememberClickThrottle()
-    val selected = DiagnosticsLevelFilter.fromLevels(state.selectedLevels)
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        contentAlignment = Alignment.CenterEnd,
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        AnchoredSelectionMenu(
-            selected = selected,
-            options = DiagnosticsLevelFilter.options.map { it to it.label },
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            onSelect = onLevelFilterSelected,
-            anchor = {
-                TextButton(
-                    onClick = {
-                        if (allowToggle.tryAcquire()) expanded = !expanded
-                    },
-                    contentPadding = PaddingValues(0.dp),
-                ) {
-                    AnimatedSettingValue(value = selected.label)
-                }
-            },
-        )
-    }
-}
-
-private data class DiagnosticsLevelFilter(
-    val label: String,
-    val levels: Set<LogLevel>,
-) {
-    companion object {
-        private val visibleLevels = LogLevel.entries.filter { it != LogLevel.FATAL }
-        val options =
-            buildList {
-                add(DiagnosticsLevelFilter("All", visibleLevels.toSet()))
-                add(DiagnosticsLevelFilter("Debug", setOf(LogLevel.DEBUG)))
-                visibleLevels
-                    .filter { it != LogLevel.DEBUG }
-                    .forEach { threshold ->
-                        add(
-                            DiagnosticsLevelFilter(
-                                label = threshold.exportValue.lowercase().replaceFirstChar(Char::uppercase),
-                                levels = visibleLevels.filter { it.wireId >= threshold.wireId }.toSet(),
-                            ),
-                        )
-                    }
-            }
-
-        fun fromLevels(levels: Set<LogLevel>): DiagnosticsLevelFilter =
-            options.firstOrNull { it.levels == levels } ?: DiagnosticsLevelFilter("Custom", levels)
+        listOf(LogLevel.ERROR, LogLevel.WARN, LogLevel.INFO, LogLevel.DEBUG).forEach { level ->
+            FilterChip(
+                selected = level in state.selectedLevels,
+                onClick = { onAction(DiagnosticsAction.ToggleLevel(level)) },
+                label = { Text(level.name) },
+            )
+        }
     }
 }
 
