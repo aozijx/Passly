@@ -22,6 +22,10 @@ effect 可在恢复后消费一次；页面 owner 退出后旧 effect 丢弃。�
   `ColorScheme`。背景和容器来自低 chroma 的 neutral palette，不在默认画布上叠加可调颜色遮罩。
 - 手动主题切换可以对完整色彩角色做短时插值，但不能通过全屏 overlay 或二次 tint 模拟主题变化。
 - 应用圆角设置通过 `MaterialTheme.shapes` 统一传播，不复制组件 shape/gap 算法。
+- `Surface` 的阴影不由内容承载，而是按节点的完整尺寸和 shape 单独绘制：`graphicsLayer { alpha }`（alpha < 1）、
+  尺寸裁切和布局裁切都会把阴影一起切掉。菜单/Popup 做淡入淡出或位移动画时，要在动画层内部给投影留出阴影余量
+  （参考 `VaultFab` 的 `padding`），不要把阴影和内容拆成两层 `Surface`，否则阴影会按整块菜单绘制，
+  在可见内容之外出现、被裁掉或在收起后残留。
 - 设置分组使用 `SegmentedListItem`；没有图标时不保留不可见 leading 占位。
 - Switch 只由自身表达 checked，不用容器形状或颜色重复表达。
 - 只有 Material 主题无法表达的产品语义才新增项目 token。
