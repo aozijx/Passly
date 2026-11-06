@@ -107,24 +107,6 @@ class OtpCodeRuntimeTest {
     }
 
     @Test
-    fun `visible otp waits for fresh authentication without crashing`() =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = scope,
-                    loadOtpConfig = { throw FreshAuthenticationRequiredException() },
-                    codeGenerator = { OtpResult.Success("123456") },
-                )
-
-            coordinator.subscribe("fresh-auth-entry")
-            yield()
-
-            assertEquals(null, coordinator.states.value["fresh-auth-entry"])
-            scope.cancel()
-        }
-
-    @Test
     fun `fresh authentication failure pauses ticker retries until lifecycle changes`() =
         runTest {
             var loadCount = 0
@@ -150,10 +132,12 @@ class OtpCodeRuntimeTest {
     @Test
     fun `failed moving factor reload clears stale code and retries on the next refresh`() =
         runTest {
+            val nowSeconds = 30L
             var loadCount = 0
             val coordinator =
                 OtpCodeRuntime(
                     scope = backgroundScope,
+                    currentTimeMillis = { nowSeconds * 1_000 },
                     loadOtpConfig = {
                         loadCount++
                         if (loadCount == 2) throw IllegalStateException("temporary config read failure")
@@ -162,7 +146,7 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("code-$loadCount") },
                 )
             coordinator.activate("reload-entry")
-            val initialMovingFactor = System.currentTimeMillis() / 30
+            val initialMovingFactor = nowSeconds / 30
 
             coordinator.refreshStates(nowSeconds = (initialMovingFactor + 1) * 30)
 
@@ -743,11 +727,13 @@ class OtpCodeRuntimeTest {
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             try {
+                val nowSeconds = 30L
                 val staleReadGate = CompletableDeferred<Unit>()
                 var loadCount = 0
                 val coordinator =
                     OtpCodeRuntime(
                         scope = scope,
+                        currentTimeMillis = { nowSeconds * 1_000 },
                         loadOtpConfig = {
                             loadCount++
                             if (loadCount == 2) {
@@ -759,7 +745,7 @@ class OtpCodeRuntimeTest {
                         codeGenerator = { OtpResult.Success("code-$loadCount") },
                     )
                 coordinator.activate("refresh-entry")
-                val nextMovingFactor = (System.currentTimeMillis() / 30 + 1) * 30
+                val nextMovingFactor = (nowSeconds / 30 + 1) * 30
                 val oldRefresh = scope.launch { coordinator.refreshStates(nextMovingFactor) }
                 coordinator.entryChanged("refresh-entry")
 

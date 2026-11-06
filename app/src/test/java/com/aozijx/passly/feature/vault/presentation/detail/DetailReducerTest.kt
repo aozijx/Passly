@@ -291,6 +291,177 @@ class DetailReducerTest {
         assertTrue(actual.packagePickerAppsLoaded)
     }
 
+    @Test
+    fun openMapsBuiltInIconToSingleDraftSource() {
+        val actual =
+            DetailReducer.reduce(
+                DetailUiState(),
+                DetailMutation.FaviconEditorOpened(
+                    DetailFaviconSource.BuiltIn("security.key", "primary"),
+                ),
+            )
+
+        val editor = actual.faviconEditor as DetailFaviconEditorState.Open
+        assertEquals(DetailFaviconSource.BuiltIn("security.key", "primary"), editor.source)
+        assertFalse(editor.dirty)
+    }
+
+    @Test
+    fun dirtyFaviconDismissConfirmsAndSaveFailurePreservesDraftWhileSuccessCloses() {
+        val editor =
+            DetailFaviconEditorState.Open(
+                initialSource = DetailFaviconSource.InferredDefault,
+                source = DetailFaviconSource.BuiltIn("finance.bank", "secondary"),
+            )
+        val requested =
+            DetailFaviconEditorReducer.reduce(
+                editor,
+                DetailMutation.FaviconEditorDismissRequested,
+            ) as DetailFaviconEditorState.Open
+        val saving =
+            DetailUiState(
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
+                faviconEditor = requested,
+            )
+
+        val failed =
+            DetailReducer.reduce(
+                saving,
+                DetailMutation.SaveFailed(DetailEditCompletion.Icon, "CONFLICT"),
+            )
+        val succeeded =
+            DetailReducer.reduce(
+                saving,
+                DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
+            )
+
+        val failedEditor = failed.faviconEditor as DetailFaviconEditorState.Open
+        assertEquals(DetailFaviconOverlay.ConfirmDiscard, requested.overlay)
+        assertEquals(editor.source, failedEditor.source)
+        assertEquals(
+            DetailFaviconWorkState.Failed(DetailFaviconProcessingError.SAVE_FAILED),
+            failedEditor.work,
+        )
+        assertEquals(DetailFaviconEditorState.Closed, succeeded.faviconEditor)
+    }
+
+    @Test
+    fun iconSaveStartClearsPreviousEditorError() {
+        val state =
+            DetailUiState(
+                faviconEditor =
+                    DetailFaviconEditorState.Open(
+                        initialSource = DetailFaviconSource.InferredDefault,
+                        work = DetailFaviconWorkState.Failed(DetailFaviconProcessingError.SAVE_FAILED),
+                    ),
+            )
+
+        val actual = DetailReducer.reduce(state, DetailMutation.SaveStarted(DetailEditCompletion.Icon))
+
+        assertEquals(DetailSaveState.Saving(DetailEditCompletion.Icon), actual.saveState)
+        assertEquals(DetailFaviconWorkState.Idle, (actual.faviconEditor as DetailFaviconEditorState.Open).work)
+    }
+
+    @Test
+    fun promotedPrivateImageKeepsCandidatePathUntilSaveCompletes() {
+        val state =
+            DetailFaviconEditorState.Open(
+                initialSource = DetailFaviconSource.InferredDefault,
+                source = DetailFaviconSource.PrivateImage("/private/staging/icon.webp"),
+            )
+
+        val promoted =
+            DetailFaviconEditorReducer.reduce(
+                state,
+                DetailMutation.FaviconSourcePromoted("/private/images/favicon.webp"),
+            ) as DetailFaviconEditorState.Open
+        assertEquals(DetailFaviconSource.PrivateImage("/private/images/favicon.webp"), promoted.source)
+        assertEquals("/private/images/favicon.webp", promoted.promotedCandidatePath)
+
+        val saved =
+            DetailReducer.reduce(
+                DetailUiState(
+                    saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
+                    faviconEditor = promoted,
+                ),
+                DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
+            )
+
+        assertEquals(DetailFaviconEditorState.Closed, saved.faviconEditor)
+    }
+
+    @Test
+    fun savingTagsRejectsEditsAndDismissalsUntilTheWriteCompletes() {
+        val editor = DetailTagEditorState.Open(initialTags = setOf("Work"), input = "Personal")
+        val saving = DetailUiState(tagEditor = editor, saveState = DetailSaveState.Saving(DetailEditCompletion.Tags))
+        val changes =
+            listOf(
+                DetailMutation.TagInputChanged("New draft"),
+                DetailMutation.TagSubmitted("Finance"),
+                DetailMutation.TagRemoved("Work"),
+                DetailMutation.TagEditorDismissRequested,
+                DetailMutation.TagEditorDiscardConfirmed,
+                DetailMutation.TagEditorDiscardCancelled,
+                DetailMutation.TagEditorOpened(setOf("Other"), emptySet()),
+            )
+        for (change in changes) assertEquals(saving, DetailReducer.reduce(saving, change))
+        val failed = DetailReducer.reduce(saving, DetailMutation.SaveFailed(DetailEditCompletion.Tags, "failure"))
+        val edited = DetailReducer.reduce(failed, DetailMutation.TagInputChanged("Try again"))
+        assertEquals("Try again", (edited.tagEditor as DetailTagEditorState.Open).input)
+        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded(DetailEditCompletion.Tags))
+        assertEquals(DetailTagEditorState.Closed, succeeded.tagEditor)
+    }
+
+    @Test
+    fun savingAnUnrelatedFieldDoesNotBlockTheTagDraft() {
+        val state =
+            DetailUiState(
+                tagEditor = DetailTagEditorState.Open(initialTags = emptySet()),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Favorite),
+            )
+
+        val edited = DetailReducer.reduce(state, DetailMutation.TagInputChanged("Personal"))
+
+        assertEquals("Personal", (edited.tagEditor as DetailTagEditorState.Open).input)
+    }
+
+    @Test
+    fun openTagEditorInitializesSortedDraftAndAvailableSuggestions() {
+        val actual =
+            DetailReducer.reduce(
+                DetailUiState(),
+                DetailMutation.TagEditorOpened(
+                    currentTags = setOf("Work", "Personal"),
+                    availableTags = setOf("Password", "Finance"),
+                ),
+            )
+
+        val editor = actual.tagEditor as DetailTagEditorState.Open
+        assertEquals(linkedSetOf("Personal", "Work"), editor.initialTags)
+        assertEquals(linkedSetOf("Personal", "Work"), editor.draftTags)
+        assertEquals(setOf("Password", "Finance"), editor.availableTags)
+        assertFalse(editor.dirty)
+    }
+
+    @Test
+    fun successfulTagSaveClosesSheetButFailurePreservesDraft() {
+        val saving =
+            DetailUiState(
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
+                tagEditor =
+                    DetailTagEditorState.Open(
+                        initialTags = setOf("Work"),
+                        draftTags = setOf("Personal"),
+                    ),
+            )
+
+        val failed = DetailReducer.reduce(saving, DetailMutation.SaveFailed(DetailEditCompletion.Tags, "CONFLICT"))
+        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded(DetailEditCompletion.Tags))
+
+        assertEquals(setOf("Personal"), (failed.tagEditor as DetailTagEditorState.Open).draftTags)
+        assertEquals(DetailTagEditorState.Closed, succeeded.tagEditor)
+    }
+
     private fun entry(title: String) =
         Entry(
             identity =

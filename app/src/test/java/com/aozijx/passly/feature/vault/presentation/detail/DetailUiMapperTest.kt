@@ -19,6 +19,8 @@ import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -38,6 +40,36 @@ class DetailUiMapperTest {
         val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
 
         assertNull(card.cardholder)
+    }
+
+    @Test
+    fun `installed app mapping preserves display label and package identity`() {
+        val app =
+            DetailInstalledApp(
+                label = "Browser",
+                packageName = "com.example.browser",
+            )
+
+        val actual = app.toPackagePickerItemUiModel()
+
+        assertEquals("Browser", actual.label)
+        assertEquals("com.example.browser", actual.packageName)
+    }
+
+    @Test
+    fun `tag editor mapping carries dirty draft and validation into ui model`() {
+        val state =
+            DetailTagEditorState.Open(
+                initialTags = setOf("Work"),
+                draftTags = setOf("Personal"),
+                validationError = DetailTagValidationError.TOO_MANY_TAGS,
+            )
+
+        val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
+
+        assertTrue(actual.dirty)
+        assertEquals(setOf("Personal"), actual.draftTags)
+        assertEquals(TagEditorValidationErrorUiModel.TOO_MANY_TAGS, actual.validationError)
     }
 
     @Test
