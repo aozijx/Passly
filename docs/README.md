@@ -165,5 +165,3 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
 - [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
 - [文档结构后续待办](superpowers/plans/2026-11-06-passly-documentation-structure-followups.md)
-
-文档分类与页面结构约定见[文档维护约定](development/documentation.md)。

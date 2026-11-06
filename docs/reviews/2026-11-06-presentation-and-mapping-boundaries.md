@@ -32,7 +32,7 @@
 
 | 职责 | 关键函数/类型 | 源码 |
 | --- | --- | --- |
-| 一次性 seed 所有权 | `beginInitialization()`、`initialize(initialContent)`、`consume()` | [`AddWifiViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/wifi/AddWifiViewModel.kt)、[`VaultGraphRegistration.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultGraphRegistration.kt)、`EntryEditorSeedCoordinator` |
+| 一次性 seed 所有权 | `beginInitialization()`、`initialize(initialContent)`、`consume()` | [`AddWifiViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/wifi/AddWifiViewModel.kt)、[`VaultGraphRegistration.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultGraphRegistration.kt)、[`EntryEditorSeedCoordinator.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/EntryEditorSeedCoordinator.kt) |
 | ViewModel 签名门禁 | ViewModel 声明扫描、source boundary verification | [`SourceBoundaryVerifier.kt`](../../buildSrc/src/main/kotlin/passly/SourceBoundaryVerifier.kt)、[`EditorSourceBoundaryVerifier.kt`](../../buildSrc/src/main/kotlin/passly/EditorSourceBoundaryVerifier.kt) |
 | 九种新增类型 UI 映射 | `VaultAddTypeUiModel`、`AddType.toUiModel()` | [`VaultAddTypeUiModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/ui/model/VaultAddTypeUiModel.kt) |
 | EntryCredential 敏感字段投影 | `SensitiveFieldSetMapper` 与 `EntryCredential` subtype projection | [`SensitiveFieldSetMapper.kt`](../../data/src/main/java/com/aozijx/passly/data/mapper/entry/SensitiveFieldSetMapper.kt)、[`EntryCredential.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/credential/EntryCredential.kt) |
