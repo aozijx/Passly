@@ -2,9 +2,24 @@
 
 **范围：** Runtime Session 遥测与状态转换故障隔离、Presentation 操作所有权与状态投影、Route/ViewModel 边界、Feature 内部包与协议实现隔离、Kotlin 编码规范门禁、缓存清理失败反馈、命令异常状态流、纯转发策略清理、Autofill 租约释放与取消恢复、导航宿主与重复页面工作、Detail/编辑器 ViewModel 工作流及 Room observation 错误恢复、Feature/Domain/Security 契约方向、Domain 端口消费闭包、敏感异步提交、应用级 task-clear 命令交付、Core/Data dormant API 调用闭包、DataStore 与平台目录观察错误恢复、应用级诊断运行时/功能适配边界、Runtime Session 资源转换与 fatal Error 传播及备份目录授权/执行命令反馈。
 
+## 专题审查待办索引
+
+本页集中维护跨模块维护发现（Tasks 9–85）；按专题拆出的历史审查、迁移计划和安全候选留在下列 owner TODO 中。专题页是对应事项的状态与证据来源；本索引不复制其子任务，新增或确认旧逻辑后应更新 owner TODO 与对应代码位置文档。
+
+| 开发阶段/主题 | 待办与记录 | 主要待闭合事项 |
+| --- | --- | --- |
+| 架构与并发边界 | [应用架构与并发 TODO](2026-11-06-app-architecture-concurrency-todo.md)、本页 Tasks 26、31、37、51、64、80、83、84 | session/lease 与工作流 owner、Room observation 恢复、ViewModel/Coordinator 调用闭包、Route effect 生命周期、任务取消和资源关闭顺序 |
+| 功能迁移与模块边界 | [Autofill Feature 模块迁移](2026-11-06-autofill-feature-module.md)、本页 Tasks 9、21、33、52、81、82、85 | Activity/Route 生命周期与平台结果交付、系统流重复读取、设置变化后的 interaction 有效期、稳定 wire key 解码、模块迁移后代码/文档路径 |
+| Scanner 输入与结果交付 | [Scanner 输入/取景框计划](2026-11-06-scanner-entry-and-framing.md)、[Scanner 审查 TODO](2026-11-06-passly-scanner-review-followups.md)、本页 Tasks 51、80、84 | 当前 owner raw-result 合同；相机候选/几何验证；图片解码器取消、ML Kit client 关闭及 fatal Error 清理；编译和行为验收 |
+| Vault、OTP 与数据功能 | [Vault Search 审查 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP 审查 TODO](2026-11-06-passly-otp-review-followups.md)、本页 Tasks 27、31、32、35、36、42、43 | 查询失败恢复、缓存失效、编辑敏感值边界、读取/修订部分失败清理与存储映射闭包 |
+| Backup 与诊断 | [Backup 审查 TODO](2026-11-06-passly-backup-review-followups.md)、[Diagnostics 可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md)、本页 Tasks 39–41、64、73–74 | 备份目录授权、命令失败反馈、编解码资源预算、诊断运行时 owner 与清理失败可见性 |
+| 安全审查与设备验收 | [安全扫描遗留问题](2026-11-06-passly-security-scan-followups.md)、[硬件 Keystore 验收](2026-10-29-hardware-keystore-verification.md)、本页 Tasks 42–46、59 | 安全策略裁定、持久提交后恢复、明文驻留边界、认证轮换与真机 Keystore 证据 |
+
+**既有发现的状态约束：** 旧实现描述只作为带日期的基线证据，不自动等于当前缺陷。每个专题项须核对当前源码、生产/测试调用点和文档链接；已迁移的事项改为待验证/验收，不继续写成当前阻断。已确认的兼容性、协议映射或策略候选保留原外部键和决策证据，未经验证不改生产实现。
+
 ## Task 9：保证 Autofill 最后一个租约取消后仍能完成锁定
 
-- [ ] 增加 Activity 生命周期行为覆盖：让 session lock 在互斥处暂停并触发 Accessibility Activity finish，断言主线程/Activity teardown 能及时返回；随后释放互斥，验证 lease、interaction 与 session lock 最终清理完成，且锁定失败仍遵守可重试合同。
+- [ ] 增加统一 `AutofillAuthActivity` 的 Accessibility launch 生命周期行为覆盖：让 session lock 在互斥处暂停并触发 Activity finish，断言主线程/Activity teardown 能及时返回；随后释放互斥，验证 lease、interaction 与 session lock 最终清理完成，且锁定失败仍遵守可重试合同。
 
 **HEAD 基线证据（当前工作区实现已变更、未验证）：** 原 `AutofillUnlockLease.release()` 在锁外调用 `lockAutofillSession()`，但在调用前已从 `borrowers` 移除 ID 并把 `owned` 设为 `false`；若锁请求在取得互斥权前取消，此租约没有再次触发锁的状态。原 `endResultCompletion()` 若 finalize 抛出，`finally` 会释放 completion barrier，但不会消费 `lockPending`。`AccessibilityFillActivity.onDestroy()` 在 Activity 主线程直接 `runBlocking { viewModel.abandon() }`；`abandon()` 进入 `NonCancellable`，若 active/resolving interaction 存在，会同步等待 `FinishAutofillInteraction.cancel()`，后者释放最后一个 lease 时调用 `SessionLockController.lock()`。`VaultSessionController.lock()` 先等待共享 `mutex.withLock`，取锁后又封存数据库并执行不可取消密钥/授权清理；传给 `traceLock(timeoutMs = 5_000)` 的 timeout 只用于日志字段，不会限制这段互斥/封存等待。故 Activity 销毁路径可能把安全收尾延迟直接施加到主线程。HEAD 基线中的 Autofill lease 测试覆盖及时锁定及多个 borrower，却没有覆盖锁等待取消/失败或 Activity teardown 主线程响应性；当前工作区改动尚未验证。
 
@@ -14,9 +29,11 @@
 
 ## Task 21：闭合 Legacy Autofill 平台结果的重放与凭据驻留
 
-- [ ] 增加 Activity/Route/ViewModel 行为测试覆盖 discovery response、已选 Dataset/Response 在 `AutofillFillActivity` configuration recreation、交付前销毁、交付回调期间重建及交付后重建；验证平台 callback 恰好一次、lease 仅按合同关闭、活动记录不重复，并确认交付结束后 StateFlow 不再保留凭据 Dataset。运行 Legacy Autofill 与 `AutofillResultDelivery` 测试、`verifyArchitecture` 和 `git diff --check`。
+- [ ] 为统一宿主 `AutofillAuthActivity`、`AutofillFillRoute` 与 `AutofillFillViewModel` 增加 Activity/Route/ViewModel 行为覆盖：discovery response、已选 Dataset/Response、configuration recreation、交付前销毁、交付 callback 异常与交付后的敏感状态清理。验证平台 callback 恰好一次、lease 仅按合同关闭、活动记录不重复，并确认交付成功后 StateFlow 不再保留凭据 Dataset。运行 `:feature:autofill:testDebugUnitTest`、相关 Activity/Route 行为测试、`verifyArchitecture` 和 `git diff --check`。
 
-**证据：** `AutofillFillViewModel` 将 `FillResponse`/`Dataset` 包在 `AutofillFillUiState.Result` 中；`LegacyDatasetFactory.createFillDatasetForRoles()` 将 `payload.username`、`payload.password`、`payload.otpCode` 写入 `AutofillValue`，故选择结果状态实际持有凭据载荷。`AutofillFillRoute.AutofillCompletionEffect` 对此 StateFlow 状态使用 `LaunchedEffect(state)` 并立即调用 Activity `onResult`，没有 ack/consume 清理。`AutofillFillActivity` 的 `resultFinishing` 只是 Activity 字段；其 `by viewModels()` ViewModel 在配置重建时保留，而新 Activity 会重置该 AtomicBoolean 并重新收集重放的 Result。Manifest 没有为此 Activity 声明接管方向、屏幕尺寸等全部配置变更；`onDestroy()` 仅在 `isFinishing` 时派发 Cancel，因此配置销毁不会主动清除旧 ViewModel 结果。另一个终态缺口是 `finishWithResult()` 先 `compareAndSet(false, true)` 再执行 `resultDelivery.commitResult()`，没有在提交异常时恢复 claim 或取消 interaction；`AutofillResultDelivery.commitResult()` 的平台 callback 异常路径会执行 `endResultCompletion {}` 并继续抛出，因而异常后本 Activity 的 flag 仍为 true，若随后销毁，`onDestroy()` 会跳过 Cancel。现有 `AutofillResultDeliveryTest` 只覆盖 callback 成功及平台结果先于临时 unlock 关闭的顺序，没有测试 callback 抛错后 Activity、interaction 与 lease 的终态。正常交付时 `commitResult()` 每次调用都会执行传入的 `setResult + finish` callback，再异步完成 selection；底层 interaction 状态机使终态转换/使用记录至多一次，但没有跨 Activity 实例的 result claim/ack，不能单凭其幂等性证明平台提交不重放。当前 Legacy Autofill Presentation 测试只覆盖 Reducer；没有 Activity/Route 重建覆盖。Discovery FillResponse 是 Android 认证响应协议所需对象，需与含凭据 Dataset 的结果一起验证清理，不据此移除平台协议边界。
+**历史 HEAD 基线（旧三 Activity 结构）：** `AutofillFillViewModel` 曾将 `FillResponse`/`Dataset` 包在 `AutofillFillUiState.Result` 中；`LegacyDatasetFactory.createFillDatasetForRoles()` 将 `payload.username`、`payload.password`、`payload.otpCode` 写入 `AutofillValue`，所以选择结果状态会短暂持有凭据载荷。旧 `AutofillFillRoute.AutofillCompletionEffect` 用 `LaunchedEffect(state)` 回调 Activity，旧 Activity 的 `resultFinishing` 是 Activity 局部字段；当时发现配置重建可能重放结果且 Activity 交付异常后无法恢复 claim。该段只记录三 Activity 合并前的 HEAD 证据，不代表当前宿主实现。
+
+**当前工作区复核（2026-11-06，模块迁移未验证）：** `AutofillAuthActivity.finishLegacyWithResult(request, result)` 调用 `legacyViewModel.commitPlatformResult { ... }`；`AutofillFillViewModel` 将 `ActivityResultClaim` 放在由 `by viewModels()` 持有的 ViewModel 中，成功执行 `setResult`/`finish` callback 后通过 `AutofillFillReducer.reduce(..., ResultDelivered)` 将 `Result`/`Error` 清回 `Initial`。`ActivityResultClaim.commit(deliverToPlatform)` 以 `compareAndSet(false, true)` 建 claim，callback 抛出任意 `Throwable` 时释放 claim 后继续传播；Activity 只捕获普通 `Exception` 并启动 `Cancel` 收尾。`AutofillFillRoute.AutofillCompletionEffect` 仍由 `LaunchedEffect(state)` 重放 StateFlow 结果；宿主 `onDestroy()` 只在真正 finishing 时取消 Legacy interaction，所以配置销毁时旧 ViewModel 与 claim 会保留，重建后的新 Route 会再次消费尚未交付的结果。成功 callback 后状态清理和 claim 共用 ViewModel owner。当前找到 `ActivityResultClaimTest` 与 ResultDelivery 单测，但没有 `AutofillAuthActivity`/Route 的重建与平台交付行为测试；模块迁移和这些合同均尚未编译或运行验证。`FillResponse` 仍是 Android discovery 认证协议结果，含凭据的 Dataset 结果则应在 callback 成功后不留在 StateFlow。
 
 **已关闭子项：** 上述 callback 失败与 lease barrier 缺口已由 `ActivityResultClaim`、Activity 取消回退及 `AutofillResultDelivery` 的平台成功提交边界闭合，并由 claim/交付器测试覆盖。其余 Legacy StateFlow 凭据驻留、配置重建重放和 ViewModel framework-result 所有权仍未处理；历史基线描述保留用于解释未关闭项。
 
@@ -183,6 +200,7 @@
 - [ ] 按实际调用闭包将 `LoadEditableEntryUseCase`、`EditableEntryLoadResult` 与 `EditDetailEntryUseCase` 从 `feature.vault.detail` 归到条目编辑应用能力 owner：四种类型编辑器都使用前两项进行编辑载入，并使用保存用例提交；Detail 也复用保存用例。保留 Detail 对编辑业务的调用，不让编辑器依赖 `detail` 实现包作为跨子功能 API。
 - [ ] 按新 owner 收敛包依赖与架构门禁：编辑能力只依赖 Domain/Core 端口与规则，禁止 `presentation/editor/*` 反向依赖 Detail presentation 或仅为搬包新增同签名转发层。迁移保留认证代际检查、敏感字段揭示与 wipe、编辑版本/冲突合同、统一日志及成功/失败行为；若发现该能力确实拥有 Detail 专属宿主状态，先拆清该状态 owner，不把页面导航/状态搬入 UseCase。
 - [ ] 为编辑载入补齐可恢复异常边界：`LoadEditableEntryUseCase` 的 Domain/Repository、AuthorizationGate 与 activity-recording suspend 调用异常不能从四个编辑器的 `viewModelScope.launch` 成为未处理异常并留在 Loading；将可恢复 `Exception` 映射为明确载入失败，继续传播 `CancellationException` 与 fatal `Error`，失败时擦除/清空部分敏感表单且不得发布旧请求结果。
+- [ ] 评估完整表单 reveal 的 JVM 敏感值驻留：当前 `SensitiveValue.toTransientString()` 通过 `String(chars)` 创建不可变明文副本，再将其放进 `Entry`/表单和一次性 seed；`finally` 只覆盖临时 `CharArray`，关闭 seed/Form 只能释放可控引用，不能保证擦零 String 副本。评估是否能在不泄漏到导航/SavedState/日志且不复制一套表单模型的前提下缩短或改用可控缓冲生命周期；若 Kotlin `String` 仍是表单/领域必需载体，记录残留边界并避免声称可靠内存擦除。覆盖授权拒绝、异常、锁定、编辑取消和保存完成的引用释放路径。
 - [ ] 让编辑载入失败可以由当前页面 owner 再次请求：目前四个 `loadExistingEntry()` 在设置 `editingEntryId` 后对同一条目的重复调用直接返回，Route 只显示失败 Snackbar，没有 retry action。明确重试时的 request generation、旧 job 取消、表单清空和认证快照检查，避免迟到旧结果覆盖新尝试。
 - [ ] 闭合共享 `EditorWriteSession` 的 fatal `Error` 路径：当前保存协程对 `CancellationException` 和普通 `Exception` 有显式转换，但 fatal `Error` 会原样逃逸且不会调用 `onIdle()`/`onClear()`；若宿主在错误传播后仍存活，session 可能卡在 `Saving` 且敏感表单仍保留。定义窄清理路径擦除表单并释放忙碌状态，同时继续传播原始 `Error`，不能将未知提交结果映射为可重试 `Failed`，避免可能的重复写入。
 - [ ] 更新加载用例、编辑用例及四类编辑 ViewModel 的测试，并补齐 Detail 与编辑页共同使用场景；覆盖认证撤销、条目版本变化/冲突、敏感字段读取拒绝、取消/重试、迟到结果与 fatal Error 清理。运行相关 UseCase/ViewModel 测试、`verifyArchitecture` 与 `git diff --check`。
@@ -190,6 +208,8 @@
 **证据：** `LoadEditableEntryUseCase`、`EditableEntryLoadResult` 和 `EditDetailEntryUseCase` 均声明在 `app/src/main/java/com/aozijx/passly/feature/vault/detail/`。精确生产引用显示 Password、OTP、BankCard、Wi-Fi 四个 `Add*ViewModel` 都注入前两个用例并使用 `EditDetailEntryUseCase`；`DetailViewModel` 也注入保存用例。因此 `detail` 包实际承载跨四类编辑器的条目读取、敏感字段授权揭示、编辑版本保护和写入应用服务，形成 Detail 子功能对共享编辑流程的命名/包依赖。加载用例返回 `EditableEntryLoadResult` 并包含认证快照，保存用例内部持有 Repository/Domain 规则和写互斥；它们不是仅给 Detail 使用的页面 helper。应明确共享条目编辑的应用能力 owner，按真实消费者闭包迁移，而不是机械搬文件或再套一层 facade。此项是职责/依赖方向问题；当前证据未表明现有编辑行为已失败。
 
 **新增载入失败证据：** 同一 `LoadEditableEntryUseCase.invoke()` 顺序调用 `EntryQueryRepository.getById()`、`SensitiveFieldRepository.getPresence()/revealMany()`、`AuthorizationGate.authorize()` 和 `ActivityRecorder.recordUsage()`，只将预期认证/领域情况转成 `EditableEntryLoadResult`，没有异常映射。四个编辑 ViewModel 的 `loadExistingEntry()` 都在 `viewModelScope.launch` 中直接调用它，没有 `try/catch`；而 Domain Repository 对应的 Data 实现执行 Room query 与 secret decrypt，均可抛出异常。意外读取异常因此绕过已有 `EditorLoadPhase.Failed/loadFailed` 状态进入 coroutine exception handler，Loading 状态没有终结反馈，且可能按主线程未处理异常策略使进程崩溃。`LoadEditableEntryUseCaseTest` 与四种 ViewModel 测试未找到依赖抛异常的 fake/用例；修复应在共享载入边界保持取消语义并映射普通可恢复异常，不要在四个 ViewModel 分别复制 catch/default。
+
+**新增内存所有权证据（2026-11-06）：** `LoadEditableEntryUseCase.invoke()` 在授权闭包内取得 `revealed` 后，对每个值调用私有扩展 `SensitiveValue.toTransientString()`；该函数先 `toCharArray()`，再执行 `String(chars)` 并在 `finally` 将原数组填零。返回的不可变 String 随后进入 `Entry.withRevealedField(field, value)`、`EditableEntryLoadResult.Loaded.entry`、`EntryEditorSeed.Editable`、图级 `EntryEditorSeedStore` 与类型表单 String。seed Store 消费/清空和 ViewModel `onClear()` 会失去持有引用，但不会原位覆盖 String。当前没有证据表明其越过内存/导航边界；记录为敏感明文对象驻留和擦除能力的设计评估，不据此宣称已有凭据泄漏，也不建议在没有全链路类型所有权方案前只替换局部表单字段类型。
 
 **新增编辑重试与 fatal 清理证据：** 四个 Route 的 `LaunchedEffect` 仅在 `uiState.loadFailed` 时展示通用 Snackbar，没有 retry callback；四个 ViewModel 的 `loadExistingEntry()` 都以 `editingEntryId != null` 拒绝后续调用，因此现有 Failed 状态无法通过相同页面 owner 重试。`EditorWriteSession.save()` 将 `CancellationException` 恢复为编辑/清理状态、将普通 `Exception` 转成 `EditorSaveEffect.Failed`，然后通过认证/attempt 检查投递结果；若 writer 抛出 `Error`，控制流绕过其后的状态检查和 `onClear()`，attempt 留在 `Phase.Saving`，表单不会被清空。现有 `EditorWriteSessionTest.unexpectedFailureUsesTheLocalizedFallbackWithoutExposingTheException` 使用 `error(...)`，实际抛出的是 `IllegalStateException`，只覆盖普通 Exception；没有验证 fatal Error 清理和重抛。未知提交结果不能直接映射成可重试保存失败，需单独定义 fatal error 的终态及清理顺序。以上为静态源码与现有测试覆盖审查，未运行测试。
 
