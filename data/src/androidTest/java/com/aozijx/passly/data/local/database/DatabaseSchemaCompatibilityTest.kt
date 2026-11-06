@@ -16,9 +16,10 @@ import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
+import com.aozijx.passly.data.local.database.entity.EntryEntity
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,7 +27,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class DatabaseSchemaCompatibilityTest {
     @Test
-    fun legacyVersionOneDatabaseFailsOpenWithoutDeletingItsData() =
+    fun schemaMismatchFailsOpenAndPreservesExistingEntryAndLegacyAttachmentSchema() =
         runBlocking {
             System.loadLibrary("sqlcipher")
             val context = ApplicationProvider.getApplicationContext<Context>()
@@ -35,14 +36,34 @@ class DatabaseSchemaCompatibilityTest {
             val provider = DatabaseProvider(context, NoOpLogger)
 
             try {
-                provider.open(databaseName, DATABASE_KEY.copyOf()).close()
+                val database = provider.open(databaseName, DATABASE_KEY.copyOf())
+                try {
+                    database.entryCommandDao().insertStrict(
+                        EntryEntity(
+                            entryId = PRESERVED_ENTRY_ID,
+                            title = "Preserved entry",
+                        ),
+                    )
+                } finally {
+                    database.close()
+                }
                 legacyHelper(context, databaseName).use { helper ->
                     replaceAttachmentTableWithLegacySchema(helper.writableDatabase)
                 }
 
                 val file = context.getDatabasePath(databaseName)
                 assertTrue(file.exists())
-                assertNotNull(runCatching { provider.open(databaseName, DATABASE_KEY.copyOf()) }.exceptionOrNull())
+                val openFailure =
+                    try {
+                        provider.open(databaseName, DATABASE_KEY.copyOf()).close()
+                        null
+                    } catch (failure: IllegalStateException) {
+                        failure
+                    }
+                assertTrue(
+                    "Room schema validation must reject the malformed table",
+                    openFailure != null,
+                )
                 assertTrue("A schema mismatch must not delete the user's database", file.exists())
 
                 legacyHelper(context, databaseName).use { helper ->
@@ -54,6 +75,14 @@ class DatabaseSchemaCompatibilityTest {
                             }
                         }
                     assertTrue(columns.containsAll(setOf("entryId", "stagingOwnerId", "status")))
+                    val preservedTitle =
+                        helper.writableDatabase
+                            .query("SELECT title FROM entries WHERE entryId = '$PRESERVED_ENTRY_ID'")
+                            .use { cursor ->
+                                assertTrue(cursor.moveToFirst())
+                                cursor.getString(cursor.getColumnIndexOrThrow("title"))
+                            }
+                    assertEquals("Preserved entry", preservedTitle)
                 }
             } finally {
                 context.deleteDatabase(databaseName)
@@ -178,5 +207,6 @@ class DatabaseSchemaCompatibilityTest {
 
     private companion object {
         val DATABASE_KEY = "Legacy attachment schema compatibility test key".toByteArray()
+        const val PRESERVED_ENTRY_ID = "schema-compatibility-entry"
     }
 }

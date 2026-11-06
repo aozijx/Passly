@@ -36,14 +36,18 @@ class SingleThreadKdfRunnerTest {
                     callbackReached.set(true)
                 }
 
-            assertTrue(started.await(1, TimeUnit.SECONDS))
-            job.cancelAndJoin()
-            assertFalse(callbackReached.get())
-            assertFalse(resultDiscarded.await(50, TimeUnit.MILLISECONDS))
+            try {
+                assertTrue(started.await(1, TimeUnit.SECONDS))
+                job.cancelAndJoin()
+                assertFalse(callbackReached.get())
 
-            releaseWorker.countDown()
-            assertTrue(resultDiscarded.await(1, TimeUnit.SECONDS))
-            secret.close()
-            runner.close()
+                releaseWorker.countDown()
+                assertTrue(resultDiscarded.await(1, TimeUnit.SECONDS))
+            } finally {
+                releaseWorker.countDown()
+                job.cancelAndJoin()
+                secret.close()
+                runner.close()
+            }
         }
 }

@@ -61,7 +61,7 @@ class EntryRevisionHistoryRebuilderTest {
     }
 
     @Test
-    fun reset_discardsEveryRevisionAndRebuildsVersionOneBaselines() =
+    fun rebuild_discardsObsoleteHistoryAndCreatesCurrentBaselinesForActiveAndDeletedEntries() =
         runBlocking {
             seedEntry(ENTRY_ONE, version = 8, title = "First", notes = "first note")
             seedEntry(

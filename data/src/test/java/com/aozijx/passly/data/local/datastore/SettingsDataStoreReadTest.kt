@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsDataStoreReadTest {
@@ -16,34 +15,36 @@ class SettingsDataStoreReadTest {
     fun `protobuf corruption is tagged without substituting a value`() =
         runTest {
             val cause = CorruptionException("invalid protobuf")
-            var observed: Throwable? = null
-            try {
+            val observed =
+                try {
                 flow<Int> { throw cause }.tagCorruptSettingsData().first()
-            } catch (error: Throwable) {
-                observed = error
-            }
+                    null
+                } catch (error: CorruptSettingsDataException) {
+                    error
+                }
 
-            assertTrue(observed is CorruptSettingsDataException)
-            assertSame(cause, (observed as CorruptSettingsDataException).original)
+            assertSame(cause, observed?.original)
         }
 
     @Test
     fun `io failures and cancellation keep their original meaning`() =
         runTest {
             val ioFailure = IOException("unavailable")
-            var observedIo: Throwable? = null
-            try {
-                flow<Int> { throw ioFailure }.tagCorruptSettingsData().first()
-            } catch (error: Throwable) {
-                observedIo = error
-            }
+            val observedIo =
+                try {
+                    flow<Int> { throw ioFailure }.tagCorruptSettingsData().first()
+                    null
+                } catch (error: IOException) {
+                    error
+                }
             val cancellation = CancellationException("cancelled")
-            var observedCancellation: Throwable? = null
-            try {
-                flow<Int> { throw cancellation }.tagCorruptSettingsData().first()
-            } catch (error: Throwable) {
-                observedCancellation = error
-            }
+            val observedCancellation =
+                try {
+                    flow<Int> { throw cancellation }.tagCorruptSettingsData().first()
+                    null
+                } catch (error: CancellationException) {
+                    error
+                }
 
             assertSame(ioFailure, observedIo)
             assertSame(cancellation, observedCancellation)
