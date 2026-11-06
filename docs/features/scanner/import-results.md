@@ -16,7 +16,7 @@ OTP 编辑器将 `ScannerImport.Otp.config` 传给 `AddOtpViewModel.tryApplyScan
 
 ## Wi-Fi 解析和安全传递
 
-`ScannerResultClassifier.classify(rawValue)` 调 `WifiQrPayloadParser.parse(rawValue)`。Parser 只接受 `WIFI:` 前缀，解析转义字段，要求非空 SSID；企业认证键与未知安全类型返回 `Unsupported`，缺字段或坏转义返回 `Malformed`。开放网络无论 payload 是否含密码都产出空密码；WEP/WPA personal 保留密码。仅 `Parsed(WifiQrPayload)` 成为 `ScannerResult.Wifi`，不支持/损坏的专用格式按普通文本显示。
+`ScannerResultClassifier.classify(rawValue)` 调 `WifiQrPayloadParser.parse(rawValue)`。Parser 以忽略大小写方式识别 `WIFI:` 前缀，解析转义字段，要求非空 SSID；企业认证键与未知安全类型返回 `Unsupported`，缺字段或坏转义返回 `Malformed`。开放网络无论 payload 是否含密码都产出空密码；WEP/WPA personal 保留密码。仅 `Parsed(WifiQrPayload)` 成为 `ScannerResult.Wifi`，不支持/损坏的专用格式按普通文本显示。
 
 首页导航把 `WifiQrPayload` 交给 Vault 导航协调器暂存，route 参数只携带一次性随机 token。`EntryEditorSeedCoordinator` / Store 将 seed 绑定当前认证对象，消费和暂存均核对所有权；锁定、消费或图作用域销毁会清除敏感内容。Wi-Fi 编辑 Route 取得初始化资格后才消费 token，并将 `AddWifiInitialContent` 交给 `AddWifiViewModel`；重复 Route 组合不会再次消费。锁定时返回 `Unavailable`，不在稍后解锁时重放旧 seed。
 
