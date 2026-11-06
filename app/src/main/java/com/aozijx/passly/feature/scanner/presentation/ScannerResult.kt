@@ -1,28 +1,12 @@
 package com.aozijx.passly.feature.scanner.presentation
 
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.policy.WifiQrPayload
-import java.net.URI
+/** The scanner transports the decoded content without interpreting its domain meaning. */
+data class ScannerResult(
+    val rawValue: String,
+)
 
-sealed interface ScannerResult {
-    val rawValue: String
+sealed interface ScannerResultHandling {
+    data object Handled : ScannerResultHandling
 
-    data class Otp(
-        override val rawValue: String,
-        val config: OtpConfig,
-    ) : ScannerResult
-
-    data class Wifi(
-        override val rawValue: String,
-        val payload: WifiQrPayload,
-    ) : ScannerResult
-
-    data class WebLink(
-        override val rawValue: String,
-        val uri: URI,
-    ) : ScannerResult
-
-    data class PlainText(
-        override val rawValue: String,
-    ) : ScannerResult
+    data object Rejected : ScannerResultHandling
 }

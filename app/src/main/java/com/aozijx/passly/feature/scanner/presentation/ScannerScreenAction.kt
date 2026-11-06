@@ -9,13 +9,5 @@ sealed interface ScannerScreenAction {
 
     data object ConfirmResult : ScannerScreenAction
 
-    data class BarcodeDetected(
-        val rawValue: String,
-    ) : ScannerScreenAction
-
-    data object CameraPermissionDenied : ScannerScreenAction
-
-    data class CameraFailure(
-        val error: Throwable,
-    ) : ScannerScreenAction
+    data object CopyResult : ScannerScreenAction
 }

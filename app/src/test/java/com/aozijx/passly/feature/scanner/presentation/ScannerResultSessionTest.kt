@@ -11,13 +11,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ScannerImportSessionTest {
+class ScannerResultSessionTest {
     @Test
     fun `confirmation waits for persistence and ignores repeated taps`() =
         runTest {
-            val session = ScannerImportSession()
-            val stored = CompletableDeferred<ScannerImportHandlingResult>()
-            val outcomes = mutableListOf<ScannerImportOutcome>()
+            val session = ScannerResultSession()
+            val stored = CompletableDeferred<ScannerResultHandling>()
+            val outcomes = mutableListOf<ScannerResultOutcome>()
             var calls = 0
             val first =
                 launch {
@@ -28,22 +28,22 @@ class ScannerImportSessionTest {
                         }
                 }
             runCurrent()
-            assertEquals(emptyList<ScannerImportOutcome>(), outcomes)
+            assertEquals(emptyList<ScannerResultOutcome>(), outcomes)
             assertEquals(
-                ScannerImportOutcome.Ignored,
+                ScannerResultOutcome.Ignored,
                 session.confirm {
                     calls++
-                    ScannerImportHandlingResult.Applied
+                    ScannerResultHandling.Handled
                 },
             )
-            stored.complete(ScannerImportHandlingResult.Applied)
+            stored.complete(ScannerResultHandling.Handled)
             first.join()
-            assertEquals(listOf(ScannerImportOutcome.Applied), outcomes)
+            assertEquals(listOf(ScannerResultOutcome.Handled), outcomes)
             assertEquals(
-                ScannerImportOutcome.Ignored,
+                ScannerResultOutcome.Ignored,
                 session.confirm {
                     calls++
-                    ScannerImportHandlingResult.Applied
+                    ScannerResultHandling.Handled
                 },
             )
             assertEquals(1, calls)
@@ -52,33 +52,33 @@ class ScannerImportSessionTest {
     @Test
     fun `rejected persistence keeps result available for retry`() =
         runTest {
-            val session = ScannerImportSession()
-            assertEquals(ScannerImportOutcome.Rejected, session.confirm { ScannerImportHandlingResult.Rejected })
-            assertEquals(ScannerImportOutcome.Applied, session.confirm { ScannerImportHandlingResult.Applied })
+            val session = ScannerResultSession()
+            assertEquals(ScannerResultOutcome.Rejected, session.confirm { ScannerResultHandling.Rejected })
+            assertEquals(ScannerResultOutcome.Handled, session.confirm { ScannerResultHandling.Handled })
         }
 
     @Test
     fun `closed result ignores late persistence acknowledgement`() =
         runTest {
-            val session = ScannerImportSession()
-            val stored = CompletableDeferred<ScannerImportHandlingResult>()
+            val session = ScannerResultSession()
+            val stored = CompletableDeferred<ScannerResultHandling>()
             val result = async { session.confirm { stored.await() } }
             runCurrent()
             session.close()
-            stored.complete(ScannerImportHandlingResult.Applied)
-            assertEquals(ScannerImportOutcome.Ignored, result.await())
+            stored.complete(ScannerResultHandling.Handled)
+            assertEquals(ScannerResultOutcome.Ignored, result.await())
         }
 
     @Test
     fun `cancelled confirmation publishes nothing and releases attempt`() =
         runTest {
-            val session = ScannerImportSession()
-            val pending = CompletableDeferred<ScannerImportHandlingResult>()
-            val outcomes = mutableListOf<ScannerImportOutcome>()
+            val session = ScannerResultSession()
+            val pending = CompletableDeferred<ScannerResultHandling>()
+            val outcomes = mutableListOf<ScannerResultOutcome>()
             val first = launch { outcomes += session.confirm { pending.await() } }
             runCurrent()
             first.cancelAndJoin()
-            assertEquals(emptyList<ScannerImportOutcome>(), outcomes)
-            assertEquals(ScannerImportOutcome.Applied, session.confirm { ScannerImportHandlingResult.Applied })
+            assertEquals(emptyList<ScannerResultOutcome>(), outcomes)
+            assertEquals(ScannerResultOutcome.Handled, session.confirm { ScannerResultHandling.Handled })
         }
 }

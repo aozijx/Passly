@@ -81,7 +81,7 @@ class ScannerRouteEffectsTest {
             owner.lifecycle.currentState = Lifecycle.State.CREATED
             runCurrent()
             assertEquals(0, hapticCount)
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("completed before stop")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("completed before stop")), model.uiState.value)
 
             owner.lifecycle.currentState = Lifecycle.State.STARTED
             runCurrent()
@@ -144,7 +144,7 @@ class ScannerRouteEffectsTest {
             runCurrent()
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
             runCurrent()
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("photo-picker-result")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("photo-picker-result")), model.uiState.value)
             assertEquals(emptyList<ScannerEffect>(), effects)
         }
 

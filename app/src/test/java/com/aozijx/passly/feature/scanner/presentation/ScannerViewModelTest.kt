@@ -84,7 +84,7 @@ class ScannerViewModelTest {
             runCurrent()
             old.complete(BarcodeImageResult.Decoded("stale"))
             runCurrent()
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("current")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("current")), model.uiState.value)
         }
 
     @Test
@@ -110,13 +110,13 @@ class ScannerViewModelTest {
             val model = model { pending.await() }
             model.onAction(ScannerUiAction.BarcodeDetected("first"))
             model.onAction(ScannerUiAction.BarcodeDetected("second"))
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("first")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("first")), model.uiState.value)
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("image")))
             model.onAction(ScannerUiAction.BarcodeDetected("late camera"))
             assertEquals(ScannerUiState.ProcessingImage, model.uiState.value)
             pending.complete(BarcodeImageResult.Decoded("from image"))
             runCurrent()
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("from image")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("from image")), model.uiState.value)
         }
 
     @Test
@@ -206,10 +206,10 @@ class ScannerViewModelTest {
 
             model.onAction(ScannerUiAction.BarcodeDetected("visible result"))
             model.onAction(ScannerUiAction.HostStopped)
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("visible result")), model.uiState.value)
 
             model.onAction(ScannerUiAction.HostStarted)
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("visible result")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("visible result")), model.uiState.value)
 
             model.onAction(ScannerUiAction.StartScanning)
             model.onAction(ScannerUiAction.HostStopped)
@@ -218,7 +218,7 @@ class ScannerViewModelTest {
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
             runCurrent()
 
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("selected photo")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("selected photo")), model.uiState.value)
         }
 
     @Test
@@ -240,7 +240,7 @@ class ScannerViewModelTest {
 
             assertNull(clipboard.lastValue)
             assertEquals(listOf(ScannerEffect.ScanSucceeded), effects)
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult.PlainText("sensitive text")), model.uiState.value)
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("sensitive text")), model.uiState.value)
         }
 
     private fun model(

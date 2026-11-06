@@ -11,245 +11,90 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
-import com.aozijx.passly.feature.scanner.presentation.ScannerResult
+import com.aozijx.passly.feature.scanner.presentation.ScannerScreenAction
 
 @Composable
 internal fun ScannerResultCard(
-    result: ScannerResult,
-    purpose: ScannerPurpose,
+    rawValue: String,
     compact: Boolean,
-    onScanAgain: () -> Unit,
-    onConfirm: () -> Unit,
-    importing: Boolean = false,
+    isBusy: Boolean,
+    onAction: (ScannerScreenAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val fallbackOtpLabel = stringResource(R.string.scanner_otp_fallback_label)
-    val presentation =
-        when (result) {
-            is ScannerResult.Otp -> {
-                ScannerResultPresentation(
-                    icon = Icons.Default.Key,
-                    title = stringResource(R.string.scanner_result_otp),
-                    detail = result.config.displayLabel(fallbackOtpLabel),
-                    preview = null,
-                    primaryAction =
-                        when (purpose) {
-                            ScannerPurpose.General -> {
-                                ScannerPrimaryActionPresentation.Available(
-                                    stringResource(R.string.scanner_add_to_vault),
-                                )
-                            }
-
-                            ScannerPurpose.ApplyToOtpEditor -> {
-                                ScannerPrimaryActionPresentation.Available(
-                                    stringResource(R.string.scanner_apply_to_editor),
-                                )
-                            }
-
-                            ScannerPurpose.ApplyToWifiEditor -> {
-                                ScannerPrimaryActionPresentation.Unavailable
-                            }
-                        },
-                )
-            }
-
-            is ScannerResult.Wifi -> {
-                ScannerResultPresentation(
-                    icon = Icons.Default.Wifi,
-                    title = stringResource(R.string.scanner_result_wifi),
-                    detail = result.payload.ssid,
-                    preview =
-                        buildList {
-                            add(result.payload.securityType.displayName())
-                            if (result.payload.isHidden) add(stringResource(R.string.wifi_hidden))
-                        }.joinToString(" · "),
-                    primaryAction =
-                        when (purpose) {
-                            ScannerPurpose.General -> {
-                                ScannerPrimaryActionPresentation.Available(
-                                    stringResource(R.string.scanner_edit_wifi),
-                                )
-                            }
-
-                            ScannerPurpose.ApplyToWifiEditor -> {
-                                ScannerPrimaryActionPresentation.Available(
-                                    stringResource(R.string.scanner_apply_to_editor),
-                                )
-                            }
-
-                            ScannerPurpose.ApplyToOtpEditor -> {
-                                ScannerPrimaryActionPresentation.Unavailable
-                            }
-                        },
-                )
-            }
-
-            is ScannerResult.WebLink -> {
-                ScannerResultPresentation(
-                    icon = Icons.Default.Link,
-                    title = stringResource(R.string.scanner_result_link),
-                    detail = result.uri.host,
-                    preview = result.rawValue,
-                    primaryAction =
-                        ScannerPrimaryActionPresentation.Available(
-                            stringResource(R.string.scanner_open_link),
-                        ),
-                )
-            }
-
-            is ScannerResult.PlainText -> {
-                ScannerResultPresentation(
-                    icon = Icons.Default.ContentCopy,
-                    title = stringResource(R.string.scanner_result_text),
-                    detail = result.rawValue,
-                    preview = null,
-                    primaryAction =
-                        ScannerPrimaryActionPresentation.Available(
-                            stringResource(R.string.scanner_copy_text),
-                        ),
-                )
-            }
-        }
     val motionScheme = MaterialTheme.motionScheme
-
     Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .animateContentSize(animationSpec = motionScheme.defaultSpatialSpec()),
+        modifier = modifier.fillMaxWidth().animateContentSize(animationSpec = motionScheme.defaultSpatialSpec()),
         shape = MaterialTheme.shapes.extraLarge,
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(
-            modifier =
-                Modifier.padding(
-                    horizontal = if (compact) 16.dp else 24.dp,
-                    vertical = if (compact) 16.dp else 20.dp,
-                ),
+            modifier = Modifier.padding(horizontal = if (compact) 16.dp else 24.dp, vertical = if (compact) 16.dp else 20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(
-                    imageVector = presentation.icon,
+                    imageVector = Icons.Default.QrCodeScanner,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(28.dp),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = presentation.title,
+                        text = stringResource(R.string.scanner_result),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = presentation.detail,
+                        text = rawValue,
                         style = MaterialTheme.typography.bodyMedium,
-                        maxLines = if (result is ScannerResult.PlainText) 3 else 1,
+                        maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            presentation.preview?.let { preview ->
-                Text(
-                    text = preview,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 FilledTonalButton(
-                    enabled = !importing,
-                    onClick = onScanAgain,
+                    enabled = !isBusy,
+                    onClick = { onAction(ScannerScreenAction.ScanAgain) },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.scanner_scan_again))
                 }
-                when (val action = presentation.primaryAction) {
-                    is ScannerPrimaryActionPresentation.Available -> {
-                        Button(
-                            enabled = !importing,
-                            onClick = onConfirm,
-                            modifier = Modifier.weight(1.35f),
-                        ) {
-                            if (importing) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                            }
-                            Text(action.label)
-                        }
+                IconButton(enabled = !isBusy, onClick = { onAction(ScannerScreenAction.CopyResult) }) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(R.string.scanner_copy_text),
+                    )
+                }
+                Button(
+                    enabled = !isBusy,
+                    onClick = { onAction(ScannerScreenAction.ConfirmResult) },
+                    modifier = Modifier.weight(1.35f),
+                ) {
+                    if (isBusy) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
                     }
-
-                    ScannerPrimaryActionPresentation.Unavailable -> {
-                        Unit
-                    }
+                    Text(stringResource(R.string.scanner_continue))
                 }
             }
         }
     }
 }
-
-private data class ScannerResultPresentation(
-    val icon: ImageVector,
-    val title: String,
-    val detail: String,
-    val preview: String?,
-    val primaryAction: ScannerPrimaryActionPresentation,
-)
-
-private sealed interface ScannerPrimaryActionPresentation {
-    data class Available(
-        val label: String,
-    ) : ScannerPrimaryActionPresentation
-
-    data object Unavailable : ScannerPrimaryActionPresentation
-}
-
-@Composable
-private fun WifiSecurityType.displayName(): String =
-    stringResource(
-        when (this) {
-            WifiSecurityType.Open -> R.string.wifi_security_open
-            WifiSecurityType.Wep -> R.string.wifi_security_wep
-            WifiSecurityType.WpaPersonal -> R.string.wifi_security_wpa_personal
-        },
-    )
-
-private fun OtpConfig.displayLabel(fallback: String): String =
-    buildString {
-        if (!issuer.isNullOrBlank()) append(issuer)
-        if (!accountName.isNullOrBlank()) {
-            if (isNotEmpty()) append(": ")
-            append(accountName)
-        }
-        if (isEmpty()) append(fallback)
-    }

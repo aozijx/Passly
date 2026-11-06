@@ -9,18 +9,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,19 +30,19 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.R
+import com.aozijx.passly.feature.scanner.presentation.ScannerViewfinderFrame
 
 @Composable
 internal fun ScannerViewfinder(
     isScanning: Boolean,
+    frame: ScannerViewfinderFrame,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val frameSize = minOf(maxWidth * 0.72f, maxHeight * 0.48f, 340.dp)
+    Box(modifier = modifier.fillMaxSize()) {
+        val frameSize = frame.size
         val density = LocalDensity.current
-        val frameSizePx = with(density) { frameSize.toPx() }
+        val frameSizePx = frame.sizePx
         val cornerRadiusPx = with(density) { 28.dp.toPx() }
 
         Canvas(
@@ -76,57 +70,48 @@ internal fun ScannerViewfinder(
             modifier =
                 Modifier
                     .align(Alignment.Center)
-                    .size(frameSize)
-                    .graphicsLayer {
-                        clip = true
-                        shape = RoundedCornerShape(28.dp)
-                    },
+                    .size(frameSize),
         ) {
-            ScannerFrame(modifier = Modifier.fillMaxSize())
-            if (isScanning) {
-                val transition = rememberInfiniteTransition(label = "scanner-line")
-                val progress by transition.animateFloat(
-                    initialValue = 0.08f,
-                    targetValue = 0.92f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = 1_600, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "scanner-line-progress",
-                )
-                val travelPx = with(density) { (frameSize - 2.dp).toPx() }
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .graphicsLayer { translationY = travelPx * progress }
-                            .background(
-                                Brush.horizontalGradient(
-                                    0f to Color.Transparent,
-                                    0.5f to MaterialTheme.colorScheme.primary,
-                                    1f to Color.Transparent,
-                                ),
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            clip = true
+                            shape = RoundedCornerShape(28.dp)
+                        },
+            ) {
+                if (isScanning) {
+                    val transition = rememberInfiniteTransition(label = "scanner-line")
+                    val progress by transition.animateFloat(
+                        initialValue = 0.08f,
+                        targetValue = 0.92f,
+                        animationSpec =
+                            infiniteRepeatable(
+                                animation = tween(durationMillis = 1_600, easing = LinearEasing),
+                                repeatMode = RepeatMode.Reverse,
                             ),
-                )
+                        label = "scanner-line-progress",
+                    )
+                    val travelPx = with(density) { (frameSize - 2.dp).toPx() }
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .graphicsLayer { translationY = travelPx * progress }
+                                .background(
+                                    Brush.horizontalGradient(
+                                        0f to Color.Transparent,
+                                        0.5f to MaterialTheme.colorScheme.primary,
+                                        1f to Color.Transparent,
+                                    ),
+                                ),
+                    )
+                }
             }
-        }
-
-        Surface(
-            modifier =
-                Modifier
-                    .align(Alignment.Center)
-                    .offset(y = frameSize / 2 + 32.dp),
-            shape = CircleShape,
-            color = Color.Black.copy(alpha = 0.58f),
-            contentColor = Color.White,
-        ) {
-            Text(
-                text = stringResource(R.string.scanner_supported_formats),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.labelLarge,
-            )
+            // Draw the frame after the clipped scan content so its corner marks stay visible.
+            ScannerFrame(modifier = Modifier.fillMaxSize())
         }
     }
 }

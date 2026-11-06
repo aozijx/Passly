@@ -1,8 +1,14 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,10 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.scanner.presentation.ScannerImport
-import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
-import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
+import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
+import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.wifi.AddWifiEditorScreen
@@ -83,32 +89,32 @@ fun AddWifiEditorRoute(
         isEditingExisting = editEntryId != null,
     )
 
-    when (overlay) {
-        WifiEditorOverlay.None -> {
-            Unit
-        }
-
-        WifiEditorOverlay.Scanner -> {
-            ScannerRoute(
-                purpose = ScannerPurpose.ApplyToWifiEditor,
-                onImport = { scannerImport ->
-                    when (scannerImport) {
-                        is ScannerImport.Wifi -> {
-                            if (viewModel.tryApplyScannedWifi(scannerImport.payload)) {
-                                ScannerImportHandlingResult.Applied
-                            } else {
-                                ScannerImportHandlingResult.Rejected
-                            }
-                        }
-
-                        is ScannerImport.Otp -> {
-                            ScannerImportHandlingResult.Rejected
-                        }
-                    }
-                },
-                onDismiss = { overlay = WifiEditorOverlay.None },
-            )
-        }
+    AnimatedVisibility(
+        visible = overlay == WifiEditorOverlay.Scanner,
+        enter =
+            fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideInVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    initialOffsetY = { it },
+                ),
+        exit =
+            fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideOutVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    targetOffsetY = { it },
+                ),
+    ) {
+        ScannerRoute(
+            onResult = { rawValue ->
+                val payload = (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
+                if (payload != null && viewModel.tryApplyScannedWifi(payload)) {
+                    ScannerResultHandling.Handled
+                } else {
+                    ScannerResultHandling.Rejected
+                }
+            },
+            onDismiss = { overlay = WifiEditorOverlay.None },
+        )
     }
 }
 

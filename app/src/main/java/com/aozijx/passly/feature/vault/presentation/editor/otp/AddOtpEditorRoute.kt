@@ -1,9 +1,15 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,10 +24,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.scanner.presentation.ScannerImport
-import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
-import com.aozijx.passly.feature.scanner.presentation.ScannerPurpose
+import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
+import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.otp.AddOtpEditorScreen
@@ -95,32 +101,32 @@ fun AddOtpEditorRoute(
         isEditingExisting = editEntryId != null,
     )
 
-    when (overlay) {
-        OtpEditorOverlay.None -> {
-            Unit
-        }
-
-        OtpEditorOverlay.Scanner -> {
-            ScannerRoute(
-                purpose = ScannerPurpose.ApplyToOtpEditor,
-                onImport = { scannerImport ->
-                    when (scannerImport) {
-                        is ScannerImport.Otp -> {
-                            if (viewModel.tryApplyScannedConfig(scannerImport.config)) {
-                                ScannerImportHandlingResult.Applied
-                            } else {
-                                ScannerImportHandlingResult.Rejected
-                            }
-                        }
-
-                        is ScannerImport.Wifi -> {
-                            ScannerImportHandlingResult.Rejected
-                        }
-                    }
-                },
-                onDismiss = { overlay = OtpEditorOverlay.None },
-            )
-        }
+    AnimatedVisibility(
+        visible = overlay == OtpEditorOverlay.Scanner,
+        enter =
+            fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideInVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    initialOffsetY = { it },
+                ),
+        exit =
+            fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideOutVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    targetOffsetY = { it },
+                ),
+    ) {
+        ScannerRoute(
+            onResult = { rawValue ->
+                val config = (OtpAuthUriCodec.parse(rawValue) as? OtpUriParseResult.Parsed)?.config
+                if (config != null && viewModel.tryApplyScannedConfig(config)) {
+                    ScannerResultHandling.Handled
+                } else {
+                    ScannerResultHandling.Rejected
+                }
+            },
+            onDismiss = { overlay = OtpEditorOverlay.None },
+        )
     }
 }
 

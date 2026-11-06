@@ -1,6 +1,6 @@
 # Passly Scanner 待办
 
-**状态：** 待修复与验证。本页记录图片解码器取消/资源清理边界及实时多条码候选筛选问题；当前实现描述见 `docs/features/scanner/`。
+**状态：** 部分待验证。本页记录图片解码器取消/资源清理边界，以及扫码视框几何的自动化/设备验证；当前实现描述见 `docs/features/scanner/`。
 
 ## Task 1：图片解码器保留取消语义并关闭 ML Kit 客户端
 
@@ -15,11 +15,20 @@
 
 ## Task 2：继续扫描视框内第一个可解码条码
 
-- [ ] 调整相机 success listener 的候选选择，使 `rawValue` 非空且非 blank 的检查与 `isInsideViewfinder(...)` 一起应用于每个候选；不能先选一个视框内但 `rawValue == null` 的条码，再因安全调用返回 null 而跳过其后的有效候选。
+- [x] 调整相机 success listener 的候选选择，在每个候选上先筛掉空白 `rawValue`，再检查 `ScannerRecognitionRegion.contains(barcode)`；无效候选不会遮蔽其后的有效候选。
 - [ ] 增加可确定性测试覆盖候选顺序：视框内无 raw value 后接视框内有效值、视框外有效值后接视框内有效值、blank 值后接有效值，以及没有有效候选；断言只把首个有效视框内字符串送入 `currentOnBarcodeDetected`。
-- [ ] 保留 `isInsideViewfinder()` 对缺失 bounding box/output transform、无效尺寸和未布局 PreviewView 的拒绝行为；单独验证它当前以映射检测框中心落在方形视框内作为准入规则，并裁定是否应改成检测框与视框相交。
-- [ ] 同步[扫描输入与生命周期](../../features/scanner/input-lifecycle.md)，记录已确认的筛选顺序、几何边界和验证范围。
+- [x] 将缺失 PreviewView 尺寸、无效旋转/矩阵逆变换处理为跳过当前帧；准入规则改为条码检测框四角全部落入视框。
+- [x] 同步[扫描输入与生命周期](../../features/scanner/input-lifecycle.md)，记录筛选顺序、几何边界和仍待进行的设备/自动化验证。
 
-**当前证据（2026-11-06）：** `ScannerCameraHost` 的成功回调先执行 `barcodes.firstOrNull { barcode.isInsideViewfinder(...) }`，只在此后读取可空的 `?.rawValue` 并调用 `currentOnBarcodeDetected(value)`。因此首个视框内但未解码出 raw value 的候选会阻止遍历后续有效候选。图片解码器已用 `barcode.rawValue?.takeIf(String::isNotBlank)` 在候选选择期间过滤空白值；相机路径没有相同过滤。当前搜索未发现对实时候选筛选或 `isInsideViewfinder()` 几何边界的专用测试。另，Viewfinder 计划和实现当前采用中心点包含规则，框边右/下侧依 `RectF.contains` 的半开边界不算命中；是否接受此规则仍待明确验收。
+**当前证据（2026-11-06）：** `ScannerCameraHost` 对每帧先创建 `ScannerRecognitionRegion`：使用共享 ViewPort 下的 `cropRect`、旋转角和预览尺寸构造图像到预览矩阵，再反向映射取景框一次。矩阵或布局不可用时关闭并跳过当前 `ImageProxy`，不调用 ML Kit；有区域后先筛除空白 `rawValue`，再检查条码框四角，避免逐候选重复变换。右/下边缘按 `RectF.contains` 半开语义处理。仍缺少候选序列与几何边界的自动化覆盖，以及真实设备上的方向/裁剪验证。
 
-**验收：** 只接受映射后中心位于当前视框内且 raw value 非空、非 blank 的首个候选；后续候选不再被无效首项遮蔽；缺少变换时继续拒绝检测；自动化覆盖候选顺序和矩形边界。
+**验收：** 只接受映射后检测框四角全部落入当前视框且 raw value 非空、非 blank 的首个候选；后续候选不再被无效首项遮蔽；缺少变换时继续拒绝检测；自动化覆盖候选顺序和矩形边界。旧的“中心点落入即可”条件已被当前四角全包含规则取代。
+
+## Task 3：扫码结果只交付原始数据
+
+- [x] 将 `ScannerResult` 收敛到原始文本；`ScannerRoute` 通过一次性回执将文本交给当前 owner。
+- [x] Vault、OTP 编辑器、Wi-Fi 编辑器在各自入口使用 Domain parser / 业务入口；链接处理归 Vault。删除 Scanner 内按业务类型分类、策略映射的代码和不再适用的测试。
+- [x] 结果卡统一展示原始文本和通用动作，清除按类型维护的标题、CTA、分类映射与旧中英文资源；同步 Scanner 主题文档。
+- [x] 执行 `:app:compileDebugKotlin` 和 `git diff --check`；设备/单测验证另按剩余任务安排。不要为旧类型合同保留双轨桥。
+
+**当前工作区证据（2026-11-06）：** `ScannerViewModel.completeScan(raw)` 只拒绝空白内容并保存 `ScannerResult(rawValue)`；`ScannerRoute.onResult(rawValue)` 保留一次确认回执，`Handled` 关闭、`Rejected` 保留卡片。业务 owner 从原始字符串分别解析 OTP、Wi-Fi、HTTP/HTTPS。图片回调在宿主短暂仍为 `Stopped` 时会先恢复状态再启动整图解析；相机取景框准入检查条码四角。`:app:compileDebugKotlin` 与 `git diff --check` 已通过；测试未运行，设备上的图片识别与相机裁剪效果仍待验证。

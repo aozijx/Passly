@@ -18,11 +18,7 @@
 Scanner 将损坏或不支持的 OTP URI 保留为普通文本；编辑器报告解析失败并保留已经输入的凭据，不改用
 另一种算法或猜测计数器。
 
-调用入口使用相同的 Domain parser，但解析结果的 owner 不同：扫码先由
-`ScannerResultClassifier.classify(rawValue)` 将原始字符串传给 `OtpAuthUriCodec.parse(rawValue)`；仅 `Parsed(config)`
-生成 `ScannerResult.Otp(rawValue, config)`，之后 `ScannerPurpose.resolveImport(result)` 按 `General` 或
-`ApplyToOtpEditor` 返回 `ScannerImport.Otp(config)`。malformed/unsupported 在 Scanner 分类中继续参与 Wi-Fi/链接/文本分类，
-不会在这一层写入条目。OTP 编辑器手动粘贴则由 `AddOtpViewModel.onAction(UriChanged(value, reportFailure))` 进入
+扫码由 `VaultRoute` 与 `AddOtpEditorRoute` 接收 `ScannerRoute.onResult(rawValue)` 的原始字符串回调，再由 owner 调用 `OtpAuthUriCodec.parse(rawValue)`；只有 `Parsed(config)` 才进入对应的导入或表单应用流程。扫描结果 owner 与回执合同见[Scanner 结果交接](../scanner/import-results.md)。OTP 编辑器手动粘贴则由 `AddOtpViewModel.onAction(UriChanged(value, reportFailure))` 进入
 `updateUri(value, reportFailure)`，传入 `value` 解析；成功时将 `parsed.config` 映射到当前表单，只有请求允许报告失败时才发
 `UriParseFailed`。扫码得到的 config 由 `tryApplyScannedConfig(config)` 填入当前表单，不再重复 parse，也不直接保存。
 
@@ -55,7 +51,7 @@ URI 的 secret 始终为无补位 Base32。内部 Base64 密钥先解码，再�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 解析与格式化 otpauth URI | `OtpAuthUriCodec.parse()`、`format()` | [`OtpAuthUriCodec.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpAuthUriCodec.kt) |
-| 从原始扫码文本分类 OTP，并按 ScannerPurpose 暴露配置 | `ScannerResultClassifier.classify(rawValue)` -> `OtpAuthUriCodec.parse(rawValue)` -> `ScannerPurpose.resolveImport(result)` | [`ScannerResultClassifier.kt`](../../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultClassifier.kt)、[`ScannerPurpose.kt`](../../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerPurpose.kt) |
+| OTP 扫描结果回执与 owner 处理 | `ScannerRoute(onResult)`、`ScannerResultSession.confirm { onResult(rawValue) }`、`AddOtpEditorRoute` / `VaultRoute` 调用 Domain parser | [`ScannerRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRoute.kt)、[`ScannerResultSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultSession.kt)、[`AddOtpEditorRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt)、[`VaultRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultRoute.kt) |
 | 将手动 URI 输入解析并应用到当前 OTP 表单 | `onAction(UriChanged(value, reportFailure))` -> `updateUri(value, reportFailure)` -> `OtpAuthUriCodec.parse(value)`；扫码配置走 `tryApplyScannedConfig(config)` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`AddOtpAction.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpAction.kt) |
 | 解析 Bitwarden `login.totp` 并映射到稳定归档字段 | `parseOtpFields(value)` -> `OtpAuthUriCodec.parse(trimmed)` -> `config.toOtpArchiveFields()` | [`BitwardenJsonImportAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/bitwarden/BitwardenJsonImportAdapter.kt)、[`OtpArchiveFields.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/OtpArchiveFields.kt) |
 | 授权揭示 OTP secret 后格式化 QR URI，并在退出时清理明文 | `ExportEntryQrUseCase` -> `OtpAuthUriCodec.format(config.copy(secret = String(chars)), entry.title)` | [`ExportEntryQrUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/ExportEntryQrUseCase.kt) |

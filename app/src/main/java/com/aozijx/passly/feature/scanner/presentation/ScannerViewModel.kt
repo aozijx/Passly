@@ -148,26 +148,20 @@ class ScannerViewModel internal constructor(
         }
     }
 
-    private fun completeScan(raw: String): Boolean =
-        when (val classified = ScannerResultClassifier.classify(raw)) {
-            ScannerClassification.Empty -> {
-                false
-            }
-
-            is ScannerClassification.Classified -> {
-                // A displayed result owns subsequent actions; retire pending image/copy feedback.
-                val owner = newWork()
-                replaceWork(owner)
-                mutate(ScannerMutation.ScanCompleted(classified.result))
-                deliveries.trySend(Delivery(owner, ScannerEffect.ScanSucceeded))
-                true
-            }
-        }
+    private fun completeScan(raw: String): Boolean {
+        if (raw.isBlank()) return false
+        // A displayed result owns subsequent actions; retire pending image/copy feedback.
+        val owner = newWork()
+        replaceWork(owner)
+        mutate(ScannerMutation.ScanCompleted(ScannerResult(raw)))
+        deliveries.trySend(Delivery(owner, ScannerEffect.ScanSucceeded))
+        return true
+    }
 
     private fun copyText() {
         val owner = work as? Work.Active ?: return
         val shown = uiState.value as? ScannerUiState.ShowingResult ?: return
-        val text = (shown.result as? ScannerResult.PlainText)?.rawValue ?: return
+        val text = shown.result.rawValue
         owner.scope.launch {
             if (!clipboardWriter.writeSensitiveIf(text) { work === owner }) return@launch
             currentCoroutineContext().ensureActive()
@@ -176,9 +170,9 @@ class ScannerViewModel internal constructor(
     }
 
     private fun decodeImage(image: ImageRef) {
-        if (work !is Work.Active) return
         val owner = newWork()
         replaceWork(owner)
+        if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
         mutate(ScannerMutation.ImageProcessingStarted)
         owner.scope.launch {
             val result = decode(image)
