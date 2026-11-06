@@ -4,9 +4,9 @@
 
 ## Task 1：将生成错误码目录归入 observability 主题
 
-- [ ] 将生成输出从 `docs/ERROR_CODES.md` 迁入小写 kebab-case 的 observability 主题路径；同步更新 `ModuleBoundariesPlugin` 的 `markdownOutputFile` / `markdownFile`、`VerifyErrorCatalogTask` 的 stale-file 消息、生成器校验、主题页与 README 索引。验收：运行生成任务后输出与校验任务指向同一文件，且全仓 Markdown 相对链接检查通过。
+- [x] 将生成输出从 `docs/ERROR_CODES.md` 迁入 `docs/architecture/observability/error-codes.md`；同步生成任务、校验任务、stale-file 消息、主题页与 README。运行 `generateErrorCodes verifyErrorCodes verifyArchitecture`，并完成相对链接检查。
 
-**代码证据：** `buildSrc/src/main/kotlin/passly/ModuleBoundariesPlugin.kt` 当前在配置生成任务和校验任务时都固定设置 `docs/ERROR_CODES.md`；`buildSrc/src/main/kotlin/passly/VerifyErrorCatalogTask.kt` 的错误提示也写死该路径。`docs/architecture/observability/record-and-trace.md` 及 `docs/README.md` 引用生成文件。它由 `config/observability/error-catalog.json` 生成，不能只移动输出文件或手工改名。
+**完成记录（2026-11-06）：** 生成任务和校验任务均以 `docs/architecture/observability/error-codes.md` 为目标，stale-file 错误提示也指向新路径。`record-and-trace.md` 使用同目录相对链接，README 入口改指主题路径。`generateErrorCodes`、`verifyErrorCodes`、`verifyArchitecture` 及全仓 Markdown 相对链接检查通过；本次未运行 buildSrc 单元测试。
 
 **相关约定：** [文档维护约定](../../development/documentation.md)。
 ## Task 2：从维护待办中归档已完成工作

@@ -24,7 +24,7 @@
 - [日志、错误与 Trace](architecture/observability/record-and-trace.md)
 - [日志运行时与加密存储](architecture/observability/runtime-and-storage.md)
 - [日志导出格式](architecture/observability/export-formats.md)
-- [错误码目录（生成）](ERROR_CODES.md)
+- [错误码目录（生成）](architecture/observability/error-codes.md)
 
 ### 数据与安全
 

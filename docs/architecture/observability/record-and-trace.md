@@ -32,7 +32,7 @@ Vault 状态变化才使用 `security.vault.unlocked`。锁定事件使用 `secu
 `completed`、`failed` 或 `cancelled`，禁止输出 `security.lock.completed + result=FAILURE`。
 
 错误码和原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 生成 core 类型、App 用户提示
-resolver 和 `docs/ERROR_CODES.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
+resolver 和 `error-codes.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
 值不依赖 Kotlin 枚举名。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
 
 Autofill 服务记录所选展示模式和键盘 Inline 能力；手动无障碍回退分别记录用户请求、受控不可用、
