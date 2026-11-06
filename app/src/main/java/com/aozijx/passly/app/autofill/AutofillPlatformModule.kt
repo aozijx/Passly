@@ -1,6 +1,5 @@
 package com.aozijx.passly.app.autofill
 
-import com.aozijx.passly.domain.autofill.port.AutofillInboxDraftImporter
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
 import dagger.Binds
@@ -12,10 +11,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AutofillPlatformModule {
-    @Binds
-    @Singleton
-    abstract fun bindAutofillInboxDraftImporter(impl: AutofillInboxCredentialImporter): AutofillInboxDraftImporter
-
     @Binds
     @Singleton
     abstract fun bindAutofillLaunchTarget(impl: AndroidAutofillLaunchTarget): AutofillLaunchTarget

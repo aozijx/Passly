@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="accessibility_fill_button">填充</string>
+  <string name="accessibility_fill_button_description">使用 Passly 手动填充当前输入框</string>
+  <string name="accessibility_fill_service_description">仅在你点击浮动按钮后读取当前输入框并填充所选凭据。</string>
+  <string name="app_name" translatable="false">Passly</string>
+  <string name="accessibility_fill_service_label">Passly 手动填充</string>
+  <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
+  <string name="autofill_select_account_hint">点按账号以填充。关闭此页将取消。</string>
+  <string name="autofill_cancel">取消</string>
+  <string name="credential_create_password_description">将密码安全地保存到 Passly</string>
+  <string name="vault_locked_title">Passly 已锁定</string>
+  <plurals name="autofill_entry_compact_summary">
+    <item quantity="other">找到 %d 个可填充账号</item>
+  </plurals>
+  <plurals name="autofill_trigger_count">
+    <item quantity="other">找到 %d 个匹配账号 · 点击选择</item>
+  </plurals>
+</resources>

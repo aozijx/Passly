@@ -6,6 +6,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.fragment.app.FragmentActivity
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.components.ActivityComponent
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,10 +23,11 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 @Composable
 fun AuthenticationHost(
     activity: FragmentActivity,
-    registry: AuthenticationHostRegistry,
-    logger: Logger,
     content: @Composable () -> Unit,
 ) {
+    val dependencies = EntryPointAccessors.fromActivity(activity, AuthenticationHostEntryPoint::class.java)
+    val registry = dependencies.registry()
+    val logger = dependencies.logger()
     val owner: AuthenticationHostOwnerViewModel = viewModel(viewModelStoreOwner = activity)
     val host =
         remember(activity, owner.ownerId, logger) {
@@ -91,6 +96,14 @@ fun AuthenticationHost(
                 }
             },
     )
+}
+
+@EntryPoint
+@InstallIn(ActivityComponent::class)
+internal interface AuthenticationHostEntryPoint {
+    fun registry(): AuthenticationHostRegistry
+
+    fun logger(): Logger
 }
 
 private fun AuthenticationDialogRequest?.toUiState(): AuthenticationDialogUiState? =

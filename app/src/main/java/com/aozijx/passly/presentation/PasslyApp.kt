@@ -14,7 +14,6 @@ import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.app.theme.AppTheme
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
@@ -27,13 +26,10 @@ import com.aozijx.passly.feature.shell.presentation.windowPolicy
 import com.aozijx.passly.feature.unlock.presentation.AuthenticationRoute
 import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
-import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 
 @Composable
 internal fun PasslyApp(
     activity: FragmentActivity,
-    authenticationHostRegistry: AuthenticationHostRegistry,
-    logger: Logger,
     noticePublisher: AppNoticePublisher,
     permissionServices: PermissionServices,
 ) {
@@ -80,7 +76,7 @@ internal fun PasslyApp(
                 appearance = settings.appearance,
                 appCornerRadiusDp = settings.appCornerRadiusDp,
             ) {
-                AuthenticationHost(activity, authenticationHostRegistry, logger) {
+                AuthenticationHost(activity) {
                     AppShell(
                         uiState = shellState,
                         effects = shellViewModel.effects,

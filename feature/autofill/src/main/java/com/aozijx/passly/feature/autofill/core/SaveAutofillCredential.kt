@@ -1,0 +1,134 @@
+package com.aozijx.passly.feature.autofill.core
+
+import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.autofill.AutofillDomainNormalization
+import com.aozijx.passly.domain.autofill.AutofillScope
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
+import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
+import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
+import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
+import com.aozijx.passly.domain.autofill.port.ApplicationLabelResolver
+import com.aozijx.passly.domain.entry.model.EntryDraft
+import com.aozijx.passly.domain.entry.model.EntryDraftValue
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
+import com.aozijx.passly.domain.entry.port.EntryCreation
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+internal class SaveAutofillCredential
+    @Inject
+    constructor(
+        private val applicationLabelResolver: ApplicationLabelResolver,
+        private val createEntry: EntryCreation,
+    ) {
+        suspend operator fun invoke(
+            draft: AutofillSaveDraft,
+            inboxDraftId: AutofillInboxDraftId? = null,
+        ): AutofillSaveOutcome {
+            if (draft.password.isBlank()) return AutofillSaveOutcome.InvalidDraft
+            val entryDraft = buildAutofillCredentialDraft(draft, applicationLabelResolver) ?: return AutofillSaveOutcome.InvalidDraft
+
+            return when (
+                val result =
+                    createEntry.createFromAutofill(
+                        entryDraft,
+                        inboxDraftId,
+                    )
+            ) {
+                is AppResult.Success -> {
+                    AutofillSaveOutcome.Saved(result.data)
+                }
+
+                is AppResult.Failure -> {
+                    AutofillSaveOutcome.Failed(
+                        AutofillOperationFailure.PERSISTENCE_FAILED,
+                    )
+                }
+            }
+        }
+    }
+
+internal fun buildAutofillCredentialDraft(
+    draft: AutofillSaveDraft,
+    applicationLabelResolver: ApplicationLabelResolver,
+): EntryDraft? {
+    val normalizedDomain = AutofillScope.normalizeDomain(draft.webDomain)
+    if (normalizedDomain == AutofillDomainNormalization.Invalid) return null
+    val domain = (normalizedDomain as? AutofillDomainNormalization.Valid)?.host
+    val normalizedApplicationId = AutofillScope.normalizeApplicationId(draft.packageName)
+    if (domain == null && normalizedApplicationId == null) return null
+    val applicationId = normalizedApplicationId.takeIf { domain == null }
+    val title =
+        resolveAutofillCredentialTitle(
+            applicationId = applicationId,
+            appLabel = applicationId?.let(applicationLabelResolver::labelFor),
+            domain = domain,
+            pageTitle = draft.pageTitle,
+            usernameValue = draft.username,
+        )
+    val definition = EntryTypeDefinitions[EntryType.LOGIN]
+    var entryDraft =
+        EntryDraft(EntryType.LOGIN)
+            .withValue(definition, FieldKey.TITLE, EntryDraftValue.Text(title))
+            .withValue(definition, FieldKey.PASSWORD, EntryDraftValue.Text(draft.password))
+    draft.username.trim().takeIf(String::isNotEmpty)?.let {
+        entryDraft = entryDraft.withValue(definition, FieldKey.USERNAME, EntryDraftValue.Text(it))
+    }
+    domain?.let {
+        draft.webDomain?.trim()?.takeIf(String::isNotEmpty)?.let { url ->
+            entryDraft = entryDraft.withValue(definition, FieldKey.PRIMARY_URL, EntryDraftValue.Text(url))
+        }
+    }
+    domain?.let {
+        entryDraft =
+            entryDraft.withValue(
+                definition,
+                FieldKey.DOMAINS,
+                EntryDraftValue.TextList(listOf(it)),
+            )
+    }
+    applicationId?.let {
+        entryDraft =
+            entryDraft.withValue(
+                definition,
+                FieldKey.APPLICATION_IDS,
+                EntryDraftValue.TextList(listOf(it)),
+            )
+    }
+    return entryDraft
+}
+
+internal fun resolveAutofillCredentialTitle(
+    applicationId: String?,
+    appLabel: String?,
+    domain: String?,
+    pageTitle: String?,
+    usernameValue: String,
+): String {
+    fun String.isApplicationIdTitle(): Boolean =
+        applicationId != null &&
+            (equals(applicationId, ignoreCase = true) || startsWith("$applicationId/", ignoreCase = true))
+
+    val normalizedAppLabel =
+        appLabel
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
+            ?.takeUnless(String::isApplicationIdTitle)
+    val normalizedPageTitle =
+        pageTitle
+            ?.trim()
+            ?.takeIf { it.any(Char::isLetter) }
+            ?.takeUnless(String::isApplicationIdTitle)
+
+    return if (domain != null) {
+        normalizedPageTitle ?: domain
+    } else {
+        normalizedAppLabel
+            ?: normalizedPageTitle
+            ?: usernameValue.trim().takeIf(String::isNotBlank)
+            ?: "Login"
+    }
+}

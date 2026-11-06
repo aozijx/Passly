@@ -433,7 +433,7 @@ class SourceBoundaryPolicyTest {
         )
         val businessDependency =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/autofill/core/SaveCredential.kt",
+                path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/SaveAutofillCredential.kt",
                 content = "import com.aozijx.passly.feature.vault.entry.CreateEntryUseCase",
             )
         val violation =
@@ -726,7 +726,7 @@ class SourceBoundaryPolicyTest {
     fun autofillCannotImportFullAuthenticationManager() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt",
+                path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt",
                 content = "import com.aozijx.passly.domain.access.port.AuthenticationManager",
             )
 
@@ -742,13 +742,98 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun appCanOnlyImportTheReviewedAutofillModuleApi() {
+        val reviewedImports =
+            listOf(
+                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
+                    "com.aozijx.passly.feature.autofill.presentation.AutofillFeatureEntry",
+                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
+                    "com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion",
+                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
+                    "com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation",
+                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
+                    "com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation",
+                "app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillLaunchTarget.kt" to
+                    "com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras",
+                "app/src/main/java/com/aozijx/passly/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt" to
+                    "com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource",
+            ).map { (path, importedType) ->
+                EditorSource(path, "import $importedType")
+            }
+
+        assertTrue(
+            SourceBoundaryVerifier
+                .verify(reviewedImports, SourceBoundaryPolicy.generalRules)
+                .isEmpty(),
+        )
+
+        val implementationImport =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillLaunchTarget.kt",
+                content = "import com.aozijx.passly.feature.autofill.credential.service.ModernCredentialService",
+            )
+        val violation =
+            SourceBoundaryVerifier
+                .verify(listOf(implementationImport), SourceBoundaryPolicy.generalRules)
+                .single()
+
+        assertEquals("AUTOFILL_MODULE_API", violation.ruleId)
+
+        val featureUiImport =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt",
+                content = "import com.aozijx.passly.feature.autofill.presentation.accessibility.AccessibilityFillUiState",
+            )
+        assertEquals(
+            "AUTOFILL_MODULE_API",
+            SourceBoundaryVerifier.verify(listOf(featureUiImport), SourceBoundaryPolicy.generalRules).single().ruleId,
+        )
+
+        val featureSheetImport =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt",
+                content = "import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet",
+            )
+        assertEquals(
+            "AUTOFILL_MODULE_API",
+            SourceBoundaryVerifier.verify(listOf(featureSheetImport), SourceBoundaryPolicy.generalRules).single().ruleId,
+        )
+
+        val formerAppAdapterImport =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillLaunchTarget.kt",
+                content = "import com.aozijx.passly.feature.autofill.core.SaveAutofillCredential",
+            )
+        assertEquals(
+            "AUTOFILL_MODULE_API",
+            SourceBoundaryVerifier
+                .verify(listOf(formerAppAdapterImport), SourceBoundaryPolicy.generalRules)
+                .single()
+                .ruleId,
+        )
+    }
+
+    @Test
+    fun autofillApiBoundaryIgnoresAppPackageDeclaration() {
+        val appPackage =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt",
+                content = "package com.aozijx.passly.app.autofill.presentation",
+            )
+
+        assertTrue(
+            SourceBoundaryVerifier
+                .verify(listOf(appPackage), SourceBoundaryPolicy.generalRules)
+                .isEmpty(),
+        )
+    }
+
+    @Test
     fun autofillAuthenticationHostSecurityImportsAreLimitedToSystemActivities() {
         val hostImport = "import com.aozijx.passly.security.authentication.host.AuthenticationHost"
         val approvedActivities =
             listOf(
-                "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillActivity.kt",
-                "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt",
-                "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseActivity.kt",
+                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt",
             ).map { path -> EditorSource(path, hostImport) }
 
         assertEquals(
@@ -758,7 +843,7 @@ class SourceBoundaryPolicyTest {
 
         val businessViewModel =
             EditorSource(
-                "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt",
+                "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt",
                 hostImport,
             )
         val violation =
@@ -771,15 +856,47 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
+    fun autofillFeatureUiCannotDependOnAppVaultIcons() {
+        val appOwnedIconImport =
+            EditorSource(
+                path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/ui/AutofillCandidateBottomSheet.kt",
+                content = "import com.aozijx.passly.presentation.shared.components.VaultItemIcon",
+            )
+
+        val violation =
+            SourceBoundaryVerifier
+                .verify(listOf(appOwnedIconImport), SourceBoundaryPolicy.generalRules)
+                .single()
+
+        assertEquals("AUTOFILL_UI_NO_APP_ICON", violation.ruleId)
+    }
+
+    @Test
+    fun autofillLegacyRouteMustStayInItsFeatureModule() {
+        val appOwnedRoute =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillRoute.kt",
+                content = "fun AutofillFillRoute(",
+            )
+
+        val violation =
+            SourceBoundaryVerifier
+                .verify(listOf(appOwnedRoute), SourceBoundaryPolicy.generalRules)
+                .single()
+
+        assertEquals("AUTOFILL_LEGACY_ROUTE_OWNER", violation.ruleId)
+    }
+
+    @Test
     fun autofillPlatformAdaptersCannotImportRepositoriesOrAuthenticationPorts() {
         val sources =
             listOf(
                 EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/Forbidden.kt",
+                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPlatformAdapter.kt",
                     content = "import com.aozijx.passly.domain.entry.port.EntryQueryRepository",
                 ),
                 EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/Forbidden.kt",
+                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/adapter/LegacyPlatformAdapter.kt",
                     content = "import com.aozijx.passly.domain.access.port.AuthenticationRequester",
                 ),
             )
@@ -796,7 +913,7 @@ class SourceBoundaryPolicyTest {
 
         val readOnlySessionProjection =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt",
+                path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt",
                 content = "import com.aozijx.passly.domain.access.port.SecureSessionAccessState",
             )
         assertTrue(
@@ -1196,7 +1313,7 @@ class SourceBoundaryPolicyTest {
                     content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
                 ),
                 EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt",
+                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt",
                     content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
                 ),
                 EditorSource(
@@ -1367,17 +1484,17 @@ class SourceBoundaryPolicyTest {
         val sources =
             listOf(
                 EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/feature/autofill/legacy/AutofillPendingIntentFactory.kt",
-                    content = "import com.aozijx.passly.feature.autofill.presentation.legacy.AutofillFillActivity",
+                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/AutofillPendingIntentFactory.kt",
+                    content = "import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity",
                 ),
                 EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPendingIntentFactory.kt",
-                    content = "import com.aozijx.passly.feature.autofill.presentation.credential.CredentialResponseActivity",
+                    path = "feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialPendingIntentFactory.kt",
+                    content = "import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity",
                 ),
             )
 
         assertEquals(
-            listOf("LAYER_FEATURE", "LAYER_FEATURE"),
+            listOf("AUTOFILL_FEATURE_NO_APP_IMPORT", "AUTOFILL_FEATURE_NO_APP_IMPORT"),
             SourceBoundaryVerifier
                 .verify(sources, SourceBoundaryPolicy.generalRules)
                 .map { it.ruleId },
@@ -1485,7 +1602,7 @@ class SourceBoundaryPolicyTest {
         val sources =
             listOf(
                 EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/app/session/DekSessionKeySource.kt",
+                    path = "app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillLaunchTarget.kt",
                     content = "import com.aozijx.passly.security.dek.DekManager",
                 ),
                 EditorSource(

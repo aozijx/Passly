@@ -42,72 +42,15 @@
             </intent-filter>
         </activity>
 
+        <!-- One authenticated host routes Autofill entry points to their content and result handler. -->
         <activity
-            android:name=".feature.autofill.presentation.legacy.AutofillFillActivity"
+            android:name=".app.autofill.presentation.AutofillAuthActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="standard"
             android:noHistory="true"
-            android:theme="@style/Theme.Passly.AutofillFill" />
-
-        <activity
-            android:name=".feature.autofill.presentation.accessibility.AccessibilityFillActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:noHistory="true"
-            android:theme="@style/Theme.Passly.TransparentAuth" />
-
-        <!-- Credential Provider 凭据选择响应 Activity -->
-        <activity
-            android:name=".feature.autofill.presentation.credential.CredentialResponseActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="standard"
-            android:noHistory="true"
-            android:theme="@style/Theme.Passly.TransparentAuth"
+            android:theme="@style/Theme.Passly.AutofillFill"
             tools:targetApi="34" />
-
-        <service
-            android:name=".feature.autofill.legacy.service.LegacyAutofillService"
-            android:enabled="true"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.autofill.AutofillService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.autofill"
-                android:resource="@xml/autofill_service_config" />
-        </service>
-
-        <service
-            android:name=".feature.autofill.accessibility.ManualAccessibilityFillService"
-            android:exported="true"
-            android:label="@string/accessibility_fill_service_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_fill_service_config" />
-        </service>
-
-        <!-- API 34+ CredentialProviderService，由版本资源声明是否启用。 -->
-        <service
-            android:name=".feature.autofill.credential.service.ModernCredentialService"
-            android:enabled="@bool/credential_provider_enabled"
-            android:exported="true"
-            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
-            tools:targetApi="34">
-            <intent-filter>
-                <action android:name="android.service.credentials.CredentialProviderService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.credentials.provider"
-                android:resource="@xml/credential_service_config" />
-        </service>
 
         <!-- 支持 Android 13（API 33）及以上系统的“按应用语言偏好”（Per-App Language）功能。-->
         <service

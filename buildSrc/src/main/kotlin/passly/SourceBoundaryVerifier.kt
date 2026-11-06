@@ -46,6 +46,7 @@ internal object SourceBoundaryVerifier {
                             }.filter { (lineIndex, reference) ->
                                 val line = codeLines.getOrNull(lineIndex).orEmpty().trimStart()
                                 !line.startsWith("import ") &&
+                                    !line.startsWith("package ") &&
                                     rule.referenceViolation(source.path, normalizedPath, reference, "") != null
                             }.distinctBy { (lineIndex) -> lineIndex }
                     forbiddenReferences.forEach { (lineIndex, reference) ->

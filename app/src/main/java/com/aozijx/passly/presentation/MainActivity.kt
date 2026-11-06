@@ -14,20 +14,15 @@ import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.PermissionServices
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
 import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    @Inject
-    lateinit var authenticationHostRegistry: AuthenticationHostRegistry
-
     @Inject
     lateinit var noticePublisher: AppNoticePublisher
 
@@ -42,9 +37,6 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var activeTaskClearRequests: ActiveTaskClearRequests
-
-    @Inject
-    lateinit var logger: Logger
 
     private lateinit var taskClearActivityOwner: TaskClearActivityOwner
 
@@ -73,8 +65,6 @@ class MainActivity : AppCompatActivity() {
         setContent {
             PasslyApp(
                 activity = this,
-                authenticationHostRegistry = authenticationHostRegistry,
-                logger = logger,
                 noticePublisher = noticePublisher,
                 permissionServices = permissionServices,
             )

@@ -151,6 +151,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":data"))
     implementation(project(":domain"))
+    implementation(project(":feature:autofill"))
     implementation(project(":runtime:session"))
     implementation(project(":security"))
 
@@ -191,9 +192,7 @@ dependencies {
     // Security & Biometric
     implementation(libs.androidx.biometric)
 
-    // Credentials & Autofill
-    implementation(libs.androidx.credentials)
-    implementation(libs.androidx.credentials.play.services.auth)
+    // Android Autofill platform types used by the Activity result adapter
     implementation(libs.androidx.autofill)
 
     // Data-facing UI adapters
@@ -218,7 +217,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
-    implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
 
     // Testing
     testImplementation(libs.junit)

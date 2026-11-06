@@ -130,10 +130,6 @@ internal object SourceBoundaryPolicy {
                 id = "LAYER_FEATURE",
                 owner = "feature",
                 sourcePathContains = "/com/aozijx/passly/feature/",
-                allowedSourcePathContains =
-                    setOf(
-                        "/feature/autofill/platform/AutofillLaunchTargetFactoryTest.kt",
-                    ),
                 allowedSourcePathPatterns = setOf(featurePresentationPath),
                 forbiddenImportPatterns = setOf(featurePresentationImport),
                 forbiddenImportPrefixes =
@@ -267,6 +263,41 @@ internal object SourceBoundaryPolicy {
         layerRules +
             listOf(
                 SourceBoundaryRule(
+                    id = "AUTOFILL_MODULE_API",
+                    sourcePathContains = "/app/src/",
+                    forbiddenImportPrefixes = setOf("com.aozijx.passly.feature.autofill."),
+                    allowedImports =
+                        setOf(
+                            "com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras",
+                            "com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget",
+                            "com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource",
+                            "com.aozijx.passly.feature.autofill.presentation.AutofillFeatureEntry",
+                            "com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion",
+                            "com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation",
+                            "com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation",
+                        ),
+                    message = "App may only import the reviewed Autofill module API",
+                ),
+                SourceBoundaryRule(
+                    id = "AUTOFILL_FEATURE_NO_APP_IMPORT",
+                    sourcePathContains = "/feature/autofill/src/",
+                    forbiddenImportPrefixes = setOf("com.aozijx.passly.app."),
+                    message = "Autofill feature implementation cannot depend on App",
+                ),
+                SourceBoundaryRule(
+                    id = "AUTOFILL_UI_NO_APP_ICON",
+                    sourcePathContains = "/feature/autofill/src/",
+                    forbiddenImportPrefixes =
+                        setOf("com.aozijx.passly.presentation.shared.components.VaultItemIcon"),
+                    message = "Autofill feature UI cannot depend on App-owned Vault icon presentation",
+                ),
+                SourceBoundaryRule(
+                    id = "AUTOFILL_LEGACY_ROUTE_OWNER",
+                    sourcePathContains = "/app/src/main/",
+                    forbiddenContentMarkers = setOf("fun AutofillFillRoute("),
+                    message = "Legacy Autofill Route belongs to the Autofill feature module",
+                ),
+                SourceBoundaryRule(
                     id = "PRESENTATION_UI_VIEW_MODEL",
                     sourcePathContains = "/presentation/ui/",
                     forbiddenContentMarkers = setOf("ViewModel", "hiltViewModel", "viewModel("),
@@ -318,12 +349,10 @@ internal object SourceBoundaryPolicy {
                 ),
                 SourceBoundaryRule(
                     id = "AUTOFILL_AUTH_HOST_ACTIVITY_OWNER",
-                    sourcePathContains = "/feature/autofill/presentation/",
+                    sourcePathContains = "/autofill/",
                     allowedSourcePathContains =
                         setOf(
-                            "/feature/autofill/presentation/legacy/AutofillFillActivity.kt",
-                            "/feature/autofill/presentation/accessibility/AccessibilityFillActivity.kt",
-                            "/feature/autofill/presentation/credential/CredentialResponseActivity.kt",
+                            "/app/autofill/presentation/AutofillAuthActivity.kt",
                         ),
                     forbiddenImportPrefixes = setOf("com.aozijx.passly.security.authentication.host."),
                     message = "authentication host implementation is restricted to Autofill system Activity roots",
@@ -390,7 +419,11 @@ internal object SourceBoundaryPolicy {
                 SourceBoundaryRule(
                     id = "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
                     sourcePathContains = "/com/aozijx/passly/app/",
-                    allowedSourcePathContains = setOf("/app/PasslyApplication.kt"),
+                    allowedSourcePathContains =
+                        setOf(
+                            "/app/PasslyApplication.kt",
+                            "/app/autofill/presentation/AutofillAuthActivity.kt",
+                        ),
                     forbiddenImportPrefixes = setOf("com.aozijx.passly.security."),
                     message = "app adapter imports a security implementation instead of a capability port",
                 ),

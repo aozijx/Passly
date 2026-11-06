@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="accessibility_fill_service_label">Passly manual fill</string>
+  <string name="accessibility_fill_button">Fill</string>
+  <string name="accessibility_fill_button_description">Manually fill current fields with Passly</string>
+  <string name="accessibility_fill_service_description">Reads the current input fields and fills your chosen credential only after you tap the floating button.</string>
+  <string name="autofill_prompt_title">Autofill with %1$s</string>
+  <string name="autofill_select_account_hint">Tap an account to fill. Close this sheet to cancel.</string>
+  <string name="autofill_cancel">Cancel</string>
+  <string name="credential_create_password_description">Save the password securely in Passly</string>
+  <string name="vault_locked_title">Passly is locked</string>
+  <plurals name="autofill_entry_compact_summary">
+    <item quantity="one">%d fillable account found</item>
+    <item quantity="other">%d fillable accounts found</item>
+  </plurals>
+  <plurals name="autofill_trigger_count">
+    <item quantity="one">%d matching account · Tap to select</item>
+    <item quantity="other">%d matching accounts · Tap to select</item>
+  </plurals>
+</resources>
