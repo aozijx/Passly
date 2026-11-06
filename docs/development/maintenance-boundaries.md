@@ -76,6 +76,6 @@
 
 - Bug 修复、结构重构、格式化和依赖升级分别提交；依赖升级单独验证，不直接跨越主要版本。
 - 每个可独立验收的阶段使用精确路径暂存，不使用 git add .，并保留用户未纳入范围的工作区修改。
-- 提交前至少运行 git diff --check、相关单元测试和 verifyModuleBoundaries。
+- 提交前至少运行 git diff --check、相关单元测试和 verifyArchitecture（包含 verifyModuleBoundaries）。
 - UI/资源/导航变化增加 assembleDebug 和 AndroidTest 编译；数据库、安全、认证和 Backup 变化运行对应测试与 lint。
 - 不以“文件已移动”或“编译通过”单独证明边界完成；同时检查运行时所有权、依赖方向、资源、DI 和回归测试。

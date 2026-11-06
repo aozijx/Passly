@@ -13,22 +13,24 @@
 
 ## 常用命令
 
+Gradle 任务按列表逐条执行，使用仓库 Wrapper 并关闭并行：`--no-parallel --max-workers=2`。
+
 ```powershell
-.\gradlew.bat :app:compileDebugKotlin
-.\gradlew.bat :app:testDebugUnitTest
-.\gradlew.bat :domain:test :runtime:session:test
-.\gradlew.bat :core:testDebugUnitTest :core:common:test
-.\gradlew.bat verifyModuleBoundaries
-.\gradlew.bat :app:lintDebug
-.\gradlew.bat :app:assembleDebug
-.\gradlew.bat :app:assembleDebugAndroidTest
+.\gradlew.bat :app:compileDebugKotlin --no-parallel --max-workers=2
+.\gradlew.bat :app:testDebugUnitTest --no-parallel --max-workers=2
+.\gradlew.bat :domain:test :runtime:session:test --no-parallel --max-workers=2
+.\gradlew.bat :core:testDebugUnitTest :core:common:test --no-parallel --max-workers=2
+.\gradlew.bat verifyArchitecture --no-parallel --max-workers=2
+.\gradlew.bat :app:lintDebug --no-parallel --max-workers=2
+.\gradlew.bat :app:assembleDebug --no-parallel --max-workers=2
+.\gradlew.bat :app:assembleDebugAndroidTest --no-parallel --max-workers=2
 git diff --check
 ```
 
 有可用设备时再执行：
 
 ```powershell
-.\gradlew.bat :app:connectedDebugAndroidTest
+.\gradlew.bat :app:connectedDebugAndroidTest --no-parallel --max-workers=2
 ```
 
 ## Release 签名

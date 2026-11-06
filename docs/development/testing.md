@@ -5,16 +5,16 @@
 Kotlin 源码与 Gradle Kotlin 脚本的格式检查使用固定版本 KtLint，CI 和本地统一运行：
 
 ```powershell
-.\gradlew.bat ktlintCheckAll --max-workers=32
+.\gradlew.bat ktlintCheckAll --no-parallel --max-workers=2
 ```
 
 该任务只检查，不会改写文件；需要格式化时显式运行 `ktlintFormatAll`。各模块的 `check` 也会运行
 本模块的 `ktlintCheck`，`buildSrc` 的 `check` 同样包含格式检查。
 
-按以下顺序执行，便于优先得到低成本反馈：
+Gradle 任务按以下顺序逐条执行，并在每次 Wrapper 调用中追加 `--no-parallel --max-workers=2`，便于优先得到低成本反馈：
 
-先运行受影响模块的相关单测。修改 `buildSrc` 架构规则时，先执行 `./gradlew -p buildSrc test`，
-再从项目根执行 `./gradlew verifyArchitecture`；前者验证规则在正反例中的行为，后者扫描实际项目。
+先运行受影响模块的相关单测。修改 `buildSrc` 架构规则时，先执行 `./gradlew -p buildSrc test --no-parallel --max-workers=2`，
+再从项目根执行 `./gradlew verifyArchitecture --no-parallel --max-workers=2`；前者验证规则在正反例中的行为，后者扫描实际项目。
 Windows 使用 `gradlew.bat`。新增 feature 的页面归属与反向导入约束不依赖业务名称清单。
 
 1. `:app:compileDebugKotlin`
