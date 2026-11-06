@@ -80,18 +80,6 @@
 **实现边界：** Detail 与 Vault List 通过独立 Runtime 持有各自 OTP state。OTP 编辑页保存成功返回前台时，Route 刷新本 Runtime 当前仍请求的条目；Detail 的成功历史修订恢复分支也立即刷新当前条目。`entryChanged()` 保留 active/subscription owner，只撤销旧 epoch、schedule 与验证码，再对仍有 owner 的条目异步重载；不会把临时列表订阅提升成永久 active entry。激活读取由 entry epoch 去重，但显式 owner/config 变化可以替换未完成读取的 epoch，旧结果及其认证/锁定异常不能覆盖新配置。Detail ViewModel 现在覆盖前台重载与 restore 成功/失败；未覆盖真实 Route lifecycle、编辑成功返回、锁定或离页期间晚到结果。
 **ticker 验证：** `start()` 现使用可替换的毫秒时钟（生产默认 `System.currentTimeMillis`），测试通过受控时钟与 coroutine test scheduler 驱动周期边界。回归验证一个条目普通读取异常清除旧码、其他条目同轮继续刷新、失败条目下一轮恢复；显式 `refreshStates(nowSeconds)` 测试仍保留，用来验证具体移动因子和 copy 状态。
 
-## Task 28：明确设备锁后的 task-clear 命令交付所有者
-
-- [x] 明确行为合同：只有 flip-to-lock 与 task-clear 都启用且 FLIP 成功锁定才清 task；SCREEN_OFF 永不清 task。当前 resumed Activity（Main、Credential Manager、Legacy Autofill、Accessibility Autofill）拥有请求；无 owner 时进程内暂存，Activity 重建可重新 claim；成功重新认证撤销请求，认证失败/取消并回到 Locked 时恢复仍 pending 的请求；进程死亡不恢复请求。
-- [x] 将 lossy `SharedFlow` 替换为有请求/owner identity 的 claim、release、consume 协调器。旧 owner、已消费请求和认证后的延迟 callback 均无法清理新 task。
-- [x] 增加 handler、协调器和生命周期 owner 回归，覆盖 screen-off 条件、请求暂存与转交、owner 替换、一次性消费、认证撤销、pause 取消及过期延迟 callback。行为通过可控 callback scheduler 的 JVM 单测覆盖，Activity 生命周期 wiring 通过 AndroidTest 编译检查；实体设备已连接，但尚未安装运行验证。
-
-**修复前证据：** `DeviceLockController` 是 Application 注入的 `@Singleton`，在 `PasslyApplication.onCreate()` 注册屏幕关闭接收器；ProcessLifecycle 的 `AppLifecycleObserver.onStart()` 也独立启用设备 flip 监听。旧实现用 `MutableSharedFlow(replay = 0, extraBufferCapacity = 1, DROP_OLDEST)` 且丢弃 `tryEmit()` 结果，因此无 collector 时命令丢失；唯一 collector 在 `MainActivity`，SCREEN_OFF 也会受 flip 清 task 设置影响。Credential Manager 与 Legacy Autofill 可直接通过系统 PendingIntent 启动；故当前 task owner 不保证是 MainActivity。
-
-**修复前延迟执行证据：** `MainActivity.closeAndClearTask()` 旧实现立即发布提醒，再直接 post 一个无持有/取消入口的 1 秒关闭 callback，执行前也不校验认证状态与 owner。用户在延迟期间重新认证时，旧 callback 仍可结束新交互。
-
-**完成实现与验证：** `docs/reviews/2026-11-02-device-lock-task-clear-design-record.md` 记录已选行为合同；`docs/security/authentication.md` 已同步。聚焦单测覆盖 handler、协调器和 lifecycle owner；`:app:compileDebugAndroidTestKotlin`、App KtLint、`verifyArchitecture` 与 `git diff --check` 均通过。Android 设备当前已连接，但本批未进行安装/运行验证。
-
 ## Task 29：在 Security 页面退出时清除 App Password 对话框草稿
 
 - [x] 为 `AppPasswordDialogCoordinator` 的当前密码、新密码和确认密码草稿定义明确的页面所有权及退出清理合同。`SecurityRoute` 离页和 Activity 配置重建都会清空 coordinator 持有的所有敏感输入与活动对话框。
@@ -99,28 +87,6 @@
 - [ ] 增加 Coordinator/Compose Route 生命周期回归，验证输入后真实离开 Security 页面会清空对话框与草稿、迟到输入/授权或操作结果不能在重进后重新写入旧状态或打开旧对话框、配置重建遵守选定的恢复策略；保留现有提交期间页面 owner 和 `CharArray` `finally` 清理合同。同步认证/安全文档，运行 App Password Coordinator/ViewModel 与 Route 行为测试、`verifyArchitecture` 和 `git diff --check`。（Compose 生命周期仪器测试已编写；待设备连接后执行。）
 
 **当前实现与验证：** `SecurityRoute` 记住 route-scoped coordinator 并挂载 `AppPasswordDialogCoordinatorOwner`；其 `DisposableEffect.onDispose` 在导航离开和 Activity 配置重建时清空三个草稿、关闭对话框。`SensitivePasswordDraft` 负责接管、覆盖并清除 `CharArray`；Set/Change 提交都复制独立 request arrays 后立即清空 Coordinator 草稿。Coordinator 也只接受当前活动对话框的输入/确认事件，避免 dismiss 后迟到 TextField callback 重新填入草稿。ViewModel 的页面 owner、异步提交和 request `finally` 清理合同保留。单元回归与 Android-test 源码编译通过，`verifyArchitecture`、KtLint、`git diff --check` 通过；Compose 生命周期仪器测试已修正并编译，但尚未运行。当前 `adb devices` 无设备，且连接测试任务在配置阶段因 Protobuf plugin 0.10.0 抛出 `No such property: sourceSets for class: java.lang.String`，无法进入设备发现；该版本清单修改是既有用户改动，本批未触碰。真实 Compose dispose/recreation 行为仍待连接设备并修复该连接测试配置后验证。
-
-## Task 30：为 DataStore 设置观察流定义可恢复的读取失败合同
-
-- [x] 盘点 `ProtoAppPreferencesStore`、`ProtoSecurityPreferencesStore` 暴露的全部 DataStore Flow 及其 `stateIn`/`launch.collect` 消费者，为磁盘读取 `IOException`、协议损坏异常和正常取消分别定义可观察的终态/重试合同。读取失败不得作为未处理异常从 ViewModel 状态投影逸出，也不得无提示地把安全设置回退为默认值或静默覆盖存储文件。
-- [x] 让恢复动作重新订阅失败的冷源，而非只重启已经终止的 `stateIn` 分享协程；保持 Repository Flow 为持久化真相源，重试/错误状态由实际拥有读取生命周期的 Repository/应用服务与页面明确分工，避免每个设置 ViewModel 复制一套不一致的 `catch`/默认值策略。
-- [x] 为设置状态增加明确的 `Failed`/恢复状态，并由对应 Route 显示可理解的失败与重试动作；目前 `InterfaceRoute`、`InteractionRoute`、`AutofillRoute`、`NotificationsRoute`、`SecurityRoute`、`PrivacyRoute` 等把 `Loading` 映射为空内容，流失败后页面无法区分“仍在加载”和“读取已终止”。错误呈现属于页面边界，冷源重新订阅属于数据读取所有者；两边用显式状态/动作连接，不把 DataStore 错误策略分散到各页面，也不引入只转发事件的中间层。
-- [x] 把运行时订阅者一并纳入读取故障合同，尤其是 `DeviceLockController`、消息设置快照与诊断记录策略：健康读取尚未发首值时的现有等待合同可以保留，但读取失败后不能无限等待或保留无提示的初始/旧策略；必须保证 `BroadcastReceiver.goAsync()` 的完成回调以及失败后重试/可观测路径。消息通知首值到达前事件被抑制的排队语义仍归 Task 23；本项只处理设置源失败或 collector 终止造成的永久 Loading/失效策略。
-- [x] 为 App Theme、App Shell、Vault Display、Security、Privacy、Appearance、Interaction、Autofill、Notification、Permissions、Data Management、Storage 等使用上述 store 的状态投影增加错误/重试行为验证：上游先正常发值后抛错、首次读取抛错、显式重试后恢复、取消不转成错误；确认异常路径不会静默显示可编辑的伪默认值，且错误只在对应 DataStore 合同中恢复。额外覆盖 `DeviceLockController` 首读失败后安全锁定与 `PendingResult.finish()`、模式 collector 恢复并只消费一次 previous-exit、消息 snapshot 从 Loading 经异常到恢复；与 Task 23 的“首值之前已接收通知”用例分开。同步 DataStore/状态管理文档并运行相关 ViewModel、进程 owner/DataStore 测试、`verifyArchitecture` 和 `git diff --check`。
-
-**证据：** `ProtoAppPreferencesStore` 的 appearance、backup directory、interface、interaction、library view、messages 与 diagnostics 属性均直接 `dataStore.data.map(...)`；`ProtoSecurityPreferencesStore` 的 security、lock timeout、lock-on-background 也直接 map，没有 error materialization/retry。对应 `AppThemeSettingsViewModel`、`SecuritySettingsViewModel`、`PrivacySettingsViewModel`、`InterfaceSettingsViewModel`、`InteractionSettingsViewModel`、`AutofillSettingsViewModel` 与 `NotificationSettingsViewModel` 都把这些流 `combine` 后 `stateIn(viewModelScope, WhileSubscribed, ...)`，其源链没有 `catch`/重试分支。两个 Serializer 会把 protobuf 解析失败转换成 `CorruptionException`，DataStore delegate 未配置 corruption handler；因此不能以“返回默认偏好”掩盖异常，也不能在读取失败后假定已有正常首值。Android DataStore API 文档明确 `data` 在读取成功时发值、遇到磁盘读取异常时抛异常，并说明默认不会自动恢复损坏文件（[DataStore data layer](https://developer.android.com/topic/libraries/architecture/datastore)、[DataStore API](https://developer.android.com/reference/androidx/datastore/core/DataStore)）。现有各 ViewModel 测试主要验证正常状态投影与写入反馈，没有覆盖源流异常后页面状态、未处理异常和重订阅恢复；需要由统一边界规定如何展示失败和触发新订阅，而不是让各个 `stateIn` 自行终止。
-
-**本轮边界/UI 证据：** `InterfaceRoute`、`InteractionRoute`、`AutofillRoute`、`NotificationsRoute`、`SecurityRoute` 与 `PrivacyRoute` 均在 `Loading` 分支返回 `Unit`，未显示加载占位或失败入口；对应 ViewModel 没有 `Retry`/`retry` action 或错误状态。由此，当前冷源异常在最初读取时可能让页面持续空白；若在已发值后失败，StateFlow 会保留旧 Ready 值，页面继续显示旧设置而没有失效提示。读取重试需重新订阅原始 repository/DataStore Flow；仅对已经完成的 `stateIn` 共享流调用重试无法恢复上游。该修正应集中定义读取所有者与页面状态/动作合同，避免分散 catch/fallback 造成伪默认值和层间重复策略。这里只记录静态调用链风险，未运行 UI 或 ViewModel 测试。
-
-**本轮扩展状态流证据：** `VaultDisplayViewModel` 也把 `InterfaceSettingsRepository.interfaceSettings`、`LibraryViewSettingsSource.libraryViewSettings`、`InteractionSettingsSource.interaction` 三个由同一 `ProtoAppPreferencesStore` 提供的冷流合并并 `stateIn(WhileSubscribed, Loading)`，没有 catch/retry；`VaultRoute` 在读取到 `VaultDisplayUiState.Loading` 时直接 `return`，因此它与设置详情页共享“首读失败后无失败态”的问题。现有 `VaultDisplayViewModelTest` 只断言三个空流时停留 Loading，以及 hierarchy-only 变化不影响投影，没有覆盖异常或恢复。应用壳层另有更早的直接 collector：`AppShellViewModel.observeSettings()` 在 `viewModelScope.launch` 中 combine appearance、interface、security 三个持久化流后直接 collect，无 catch/error mutation；失败会终止该设置观察子任务，AppShell 状态没有设置读取 Failed/Retry 合同。该观察与认证、数据库失败由独立子任务维护，恢复设计不能让设置失败阻断安全状态观察。以上是源码/测试覆盖证据，未声称设备复现；读取源分别由 `SettingsPersistenceModule` 绑定到 `ProtoAppPreferencesStore`，不是只根据 ViewModel 字段名推断。
-
-**本轮进程级消费者证据：** `DeviceLockController.init` 在 `mainScope.launch` 中直接 `collect(SecuritySettingsSource.security)`，无 catch/retry；`DeviceLockHandler.handle()` 无论 `SCREEN_OFF` 还是 `FLIP` 都先调用 `securitySettings.filterNotNull().first()`。屏幕关闭广播的 `onReceive()` 调用 `goAsync()` 后才 dispatch，`PendingResult.finish()` 位于锁任务 `finally`；若 DataStore 在设置首值前失败，collector 终止且 StateFlow 保持 null，锁任务会一直等首值，完成回调不可达。若首值之后流失败，设备锁控制器只保留最后的 settings 快照，不再接收后续策略变化。现有 `DeviceLockHandlerTest.lock waits for the persisted security snapshot` 明确固定了健康流尚无首值时会等待，因此本项不是要求移除正常 readiness barrier，而是要求定义读取异常/永久不发值时仍能安全锁定、结束异步广播并恢复观察的合同。这里是静态可达阻塞条件，尚无运行时复现。
-
-`ObservabilityRuntimeController.start()` 对 `diagnosticsLogRecordingMode` 启动无恢复的直接 collect；`DiagnosticsLogRecordingPolicy` 初值为 null 且 `allows()` 对 null 返回 false，设置源失败会使日志记录策略保持拒绝，首个模式到达前的上一进程退出记录也不会被读取。`DefaultMessageSettingsSnapshotProvider` 的常驻 collector 同样无 catch/retry，失败后 AtomicReference 会留在 `Loading`；消息发布在 snapshot Loading 时抑制事件的语义已由 Task 23 跟进，不在本项重复定义队列投递。三者分别由单例作用域自启动，不会因为页面重新进入而自动重订阅。需在 Task 30 的统一读取 owner 合同中覆盖常驻订阅的异常终态与恢复，不把安全锁、日志策略和消息策略各自做成互不一致的局部 fallback。
-
-**实施与验证：** 新增 `RecoverableRead` 统一发布 Loading/Ready/Failed；I/O 异常有界退避并允许页面提前重试，损坏/意外异常保留 Failed 并等待显式重订阅，`CancellationException` 传播、fatal `Error` 不捕获。`SettingsReadRetrySignal` 把设置页显式重试广播至消息快照与诊断记录策略进程 owner；设备锁读者在前台切换时重试，SCREEN_OFF 失败安全锁定并在 `finally` 完成异步广播。Proto Store 只标记 CorruptionException，不安装默认恢复/覆盖逻辑。各长期页面显示失败/重试并禁止未知状态下编辑；Security 与 Notification ViewModel 也在保存协程执行前检查 Ready。状态管理和运行时文档已同步。最终验证命令 `:data:testDebugUnitTest :app:testDebugUnitTest :app:ktlintCheck :data:ktlintCheck verifyArchitecture`（`--no-parallel --max-workers=2`）通过；报告为 App 1,140 tests、Data 149 tests，全部成功；`git diff --check` 通过。最初架构门禁发现共享 Presentation 测试跨越层边界，已把该测试归入 `app.settings` 后重跑全套门禁通过。无设备仪器测试在本 Task 范围内未执行。
-
-**本轮补充页面消费证据：** `DataManagementSettingsViewModel` 对 `backupDirectoryUri` 直接 `collect`，无 catch/error 状态；`BackupRoute` 在 `DataManagementSettingsUiState.Loading` 处直接提前返回。`PermissionManagementViewModel` 对同一 URI 流使用 `collectLatest` 读取并检查 SAF 授权，也无错误状态；初始字段是 `directoryUri=null`、`NOT_CONFIGURED`，因此首读失败后无法把“尚未读取/读取失败”与“用户没有配置目录”区分。`StorageSettingsViewModel` 的诊断记录模式 collector 也无错误状态，UI 初始值为 `DiagnosticsLogRecordingMode.DEFAULT`。这些都是 `ProtoAppPreferencesStore` 持久化流的消费者，须和前述设置页一起落实统一失败态/重试合同。
 
 ## Task 31：让 Room 长期观察在会话锁切换时可取消并可重建
 
@@ -215,7 +181,7 @@
 
 - [ ] 让 `DefaultBackupOperationGateway` 的公开操作遵守统一终态合同：`AuthorizationGate`、备份目录设置读取、SAF storage port 或 archive service 抛出的非取消异常都必须成为 `BackupExecutionResult.Failure`，不能越过 Gateway 边界；`CancellationException` 继续传播，提交/清理与敏感密码清零顺序保持不变。不要在 Gateway 与 ViewModel 两层重复捕获和映射同一异常。
 - [ ] 覆盖 `BackupViewModel.execute()` 的异常终态：操作开始后任何失败都应复位忙碌/Executing 状态、发布当前 page owner 的失败 effect 并保留可重试工作流；不得把原始异常直接抛进 `viewModelScope`，也不能把取消伪装成普通失败。Gateway 已返回 `Failure` 时继续沿现有 reducer/notice 映射处理。
-- [ ] 扩展 `DefaultBackupOperationGatewayTest`、`BackupViewModelLifecycleTest` 与 `BackupViewModelAccessTest`，至少注入配置目录 `Flow.first()` 失败、AuthorizationGate 抛异常、storage/check 或 archive service 抛异常及协程取消；断言 Result、页面终态、失败反馈、密码擦除和可重试性。将“设置流异常”与 Task 30 的长期订阅恢复分开，将“页面退出/执行取消”与页面工作所有权及退出取消合同分开；运行 Backup 定向测试、`verifyArchitecture` 和 `git diff --check`。
+- [ ] 扩展 `DefaultBackupOperationGatewayTest`、`BackupViewModelLifecycleTest` 与 `BackupViewModelAccessTest`，至少注入配置目录 `Flow.first()` 失败、AuthorizationGate 抛异常、storage/check 或 archive service 抛异常及协程取消；断言 Result、页面终态、失败反馈、密码擦除和可重试性。将“设置流异常”与[DataStore 长期订阅恢复合同](../../reviews/2026-11-06-datastore-settings-read-recovery.md)分开，将“页面退出/执行取消”与页面工作所有权及退出取消合同分开；运行 Backup 定向测试、`verifyArchitecture` 和 `git diff --check`。
 
 **证据：** `BackupViewModel.execute()` 先同步调用 `BackupMutation.OperationStarted`，协程体只在 `try/finally` 中调用 Gateway、映射正常返回结果和擦除密码；没有 catch。Gateway 抛出异常时不会调用 `applyResult(Failure)`，Reducer 会留在执行阶段，异常交给 `viewModelScope` 的未处理异常路径。`DefaultBackupOperationGateway.authorizeOperation()` 未映射 `AuthorizationGate.authorize()` 的异常；`exportToConfiguredDirectory()` 的 `settingsSource.backupDirectoryUri.first()` 位于捕获范围外；`checkDirectoryWritable()` 只处理 storage port 返回的 `Result`。Export/Import 映射 archive service 的普通异常，但不覆盖其之前的授权、配置读取或 target 创建步骤。已有 `DefaultBackupOperationGatewayTest` 覆盖部分返回失败与取消路径，`BackupViewModelLifecycleTest` 覆盖返回 `Failure`、销毁取消和密码清理；尚未覆盖上述端口直接抛出异常后的页面终态。该异常状态卡住由当前控制流直接推导，尚未通过新行为测试复现。
 
@@ -339,28 +305,6 @@
 
 **实现进度（2026-11-02）：** 已完成。选用 ktlint Gradle 插件 `14.2.0` 和固定引擎 `1.8.0`，通过根 `.editorconfig` 与 `ktlintCheckAll`/`ktlintFormatAll` 覆盖 Gradle 模块、Gradle Kotlin 脚本和 `buildSrc`；每个子项目的 `check` 接入本模块只读 `ktlintCheck`。Android CI 与本地文档运行同一个 `ktlintCheckAll`，格式化需显式调用。首轮模块报告记录 21,214 项、1,221 个源文件差异；最高频规则为 multiline-expression-wrapping 5,243、function-signature 4,092、blank-line-before-declaration 1,670、class-signature 1,297、trailing-comma-on-call-site 1,143；另有 11 个文件命名不匹配，均通过文件重命名修正，包名规则无违规。格式接入前后没有行为修改；顺手将可变状态字段改成语义化名称、常量改成大写命名，并给混合布尔条件补显式括号。通配 import 规则按现有规范明确关闭，字母排序仍强制检查；未使用基线或全局 suppress。`ktlintCheckAll` 任务图只执行 lint；`:app:check` dry-run 确认模块 `check` 包含 `ktlintCheck`，其编译/测试任务是原有 Android 生命周期。`ktlintFormatAll`、`ktlintCheckAll`、`verifyArchitecture`、`:app:testDebugUnitTest`、`:core:testDebugUnitTest`、`:core:common:test`、`:data:testDebugUnitTest`、`:domain:test`、`:runtime:session:test`、`:security:testDebugUnitTest`、`:app:compileDebugAndroidTestKotlin`、`:data:compileDebugAndroidTestKotlin` 与 `git diff --check` 均通过；单测合计 1,550 项、0 failures/errors。文件重命名同步更新错误目录与文件归属审查文档。
 
-## Task 58：审查长函数与大文件的职责密度
-
-**复核索引：** [2026-11-02 长函数与大文件职责审查](../../reviews/2026-11-02-long-function-and-large-file-review.md) 记录当前 300 行以上文件清单、下沉候选和保留依据。旧行数仅作为候选来源；以该索引标注的本次快照为准。
-
-- [x] 以当前 Kotlin 行数清单作为筛查入口（生产文件约 300 行以上、函数约 80 行以上、测试文件约 500 行以上），逐项查看类型/函数职责、调用闭包、状态与异常所有权；阈值只用于定位，不单独构成拆分理由。记录审过且保留的集中式注册表、规则清单、UI 内容函数与测试夹具，避免为了数字拆出转发层。
-- [x] 优先梳理 `DefaultAuthenticationManager.authenticateInternal()`：保留单飞互斥、状态提交顺序、credential `finally` 擦除和取消/fatal 异常合同；当前阶段共享认证事务状态，不引入仅转发的 helper。外层 fatal 映射仍由 Task 63 跟进。
-- [x] 审查 Detail、Vault Session、SourceBoundaryPolicy、LogStatements、boundary tests、EncryptedLogRecordStore、OtpCodeRuntime 和 CredentialResponseViewModel；当前状态、锁、资源及结果投递共享既有 owner，明细及依据见复核索引。SourceBoundaryPolicyTest 的拆分仍由 Task 74 跟进。
-- [x] 审查 Favicon/Trash UI、Autofill Inbox codec、Bitwarden adapter、KeyedEntryArchiveMapper 和 SecuritySessionEventLogger；未找到独立状态/协议 owner，保留格式和展示职责闭包，见复核索引。
-- [x] 审查 LegacyResponseFactory、EncryptedBackupContainerCodec 和 DiagnosticsScreen；保留 Android 协议构造、单一加密 wire codec 与纯 UI 内容职责，不新增转发 facade。
-- [x] 审查 `RoomBackupSnapshotRestorer.restore()` 及 `retainRestoredAttachmentFile()`；二者属于 DB/file restore 的同一事务协调 owner。附件 journal 行为验证仍由 Task 65 跟进。
-- [x] 筛查约 80 行以上的生产函数；sealed dispatcher、reducer、格式转换、事务协调、query builder、Compose 内容与集中注册表均记录于复核索引，未发现本 Task 应新增的独立 owner。
-- [x] 深审 `DetailViewModel` 的 action 与异步生命周期归属；已有 session/runtime/reducer 承担真实资源状态，VM 只协调同一 visit 下的结果交付。修复同条目重复打开 revision history 取消恢复后的刷新竞态，见下方实施记录与功能文档。
-- [x] 将超大文件与测试套件候选纳入一张尺寸/职责筛查表；对测试夹具明确标记保留或由 Task 74 拆分，不重复转移既有待办。
-- [x] 补齐当前 300 行以上的 Kotlin/Java 文件索引与中型候选；本次扫描覆盖 55 个达到阈值的文件，另 3 个原候选低于阈值但仍有职责审查结论。行数为快照而非永久事实。
-- [x] 维护可复查的尺寸与长函数结论索引，并按行为影响分别验证：Detail 修复通过定向单测、ktlint 与架构门禁；其余为静态职责审查，没有生产代码改动，不宣称运行时验证。
-
-**筛查口径：** 原始长函数/文件快照用于形成候选，物理行数受后续格式化影响；当前索引及全部 55 个达到 300 行阈值文件的刷新行数与处置结论见上方复核链接。三个早期中型候选虽已低于文件阈值，仍核对了对应职责。阈值仅用于定位，决定是否拆分依据是状态/资源所有权、真实依赖闭包与失败合同。
-
-**本轮尺寸与长函数扫描证据（2026-11-02）：** 排除 build/generated 后扫描 `app/core/data/domain/runtime/security/buildSrc` 中 Kotlin/Java 文件，55 个文件达到 300 行阈值，复核索引完整覆盖且行数与扫描一致；3 个已列中型候选现低于阈值。约 80 行以上函数按源码跨度筛查并手动核对逻辑职责，关键候选和结论见复核索引。静态审查确认集中式策略/事件目录、sealed dispatch、同一事务协调、格式 codec 和纯 Compose 内容没有需要本 Task 再拆的独立 owner。当前唯一生产逻辑变更是重复打开 revision history 时保持恢复任务及根详情刷新的行为修复；它已在前述提交中通过定向测试与架构/格式检查。其他条目仅为职责审查，不据此声称运行时验证。
-
-**Task 58 实施记录（2026-11-02）：** 已审查 `DetailViewModel` 修订历史 owner。该 VM 的 `DetailWorkSession` token 同时约束条目访问、任务取消、敏感值擦除和恢复后的根详情刷新；修订恢复任务并非可脱离页面 owner 的独立事务窗口，因此本批次不把 action 分支机械搬进只回调 VM 的 helper。检查中发现同一条目重复 `OpenRevisionHistory` 会先取消 `revisionOperationJob`，再让 `Opened` reducer 重置状态；若恢复已进入 Restoring，数据库提交后清理期间收到重复 action 会中断根详情刷新。现已使相同条目已打开时 action 幂等，并让 reducer 保留该状态；恢复完成及旧 observer 隔离测试一起验证。RED 时两条新测试分别因 ClassCastException 和 reducer 状态不等失败；GREEN 命令 `:app:testDebugUnitTest --tests ...DetailViewModelTest.reopeningRevisionHistoryDoesNotCancelRestoreInProgress --tests ...DetailRevisionReducerTest.reopeningHistoryCannotReplaceAnActiveRestore --tests ...DetailViewModelTest.backAndDismissDoNotCancelRestoreBeforeItRefreshesTheEntry --tests ...DetailViewModelTest.closedRevisionObserverCannotFailAReopenedHistorySheet --max-workers=32` 通过，4 项、0 failures/errors。整项完成情况与复核链接见本节勾选项。
-
 ## Task 59：闭合生物识别轮换的提交后恢复与启动对账
 
 - [x] 将 `ProtoVaultBootstrapStore.commitBiometricRotation()` 成功视为不可回滚的 durable commit point。`RotateBiometricKeyUseCase` 在绑定/envelope 已原子切换后还删除旧 alias、清除 rotation journal；后置 cleanup 失败现在仍返回带 `BIOMETRIC_ROTATION_CLEANUP` 标记的 BIOMETRIC Success，保留新 binding 并按 Success 刷新 availability；设置页提示新策略已生效、旧密钥清理会重试。
@@ -409,7 +353,7 @@
 **Task 62 规范化 follow-up（2026-11-02）：** 将已批准的 Unicode IDN 规则从“拒绝 U-label”改为转小写 ASCII；为避免 `java.net.IDN` 的 RFC 3490 有损折叠把不同 host 合并（例如 `faß.de` 与 `fass.de`），此类非往返 U-label 与无效 ACE label 返回 `Invalid`。IPv6 compressed/expanded 等价，按 RFC 5952 输出最左最长零段且不保留 zone identifier；IPv4-mapped IPv6 按 RFC 5952 使用点分尾段，其他 embedded IPv4 tail 解析成十六进制组。新增的回归覆盖和验证结果以本 follow-up 提交为准。
 
 ## 最近扫描复核
-- 当前 `app` Flow/StateFlow consumer 重扫未发现待办之外的新长期 collector 缺口；设置/DataStore 与进程 owner 归 Task 30，Room/session 归 Task 31，诊断运行时归 Task 39，Detail 活动/修订观察与根快照加载各自的失败和重试合同，Autofill 设置归 Task 52，Trash Flow 归 Task 66，Diagnostics 页面归 Task 69。此处保留索引，具体证据只维护在对应任务中。
+- 当前 `app` Flow/StateFlow consumer 重扫未发现待办之外的新长期 collector 缺口；设置/DataStore 与进程 owner 见[已归档的恢复合同](../../reviews/2026-11-06-datastore-settings-read-recovery.md)，Room/session 归 Task 31，诊断运行时归 Task 39，Detail 活动/修订观察与根快照加载各自的失败和重试合同，Autofill 设置归 Task 52，Trash Flow 归 Task 66，Diagnostics 页面归 Task 69。此处保留索引，具体证据只维护在对应任务中。
 - Route effect 清点仍为 14 个 `effect/effects/events` collector 加 Scanner 的共享 collector helper；Scanner 的共享 collector helper 已按 STARTED lifecycle 管理；本 Task 保留其余 Route 的宿主行为核对。`CredentialResponseRoute` 的 `completions` 单独由 `repeatOnLifecycle(STARTED)` 收集，归 Task 21，不属于 Task 51 漏项。
 - Route/ViewModel 扫描确认 `AddWifiViewModel.initialize()` 仍执行 Route 提供的 seed loader 闭包（Task 70）；ViewModel 依赖/函数参数边界仍由 Task 71 覆盖。两项均未在当前工作区修复。
 - 已完成项的历史验证留在维护审查与正式文档，不重复作为待办：Room reset 刷新桥、Scanner effect 所有权、Credential Manager 单次结果交付、Autofill callback claim 清理、Trash 命令错误处理、扫描导入 owner、条目 post-commit 资源清理。
@@ -534,14 +478,6 @@
 - [ ] 验证新增/迁移后的可见范围、所有调用点和单一真相源；持久化 key、wire tag、格式版本不得改变，安全限制不得被放宽。补充/迁移对应常量与协议测试；运行受影响模块单测、`verifyArchitecture`、lint 和 `git diff --check`。同步更新 Kotlin 规范中的位置规则；不要建立无 owner 的全局 `Constants.kt`，也不要把资源文本、Gradle 构建值或运行时可调配置复制成 Kotlin 常量。
 
 **约定完成与扫描证据（2026-11-02）：** `docs/development/kotlin-style.md` 新增“常量与固定值归属”规则，`AGENTS.md` 加入简短入口约束；常量按文件私有实现、跨文件同 owner、协议/算法语义、资源/Gradle/运行期配置分别归属。生产源码静态扫描命中 360 个 `const val` 声明，多个声明位于文件尾部 companion；精确字面量聚合发现一批待语义核验的重复（例：observability page size、应用关闭延迟、Favicon 输入上限、Autofill Inbox RSA/SHA 标识）。该扫描同时发现相同数字在不同文件中表达不同策略，故本任务要求核对消费者和行为合同后再集中；本轮只更新规则与 TODO，未移动常量或更改生产代码。
-
-## Task 76：可配置 Autofill 网站 host 匹配范围
-
-- [x] 默认严格匹配规范化后的精确 host；用户关闭严格匹配后，仅在 PSL 给出相同可注册域名时扩展候选范围。设置影响 Legacy、Accessibility 与 Credential Manager 共用的候选查询，但不放宽 interaction 授权 scope、存储的网站关联或 package ID 匹配。
-- [x] 将严格匹配写入 Proto tag 9，显式默认 `true`；在 Autofill 设置页增加中英文说明。Guava Android `InternetDomainName.topPrivateDomain()` 负责 PSL 查询，覆盖多段与 private suffix；IP、未知后缀、public suffix 本身仍精确匹配。
-- [x] 保持 DAO 域名预筛不截断，按 PSL registrable domain 检索后再完整验证候选并应用设置的数量上限；只有没有精确/同可注册域名候选时才走未关联建议回退。
-
-**实施记录（2026-11-02）：** 已新增 Domain PSL 比较、Proto 默认/true/false 映射、ViewModel toggle、Compose 设置项、候选查询传播与精确 interaction scope 回归。独立测试观察到新 Domain API 缺失、Proto tag 缺失和查询属性缺失时均按预期失败，随后补齐实现。Domain/Data/App JVM 测试、三模块 KtLint、`verifyArchitecture` 和 AndroidTest Kotlin 编译通过；未连接 Android 设备，未运行仪器测试。独立 review 为 Ready，无 Critical/Important finding；未做设备级仪器验证。
 
 ## Task 77：核实诊断日志退出时的持久性与周期写入策略
 

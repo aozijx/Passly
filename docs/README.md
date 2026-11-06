@@ -131,6 +131,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 ### 已归档审查与交付记录
 
+- [2026-11-06 Proto DataStore 设置读取恢复交付记录](reviews/2026-11-06-datastore-settings-read-recovery.md)
 - [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)
 - [2026-11-02 设备锁任务清理交付记录](reviews/2026-11-02-device-lock-task-clear-delivery.md)
 - [设备锁任务清理设计记录](reviews/2026-11-02-device-lock-task-clear-design-record.md)

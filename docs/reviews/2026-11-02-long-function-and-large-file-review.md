@@ -108,3 +108,9 @@
 ## 后续工作边界
 
 本轮只对职责归属和已定位的 Detail 恢复竞态作结论。Task 59/60/63/65/74 中已列的状态恢复、fatal Error、文件 journal 与测试结构工作保持其原 owner，不在本次重复实现。当前表是 2026-11-02 格式化后的筛查快照，代码变更后需重新统计；既有待办不因本表被视为已验证。
+
+## Detail revision-history 幂等修复
+
+复核 `DetailViewModel` 的 revision owner 时发现，同一条目重复 `OpenRevisionHistory` 会先取消 `revisionOperationJob`，再让 `Opened` reducer 重置状态。若恢复已进入 `Restoring`，数据库提交成功后、根详情刷新完成前收到重复 action，取消会中断刷新并留下过期页面数据。现在同一条目已打开时 action 幂等，reducer 保留当前状态；任务仍归 `DetailWorkSession` 生命周期 owner，不另加转发层。
+
+回归先以 RED 确认两条新测试失败：ViewModel 路径出现 `ClassCastException`，Reducer 路径状态与预期不符。GREEN 使用定向命令运行 `DetailViewModelTest.reopeningRevisionHistoryDoesNotCancelRestoreInProgress`、`DetailRevisionReducerTest.reopeningHistoryCannotReplaceAnActiveRestore`、`DetailViewModelTest.backAndDismissDoNotCancelRestoreBeforeItRefreshesTheEntry`、`DetailViewModelTest.closedRevisionObserverCannotFailAReopenedHistorySheet`，4 项通过、无 failures/errors。该修复的当前行为说明见[修订历史主题](../features/vault/entry-revision-history.md)。
