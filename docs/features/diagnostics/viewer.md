@@ -8,6 +8,8 @@
 
 `DiagnosticsViewModel.onPageEntered()` 创建访问 owner、清除旧保存目标状态并调用 `refresh()`。`refresh()` 先检查 `SecureSessionAccessState.hasFullSecureSessionAccess()`，再以 `logStore.readLines(MAX_VIEW_LINES)` 读取最多 500 条记录；发布结果前确认 page owner 与 refresh owner 仍有效。普通 `Exception` 转成无详情 `RefreshFailed`；`CancellationException` 与 fatal `Error` 继续传播。手动刷新失败保留已有行，异常源结束后不会假定自动复活，只能由新的刷新重新读取。
 
+`ObservabilityRuntimeController.readLines(limit)` 在 `Dispatchers.IO` 上要求 `limit > 0`，调用 `readRecords(limit)`；后者从空 cursor 开始，以 `store.readPage(cursor, minOf(PAGE_SIZE, limit - result.size))` 读取，`PAGE_SIZE` 为 500，直到 cursor 为空或达到 limit。每个 `SanitizedLogRecord` 再映射为 `DiagnosticsLogLine`：`TsvRecordEncoder.encode(record)` 生成可展示文本，trace ID、事件名、错误码、异常分类和异常类型保留为筛选字段。这里的 500 行是页面读取上限；底层分页大小也为 500，不表示页面会一次解码全部保留日志。
+
 默认显示 INFO、WARN、ERROR，FATAL 映射到 ERROR，DEBUG 默认关闭。`ToggleLevel(level)` 与 `SearchChanged(query)` 只变更当前 ViewModel 的可见投影；搜索对 Trace ID、事件名、错误码、稳定异常类别和异常类型执行不区分大小写包含匹配。
 
 单行复制由 `CopyRow(line)` 从 retained rows 中核对当前行后调用 `copyRows(lines)`；Trace 复制由 `CopyTrace(traceId)` 过滤相同 Trace 并裁到 `MAX_COPY_LINES`（100）。`copyRows` 将所选行的脱敏文本合并，以 owner 与 job 两层校验调用 `SensitiveClipboardWriter.writeSensitiveIf(text) { ... }`。离页取消待完成复制，文本不进入可保存 Compose 状态。保存与分享的授权和临时文件边界见[诊断日志导出](export.md)。
@@ -23,6 +25,7 @@
 | 职责 | 类/函数 | 源码 |
 | --- | --- | --- |
 | 页面读取、筛选、复制和清理 | `DiagnosticsViewModel.onPageEntered()`、`refresh()`、`copyRows(lines)`、`clearLogs()` | [`DiagnosticsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/diagnostics/DiagnosticsViewModel.kt) |
+| 加密记录分页读取并映射为页面行 | `ObservabilityRuntimeController.readLines(limit)`、`readRecords(limit)`、`TsvRecordEncoder.encode(record)` | [`ObservabilityRuntimeController.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
 | 诊断 UI 与页面访问生命周期 | `DiagnosticsScreen()`、`DiagnosticsRoute()` | [`DiagnosticsScreen.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/diagnostics/DiagnosticsScreen.kt)、[`DiagnosticsRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/data/DiagnosticsRoute.kt) |
 | 本地记录等级、容量与数据清理 | `StorageSettingsViewModel`、`DataManagementRoute()` | [`StorageSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/data/StorageSettingsViewModel.kt)、[`DataManagementRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/data/DataManagementRoute.kt) |
 | 受策略约束的剪贴板写入 | `SensitiveClipboardWriter.writeSensitiveIf()`、`ClipboardCopyController.writeSensitiveIf()` | [`SensitiveClipboardWriter.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/clipboard/port/SensitiveClipboardWriter.kt)、[`ClipboardCopyController.kt`](../../../app/src/main/java/com/aozijx/passly/app/clipboard/ClipboardCopyController.kt) |
