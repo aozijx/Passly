@@ -1,6 +1,6 @@
 # Credential Manager Provider
 
-状态：当前实现（API 34+，代码核对：2026-10-31）。
+状态：当前实现（API 34+，代码核对：2026-11-06）。
 
 Passly 当前发布 `android.credentials.TYPE_PASSWORD_CREDENTIAL`，支持 password begin-get/get、create 和
 clear-state。暂不支持 privileged browser origin、Passkey、远程条目、sticky session 或按用户名 upsert。
@@ -10,6 +10,8 @@ clear-state。暂不支持 privileged browser origin、Passkey、远程条目、
 `ModernCredentialService` 与 `CredentialBeginGetHandler` 只处理 Credential Manager 请求。调用方身份来自系统注入的
 `callingAppInfo`；自定义 extras 只携带 interaction/entry 指针。锁定时返回一个 `AuthenticationAction`，成功后
 用同一 interaction 重新发现；候选状态下不查询秘密。
+
+`CredentialBeginGetHandler.resolve(request)` 只保留 `BeginGetPasswordOption`，从 `request.callingAppInfo` 解析 packageName，随后把 `adapter.buildRequest(packageName)` 作为 `autofillRequest` 传给 `CredentialManagerFlow.beginGet(autofillRequest)`。若要求先解锁，返回的 PendingIntent 携带 interaction ID；`resolveAfterUnlock(request, interactionId)` 再以相同 packageName 构造 `autofillRequest`，调用 `unlockAndRediscover(interactionId, autofillRequest)`。最终 Get Activity 从系统 `sourceIntent` 调用 `CredentialRequestParser.parsePasswordGet(sourceIntent)`；Ready 结果中的 `interactionId`、`entryId`、`packageName`、`option.allowedUserIds` 分别传给 `selectPassword(interactionId, AutofillGrantContext(packageName, null), entryId, allowedUserIds)`，scope 固定为 native package、无 web domain。只有密码非空且 username 满足 `allowedUserIds` 时才构造带 `AutofillSelectionReceipt` 的 Success。
 
 最终选择通过 `PendingIntentHandler.retrieveProviderGetCredentialRequest()` 取得系统请求，重新验证调用方、
 interaction scope、已展示 Entry 和 `allowedUserIds`，再读取单条密码。ViewModel 的可观察 UI state 只表示
@@ -26,6 +28,8 @@ claim 阻塞。平台 callback 已成功后，日志/trace 记录异常不会将
 ## Create
 
 `CredentialBeginCreateHandler` 只接受 password create。Credential Manager 创建由 Credential Manager 自身开关控制；传统 Autofill 的系统保存提示在 Autofill 启用且密码字段分类有效时默认提供。两者只复用平台无关草稿校验和 `SaveAutofillCredential`。
+
+`CredentialBeginCreateHandler.resolve(request)` 从系统 `request.callingAppInfo` 解析 packageName，调用 `beginCreate(AutofillGrantContext(packageName, null))`，并把 interaction ID 放入 password-create PendingIntent。回调 Intent 由 `CredentialRequestParser.parsePasswordCreate(sourceIntent)` 提取 interaction、packageName、username、password；Ready 结果按这四个值调用 `createPassword(interactionId, AutofillGrantContext(packageName, null), username, password)`。流程先核对设置和 interaction scope，再按完整 Vault 会话决定直接保存或密封到 Inbox；失败或拒绝时取消 interaction，成功保存/入箱时完成 interaction。
 
 Vault 已有完整安全会话时直接写入；否则将草稿密封写入 Autofill Inbox，不弹出认证。完整 Vault 解锁后由 Inbox drainer 导入。保存始终新增登录条目，不按用户名 upsert。
 
@@ -47,6 +51,7 @@ interaction 为 process-local、60 秒超时；认证或秘密解析中的操作
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | Credential Manager 平台请求入口 | `ModernCredentialService.onBeginGetCredentialRequest()`、`onBeginCreateCredentialRequest()`、`onClearCredentialStateRequest()` | [`ModernCredentialService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt) |
-| 凭据发现、选择、创建与取消编排 | `CredentialManagerFlow.beginGet()`、`selectPassword()`、`beginCreate()`、`createPassword()`、`cancel()` | [`CredentialManagerFlow.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |
+| 凭据发现、选择、创建与取消编排 | `beginGet(request)`、`unlockAndRediscover(interactionId, request)`、`selectPassword(interactionId, scope, entryId, allowedUserIds)`、`beginCreate(scope)`、`createPassword(interactionId, scope, username, password)`、`cancel(interactionId)` | [`CredentialManagerFlow.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |
 | 响应 UI state、一次性完成事件与活动交互清理 | `CredentialResponseViewModel.onAction()`、`cancelActiveInteraction()`、`CredentialResponseResultEvents` | [`CredentialResponseViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseViewModel.kt)、[`CredentialResponseResultEvents.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseResultEvents.kt) |
-| Autofill Feature 入口解析 Credential action 并交付结果 | `parseLaunch(source)`、`deliverCredentialResult(completion)`、`AutofillActivityResultClaim.commit()` | [`AutofillFeatureEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/AutofillFeatureEntry.kt)、[`AutofillActivityResultClaim.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/result/AutofillActivityResultClaim.kt) |
+| begin-get/create 请求建候选与 PendingIntent；后续 Activity 从系统 Intent 解析参数 | `CredentialBeginGetHandler.resolve(request)`、`resolveAfterUnlock(request, interactionId)`、`CredentialBeginCreateHandler.resolve(request)`、`CredentialRequestParser.parsePasswordGet(sourceIntent)` / `parsePasswordCreate(sourceIntent)` | [`CredentialBeginGetHandler.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialBeginGetHandler.kt)、[`CredentialBeginCreateHandler.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/CredentialBeginCreateHandler.kt)、[`CredentialRequestParser.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialRequestParser.kt) |
+| Autofill Feature 入口解析 Credential action 并交付结果 | `parseLaunch(sourceIntent)`、`deliverCredentialResult(completion, viewModel, resultDelivery, resultClaim, onComplete)`、`AutofillActivityResultClaim.commit(block)` | [`AutofillFeatureEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/AutofillFeatureEntry.kt)、[`AutofillActivityResultClaim.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/result/AutofillActivityResultClaim.kt) |
