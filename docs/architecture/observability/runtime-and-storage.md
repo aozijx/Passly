@@ -1,6 +1,6 @@
 # 日志运行时与加密存储
 
-状态：当前实现（代码核对：2026-11-02）。
+状态：当前实现（代码核对：2026-11-06）。
 
 | 层 | 职责 |
 | --- | --- |
@@ -45,6 +45,10 @@ writer 在 50ms 窗口内最多合并 16 条记录，按文件大小分组加密
 的批次完成并 fsync；写入/状态检查失败会累计丢弃数，并使下一次 flush 明确失败。队列满时优先淘汰待写 DEBUG，再淘汰
 INFO；ERROR/FATAL 可尝试一次独立 emergency write。
 
+当前普通 `Exception` 会在 `WriteTask.run()` 中计入 batch failure；但 fatal `Error` 会越过该 catch。`finally` 仍执行已从队列
+取出的 flush boundary，因此 `flush()` 的 latch 可能已完成，而 `writeFailureCount` 没有增加，调用方会把未落盘批次当作成功。
+该 normal-writer fatal path 尚无测试覆盖，修复与行为测试见[诊断写入 flush TODO](../../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-6-让fatal写入失败反映到flush结果)。
+
 队列恢复并发生生命周期 flush 时，运行时写入一条 `application.log.overflow` 计数汇总。汇总不包含被丢弃内容，
 也不递归进入已饱和队列。
 
@@ -82,5 +86,5 @@ fatal `Error` 在这些清理动作后从 writer 线程传播。普通 crash han
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 观测运行时启动、读取、刷新与关闭 | `ObservabilityRuntimeController.start()`、`readLines()`、`flush()`、`shutdown()` | [`ObservabilityRuntimeController.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
-| 加密日志记录读写与清理 | `EncryptedLogRecordStore.write()`、`readPage()`、`clear()`、`LogClearResult` | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)、[`LogRecordStore.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
+| 加密日志记录读写、批次与 flush marker | `EncryptedLogRecordStore.write()`、`WriteTask.run()`、`writeBatch(batch)`、`flush(timeoutMs)`、`clear()` | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)、[`LogRecordStore.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
 | 日志文件轮转与过期文件清理 | `EncryptedLogFileManager.cleanup()`、`clear()` | [`EncryptedLogFileManager.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt) |
