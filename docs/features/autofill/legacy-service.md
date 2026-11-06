@@ -1,6 +1,6 @@
 # Legacy Autofill Service
 
-状态：当前实现（API 31+，代码核对：2026-11-04）。
+状态：当前实现（API 31+，代码核对：2026-11-06）。
 
 `LegacyAutofillService` 解析 `AssistStructure`、处理取消信号并构造 Legacy `FillResponse`/`Dataset`。它不构造
 Credential Manager response。
@@ -56,8 +56,26 @@ Legacy 服务按处理阶段记录结构化摘要，便于区分 Android 是否�
 
 Legacy 平台的认证结果按入口显式区分，不能复用一个含隐式布尔默认值的 Intent：
 
-- 锁定发现入口是 `RESPONSE`，认证后返回重新构造的 `FillResponse`；
+- 当前锁定发现入口使用 `RESPONSE`，认证后返回重新构造的 `FillResponse`；
 - 单候选入口和底部候选选择器是 `DATASET`，选择后直接向 Android 返回所选 `Dataset` 并触发填充。
+
+结果目标沿 Intent 显式传递：`LegacyResponseFactory.buildUnlockResponse()` 调用
+`AutofillPendingIntentFactory.createUnlockIntent(context, interactionId, parsed, uiMode, roleIds, inlineRequest)`；该入口固定写入
+`LegacyAutofillResultTarget.RESPONSE`，因此当前即使 `uiMode` 是 `BOTTOM_SHEET`，首次锁定发现的认证仍属于 response-level。
+认证后如果发现到候选，`buildCandidateResponse()` 对非空 BottomSheet 候选调用 `addPickerAuthentication()`，由
+`createPickerIntent(..., uiMode, roleIds)` 写入 `DATASET` 并在 FillResponse 内加入认证占位 Dataset；其他展示模式逐项调用
+`addCandidateAuthentication()` 和 `createCandidateIntent(..., entryId, uiMode, roleIds, inlineRequest)`，每个候选 Dataset
+也使用 `DATASET`。所以“锁定发现认证目标”和“候选选择器认证目标”是两个不同入口。
+
+`AutofillFillRequestParser.toAutofillFillRequest()` 要求 extras 同时包含可解析的 interaction ID、包名、展示模式和结果目标；
+目标由 `LegacyAutofillResultTarget.fromWireValue()` 穷尽稳定 wire value，未知或缺失值直接拒绝。认证选中后，
+`AutofillFillActivity` 以 `AutofillFillResult.SelectedCredential.target` 分支：`DATASET` 直接作为
+`EXTRA_AUTHENTICATION_RESULT` 返回，并附带 `EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET=true`；`RESPONSE` 则包装在
+只含该 Dataset 的新 `FillResponse` 中。写结果前仍由 `AutofillResultDelivery.commitResult(receipt)` 执行终态交付与收尾。
+
+BottomSheet 列表的 Compose key 是 `candidate.id.value`（`String`），点击回调仍传原始 `EntryId`；Route 转成
+`AutofillFillUiAction.CandidateSelected(entryId)`，ViewModel 再经 selection use case 验证当前 interaction 与候选归属。
+避免把领域 `EntryId` 直接传给 lazy list 的 key extractor，也不要为满足 UI key 类型而把业务选择回调改成字符串。
 
 认证后继续 Legacy Fill 时，已有 `CandidatesReady` interaction 且请求带有 direct entry ID 的续接分支由 `DiscoverAutofillCandidates` 返回语义 `ResumeSelection`；Presentation 不读取具体 interaction store，也不自行判断状态。后续仍调用 `ResolveAutofillSelection`，由其重新检查 scope、interaction 状态和条目是否属于已展示候选。非 direct-entry discovery 仍走普通候选搜索。
 
@@ -101,4 +119,9 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 | 解析候选凭据并报告脱敏异常快照 | `RoomAutofillCredentialResolver.resolve()` | [`RoomAutofillCredentialResolver.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/autofill/RoomAutofillCredentialResolver.kt) |
 | 交付平台结果后完成交互与租约收尾 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
 | 准备旧版保存流程 | `LegacySaveFlow.prepare()` | [`LegacySaveFlow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacySaveFlow.kt) |
+| 构造锁定 response、候选 response 与 picker/candidate Dataset | `buildUnlockResponse()`、`buildCandidateResponse()`、`addPickerAuthentication()`、`addCandidateAuthentication()` | [`LegacyResponseFactory.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/builder/LegacyResponseFactory.kt) |
+| 写入入口专属认证目标及候选身份 | `createUnlockIntent(...)`、`createPickerIntent(...)`、`createCandidateIntent(..., entryId, ...)`、`putCommonExtras(..., resultTarget, ...)` | [`AutofillPendingIntentFactory.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/AutofillPendingIntentFactory.kt) |
+| 验证必需 extras 并解析结果目标、ID 和展示模式 | `Intent.toAutofillFillRequest()`、`LegacyAutofillResultTarget.fromWireValue(value)` | [`AutofillFillRequestParser.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillRequestParser.kt)、[`LegacyAutofillResultTarget.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacyAutofillResultTarget.kt) |
+| 按 DATASET / RESPONSE 目标构造 Android 认证结果并交付 | `AutofillFillActivity`、`responseFactory.buildDataset(payload, usernameIds, passwordIds, otpIds)`、`resultDelivery.commitResult(receipt) { ... }` | [`AutofillFillActivity.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillActivity.kt) |
+| 使用稳定 String lazy key 并保持 EntryId 选择事件 | `AutofillCandidateBottomSheet(candidates, onCandidateSelected, onCancel)`、`LazyListScope.items(..., key = { candidate.id.value })`、`AutofillFillUiAction.CandidateSelected(entryId)` | [`AutofillCandidateBottomSheet.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/ui/AutofillCandidateBottomSheet.kt)、[`AutofillFillRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillRoute.kt)、[`AutofillFillViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt) |
 | 密封收件箱的模型与处理流程 | [密封收件箱文档](sealed-inbox.md) | [sealed-inbox.md](sealed-inbox.md) |
