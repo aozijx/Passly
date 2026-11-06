@@ -39,6 +39,17 @@ Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物�
 
 `SecretKeySpec.encoded` 可能返回副本，对它调用 `fill(0)` 不能证明内部密钥已被擦除。文档和注释只能表述为“尽力缩短并覆盖可控副本”。
 
+## 参数与清理的已知边界
+
+当前主密码/恢复码使用固定 Argon2id v1.3 参数：65,536 KiB、3 次、parallelism 4、256-bit 输出及随机 16-byte salt。
+认证 `KeyEnvelope` 尚未保存每个信封的 m/t/p，解锁仍使用固定默认值；不能直接按设备改默认值，否则已有信封可能无法解密。
+这些派生参数与 salt 是公开元数据，不承担保密职责；未来设备校准需要保存并认证参数、在派生前校验资源范围。用户已明确不要求旧信封兼容；届时缺参的旧开发记录应明确失败，现有数据的重置/重新安装须由用户显式完成，不在解锁失败时静默删库。
+该增强尚未实现，见[安全跟踪 Task 9](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-9设备校准-argon2id同时固定每个信封的派生上下文)。
+
+2026-11-06 源码复核发现 `DekManager.lock()` 先将持有数组的 `Unlocked` 替换为 `Locking`，再调用只处理 `Unlocked` 的擦除函数，
+导致原缓存 DEK 未被显式覆盖。上文生命周期中的擦除是应满足的合同，当前实现尚有这一缺口；状态变为 Locked 不能作为缓冲已归零的证据。
+整改与行为测试见[安全跟踪 Task 8](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-8在状态替换前覆盖原缓存-dek)。
+
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |

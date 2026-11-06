@@ -105,8 +105,9 @@ app/                               Android 入口与跨边界适配器
 
 ## UseCase 何时需要
 
-单一 Repository 调用可由 ViewModel 直接编排。跨仓库事务、安全校验、恢复码创建/重置等具有业务不变量的流程使用
-UseCase，避免把领域规则放进 Compose 或 Android 回调。
+ViewModel 可直接执行简单的单一 Repository 读取或写入。UseCase/应用服务封装一个完整且有意义的业务动作：它可以只调用一个 Repository，也可以协调多个仓库、端口或安全能力；是否提取看动作是否包含业务规则、验证、不变量、事务/幂等要求、可复用流程或独立的错误/取消合同，而不是看 Repository 数量。简单一对一转发不建立 UseCase。
+
+纯领域判断放在 Domain Policy/规则；应用或 feature 专属流程放在拥有该流程的 App/Application 层；持久化与数据映射仍由 Repository/Data 层负责。提取 UseCase 后应让 ViewModel 的依赖、分支或异步编排职责实际下降。UseCase 也应保持一个清晰业务动作，不成为多个 ViewModel 逻辑的集中垃圾桶。
 
 ## 相关文档
 

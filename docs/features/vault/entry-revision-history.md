@@ -35,6 +35,7 @@ Closed 和 Open。Open 固定绑定一个 Entry ID，并分别持有列表与当
 
 初始化能力本身是全库且按 generation 一次性执行，不接收当前页面的 `entryId`：`RoomEntryRevisionRepository.initializeHistory()` 委托给 `InitializeEntryRevisionHistory.execute()`，它在 mutex 内读取 `RevisionHistoryMaintenanceStore.completedGeneration()`。若版本低于 `CURRENT_GENERATION = 1`，便通过 `DatabaseTransactionRunner.write("entry_revision_history_initialize")` 清除旧 revision 并重建当前全库基线；`EntryRevisionHistoryRebuilder.rebuildInTransaction(db, now)` 用同一个 `now` 遍历 `entryQueryDao().getAll()`。该 DAO 查询不筛选 `deletedAt`，所以回收站条目也参与基线重建。对每条目读取 `STRUCT_BUNDLE`，调用 `EntryRevisionWriter.snapshotChanges(db, entryId, entryVersion, summary, secret, entryType, now)` 写入基线，并为缺失 bundle 使用空 `EntrySecret`。事务中还会安排附件 GC 和旧图标引用清理。事务成功后标记 generation 完成，再执行附件队列与待清理图标的 post-commit drain。故首次从单条目历史页进入会触发全库一次性维护；后续打开只检查 generation，再读取当前条目 metadata。页面仍拥有按条目的观察、取消、失败投影和重试；初始化的全库事务与资源维护归 Data/application 工作流审计范围。
 
+附件 GC 在删除引用的数据库事务内把未引用资源标记为 `PENDING_GC`；提交后 collector 在完整 Vault 会话可用时执行文件删除并完成数据库记录清理。批次按 `(enqueuedAt, resourceId)` 稳定分页；单行失败会记录并推进游标，避免后续文件饥饿。整轮失败从 250 ms 起按指数退避，最高 30 秒；锁定会停止 drain，解锁或数据库状态恢复会重新唤醒。取消继续传播，fatal `Error` 不映射为普通重试。
 ## 快照与敏感数据
 
 普通比较读取 redacted revision。高敏字段默认只显示字段名，逐项取得授权后才由 revision reveal 用例读取。
@@ -65,8 +66,9 @@ revision、消费精确 permit、物化快照、写入新的当前版本并记�
 
 历史恢复记录 VERSION_RESTORED，回收站恢复记录 RESTORE，软删除记录 DELETE。后两者改变生命周期与乐观锁版本，
 不制造内容快照。内容活动使用 `EntryActivityContext.ContentRevision` 关联实际新版本，访问与生命周期活动分别使用
-Usage / Lifecycle。活动只含类型、版本、条目标识与时间，不含字段值或任意来源文本；存储删除未使用的 source，
-以 revisionVersion 表达可选修订关联，Room schema 保持 1，不兼容旧开发数据。活动不以外键绑定可被裁剪的修订行。
+Usage / Lifecycle。活动只含类型、版本、条目标识与时间，不含字段值或任意来源文本。Room 行保存活动类型、
+条目标识、时间和可选的 `revisionVersion`，Room schema 保持 1，不兼容旧开发数据。
+活动不以外键绑定可被裁剪的修订行。
 
 使用记录统一由 `EntryActivityWriter` 写入，拒绝通过 usage 入口写入内容事件；活动按时间及活动 ID 稳定倒序读取。
 修订最多保留每条 50、全库 1000 份；活动不随修订裁剪删除，使用频次与最后使用时间继续基于已存使用记录统计。
@@ -108,3 +110,4 @@ entry visit 内重订阅，失败提示提供重试；若此前已有记录，�
 | 比较与恢复历史版本 | `CompareEntryRevisionUseCase`、`RestoreEntryRevisionUseCase` | [`CompareEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/CompareEntryRevisionUseCase.kt)、[`RestoreEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/RestoreEntryRevisionUseCase.kt) |
 | 在事务中写入版本并恢复修订 | `EntryRevisionWriter`、`EntryRevisionRestoreTransaction` | [`EntryRevisionWriter.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt)、[`EntryRevisionRestoreTransaction.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/EntryRevisionRestoreTransaction.kt) |
 | 写入条目活动记录 | `EntryActivityWriter` | [`EntryActivityWriter.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryActivityWriter.kt) |
+| 安排及执行附件资源回收 | `AttachmentResourceGarbageCollector.scheduleInTransaction()`、`drain()`、`runAttachmentGcDrain()` | [`AttachmentResourceGarbageCollector.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/attachment/AttachmentResourceGarbageCollector.kt)、[`AttachmentGarbageCollectionWorker.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/attachment/AttachmentGarbageCollectionWorker.kt) |

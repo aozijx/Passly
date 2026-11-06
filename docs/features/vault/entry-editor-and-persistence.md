@@ -55,7 +55,7 @@ Bank Card、Wi-Fi 四类，其余类型明确拒绝。新增类型时分别更�
 
 每类 ViewModel 暴露不可变 `uiState`，保留类型专属表单和 `Idle / Saving` 展示阶段。
 共享的 `EditorWriteSession` 持有保存任务，驱动保存、失败恢复和清空回调；保存取点击时的表单快照，期间拒绝表单更新和重复保存。
-成功清空表单并发送 `EditorSaveEffect.Saved`，失败回到可重试状态。当前成功 Effect 不携带条目 ID，不能按尚不存在的 `Saved(entryId)` 合同调用。
+成功清空表单并发送 `EditorSaveEffect.Saved`，失败回到可重试状态。成功事件不包含条目 ID；宿主按保存成功回调离开创建流程。
 
 Route 按生命周期收集状态；Screen 接收状态和 Action。`EditorSaveEffectHandler` 消费保存结果并调用宿主回调或显示失败提示。
 焦点、动画和展开状态留在 Compose；字段值、扫码结果和保存状态回到表单状态。敏感输入不进入导航参数或 SavedState。
@@ -102,17 +102,7 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 ## 四类完整表单编辑
 
-详情页仅对 Login、OTP、Bank Card、Wi-Fi 展示完整表单编辑入口。路由只传 `entryId`；加载用例从 Repository
-读取真实类型，目标不存在、类型不支持、授权拒绝、字段不完整或会话过期时不返回可保存表单，也不回退到其他类型。
-Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合一次性请求 `REVEAL` 授权；只有完整返回所有请求字段后
-才回填表单，并记录一次 `VIEW` 活动。Wi-Fi 密码属于加密 bundle，由完整会话读取，不走高敏字段 reveal。
-
-表单加载期间禁止编辑和保存。编辑器把加载结果绑定到当前完整认证对象；锁定、切换认证会话或 ViewModel 关闭时取消加载并清空表单。
-保存使用 `EntryEdit.ReplaceForm`，更新用例重新读取最新条目、执行完整 Domain 校验，并通过预期版本写入及最多一次冲突重试提交。
-表单不拥有的字段（包括图标、收藏、过期时间、域名关联、自定义字段及非表单关联）继续保留。失败不会清空用户编辑内容；成功后清空敏感表单并返回详情。
-
-密码表单允许修改主关联应用，但回填和保存还会保留其他已有应用关联。Wi-Fi 编辑只使用编辑器回填，不触发扫码种子或创建初始化。
-其余 EntryType 没有完整表单入口，仍使用上文的单逻辑字段编辑。
+详情页对 Login、OTP、Bank Card、Wi-Fi 提供完整表单编辑，其余类型仍逐项编辑。加载、认证后的一次性 seed 交接、保存及字段保留规则见[完整表单编辑](full-form-editing.md)。
 
 详情保存遇到非预期异常时，当前访问仍有效就转为可重试失败状态，避免界面永久停在 Saving；协程取消继续传播。异常也可能发生在数据库已提交、详情展示刷新失败之后，因此失败提示不等于保证事务回滚；重新打开详情会从持久化真相源重新加载。
 
@@ -127,7 +117,7 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 目前只映射 Password、TOTP、Bank Card、Wi-Fi 四个导航目的地。不支持的请求返回 `UnsupportedDestination`，不回退到 Login。
 注册表从目的地映射派生 `creatableTypes`，由列表 UI model 传入 FAB 和创建弹层；快捷项也与该列表取交集。
 组件只渲染传入的创建选项，不自行遍历类型枚举。筛选继续使用独立的全量选项，读取、导入支持的类型不等于可创建类型。
-不支持目的地的请求不会进入备用表单；旧的未渲染 `addType` 状态与分支已移除。
+不支持的请求不会进入备用表单；创建入口只展示注册表提供的受支持类型。
 
 新增可创建类型应同时核对字段定义、强类型表单与映射、Domain 物化和校验、事务存储、详情读取及备份往返；
 声明 Autofill、扫码等能力时，再验证对应集成。增加注册表只能解决实际的路由或组合需求，不能替代能力闭环。
@@ -157,5 +147,6 @@ Login、OTP 和 Bank Card 中实际存在的高敏字段会按字段存在集合
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |
 | 编辑详情条目 | `EditDetailEntryUseCase.edit()` | [`EditDetailEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/EditDetailEntryUseCase.kt) |
 | 获授权读取完整编辑表单 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
+| 编辑认证后的一次性表单交接 | `EntryEditorSeedStore`、`EntryEditorSeedCoordinator` | [`EntryEditorSeedStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EntryEditorSeedStore.kt) |
 | 按条目类型选择创建/完整编辑目标 | `VaultEditorDestinationRegistry.routeFor()`、`editRouteFor()` | [`VaultEditorDestinationRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt) |
 | 注册详情与四个编辑目的地 | `registerVaultGraph()`、`registerEditorEditDestination()` | [`VaultGraphRegistration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultGraphRegistration.kt) |

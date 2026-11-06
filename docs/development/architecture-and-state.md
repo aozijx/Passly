@@ -1,15 +1,16 @@
 # Presentation 状态管理
 
-状态：当前开发规范（代码核对：2026-10-18）。
+状态：当前开发规范；当前结构示例和迁移状态以 Task 80 全量复核为准。
 
-Passly 使用单向数据流，但不要求每个页面都有 Intent、Effect、Reducer 四件套。模式由状态复杂度决定。
+Passly 使用分层 MVVM 与单向数据流（UDF）：ViewModel 持有页面业务状态，Route 收集状态并连接宿主能力，Content 渲染状态并把用户操作向上发送。Repository Flow、异步操作结果和用户操作是状态生产的不同输入，不构成不同架构。不要把“Flow 页面”与“Action 页面”分别当作 MVVM/MVI 模式。
 
-| 页面 | 模式 |
+| 状态生产需要 | 同一 UDF 架构中的实现 |
 | --- | --- |
-| 静态说明 | Stateless Compose |
-| Repository Flow 投影/简单设置 | UiState + 语义方法 |
-| 多异步来源或复合输入 | UiState + UiAction + Effect |
-| 有非法转换和多路异步结果 | Mutation + 纯 Reducer |
+| 持久数据变化 | ViewModel 观察 Repository Flow，映射为屏幕状态 |
+| 简单用户命令 | 调用语义明确的方法；不必为每个操作定义 Action sealed class |
+| 多类或需穷尽表达的页面输入 | 用类型化 `UiAction` 进入同一个 ViewModel 状态 owner |
+| 状态转换复杂、异步结果汇合或非法组合需禁止 | 可选纯 Reducer；不负责 I/O、认证、导航或异步编排 |
+| 纯静态内容或短暂视觉状态 | 无需强行创建 ViewModel；由 Compose/组件 state holder 管理 |
 
 ## 合同
 
@@ -21,8 +22,11 @@ Passly 使用单向数据流，但不要求每个页面都有 Intent、Effect、
 
 ## ViewModel 和 Reducer
 
-ViewModel 拥有页面生命周期、异步任务和 effect，只依赖内层端口。简单设置可以暴露语义方法；复杂页面统一
-`onAction(action)`。对外只暴露不可变 `StateFlow`/`SharedFlow`。
+ViewModel 拥有页面业务状态、页面异步任务和需要由页面 owner 管理的 effect，只依赖内层端口。对外暴露不可变、可观察的 `UiState`；简单用户操作用语义方法，多类操作再用类型化 `onAction(action)`。不要求所有 ViewModel 统一成同一个入口签名。
+
+屏幕 `UiState` 通常是内存中的展示投影，不是持久数据源。Repository/Domain 是持久业务数据的事实来源；Compose `remember` 只拥有适合组件生命周期的视觉状态。可编辑草稿可独立存在，但需明确它与已保存数据的关系、owner、提交/丢弃及敏感值清理语义。不得让 Repository Flow 与另一份长期可变副本同时声称拥有同一业务字段。
+
+ViewModel 负责屏幕协调，不应因此成为所有业务规则和工作流的收纳处。简单的单一 Repository 操作可直接调用；当一个有名称的业务动作包含验证、不变量、跨端口/仓库编排、可复用策略或需要独立测试的完整流程时，放入职责匹配的 UseCase/应用服务。纯领域判断放入 Domain Policy/规则。UseCase 即使只调用一个 Repository 也可以有价值；若只是逐参数转发一个简单 CRUD 调用，则不增加它。提取后必须实际减少 ViewModel 的依赖、分支或异步职责，不能把 God ViewModel 原样搬成 God UseCase。
 
 Reducer 是可选的。只有多种异步结果汇合、需要阻止非法转换或状态转换已淹没 ViewModel 时才提取。Reducer 消费
 Mutation/Result，不直接执行数据库、认证或导航，也不直接消费需要异步工作的 UiAction。

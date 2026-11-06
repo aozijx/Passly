@@ -74,6 +74,10 @@ payload_ciphertext + tag  AES-256-GCM(serialized draft)
 AAD 是 encoded `magic || version || key_id || draft_id || created_at_ms` 再拼接从 `bootstrap.pb` 读取的
 `public_key_sha256`；fingerprint 不在 record header。payload 使用独立 magic/version，重复 draft ID，并包含
 source（固定 wire key：Legacy=1、Credential Manager=2）、captured time、package/domain/page title/username/password。
+`AutofillInboxRecordCodec.encodePayload(draftId, source, capturedAtMs, draft)` 将 `source.wireKey` 写成 u8；
+`decodePayload(plaintext)` 用 `readUnsignedByte()` 读出 `sourceKey`，调用 `AutofillInboxSource.fromWireKey(sourceKey)`，未知值抛
+`IllegalArgumentException` 并进入记录级隔离路径。该反向解析当前以 `entries.firstOrNull` 按 `wireKey` 查找；稳定值及
+未知来源拒绝行为见[维护 TODO Task 85](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
 字符串使用 UTF-8 与 big-endian signed i32 长度，nullable 字段用 -1 表示缺失；拒绝未知 source、非法 UTF-8、尾随字节与超限字段。
 各 UTF-8 字段上限分别为 package 512、domain 4096、page title 8192、username 8192、password 32768 bytes，整条 record 上限 64 KiB。
 Entry ID 由导入事务根据 draft ID 确定，不在 pending payload 预造 Entry ID。解密后两个 draft ID 必须一致。
@@ -119,5 +123,5 @@ Inbox root 或 pending records；队列仍按本页定义的保留期、容量�
 | --- | --- | --- |
 | 定义 Autofill 入口使用的入队能力端口 | `AutofillInboxQueue` | [`AutofillInboxQueue.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillInboxQueue.kt) |
 | 生成和校验密封收件箱密钥 | `AutofillInboxKeyProvisioner`、`AutofillInboxKeyMaterialCodec` | [`AutofillInboxKeyProvisioner.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyProvisioner.kt)、[`AutofillInboxKeyMaterialCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyMaterialCodec.kt) |
-| 加密队列记录并写入受限队列 | `AutofillInboxQueueWriter.enqueue()`、`AutofillInboxRecordCodec` | [`AutofillInboxQueueWriter.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxQueueWriter.kt)、[`AutofillInboxRecordCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxRecordCodec.kt) |
+| 加密队列记录并写入受限队列 | `AutofillInboxQueueWriter.enqueue()`、`AutofillInboxRecordCodec.encodePayload(draftId, source, capturedAtMs, draft)`、`decodePayload(plaintext)` | [`AutofillInboxQueueWriter.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxQueueWriter.kt)、[`AutofillInboxRecordCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxRecordCodec.kt)、[`AutofillInboxPendingDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/model/AutofillInboxPendingDraft.kt) |
 | Vault 解锁后导入排队草稿 | `AutofillInboxCredentialImporter.import()` | [`AutofillInboxCredentialImporter.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AutofillInboxCredentialImporter.kt) |

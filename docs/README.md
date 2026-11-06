@@ -42,6 +42,10 @@
 - [敏感数据与剪贴板](security/sensitive-data-access.md)
 - [远程内容](security/remote-content.md)
 
+#### 2026-11 安全扫描
+
+- [全仓安全扫描报告](security/2026-11-06-repository-scan.md)
+
 ### 已发布决策
 
 ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原编号；决策变化时新增 ADR 并建立替代关系。
@@ -80,6 +84,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [列表与搜索](features/vault/list-and-search.md)
 - [修订历史](features/vault/entry-revision-history.md)
 - [编辑与写入](features/vault/entry-editor-and-persistence.md)
+- [完整表单编辑](features/vault/full-form-editing.md)
 - [OTP 创建](features/vault/otp-entry.md)
 - [OTP 运行时与复制](features/vault/otp-runtime.md)
 - [OTP URI](features/vault/otp-uri.md)
@@ -129,40 +134,27 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [测试与质量门禁](development/testing.md)
 - [共享元素转场](development/shared-element-transitions.md)
 
-### 已归档审查与交付记录
-
-- [2026-11-06 Presentation 与映射边界审查记录](reviews/2026-11-06-presentation-and-mapping-boundaries.md)
-- [2026-11-06 运行可靠性边界修复记录](reviews/2026-11-06-reliability-boundary-hardening.md)
-- [2026-11-06 Kotlin 格式门禁交付记录](reviews/2026-11-06-kotlin-format-gate-delivery.md)
-- [2026-11-06 敏感字段完整读取端口收窄记录](reviews/2026-11-06-sensitive-field-readall-port-removal.md)
-- [2026-11-06 Runtime Session 解锁与状态事件失败边界](reviews/2026-11-06-runtime-session-failure-boundaries.md)
-- [2026-11-06 安全凭据提交点交付记录](reviews/2026-11-06-recovery-credential-commit-contract.md)
-- [2026-11-06 Proto DataStore 设置读取恢复交付记录](reviews/2026-11-06-datastore-settings-read-recovery.md)
-- [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)
-- [2026-11-02 设备锁任务清理交付记录](reviews/2026-11-02-device-lock-task-clear-delivery.md)
-- [设备锁任务清理设计记录](reviews/2026-11-02-device-lock-task-clear-design-record.md)
-- [2026-11-02 长函数与大文件审查](reviews/2026-11-02-long-function-and-large-file-review.md)
-- [2026-11-02 Autofill 严格域名匹配交付记录](reviews/2026-11-02-autofill-strict-domain-matching-delivery.md)
-- [Autofill 严格域名匹配设计记录](reviews/2026-11-02-autofill-strict-domain-matching-design-record.md)
-- [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
-- [2026-10-30 Entry Payload Adapter 注册审查](reviews/2026-10-30-entry-payload-adapter-registration.md)
-- [2026-10-29 可维护性与冗余审查](reviews/2026-10-29-passly-maintainability-audit.md)
-- [2026-10-29 功能文件归属审查](reviews/2026-10-29-feature-file-ownership-audit.md)
-- [2026-10-29 Domain Entry Type 注册审查](reviews/2026-10-29-domain-entry-type-registration.md)
-- [2026-10-29 Data Secret Payload DTO 拆分审查](reviews/2026-10-29-data-secret-payload-dto-split.md)
-- [2026-10-27 历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)
-- [2026-07 代码审查](reviews/2026-07-code-review.md)（仅适用于该审查时点）
-
 ### 正在推进的设计与待办
 
-- [App Password 对话框生命周期设计](superpowers/specs/2026-11-03-app-password-dialog-lifecycle-design.md)
+#### 2026-11 设计与待办
+
 - [Typed Diagnostic Events 设计](superpowers/specs/2026-11-04-typed-diagnostic-events-design.md)
-- [硬件 Keystore 验收](superpowers/plans/2026-10-29-hardware-keystore-verification.md)
-- [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
+- [Scanner 入口与 Framing 设计](superpowers/specs/2026-11-06-scanner-entry-and-framing-design.md)
 - [应用架构与并发设计 TODO](superpowers/plans/2026-11-06-app-architecture-concurrency-todo.md)
 - [Backup 审查待办](superpowers/plans/2026-11-06-passly-backup-review-followups.md)
+- [Diagnostics 写入与 flush 可靠性跟进](superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)
+- [Autofill BottomSheet 认证合同实施计划](superpowers/plans/2026-11-06-autofill-bottom-sheet-auth-contract.md)
 - [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
+- [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
 - [OTP 审查待办](superpowers/plans/2026-11-06-passly-otp-review-followups.md)
 - [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
 - [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
-- [文档结构后续待办](superpowers/plans/2026-11-06-passly-documentation-structure-followups.md)
+
+#### 2026-10 计划
+
+- [硬件 Keystore 验收](superpowers/plans/2026-10-29-hardware-keystore-verification.md)
+- [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
+
+#### 2026-10 验收依据
+
+- [历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)

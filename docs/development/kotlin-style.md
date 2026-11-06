@@ -12,6 +12,10 @@
 ## 命名
 
 - 类型使用 PascalCase；函数和属性使用 camelCase；真正编译期常量使用 UPPER_SNAKE_CASE。
+- 固定常量放在 Kotlin 文件顶部的声明区，即 imports 之后、主要类型/函数之前；文件私有实现常量用 `private const val`，避免藏在文件尾部的 `companion object`、函数内部或使用点旁。
+- 被多个源文件共享的常量集中到所属层/Feature 的专用配置或常量文件（如同一协议的 `XxxConstants.kt` / `XxxConfig.kt`），保持最小可见性；不创建跨功能、无明确 owner 的全局 `Constants.kt` 大杂烩。单文件常量保持在该文件，不为一处使用额外造转发对象。
+- 算法、持久化 key、wire tag、格式版本和输入上限属于具体协议/组件 owner；可集中在该 owner 的文件头部或专用合同文件，但不可按相同数字或相同字面量跨不相关模块合并。面向用户的文本、Android 资源、构建值与运行期配置继续由资源、Gradle 或配置数据源拥有，不复制成 Kotlin 常量。
+- 抽取或移动常量只改变其归属与位置，不隐式改变值、默认行为、持久化兼容性或外部协议。
 - Boolean 表达明确判断：`isEnabled`、`hasFullAccess`、`canSubmit`。
 - 安全和判断边界使用有语义的 `Policy`、`Gate`、`Guard`、`Provisioner`、`UseCase`。
 - 不使用 `Manager` 聚合数据、认证、导航和 UI 等无关职责。

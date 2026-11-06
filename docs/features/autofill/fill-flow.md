@@ -1,6 +1,6 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-11-02）。
+状态：当前实现（代码核对：2026-11-06）。
 
 ## 应用内部输入边界
 
@@ -75,13 +75,30 @@ Legacy 和手动无障碍入口可用 `HeuristicMatchStrategy` 识别非标准�
 interaction。并发授权合并为一次认证；成功后重新发现或最终选择不再次认证。interaction 绑定来源、规范化作用域和
 实际展示过的 Entry IDs，不是按包名授予的时间窗口。
 
+正常返回的取消、失败与拒绝由各平台流程映射为取消或不可用状态。认证调用本身抛异常的 cleanup 缺口及并发 waiter 所有权见[维护 TODO Task 81](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-81保证-autofill-授权异常结束共享-attempt-并释放等待者)。
+
+Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInteraction(request.interactionId)`；授权成功后，`continueAuthorized(request)` 调用 `discover(request)`，再把 `request.toDomainRequest()`、同一个 `request.interactionId`、`request.roleMap()` 和 `request.directEntryId` 分别传给 `DiscoverAutofillCandidates.invoke(request, interactionId, classifiedRoles, directEntryId)`。已分类 role map 因而不会在 Domain use case 中被第二次启发式解析。发现结果若为 `Candidates` 且请求含 `directEntryId`，ViewModel 直接以该 ID 进入选择解析；底部候选模式则先保存 trace continuation，再发布候选 UI；系统菜单/Inline 模式直接构造 discovery response。
+
+`DiscoverAutofillCandidates.invoke()` 用 `request.source` 选择启发式或严格字段匹配器，并从 `request.packageName`、`request.domain` 构造 `AutofillGrantContext(...).normalized()`。新交互时，它将规范化 scope、`request.source.toInteractionSource()` 和设置中的 `requireAuthentication` 传给 `StartAutofillInteraction`；已有交互则按 `interactionId` 读取 snapshot 并要求 scope 完全相同。候选查询只传 `AutofillCandidateQuery(packageName, webDomain, allowUnmatched, limit, strictDomainMatching)`：网页 scope 时 `packageName = null`，原生应用才传规范化 package；返回的 candidate IDs 再传给 `interactionStore.recordCandidates(snapshot.id, ids)`，使最终选择必须属于实际展示集合。
+
 ## 解析秘密
 
-`ResolveAutofillSelection` 依次验证：入口仍启用、interaction 存在且已授权、最终调用方作用域相同、Entry ID
-确实展示过、Credential Manager allowed user 仍通过。之后 `AutofillCredentialResolver` 只读取选中条目的密码。
-请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
+`DiscoverAutofillCandidates` 读取本次发现时的 Autofill 设置，并检查对应入口是否启用；`ResolveAutofillSelection`
+本身不重读设置。它验证 interaction 存在、scope 相同且已授权，再通过状态机确认 Entry ID 确实展示过。
+Credential Manager 的 `allowedUserIds` 在 `CredentialManagerFlow.selectPassword()` 收到解析结果后独立校验，Legacy 不使用该限制。
+`AutofillCredentialResolver` 只读取选中条目的密码；请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
+已展示候选对应的设置若在交付前关闭，最终选择是否仍有效目前没有重读设置或撤销 interaction 的步骤；合同待裁定，见[维护 TODO Task 82](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-82定义-autofill-设置变更后已展示凭据的有效期)。
 Base32 secret 的字符、补位和尾部位由 Domain 的 `OtpSecretCodec` 统一校验；`OtpGenerator` 遇到损坏密钥时
 返回 `InvalidSecret`，不生成或填充 OTP 码。
+
+Legacy 选择时，`AutofillFillViewModel.resolve(request, entryId)` 将 `request.interactionId`、新建的
+`AutofillGrantContext(request.packageName, request.webDomain)`、选中的 `EntryId` 和
+`request.otpIds.isNotEmpty()` 作为 `ResolveAutofillSelection.invoke(interactionId, scope, entryId, includeOtp)` 参数。
+Credential Manager 则由 `CredentialManagerFlow.selectPassword()` 传入平台解析后的 interaction、scope、EntryId
+和 `allowedUserIds`，并固定 `includeOtp = false`。use case 在解析前再次规范化并比较 scope，再由
+`interactionStore.beginSelection(interactionId, entryId)` 原子检查展示资格，最后将
+`AutofillCredentialSelection(entryId, includeOtp)` 交给 resolver；平台解析的用户限制由 Credential Manager
+flow 在拿到结果后额外校验 username，Legacy 不使用该参数。
 
 ## 结果与关闭顺序
 
@@ -90,9 +107,7 @@ Activity 只编排平台结果，ViewModel 只编排授权、发现和选择。L
 `SelectedResponse`、`SelectedDataset`、`Cancelled` 明确区分，不使用 nullable receipt 猜测是否需要关闭临时会话。
 Credential Manager 同样用 `Immediate` 与 `CommittedSelection` 区分普通平台响应和已选择凭据。
 
-`LegacyAutofillResultTarget` 是 Legacy 启动协议的一部分：解锁发现返回 `RESPONSE`，单候选和底部候选选择返回
-`DATASET`。PendingIntent 工厂在创建入口时写入显式稳定字符串，解析器拒绝缺失或未知值；Compose 底部列表直接传递
-类型化 `EntryId`，不再经过字符串往返转换。该目标只决定 Android 平台结果形态，不进入 domain 候选数据结构。
+`LegacyAutofillResultTarget` 是 Legacy 启动协议的一部分。`LegacyResponseFactory.buildUnlockResponse(context, interactionId, discoveryContext, parsed, inlineRequest)` 根据 `discoveryContext.presentation` 调用 `forLockedPresentation(presentation)`：`BOTTOM_SHEET` 映射为 `DATASET`，`FLOATING` 与 `SYSTEM_INLINE` 映射为 `RESPONSE`。同一目标传给 `AutofillPendingIntentFactory.createUnlockIntent(..., uiMode, roleIds, resultTarget, inlineRequest)` 并决定 builder 构造需认证占位 `Dataset` 还是 `FillResponse.setAuthentication()`；单候选和已解锁底部 picker 则由 candidate/picker Intent 显式使用 `DATASET`。PendingIntent 工厂将目标的稳定 wire value 写入 extras，`Intent.toAutofillFillRequest()` 拒绝缺失或未知值。认证结果由 Activity 按目标交付，列表选择回调仍传类型化 `EntryId`，不经过字符串往返转换。完整平台分支见[Legacy Service](legacy-service.md#认证结果目标与-bottomsheet-选择)。
 
 Compose 路由将工作流状态映射为显式的 `Hidden` 或 `Candidates` 显示状态；终态提交属于独立副作用，不再通过
 nullable 候选列表或组合函数提前返回表达“当前不显示 UI”。

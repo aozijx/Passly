@@ -2,6 +2,18 @@
 
 ViewModel 拥有单个页面或明确页面流程的状态、动作和生命周期任务。它可以依赖 Domain 规则、Repository、UseCase、Interactor 和窄的应用端口；不得注入、保存、调用或在签名中接收另一个 ViewModel。共享业务行为放入有明确职责的 UseCase/Interactor 或端口，不通过 ViewModel 相互调用传递。
 
+## 避免上帝 ViewModel 与业务逻辑膨胀
+
+ViewModel 的职责是屏幕状态生产与页面级协调，不是容纳所有 feature 逻辑。评估是否过载时，检查它是否同时拥有多个可独立变化的业务流程、无关状态机、过宽依赖闭包、重复分支/映射，或多个有不同取消与重试合同的异步任务组；行数和函数数量只用于发现候选，不单独决定拆分。
+
+- 屏幕展示映射和短生命周期页面状态留在 Presentation/ViewModel；持久数据仍由 Repository/Domain 提供，避免复制一份可独立写入的业务真相。
+- 可复用的纯业务判断放进所属 Domain Policy/规则；完整业务动作及其验证、不变量、幂等/事务或跨端口编排放入职责明确的 UseCase/应用服务。
+- UseCase 可以只依赖一个 Repository，只要它封装了有意义的业务动作、规则或独立测试边界；单纯一对一转发简单读写仍由 ViewModel 直接调用 Repository。
+- Activity Result、导航和 Android 平台生命周期留在 Route/Activity；只有独立状态、任务生命周期和取消/清理合同完整的流程才建立独立 owner。
+- 提取后的 owner 必须让原 ViewModel 实际减少状态、依赖、分支或异步职责；不把整段实现搬进万能 UseCase、Coordinator、Manager，也不新增纯转发桥。
+
+异步编排或状态 owner 迁移需要 ViewModel/Route/宿主行为测试，覆盖取消、失败重试、迟到结果和平台交付；纯函数测试不能代替 owner 行为覆盖。
+
 这条边界覆盖主构造器、属性、函数 receiver/参数/返回类型、嵌套泛型和可执行表达式中的类型引用，也包括 import alias 与完全限定名。普通字符串文本、注释与转义美元符号不构成类型依赖。架构门禁应基于实际 ViewModel 声明识别引用目标，不能只因某个普通类型的名字包含 `ViewModel` 而拒绝它。
 
 ## UI owner

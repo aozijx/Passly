@@ -14,9 +14,11 @@
 ## 职责与命名
 
 - ViewModel 管理页面生命周期、状态、异步任务和 Effect，不直接依赖 DAO、Room、文件实现或 Android 导航对象。
-- Repository 聚合领域数据并隔离持久化模型；UseCase 表达跨 Repository 的业务动作；Policy 负责可复用判断；Gateway 只用于真实的外部能力边界。
+- Repository 聚合领域数据并隔离持久化模型；UseCase/应用服务拥有一个完整、有意义的业务动作及其编排；Policy 负责可复用的纯判断；Gateway 只用于真实的外部能力边界。
 - 多模块调用方依赖 Domain 能力端口；具体能力由拥有实现机制的模块实现并在组合根绑定。Autofill Inbox 入队契约属于 `domain.autofill.port`，Security 只拥有其密封加密和耐久文件写入实现，App Feature 不直接依赖 Security 实现包。
-- 不为单次 Repository 调用机械增加 UseCase，也不把数据库、认证、导航和错误展示混入同一个对象。
+- 单次 Repository 调用若只是简单读写，可由 ViewModel 直接发起；当单仓库操作本身承载明确业务意图、验证、不变量、可复用流程或独立测试边界时，也可以由 UseCase 封装。不要机械建立一对一 Repository 转发层。
+- ViewModel 同时堆积多个独立状态机、业务流程、宽依赖闭包或各自有取消/重试合同的任务组时，按真实职责把规则归入 Domain Policy、完整操作归入 UseCase/应用服务、平台生命周期归入 Route/Activity。判断拆分看职责和依赖是否减少，不按行数强拆；禁止把大 ViewModel 原样搬进 God UseCase/Manager。
+- 不把数据库实现、认证策略、导航和 UI 错误展示混入同一个对象；拆出的能力须由真实 owner 管理，不增加只转发参数和结果的桥接层。
 - 审查 Route/ViewModel 拆分时，先追踪状态所有者、异步任务组、取消与资源清理、宿主副作用及依赖闭包；仅当新所有者能独立承担完整生命周期并实际减少原所有者的状态或依赖时才拆分。Route 保留生命周期、Activity Result 和系统 effect；避免只搬函数、回调包或一一转发层。异步编排所有权变化需有 Route/ViewModel 行为测试。
 - 页面根 Reducer 只组合子状态。标签、favicon 等拥有独立状态语义的能力由各自 Reducer 处理。
 - Presentation Loader 只返回页面实际消费的投影；不得为未使用的摘要、就绪标记或未来策略预留状态，也不得为无复用消费者的 Policy 保留 DI 抽象。

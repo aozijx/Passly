@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-11-02。
+代码核对日期：2026-11-06。
 
 ## 契约与状态机
 
@@ -41,6 +41,15 @@ stateDiagram-v2
 `NonCancellable` 中完成 session 恢复后继续传播，JVM fatal `Error` 完成必要恢复后原样传播。恢复或错误遥测产生的次级异常
 保留为 suppressed；次级 fatal/cancellation 可取代普通异常，但不能覆盖已经发生的 fatal 或调用方取消。认证终态日志失败
 也作为次级异常保留，不能遮蔽原认证错误。恢复码 envelope 删除失败会回滚暂存 session；fatal 删除/回滚错误按同一优先级传播。
+
+认证的生产调用链为 `DefaultAuthenticationManager.authenticate(request, input)` →
+`withConsumedCredential(input) { credential -> ... }` →
+`securityEvents.traceAuthentication(request.purpose) { ... }` →
+`authenticateInternal(request, credential, traceScope)` →
+`requestSlot.withSlot(onBusy = ..., block = ...)` →
+`authenticateWithSlot(request, credential, traceScope)`。`request.id` 用于状态与失败关联，`request.purpose` 同时决定是否打开会话、认证策略和 trace 类型；`request.allowedMethods` 只与目的允许集合及当前 `authenticationMethods.value` 求交。`credential` 只传给 `CredentialMethodExecutor.execute(request, method, host, credential)`，生物识别则调用 `BiometricMethodExecutor.execute(request, host)`。忙请求在拿到 slot 前返回 `BUSY`，但已消费的凭据仍由最外层 `finally` 清零。
+
+需要打开会话的目的会依次发布 `AwaitingHost(request.id)` 和 `Authenticating(request.id, method)`；取消/失败时由 `restoreState(previousState)` 根据先前的 `Authenticated`、`AutofillAuthenticated`、`RecoveryMode` 或锁定状态调用对应恢复入口。成功结果若是恢复码会先调用 `authenticationMethods.onRecoveryCodeConsumed()`；目的要求解锁敏感数据密钥时再调用 `sensitiveDataKeyManager.unlockAfterFreshAuthentication()`；不打开会话的成功认证调用 `session.onUserInteraction()`。公共 `lock(request)` 则原样转发到 `VaultSessionController.lock(request)`，其 `SessionLockRequest.reason` 决定软锁或封存级别，`trigger` 进入遥测上下文，不由页面重算策略。Controller 以 `traceLock(request = request, timeoutMs = ...)` 包住 `mutex.withLock`；这里的 `timeoutMs` 是 trace 字段，不是互斥等待或数据库封存的硬超时。等待 mutex 时取消会阻止锁定开始；取得 mutex 后，撤销授权、锁级别转换、封存和密钥清理在 `NonCancellable` 中收尾。Activity teardown 对该等待的影响及未完成的宿主级验证见[维护 TODO Task 9](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-9保证-autofill-最后一个租约取消后仍能完成锁定)。
 
 前台用户交互会重新开始空闲计时。进程进入后台后停止前台空闲计时；启用“后台自动锁定”时，从进入后台开始按同一个
 自动锁定时间倒计时，倒计时内返回前台会取消后台封存。倒计时已经到期并开始封存后，返回前台不得取消正在进行的
