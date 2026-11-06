@@ -57,6 +57,8 @@ Bank Card、Wi-Fi 四类，其余类型明确拒绝。新增类型时分别更�
 共享的 `EditorWriteSession` 持有保存任务，驱动保存、失败恢复和清空回调；保存取点击时的表单快照，期间拒绝表单更新和重复保存。
 成功清空表单并发送 `EditorSaveEffect.Saved`，失败回到可重试状态。成功事件不包含条目 ID；宿主按保存成功回调离开创建流程。
 
+`EditorWriteSession.save { draft }` 将普通 `AppResult.Failure` 或普通 `Exception` 映射为 `EditorSaveEffect.Failed` 并调用 `onIdle()`；`CancellationException` 仅在相同认证 owner 仍有效时恢复 Editing/Idle，否则清空，然后继续传播。fatal `Error` 不在捕获范围内，会原样逸出且跳过 `Finished`、`onIdle()` 和 `onClear()`；若 ViewModel 仍存活，阶段可能停在 `Saving`，敏感表单未由该失败路径清理。此缺口由[维护 TODO Task 42](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)跟踪；fatal `Error` 不应按可重试的普通失败解释。
+
 Route 按生命周期收集状态；Screen 接收状态和 Action。`EditorSaveEffectHandler` 消费保存结果并调用宿主回调或显示失败提示。
 焦点、动画和展开状态留在 Compose；字段值、扫码结果和保存状态回到表单状态。敏感输入不进入导航参数或 SavedState。
 
