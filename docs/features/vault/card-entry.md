@@ -12,6 +12,25 @@ CVV 可留空；填写时页面复用 Domain 的 `CardCvvValidator`，与创建�
 `INVALID_LENGTH`、`INVALID_FORMAT`。有效但未识别卡组织的号码仍可保存，原始分组格式保持不变。
 这些规则用于新建条目的格式校验，不会重写既有条目或改变原生归档恢复策略。
 
+## 表单映射与保存参数链
+
+`AddBankCardViewModel.onAction(AddBankCardAction.Save)` 进入 `save()`，读取当前 `AddBankCardUiState` 快照，并要求
+`canEditForm()` 与 `current.canSave` 成立；随后调用
+`writeSession.save { current.form.toEntryDraft() }`。闭包延迟到 `EditorWriteSession` 接受当前认证会话和保存尝试后执行，
+因此重复保存、保存期间修改表单或失效会话不会提交另一份表单状态。
+
+`AddBankCardFormState.toEntryDraft()` 将标题和卡号首尾裁剪后写为 `TITLE`、`CARD_NUMBER`；可选持卡人、CVV、付款 PIN、
+账单地址、银行资料、备注以 `withOptionalText(definition, key, rawValue)` 首尾裁剪，空值不添加字段；已选择的有效期
+通过 `CardExpiry.storageValue` 写入 `CARD_EXPIRATION`，标签经 `parseRawTags()` 后写入 `TAGS`。卡号格式预检来自
+`AddBankCardFormState.cardNumberValidation` 对原始表单字段调用 `CardNumberValidator.validate(cardNumber)`；Domain 校验仍在
+草稿创建/替换入口执行，不依赖 UI 预检作为唯一边界。
+
+`EditorWriteSession` 执行 `write(draft)` 时，ViewModel 写入闭包按 `editingEntryId` 分支：新建调用
+`createEntryUseCase(draft)`（`EntryCreation` 端口），详情完整编辑调用
+`editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))`。完整编辑由 Domain `EntryFormEditor.apply(entry, draft)`
+按 Entry 类型物化替代表单、保留表单不拥有的状态并执行 `EntryValidation.validate(updated)`；清空可选表单值会映射为该
+完整表单字段的清除，不会触发逐字段修订。
+
 ## 可选银行资料
 
 创建页的“银行资料”包含以下可选字段，保存前去除首尾空白；币种允许多币种文本，如 `CNY / USD`。
@@ -64,6 +83,10 @@ Bitwarden 的分离年月字段在适配边界允许一位或两位月份，完�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 新建银行卡条目表单与动作编排 | `AddBankCardViewModel` | [`AddBankCardViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/AddBankCardViewModel.kt) |
+| 保存时映射表单字段、有效期与标签为 EntryDraft | `AddBankCardFormState.toEntryDraft()`、`withOptionalText(definition, key, rawValue)`、`withTags(definition, rawTags)` | [`BankCardFormMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/BankCardFormMapper.kt) |
+| 接收 Save Action、截取当前表单并延迟给写入会话 | `onAction(AddBankCardAction.Save)`、`save()`、`writeSession.save { current.form.toEntryDraft() }` | [`AddBankCardViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/AddBankCardViewModel.kt)、[`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
+| 由编辑模式选择创建或完整表单替换 | `createEntryUseCase(draft)`、`editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))` | [`AddBankCardViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/AddBankCardViewModel.kt) |
+| 替换银行卡表单、保留表单外状态并执行完整校验 | `EntryFormEditor.apply(entry, draft)`、`EntryValidation.validate(updated)` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryValidation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryValidation.kt) |
 | 校验卡号与 CVV | `CardNumberValidator.validate()`、`CardCvvValidator` | [`CardNumberValidator.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/CardNumberValidator.kt)、[`CardCvvValidator.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/CardCvvValidator.kt) |
 | 表达和解析有效期 | `CardExpiry.parse()` | [`CardExpiry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/credential/CardExpiry.kt) |
 | 将银行卡凭据映射到加密 payload | `CardEntryPayloadAdapter.encode()` | [`CardEntryPayloadAdapter.kt`](../../../data/src/main/java/com/aozijx/passly/data/mapper/entry/CardEntryPayloadAdapter.kt) |
