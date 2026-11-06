@@ -18,11 +18,24 @@
 Scanner 将损坏或不支持的 OTP URI 保留为普通文本；编辑器报告解析失败并保留已经输入的凭据，不改用
 另一种算法或猜测计数器。
 
+调用入口使用相同的 Domain parser，但解析结果的 owner 不同：扫码先由
+`ScannerResultClassifier.classify(rawValue)` 将原始字符串传给 `OtpAuthUriCodec.parse(rawValue)`；仅 `Parsed(config)`
+生成 `ScannerResult.Otp(rawValue, config)`，之后 `ScannerPurpose.resolveImport(result)` 按 `General` 或
+`ApplyToOtpEditor` 返回 `ScannerImport.Otp(config)`。malformed/unsupported 在 Scanner 分类中继续参与 Wi-Fi/链接/文本分类，
+不会在这一层写入条目。OTP 编辑器手动粘贴则由 `AddOtpViewModel.onAction(UriChanged(value, reportFailure))` 进入
+`updateUri(value, reportFailure)`，传入 `value` 解析；成功时将 `parsed.config` 映射到当前表单，只有请求允许报告失败时才发
+`UriParseFailed`。扫码得到的 config 由 `tryApplyScannedConfig(config)` 填入当前表单，不再重复 parse，也不直接保存。
+
 Bitwarden 的 `login.totp` 若以 `otpauth:` 开头，也通过上述 Domain 解析器；损坏或不支持的 URI 在适配阶段
 拒绝整个源文件，不因兼容导入策略改成默认配置。归档字段通过 `toOtpArchiveFields` 与原生导出共用稳定键映射。
 裸密钥和 `steam://` 是 Bitwarden 适配器的独立源格式分支，不作为 `otpauth:` URI 解析；两者同样使用
 `OtpSecretCodec.canonicalBase32` 校验并规范密钥，再经共享归档字段映射输出。裸密钥允许输入空白；
 Steam 前缀按大小写无关方式识别和截取。无效密钥统一转为不含原始值的备份失败，不保留半成品条目。
+
+具体地，`BitwardenJsonImportAdapter.parseOtpFields(value)` 先裁剪得到 `trimmed` 并调用
+`OtpAuthUriCodec.parse(trimmed)`；`Parsed` 直接使用 `config`，`Malformed/Unsupported` 抛出不携带原始 URI 的
+`BackupFailed`，只有 `NotOtp` 才进入 Steam URI 或裸 Base32 分支。最终配置传给 `config.toOtpArchiveFields()`，
+使用原生备份相同的显式稳定键，不在 Adapter 中另写 OTP wire mapping。
 
 ## 导出与密钥
 
@@ -42,5 +55,9 @@ URI 的 secret 始终为无补位 Base32。内部 Base64 密钥先解码，再�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 解析与格式化 otpauth URI | `OtpAuthUriCodec.parse()`、`format()` | [`OtpAuthUriCodec.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpAuthUriCodec.kt) |
+| 从原始扫码文本分类 OTP，并按 ScannerPurpose 暴露配置 | `ScannerResultClassifier.classify(rawValue)` -> `OtpAuthUriCodec.parse(rawValue)` -> `ScannerPurpose.resolveImport(result)` | [`ScannerResultClassifier.kt`](../../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerResultClassifier.kt)、[`ScannerPurpose.kt`](../../../app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerPurpose.kt) |
+| 将手动 URI 输入解析并应用到当前 OTP 表单 | `onAction(UriChanged(value, reportFailure))` -> `updateUri(value, reportFailure)` -> `OtpAuthUriCodec.parse(value)`；扫码配置走 `tryApplyScannedConfig(config)` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`AddOtpAction.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpAction.kt) |
+| 解析 Bitwarden `login.totp` 并映射到稳定归档字段 | `parseOtpFields(value)` -> `OtpAuthUriCodec.parse(trimmed)` -> `config.toOtpArchiveFields()` | [`BitwardenJsonImportAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/bitwarden/BitwardenJsonImportAdapter.kt)、[`OtpArchiveFields.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/OtpArchiveFields.kt) |
+| 授权揭示 OTP secret 后格式化 QR URI，并在退出时清理明文 | `ExportEntryQrUseCase` -> `OtpAuthUriCodec.format(config.copy(secret = String(chars)), entry.title)` | [`ExportEntryQrUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/ExportEntryQrUseCase.kt) |
 | 校验和规范化 OTP Base32 密钥 | `OtpSecretCodec.canonicalBase32()` | [`OtpSecretCodec.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpSecretCodec.kt) |
 | 将 OTP 配置映射到备份稳定字段 | `toOtpArchiveFields()` | [`OtpArchiveFields.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/OtpArchiveFields.kt) |
