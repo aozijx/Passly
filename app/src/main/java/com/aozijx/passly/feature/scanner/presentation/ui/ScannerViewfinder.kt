@@ -33,6 +33,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.feature.scanner.presentation.ScannerViewfinderFrame
 
+private val VIEWFINDER_CORNER_RADIUS = 28.dp
+private val FRAME_DECORATION_LENGTH = 42.dp
+private val FRAME_OUTLINE_WIDTH = 1.5.dp
+private val FRAME_DECORATION_WIDTH = 4.dp
+
 @Composable
 internal fun ScannerViewfinder(
     isScanning: Boolean,
@@ -43,7 +48,7 @@ internal fun ScannerViewfinder(
         val frameSize = frame.size
         val density = LocalDensity.current
         val frameSizePx = frame.sizePx
-        val cornerRadiusPx = with(density) { 28.dp.toPx() }
+        val cornerRadiusPx = with(density) { VIEWFINDER_CORNER_RADIUS.toPx() }
 
         Canvas(
             modifier =
@@ -78,7 +83,7 @@ internal fun ScannerViewfinder(
                         .fillMaxSize()
                         .graphicsLayer {
                             clip = true
-                            shape = RoundedCornerShape(28.dp)
+                            shape = RoundedCornerShape(VIEWFINDER_CORNER_RADIUS)
                         },
             ) {
                 if (isScanning) {
@@ -120,47 +125,74 @@ internal fun ScannerViewfinder(
 private fun ScannerFrame(modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primary
     Canvas(modifier = modifier) {
-        val outlineWidth = 1.5.dp.toPx()
-        val cornerWidth = 4.dp.toPx()
+        val outlineWidth = FRAME_OUTLINE_WIDTH.toPx()
+        val cornerWidth = FRAME_DECORATION_WIDTH.toPx()
         val inset = cornerWidth / 2f
-        val cornerLength = 34.dp.toPx()
+        val cornerRadius = VIEWFINDER_CORNER_RADIUS.toPx() - inset
+        val cornerLength = FRAME_DECORATION_LENGTH.toPx()
         val maxX = size.width - inset
         val maxY = size.height - inset
 
         drawRoundRect(
             color = Color.White.copy(alpha = 0.42f),
-            cornerRadius = CornerRadius(28.dp.toPx()),
+            topLeft = Offset(inset, inset),
+            size = Size(size.width - inset * 2f, size.height - inset * 2f),
+            cornerRadius = CornerRadius(cornerRadius),
             style = Stroke(width = outlineWidth),
         )
 
         fun corner(
-            start: Offset,
-            horizontal: Offset,
-            vertical: Offset,
+            arcTopLeft: Offset,
+            startAngle: Float,
+            horizontalStart: Offset,
+            horizontalEnd: Offset,
+            verticalStart: Offset,
+            verticalEnd: Offset,
         ) {
-            drawLine(primary, start, horizontal, cornerWidth, StrokeCap.Round)
-            drawLine(primary, start, vertical, cornerWidth, StrokeCap.Round)
+            drawArc(
+                color = primary,
+                startAngle = startAngle,
+                sweepAngle = 90f,
+                useCenter = false,
+                topLeft = arcTopLeft,
+                size = Size(cornerRadius * 2f, cornerRadius * 2f),
+                style = Stroke(width = cornerWidth, cap = StrokeCap.Round),
+            )
+            drawLine(primary, horizontalStart, horizontalEnd, cornerWidth, StrokeCap.Round)
+            drawLine(primary, verticalStart, verticalEnd, cornerWidth, StrokeCap.Round)
         }
 
         corner(
-            start = Offset(inset, inset),
-            horizontal = Offset(inset + cornerLength, inset),
-            vertical = Offset(inset, inset + cornerLength),
+            arcTopLeft = Offset(inset, inset),
+            startAngle = 180f,
+            horizontalStart = Offset(inset + cornerRadius, inset),
+            horizontalEnd = Offset(inset + cornerLength, inset),
+            verticalStart = Offset(inset, inset + cornerRadius),
+            verticalEnd = Offset(inset, inset + cornerLength),
         )
         corner(
-            start = Offset(maxX, inset),
-            horizontal = Offset(maxX - cornerLength, inset),
-            vertical = Offset(maxX, inset + cornerLength),
+            arcTopLeft = Offset(maxX - cornerRadius * 2f, inset),
+            startAngle = 270f,
+            horizontalStart = Offset(maxX - cornerLength, inset),
+            horizontalEnd = Offset(maxX - cornerRadius, inset),
+            verticalStart = Offset(maxX, inset + cornerRadius),
+            verticalEnd = Offset(maxX, inset + cornerLength),
         )
         corner(
-            start = Offset(inset, maxY),
-            horizontal = Offset(inset + cornerLength, maxY),
-            vertical = Offset(inset, maxY - cornerLength),
+            arcTopLeft = Offset(inset, maxY - cornerRadius * 2f),
+            startAngle = 90f,
+            horizontalStart = Offset(inset + cornerRadius, maxY),
+            horizontalEnd = Offset(inset + cornerLength, maxY),
+            verticalStart = Offset(inset, maxY - cornerLength),
+            verticalEnd = Offset(inset, maxY - cornerRadius),
         )
         corner(
-            start = Offset(maxX, maxY),
-            horizontal = Offset(maxX - cornerLength, maxY),
-            vertical = Offset(maxX, maxY - cornerLength),
+            arcTopLeft = Offset(maxX - cornerRadius * 2f, maxY - cornerRadius * 2f),
+            startAngle = 0f,
+            horizontalStart = Offset(maxX - cornerLength, maxY),
+            horizontalEnd = Offset(maxX - cornerRadius, maxY),
+            verticalStart = Offset(maxX, maxY - cornerLength),
+            verticalEnd = Offset(maxX, maxY - cornerRadius),
         )
     }
 }
