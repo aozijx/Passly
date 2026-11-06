@@ -73,7 +73,7 @@
 ### 其他功能
 
 - [诊断日志](features/diagnostics/viewer-and-export.md)
-- [二维码扫描](features/scanner.md)
+- [二维码扫描](features/scanner/overview.md)
 - [权限与消息](features/permissions-and-messages.md)
 
 ## 开发约定
