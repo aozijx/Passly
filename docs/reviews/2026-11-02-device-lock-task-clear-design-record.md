@@ -1,7 +1,7 @@
-# Device Lock Task Clear Design
+# Device Lock Task Clear Design Record
 
 **Date:** 2026-11-02
-**Status:** Approved for implementation
+**Status:** Implemented; archived 2026-11-06
 
 ## Intent
 

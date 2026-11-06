@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Guava Android `InternetDomainName`, Room, Proto DataStore, Jetpack Compose.
 
-**设计记录：** [严格域名匹配设计](../superpowers/specs/2026-11-02-autofill-strict-domain-matching-design.md)
+**设计记录：** [严格域名匹配设计](2026-11-02-autofill-strict-domain-matching-design-record.md)
 
 ## Global Constraints
 

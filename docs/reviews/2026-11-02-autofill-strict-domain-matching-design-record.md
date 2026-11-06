@@ -1,7 +1,7 @@
-# Autofill strict domain matching design
+# Autofill Strict Domain Matching Design Record
 
 **Date:** 2026-11-02
-**Status:** Approved for implementation
+**Status:** Implemented; archived 2026-11-06
 
 ## Intent
 

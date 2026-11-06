@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Android Activity lifecycle, StateFlow, coroutine tests.
 
-**设计记录：** [设备锁任务清理设计](../superpowers/specs/2026-11-02-device-lock-task-clear-design.md)
+**设计记录：** [设备锁任务清理设计](2026-11-02-device-lock-task-clear-design-record.md)
 
 ## Global Constraints
 

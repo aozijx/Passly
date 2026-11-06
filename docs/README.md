@@ -1,13 +1,14 @@
 # Passly 文档中心
 
-文档以当前代码为准。平台行为同时核对 Android 官方文档；历史决策保留在 ADR 中。已批准但尚未实现的行为必须
-明确标注，不能混入当前流程。
+文档以当前代码为准。按开发流程阅读：先接入项目并理解边界，再查阅实现合同，按功能主题开发，最后验证并归档交付记录。已批准但尚未实现的行为必须明确标注，不能混入当前流程。
 
-## 开始使用
+## 1. 开发准备
 
 - [开发与构建](getting-started/development.md)
+- [维护边界](development/maintenance-boundaries.md)
+- [文档维护约定](development/documentation.md)
 
-## 当前系统
+## 2. 理解系统合同
 
 ### 架构与平台边界
 
@@ -25,15 +26,12 @@
 - [日志导出格式](architecture/observability/export-formats.md)
 - [错误码目录（生成）](ERROR_CODES.md)
 
-### 数据
+### 数据与安全
 
 - [数据库](data/database.md)
 - [设置存储](data/settings-storage.md)
 - [数据映射](data/mapping.md)
 - [内容渲染](data/content-rendering.md)
-
-### 安全
-
 - [安全总览](security/overview.md)
 - [威胁模型](security/threat-model.md)
 - [认证与恢复码](security/authentication.md)
@@ -44,68 +42,9 @@
 - [敏感数据与剪贴板](security/sensitive-data-access.md)
 - [远程内容](security/remote-content.md)
 
-## 功能
-
-### Vault
-
-- [列表与搜索](features/vault/list-and-search.md)
-- [修订历史](features/vault/entry-revision-history.md)
-- [编辑与写入](features/vault/entry-editor-and-persistence.md)
-- [OTP 创建](features/vault/otp-entry.md)
-- [OTP URI](features/vault/otp-uri.md)
-- [二维码](features/vault/qr-display.md)
-- [银行卡](features/vault/card-entry.md)
-
-### Autofill
-
-- [共享流程](features/autofill/fill-flow.md)
-- [Legacy Service](features/autofill/legacy-service.md)
-- [Credential Manager](features/autofill/credential-manager.md)
-- [保存语义](features/autofill/save-flow.md)
-- [Sealed Inbox](features/autofill/sealed-inbox.md)
-- [验证矩阵](features/autofill/verification.md)
-
-### Backup
-
-- [备份导入与导出流程](features/backup/backup-workflows.md)
-- [Passly Archive v1 协议](features/backup/passly-archive-v1.md)
-- [验证要求](features/backup/verification.md)
-
-### 系统集成
-
-- [通知设置](features/notification-settings.md)
-- [权限管理](features/permission-management.md)
-
-### 工具
-
-- [诊断日志](features/diagnostics/overview.md)
-- [二维码扫描](features/scanner/overview.md)
-
-## 开发约定
-
-- [Kotlin 规范](development/kotlin-style.md)
-- [Compose 与 Material](development/compose-ui.md)
-- [状态管理](development/architecture-and-state.md)
-- [测试与质量门禁](development/testing.md)
-- [维护边界](development/maintenance-boundaries.md)
-- [共享元素转场](development/shared-element-transitions.md)
-- [文档维护](development/documentation.md)
-
-## 决策与审查记录
+### 已发布决策
 
 ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原编号；决策变化时新增 ADR 并建立替代关系。
-
-- [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)
-- [2026-11-02 设备锁任务清理交付记录](reviews/2026-11-02-device-lock-task-clear-delivery.md)
-- [2026-11-02 Autofill 严格域名匹配交付记录](reviews/2026-11-02-autofill-strict-domain-matching-delivery.md)
-- [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
-- [2026-10-30 Entry Payload Adapter 注册审查](reviews/2026-10-30-entry-payload-adapter-registration.md)
-- [2026-10-29 可维护性与冗余审查](reviews/2026-10-29-passly-maintainability-audit.md)
-- [2026-10-29 功能文件归属审查](reviews/2026-10-29-feature-file-ownership-audit.md)
-- [2026-10-29 Domain Entry Type 注册审查](reviews/2026-10-29-domain-entry-type-registration.md)
-- [2026-10-29 Data Secret Payload DTO 拆分审查](reviews/2026-10-29-data-secret-payload-dto-split.md)
-- [2026-10-27 历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)
-- [2026-07 代码审查](reviews/2026-07-code-review.md)（仅适用于该审查时点）
 
 | ADR | 状态 | 决策 |
 | --- | --- | --- |
@@ -134,4 +73,75 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 | [0024](decisions/ADR-0024-structured-observability-logger.md) | Implemented | 统一结构化 Logger |
 | [0025](decisions/ADR-0025-sealed-autofill-save-inbox.md) | Accepted, implemented | 锁定状态 Sealed Autofill Save Inbox |
 
-状态标记与页面结构约定见[文档维护约定](development/documentation.md)。
+## 3. 实现功能主题
+
+### Vault
+
+- [列表与搜索](features/vault/list-and-search.md)
+- [修订历史](features/vault/entry-revision-history.md)
+- [编辑与写入](features/vault/entry-editor-and-persistence.md)
+- [OTP 创建](features/vault/otp-entry.md)
+- [OTP URI](features/vault/otp-uri.md)
+- [二维码](features/vault/qr-display.md)
+- [银行卡](features/vault/card-entry.md)
+
+### Autofill
+
+- [共享流程](features/autofill/fill-flow.md)
+- [Legacy Service](features/autofill/legacy-service.md)
+- [Credential Manager](features/autofill/credential-manager.md)
+- [保存语义](features/autofill/save-flow.md)
+- [Sealed Inbox](features/autofill/sealed-inbox.md)
+- [验证矩阵](features/autofill/verification.md)
+
+### Backup
+
+- [备份导入与导出流程](features/backup/backup-workflows.md)
+- [Passly Archive v1 协议](features/backup/passly-archive-v1.md)
+- [验证要求](features/backup/verification.md)
+
+### 系统集成与工具
+
+- [通知设置](features/notification-settings.md)
+- [权限管理](features/permission-management.md)
+- [诊断日志](features/diagnostics/overview.md)
+- [二维码扫描](features/scanner/overview.md)
+
+## 4. 验证、维护与交付
+
+### 开发约定与质量门禁
+
+- [Kotlin 规范](development/kotlin-style.md)
+- [Compose 与 Material](development/compose-ui.md)
+- [状态管理](development/architecture-and-state.md)
+- [测试与质量门禁](development/testing.md)
+- [共享元素转场](development/shared-element-transitions.md)
+
+### 已归档审查与交付记录
+
+- [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)
+- [2026-11-02 设备锁任务清理交付记录](reviews/2026-11-02-device-lock-task-clear-delivery.md)
+- [设备锁任务清理设计记录](reviews/2026-11-02-device-lock-task-clear-design-record.md)
+- [2026-11-02 Autofill 严格域名匹配交付记录](reviews/2026-11-02-autofill-strict-domain-matching-delivery.md)
+- [Autofill 严格域名匹配设计记录](reviews/2026-11-02-autofill-strict-domain-matching-design-record.md)
+- [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
+- [2026-10-30 Entry Payload Adapter 注册审查](reviews/2026-10-30-entry-payload-adapter-registration.md)
+- [2026-10-29 可维护性与冗余审查](reviews/2026-10-29-passly-maintainability-audit.md)
+- [2026-10-29 功能文件归属审查](reviews/2026-10-29-feature-file-ownership-audit.md)
+- [2026-10-29 Domain Entry Type 注册审查](reviews/2026-10-29-domain-entry-type-registration.md)
+- [2026-10-29 Data Secret Payload DTO 拆分审查](reviews/2026-10-29-data-secret-payload-dto-split.md)
+- [2026-10-27 历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)
+- [2026-07 代码审查](reviews/2026-07-code-review.md)（仅适用于该审查时点）
+
+### 正在推进的设计与待办
+
+- [App Password 对话框生命周期设计](superpowers/specs/2026-11-03-app-password-dialog-lifecycle-design.md)
+- [Typed Diagnostic Events 设计](superpowers/specs/2026-11-04-typed-diagnostic-events-design.md)
+- [硬件 Keystore 验收](superpowers/plans/2026-10-29-hardware-keystore-verification.md)
+- [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
+- [Backup 审查待办](superpowers/plans/2026-11-06-passly-backup-review-followups.md)
+- [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
+- [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
+- [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
+
+文档分类与页面结构约定见[文档维护约定](development/documentation.md)。

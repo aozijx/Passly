@@ -90,7 +90,7 @@
 
 **修复前延迟执行证据：** `MainActivity.closeAndClearTask()` 旧实现立即发布提醒，再直接 post 一个无持有/取消入口的 1 秒关闭 callback，执行前也不校验认证状态与 owner。用户在延迟期间重新认证时，旧 callback 仍可结束新交互。
 
-**完成实现与验证：** `docs/superpowers/specs/2026-11-02-device-lock-task-clear-design.md` 记录已选行为合同；`docs/security/authentication.md` 已同步。聚焦单测覆盖 handler、协调器和 lifecycle owner；`:app:compileDebugAndroidTestKotlin`、App KtLint、`verifyArchitecture` 与 `git diff --check` 均通过。Android 设备当前已连接，但本批未进行安装/运行验证。
+**完成实现与验证：** `docs/reviews/2026-11-02-device-lock-task-clear-design-record.md` 记录已选行为合同；`docs/security/authentication.md` 已同步。聚焦单测覆盖 handler、协调器和 lifecycle owner；`:app:compileDebugAndroidTestKotlin`、App KtLint、`verifyArchitecture` 与 `git diff --check` 均通过。Android 设备当前已连接，但本批未进行安装/运行验证。
 
 ## Task 29：在 Security 页面退出时清除 App Password 对话框草稿
 
