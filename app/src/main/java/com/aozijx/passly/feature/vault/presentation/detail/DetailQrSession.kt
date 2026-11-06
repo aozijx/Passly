@@ -18,15 +18,6 @@ internal class DetailQrSession(
     private val access: SecureSessionAccessState,
     private val export: suspend (Entry, () -> Unit) -> EntryQrExportResult,
 ) {
-    constructor(
-        scope: CoroutineScope,
-        access: SecureSessionAccessState,
-        export: suspend (Entry) -> EntryQrExportResult,
-    ) : this(scope, access, { entry, onAuthorized ->
-        onAuthorized()
-        export(entry)
-    })
-
     private val mutableState = MutableStateFlow<DetailQrState>(DetailQrState.Hidden)
     val state = mutableState.asStateFlow()
     private var requestJob: Job? = null

@@ -28,10 +28,36 @@ import org.junit.Test
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailQrSessionTest {
     @Test
+    fun `authorization remains pending until export reports authorization`() =
+        runTest {
+            val started = CompletableDeferred<Unit>()
+            val result = CompletableDeferred<EntryQrExportResult>()
+            var onAuthorized: (() -> Unit)? = null
+            val session =
+                DetailQrSession(backgroundScope, Access()) { _, authorized ->
+                    onAuthorized = authorized
+                    started.complete(Unit)
+                    result.await()
+                }
+
+            session.request(entry())
+            runCurrent()
+
+            assertTrue(started.isCompleted)
+            assertEquals(DetailQrState.Authorizing(EntryQrKind.Wifi), session.state.value)
+            requireNotNull(onAuthorized).invoke()
+            assertEquals(DetailQrState.Loading(EntryQrKind.Wifi), session.state.value)
+            result.complete(EntryQrExportResult.Cancelled)
+            runCurrent()
+            assertEquals(DetailQrState.Hidden, session.state.value)
+        }
+
+    @Test
     fun `cancelled export does not leave a loading sheet`() =
         runTest {
             val session =
-                DetailQrSession(backgroundScope, Access()) {
+                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                    onAuthorized()
                     throw CancellationException("cancelled")
                 }
 
@@ -46,7 +72,8 @@ class DetailQrSessionTest {
         runTest {
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, Access()) {
+                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                    onAuthorized()
                     EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
                 }
             session.request(entry())
@@ -81,7 +108,8 @@ class DetailQrSessionTest {
         runTest {
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, Access()) {
+                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                    onAuthorized()
                     EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
                 }
 
@@ -104,7 +132,8 @@ class DetailQrSessionTest {
             val access = Access()
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, access) {
+                DetailQrSession(backgroundScope, access) { _, onAuthorized ->
+                    onAuthorized()
                     EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
                 }
             session.request(entry())
@@ -123,7 +152,8 @@ class DetailQrSessionTest {
             val result = CompletableDeferred<EntryQrExportResult>()
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, Access()) {
+                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                    onAuthorized()
                     withContext(NonCancellable) { result.await() }
                 }
             session.request(entry())
@@ -144,8 +174,9 @@ class DetailQrSessionTest {
             val access = Access().apply { authenticationState.value = AuthenticationState.Locked }
             var exports = 0
             val session =
-                DetailQrSession(backgroundScope, access) {
+                DetailQrSession(backgroundScope, access) { _, onAuthorized ->
                     exports++
+                    onAuthorized()
                     EntryQrExportResult.Unavailable
                 }
 
@@ -161,7 +192,8 @@ class DetailQrSessionTest {
         runTest {
             val contents = mutableListOf<OwnedChars>()
             val session =
-                DetailQrSession(backgroundScope, Access()) {
+                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                    onAuthorized()
                     val content = OwnedChars.fromString("WIFI:${contents.size}").also(contents::add)
                     EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
                 }
@@ -181,12 +213,18 @@ class DetailQrSessionTest {
     fun `invalid credentials show failure while authorization cancellation stays hidden`() =
         runTest {
             var result: EntryQrExportResult = EntryQrExportResult.Unavailable
-            val session = DetailQrSession(backgroundScope, Access()) { result }
+            var authorizationGranted = true
+            val session =
+                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                    if (authorizationGranted) onAuthorized()
+                    result
+                }
             session.request(entry())
             runCurrent()
             assertEquals(DetailQrState.Failed(EntryQrKind.Wifi), session.state.value)
 
             result = EntryQrExportResult.Cancelled
+            authorizationGranted = false
             session.request(entry())
             runCurrent()
             assertEquals(DetailQrState.Hidden, session.state.value)

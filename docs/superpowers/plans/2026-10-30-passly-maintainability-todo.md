@@ -12,7 +12,7 @@
 | 2 / P1 | 本页 38、42、40、41、32；[Backup Tasks 1、5](2026-11-06-passly-backup-review-followups.md)；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | 保存期输入、seed/流资源、操作终态、分类查询、flush；先固定失败结果再改 owner |
 | 3 / P2 | 本页 46、51；[安全 Tasks 3、4、7、9](2026-11-06-passly-security-scan-followups.md)、Backup Tasks 2、3、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；资源预算先于最低设备验收；Autofill 设置策略待办由专题清单维护 |
 | 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
-| 5 / P3 | 本页 83 → 84/80，39、35、34、36、78、79、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；39/77 先稳定诊断可靠性 |
+| 5 / P3 | 本页 83 → 84/80，39、35、34、36、78、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；39/77 先稳定诊断可靠性 |
 
 安全 Task 1/5/10、Autofill 设置快照、OTP HOTP 和非 ASCII 搜索仍有策略合同待裁定；本轮不臆定产品行为，不把候选升级为已验证漏洞。允许独立项并行，表中箭头表示必须先满足的前置条件。
 
@@ -311,10 +311,10 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 79：移除二维码会话仅供旧调用签名使用的授权回调桥
 
-- [ ] 复核 `DetailQrSession` 的次级构造器 `(Entry) -> EntryQrExportResult` 是否仍有独立生产用途。当前生产 `DetailViewModel` 使用包含 `onAuthorized` 回调的主构造器，次级构造器在调用旧签名 export 前无条件调用 `onAuthorized()`，无法模拟“授权闭包开始时才从 Authorizing 转 Loading”的生产时序。
-- [ ] 若确认没有需要保留的 owner，迁移 `DetailQrSessionTest` 到主构造器显式控制授权回调，再删除次级构造器；测试应分别覆盖授权前等待、授权后 Loading、拒绝/取消隐藏、generation 过期擦除。不要让测试便利构造掩盖授权时序，也不要更改 `ExportEntryQrUseCase.invoke(entry, onAuthorized)` 的真实回调边界。
+- [x] 移除仅由测试调用的次级构造器 `(Entry) -> EntryQrExportResult`；生产 `DetailViewModel` 原本已使用带 `onAuthorized` 的主构造器，没有需要兼容的生产 owner。
+- [x] 将 `DetailQrSessionTest` 全部迁到主构造器并显式控制授权回调，覆盖授权前 Authorizing、授权后 Loading、拒绝/取消隐藏、generation 过期 payload 擦除及锁定/关闭清理；不更改 `ExportEntryQrUseCase.invoke(entry, onAuthorized)` 的授权边界。
 
-**证据（2026-11-06，当前工作区源码复核）：** `DetailViewModel` 在 `DetailQrSession(viewModelScope, secureSessionAccessState) { entry, onAuthorized -> exportEntryQr(entry, onAuthorized) }` 中把主构造器的双参数闭包接到 `ExportEntryQrUseCase.invoke(entry, onAuthorized)`。`invoke()` 对 Wi-Fi 调用 `authorizationGate.authorize(AuthorizationScope.Global(REVEAL_SECRET)) { ... }`，仅进入授权回调后先执行 `onAuthorized()`，再以 `entry.id` 调用 `sensitiveFieldRepository.readBundle(entry.id)`；OTP 分支先从 `entry.secret.otp.config` 取配置，再以 `AuthorizationScope.SensitiveFields(entry.id, setOf(OTP_SECRET), REVEAL)` 请求授权，授权闭包内调用 `onAuthorized()`，随后把 `entry.id`、`OTP_SECRET`、`REVEAL` 和授权闭包给出的 `permit` 传给 `sensitiveFieldRepository.reveal(...)`。因此主构造器的 Loading 转换准确表示授权通过、敏感读取即将开始。次级构造器接收 `suspend (Entry) -> EntryQrExportResult`，并立即用 `{ entry, onAuthorized -> onAuthorized(); export(entry) }` 适配；`rg` 显示当前仅 `DetailQrSessionTest` 调用该单参数签名，测试里没有一个独立生产消费者。该桥会在单参数 export 执行授权前推进 Loading，无法表达授权等待时序；这是测试便利桥造成的语义失真，不是已证实的用户可见故障。删除时应将测试改用双参数构造器，在授权回调实际到达处显式触发，并覆盖回调前 `Authorizing`、回调后 `Loading`、Denied/Cancelled 隐藏及 generation 过期时 Ready payload 擦除；保持 `ExportEntryQrUseCase.invoke(entry, onAuthorized)` 的授权边界不变。
+**2026-11-07 完成：** 生产调用唯一一处 `DetailViewModel` 已使用显式授权回调；全仓生产引用没有单参数 consumer。新增状态回归用例在旧构造器下先实际失败（授权尚未回调就进入 Loading），再将 10 个 session 用例统一迁到双参数主构造器并删除次级构造器。定向 `DetailQrSessionTest` 10 项通过；完整 App 测试显式按 `com.aozijx.passly.*` 执行，XML 汇总 992 项、0 失败、0 error。第一次 full-task 汇总曾被并行定向测试的 11 项报告覆盖，因此不作为全套证据；最终验证使用显式包过滤并在同一命令结束时汇总 XML。
 
 
 <a id="task-74"></a>
