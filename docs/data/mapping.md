@@ -24,9 +24,67 @@ EntryAssembler -> Entry
 Data 内部的 `SecretFieldStore.readAll()`，把 bundle 与各高敏字段合并；Feature 不经 Domain Repository
 读取完整 secret。
 
+## 读取调用与参数传递
+
+普通详情的 `RoomEntryQueryRepository.getById(entryId)` 先检查 `sessionState.hasFullSecureSessionAccess()`；通过后以
+`databaseSession.query { ... }` 获取 session read lease，再用 `entryId.value` 调用
+`entryQueryDao().getById(...)`。找到 `EntryEntity` 后，`EntryProfileMapper.fromEntity(metaEntity)` 只映射结构化列；
+同一个 `AppDatabase` 接收者、`entryId.value` 和 `metaEntity.entryType` 传给
+`secretFieldStore.readBundle(db, entryId, entryType)`。最后
+`EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)` 组合 Domain `Entry`。无完整会话时 Repository
+返回 `null`，不表示数据库确认该 ID 不存在；调用方只能在已建立访问上下文时把该结果解释为缺失。
+
+授权读取单字段时，`RoomSensitiveFieldRepository.reveal(entryId, key, action, permit)` 只是将 `key` 包成
+`setOf(key)` 并委托 `revealMany(entryId, keys, action, permit)`，再用 `singleOrNull()` 返回单个结果。
+批量路径先要求完整会话，并以同一组 `entryId`、`keys`、`action` 构造
+`AuthorizationScope.SensitiveFields` 交给 `permitVerifier.consume(permit, scope)`；通过后才进入
+`databaseSession.query`，逐个用 `key.toStorageKey()` 查询 `getField(entryId.value, storageKey)`，并把
+`codec.decrypt(entryId.value, key, entity.valueCipher)` 包成 `RevealedSensitiveField` / `OwnedChars`。
+`getPresence(entryId)` 只读取非 `STRUCT_BUNDLE` 的存储键并通过 `sensitiveFieldKeyFromStorageKey()` 映射，
+不解密值；无完整会话时返回空键集，因此调用方也须先区分访问受限与“确实没有高敏字段”。
+
+Backup 的完整快照由 `RoomBackupSnapshotReader` 在其已有数据库接收者内调用
+`secretFieldStore.readAll(db, metaEntity.entryId, metaEntity.entryType)`。该方法读取同一条目的全部密文行，
+以 `SecretBundleCodec.decrypt(cipher, entryId, entryType)` 解码 bundle，再按每行稳定 `fieldKey` 经
+`sensitiveFieldKeyFromStorageKey()` 和 `SecretFieldCodec.decrypt(entryId, key, cipher)` 解密字段，最后
+`bundle.mergeSensitiveFields(fields)` 形成快照输入。该完整读取能力留在受控备份适配器，不改变
+`EntryQueryRepository.getById()` 的普通详情边界。
+
 写入时，Profile 直接映射到 `EntryEntity`；Secret 由 `SensitiveFieldSetMapper` 拆成 bundle 与逐字段值，
 再由各自 Codec 加密。Revision 另有独立的 `EntryContentSnapshotCodec` 和
 `SensitiveRevisionSnapshotCodec`；其中 `SummaryPayload` 是历史快照格式，不是 `entries` 的当前格式。
+
+## 写入调用与参数传递
+
+更新入口为 `RoomEntryCommandRepository.updateEntry(id, expectedVersion, changes)`，它把类型化 ID/version
+解包成字符串/整数传给 `UpdateEntryExecutor.execute(id.value, expectedVersion.value, changes)`。
+Executor 调用 `databaseTransactions.write("entry_update") { ... }`；该 runner 检查完整会话访问并以
+`AppDatabaseSession.transaction` 提供事务接收者，然后把 `db`、`id`、`expectedVersion`、`changes` 和
+`clock.now()` 传给 `EntryUpdateTransaction.update(...)`。事务内先读 `EntryEntity` 并比较预期版本，只用
+`secretFieldStore.readBundle(db, id, entity.entryType)` 取低敏结构，再读存储键名判断 Preserve/Clear/Replace
+语义；替换时 `updateExisting(db, id, newSecret, entity.entryType)` 只改有显式更新的字段行并重写 bundle。
+随后按实际敏感键重算 capability flags，以
+`entryCommandDao().optimisticUpdate(entryId, expectedVersion, title, username, primaryUrl, domains, applicationIds, iconName, iconCustomReference, favorite, tags, iconColor, expiresAt, capabilityFlags, otpType, updatedAt)` 写入 Profile 与版本；这些值分别来自 `newProfile`、`flags`、`newSecret.otp?.config?.type` 和 `now`。影响行数不为 1 即抛 `Conflict`。同一事务再调用
+`revisionWriter.snapshotChanges(db = db, entryId = id, entryVersion = expectedVersion + 1, summary = newProfile, secret = newSecret, entryType = entity.entryType, now = now)`
+和 `activityWriter.recordActivity(db, id, UPDATE, now, ContentRevision(EntryVersion(expectedVersion + 1)))`。
+
+`EntryUpdateExecutor` 仅在事务结果为 `Changed` 时于同一事务内登记附件 GC；提交后
+`postCommitCleanup.afterCommit(result) { ... }` 分别执行附件 `drain()` 与旧图标
+`cleanReplacedIcon(previousIcon, currentIcon)`。普通清理异常只记录，不改写已提交的 `AppResult.Success`；取消与
+fatal `Error` 继续传播。若提交后取消，调用方应重查 Repository/Room 真相，不把取消解释成事务回滚。
+
+创建路径由 `RoomEntryCommandRepository.createEntry(entry)` 转给 `CreateEntryExecutor.execute(entry)`，并使用
+`databaseTransactions.write("entry_create")`；Autofill 与 Inbox 分别选择 `executeForAutofill(entry)` 的
+`writeForAutofill`，以及 `executeForInbox(entry)` 的同一访问门并启用 `idempotentByEntryId = true`。
+事务用 `Entry` 的 ID、Profile 和 type 构造 `EntryEntity`，以 `EntryCapabilities.from(entry.secret)` 生成初始能力，
+再顺序调用 `insertStrict(entity)`、`secretFieldStore.replaceAll(db, entryId, entry.secret, entry.type)`、
+`revisionWriter.snapshotChanges(..., entryVersion = 1)`、同事务附件 GC 登记和
+`activityWriter.recordActivity(..., CREATE, ..., ContentRevision(EntryVersion.INITIAL))`。提交后才由
+`postCommitCleanup.afterCommit(result) { attachmentGarbageCollector.drain() }` 排空资源队列。
+
+这些 Repository 在检查会话权限后再进入 `AppDatabaseSession.query/transaction`；权限检查与排队 lease 获取之间的
+线性化边界由[维护 TODO Task 37](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)跟踪，
+不能仅凭本文的顺序描述推断并发锁定时所有入口已原子化。
 
 `SecretPayload` 保持扁平的版本 1 JSON 结构。`EntrySecretMapper` 是根边界：编码时核对凭据种类与预期
 `EntryType`；解码时拒绝未知 schema 版本、多个凭据槽位及槽位与条目类型不匹配。凭据槽位由按
