@@ -104,8 +104,17 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 - [通知设置](features/notification-settings.md)
 - [权限管理](features/permission-management.md)
-- [诊断日志](features/diagnostics/overview.md)
-- [二维码扫描](features/scanner/overview.md)
+#### 诊断日志
+
+- [总览](features/diagnostics/overview.md)
+- [查看器](features/diagnostics/viewer.md)
+- [导出流程](features/diagnostics/export.md)
+
+#### 二维码扫描
+
+- [总览](features/scanner/overview.md)
+- [输入生命周期](features/scanner/input-lifecycle.md)
+- [导入结果](features/scanner/import-results.md)
 
 ## 4. 验证、维护与交付
 
@@ -122,6 +131,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)
 - [2026-11-02 设备锁任务清理交付记录](reviews/2026-11-02-device-lock-task-clear-delivery.md)
 - [设备锁任务清理设计记录](reviews/2026-11-02-device-lock-task-clear-design-record.md)
+- [2026-11-02 长函数与大文件审查](reviews/2026-11-02-long-function-and-large-file-review.md)
 - [2026-11-02 Autofill 严格域名匹配交付记录](reviews/2026-11-02-autofill-strict-domain-matching-delivery.md)
 - [Autofill 严格域名匹配设计记录](reviews/2026-11-02-autofill-strict-domain-matching-design-record.md)
 - [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
@@ -143,5 +153,6 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
 - [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
 - [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
+- [文档结构后续待办](superpowers/plans/2026-11-06-passly-documentation-structure-followups.md)
 
 文档分类与页面结构约定见[文档维护约定](development/documentation.md)。

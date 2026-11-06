@@ -2,8 +2,8 @@
 
 ## 分类与命名
 
-- 目录使用稳定主题：`architecture`、`data`、`security`、`features`、`development`、`decisions`、`reviews`。
-- 文件名使用小写 kebab-case；`docs/README.md` 是唯一目录索引，直接链接各主题页。主题目录不另建仅用于转跳的 `README.md`。
+- 物理目录使用稳定主题：`getting-started`、`architecture`、`data`、`security`、`features`、`development`、`decisions`、`reviews`、`superpowers`；不因阅读流程重复搬动同一主题文件。`docs/README.md` 按开发流程分组导航，目录索引仍直接链接主题页。
+- 文件名使用小写 kebab-case；`docs/README.md` 是唯一目录索引，直接链接各主题页。主题目录不另建仅用于转跳的 `README.md`。生成文件遵循生成器确定的路径，不手工修改内容；路径分类调整必须同步生成器、校验任务及所有引用。
 - 一个主题只有一份“当前实现”文档，避免 Design、Implementation、outline 并存。
 - 类与包名以仓库当前代码为准；版本号、字段表等易漂移信息尽量链接源码而不是整段复制。
 - 多流程主题可以建立目录；只有职责可独立变化时才拆文件，行数不是拆分理由。只有单独契约、平台入口或读者群确有需要时才拆分；重复流程只保留一个权威页面，其他主题以链接引用。
