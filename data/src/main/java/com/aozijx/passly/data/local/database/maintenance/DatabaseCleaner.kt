@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.local.database.maintenance
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
+import com.aozijx.passly.data.local.database.AppDatabase
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,20 +38,23 @@ internal class DatabaseCleanerImpl
         private val databaseSession: AppDatabaseSession,
     ) : DatabaseCleaner {
         override suspend fun clearAllData(): DatabaseClearResult =
-            databaseSession.transaction {
-                val maintenance = databaseMaintenanceDao()
-                // 子表→父表顺序：先删依赖表，再删主表
-                val attachmentsDeleted = maintenance.clearAttachments()
-                val revisionsDeleted = maintenance.clearRevisions()
-                maintenance.clearAttachmentGcQueue()
-                val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
-                DatabaseClearResult(
-                    revisionsDeleted = revisionsDeleted,
-                    activityDeleted = maintenance.clearActivities(),
-                    attachmentsDeleted = attachmentsDeleted,
-                    attachmentResourcesDeleted = attachmentResourcesDeleted,
-                    secretsDeleted = maintenance.clearSecrets(),
-                    entriesDeleted = maintenance.clearEntries(),
-                )
-            }
+            databaseSession.transaction { clearAllVaultData() }
     }
+
+/** Clears user data in the caller's existing transaction, without re-entering the session. */
+internal suspend fun AppDatabase.clearAllVaultData(): DatabaseClearResult {
+    val maintenance = databaseMaintenanceDao()
+    // 子表→父表顺序：先删依赖表，再删主表
+    val attachmentsDeleted = maintenance.clearAttachments()
+    val revisionsDeleted = maintenance.clearRevisions()
+    maintenance.clearAttachmentGcQueue()
+    val attachmentResourcesDeleted = maintenance.clearAttachmentResources()
+    return DatabaseClearResult(
+        revisionsDeleted = revisionsDeleted,
+        activityDeleted = maintenance.clearActivities(),
+        attachmentsDeleted = attachmentsDeleted,
+        attachmentResourcesDeleted = attachmentResourcesDeleted,
+        secretsDeleted = maintenance.clearSecrets(),
+        entriesDeleted = maintenance.clearEntries(),
+    )
+}
