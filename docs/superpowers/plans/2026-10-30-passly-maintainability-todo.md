@@ -249,20 +249,6 @@
 
 **Task 52 进度（2026-11-02）：** 已把 preference 与 system status 拆成独立 `Loading/Ready/Failed` 源状态；普通 `Exception` 显示为对应源失败，取消与 fatal `Error` 继续传播。Preference 失败保留最后值但禁止写入，两个 retry action 分别重启各自 collector；系统失败显示 unavailable，不映射为 `false`。Android callback 读取异常关闭对应 Flow，已注册 observer 在失败/取消路径注销。已运行 `:app:testDebugUnitTest :app:compileDebugAndroidTestKotlin verifyArchitecture --max-workers=32` 与 `git diff --check`；Autofill ViewModel 定向测试 8/8 通过，AndroidTest 只完成编译。当前 adb 未发现设备，因此真实 Android observer fault injection 和 Compose instrumentation 尚未执行；第二、三项验收保持未完成。
 
-## Task 53：让安全凭据 provision 结果遵循持久提交点并传播 fatal 错误
-
-- [x] 为 `DefaultAuthenticationMethodProvisioner.setAppPassword()` 明确 envelope 写入后的真实终态。已将持久提交与会话协调拆成 `runAppPasswordProvisioning()`；普通异常后以本次随机 salt 读取并确认持久 envelope，提交后返回凭据设置成功，提交前才返回 `SESSION_TRANSITION_FAILED`。取消与 fatal `Error` 保持传播。
-- [x] 为 Recovery Code 生成与 commit 收窄错误映射。生成器只映射普通 `Exception`；草稿提交以持久 envelope 为提交点，save 抛错时比较完整 envelope，提交后的可用性普通异常不改写提交结果；取消与 fatal `Error` 在敏感草稿清理后传播。Domain draft 暴露不可变 `isCommitted` 属性供调用方查询该提交事实。
-- [x] 闭合 Settings Presentation 对 Recovery Code fatal 错误的二次映射。页面只映射普通 `Exception`，取消/fatal 都先在 `NonCancellable` 区读取 draft 提交事实并收敛 disclosure 与可用状态，再继续传播原异常。
-- [x] 审核 `finishRecoveryPasswordProvisioning()` 的提交后合同。Session seal 继续在 `NonCancellable` 完成；刷新只忽略普通派生状态异常，取消和 fatal `Error` 继续传播。
-- [x] 增加 provisioner/draft/ViewModel 行为测试：覆盖 precommit 普通失败、save 后抛普通异常、提交后刷新异常、取消与 fatal `AssertionError`、持久快照结果、Recovery draft 明文关闭及页面终态。Schema 未变更。尚未通过实体设备验证 Keystore/数据库重开行为；这不属于本批可由 JVM 测试证明的边界。
-
-**证据：** `DefaultAuthenticationMethodProvisioner.setAppPassword()` 在 `DekManager.initializeWithKey()` 或 `rekeyWithKey()` 后才刷新 availability 并发布 authenticated state；`DekManager` 的 envelope 写入调用 `VaultBootstrapStore.save()`，生产 Proto store 用 `DataStore.updateData` 持久更新 envelope。若后续步骤抛异常，外层显式保留 `CancellationException`、但将所有其余 `Throwable` 统一转成 `AuthenticationResult.Failure(SESSION_TRANSITION_FAILED)`，因此调用者结果无法区分 envelope 未提交和已提交后协调失败。Recovery password 分支调用 `finishRecoveryPasswordProvisioning()`：它在 `NonCancellable` 完成 session lock 后刷新派生 availability，refresh catch 保留取消但吞掉任意其他 `Throwable`。Recovery draft 的 `commit()` 则先 `vaultBootstrapStore.save(copy)`、`close()`，再刷新 availability；刷新 fatal `Error` 会被内部 catch 吞掉，取消会穿透外层并让调用者观察到取消，即使 `save()` 已完成。`DefaultRecoveryCredentialGenerator.generate()` 同样在最终 `finally` 清理 code/envelope/secret 的同时把任意 `Throwable` 映射为普通 `RecoveryCredentialCreation.Failed`。现有 `RecoverySecurityLifecycleTest` 覆盖 seal-before-refresh、普通 refresh 失败仍已 seal、recovery 消耗失败/取消回滚；`DefaultRecoveryCodeDraftFactoryTest` 覆盖 session 绑定，不覆盖生成/commit 的 durable 写入、refresh 后结果、fatal Error 或缓冲终态；未发现 `DefaultAuthenticationMethodProvisioner` 专属行为测试。此项区分 Task 46 的 availability 快照/刷新乱序、Task 45 的认证 UI 并发，以及应用选择器加载恢复合同，聚焦凭据写入 commit point、调用方结果和敏感清理一致性。
-
-**新增 Presentation 证据：** `RecoveryCodeSettingsViewModel.generate()` 捕获 `Throwable` 后直接发布 `RecoveryCodeDraftUiState.Failed`；`confirmAndEnable()` 捕获 `Throwable` 后映射为 `RecoveryCodeCommitResult.Failed`，随后 dismiss draft 并清除 SavedState 标记。两个方法都先显式重抛 `CancellationException`，但仍吞掉 fatal `Error`。特别是 commit 可能已持久化后才由刷新阶段抛错，ViewModel 将之视为可重试失败并清理 draft；须与 Interactor 的 durable commit point 联合验证，不能只在 Domain/Data 单测验证 Error 传播。
-
-**Task 53 实现进度（2026-11-02）：** 已完成。`runAppPasswordProvisioning()` 以本次 salt 核对持久 envelope，区分普通提交前失败与提交后会话协调失败；`OwnedBytes.use`、`SecretChars.close` 和 salt `finally` 收口派生材料生命周期。Recovery draft 在保存异常后读回比较完整 envelope，ViewModel 在取消/错误后按 `isCommitted` 归并到 Committed/Ready/Failed，fatal Error 不降级为页面业务失败。普通 JVM 定向测试覆盖 app-password commit helper、Recovery draft/生成器、Recovery lifecycle 和 Settings interactor/ViewModel。最终全量 gate 结果记录在提交说明；实体设备验证仍按 Task 52 的设备限制明确保留。
-
 ## Task 54：让 Runtime 解锁边界传播 fatal Error
 
 - [x] 收窄 `RuntimeSessionManager.unlock()` 与 `SessionLeaseGate.open()` 的异常映射：`keySource.copyKey()` 和 `resource.open(key)` 的普通可恢复异常可继续映射为 `KeyUnavailable`/`OpenFailed`，`CancellationException` 继续原样传播；JVM fatal `Error` 不应变成可供 UI 重试的普通解锁失败结果。
