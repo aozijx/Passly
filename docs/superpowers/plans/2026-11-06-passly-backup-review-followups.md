@@ -20,3 +20,13 @@
 - [ ] 更新备份导入格式文档，记录预算、验证顺序与峰值副本；保留现有 wire key 与格式兼容合同。
 
 **当前证据（2026-11-06）：** `BackupFileStore.readBytesSafely()` 限制单次输入为 256 MiB，但 Passly JSON/Bitwarden JSON 会构建完整文本或 JSON tree；加密导入会持有原容器、解密 ZIP 字节及提取的 JSON/资源。不同阶段副本和累计内存尚无统一上限证明。
+
+## Task 3：覆盖 BackupArchiveService 编排的参数与清理合同
+
+- [ ] 新增针对 `BackupArchiveServiceImpl.export(request)` 的专用单测：验证 `request.format/password/options/targetUri` 分别流向 Registry、`validatePassword`、`BackupSnapshotReadOptions`、Adapter 和 `BackupFileStore.writeBytes`；特别断言 `includeIcons` 与 `includeAttachments` 同时受请求选项和 Adapter 能力限制，其他筛选项按请求传递。
+- [ ] 新增针对 `BackupArchiveServiceImpl.import(request)` 的专用单测：验证 `sourceUri` 传给 `readBytesSafely`，`format + payload` 传给 probe 分派，`password/strategy` 传给 decode，`bundle + mode` 传给 `restore`，并验证 `BackupImportResult` 合并 restore 计数与兼容摘要。
+- [ ] 通过可观察 ByteArray/资源引用断言成功、decode/restore 普通失败和取消路径的 payload、encoded bytes、bundle resource data 清理；确认失败才调用 `AppErrorReporter.report`，report operation 分别为 `backup_export` 与 `backup_import`，且取消不会伪装成普通失败。
+- [ ] 保留组件测试职责：Codec 证明 wire/container，Planner 证明策略筛选，Gateway 证明授权/目标清理；Service 测试只验证真实编排与跨组件参数合同，不复制底层编解码用例。
+- [ ] 更新 [`备份验证要求`](../../features/backup/verification.md) 的测试映射，并验证新增测试能在不依赖 Android 文件 provider、Room 或真实 KDF 慢路径的情况下稳定运行。
+
+**当前证据（2026-11-06）：** `app/src/test` 有 `BackupCodecTest`、`BackupImportPlannerTest`、`DefaultBackupOperationGatewayTest` 和 Room 文件 journal 测试，但没有 `BackupArchiveServiceImpl` 对应测试文件。Service 本身负责格式选择、选项能力裁剪、参数传递、资源/输入清零和错误报告；相邻单测分别覆盖这些组件，却没有端到端断言上述拼接合同。此项为测试覆盖缺口，不是已确认运行时故障。
