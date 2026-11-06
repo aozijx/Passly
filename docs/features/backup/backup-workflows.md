@@ -77,8 +77,11 @@ Adapter 不持有目标 URI。
 4. 格式 Adapter 只负责 canonical bundle 与外部格式互转。
 5. `BackupFileStore` 写入目标，并在完成或失败后清零可控密码与编码缓冲。导入/导出取消保留取消语义；
    目标创建成功但 URI 尚未交回流程前若普通失败、取消或 fatal `Error`，都在不可取消区尝试删除该文件。
-   导出目标的部分文件也在不可取消清理区删除；清理错误按 fatal `Error`、取消、普通异常的顺序与主错误合并，
-   被替代的主错误保留为 suppressed。SAF 创建和写入探测只把普通异常映射为 `Result.failure`；取消与 fatal `Error`
+   导出目标的部分文件也在不可取消清理区删除。若 archive service 抛出异常，Gateway 将删除失败返回值与主异常按
+   fatal `Error`、取消、普通异常的顺序合并，被替代的主异常保留为 suppressed；但若 archive service 已返回
+   `AppResult.Failure`，Gateway 当前仅重新抛出清理阶段的 fatal `Error`/取消，普通清理失败（包括 delete 返回 `false`）
+   会被丢弃，并继续返回原操作失败，因此不保证部分文件已删除，也没有单独提示残留文件。此返回失败分支待补齐合同，见
+   [备份扫描待办 Task 5](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)。SAF 创建和写入探测只把普通异常映射为 `Result.failure`；取消与 fatal `Error`
    原样传播。删除接口把普通 provider 异常映射为 `false`，但继续传播取消和 fatal `Error`。
 
 完整导出使用 archive registry，而不是 UI 当前可创建/筛选类型。数据库出现未注册类型时必须失败，不能静默漏项。
@@ -87,8 +90,12 @@ TXT 是人类可读投影，不可恢复，且不输出 favorite 字段。
 ## 工作流状态
 
 界面使用封闭状态：`Idle`、`FormatPicker`、`ConfigureExport`、`AwaitingExportTarget`、`ConfigureImport`、
-`Executing`、`Failed`。导出配置、导入 URI/策略和密码只存在于各自分支；关闭、取消、完成和 ViewModel 清理时
-清零受控密码缓冲。不得用多个 nullable/Boolean 拼出相互冲突的流程。
+`Executing`、`Failed`。ViewModel workflow 中的密码以 `SensitiveValue` 持有；关闭或替换 workflow、拒绝状态更新、
+操作结束及 ViewModel 清理时会擦除其可控字符缓冲。密码不通过 SavedState 或 Navigation 参数持久化。不过当前 Compose 输入/投影仍会产生不可变 `String` 副本，清零 `SensitiveValue` 不等于擦除所有副本，具体边界和后续评估见下文。
+
+密码输入调用链是 `OutlinedTextField(value = state.password)` → `BackupUiAction.UpdatePassword(value: String)` →
+`BackupViewModel.onAction()` → `OwnedChars.fromString(action.password)`，后者将 UI 字符串复制到可控 `CharArray`，再由
+`replacePassword()` 写入 workflow；`BackupSheetUiMapper.toSheetUiState()` 又调用 `SensitiveValue.copyToString()`，该函数将字符数组转换成新 String 并在 `finally` 擦除临时数组。故表单 UI 的值和 Action 暂时以 String 表示。操作时 `BackupViewModel.execute(operation, password)` 在 coroutine `finally` 擦除 workflow 的 `SensitiveValue`；`DefaultBackupOperationGateway.performExport(request, targetUri, deleteOnFailure)` / `performImport(request)` 再复制成传给 `BackupExportRequest` / `BackupImportRequest` 的 `CharArray`，并在各自 `finally` 擦除副本。`BackupArchiveServiceImpl.validatePassword(required, password)` 仅在 `required == true` 时拒绝 null/empty，不执行强度校验；算法和文件格式 Adapter 接收同一密码数组。当前确认的是进程内 String 驻留边界，没有证据表明密码进入持久状态、日志或外部目标；评估项见[备份扫描待办 Task 4](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)。
 
 提交导入或导出后，操作由 `BackupViewModel` 的任务持有，不随 Backup 页面离开而取消。页面离开会关闭尚未提交的配置并使旧页面通知失效；执行中的状态保留，重进时不接受第二个并行 Backup 操作，完成结果更新该操作状态。Activity/ViewModel 销毁会取消任务：操作 `finally` 擦除 UI 持有的密码，归档流程传播取消并补偿已创建的部分导出文件；导入事务按 Room/文件 journal 的回滚合同结束。SAF 文档选择回执绑定发起它的页面 owner 和一次性请求 ID，旧回执不能在重进后启动新的导入或导出。页面仍有效但宿主暂停时，选择器命令会等到 `STARTED` 后启动；页面离开会丢弃旧回执。导出选择命令入队失败时恢复 `ConfigureExport`，可重新提交；普通提示队列满时允许丢弃。
 
@@ -169,6 +176,8 @@ Bitwarden 银行卡的完整合法年月经 Domain `CardExpiry` 统一为 `MM/YY
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 编排备份格式、快照、授权与文件读写 | `BackupArchiveServiceImpl` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt) |
+| 管理密码输入投影、受控缓冲与一次性请求 | `BackupUiAction.UpdatePassword(value)`、`OwnedChars.fromString(value)`、`BackupUiState.toSheetUiState(configuredDirectoryLabel)`、`BackupViewModel.execute(operation, password)` | [`BackupViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupViewModel.kt)、[`BackupSheetUiMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupSheetUiMapper.kt)、[`BackupRestoreSheetUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/presentation/ui/model/BackupRestoreSheetUiState.kt)、[`OwnedChars.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/sensitive/OwnedChars.kt) |
+| 将一次性密码副本交给 Service、按 `deleteOnFailure` 补偿目标并在返回/失败/取消后擦除 | `DefaultBackupOperationGateway.performExport(request, targetUri, deleteOnFailure)`、`tryDeleteFailedExport(targetUri)`、`performImport(request)` | [`DefaultBackupOperationGateway.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt) |
 | 生成稳定键归档条目并规划导入 | `KeyedEntryArchiveMapper`、`BackupImportPlanner` | [`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt)、[`BackupImportPlanner.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlanner.kt) |
 | 读取与恢复 Room 快照 | `RoomBackupSnapshotReader`、`RoomBackupSnapshotRestorer` | [`RoomBackupSnapshotReader.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/RoomBackupSnapshotReader.kt)、[`RoomBackupSnapshotRestorer.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/RoomBackupSnapshotRestorer.kt) |
 | 将备份字节写入目标并清理缓冲 | `BackupFileStore` | [`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt) |
