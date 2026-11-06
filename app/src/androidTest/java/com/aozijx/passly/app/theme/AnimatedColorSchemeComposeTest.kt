@@ -6,7 +6,6 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.concurrent.atomic.AtomicReference
@@ -90,10 +89,9 @@ class AnimatedColorSchemeComposeTest {
         actual: Color,
         tolerance: Float,
     ) {
-        val midpoint = lerp(expected, actual, 0.5f)
-        assertEquals(expected.red, midpoint.red, tolerance)
-        assertEquals(expected.green, midpoint.green, tolerance)
-        assertEquals(expected.blue, midpoint.blue, tolerance)
-        assertEquals(expected.alpha, midpoint.alpha, tolerance)
+        assertEquals(expected.red, actual.red, tolerance)
+        assertEquals(expected.green, actual.green, tolerance)
+        assertEquals(expected.blue, actual.blue, tolerance)
+        assertEquals(expected.alpha, actual.alpha, tolerance)
     }
 }

@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import javax.crypto.AEADBadTagException
 import javax.crypto.spec.SecretKeySpec
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -97,7 +98,7 @@ class EncryptedLogRecordStoreTest {
         val bytes = file.readBytes().also { it[it.lastIndex] = (it.last() xor 1) }
         file.writeBytes(bytes)
 
-        assertThrows(Exception::class.java) { store.readPage(null, 10) }
+        assertThrows(AEADBadTagException::class.java) { store.readPage(null, 10) }
         store.close()
     }
 

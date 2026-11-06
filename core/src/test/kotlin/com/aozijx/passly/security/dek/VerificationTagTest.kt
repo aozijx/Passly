@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.dek
 
 import java.security.SecureRandom
+import javax.crypto.AEADBadTagException
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -17,7 +18,7 @@ class VerificationTagTest {
     fun verify_rejectsDifferentDek() {
         val tag = VerificationTag.create(randomDek())
 
-        assertThrows(Exception::class.java) {
+        assertThrows(AEADBadTagException::class.java) {
             VerificationTag.verify(randomDek(), tag, "test")
         }
     }

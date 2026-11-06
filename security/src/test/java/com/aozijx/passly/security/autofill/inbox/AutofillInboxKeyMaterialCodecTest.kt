@@ -44,7 +44,7 @@ class AutofillInboxKeyMaterialCodecTest {
     fun wrongDekCannotUnwrapThePrivateKey() {
         val material = codec.generateAndWrap(dek)
 
-        assertThrows(Exception::class.java) {
+        assertThrows(AEADBadTagException::class.java) {
             codec.withPrivateKey(material, ByteArray(32) { 0x5a }) { Unit }
         }
     }

@@ -23,6 +23,7 @@ import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
+import java.nio.charset.CharacterCodingException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -65,7 +66,7 @@ class LogRecordCodecTest {
                 .encodeToByteArray()
         val eventOffset = encoded.indexOf(eventBytes)
         val malformed = encoded.copyOf().also { it[eventOffset] = 0xC3.toByte() }
-        assertThrows(Exception::class.java) {
+        assertThrows(CharacterCodingException::class.java) {
             LogRecordCodec.decode(malformed)
         }
     }

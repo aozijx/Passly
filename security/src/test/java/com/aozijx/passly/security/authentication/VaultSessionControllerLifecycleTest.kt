@@ -1,0 +1,1061 @@
+package com.aozijx.passly.security.authentication
+
+import com.aozijx.passly.core.observability.ErrorCode
+import com.aozijx.passly.core.observability.EventKey
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFields
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.ReasonCode
+import com.aozijx.passly.core.observability.SpanId
+import com.aozijx.passly.core.observability.TraceId
+import com.aozijx.passly.core.observability.TraceResumeResult
+import com.aozijx.passly.core.observability.TraceScope
+import com.aozijx.passly.core.observability.trace.TraceToken
+import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.model.BiometricBinding
+import com.aozijx.passly.domain.access.model.BiometricBootstrapState
+import com.aozijx.passly.domain.access.model.BiometricRotationJournal
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.model.KeyEnvelope
+import com.aozijx.passly.domain.access.model.LockReason
+import com.aozijx.passly.domain.access.model.LockTrigger
+import com.aozijx.passly.domain.access.model.SessionLockRequest
+import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
+import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
+import com.aozijx.passly.runtime.session.SecureSessionState
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.dek.DekState
+import com.aozijx.passly.security.dek.FieldKeyManager
+import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
+import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.lock.LockStateManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class VaultSessionControllerLifecycleTest {
+    @Test
+    fun `fatal reset result is propagated after locking the session`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("fatal reset result")
+            val session = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.withExclusiveDatabaseReset { fatal }
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        }
+
+    @Test
+    fun `fatal authorization revocation still clears keys seals and locks`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("permit revoke fatal")
+            val session = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    revokeAuthorization = { throw fatal },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        }
+
+    @Test
+    fun `fatal sensitive key clear still seals and locks`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("sensitive key clear fatal")
+            val session = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    clearSensitiveKey = SensitiveDataKeyClearer { throw fatal },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, session.sealCount)
+        }
+
+    @Test
+    fun `fatal sensitive key clear during reset locks before propagating`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("sensitive key clear fatal")
+            val session = YieldingDatabaseSession()
+            var revoked = 0
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    revokeAuthorization = { revoked++ },
+                    clearSensitiveKey = SensitiveDataKeyClearer { throw fatal },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.withExclusiveDatabaseReset {
+                        session.seal()
+                        IllegalStateException("ordinary reset failure")
+                    }
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(1, revoked)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        }
+
+    @Test
+    fun `fatal close result propagates after lock revokes access and clears keys`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("database close fatal")
+            var revoked = 0
+            val session =
+                YieldingDatabaseSession(
+                    sealResult = Result.failure(fatal),
+                )
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    revokeAuthorization = { revoked++ },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, revoked)
+        }
+
+    @Test
+    fun `fatal authorization revocation still locks and propagates`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("permit revoke fatal")
+            val session = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    revokeAuthorization = { throw fatal },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.withExclusiveDatabaseReset {
+                        session.seal()
+                        IllegalStateException("ordinary reset failure")
+                    }
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+        }
+
+    @Test
+    fun `close failure during security lock is reported after fail closed cleanup`() =
+        runMainTest { dispatcher ->
+            val logger = RecordingLogger()
+            val closeFailure = IllegalStateException("database close failed")
+            val session =
+                YieldingDatabaseSession(
+                    sealResult = Result.failure(closeFailure),
+                )
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    logger = logger,
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, logger.errorEvents.count { it == Events.Security.LockFailed })
+        }
+
+    @Test
+    fun `failed reset close keeps authentication locked and revokes permits`() =
+        runMainTest { dispatcher ->
+            var revoked = 0
+            val closeFailure = IllegalStateException("database close failed")
+            val session =
+                YieldingDatabaseSession(
+                    sealResult = Result.failure(closeFailure),
+                )
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    revokeAuthorization = { revoked++ },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val result =
+                controller.withExclusiveDatabaseReset {
+                    session.seal().fold(
+                        onSuccess = { session.unlock() },
+                        onFailure = { it },
+                    )
+                }
+
+            assertEquals(closeFailure, result)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(closeFailure, controller.databaseFailure.value)
+            assertEquals(SecureSessionState.SEALED, session.lockState)
+            assertEquals(1, revoked)
+            assertEquals(0, session.unlockCalls)
+        }
+
+    @Test
+    fun `failed reset reopen publishes locked state and supports retry`() =
+        runMainTest { dispatcher ->
+            val session = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+            val reopenError = IllegalStateException("database reopen failed")
+
+            val result =
+                controller.withExclusiveDatabaseReset {
+                    session.seal()
+                    session.unlockResultError = reopenError
+                    session.unlock()
+                }
+
+            assertEquals(reopenError, result)
+            assertFalse(controller.isUnlocked())
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(reopenError, controller.databaseFailure.value)
+
+            session.unlockResultError = null
+            assertEquals(DatabaseSessionRetryResult.Ready, controller.retry())
+            assertTrue(controller.hasFullSecureSessionAccess())
+            assertEquals(null, controller.databaseFailure.value)
+        }
+
+    @Test
+    fun `security lock waits for database reset to finish reopening`() =
+        runMainTest { dispatcher ->
+            val session = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = session,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+            val resetStarted = CompletableDeferred<Unit>()
+            val finishReset = CompletableDeferred<Unit>()
+            val reset =
+                async(dispatcher) {
+                    controller.withExclusiveDatabaseReset {
+                        session.seal()
+                        resetStarted.complete(Unit)
+                        finishReset.await()
+                        session.unlock()
+                    }
+                }
+            resetStarted.await()
+
+            val lock =
+                async(dispatcher) {
+                    controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+                }
+            runCurrent()
+            assertFalse(lock.isCompleted)
+
+            finishReset.complete(Unit)
+            reset.await()
+            lock.await()
+
+            assertEquals(SecureSessionState.SOFT_LOCKED, session.lockState)
+            assertTrue(controller.isLocked())
+        }
+
+    @Test
+    fun `database-only seal immediately revokes secure session access`() =
+        runMainTest { dispatcher ->
+            val databaseSession = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            databaseSession.lockState = SecureSessionState.SEALED
+
+            assertFalse(controller.isUnlocked())
+            assertFalse(controller.hasFullSecureSessionAccess())
+            assertTrue(controller.isLocked())
+        }
+
+    @Test
+    fun `cancelled fresh unlock seals staged session and propagates cancellation`() =
+        runMainTest { dispatcher ->
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            val session = YieldingDatabaseSession(pauseUnlock = true)
+            val lockState = LockStateManager()
+            val controller =
+                VaultSessionController(
+                    dekManager = dekManager,
+                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                    authorizationPermitRevoker = { },
+                    sessionManager = session,
+                    vaultBootstrapStore = bootstrap,
+                    lockStateManager = lockState,
+                    securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                    idleTimeoutSettings =
+                        object : IdleTimeoutSettings {
+                            override val isLockOnBackground = MutableStateFlow(false)
+                            override val lockTimeout = MutableStateFlow(1_000L)
+                        },
+                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+                )
+
+            val unlockJob =
+                launch(dispatcher) {
+                    controller.commitUnlock(
+                        EnvelopeType.APP_PASSWORD,
+                        OwnedBytes(ByteArray(32) { 7 }),
+                        "unlock-cancel",
+                        AuthenticationPurpose.UNLOCK_VAULT,
+                    )
+                }
+            runCurrent()
+            session.unlockStarted.await()
+            unlockJob.cancel()
+            runCurrent()
+            unlockJob.join()
+
+            assertTrue(unlockJob.isCancelled)
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, session.sealCount)
+        }
+
+    @Test
+    fun `cancelled soft lock resume preserves existing dek and soft lock`() =
+        runMainTest { dispatcher ->
+            val cancelled = CancellationException("soft lock resume cancelled")
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 6 })
+            val session =
+                YieldingDatabaseSession(
+                    initialLockState = SecureSessionState.SOFT_LOCKED,
+                    unlockFailure = cancelled,
+                )
+            val lockState = LockStateManager().apply { mark(SecureSessionState.SOFT_LOCKED) }
+            val controller =
+                VaultSessionController(
+                    dekManager = dekManager,
+                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                    authorizationPermitRevoker = { },
+                    sessionManager = session,
+                    vaultBootstrapStore = bootstrap,
+                    lockStateManager = lockState,
+                    securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                    idleTimeoutSettings =
+                        object : IdleTimeoutSettings {
+                            override val isLockOnBackground = MutableStateFlow(false)
+                            override val lockTimeout = MutableStateFlow(1_000L)
+                        },
+                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+                )
+
+            val thrown =
+                try {
+                    controller.commitUnlock(
+                        EnvelopeType.APP_PASSWORD,
+                        OwnedBytes(ByteArray(32) { 9 }),
+                        "soft-lock-cancel",
+                        AuthenticationPurpose.UNLOCK_VAULT,
+                    )
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(dekManager.isUnlocked.value)
+            assertEquals(SecureSessionState.SOFT_LOCKED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(0, session.sealCount)
+        }
+
+    @Test
+    fun `cancelled recovery unlock seals staged recovery session and propagates cancellation`() =
+        runMainTest { dispatcher ->
+            val cancelled = CancellationException("recovery database unlock cancelled")
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            val session = YieldingDatabaseSession(unlockFailure = cancelled)
+            val lockState = LockStateManager()
+            val controller =
+                VaultSessionController(
+                    dekManager = dekManager,
+                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                    authorizationPermitRevoker = { },
+                    sessionManager = session,
+                    vaultBootstrapStore = bootstrap,
+                    lockStateManager = lockState,
+                    securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                    idleTimeoutSettings =
+                        object : IdleTimeoutSettings {
+                            override val isLockOnBackground = MutableStateFlow(false)
+                            override val lockTimeout = MutableStateFlow(1_000L)
+                        },
+                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+                )
+
+            val thrown =
+                try {
+                    controller.commitRecoveryUnlock(OwnedBytes(ByteArray(32) { 8 }), "recovery-cancel")
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, session.sealCount)
+        }
+
+    @Test
+    fun `cancelling a sealed lock completes key cleanup and reports cancellation`() =
+        runMainTest { dispatcher ->
+            val logger = RecordingLogger()
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+            dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 })
+            val databaseSession = YieldingDatabaseSession(pauseSeal = true)
+            val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+            val controller =
+                VaultSessionController(
+                    dekManager = dekManager,
+                    sensitiveDataKeyClearer =
+                        SensitiveDataKeyManager(
+                            bootstrap,
+                            dekManager,
+                            CoroutineScope(dispatcher),
+                        ),
+                    authorizationPermitRevoker = { },
+                    sessionManager = databaseSession,
+                    vaultBootstrapStore = bootstrap,
+                    lockStateManager = lockState,
+                    securityEvents = SecuritySessionEventLogger(logger),
+                    idleTimeoutSettings =
+                        object : IdleTimeoutSettings {
+                            override val isLockOnBackground = MutableStateFlow(false)
+                            override val lockTimeout = MutableStateFlow(1_000L)
+                        },
+                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+                )
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val lockJob =
+                launch(dispatcher) {
+                    controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                }
+            runCurrent()
+            databaseSession.sealStarted.await()
+
+            lockJob.cancel()
+            databaseSession.allowSealToFinish.complete(Unit)
+            runCurrent()
+            lockJob.join()
+
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+        }
+
+    @Test
+    fun `seal cancellation completes lock cleanup then propagates cancellation`() =
+        runMainTest { dispatcher ->
+            val cancelled = CancellationException("database seal cancelled")
+            val logger = RecordingLogger()
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+            dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 })
+            val databaseSession = YieldingDatabaseSession(sealFailure = cancelled)
+            val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+            val controller =
+                VaultSessionController(
+                    dekManager = dekManager,
+                    sensitiveDataKeyClearer =
+                        SensitiveDataKeyManager(
+                            bootstrap,
+                            dekManager,
+                            CoroutineScope(dispatcher),
+                        ),
+                    authorizationPermitRevoker = { },
+                    sessionManager = databaseSession,
+                    vaultBootstrapStore = bootstrap,
+                    lockStateManager = lockState,
+                    securityEvents = SecuritySessionEventLogger(logger),
+                    idleTimeoutSettings =
+                        object : IdleTimeoutSettings {
+                            override val isLockOnBackground = MutableStateFlow(false)
+                            override val lockTimeout = MutableStateFlow(1_000L)
+                        },
+                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val thrown =
+                try {
+                    controller.lock(SessionLockRequest(LockReason.APP_EXIT, LockTrigger.APP_EXIT))
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
+            assertEquals(1, databaseSession.sealCount)
+            assertTrue(dekManager.state is DekState.Locked)
+            assertEquals(SecureSessionState.SEALED, lockState.state)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+        }
+
+    @Test
+    fun `soft lock cancellation completes state transition then propagates cancellation`() =
+        runMainTest { dispatcher ->
+            val cancelled = CancellationException("database soft lock cancelled")
+            val logger = RecordingLogger()
+            val databaseSession = YieldingDatabaseSession(softLockFailure = cancelled)
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    logger = logger,
+                )
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val thrown =
+                try {
+                    controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
+            assertTrue(databaseSession.softLockCompleted)
+            assertEquals(SecureSessionState.SOFT_LOCKED, databaseSession.lockState)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCancelled })
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+        }
+
+    @Test
+    fun `disabling background lock preserves the existing idle timeout`() =
+        runMainTest { dispatcher ->
+            val databaseSession = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppForeground()
+            advanceTimeBy(500L)
+            controller.onAppBackground()
+            advanceTimeBy(500L)
+            runCurrent()
+
+            assertTrue(databaseSession.softLockCompleted)
+            assertEquals(0, databaseSession.sealCount)
+        }
+
+    @Test
+    fun `background lock waits for configured timeout and is cancelled on foreground return`() =
+        runMainTest { dispatcher ->
+            val databaseSession = YieldingDatabaseSession()
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(true),
+                )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppBackground()
+            advanceTimeBy(999L)
+            runCurrent()
+
+            assertEquals(0, databaseSession.sealCount)
+
+            controller.onAppForeground()
+            advanceTimeBy(1L)
+            runCurrent()
+
+            assertEquals(0, databaseSession.sealCount)
+            advanceUntilIdle()
+        }
+
+    @Test
+    fun `foreground return cannot cancel a background seal after timeout elapsed`() =
+        runMainTest { dispatcher ->
+            val logger = RecordingLogger()
+            val databaseSession = YieldingDatabaseSession(pauseSeal = true)
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(true),
+                    logger = logger,
+                )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppBackground()
+            advanceTimeBy(1_000L)
+            runCurrent()
+            databaseSession.sealStarted.await()
+
+            controller.onAppForeground()
+            databaseSession.allowSealToFinish.complete(Unit)
+            runCurrent()
+
+            assertEquals(1, databaseSession.sealCount)
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
+            advanceUntilIdle()
+        }
+
+    @Test
+    fun `idle timeout does not cancel its own lock operation or report a false failure`() =
+        runMainTest { dispatcher ->
+            val logger = RecordingLogger()
+            val bootstrap = EmptyVaultBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+            val sensitiveKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
+            val databaseSession = YieldingDatabaseSession()
+            val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+            val timeout = MutableStateFlow(1L)
+            val controller =
+                VaultSessionController(
+                    dekManager = dekManager,
+                    sensitiveDataKeyClearer = sensitiveKeyManager,
+                    authorizationPermitRevoker = { },
+                    sessionManager = databaseSession,
+                    vaultBootstrapStore = bootstrap,
+                    lockStateManager = lockState,
+                    securityEvents = SecuritySessionEventLogger(logger),
+                    idleTimeoutSettings =
+                        object : IdleTimeoutSettings {
+                            override val isLockOnBackground = MutableStateFlow(false)
+                            override val lockTimeout = timeout
+                        },
+                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
+                )
+
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+            controller.onAppForeground()
+            controller.onUserInteraction()
+            advanceTimeBy(1L)
+            runCurrent()
+
+            assertTrue(databaseSession.softLockCompleted)
+            assertEquals(SecureSessionState.SOFT_LOCKED, lockState.state)
+            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
+            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
+        }
+
+    @Test
+    fun `fatal soft lock failure escalates to sealed cleanup before propagating`() =
+        runMainTest { dispatcher ->
+            val fatal = AssertionError("database soft lock fatal")
+            val databaseSession = YieldingDatabaseSession(softLockFailure = fatal)
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                )
+            runCurrent()
+            controller.transition(AuthenticationState.Authenticated(0L))
+
+            val caught =
+                try {
+                    controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+
+            assertSame(fatal, caught)
+            assertEquals(1, databaseSession.sealCount)
+            assertEquals(SecureSessionState.SEALED, databaseSession.lockState)
+            assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+        }
+
+    private fun createController(
+        dispatcher: CoroutineDispatcher,
+        databaseSession: DatabaseSessionLifecycle,
+        timeout: MutableStateFlow<Long>,
+        lockOnBackground: MutableStateFlow<Boolean>,
+        logger: RecordingLogger = RecordingLogger(),
+        provisionInboxKey: suspend () -> Unit = {},
+        revokeAuthorization: () -> Unit = {},
+        clearSensitiveKey: SensitiveDataKeyClearer? = null,
+    ): VaultSessionController {
+        val bootstrap = EmptyVaultBootstrapStore()
+        val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
+        val sensitiveDataKeyClearer =
+            clearSensitiveKey
+                ?: SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
+        val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
+        return VaultSessionController(
+            dekManager = dekManager,
+            sensitiveDataKeyClearer = sensitiveDataKeyClearer,
+            authorizationPermitRevoker = revokeAuthorization,
+            sessionManager = databaseSession,
+            vaultBootstrapStore = bootstrap,
+            lockStateManager = lockState,
+            securityEvents = SecuritySessionEventLogger(logger),
+            idleTimeoutSettings =
+                object : IdleTimeoutSettings {
+                    override val isLockOnBackground = lockOnBackground
+                    override val lockTimeout = timeout
+                },
+            autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning(provisionInboxKey),
+        )
+    }
+
+    @Test
+    fun `only a full Vault unlock provisions the Autofill Inbox key`() =
+        runMainTest { dispatcher ->
+            var provisionCount = 0
+            val fullUnlockController =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = YieldingDatabaseSession(),
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    provisionInboxKey = { provisionCount++ },
+                )
+            val autofillController =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = YieldingDatabaseSession(),
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    provisionInboxKey = { provisionCount++ },
+                )
+
+            assertTrue(fullUnlockController.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT))
+            assertEquals(1, provisionCount)
+            assertTrue(autofillController.markAuthenticated(AuthenticationPurpose.AUTOFILL))
+            assertEquals(1, provisionCount)
+        }
+
+    private class YieldingDatabaseSession(
+        private val pauseSeal: Boolean = false,
+        private val sealFailure: Throwable? = null,
+        private val softLockFailure: Throwable? = null,
+        private val pauseUnlock: Boolean = false,
+        private val unlockFailure: Throwable? = null,
+        private val sealResult: Result<Unit> = Result.success(Unit),
+        initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
+    ) : DatabaseSessionLifecycle {
+        override var lockState: SecureSessionState = initialLockState
+        var unlockResultError: Throwable? = null
+        var softLockCompleted = false
+        var sealCount = 0
+        var unlockCalls = 0
+        val sealStarted = CompletableDeferred<Unit>()
+        val allowSealToFinish = CompletableDeferred<Unit>()
+        val unlockStarted = CompletableDeferred<Unit>()
+        val allowUnlockToFinish = CompletableDeferred<Unit>()
+
+        override suspend fun unlock(): Throwable? {
+            unlockCalls += 1
+            unlockStarted.complete(Unit)
+            if (pauseUnlock) allowUnlockToFinish.await()
+            unlockFailure?.let { throw it }
+            unlockResultError?.let { return it }
+            lockState = SecureSessionState.UNLOCKED
+            return null
+        }
+
+        override suspend fun softLock() {
+            lockState = SecureSessionState.SOFT_LOCKED
+            yield()
+            softLockCompleted = true
+            softLockFailure?.let { throw it }
+        }
+
+        override suspend fun seal(): Result<Unit> {
+            sealStarted.complete(Unit)
+            if (pauseSeal) allowSealToFinish.await()
+            sealCount += 1
+            lockState = SecureSessionState.SEALED
+            sealFailure?.let { throw it }
+            return sealResult
+        }
+    }
+
+    private class RecordingLogger : Logger {
+        val infoEvents = mutableListOf<EventKey>()
+        val errorEvents = mutableListOf<EventKey>()
+
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) {
+            infoEvents += event
+        }
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
+
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) {
+            errorEvents += event
+        }
+
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override suspend fun <T> withRootTrace(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T = TestTraceScope.block()
+
+        override suspend fun <T> inSpan(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): T =
+            withContext(CoroutineName("test-span")) {
+                TestTraceScope.block()
+            }
+
+        override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
+
+        override suspend fun <T> resumeTrace(
+            token: TraceToken,
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): TraceResumeResult<T> = error("not used")
+    }
+
+    private object TestTraceScope : TraceScope {
+        override val traceId = TraceId("test_trace")
+        override val spanId = SpanId("test_span")
+        override val parentSpanId: SpanId? = null
+    }
+
+    private class EmptyVaultBootstrapStore : VaultBootstrapStore {
+        override suspend fun save(envelope: KeyEnvelope) = Unit
+
+        override suspend fun load(type: EnvelopeType): KeyEnvelope? = null
+
+        override suspend fun loadAll(): List<KeyEnvelope> = emptyList()
+
+        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
+
+        override suspend fun delete(type: EnvelopeType) = Unit
+
+        override suspend fun saveVerificationTag(tag: ByteArray) = Unit
+
+        override suspend fun loadVerificationTag(): ByteArray? = null
+
+        override suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray) = Unit
+
+        override suspend fun loadSensitiveKeyEnvelope(): ByteArray? = null
+
+        override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) = Unit
+
+        override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = null
+
+        override suspend fun loadBiometricState() = BiometricBootstrapState(null, null, emptySet())
+
+        override suspend fun prepareBiometricRotation(journal: BiometricRotationJournal) = Unit
+
+        override suspend fun commitBiometricRotation(
+            envelope: KeyEnvelope,
+            binding: BiometricBinding,
+            obsoleteAlias: String?,
+        ) = Unit
+
+        override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
+
+        override suspend fun disableBiometric(activeAlias: String) = Unit
+
+        override suspend fun clearBiometricRotationJournal() = Unit
+    }
+}
+
+private fun runMainTest(
+    block: suspend TestScope.(StandardTestDispatcher) -> Unit,
+) = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    Dispatchers.setMain(dispatcher)
+    try {
+        block(dispatcher)
+    } finally {
+        Dispatchers.resetMain()
+    }
+}

@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.authentication
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,7 +18,7 @@ class BiometricAliasDeletionTest {
             attemptBiometricAliasDeletion { throw fatal }
             error("fatal error was hidden")
         } catch (actual: AssertionError) {
-            assertTrue(actual.message == fatal.message)
+            assertSame(fatal, actual)
         }
     }
 

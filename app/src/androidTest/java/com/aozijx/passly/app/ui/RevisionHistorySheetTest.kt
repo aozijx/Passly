@@ -1,6 +1,5 @@
 package com.aozijx.passly.app.ui
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +35,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisi
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionSheetUiModel
-import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -62,7 +60,6 @@ class RevisionHistorySheetTest {
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         compose.onNodeWithText(context.getString(R.string.revision_history_empty)).assertIsDisplayed()
-        captureSheet("history-empty.png")
         assertSheetWrapsContent("Empty history")
 
         model.value =
@@ -128,7 +125,6 @@ class RevisionHistorySheetTest {
         compose.onNodeWithTag("revision-comparison-list").performScrollToIndex(29)
         compose.onNodeWithText(context.getString(R.string.revision_custom_field_label, "Field 30")).assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.revision_restore_action)).assertIsDisplayed()
-        captureSheet("history-long-comparison.png")
     }
 
     @Test
@@ -199,22 +195,6 @@ class RevisionHistorySheetTest {
         compose.onNodeWithTag("revision-history-sheet").performTouchInput { swipeDown() }
 
         assertTrue(actions.isEmpty())
-    }
-
-    private fun captureSheet(name: String) {
-        compose.waitForIdle()
-        compose.mainClock.advanceTimeBy(500)
-        compose.waitForIdle()
-        val arguments = InstrumentationRegistry.getArguments()
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory =
-            arguments.getString("additionalTestOutputDir")?.let(::File)
-                ?: checkNotNull(context.getExternalFilesDir(null))
-        directory.mkdirs()
-        val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val screenshot = automation.takeScreenshot()
-        File(directory, name).outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        screenshot.recycle()
     }
 
     private fun assertSheetWrapsContent(description: String) {

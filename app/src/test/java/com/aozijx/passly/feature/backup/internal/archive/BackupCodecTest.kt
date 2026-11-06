@@ -24,8 +24,10 @@ import com.aozijx.passly.feature.backup.internal.model.BackupFormats
 import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import javax.crypto.AEADBadTagException
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -163,7 +165,7 @@ class BackupCodecTest {
                 parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
-        assertThrows(Exception::class.java) {
+        assertThrows(AEADBadTagException::class.java) {
             EncryptedBackupContainerCodec.decrypt(
                 encrypted,
                 "wrong".toCharArray(),
@@ -173,7 +175,7 @@ class BackupCodecTest {
 
         val tampered = encrypted.copyOf()
         tampered[tampered.lastIndex] = (tampered.last().toInt() xor 1).toByte()
-        assertThrows(Exception::class.java) {
+        assertThrows(AEADBadTagException::class.java) {
             EncryptedBackupContainerCodec.decrypt(
                 tampered,
                 "correct".toCharArray(),
@@ -197,7 +199,7 @@ class BackupCodecTest {
         val iterationsOffset = 8 + 4 + 4 + 4 + 4 + 4
         ByteBuffer.wrap(tampered).putInt(iterationsOffset, 4)
 
-        assertThrows(Exception::class.java) {
+        assertThrows(AEADBadTagException::class.java) {
             EncryptedBackupContainerCodec.decrypt(
                 tampered,
                 password,
@@ -520,7 +522,7 @@ class BackupCodecTest {
                         BackupEntryRecord(
                             id = "wire-entry",
                             type = "login",
-                            revision = 1,
+                            revision = 3,
                             createdAt = 1,
                             updatedAt = 2,
                             fields =
@@ -529,16 +531,14 @@ class BackupCodecTest {
                                     BackupFieldRecord("username", BackupFieldValue.text("alice")),
                                     BackupFieldRecord("primary_url", BackupFieldValue.text("https://example.com")),
                                     BackupFieldRecord("password", BackupFieldValue.text("secret")),
+                                    BackupFieldRecord("favorite", BackupFieldValue.boolean(true)),
                                 ),
                         ),
                     ),
             )
 
-        val root =
-            BackupJson
-                .parseToJsonElement(
-                    BackupJson.encodeToString(document),
-                ).jsonObject
+        val json = BackupJson.encodeToString(document)
+        val root = BackupJson.parseToJsonElement(json).jsonObject
         val entry =
             root
                 .getValue("entries")
@@ -556,10 +556,17 @@ class BackupCodecTest {
             ),
             entry.keys,
         )
-        assertEquals(4, entry.getValue("fields").jsonArray.size)
-        assertFalse(BackupJson.encodeToString(document).contains("schemaVersion"))
-        assertFalse(BackupJson.encodeToString(document).contains("summary"))
-        assertFalse(BackupJson.encodeToString(document).contains("\"secret\":"))
+        assertEquals("passly-field-archive", root.getValue("format").jsonPrimitive.content)
+        assertEquals("1", root.getValue("version").toString())
+        assertEquals("3", entry.getValue("revision").toString())
+        assertEquals(5, entry.getValue("fields").jsonArray.size)
+        assertTrue(json.contains("\"kind\": \"text\""))
+        assertTrue(json.contains("\"text\": \"Title\""))
+        assertTrue(json.contains("\"boolean\": true"))
+        assertFalse(json.contains("schemaVersion"))
+        assertFalse(json.contains("summary"))
+        assertFalse(json.contains("\"secret\":"))
+        assertFalse(json.contains("sensitiveFields"))
     }
 
     @Test
@@ -659,7 +666,7 @@ class BackupCodecTest {
         }
 
         val legacyVaultFormat = json.replace(BackupDocument.FORMAT, "passly-vault")
-        assertThrows(Exception::class.java) {
+        assertThrows(IllegalArgumentException::class.java) {
             JsonBackupImporter().import(legacyVaultFormat.toByteArray())
         }
     }

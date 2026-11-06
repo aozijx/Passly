@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
+import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
@@ -333,7 +334,7 @@ class EntryRevisionRestoreTransactionTest {
                     }
                 }.exceptionOrNull()
 
-            assertTrue(failure != null)
+            assertTrue("stale restore must fail with Conflict, got $failure", failure is Conflict)
             assertEquals("Current", database.entryQueryDao().getById(ENTRY_ID)?.title)
             assertEquals(2, database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).size)
             assertEquals(0, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
