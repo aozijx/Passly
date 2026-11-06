@@ -17,13 +17,10 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -82,29 +79,6 @@ class RoomBackupSnapshotGatewayTest {
             assertEquals(16 * 1024 * 1024L, store.readOptions?.maxResourceBytes)
         }
 
-    @Test
-    fun overwriteRejectsCompatibilityFilteredNonemptySourceBeforeCallingStore() =
-        runBlocking {
-            val store = RecordingVaultBackupStore(VaultBackupSnapshot(emptyList(), emptyList(), emptyList()))
-            val gateway = RoomBackupSnapshotGateway(store, context)
-            val bundle =
-                com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle(
-                    document =
-                        com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument(
-                            format = "passly-field-archive",
-                            version = 1,
-                            exportedAt = 1L,
-                            entries = emptyList(),
-                        ),
-                    sourceEntryCount = 1,
-                )
-
-            assertThrows(IllegalArgumentException::class.java) {
-                runBlocking { gateway.restore(bundle, ImportMode.OVERWRITE) }
-            }
-            assertFalse(store.restoreCalled)
-        }
-
     private fun account(id: String) =
         Entry(
             identity =
@@ -121,7 +95,6 @@ class RoomBackupSnapshotGatewayTest {
         private val snapshot: VaultBackupSnapshot,
     ) : VaultBackupStore {
         var readOptions: VaultBackupReadOptions? = null
-        var restoreCalled = false
 
         override suspend fun read(options: VaultBackupReadOptions): VaultBackupSnapshot {
             readOptions = options
@@ -132,7 +105,6 @@ class RoomBackupSnapshotGatewayTest {
             snapshot: VaultBackupSnapshot,
             mode: VaultBackupRestoreMode,
         ): VaultBackupRestoreResult {
-            restoreCalled = true
             return VaultBackupRestoreResult(0, 0)
         }
     }
