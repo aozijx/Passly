@@ -13,15 +13,17 @@
 
 目标不存在、类型不支持、授权拒绝、字段不完整或会话过期时不进入编辑页，也不回退到其他类型。加载成功后再次核对详情访问凭据与认证会话，再将条目交给编辑目的地。
 
-导航时，`VaultGraphRegistration` 的 `onEditFullForm(editableEntry)` 原样调用 `seedCoordinator.stage(editableEntry)`。`EntryEditorSeedCoordinator.stage(seed)` 先检查完整会话，并要求 `seed.authentication` 与当前认证对象为同一实例，然后调用 `EntryEditorSeedStore.stage(seed)`；Store 生成 `EditorSeedToken.new()` 并以单槽保存 seed。目的地注册表用 `editRouteFor(editableEntry.entry.type, staged.token.value)` 选择 Login/OTP/Bank Card/Wi-Fi 路由，`AppRoute.Edit*.createRoute(seedToken)` 只把 token 插入路由字符串。未支持类型会 discard token。路由参数不是条目 ID，也不携带 `Entry`。
+当前 `EditableEntryLoadResult` 表达的是查询成功、缺失、不支持、拒绝、取消与会话不可用等预期结果；`LoadEditableEntryUseCase.invoke(entryId)` 没有将 Repository、授权或 `ActivityRecorder.recordUsage()` 抛出的普通异常映射为该结果。此调用由 `DetailViewModel.prepareEntryForEdit()` 在 `DetailRoute` 的 `editScope.launch` 中发起；异常会从协程逸出，Route 当前没有相应失败 state/effect 或重试提示。取消与 fatal `Error` 也不映射为普通加载失败。此异常反馈/重试边界见[维护 TODO Task 42](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
+
+导航时，`VaultGraphRegistration` 的 `onEditFullForm(editableEntry)` 原样调用 `seedCoordinator.stage(editableEntry)`。`EntryEditorSeedCoordinator.stage(seed)` 先检查完整会话，并要求 `seed.authentication` 与当前认证对象为同一实例，然后调用 `EntryEditorSeedStore.stage(seed)`；Store 生成 `EditorSeedToken.new()` 并以单槽保存 seed。目的地注册表用 `editRouteFor(editableEntry.entry.type, staged.token.value)` 选择 Login/OTP/Bank Card/Wi-Fi 路由，`AppRoute.Edit*.createRoute(seedToken)` 只把 token 插入路由字符串。未支持类型会 discard token。若注册表返回路由，Graph 随后调用 `context.navigateToRoute(route)`；当前 route-launch 抛错时没有 catch/discard，已 stage 的单槽 seed 会保留到被替换、会话撤销或 graph ViewModel 清理。关闭 Store 只释放对 seed 的受控引用，不会原位擦除 Entry 中不可变 String。失败导航后的 seed 生命周期待闭合，见[维护 TODO Task 42](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。路由参数不是条目 ID，也不携带 `Entry`。
 
 ## 一次性交接与敏感状态
 
 详情路由只传 `seedToken`。完整 `Entry` 留在 Vault graph 范围内的 `EntryEditorSeedStore`，由 `EntryEditorSeedCoordinator` 持有其路由级访问控制。Store 只保留一个 seed；消费必须匹配 token，成功消费即清空槽位，路由销毁时未消费的 seed 会被丢弃。
 
-可编辑 seed 绑定读取时的完整认证对象。锁定或认证会话切换会清空 seed；编辑器消费后还会核对条目类型和同一认证对象。锁定、撤权或编辑 ViewModel 关闭时，由编辑 ViewModel 清空已回填的表单。明文条目不进入导航参数、SavedState 或 Intent。
+可编辑 seed 绑定读取时的完整认证对象。锁定或认证会话切换会清空 seed；编辑器消费后还会核对条目类型和同一认证对象。锁定、撤权或编辑 ViewModel 关闭时，由编辑 ViewModel 清空已回填的表单。这里的“清空”是清除 Store/UI state 对对象的引用；`LoadEditableEntryUseCase` 当前通过 `SensitiveValue.toCharArray()` 构造不可变 `String` 并写入 `Entry`，随后只覆盖临时 `CharArray`，不能保证 JVM 中的 String 副本已被原位擦零。明文条目不进入导航参数、SavedState 或 Intent；该内存副本边界及后续缓冲类型评估见[维护 TODO Task 42](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
 
-`registerEditorEditDestination()` 从 `backStackEntry.arguments["seedToken"]` 取字符串，并建立 `consumeSeed(rawToken)`：该闭包调用 `EditorSeedToken.parse(rawToken)`，有效时调用 `seedCoordinator.consume(token)`，无效时返回 `Missing`。各编辑 Route 将消费结果交给对应 ViewModel 的 `loadExistingEntry(result)`；例如密码编辑器用 `matchesCurrentAccess(LOGIN, secureSessionAccessState)` 校验类型、完整访问和认证对象身份，通过后设置 `editingEntryId = seed.entry.id` 并从 `seed.entry` 映射表单。Route 的 `DisposableEffect` 在目的地销毁时调用 `discard(token)`，仅在 seed 尚未消费且 token 仍匹配时清除它。
+`registerEditorEditDestination()` 从 `backStackEntry.arguments["seedToken"]` 取字符串，并建立 `consumeSeed(rawToken)`：该闭包调用 `EditorSeedToken.parse(rawToken)`，有效时调用 `seedCoordinator.consume(token)`，无效时返回 `Missing`。各编辑 Route 将消费结果交给对应 ViewModel 的同步 `loadExistingEntry(result)`；它只验证 seed 类型、完整访问和认证对象身份，再从 seed 中的 `entry` 映射表单，不调用 Repository 或 `LoadEditableEntryUseCase`。无效/缺失 seed 会进入 `failEditLoad()` 并由 Route 显示 Snackbar；有效 seed 设置 `editingEntryId`，后续重复载入会被忽略。Route 的 `DisposableEffect` 在目的地销毁时调用 `discard(token)`，仅在 seed 尚未消费且 token 仍匹配时清除它。若 seed 无效，用户需返回详情页重新发起编辑以生成新 token；此路径与 Detail 预加载异常后的重试不是同一 owner。
 
 ## 更新合同
 
