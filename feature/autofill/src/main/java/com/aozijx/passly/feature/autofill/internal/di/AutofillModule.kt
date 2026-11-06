@@ -16,11 +16,11 @@ import javax.inject.Singleton
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class Strict
+internal annotation class Strict
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class Heuristic
+internal annotation class Heuristic
 
 @Module
 @InstallIn(SingletonComponent::class)

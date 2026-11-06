@@ -7,7 +7,7 @@ import android.view.autofill.AutofillId
 import com.aozijx.passly.feature.autofill.core.AutofillInputTypeClassifier
 
 /** Full static properties of an editable input field (for heuristic matching). */
-data class EditableFieldInfo(
+internal data class EditableFieldInfo(
     val autofillId: AutofillId,
     val resourceId: String? = null,
     val inputType: String? = null,
@@ -21,7 +21,7 @@ data class EditableFieldInfo(
     val value: String? = null,
 )
 
-data class ParsedStructure(
+internal data class ParsedStructure(
     val packageName: String? = null,
     val webDomain: String? = null,
     /** All editable input fields on the page. */

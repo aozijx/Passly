@@ -268,9 +268,8 @@ internal object SourceBoundaryPolicy {
                     forbiddenImportPrefixes = setOf("com.aozijx.passly.feature.autofill."),
                     allowedImports =
                         setOf(
-                            "com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras",
+                            "com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract",
                             "com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget",
-                            "com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource",
                             "com.aozijx.passly.feature.autofill.presentation.AutofillFeatureEntry",
                             "com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion",
                             "com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation",

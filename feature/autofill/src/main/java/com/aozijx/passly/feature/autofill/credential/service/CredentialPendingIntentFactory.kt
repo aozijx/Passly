@@ -6,7 +6,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
 import javax.inject.Inject
@@ -32,14 +32,14 @@ internal class CredentialPendingIntentFactory
             val intent =
                 launchTarget
                     .credentialResponseIntent(context, requestId)
-                    .setAction(AutofillLaunchExtras.ACTION_CREDENTIAL_GET_PASSWORD)
+                    .setAction(AutofillIntentExtras.ACTION_CREDENTIAL_GET_PASSWORD)
                     // PendingIntent identity ignores extras. Identifier keeps two UUIDs
                     // distinct even in the unlikely event of an Int hash collision.
                     .setIdentifier(requestId)
                     // The entry id is only an opaque candidate pointer. Calling-app
                     // identity always comes from the system-injected final request.
-                    .putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
-                    .putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
+                    .putExtra(AutofillIntentExtras.INTERACTION_ID, interactionId.value)
+                    .putExtra(AutofillIntentExtras.ENTRY_ID, entryId.value)
 
             return PendingIntent.getActivity(
                 context,
@@ -60,9 +60,9 @@ internal class CredentialPendingIntentFactory
             val intent =
                 launchTarget
                     .credentialResponseIntent(context, requestId)
-                    .setAction(AutofillLaunchExtras.ACTION_CREDENTIAL_CREATE_PASSWORD)
+                    .setAction(AutofillIntentExtras.ACTION_CREDENTIAL_CREATE_PASSWORD)
                     .setIdentifier(requestId)
-                    .putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
+                    .putExtra(AutofillIntentExtras.INTERACTION_ID, interactionId.value)
             return PendingIntent.getActivity(
                 context,
                 requestId.hashCode(),
@@ -79,9 +79,9 @@ internal class CredentialPendingIntentFactory
             val intent =
                 launchTarget
                     .credentialResponseIntent(context, requestId)
-                    .setAction(AutofillLaunchExtras.ACTION_CREDENTIAL_UNLOCK)
+                    .setAction(AutofillIntentExtras.ACTION_CREDENTIAL_UNLOCK)
                     .setIdentifier(requestId)
-                    .putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
+                    .putExtra(AutofillIntentExtras.INTERACTION_ID, interactionId.value)
             return PendingIntent.getActivity(
                 context,
                 requestId.hashCode(),

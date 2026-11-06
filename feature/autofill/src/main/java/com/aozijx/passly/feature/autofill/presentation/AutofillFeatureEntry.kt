@@ -18,7 +18,8 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
+import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
 import com.aozijx.passly.feature.autofill.presentation.accessibility.AccessibilityFillRoute
 import com.aozijx.passly.feature.autofill.presentation.accessibility.AccessibilityFillViewModel
 import com.aozijx.passly.feature.autofill.presentation.credential.CredentialResponseCompletion
@@ -54,8 +55,8 @@ enum class AutofillHostPresentation {
 /** App uses this small classification before `super.onCreate` to select its theme and window flags. */
 fun autofillHostPresentation(action: String?): AutofillHostPresentation =
     when (action) {
-        AutofillLaunchExtras.ACTION_LEGACY_FILL -> AutofillHostPresentation.LEGACY_FILL
-        AutofillLaunchExtras.ACTION_ACCESSIBILITY_FILL -> AutofillHostPresentation.ACCESSIBILITY_FILL
+        AutofillHostLaunchContract.ACTION_LEGACY_FILL -> AutofillHostPresentation.LEGACY_FILL
+        AutofillHostLaunchContract.ACTION_ACCESSIBILITY_FILL -> AutofillHostPresentation.ACCESSIBILITY_FILL
         else -> AutofillHostPresentation.CREDENTIAL
     }
 
@@ -162,11 +163,11 @@ private sealed interface AutofillLaunch {
 
 private fun parseLaunch(source: Intent): AutofillLaunch? =
     when (source.action) {
-        AutofillLaunchExtras.ACTION_ACCESSIBILITY_FILL -> AutofillLaunch.Accessibility
-        AutofillLaunchExtras.ACTION_LEGACY_FILL -> source.toAutofillFillRequest()?.let(AutofillLaunch::Legacy)
-        AutofillLaunchExtras.ACTION_CREDENTIAL_GET_PASSWORD -> AutofillLaunch.Credential(CredentialResponseUiAction.PasswordGet(source))
-        AutofillLaunchExtras.ACTION_CREDENTIAL_UNLOCK -> AutofillLaunch.Credential(CredentialResponseUiAction.Unlock(source))
-        AutofillLaunchExtras.ACTION_CREDENTIAL_CREATE_PASSWORD -> AutofillLaunch.Credential(CredentialResponseUiAction.PasswordCreate(source))
+        AutofillHostLaunchContract.ACTION_ACCESSIBILITY_FILL -> AutofillLaunch.Accessibility
+        AutofillHostLaunchContract.ACTION_LEGACY_FILL -> source.toAutofillFillRequest()?.let(AutofillLaunch::Legacy)
+        AutofillIntentExtras.ACTION_CREDENTIAL_GET_PASSWORD -> AutofillLaunch.Credential(CredentialResponseUiAction.PasswordGet(source))
+        AutofillIntentExtras.ACTION_CREDENTIAL_UNLOCK -> AutofillLaunch.Credential(CredentialResponseUiAction.Unlock(source))
+        AutofillIntentExtras.ACTION_CREDENTIAL_CREATE_PASSWORD -> AutofillLaunch.Credential(CredentialResponseUiAction.PasswordCreate(source))
         else -> AutofillLaunch.Credential(CredentialResponseUiAction.UnknownAction)
     }
 

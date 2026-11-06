@@ -17,13 +17,16 @@ interface AutofillLaunchTarget {
     fun accessibilityFillIntent(context: Context): Intent
 }
 
-object AutofillLaunchExtras {
+object AutofillHostLaunchContract {
     const val ACTION_LEGACY_FILL = "com.aozijx.passly.autofill.action.LEGACY_FILL"
     const val ACTION_ACCESSIBILITY_FILL = "com.aozijx.passly.autofill.action.ACCESSIBILITY_FILL"
+    const val REQUEST_ID = "autofill_request_id"
+}
+
+internal object AutofillIntentExtras {
     const val ACTION_CREDENTIAL_GET_PASSWORD = "com.aozijx.passly.ACTION_GET_PASSWORD"
     const val ACTION_CREDENTIAL_UNLOCK = "com.aozijx.passly.ACTION_CREDENTIAL_UNLOCK"
     const val ACTION_CREDENTIAL_CREATE_PASSWORD = "com.aozijx.passly.ACTION_CREATE_PASSWORD"
-    const val REQUEST_ID = "autofill_request_id"
     const val RESULT_TARGET = "autofill_result_target"
     const val INTERACTION_ID = "autofill_interaction_id"
     const val ENTRY_ID = "autofill_entry_id"

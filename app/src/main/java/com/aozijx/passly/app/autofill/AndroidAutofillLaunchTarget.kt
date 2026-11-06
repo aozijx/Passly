@@ -2,20 +2,20 @@ package com.aozijx.passly.app.autofill
 
 import android.content.Context
 import android.content.Intent
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AndroidAutofillLaunchTarget
+internal class AndroidAutofillLaunchTarget
     @Inject
     constructor() : AutofillLaunchTarget {
         override fun accessibilityFillIntent(context: Context): Intent =
             Intent(context, AutofillAuthActivity::class.java)
                 .setPackage(context.packageName)
-                .setAction(AutofillLaunchExtras.ACTION_ACCESSIBILITY_FILL)
+                .setAction(AutofillHostLaunchContract.ACTION_ACCESSIBILITY_FILL)
 
         override fun legacyFillIntent(
             context: Context,
@@ -23,8 +23,8 @@ class AndroidAutofillLaunchTarget
         ): Intent =
             Intent(context, AutofillAuthActivity::class.java)
                 .setPackage(context.packageName)
-                .setAction(AutofillLaunchExtras.ACTION_LEGACY_FILL)
-                .putExtra(AutofillLaunchExtras.REQUEST_ID, requestId)
+                .setAction(AutofillHostLaunchContract.ACTION_LEGACY_FILL)
+                .putExtra(AutofillHostLaunchContract.REQUEST_ID, requestId)
 
         override fun credentialResponseIntent(
             context: Context,
@@ -32,5 +32,5 @@ class AndroidAutofillLaunchTarget
         ): Intent =
             Intent(context, AutofillAuthActivity::class.java)
                 .setPackage(context.packageName)
-                .putExtra(AutofillLaunchExtras.REQUEST_ID, requestId)
+                .putExtra(AutofillHostLaunchContract.REQUEST_ID, requestId)
     }

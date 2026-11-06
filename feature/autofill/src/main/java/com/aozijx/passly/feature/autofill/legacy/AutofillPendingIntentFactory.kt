@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import com.aozijx.passly.feature.autofill.platform.AutofillPendingIntentPolicy
 import javax.inject.Inject
@@ -38,7 +38,7 @@ internal class AutofillPendingIntentFactory
                 )
             return launchTarget.legacyFillIntent(context, requestId).apply {
                 setIdentifier(requestId)
-                putExtra(AutofillLaunchExtras.ENTRY_ID, entryId.value)
+                putExtra(AutofillIntentExtras.ENTRY_ID, entryId.value)
                 putCommonExtras(
                     interactionId,
                     parsed,
@@ -103,22 +103,22 @@ internal class AutofillPendingIntentFactory
             resultTarget: LegacyAutofillResultTarget,
             inlineRequest: InlineSuggestionsRequest?,
         ) {
-            putExtra(AutofillLaunchExtras.INTERACTION_ID, interactionId.value)
-            putExtra(AutofillLaunchExtras.UI_MODE, uiMode.wireKey)
-            inlineRequest?.let { putExtra(AutofillLaunchExtras.INLINE_REQUEST, it) }
-            putExtra(AutofillLaunchExtras.RESULT_TARGET, resultTarget.wireValue)
-            putExtra(AutofillLaunchExtras.PACKAGE_NAME, parsed.packageName)
-            putExtra(AutofillLaunchExtras.WEB_DOMAIN, parsed.webDomain)
-            putExtra(AutofillLaunchExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())
+            putExtra(AutofillIntentExtras.INTERACTION_ID, interactionId.value)
+            putExtra(AutofillIntentExtras.UI_MODE, uiMode.wireKey)
+            inlineRequest?.let { putExtra(AutofillIntentExtras.INLINE_REQUEST, it) }
+            putExtra(AutofillIntentExtras.RESULT_TARGET, resultTarget.wireValue)
+            putExtra(AutofillIntentExtras.PACKAGE_NAME, parsed.packageName)
+            putExtra(AutofillIntentExtras.WEB_DOMAIN, parsed.webDomain)
+            putExtra(AutofillIntentExtras.EDITABLE_IDS, parsed.allIds.toTypedArray())
             roleIds[FieldRole.USERNAME]
                 ?.takeIf(List<AutofillId>::isNotEmpty)
-                ?.let { putExtra(AutofillLaunchExtras.USERNAME_IDS, ArrayList(it)) }
+                ?.let { putExtra(AutofillIntentExtras.USERNAME_IDS, ArrayList(it)) }
             roleIds[FieldRole.PASSWORD]
                 ?.takeIf(List<AutofillId>::isNotEmpty)
-                ?.let { putExtra(AutofillLaunchExtras.PASSWORD_IDS, ArrayList(it)) }
+                ?.let { putExtra(AutofillIntentExtras.PASSWORD_IDS, ArrayList(it)) }
             roleIds[FieldRole.OTP]
                 ?.takeIf(List<AutofillId>::isNotEmpty)
-                ?.let { putExtra(AutofillLaunchExtras.OTP_IDS, ArrayList(it)) }
+                ?.let { putExtra(AutofillIntentExtras.OTP_IDS, ArrayList(it)) }
         }
 
         fun getActivityPendingIntent(

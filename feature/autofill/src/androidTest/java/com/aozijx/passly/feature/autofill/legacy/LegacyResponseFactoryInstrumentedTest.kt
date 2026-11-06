@@ -34,7 +34,7 @@ import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyInlinePre
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.legacy.service.parser.EditableFieldInfo
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
 import com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -158,19 +158,19 @@ class LegacyResponseFactoryInstrumentedTest {
         assertEquals(
             LegacyAutofillResultTarget.DATASET,
             LegacyAutofillResultTarget.fromWireValue(
-                pickerRequest.getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
+                pickerRequest.getStringExtra(AutofillIntentExtras.RESULT_TARGET),
             ),
         )
         assertEquals(
             LegacyAutofillResultTarget.DATASET,
             LegacyAutofillResultTarget.fromWireValue(
-                unlockRequest.getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
+                unlockRequest.getStringExtra(AutofillIntentExtras.RESULT_TARGET),
             ),
         )
         assertEquals(
             LegacyAutofillResultTarget.RESPONSE,
             LegacyAutofillResultTarget.fromWireValue(
-                inlineUnlockRequest.getStringExtra(AutofillLaunchExtras.RESULT_TARGET),
+                inlineUnlockRequest.getStringExtra(AutofillIntentExtras.RESULT_TARGET),
             ),
         )
     }

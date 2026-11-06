@@ -16,7 +16,7 @@ import androidx.credentials.provider.PendingIntentHandler
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.credential.service.CredentialCallingAppResolver
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillIntentExtras
 
 internal sealed interface PasswordGetParseResult {
     data class Ready(
@@ -88,7 +88,7 @@ internal object CredentialRequestParser {
                 )
         val entryId =
             sourceIntent
-                .getStringExtra(AutofillLaunchExtras.ENTRY_ID)
+                .getStringExtra(AutofillIntentExtras.ENTRY_ID)
                 ?.takeIf(String::isNotBlank)
                 ?.let(::EntryId)
         if (entryId == null) {
@@ -151,7 +151,7 @@ internal object CredentialRequestParser {
     }
 
     private fun Intent.readInteractionId(): AutofillInteractionId? =
-        getStringExtra(AutofillLaunchExtras.INTERACTION_ID)
+        getStringExtra(AutofillIntentExtras.INTERACTION_ID)
             ?.takeIf(String::isNotBlank)
             ?.let(::AutofillInteractionId)
 }
