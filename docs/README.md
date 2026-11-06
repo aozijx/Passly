@@ -131,6 +131,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 ### 已归档审查与交付记录
 
+- [2026-11-06 Runtime Session 解锁与状态事件失败边界](reviews/2026-11-06-runtime-session-failure-boundaries.md)
 - [2026-11-06 安全凭据提交点交付记录](reviews/2026-11-06-recovery-credential-commit-contract.md)
 - [2026-11-06 Proto DataStore 设置读取恢复交付记录](reviews/2026-11-06-datastore-settings-read-recovery.md)
 - [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)

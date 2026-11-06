@@ -28,6 +28,19 @@ sequenceDiagram
 会在不可取消清理区撤销已发布句柄、尝试关闭新句柄并恢复 SEALED。清理期间的 fatal `Error` 会覆盖普通失败并保留原始失败为
 suppressed；主失败本身为 fatal 时保持主错误并附加清理错误。key buffer 在 `unlock()` 的 `finally` 中归零。
 
+调用顺序为 `RuntimeSessionManager.unlock()` → 检查 `leaseGate.closeFailure()` → 尝试
+`leaseGate.resumeIfOpen()` → 在 `withContext(ioDispatcher)` 中调用 `keySource.copyKey()` →
+`leaseGate.open(key)`。key source 的普通异常映射为 `KeyUnavailable(cause)`，资源打开普通异常映射为
+`OpenFailed(cause)`；取消直接传播。fatal `Error` 先记录为待传播错误，使 dispatcher 区域执行 key buffer 的
+`finally` 擦除，再从 `unlock()` 重抛同一 Error。`SessionLeaseGate.open(key)` 调用 `resource.open(key)` 后依次记录新
+handle、发布 handle、更新 `UNLOCKED`，再调用
+`emitTransition(startedAt, fromState, UNLOCKED, OPEN, NONE)`。失败时 `discardOpened(opened, published, cause)`
+在 `NonCancellable` 中撤销已发布 handle、调用 `resource.close(opened)` 并恢复 `SEALED`；清理 Error 的优先级规则见上文。
+
+状态事件只由 `emitTransition(startedAt, fromState, toState, reason, lockType, timeoutMs, activeLeaseCount, error)`
+发送，事件 owner 固定为 `SESSION_RUNTIME`。此边界重抛 `CancellationException`、忽略普通 `Exception`，不捕获 fatal
+`Error`；因此 sink 的普通失败不会回滚已发布状态，取消与 fatal 仍遵循调用方合同。
+
 session transition event 由 `SessionEventSink` best-effort 记录，普通遥测 `Exception` 不回滚已提交的状态或资源操作；
 取消和 fatal `Error` 仍向调用方传播。`DRAIN_TIMEOUT` 遥测失败会延后到 lease 取消和资源关闭完成后传播，因此日志可能缺少后续
 的 `SEAL` 事件，但 session 仍保持 SEALED，且资源结果不由日志采集决定。生产的 `DatabaseSessionEventLogger` 将事件转为

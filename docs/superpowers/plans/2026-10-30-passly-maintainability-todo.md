@@ -249,27 +249,6 @@
 
 **Task 52 进度（2026-11-02）：** 已把 preference 与 system status 拆成独立 `Loading/Ready/Failed` 源状态；普通 `Exception` 显示为对应源失败，取消与 fatal `Error` 继续传播。Preference 失败保留最后值但禁止写入，两个 retry action 分别重启各自 collector；系统失败显示 unavailable，不映射为 `false`。Android callback 读取异常关闭对应 Flow，已注册 observer 在失败/取消路径注销。已运行 `:app:testDebugUnitTest :app:compileDebugAndroidTestKotlin verifyArchitecture --max-workers=32` 与 `git diff --check`；Autofill ViewModel 定向测试 8/8 通过，AndroidTest 只完成编译。当前 adb 未发现设备，因此真实 Android observer fault injection 和 Compose instrumentation 尚未执行；第二、三项验收保持未完成。
 
-## Task 54：让 Runtime 解锁边界传播 fatal Error
-
-- [x] 收窄 `RuntimeSessionManager.unlock()` 与 `SessionLeaseGate.open()` 的异常映射：`keySource.copyKey()` 和 `resource.open(key)` 的普通可恢复异常可继续映射为 `KeyUnavailable`/`OpenFailed`，`CancellationException` 继续原样传播；JVM fatal `Error` 不应变成可供 UI 重试的普通解锁失败结果。
-- [x] fatal `Error` 发生在资源打开阶段时，先完成与打开阶段一致的句柄撤销、SEALED 状态恢复及可行的资源关闭，再重抛原始 Error；清理异常只作为 suppressed 信息附加，不能覆盖 fatal 根因。避免把生命周期转换并发合同与数据库重置关闭结果混为一谈。
-- [x] 明确原始失败与清理失败的 fatal 优先级：`SessionLeaseGate.closeAfterFailedOpen()` 当前把所有清理 `Throwable` 加到原始 `cause.suppressed` 后返回；若原始失败是普通 Exception、资源 close 抛 `AssertionError`，fatal 会被隐藏且 `open()` 仍返回普通 `OpenFailed`。完成 SEALED/句柄清理后必须传播 cleanup fatal，并把原始普通失败作为 suppressed；主失败本身已是 fatal 时保留主错误并附加 cleanup 错误。
-- [x] 补 `RuntimeSessionManagerTest`：key source 与 resource open 分别抛普通异常、`CancellationException`、同一 `AssertionError`；断言前两者保持既有 result/取消合同，fatal Error 以同一对象重抛，session 保持 SEALED，已创建资源关闭，交给 Runtime 的 key buffer 仍在 `unlock()` 的 `finally` 中归零，后续解锁可重试。另覆盖 cleanup 本身抛错时不覆盖原始 Error；当主失败为普通 Exception 而 close cleanup 抛 fatal Error 时，验证 fatal 仍传播并保留原始异常。运行 Runtime Session 定向测试、`verifyArchitecture` 与 `git diff --check`。
-
-**证据：** `RuntimeSessionManager.unlock()` 的 key-source catch 只特判 `CancellationException`，其余 `Throwable` 均包装为 `SessionUnlockResult.KeyUnavailable`；`SessionLeaseGate.open()` 同样把所有非取消 `Throwable` 包装成 `SessionUnlockResult.OpenFailed`。因此 `AssertionError`、`OutOfMemoryError` 等 fatal Error 会以普通业务结果返回，而非让进程级严重错误沿调用栈传播。`open()` 已有 `discardOpened()` 在失败后以 `NonCancellable` 清理已创建或发布的 handle，`RuntimeSessionManager.unlock()` 也在 `finally` 清零取得的 key，适合作为 fatal 重抛前的资源保证；`SessionLeaseGate.closeAfterFailedOpen()` 也将任意 cleanup `Throwable` 作为 suppressed 附加到原始 cause；普通 open 后续异常加 cleanup fatal 会因此仍返回普通 `OpenFailed`。现有测试只有 CancellationException 的 key-source/resource-open 用例，未覆盖 fatal 对象身份、两种主/清理异常优先级与 key wipe。此项针对异常类别和资源清理顺序，不重复 Task 26 的 open/seal 并发转换或 数据库重置的关闭失败门槛。
-
-**实现进度（2026-11-02）：** 已完成。普通 `Exception` 映射保持业务结果，取消继续传播，fatal `Error` 在密钥擦除和句柄回滚后传播；清理 fatal 覆盖普通失败并保留原始失败，主 fatal 保持优先级。新增覆盖普通失败、取消、key wipe、SEALED 恢复、资源清理和可重试状态的 Runtime Session 测试。`:runtime:session:test verifyArchitecture --max-workers=32` 通过；测试报告为 21 tests、0 failures、0 errors，`git diff --check` 通过。
-
-## Task 55：隔离 Runtime Session 状态转换与遥测 sink 故障
-
-- [x] 明确 `SessionEventSink` 是非权威遥测边界：普通日志/采集失败不得改变资源 open、soft-lock、resume、seal 的业务结果；fatal `Error` 仍按 AGENTS 的清理后传播规则处理，不得伪装为可恢复转换失败。不要把转换前后的事件日志失败当成底层资源 `open/close` 失败。
-- [x] 保持状态迁移与资源动作的真实终态一致。特别是 `SessionLeaseGate.open()` 已发布 handle 和 `UNLOCKED` 后才发 `OPEN` 事件；普通遥测异常会被隔离，不再按资源 open 失败执行 `discardOpened()` 或关闭 handle。对 `softLock()`、`resumeIfOpen()` 与 `seal()` 也核对“状态已提交但 event sink 抛错”的调用结果；收尾事件的失败不可覆盖原始资源错误或取消。
-- [x] 增加 Runtime Session 测试替身令 sink 在 OPEN/RESUME/SOFT_LOCK/SEAL/CLOSE_FAILED/DRAIN_TIMEOUT 各阶段抛 `IllegalStateException`、`CancellationException` 与 `AssertionError`；验证哪些事件允许丢失、业务状态/资源句柄仍符合转换结果、取消仍传播、fatal 只在必要清理后传播且原始原因保留。覆盖 Data 的 `DatabaseSessionEventLogger` 到生产 Logger adapter 行为，并运行 Runtime/Data session 定向测试、`verifyArchitecture` 与 `git diff --check`。
-
-**证据：** `RuntimeSessionManager` 将可挂起的 `SessionEventSink.emit()` 注入公开状态机，接口没有记录 sink 必须无异常或 best-effort。`SessionLeaseGate.open()` 在 `resource.open(key)` 成功、发布 `handle` 并将状态改成 UNLOCKED 后调用 `emitTransition(OPEN)`；该调用若抛错会落入同一个 `catch(Throwable)`，先撤销/关闭已发布 handle，再将正常成功改写为 `OpenFailed`，并再次调用 sink 记录 `OPEN_FAILED`。`softLock()`/`resumeIfOpen()` 在状态写入后才发 transition，`seal()` 在 close 后发 SEAL，sink 异常同样使调用方看到与已提交状态不同的失败。生产 `AppDatabaseSession` 使用 `SessionEventSink(eventLogger::record)`；`DatabaseSessionEventLogger.record()` 直接调用 `Logger.inSpan/log`，自身没有故障隔离。`DefaultLogger` 会隔离各 `LogSink` 的普通 `Exception`，但 sanitize、聚合与事件构造发生在该 sink catch 之外，因此 adapter 没有类型级不抛保证。现有 Runtime 测试只注入成功的列表 sink 或 `None`，未测试事件 sink 失败时状态/资源转换是否仍一致。此项区分资源关闭结果、并发状态转换与 fatal 错误映射，聚焦非权威遥测对已提交 session 状态的反向控制。
-
-**实现进度（2026-11-02）：** 已完成实现与验证。Runtime 在单一事件边界忽略普通 `Exception`，保留取消/fatal 传播；DRAIN_TIMEOUT 的取消/fatal 延后到 lease 取消、close 和 SEALED 恢复后传播。`DefaultLogger` 也在同步 `LogSink` 边界保留 `CancellationException`，普通 sink 异常仍隔离。Runtime Session 测试为 27 tests、Data adapter 定向测试为 5 tests、Core `DefaultLogger` 定向测试为 3 tests，均 0 failures/errors；`:runtime:session:test verifyArchitecture --max-workers=32`、Data/Core 定向测试及 `git diff --check` 均通过。
-
 ## Task 56：移除未消费且无 fresh authorization 的完整敏感字段读取端口
 
 - [x] 从 `SensitiveFieldRepository` 删除无生产调用者的 `readAll(entryId)` 与 `RoomSensitiveFieldRepository` 对应实现，并删除其测试替身中的死 override；仅保留确有消费方的 `getPresence`、携带 permit 的 `reveal/revealMany`、低敏感 `readBundle`。
