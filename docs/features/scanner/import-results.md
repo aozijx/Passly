@@ -6,6 +6,10 @@ Scanner 不直接保存识别内容。`ScannerPurpose.resolveImport(result)` 将
 
 ## OTP 与调用方入口
 
+`ScannerScreen` 的 `ConfirmResult` action 由 `ScannerRoute` 从当前 `ShowingResult.result` 取值。OTP/Wi-Fi 结果先传给 `purpose.resolveImport(result)`；只有 `Available(import)` 才在 `rememberCoroutineScope()` 中调用 `importSession.confirm { onImport(import) }`。`onImport` 的挂起回执映射为：`Applied` 调用 `onDismiss()`，`Rejected` 显示本地化的 `importUnavailableMessage` 并保留结果，`Ignored` 不执行 UI 操作。若解析为 `Unavailable`，Route 不启动导入。
+
+同一确认入口对其他结果走本地动作：`WebLink.uri` 转成 `ACTION_VIEW` Intent 并交给 `Context.startActivity()`，普通 `Exception` 映射为 `openLinkFailedMessage`；`PlainText` 派发 `ScannerUiAction.CopyText`，由 ViewModel 校验当前结果与 owner 后调用剪贴板端口。Dismiss 和相机权限拒绝都会先 `importSession.close()` 再调用 `onDismiss()`；关闭后的确认即使收到迟到回执也映射为 `Ignored`，但不撤销导入回调 owner 已接管的后台工作。
+
 Vault 列表用 `ScannerPurpose.General`：OTP 交给 Activity 生命周期的 `ScannedOtpImportViewModel.importScannedOtp(config)`，Wi-Fi 进入独立编辑页；OTP 编辑器和 Wi-Fi 编辑器分别传 `ApplyToOtpEditor`、`ApplyToWifiEditor`，只接受匹配的结果。网页链接交系统，普通文本由 Scanner 复制。`resolveImport` 对 purpose 和 sealed `ScannerResult` 穷尽分支，链接与文本不会生成可导入对象。
 
 Vault 首页 OTP 的调用链为 `ScannerRoute.onImport(ScannerImport.Otp)` → `ScannedOtpImportViewModel.importScannedOtp(config)` → `ImportScannedOtpUseCase.invoke(config)` → `config.toNewEntryDraft()` → `EntryCreation(draft)`。前两层在保存前验证完整访问与认证会话身份；Activity ViewModel 用 `Mutex.tryLock()` 拒绝并行导入，已确认任务由 Activity ViewModel scope 持有。Use case 只在创建结果成功时返回 `true`；输入无效或持久化普通异常返回失败，取消传播。页面等待仍有效时，成功映射为 `ScannerImportHandlingResult.Applied`，失败映射为 `Rejected`。
