@@ -268,38 +268,6 @@ class EntrySecretMapperTest {
     }
 
     @Test
-    fun `extended card details survive payload round trip`() {
-        val credential =
-            CardCredential(
-                cardType = "visa",
-                cardNumber = "4111111111111111",
-                cardExpiry = "12/30",
-                cardCvv = "123",
-                cardHolder = "Ada",
-                paymentPin = "4567",
-                paymentPlatform = "wallet",
-                billingAddress = "address",
-                issuingBank = "Example Bank",
-                bankBranch = "Central Branch",
-                cardProduct = "Travel Platinum",
-                currency = "CNY / USD",
-                bankPhone = "+86 123456",
-            )
-        val secret = EntrySecret(credential)
-        val json =
-            AppJson.encodeToString(
-                SecretPayload.serializer(),
-                EntrySecretMapper.toPayload(secret, EntryType.BANK_CARD),
-            )
-        val restored =
-            EntrySecretMapper.toDomain(
-                AppJson.decodeFromString(SecretPayload.serializer(), json),
-                EntryType.BANK_CARD,
-            )
-        assertEquals(secret, restored)
-    }
-
-    @Test
     fun `card domain and payload fields remain structurally aligned`() {
         fun fields(type: Class<*>) =
             type.declaredFields
@@ -313,13 +281,19 @@ class EntrySecretMapperTest {
     }
 
     @Test
-    fun `every nondefault card field survives mapper round trip`() {
+    fun `every nondefault card field survives payload serialization round trip`() {
         val credential = populatedDataClass(CardCredential::class.java) as CardCredential
         val expectedPayload = populatedDataClass(CardCredentialPayload::class.java) as CardCredentialPayload
         val payload = EntrySecretMapper.toPayload(EntrySecret(credential), EntryType.BANK_CARD)
+        val decodedPayload =
+            AppJson.decodeFromString(
+                SecretPayload.serializer(),
+                AppJson.encodeToString(SecretPayload.serializer(), payload),
+            )
 
         assertEquals(expectedPayload, payload.card)
-        assertEquals(credential, EntrySecretMapper.toDomain(payload, EntryType.BANK_CARD).credential)
+        assertEquals(payload, decodedPayload)
+        assertEquals(credential, EntrySecretMapper.toDomain(decodedPayload, EntryType.BANK_CARD).credential)
     }
 
     private fun populatedDataClass(type: Class<*>): Any {
