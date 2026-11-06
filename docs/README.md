@@ -131,6 +131,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 ### 已归档审查与交付记录
 
+- [2026-11-06 Kotlin 格式门禁交付记录](reviews/2026-11-06-kotlin-format-gate-delivery.md)
 - [2026-11-06 敏感字段完整读取端口收窄记录](reviews/2026-11-06-sensitive-field-readall-port-removal.md)
 - [2026-11-06 Runtime Session 解锁与状态事件失败边界](reviews/2026-11-06-runtime-session-failure-boundaries.md)
 - [2026-11-06 安全凭据提交点交付记录](reviews/2026-11-06-recovery-credential-commit-contract.md)
