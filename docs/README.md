@@ -159,6 +159,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [Typed Diagnostic Events 设计](superpowers/specs/2026-11-04-typed-diagnostic-events-design.md)
 - [硬件 Keystore 验收](superpowers/plans/2026-10-29-hardware-keystore-verification.md)
 - [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
+- [应用架构与并发设计 TODO](superpowers/plans/2026-11-06-app-architecture-concurrency-todo.md)
 - [Backup 审查待办](superpowers/plans/2026-11-06-passly-backup-review-followups.md)
 - [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
 - [OTP 审查待办](superpowers/plans/2026-11-06-passly-otp-review-followups.md)

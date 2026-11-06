@@ -29,6 +29,12 @@ Closed 和 Open。Open 固定绑定一个 Entry ID，并分别持有列表与当
 恢复执行期间 Back 与整张弹层的关闭/下滑手势均不可用；Reducer 也拒绝关闭和返回列表事件，避免数据库事务已成功、提交后清理仍挂起时取消 ViewModel job，造成数据已恢复而当前详情未刷新。切换条目或关闭敏感会话仍会使旧结果失效，禁止回写新的或已清空的页面状态。
 同一条目历史弹层已经打开时，重复的 `OpenRevisionHistory` action 保持当前状态，不重置比较/恢复阶段，也不取消正在执行的恢复任务。
 
+## 首次打开时的历史初始化
+
+`openRevisionHistory()` 从当前详情条目取得 `entryId` 和 `DetailWorkSession` token，发布 Opened 后启动 `observeRevisionHistory(entryId, token)`。该观察任务先调用无参 `EntryRevisionRepository.initializeHistory()`；只有初始化成功后才调用 `observeMetadata(entryId)` 并收集该条目元数据。列表失败后的 `retryRevisionHistory()` 会用同一条目的当前 token 重走初始化检查和 metadata 订阅。每次执行使用 `revisionObservationGeneration`；条目切换、关闭或重试导致旧任务失效时，不发布迟到结果。
+
+初始化能力本身是全库且按 generation 一次性执行，不接收当前页面的 `entryId`：`RoomEntryRevisionRepository.initializeHistory()` 委托给 `InitializeEntryRevisionHistory.execute()`，它在 mutex 内读取 `RevisionHistoryMaintenanceStore.completedGeneration()`。若版本低于 `CURRENT_GENERATION = 1`，便通过 `DatabaseTransactionRunner.write("entry_revision_history_initialize")` 清除旧 revision 并重建当前全库基线；`EntryRevisionHistoryRebuilder.rebuildInTransaction(db, now)` 用同一个 `now` 遍历 `entryQueryDao().getAll()`。该 DAO 查询不筛选 `deletedAt`，所以回收站条目也参与基线重建。对每条目读取 `STRUCT_BUNDLE`，调用 `EntryRevisionWriter.snapshotChanges(db, entryId, entryVersion, summary, secret, entryType, now)` 写入基线，并为缺失 bundle 使用空 `EntrySecret`。事务中还会安排附件 GC 和旧图标引用清理。事务成功后标记 generation 完成，再执行附件队列与待清理图标的 post-commit drain。故首次从单条目历史页进入会触发全库一次性维护；后续打开只检查 generation，再读取当前条目 metadata。页面仍拥有按条目的观察、取消、失败投影和重试；初始化的全库事务与资源维护归 Data/application 工作流审计范围。
+
 ## 快照与敏感数据
 
 普通比较读取 redacted revision。高敏字段默认只显示字段名，逐项取得授权后才由 revision reveal 用例读取。
@@ -95,6 +101,8 @@ entry visit 内重订阅，失败提示提供重试；若此前已有记录，�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 详情页历史状态和交互编排 | `DetailViewModel`、`DetailRevisionReducer` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevisionReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/history/DetailRevisionReducer.kt) |
+| 首次查看时检查并初始化全库历史 generation | `initializeHistory()`、`InitializeEntryRevisionHistory.execute()` | [`EntryRevisionRepository.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryRevisionRepository.kt)、[`RoomEntryRevisionRepository.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomEntryRevisionRepository.kt)、[`InitializeEntryRevisionHistory.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/InitializeEntryRevisionHistory.kt) |
+| 清旧修订并为全库当前条目写入基线 | `rebuildInTransaction(db, now)`、`snapshotChanges(db, entryId, entryVersion, summary, secret, entryType, now)` | [`EntryRevisionHistoryRebuilder.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionHistoryRebuilder.kt)、[`EntryRevisionWriter.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionWriter.kt) |
 | Detail 根 snapshot 加载与恢复后刷新 | `DetailSnapshotState`、`DetailPresentationLoader`、`retryDetailLoad()`、`retrySnapshotRefresh()` | [`DetailUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt)、[`DetailPresentationLoader.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPresentationLoader.kt)、[`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRoute.kt) |
 | 活动历史加载状态与重试展示 | `DetailActivityHistoryState`、`ActivityTimelineSection` | [`DetailUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt)、[`ActivityTimelineSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/ActivityTimelineSection.kt) |
 | 比较与恢复历史版本 | `CompareEntryRevisionUseCase`、`RestoreEntryRevisionUseCase` | [`CompareEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/CompareEntryRevisionUseCase.kt)、[`RestoreEntryRevisionUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/history/RestoreEntryRevisionUseCase.kt) |
