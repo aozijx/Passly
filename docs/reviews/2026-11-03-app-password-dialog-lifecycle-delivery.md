@@ -1,6 +1,6 @@
-# App Password Dialog Lifecycle Implementation Plan
+# App Password Dialog Lifecycle Delivery Record
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+状态：已完成。本文保留实现任务与验收记录；当前安全行为以[认证主题](../security/authentication.md)为准。
 
 **Goal:** Clear Security page App Password dialog drafts on navigation away and Activity recreation, and shorten the lifetime of coordinator-owned password material.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Jetpack Compose runtime, Android Compose instrumentation tests, JUnit, Gradle.
 
-**Spec:** `docs/superpowers/specs/2026-11-03-app-password-dialog-lifecycle-design.md`
+**设计记录：** [应用密码对话框生命周期设计](../superpowers/specs/2026-11-03-app-password-dialog-lifecycle-design.md)
 
 ## Global Constraints
 

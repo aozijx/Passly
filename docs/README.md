@@ -23,6 +23,7 @@
 - [日志、错误与 Trace](architecture/observability/record-and-trace.md)
 - [日志运行时与加密存储](architecture/observability/runtime-and-storage.md)
 - [日志导出格式](architecture/observability/export-formats.md)
+- [错误码目录（生成）](ERROR_CODES.md)
 
 ### 数据
 
@@ -94,11 +95,14 @@
 
 ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原编号；决策变化时新增 ADR 并建立替代关系。
 
+- [2026-11-03 应用密码对话框生命周期交付记录](reviews/2026-11-03-app-password-dialog-lifecycle-delivery.md)
+- [2026-11-02 设备锁任务清理交付记录](reviews/2026-11-02-device-lock-task-clear-delivery.md)
+- [2026-11-02 Autofill 严格域名匹配交付记录](reviews/2026-11-02-autofill-strict-domain-matching-delivery.md)
+- [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
+- [2026-10-30 Entry Payload Adapter 注册审查](reviews/2026-10-30-entry-payload-adapter-registration.md)
 - [2026-10-29 可维护性与冗余审查](reviews/2026-10-29-passly-maintainability-audit.md)
 - [2026-10-29 功能文件归属审查](reviews/2026-10-29-feature-file-ownership-audit.md)
 - [2026-10-29 Domain Entry Type 注册审查](reviews/2026-10-29-domain-entry-type-registration.md)
-- [2026-10-30 Entry Payload Adapter 注册审查](reviews/2026-10-30-entry-payload-adapter-registration.md)
-- [2026-10-30 诊断日志采集策略审查](reviews/2026-10-30-diagnostics-log-policy.md)
 - [2026-10-29 Data Secret Payload DTO 拆分审查](reviews/2026-10-29-data-secret-payload-dto-split.md)
 - [2026-10-27 历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)
 - [2026-07 代码审查](reviews/2026-07-code-review.md)（仅适用于该审查时点）

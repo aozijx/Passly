@@ -1,6 +1,6 @@
-# Autofill Strict Domain Matching Implementation Plan
+# Autofill Strict Domain Matching Delivery Record
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+状态：已完成。本文保留实现任务与验收记录；当前行为以 [Autofill 安全主题](../security/autofill.md) 和 [共享填充流程](../features/autofill/fill-flow.md) 为准。
 
 **Goal:** Add a persisted Autofill setting that defaults to exact-host matching and optionally allows hosts sharing the same PSL registrable domain.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Guava Android `InternetDomainName`, Room, Proto DataStore, Jetpack Compose.
 
-**Spec:** `docs/superpowers/specs/2026-11-02-autofill-strict-domain-matching-design.md`
+**设计记录：** [严格域名匹配设计](../superpowers/specs/2026-11-02-autofill-strict-domain-matching-design.md)
 
 ## Global Constraints
 

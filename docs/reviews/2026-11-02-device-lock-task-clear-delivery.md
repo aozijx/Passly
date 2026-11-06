@@ -1,6 +1,6 @@
-# Device Lock Task Clear Implementation Plan
+# Device Lock Task Clear Delivery Record
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+状态：已完成。本文保留实现任务与验收记录；当前行为以[认证与设备锁主题](../security/authentication.md)为准。
 
 **Goal:** Deliver a flip-triggered task-clear request to the current Passly Activity exactly once, cancel it on successful reauthentication, and prevent stale delayed callbacks from closing a newer interaction.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Kotlin, Android Activity lifecycle, StateFlow, coroutine tests.
 
-**Spec:** `docs/superpowers/specs/2026-11-02-device-lock-task-clear-design.md`
+**设计记录：** [设备锁任务清理设计](../superpowers/specs/2026-11-02-device-lock-task-clear-design.md)
 
 ## Global Constraints
 
