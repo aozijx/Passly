@@ -56,9 +56,14 @@ JSON 使用 Base64；加密 ZIP 使用 `resources/<resource-id>`。路径穿越�
 - magic：ASCII `PSLYBKP1`；container version 1；整数 big-endian；
 - Argon2id v1.3：iterations 3、memory 65536 KiB、parallelism 4；
 - AES-256-GCM：16-byte salt、12-byte nonce、128-bit tag；
-- 从 magic 到 nonce 的完整头部作为 AAD；每次导出生成新 salt 和 nonce；
-- KDF 前限制 iterations ≤ 10、memory ≤ 262144 KiB、parallelism ≤ 8；
+- `EncryptedBackupExporter.export(bundle, password)` 固定传入 `KeyDerivation.BASELINE_ARGON2ID_PARAMETERS` 调 `EncryptedBackupContainerCodec.encrypt(zipContent, password, parameters)`；认证 Envelope 的 `DeviceKdfConfiguration` 不参与备份。
+- 从 magic 到 nonce 的完整头部作为 AAD；每次导出生成新 salt 和 nonce；容器解析后，KDF 参数为 Argon2 v1.3、256-bit key、iterations `1..10`、memory `8192..262144 KiB`、parallelism `1..8` 才可继续。导出与导入都经过同一 `validateContainerKdf(parameters)` 范围检查；导入还在 KDF 前验证容器总长、头长、salt/nonce/tag/ciphertext 长度和无尾随字节。
 - 错误密码与认证失败统一表现为密码错误或文件损坏。
+
+导入调用顺序是 `EncryptedBackupImporter.import(container, password, strategy)` →
+`EncryptedBackupContainerCodec.decrypt(container, password)` → `parse(container)` →
+构造并检查 `Argon2idParameters` / `validateContainerKdf(parameters)` → `deriveKey(password, salt, parameters)` →
+AES-GCM `doFinal(ciphertext)`。头部参数虽未认证前仍是不可信输入，但必须先通过结构和资源上限，才能触发 Argon2；之后头部作为 AAD 参与 GCM 验证。
 
 AES-GCM 明文是包含 `document.json` 与 resources 的完整 ZIP，因此文档和资源属于同一认证边界。
 
@@ -84,3 +89,4 @@ Passkey、附件 ZIP、附件描述和密码历史，避免静默丢失无法表
 | 注册归档稳定类型键 | `BackupArchiveKeyRegistry` | [`BackupArchiveKeyRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistry.kt) |
 | 在稳定键与领域 Entry 之间映射 | `KeyedEntryArchiveMapper` | [`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt) |
 | 编码与验证备份归档 | `BackupArchiveCodec`、`KeyedBackupBundleValidator.validate()` | [`BackupArchiveCodec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupArchiveCodec.kt)、[`KeyedBackupBundleValidator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/KeyedBackupBundleValidator.kt) |
+| 加密备份参数、容器头校验与派生顺序 | `EncryptedBackupExporter.export(bundle, password)`、`EncryptedBackupImporter.import(container, password, strategy)`、`EncryptedBackupContainerCodec.encrypt(...)` / `decrypt(...)` / `validateContainerKdf(parameters)` | [`EncryptedBackupExporter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupExporter.kt)、[`EncryptedBackupImporter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupImporter.kt)、[`EncryptedBackupContainerCodec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupContainerCodec.kt) |

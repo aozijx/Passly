@@ -33,6 +33,32 @@ message 缺失表示尚未 provision；存在但不完整/错误版本是完整�
 RSA-3072 X.509；key ID 16 bytes，fingerprint 32 bytes。解锁后从 private key 派生 public key，校验 modulus、
 exponent 和 fingerprint。
 
+provision 由认证会话 owner 触发：`VaultSessionController.markAuthenticatedInternal()` 在发布
+`AuthenticationState.Authenticated` 并重置 idle timer 后调用无参
+`autofillInboxKeyProvisioning.provisionAfterUnlock()`；常规认证发布路径
+`publishAuthenticatedInternal(purpose)` 只在 `purpose == UNLOCK_VAULT` 时调用同一入口。两条调用都处于
+`NonCancellable` 发布边界内，避免 Vault 已解锁但认证状态/Inbox provision 只完成一半。Security DI 在
+`AuthenticationModule.bindAutofillInboxKeyProvisioning(implementation)` 将
+`AutofillInboxKeyProvisioner` 绑定到窄接口。
+
+`AutofillInboxKeyProvisioner.provisionAfterUnlock()` 用 Mutex 串行化 provision。已有 material 时，它先取
+`recordStore.pending(current.keyId)`，再在 `Dispatchers.Default` 与
+`dekManager.withDek { dek -> keyMaterialCodec.withPrivateKey(current, dek) { ... } }` 中逐条调用
+`recordCodec.open(current, privateKey, record.encodedRecord)`；单条解密/格式异常记为无法解码，后续循环将该
+draft quarantine。成功解码的草稿按 `draftImporter.get().import(draft)` 处理：`Imported` 后移除文件，`Invalid`
+后 quarantine，`Retry` 则停止本轮并保留当前及后续记录。`finally` 会清零本轮 pending records 的
+`encodedRecord` 缓冲。没有已有 material 时，先在 Default dispatcher 内通过
+`dekManager.withDek(keyMaterialCodec::generateAndWrap)` 生成并封装材料，再调用
+`bootstrapStore.saveAutofillInboxKeyMaterial(material)` 持久化。
+`CancellationException` 从 provisioner 原样传播；其他 provision 阶段的 `Exception` 被转换为脱敏的 degraded
+diagnostic 并吞掉，因此已经发布的 Vault 解锁状态不会因 Inbox 维护失败回滚。单条 record 的格式/解密异常
+只导致该 record quarantine；导入的 `Retry` 停止遍历但不标记本轮失败日志，也不删除未处理记录。
+
+导入 adapter `AutofillInboxCredentialImporter.import(draft)` 将 `draft.draft` 和稳定幂等键 `draft.draftId`
+原样传给 `SaveAutofillCredential(draft.draft, draft.draftId)`；`Saved` 映射为 `Imported`，`InvalidDraft`
+映射为 `Invalid`，`Failed` 映射为 `Retry`。因此文件删除/隔离决策由 provisioner 根据 importer 结果执行，
+不是由 Android Autofill 回调直接完成。
+
 private key envelope v1：
 
 ```text
@@ -122,6 +148,8 @@ Inbox root 或 pending records；队列仍按本页定义的保留期、容量�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 定义 Autofill 入口使用的入队能力端口 | `AutofillInboxQueue` | [`AutofillInboxQueue.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillInboxQueue.kt) |
+| 完整认证发布后触发 key provision 与 pending 导入 | `VaultSessionController.markAuthenticatedInternal()`、`publishAuthenticatedInternal(purpose)` | [`VaultSessionController.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
 | 生成和校验密封收件箱密钥 | `AutofillInboxKeyProvisioner`、`AutofillInboxKeyMaterialCodec` | [`AutofillInboxKeyProvisioner.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyProvisioner.kt)、[`AutofillInboxKeyMaterialCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxKeyMaterialCodec.kt) |
+| 将 provisioner 绑定到认证会话能力接口 | `AuthenticationModule.bindAutofillInboxKeyProvisioning(implementation)` | [`AuthenticationModule.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/di/AuthenticationModule.kt) |
 | 加密队列记录并写入受限队列 | `AutofillInboxQueueWriter.enqueue()`、`AutofillInboxRecordCodec.encodePayload(draftId, source, capturedAtMs, draft)`、`decodePayload(plaintext)` | [`AutofillInboxQueueWriter.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxQueueWriter.kt)、[`AutofillInboxRecordCodec.kt`](../../../security/src/main/java/com/aozijx/passly/security/autofill/inbox/AutofillInboxRecordCodec.kt)、[`AutofillInboxPendingDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/model/AutofillInboxPendingDraft.kt) |
-| Vault 解锁后导入排队草稿 | `AutofillInboxCredentialImporter.import()` | [`AutofillInboxCredentialImporter.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AutofillInboxCredentialImporter.kt) |
+| Vault 解锁后导入排队草稿 | `AutofillInboxCredentialImporter.import()` | [`AutofillInboxCredentialImporter.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/inbox/AutofillInboxCredentialImporter.kt) |

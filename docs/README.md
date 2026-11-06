@@ -136,24 +136,35 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 ### 正在推进的设计与待办
 
-#### 2026-11 设计与待办
+#### 2026-11 设计方案
 
 - [Typed Diagnostic Events 设计](superpowers/specs/2026-11-04-typed-diagnostic-events-design.md)
+- [Autofill Feature Module 设计](superpowers/specs/2026-11-06-autofill-feature-module-design.md)
 - [Scanner 入口与 Framing 设计](superpowers/specs/2026-11-06-scanner-entry-and-framing-design.md)
+
+#### 2026-11 实施计划
+
+- [Autofill BottomSheet 认证合同实施计划](superpowers/plans/2026-11-06-autofill-bottom-sheet-auth-contract.md)
+- [Autofill Feature Module 实施计划](superpowers/plans/2026-11-06-autofill-feature-module.md)
+- [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
+
+#### 2026-11 审查跟进与待修项
+
 - [应用架构与并发设计 TODO](superpowers/plans/2026-11-06-app-architecture-concurrency-todo.md)
 - [Backup 审查待办](superpowers/plans/2026-11-06-passly-backup-review-followups.md)
 - [Diagnostics 写入与 flush 可靠性跟进](superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)
-- [Autofill BottomSheet 认证合同实施计划](superpowers/plans/2026-11-06-autofill-bottom-sheet-auth-contract.md)
 - [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
-- [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
 - [OTP 审查待办](superpowers/plans/2026-11-06-passly-otp-review-followups.md)
 - [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
 - [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
 
 #### 2026-10 计划
 
-- [硬件 Keystore 验收](superpowers/plans/2026-10-29-hardware-keystore-verification.md)
 - [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
+
+#### 2026-11 验收依据
+
+- [硬件 Keystore 真机验收](reviews/2026-11-03-hardware-keystore-verification.md)
 
 #### 2026-10 验收依据
 

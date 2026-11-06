@@ -51,9 +51,13 @@ App 通过 Gradle 依赖 `:data` 让 Hilt 聚合实现。Backup 的 `BackupSnaps
 Autofill 等 Android Service 需要打开页面时，由 Feature 中的启动契约与 `app` 适配器衔接，Feature 不引用 Activity 类。
 
 分页应通过纯 Kotlin 契约传递；Android Paging 可留在 Data/UI 适配边界。Feature 需要条目数据时依赖
-Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill/Credential Manager 的平台流程和候选编排
-留在 App；只有可复用的条目匹配语义进入 Entry 领域。卡号校验和 Wi-Fi 二维码载荷解析属于纯规则，
-位于 `domain/entry/policy`；相机、扫码结果展示与导入编排仍在 App Feature。
+Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill 服务、候选编排和候选 UI 归属
+`:feature:autofill`；App 仅拥有共享认证 Activity 宿主、结果交付集成及平台适配器。候选 UI 使用
+metadata-only 的 `AutofillCandidateSummary`，不依赖 App 的 Vault 图标组件，取不到目标应用图标时不展示图标。
+Autofill 策略通过专属 `AutofillSettingsSource` / `AutofillSettingsRepository` Domain 端口读取与更新；
+通用 `InteractionSettings` 仅描述滑动与下拉搜索，避免 Autofill 与 Vault 手势共用无关设置快照。
+只有可复用的条目匹配语义进入 Entry Domain。卡号校验和 Wi-Fi 二维码载荷解析属于纯规则，位于
+`domain/entry/policy`；相机、扫码结果展示与导入编排仍在 App Feature。
 
 `EntryFieldReader` 的默认实现也位于 `domain/entry/policy`，App 仅通过 DI 连接。读取按 `FieldKey`
 穷尽映射，不按枚举名称或前缀猜分组；新增字段必须明确其读取语义。凭据不存在或高敏值未揭示时返回
@@ -193,7 +197,7 @@ security -> *.data.repository / *.data.local
 
 `AppTheme`、`PersistedAppTheme`、`LocalAppearanceSettings` 及主题设置状态 owner 由 `app.theme` 拥有；App 主入口和 Autofill 系统 Activity 使用同一主题组合，Settings 读取中立的当前外观 CompositionLocal。Shell 不再拥有跨应用使用的主题实现。
 
-Autofill 的 `AutofillFillActivity`、`AccessibilityFillActivity` 和 `CredentialResponseActivity` 是 Manifest 系统入口，分别持有 Android Activity 生命周期，并在 Activity 根组合 `AuthenticationHost`。这三个精确文件允许导入 `security.authentication.host`；Autofill ViewModel、Route 和其他 Feature 源码均受 `AUTOFILL_AUTH_HOST_ACTIVITY_OWNER` 限制，不能获得该宿主实现依赖。
+Autofill 的 Android service、服务 Manifest 声明、领域编排适配、平台协议、收件箱导入和 Presentation 实现在 `:feature:autofill`；Feature manifest 提供三个服务组件与其权限、metadata、配置资源。App 仍是最终 Manifest 合并/Hilt root，并保留 `app.autofill.presentation.AutofillAuthActivity` Activity 与需要 App 能力的 Android adapter。Activity 源码与包名均归属 App，避免把组合根伪装成 Feature 实现，也让 import 边界规则能完整审查它。最终 APK 合并 Manifest 中包含 Feature 的服务和 App 的唯一认证 Activity。Activity 负责 App 主题、窗口和平台结果回调；Security 提供统一的 `AuthenticationHost` 并在自身模块内解析认证宿主依赖；Feature 的 `AutofillFeatureEntry` 解析 launch action、持有 Autofill ViewModel/Route、构造响应并完成结果交付。App Activity 只通过稳定 Feature 宿主 API 进入 Autofill，不直接依赖实现类型。`AutofillServiceStatusSource` 等窄平台能力由 App adapter 实现；Autofill inbox importer 由 Feature 自己绑定到 Domain 端口，禁止反向依赖 `:app`。
 
 ## 代码位置
 

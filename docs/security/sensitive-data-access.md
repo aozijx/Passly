@@ -38,6 +38,11 @@ UI 类型实际支持的字段放入 `DetailUiState.revealedFields`。新增 Ent
 并在编辑期间绑定同一个认证对象；锁定、会话切换或页面关闭会取消待处理加载并清空表单。Wi-Fi 密码在加密 bundle 中，
 仅经完整会话读取。其他 EntryType 不提供完整表单编辑。
 
+编辑表单清空表示失去 Store/UI state 对对象的引用，不等于 JVM 字符串内存的确定擦除。`LoadEditableEntryUseCase.invoke()`
+把每个 `SensitiveValue` 先转换为临时 `CharArray`，再通过 `String(chars)` 放入 Entry/表单；`finally` 只覆盖临时数组，
+不可变 String 的副本由运行时回收。锁定和页面关闭会尽快释放这些可控引用，但不声称覆盖所有 JVM 副本；降低敏感值在
+字符串模型中的驻留范围是开放的内存所有权评估，见[维护 TODO Task 42](../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
+
 ## 剪贴板
 
 Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或详情页关闭时，只清除仍由 Passly 写入的剪贴板；
@@ -50,5 +55,5 @@ Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或�
 | --- | --- | --- |
 | 声明字段读取授权端口 | `SensitiveFieldRepository` | [`SensitiveFieldRepository.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/SensitiveFieldRepository.kt) |
 | 按字段读取或揭示加密内容 | `RoomSensitiveFieldRepository.revealMany()`、`SecretFieldStore.readField()` | [`RoomSensitiveFieldRepository.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt)、[`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
-| 为完整表单读取并授权现存高敏字段 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
+| 为完整表单读取并授权现存高敏字段 | `LoadEditableEntryUseCase.invoke()`、`Entry.withRevealedField()`、`SensitiveValue.toTransientString()` | [`LoadEditableEntryUseCase.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
 | 驱动详情页字段揭示状态 | `DetailViewModel`、`DetailRevealStore` | [`DetailViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevealStore.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRevealStore.kt) |

@@ -11,7 +11,7 @@
 - scope 规范化由 Domain 的 `AutofillScope` 统一拥有：application ID 去首尾空白并按 `Locale.ROOT` 转小写，空值无效；缺失域名与畸形域名分开处理，畸形 scope 在取得解锁 lease 或查询候选前拒绝。
 - 网页身份与保存关联使用规范化的精确 host：scheme、port、path 不参与身份；`www.example.com` 与 `example.com` 保持隔离，单个 DNS 根尾点会规范化移除。Unicode IDN 由 `java.net.IDN`（RFC 3490）转为小写 ASCII；有损映射会拒绝，例如 `faß.de` 及其现代 A-label 不会折叠到 `fass.de`。Bracketed IPv6 按 RFC 5952 规范化，不做 DNS 查询并拒绝带 zone 的地址。
 - 自动填充设置中的“严格匹配网站主机”默认开启，候选要求精确 host。关闭后，只在候选阶段按 Guava PSL 的可注册域名（含私有后缀）放宽到同主域的子域；IP、未知后缀和不可注册的公共后缀仍精确匹配。交互授权始终绑定原始请求的精确 host，不能通过宽松候选设置跨 host 恢复授权。
-- 有有效网页域名时，候选查询与保存关联只使用该域名，不把浏览器 application ID 作为网站凭据关联。无网页域名时才按 application ID 查询/保存。DAO 的子串结果仍须经过 Domain 精确或 PSL 可注册域名校验；允许未匹配建议时，只在没有精确或同可注册域名候选后按设置回退到未关联登录项。
+- 有有效网页域名时，候选查询与保存关联只使用该域名，不把浏览器 application ID 作为网站凭据关联。无网页域名时才按 application ID 查询/保存。DAO 的子串结果仍须经过 Domain 精确或 PSL 可注册域名校验；候选只返回匹配条目，没有未关联条目回退，最多返回 10 条。
 - 候选阶段只读元数据；密码和 OTP 只在最终选择验证后按单条读取。
 - `AutofillAuthenticated` 是窄权限会话，不授权普通 Vault 列表、编辑、备份或设置。
 - 结果提交边界必须包含 `setResult + finish`；提交开始后禁止 lease 新借用，`finish` 返回后才能关闭临时会话。
@@ -23,6 +23,8 @@
   进程内保留至多 10 秒，超时即丢弃并取消 interaction。无法确认目标时拒绝填充，不使用剪贴板兜底。
 
 ## 保存
+
+传统 Autofill 在 Autofill 启用且字段分类识别出有效密码字段时默认提供系统 SaveInfo，不提供单独的保存用户名/密码开关。Credential Manager 创建能力由其自身设置控制。
 
 完整 Vault 会话可直接保存；锁定时只用 Inbox public key 密封耐久排队，不取得 DEK、SQLCipher session 或读权限，
 也不弹出认证。只有 Inbox 入队成功才向 Android 确认接收；完整解锁后按序导入。Queued 与 Imported 是不同阶段，
@@ -44,9 +46,9 @@ Android 平台可以持有 Autofill/Credential 请求上下文，但 Passly 不�
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 维护 Autofill 授权与交互生命周期 | `AutofillInteractionStore`、`AuthorizeAutofillInteraction` | [`AutofillInteractionStore.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt)、[`AuthorizeAutofillInteraction.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt) |
-| 在平台交付前后管理结果提交 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
-| 在 Legacy Autofill Activity 重建间 claim 并确认一次性交付 | `AutofillFillViewModel.commitPlatformResult()`、`ActivityResultClaim.commit()` | [`AutofillFillViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt)、[`ActivityResultClaim.kt`](../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/ActivityResultClaim.kt) |
+| 维护 Autofill 授权与交互生命周期 | `AutofillInteractionStore`、`AuthorizeAutofillInteraction` | [`AutofillInteractionStore.kt`](../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt)、[`AuthorizeAutofillInteraction.kt`](../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt) |
+| 在平台交付前后管理结果提交 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
+| 在 Legacy Autofill Activity 重建间 claim 并确认一次性交付 | `AutofillFillViewModel.commitPlatformResult()`、`AutofillActivityResultClaim.commit()` | [`AutofillFillViewModel.kt`](../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt)、[`AutofillActivityResultClaim.kt`](../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/result/AutofillActivityResultClaim.kt) |
 | 在敏感数据读取处执行受限字段读取 | `RoomSensitiveFieldRepository.revealMany()` | [`RoomSensitiveFieldRepository.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt) |
 
-Legacy Fill 的平台结果 claim 由 Activity-retained `AutofillFillViewModel` 持有，避免配置重建后新 Activity 将同一 StateFlow 终态再次交付。ViewModel 只暂存 discovery/selection 语义结果；Activity 在平台交付时通过 `LegacyResponseFactory` 构造 `FillResponse`/`Dataset`，ViewModel 不持有 Context 或 framework result。选中结果中的凭据 payload 只保留到一次性 callback 成功，之后 `Result`/`Error` 清回 `Initial`；callback 失败时 `ActivityResultClaim` 回滚 claim，Activity 可以取消 interaction 并交付取消结果。Autofill 凭据交付仍先完成平台 callback，再由 `AutofillResultDelivery` 收尾 selection 与 lease。
+Legacy Fill 的平台结果 claim 由 Activity-retained `AutofillFillViewModel` 持有，避免配置重建后新 Activity 将同一 StateFlow 终态再次交付。ViewModel 只暂存 discovery/selection 语义结果；Activity 在平台交付时通过 `LegacyResponseFactory` 构造 `FillResponse`/`Dataset`，ViewModel 不持有 Context 或 framework result。选中结果中的凭据 payload 只保留到一次性 callback 成功，之后 `Result`/`Error` 清回 `Initial`；callback 失败时 `AutofillActivityResultClaim` 回滚 claim，Activity 可以取消 interaction 并交付取消结果。Autofill 凭据交付仍先完成平台 callback，再由 `AutofillResultDelivery` 收尾 selection 与 lease。该 claim 是 Feature 与 App Activity 共同使用的窄 API，放在独立 `presentation.result` 包以维持显式模块边界。

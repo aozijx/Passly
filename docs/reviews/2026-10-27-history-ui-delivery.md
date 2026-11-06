@@ -3,7 +3,7 @@
 **Period:** 2026-10-27 to 2026-10-29
 **Scope:** Biometric policy and key lifecycle, entry revision history, top bars, and in-app Autofill boundaries.
 
-This review preserves delivery evidence for completed work. Current implementation contracts live in the linked feature and architecture documents. API 31 Data and App instrumentation passed; only physical biometric enrollment verification remains open in the [hardware follow-up plan](../superpowers/plans/2026-10-29-hardware-keystore-verification.md).
+This review preserves delivery evidence for completed work. Current implementation contracts live in the linked feature and architecture documents. API 31 Data and App instrumentation passed. Physical biometric enrollment verification was completed on 2026-11-03; see the [hardware Keystore review](2026-11-03-hardware-keystore-verification.md).
 
 ## Current contracts
 

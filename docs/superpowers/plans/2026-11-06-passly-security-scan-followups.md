@@ -110,8 +110,11 @@
 
 **证据：** `DekManager.lock()` 先 `_state = DekState.Locking`（224 行），再 `wipeCurrentDek()`（229 行）；后者仅对 `DekState.Unlocked` 的数组覆盖（246-250 行）。因此原缓存 DEK 被丢弃而未覆盖，与锁定清理意图不符。当前模型排除持续 root 读进程内存，故不将其夸大为普通应用可直接提取密钥。
 
+**继续复核：** `lock()` 在发布 `Locking` 后、执行第二个清理临界区前调用 `logger.log(vaultLockStarted())`；若日志实现抛出异常，字段 key 清理与 `Locked` 发布都不会执行。`cacheAndUnlock()` 则先发布 `Unlocked` 和 `isUnlocked=true`，再调用 `FieldKeyManager.deriveAndSet()`；若密钥派生失败，已发布状态与字段 key 状态不一致。两条路径都需要故障注入验证，不能仅凭正常路径测试认定状态机安全。
+
 - [ ] 在替换持有敏感数组的状态前保留并覆盖该数组，明确锁定的取消、日志失败和 fatal Error 清理顺序；完成字段 key 清理和 Locked 发布。
 - [ ] 行为回归测试保留实际缓存数组引用，锁定后断言其内容归零，并验证重复锁定、取消、事件异常以及之后重新解锁；不能只断言 state 为 Locked。
+- [ ] 注入锁定日志异常和字段密钥派生异常，验证状态发布、缓存 DEK、字段 key 与重新认证的一致性；将派生成功作为发布 `Unlocked` 的前置条件。
 - [ ] 复核认证信封解封后的临时 DEK 生命周期和 `SecretKeySpec` 副本；将其他可控明文遗漏列在同一清理边界修复，不宣称 JVM 全副本可验证擦除。
 
 ## Task 9：首次创建并固定设备 Argon2id 参数
@@ -122,15 +125,10 @@
 
 **参数公开：** memory、iterations、parallelism、算法版本、salt 不属于秘密。允许读取它们是正常设计；攻击者通常本就知道应用默认值。安全目标是强口令、足够派生成本、参数完整性和派生前资源约束，不能把隐藏参数当安全边界。
 
-- [x] 只对全新安装首次进入应用校准；保存版本、m/t/p 和输出长度至 `bootstrap.pb`。解锁只读已保存参数，不重跑校准、不自动降级、不试参。并行度保持 4；根据堆上限、核心数和 64 MiB 实测耗时选择 64/128 MiB 与 3/4 次。
-- [x] 缺配置且有认证信封时明确失败；Room/内部格式版本保持 1，Proto 使用字段 10；不自动删库。
-- [x] 项目内认证派生调用全部显式传参；`KeyDerivation` 和备份容器不再为派生函数提供隐式参数。备份导出显式使用原容器基线，导入继续使用头部已认证参数，避免改变独立备份格式。
 - [ ] 做真实低内存和热状态设备验证，确认 128 MiB 选择不会造成进程内存压力；测量启动等待时间和 KDF 串行并发预算。
-- [x] 认证信封用稳定字节编码将 type、算法、格式版本、salt 和参数纳入 AES-GCM AAD；解封前验证结构与资源范围。生物识别信封保持其独立 Cipher 合同。
-- [x] 校准、首次设置 UI、安全 provisioner、Domain model、Data Proto mapper、主密码与恢复码消费者已接入；备份仍用独立默认值。
-- [x] 选择器和持久化验证器统一只允许 3/4 次迭代；认证配置与信封必须一起保留。
 - [ ] 新信封写入成功为 commit point；提交前失败不得覆盖当前有效信封，提交后取消/availability refresh 失败按持久事实恢复。资源不足时明确报告失败，不静默改参。
 - [ ] 验证新参数往返、进程重启后读取、参数篡改/缺失/超限在派生前拒绝、新合同下不变的 Vault DEK、改密失败重试和敏感缓冲清理。
+- [ ] 为 `ProtoVaultBootstrapStore` 增加真实 DataStore 持久化往返及并发首次写入测试；当前纯参数与信封 AAD 测试未覆盖 Proto 字段 10 的落盘、重启读取和 first-writer-wins 合同。
 
 **本次验证：** `:domain:test` 187 项、`:core:testDebugUnitTest` 80 项、`:security:testDebugUnitTest` 149 项及 `:data:testDebugUnitTest` 通过；`:core:ktlintCheck`、`:security:ktlintCheck`、`:data:ktlintCheck`、`verifyArchitecture`、`:app:processDebugResources`、`:app:compileDebugKotlin` 通过。App 单测编译被并行 Autofill 迁移下 `RecoveryModeBoundaryTest` 访问 `internal StartAutofillInteraction` 的错误阻断。全仓 KtLint 被其他工作流的 Autofill、Scanner、诊断文件问题阻断；本次改动文件在报告中无违例。无连接设备，未做首次启动时长、低内存和实际解锁仪器验证。
 

@@ -25,8 +25,7 @@ claim 阻塞。平台 callback 已成功后，日志/trace 记录异常不会将
 
 ## Create
 
-`CredentialBeginCreateHandler` 只接受 password create。Credential Manager 总开关与 Legacy “保存新登录”开关
-彼此独立；两者只复用平台无关草稿校验和 `SaveAutofillCredential`。
+`CredentialBeginCreateHandler` 只接受 password create。Credential Manager 创建由 Credential Manager 自身开关控制；传统 Autofill 的系统保存提示在 Autofill 启用且密码字段分类有效时默认提供。两者只复用平台无关草稿校验和 `SaveAutofillCredential`。
 
 Vault 已有完整安全会话时直接写入；否则将草稿密封写入 Autofill Inbox，不弹出认证。完整 Vault 解锁后由 Inbox drainer 导入。保存始终新增登录条目，不按用户名 upsert。
 
@@ -47,7 +46,7 @@ interaction 为 process-local、60 秒超时；认证或秘密解析中的操作
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| Credential Manager 平台请求入口 | `ModernCredentialService.onBeginGetCredentialRequest()`、`onBeginCreateCredentialRequest()`、`onClearCredentialStateRequest()` | [`ModernCredentialService.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt) |
-| 凭据发现、选择、创建与取消编排 | `CredentialManagerFlow.beginGet()`、`selectPassword()`、`beginCreate()`、`createPassword()`、`cancel()` | [`CredentialManagerFlow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |
-| 响应 UI state、一次性完成事件与活动交互清理 | `CredentialResponseViewModel.onAction()`、`cancelActiveInteraction()`、`CredentialResponseResultEvents` | [`CredentialResponseViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseViewModel.kt)、[`CredentialResponseResultEvents.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseResultEvents.kt) |
-| Credential Manager 结果交付与 claim | `CredentialResponseActivity.finishWithResult()`、`ActivityResultClaim.commit()` | [`CredentialResponseActivity.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseActivity.kt)、[`ActivityResultClaim.kt`](../../../app/src/main/java/com/aozijx/passly/feature/autofill/presentation/ActivityResultClaim.kt) |
+| Credential Manager 平台请求入口 | `ModernCredentialService.onBeginGetCredentialRequest()`、`onBeginCreateCredentialRequest()`、`onClearCredentialStateRequest()` | [`ModernCredentialService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/service/ModernCredentialService.kt) |
+| 凭据发现、选择、创建与取消编排 | `CredentialManagerFlow.beginGet()`、`selectPassword()`、`beginCreate()`、`createPassword()`、`cancel()` | [`CredentialManagerFlow.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |
+| 响应 UI state、一次性完成事件与活动交互清理 | `CredentialResponseViewModel.onAction()`、`cancelActiveInteraction()`、`CredentialResponseResultEvents` | [`CredentialResponseViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseViewModel.kt)、[`CredentialResponseResultEvents.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/credential/CredentialResponseResultEvents.kt) |
+| Autofill Feature 入口解析 Credential action 并交付结果 | `parseLaunch(source)`、`deliverCredentialResult(completion)`、`AutofillActivityResultClaim.commit()` | [`AutofillFeatureEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/AutofillFeatureEntry.kt)、[`AutofillActivityResultClaim.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/result/AutofillActivityResultClaim.kt) |

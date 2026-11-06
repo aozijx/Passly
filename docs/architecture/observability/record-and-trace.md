@@ -1,6 +1,6 @@
 # 日志记录、错误与 Trace
 
-状态：当前实现（代码核对：2026-10-19）。
+状态：当前实现（代码核对：2026-11-06）。
 
 Passly 只有一套结构化日志管线。业务代码提交类型化 `LogStatement`，底层统一处理 Trace、字段校验、
 异常归类、隐私清洗、采样/聚合和 Sink 分发；业务层不得拼 JSON、直接写文件或调用 `android.util.Log`。
@@ -16,7 +16,9 @@ Application、Database、Security、Autofill、Backup 和 Vault。类型化语�
 - `DEBUG`、`INFO` 用于观察和状态转换。
 - 已知降级但没有异常对象时使用 `degraded`。
 - `warn`、`error`、`fatal` 强制传入 `ErrorCode + ReasonCode + Throwable`。
-- Sink 失败不能改变业务控制流；业务异常与协程取消仍按原实例传播。
+- `DefaultLogger.emit()` 将已脱敏记录交给各 `LogSink.emit(record)`：普通 `Exception` 被隔离，`CancellationException` 按原实例传播，fatal `Error` 不会被伪装成普通 Sink 故障。Trace lifecycle hook 的 `onSpanStarted(span)` / `onSpanCompleted(span)` 同步调用会隔离普通 `Exception`；fatal `Error` 仍向上传播。业务异常不会因普通 Sink 写入失败而被替换。
+
+`DefaultLogger.emit(event, traceContext)` 为每次日志调用生成 `event_id`、时间戳、elapsed time、当前 process/session ID 与 Trace 快照，组成 `SanitizationContext` 后调用 `sanitizer.sanitize(event, context)`。只有 `Accepted(record)` 会继续进入可选的 `EventAggregator.record(record)`；聚合器返回 `false` 时停止后续分发。未被抑制的记录按注入顺序逐个调用 `LogSink.emit(record)`。因此字段清理和拒绝先于聚合、Logcat 与持久 Sink，调用方不能绕过 sanitizer 直接选择某个下游。
 
 操作型事件采用互斥终态，同一 `span_id` 最多输出一个终态：
 
@@ -107,6 +109,7 @@ process-local 的 opaque `TraceToken`：默认单次消费、最长 10 分钟、
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 日志接口与 trace 操作 | `Logger.log()`、`Logger.withRootTrace()`、`Logger.inSpan()` | [`Logger.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/Logger.kt) |
+| 运行时分派、隐私边界、Sink 异常语义和 Span 终态 | `DefaultLogger.emit()`、`emitFailure()`、`runSpan()`、`notifyStarted(span)`、`notifyCompleted(span)` | [`DefaultLogger.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/internal/DefaultLogger.kt) |
 | 待处理事件与脱敏记录模型 | `PendingLogEvent`、`SanitizedLogRecord` | [`LogRecord.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogRecord.kt) |
 | 日志语句封装 | `LogStatements` | [`LogStatements.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogStatements.kt) |
 | 敏感字段清理 | `PrivacyPolicy.sanitize()` | [`PrivacyPolicy.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/PrivacyPolicy.kt) |
