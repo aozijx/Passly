@@ -34,7 +34,7 @@ version 和 container version 的测试必须分开。
 `BackupArchiveServiceImpl.export(request)` 和 `import(request)` 当前没有对应的专用测试类。现有 Codec、Planner、Gateway
 测试分别覆盖相邻组件，但未直接断言 service 如何把 `BackupExportRequest.options` 变成
 `BackupSnapshotReadOptions`、将 `targetUri/sourceUri` 传入 FileStore、把 `mode/strategy/password` 传给恢复或 Adapter，
-以及在成功、普通失败与取消后清零 `payload`、编码结果和 bundle 资源。此验证缺口排入[备份扫描待办 Task 3](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md#task-3-覆盖备份服务编排的参数与清理合同)。
+以及在成功、普通失败与取消后清零 `payload`、编码结果和 bundle 资源。此验证缺口排入[备份扫描待办 Task 3](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)。
 
 严格策略和兼容策略共享同一 canonical 校验合同，但不能仅凭 `BackupImportPlannerTest` 推断每个格式 Adapter 的
 异常映射、密码传递和资源清理都已覆盖。修改 Adapter 时还需分别核对 `PasslyJsonFormatAdapter.decode()`、

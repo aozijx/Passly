@@ -121,7 +121,7 @@ requireResourceData = false)` 检查。
 
 `BackupImportPlanner.plan(bundle, strategy)` 对 `STRICT` 调完整 `BackupBundleValidator.validate`；兼容策略先做结构头
 和资源完整性校验，再筛选未知类型/字段、逐 Entry 校验并裁剪无效项及其引用，最后形成兼容摘要。逐条校验当前使用
-`runCatching`，会捕获 `Throwable`，fatal `Error` 可能被误判为无效 Entry；待修复项见[备份扫描待办 Task 1](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md#task-1-兼容导入不能把-fatal-error-当成无效条目)。加密容器与
+`runCatching`，会捕获 `Throwable`，fatal `Error` 可能被误判为无效 Entry；待修复项见[备份扫描待办 Task 1](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)。加密容器与
 Bitwarden/JSON 的具体校验字段见[归档格式](passly-archive-v1.md)。导入目前先将原始文件读入内存；JSON 文本、解密 ZIP、
 解压资源等副本的预算与峰值内存仍由[备份导入预算 TODO](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)跟踪，
 单文件读取上限不等同于全链路累计内存上限。

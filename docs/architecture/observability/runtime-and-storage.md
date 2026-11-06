@@ -47,7 +47,7 @@ INFO；ERROR/FATAL 可尝试一次独立 emergency write。
 
 当前普通 `Exception` 会在 `WriteTask.run()` 中计入 batch failure；但 fatal `Error` 会越过该 catch。`finally` 仍执行已从队列
 取出的 flush boundary，因此 `flush()` 的 latch 可能已完成，而 `writeFailureCount` 没有增加，调用方会把未落盘批次当作成功。
-该 normal-writer fatal path 尚无测试覆盖，修复与行为测试见[诊断写入 flush TODO](../../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-6-让fatal写入失败反映到flush结果)。
+该 normal-writer fatal path 尚无测试覆盖，修复与行为测试见[诊断写入 flush TODO Task 1](../../superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)。
 
 队列恢复并发生生命周期 flush 时，运行时写入一条 `application.log.overflow` 计数汇总。汇总不包含被丢弃内容，
 也不递归进入已饱和队列。
