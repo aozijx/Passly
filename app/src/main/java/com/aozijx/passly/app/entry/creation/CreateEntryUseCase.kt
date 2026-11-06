@@ -9,6 +9,7 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
+import com.aozijx.passly.domain.autofill.port.AutofillEntryCreation
 import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
@@ -36,7 +37,7 @@ class CreateEntryUseCase internal constructor(
     private val clock: () -> Long,
     private val logger: Logger,
     private val monotonicClock: () -> Long,
-) : EntryCreation {
+) : EntryCreation, AutofillEntryCreation {
     @Inject
     constructor(
         entryCommandRepository: EntryCommandRepository,
