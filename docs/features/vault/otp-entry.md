@@ -30,7 +30,7 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 锁定、保存中或销毁后的拒绝不会填入表单或发送成功反馈，Scanner Route 据此返回 `Rejected`，不能把忽略的配置报告为 `Applied`。
 
 创建和归档读取共用 Domain 的参数规则；原生恢复校验合法性后保留密钥表示和身份元数据，
-不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[归档格式](../backup/archive-format.md)。
+不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[Passly Archive v1](../backup/passly-archive-v1.md)。
 
 最终创建校验也由 `EntryValidation` 调用 `OtpConfigValidation`，而非仅检查密钥非空。即使草稿绕过页面表单，
 非法 Base32/Base64、数字 OTP 的 5 位配置或不符合 Steam 固定项的配置也会在 Repository 写入前失败。
