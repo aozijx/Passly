@@ -21,7 +21,7 @@ Base64 编码。临时解码字节立即擦除。输入及成功解析结果的�
 首页导入与编辑器共用 `suggestedEntryTitle`，组合完整的 `issuer: account`，不按冒号截断身份。
 显示标题只裁剪各部分首尾空白；没有身份资料时，直接导入按类型使用 `TOTP / HOTP / Steam`，
 编辑器保留已有标题。用户保存表单时以表单标题为准，不先生成默认标题再覆盖。
-首页 OTP 扫描在用户确认后由 Activity 作用域的 `ScannedOtpImportViewModel` 持有写入任务；退出 Scanner、Vault 图或切换到认证壳层只取消页面等待，不会取消已确认的保存。任务启动前会核对确认时的完整访问与认证状态；若会话变化则不写入。写入开始后由数据库 session lease 与锁定串行化，已提交事务不因离页或结果等待者取消而回滚。同一 Activity 生命周期内同一时间只接受一个扫描导入，避免 Scanner 重建造成并发重复创建。Scanner 仍在前台时按仓库结果关闭或显示可重试失败；离开后不再向旧页面发送迟到反馈。
+首页 OTP 扫描在用户确认后由 Activity 作用域的 `ScannedOtpImportViewModel` 持有写入任务；退出 Scanner、Vault 图或切换到认证壳层只取消页面等待，不会取消已确认的保存。任务启动前会核对确认时的完整访问与认证状态；若会话变化则不写入。写入开始后由数据库 session lease 与锁定串行化，已提交事务不因离页或结果等待者取消而回滚。同一 Activity 生命周期内同一时间只接受一个扫描导入，避免 Scanner 重建造成并发重复创建。Scanner 仍在前台时按仓库结果关闭或显示可重试失败；离开后不再向旧页面发送迟到反馈。调用者和参数传递见下方代码位置表。
 `AddOtpViewModel` 在无效输入下不调用写入用例，保留原始输入供修改；合法保存经 Domain `EntryCreation` 能力写入，
 成功后清除表单敏感内容。URI 解析及第三方导入边界见[动态口令 URI 导入与导出](otp-uri.md)。
 
@@ -46,25 +46,18 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 这一明确的输入失败转换为 `ValidationError`，不会吞掉仓库异常或其他程序错误。Wi-Fi 安全类型缺失或未知也
 走同一失败通路；有效的稳定键和既有别名继续由 `WifiSecurityType.parseStoredValue` 解析。
 
-## HOTP 生成边界
-
-`OtpGenerator` 的 HOTP 成功结果必须包含非负、可表示为 Long 的下一计数器。当前计数器为
-`Long.MAX_VALUE - 1` 时可以生成并返回 `Long.MAX_VALUE`；当前或覆盖计数器已为 `Long.MAX_VALUE` 时，
-在解码密钥和计算验证码前返回 `OtpGenerationError.CounterExhausted`。负覆盖计数器仍为 `InvalidCounter`。
-耗尽状态可存储和归档，但不能继续生成；不得通过溢出、回绕或重置为 0 继续使用。
-
-用户在通过复制验证码的认证后，每次复制 HOTP 都在同一数据库事务中读取当前计数器、生成验证码并写入下一计数器。
-失败时不推进计数器；写入成功后才将验证码交给剪贴板。该操作不创建条目修订或内容编辑记录。普通 HOTP
-订阅仍显示 Pending，避免展示一个可被反复复制的旧验证码；TOTP/Steam 复制当前有效时间窗内的验证码。
-OTP 运行时只解密低敏 OTP 配置与独立的 OTP secret 字段，不读取同一条目的其他敏感字段。
-若 HOTP 事务挂起期间页面关闭、切换条目或会话锁定，事务即使已成功推进计数器，返回的验证码也会因旧运行时令牌失效而丢弃，不再写入剪贴板；用户需要重新授权生成下一码。
-
-TOTP/Steam 跨周期重读配置遇到普通存储异常时，会立即移除该条目的旧验证码，展示和复制都不可继续使用过期码；保留的调度信息使后续 ticker 周期重试。普通异常不会终止其他条目的刷新；取消仍传播，认证过期与会话锁定继续走各自的状态迁移，fatal `Error` 不转换为普通验证码失败。
-
-Vault 列表和 Detail 各自拥有独立 OTP Runtime。页面恢复前台时，它们只让自己仍在请求的条目重新读取 OTP 配置；Detail 成功恢复历史修订后也会刷新当前条目。OTP 编辑页保存后返回时，不会继续展示或复制编辑前的验证码，也不需要跨 ViewModel 的全局失效事件。配置替换会使旧 entry epoch 的读取与 HOTP 消费结果失效；迟到的认证过期或会话锁异常不能暂停新配置或清空新 Runtime 状态。
+验证码刷新、HOTP 计数器提交、详情复制和列表复制路径见[OTP 运行时与复制](otp-runtime.md)。
 
 ## 代码位置
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 从 OTP 配置生成新建草稿并建议标题 | `OtpConfig.toNewEntryDraft()`、`OtpConfig.suggestedEntryTitle()` | [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt) |
+| 将编辑表单状态映射为新建草稿，解析配置、标题、备注与标签 | `OtpFormState.toEntryDraft()` | [`OtpFormMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormMapper.kt) |
+| 处理 OTP 编辑页 Action，快照当前状态并在 Save 时提交草稿 | `AddOtpViewModel.onAction(AddOtpAction.Save)`、`save()`、`EditorWriteSession.save { current.form.toEntryDraft() }` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
+| 将新 OTP 配置转换为带默认标题的草稿 | `OtpConfig.toNewEntryDraft(title = suggestedEntryTitle())`、`OtpConfig.suggestedEntryTitle()` | [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt) |
+| 确认首页扫码导入的 owner、认证与访问状态并串行接收任务 | `ScannedOtpImportViewModel.importScannedOtp(config)` | [`ScannedOtpImportViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/ScannedOtpImportViewModel.kt) |
+| 将扫码配置转成草稿并调用创建能力 | `ImportScannedOtpUseCase.invoke(config)`、`createEntry(draft)` | [`ImportScannedOtpUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/ImportScannedOtpUseCase.kt) |
+| 从 Vault 扫码结果派发导入并将布尔结果映射为 Applied / Rejected | `VaultRoute` 的 scanner import callback、`ScannedOtpImportViewModel.importScannedOtp(config)` | [`VaultRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultRoute.kt) |
+| 在 OTP 编辑器中接收扫码配置，只填充当前编辑会话而不直接创建 | `AddOtpEditorRoute` 的 ApplyToOtpEditor callback、`AddOtpViewModel.tryApplyScannedConfig(config)` | [`AddOtpEditorRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt)、[`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt) |
+| 从新建或编辑 ViewModel 的写入闭包进入创建/完整表单替换 | `createEntryUseCase(draft)`、`editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt) |
+| 最终验证 OTP 配置并在创建前拒绝不合法值 | `OtpConfigValidation.validate()`、`EntryValidation.validate()` | [`OtpConfigValidation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpConfigValidation.kt)、[`EntryValidation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryValidation.kt) |
