@@ -66,8 +66,8 @@
 
 ### Backup
 
-- [导入与导出](features/backup/import-export.md)
-- [归档格式](features/backup/archive-format.md)
+- [备份导入与导出流程](features/backup/backup-workflows.md)
+- [Passly Archive v1 协议](features/backup/passly-archive-v1.md)
 - [验证要求](features/backup/verification.md)
 
 ### 其他功能

@@ -1,4 +1,4 @@
-# Backup 导入与导出
+# Backup 导入与导出流程
 
 状态：当前实现（代码核对：2026-11-06）。
 
@@ -17,7 +17,7 @@ Data 实现，页面和普通 Backup 流程不导入 Data。
 
 完整备份可包含所选条目及业务字段、关系、已提交附件和可选图标。Draft、活动记录、修订历史、可重建索引、
 设置、会话、DEK、Bootstrap、认证材料、Room 密文结构、本机路径和未提交附件不进入备份。
-协议细节见[Passly Archive v1](archive-format.md)，验证边界见[验证要求](verification.md)与
+协议细节见[Passly Archive v1](passly-archive-v1.md)，验证边界见[验证要求](verification.md)与
 [ADR-0022](../../decisions/ADR-0022-keyed-backup-document.md)。文档、加密容器和 Room Schema 各自独立版本；
 当前协议不兼容旧 `passly-vault`/`passly-archive` 文档。
 
@@ -122,7 +122,7 @@ requireResourceData = false)` 检查。
 `BackupImportPlanner.plan(bundle, strategy)` 对 `STRICT` 调完整 `BackupBundleValidator.validate`；兼容策略先做结构头
 和资源完整性校验，再筛选未知类型/字段、逐 Entry 校验并裁剪无效项及其引用，最后形成兼容摘要。逐条校验当前使用
 `runCatching`，会捕获 `Throwable`，fatal `Error` 可能被误判为无效 Entry；待修复项见[备份扫描待办 Task 1](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md#task-1-兼容导入不能把-fatal-error-当成无效条目)。加密容器与
-Bitwarden/JSON 的具体校验字段见[归档格式](archive-format.md)。导入目前先将原始文件读入内存；JSON 文本、解密 ZIP、
+Bitwarden/JSON 的具体校验字段见[归档格式](passly-archive-v1.md)。导入目前先将原始文件读入内存；JSON 文本、解密 ZIP、
 解压资源等副本的预算与峰值内存仍由[备份导入预算 TODO](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)跟踪，
 单文件读取上限不等同于全链路累计内存上限。
 
@@ -144,7 +144,7 @@ Bitwarden 银行卡的完整合法年月经 Domain `CardExpiry` 统一为 `MM/YY
 
 原生归档的 OTP 在规划阶段经恢复使用的同一读取器与 Domain 配置规则校验；不再放过 9/10 位、未知算法/
 编码、损坏密钥或冲突的 Steam 配置。兼容模式隔离这些条目，严格模式拒绝；合法的长周期 TOTP 可以备份恢复。
-可选参数的默认值见[归档格式](archive-format.md)，验证通过的 OTP 不会再因恢复时使用另一套默认值而失败。
+可选参数的默认值见[归档格式](passly-archive-v1.md)，验证通过的 OTP 不会再因恢复时使用另一套默认值而失败。
 
 两种策略都严格拒绝错误身份/版本、认证失败、危险 KDF 参数、重复顶层 ID、损坏资源、路径穿越、未知 ZIP
 条目和超限输入。`APPEND` 跳过已有 ID；`OVERWRITE` 在单个 Room 事务中清库并写入。如果源文件有 Entry，
