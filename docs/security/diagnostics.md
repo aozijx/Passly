@@ -1,6 +1,6 @@
 # 诊断安全与隐私
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-11-06）。
 
 本页只定义安全策略。Logger 结构、存储和格式分别见[日志记录与 Trace](../architecture/observability/record-and-trace.md)、
 [运行时与加密存储](../architecture/observability/runtime-and-storage.md)和
@@ -26,8 +26,22 @@ Release 只返回匿名拒绝结果。
 ## 异常与错误
 
 异常只在 core 隐私边界转换成受限快照。WARN/ERROR/FATAL 业务语句必须携带受控错误码、原因码和异常对象；
-没有异常对象的已知降级使用 `degraded`。快照最多保留 24 个经过字符清洗的应用与平台栈帧，可包含类名、方法、
-受限源码文件名和行号；不包含绝对路径、变量值、用户输入或异常 message。原始异常文本不得用于用户提示或日志解释。
+没有异常对象的已知降级使用 `degraded`。`PrivacyPolicy.sanitize()` 将错误中的 `Throwable` 与映射后的 `ExceptionKind`
+传给 `ExceptionSnapshotFactory.create(throwable, kind)`。快照最多保留 24 条通过规范化的栈帧；保留范围包含 Passly、Android
+framework 和第三方库，不采用 package allowlist。Passly 的 `com.aozijx.passly.` 前缀会被去掉，外部类名保留完整包名；类名、
+方法名、源码文件名和行号经字符集与长度限制。文件名只接受受限 `.kt`/`.java` 名称及合法行号，不保存绝对路径。异常快照
+另计 `externalFrameCount`：统计原始栈中所有非 Passly 前缀帧，不受最多 24 条可输出帧限制；cause 只保留最多 3 层异常类型，
+不保留异常 message 或 suppressed 异常。
+
+这些清洗后的帧进入加密本地日志记录；debug build 的 `LogcatSink.emit(record)` 将每帧另写一行，Release sink 不写 Logcat。
+JSONL、TSV 和 ZIP 诊断导出也会携带 `stack_frames` 与 `external_frame_count`，但必须通过新鲜 `EXPORT_DIAGNOSTICS` 授权。
+这让用户主动选择的诊断文件可包含依赖库包名/类名等实现信息；若要收窄第三方帧，需先明确诊断效用与最小暴露策略，再同步
+sanitizer、编码器和测试。当前实现不包含绝对路径、变量值、用户输入或异常 message。原始异常文本不得用于用户提示或日志解释。
+
+当前证据分别由 [`ExceptionSnapshotFactoryTest`](../../core/src/test/kotlin/com/aozijx/passly/core/observability/privacy/ExceptionSnapshotFactoryTest.kt)
+（包含 `com.bank.secret.CustomerActivity` 第三方帧并验证消息/路径 sentinel 不进入快照）、[`LogcatSinkTest`](../../app/src/test/java/com/aozijx/passly/app/observability/LogcatSinkTest.kt)
+（Release 不写 Logcat、debug 按独立行输出帧）和 [`DiagnosticsExportEncodersTest`](../../app/src/test/java/com/aozijx/passly/app/observability/DiagnosticsExportEncodersTest.kt)
+（导出 `stack_frames` 且排除异常消息污染）覆盖。它们证明当前过滤/编码行为，不单独决定是否应收窄第三方包名披露。
 
 用户提示只来自错误目录中标记为 `USER_ACTIONABLE` 的资源映射。`INTERNAL` 错误没有用户文案，UI 不得显示
 原始错误码作为兜底。
@@ -49,5 +63,7 @@ Release 只返回匿名拒绝结果。
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 按白名单脱敏结构化日志字段 | `PrivacyPolicy.sanitize()` | [`PrivacyPolicy.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/PrivacyPolicy.kt) |
+| 将异常转换为清洗后的快照 | `ExceptionSnapshotFactory.create(throwable, kind)`、`normalize(frame)` | [`ExceptionSnapshotFactory.kt`](../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/ExceptionSnapshotFactory.kt) |
 | 将安全日志记录写入加密存储 | `EncryptedLogRecordStore.write()`、`readPage()` | [`EncryptedLogRecordStore.kt`](../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt) |
-| 编码诊断导出并管理分享文件 | `DiagnosticsExportEncoder.write()`、`ObservabilityExportService.export()` | [`DiagnosticsExportEncoders.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)、[`ObservabilityExportService.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |
+| Debug Logcat 输出清洗后的每帧 | `LogcatSink.emit(record)` | [`LogcatSink.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/LogcatSink.kt) |
+| 编码诊断导出并管理分享文件 | `DiagnosticsExportEncoder.write()`、`ObservabilityExportService.export(permit, request)` | [`DiagnosticsExportEncoders.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)、[`ObservabilityExportService.kt`](../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |

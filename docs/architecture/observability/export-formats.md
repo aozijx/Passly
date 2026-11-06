@@ -34,7 +34,8 @@ elapsed_ms、timeout_ms、retry_count，其余已注册字段按键排序。异�
 | `level` | `DEBUG`、`INFO`、`WARN`、`ERROR`、`FATAL` |
 | `context.category` | `APPLICATION`、`DATABASE`、`SECURITY`、`AUTOFILL`、`BACKUP`、`VAULT` |
 | `error.exception.kind` | `DATABASE_IO`、`CRYPTO`、`AUTHENTICATION`、`PLATFORM`、`LIFECYCLE`、`IO`、`UNKNOWN` |
-| `error.exception.stack_frames` | 最多 24 个经过字符清洗的类名、方法名和可选源码位置 |
+| `error.exception.stack_frames` | 最多 24 个经过字符清洗的 Passly/平台/第三方类名、方法名和可选源码位置；Passly package prefix 去掉，外部 package 名保留 |
+| `error.exception.external_frame_count` | 原始 Throwable 栈中所有不以 `com.aozijx.passly.` 开头的 frame 数，独立于实际输出的最多 24 条 frame |
 
 ## TSV
 
