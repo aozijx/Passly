@@ -29,6 +29,7 @@ fun AppPasswordSetDialog(
     confirmEnabled: Boolean,
     isBusy: Boolean = false,
     errorMessage: String? = null,
+    kdfHint: String? = null,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -68,6 +69,14 @@ fun AppPasswordSetDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (kdfHint != null) {
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text(
+                        text = kdfHint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(modifier = Modifier.size(16.dp))
                 PasswordFields(
                     newPassword = newPassword,

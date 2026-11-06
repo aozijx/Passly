@@ -254,4 +254,7 @@
     <string name="card_product">卡片产品名称</string>
     <string name="card_currency">币种</string>
     <string name="card_bank_phone">银行客服电话</string>
+    <string name="auth_kdf_calibrating">正在按设备性能设置密码保护参数…</string>
+    <string name="auth_kdf_initialization_failed">无法保存密码保护参数。请重试打开应用；不会自动重置已有数据。</string>
+    <string name="auth_kdf_selected">Argon2id 已按设备能力设置并保存：内存 %1$d MiB、迭代 %2$d 次、并行度 %3$d。以后解锁沿用这些参数。</string>
 </resources>

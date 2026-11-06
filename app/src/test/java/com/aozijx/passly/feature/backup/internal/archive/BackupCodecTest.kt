@@ -85,9 +85,11 @@ class BackupCodecTest {
         val plaintext = """{"data":"test"}""".toByteArray()
         val parameters =
             KeyDerivation.Argon2idParameters(
+                version = KeyDerivation.ARGON2_VERSION_13,
                 iterations = 5,
                 memoryKiB = 32_768,
                 parallelism = 2,
+                keyLengthBits = 256,
             )
 
         val encrypted =
@@ -122,12 +124,14 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 "same-content".toByteArray(),
                 password,
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
         val second =
             EncryptedBackupContainerCodec.encrypt(
                 "same-content".toByteArray(),
                 password,
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
         val firstHeader = EncryptedBackupContainerCodec.inspectHeader(first)
@@ -156,6 +160,7 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 "secret".toByteArray(),
                 "correct".toCharArray(),
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
         assertThrows(Exception::class.java) {
@@ -184,6 +189,7 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 "authenticated".toByteArray(),
                 password,
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKeyIgnoringParameters,
             )
         val tampered = encrypted.copyOf()
@@ -206,6 +212,7 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 "data".toByteArray(),
                 "password".toCharArray(),
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
         val invalidLength = encrypted.copyOf()
@@ -236,6 +243,7 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 "data".toByteArray(),
                 "password".toCharArray(),
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
         val dangerous = encrypted.copyOf()
@@ -263,6 +271,7 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 "data".toByteArray(),
                 "password".toCharArray(),
+                KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
             ) { _, _, _ -> invalidKey }
         }
         assertTrue(invalidKey.all { it == 0.toByte() })
@@ -315,6 +324,7 @@ class BackupCodecTest {
             EncryptedBackupContainerCodec.encrypt(
                 zip,
                 password,
+                parameters = KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
                 deriveKey = ::stubDeriveKey,
             )
 

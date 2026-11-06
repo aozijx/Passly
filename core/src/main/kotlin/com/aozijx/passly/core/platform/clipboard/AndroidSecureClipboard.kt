@@ -14,6 +14,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
+private const val CLIP_LABEL = "passly.sensitive"
+private const val OWNERSHIP_TOKEN_KEY = "com.aozijx.passly.clipboard.OWNER_TOKEN"
+private const val LEGACY_SENSITIVE_EXTRA_KEY = "android.content.extra.IS_SENSITIVE"
+
 @Singleton
 internal class AndroidSecureClipboard
     @Inject
@@ -90,10 +94,4 @@ internal class AndroidSecureClipboard
             } else {
                 LEGACY_SENSITIVE_EXTRA_KEY
             }
-
-        private companion object {
-            const val CLIP_LABEL = "passly.sensitive"
-            const val OWNERSHIP_TOKEN_KEY = "com.aozijx.passly.clipboard.OWNER_TOKEN"
-            const val LEGACY_SENSITIVE_EXTRA_KEY = "android.content.extra.IS_SENSITIVE"
-        }
     }

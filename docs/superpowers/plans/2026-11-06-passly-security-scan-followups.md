@@ -112,30 +112,27 @@
 
 - [ ] 在替换持有敏感数组的状态前保留并覆盖该数组，明确锁定的取消、日志失败和 fatal Error 清理顺序；完成字段 key 清理和 Locked 发布。
 - [ ] 行为回归测试保留实际缓存数组引用，锁定后断言其内容归零，并验证重复锁定、取消、事件异常以及之后重新解锁；不能只断言 state 为 Locked。
-- [ ] 复核 `EnvelopeManager.verify()` 解密的临时 DEK 生命周期和 `SecretKeySpec` 副本；将其他可控明文遗漏列在同一清理边界修复，不宣称 JVM 全副本可验证擦除。
+- [ ] 复核认证信封解封后的临时 DEK 生命周期和 `SecretKeySpec` 副本；将其他可控明文遗漏列在同一清理边界修复，不宣称 JVM 全副本可验证擦除。
 
-## Task 9：设备校准 Argon2id，同时固定每个信封的派生上下文
+## Task 9：首次创建并固定设备 Argon2id 参数
 
-**状态：代码已接入；全新安装的一次性校准、持久化、认证路径读取及首次设置提示已实现。完整 App 编译和设备校准仍待验证。**
+**状态：代码已接入；全新安装的一次性校准、持久化、认证路径读取及首次设置提示已实现。App 主源码编译通过；设备校准仍待验证。**
 
-**当前事实：** 新增 `bootstrap.pb` 中单份认证 KDF 配置；首次测量 64 MiB/3 次基线后选定并持久化，主密码和恢复码共用，解锁不校准。加密备份 v1 仍使用其独立头部参数。旧开发信封缺配置时明确失败；用户只要求全新安装，不维护旧数据兼容。
+**当前事实：** 全新安装进入应用时测量 64 MiB/3 次基线，选择参数并原子保存到 `bootstrap.pb`。主密码和恢复码共用该配置，解锁不校准。加密备份 v1 使用独立头部参数。没有参数回退或试参路径。
 
 **参数公开：** memory、iterations、parallelism、算法版本、salt 不属于秘密。允许读取它们是正常设计；攻击者通常本就知道应用默认值。安全目标是强口令、足够派生成本、参数完整性和派生前资源约束，不能把隐藏参数当安全边界。
 
 - [x] 只对全新安装首次进入应用校准；保存版本、m/t/p 和输出长度至 `bootstrap.pb`。解锁只读已保存参数，不重跑校准、不自动降级、不试参。并行度保持 4；根据堆上限、核心数和 64 MiB 实测耗时选择 64/128 MiB 与 3/4 次。
-- [x] 缺配置且有认证信封时明确失败；Room/内部格式版本保持 1，Proto 使用字段 10；不加旧默认值 fallback，也不静默删库。
+- [x] 缺配置且有认证信封时明确失败；Room/内部格式版本保持 1，Proto 使用字段 10；不自动删库。
 - [x] 项目内认证派生调用全部显式传参；`KeyDerivation` 和备份容器不再为派生函数提供隐式参数。备份导出显式使用原容器基线，导入继续使用头部已认证参数，避免改变独立备份格式。
 - [ ] 做真实低内存和热状态设备验证，确认 128 MiB 选择不会造成进程内存压力；测量启动等待时间和 KDF 串行并发预算。
-- [ ] 新信封采用稳定编码将 type、算法和参数等上下文纳入 AEAD 认证保护。派生前先执行结构、算法及资源上下限验证；仅靠最终 GCM 认证不能阻止先消耗恶意 KDF 预算。
+- [x] 认证信封用稳定字节编码将 type、算法、格式版本、salt 和参数纳入 AES-GCM AAD；解封前验证结构与资源范围。生物识别信封保持其独立 Cipher 合同。
 - [x] 校准、首次设置 UI、安全 provisioner、Domain model、Data Proto mapper、主密码与恢复码消费者已接入；备份仍用独立默认值。
-- [ ] 裁定参数选择器与持久化验证器的范围差异：`DeviceKdfPolicy.select()` 只产生 3/4 次迭代，而 `AuthenticationKdfParameters` 接受 3–5 次。检查现存发布/序列化数据和所有写入来源；若 5 是已发布或预留合同，记录其来源、兼容责任与测试；若无来源，则评估收紧验证范围。不得只按当前选择器推断持久化配置永远不会是 5。
-- [ ] 评估将每个 envelope 的参数纳入 AEAD 认证上下文，保证从配置文件拆分/导出单个信封时仍可独立验证；当前认证配置与信封必须一起保留。
-- [ ] 新信封写入成功为 commit point；提交前失败不得覆盖当前有效信封，提交后取消/availability refresh 失败按持久事实恢复。设备迁移后使用文件自带参数，过高时明确报告资源限制，不静默改参。
-- [ ] 验证新参数往返、重启/跨设备重放、参数篡改/缺失/超限在派生前拒绝、新合同下不变的 Vault DEK、改密失败重试和敏感缓冲清理。缺参旧开发记录明确失败，不伪装成密码错误。
+- [x] 选择器和持久化验证器统一只允许 3/4 次迭代；认证配置与信封必须一起保留。
+- [ ] 新信封写入成功为 commit point；提交前失败不得覆盖当前有效信封，提交后取消/availability refresh 失败按持久事实恢复。资源不足时明确报告失败，不静默改参。
+- [ ] 验证新参数往返、进程重启后读取、参数篡改/缺失/超限在派生前拒绝、新合同下不变的 Vault DEK、改密失败重试和敏感缓冲清理。
 
-**参数范围差异证据（2026-11-06，静态源码复核）：** `DeviceKdfPolicy.select()` 的条件分支只构造 iterations 3 或 4；Domain `AuthenticationKdfParameters.init` 则要求 iterations 在 3..5。DataStore `initializeIfAbsent()` 只写入候选值，读取时 `toDomain()` 会经过同一个 Domain 构造器，因此 5 可由持久快照读取而不是由当前选择器产生。未发现历史发行版、迁移或外部导入路径写入 5 的证据，也未验证真实 `bootstrap.pb` 样本；这是策略范围不对齐/兼容来源待查，不是已证实故障。
-
-**本次验证：** `:domain:test` 187 项、`:security:testDebugUnitTest` 149 项通过；`:core:ktlintCheck`、`:security:ktlintCheck`、`:data:ktlintCheck`、`verifyArchitecture`、`:app:processDebugResources` 通过。完整 `:app:compileDebugKotlin` 被并行迁移中的 `:feature:autofill` 未解析 `mipmap` 和 `VaultItemIcon` 引用阻断；App KtLint 仍有其他工作流正在修改的 Autofill、Scanner、诊断文件问题，本次改动文件在复查报告中无违例。无连接设备，因此未做首次启动时长、低内存和实际解锁仪器验证。
+**本次验证：** `:domain:test` 187 项、`:core:testDebugUnitTest` 80 项、`:security:testDebugUnitTest` 149 项及 `:data:testDebugUnitTest` 通过；`:core:ktlintCheck`、`:security:ktlintCheck`、`:data:ktlintCheck`、`verifyArchitecture`、`:app:processDebugResources`、`:app:compileDebugKotlin` 通过。App 单测编译被并行 Autofill 迁移下 `RecoveryModeBoundaryTest` 访问 `internal StartAutofillInteraction` 的错误阻断。全仓 KtLint 被其他工作流的 Autofill、Scanner、诊断文件问题阻断；本次改动文件在报告中无违例。无连接设备，未做首次启动时长、低内存和实际解锁仪器验证。
 
 ## Task 10：避免把字符池估算当作可证明的密码强度
 
@@ -146,12 +143,12 @@
 - [ ] 分开“建议性强度提示”和最终创建策略；全值阻止列表不能用 substring 拒绝所有长口令。
 - [ ] 选择可解释的本地 guessability 模型或明确标注启发式提示，覆盖重复/顺序、常见变体、长 passphrase 和 Unicode；不在日志或遥测保存输入。
 
-## 本轮规范性整理与验证
+## 审查记录与验证
 
 - **removed：** `AndroidSecureClipboard` 与 `FieldKeyManager` 仅承载私有常量的尾部 companion，常量保持原值并移至各自文件顶部。
-- **retained：** Argon2id 的默认值与合法范围不变，抽出顶部具名常量；没有动态校准、参数持久化或密码规则行为变化。
+- **removed：** 认证 Argon2id 隐式默认值和信封未认证元数据路径；新建认证统一采用首次持久化参数与 AAD。备份容器继续显式使用独立参数合同。
 - **removed：** `MemoryCleaner` 注释中对防优化/全局擦除的过强保证；改为可控缓冲尽力覆盖和可选写入排序的准确说明。`DatabaseProvider` 参数注释改为实际调用方传入 DEK 副本，不虚构额外派生。
-- **deferred：** Task 6–10 的行为变更及相应设备、取消与新格式测试；本轮规范性整理不能计作这些问题已修复。
+- **deferred：** Task 9 的设备、故障注入与完整 App 构建验证；其他 Task 仍按各自状态跟进。
 - 验证结果在实际命令结束后追加；不以历史测试或其他工作流结果代替本轮证据。
 - 扫描工具返回累计计量 10,392,571 tokens，其中 cached input 9,910,016、非缓存 input 433,894、output 48,661；这是工具按 5 个关联 rollout 汇总的 token 计量，不是本轮独立计费金额。报告目录内的 `scan-manifest.json` 保留工具原始统计。
 - 本轮规范性代码整理验证：`:core:testDebugUnitTest` 实际执行 79 个测试，0 failure/0 error/0 skipped；`:core:ktlintCheck`、`:data:ktlintCheck`、`verifyArchitecture`、`:core:lintDebug` 均通过。首轮 KtLint 曾发现两个文件尾空行，已修正并在第二轮通过。最后再运行 `git diff --check`；本轮未执行设备仪器测试。

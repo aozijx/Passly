@@ -64,8 +64,7 @@ object EncryptedBackupContainerCodec {
     fun encrypt(
         plaintext: ByteArray,
         password: CharArray,
-        parameters: KeyDerivation.Argon2idParameters =
-            KeyDerivation.DEFAULT_ARGON2ID_PARAMETERS,
+        parameters: KeyDerivation.Argon2idParameters,
         deriveKey: (
             CharArray,
             ByteArray,

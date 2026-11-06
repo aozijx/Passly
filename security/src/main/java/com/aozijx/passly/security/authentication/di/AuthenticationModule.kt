@@ -3,6 +3,7 @@ package com.aozijx.passly.security.authentication.di
 import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
+import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
@@ -21,6 +22,7 @@ import com.aozijx.passly.security.authentication.DefaultAuthenticationManager
 import com.aozijx.passly.security.authentication.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.DefaultRecoveryCodeDraftFactory
 import com.aozijx.passly.security.authentication.DefaultRecoveryCredentialGenerator
+import com.aozijx.passly.security.authentication.DeviceKdfConfiguration
 import com.aozijx.passly.security.authentication.KdfRunner
 import com.aozijx.passly.security.authentication.RecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.SingleThreadKdfRunner
@@ -40,6 +42,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AuthenticationModule {
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationKdfParameterSource(impl: DeviceKdfConfiguration): AuthenticationKdfParameterSource
+
     @Binds
     @Singleton
     abstract fun bindAutofillInboxKeyProvisioning(implementation: AutofillInboxKeyProvisioner): AutofillInboxKeyProvisioning

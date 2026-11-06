@@ -5,6 +5,7 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
@@ -44,6 +45,7 @@ class DekManager
             wrappingKey: SecretKeySpec,
             salt: ByteArray,
             algorithm: KdfAlgorithm,
+            parameters: AuthenticationKdfParameters,
         ) {
             logger.inSpan(Operations.VaultKeyManagement) {
                 mutex.withLock {
@@ -53,7 +55,7 @@ class DekManager
                     try {
                         vaultBootstrapStore.saveVerificationTag(VerificationTag.create(dek))
                         vaultBootstrapStore.save(
-                            EnvelopeManager.wrapWithKey(type, dek, wrappingKey, salt, algorithm),
+                            EnvelopeManager.wrapWithKey(type, dek, wrappingKey, salt, algorithm, parameters),
                         )
                         logger.log(LogStatements.Security.vaultInitialized())
                         cacheAndUnlock(dek)
@@ -175,6 +177,7 @@ class DekManager
             wrappingKey: SecretKeySpec,
             salt: ByteArray,
             algorithm: KdfAlgorithm,
+            parameters: AuthenticationKdfParameters,
         ) {
             logger.inSpan(Operations.VaultKeyManagement) {
                 mutex.withLock {
@@ -183,7 +186,7 @@ class DekManager
                         "DEK not loaded, current: ${current::class.simpleName}"
                     }
                     vaultBootstrapStore.save(
-                        EnvelopeManager.wrapWithKey(type, current.dek, wrappingKey, salt, algorithm),
+                        EnvelopeManager.wrapWithKey(type, current.dek, wrappingKey, salt, algorithm, parameters),
                     )
                     logger.log(LogStatements.Security.envelopeRekeyed())
                 }
@@ -209,14 +212,6 @@ class DekManager
         suspend fun getEnvelope(type: EnvelopeType): KeyEnvelope? = vaultBootstrapStore.load(type)
 
         suspend fun removeEnvelope(type: EnvelopeType) = vaultBootstrapStore.delete(type)
-
-        suspend fun verifyEnvelope(
-            type: EnvelopeType,
-            key: SecretKeySpec,
-        ): Boolean {
-            val keyEnvelope = vaultBootstrapStore.load(type) ?: return false
-            return EnvelopeManager.verify(keyEnvelope, key)
-        }
 
         suspend fun lock() {
             logger.inSpan(Operations.VaultKeyManagement) {

@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
@@ -16,6 +17,7 @@ import com.aozijx.passly.feature.unlock.presentation.UnlockUiAction
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,7 @@ class UnlockViewModel
     @Inject
     constructor(
         private val authenticationManager: AuthenticationManager,
+        private val kdfParameterSource: AuthenticationKdfParameterSource,
         private val methodProvisioner: AuthenticationMethodProvisioner,
     ) : ViewModel() {
         private val _uiState =
@@ -37,6 +40,15 @@ class UnlockViewModel
         private var recoveryRevealTapCount = 0
 
         init {
+            viewModelScope.launch {
+                try {
+                    mutate(UnlockMutation.KdfParametersReady(kdfParameterSource.selected()))
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    mutate(UnlockMutation.KdfInitializationFailed)
+                }
+            }
             viewModelScope.launch {
                 authenticationManager.methods.collect { methods ->
                     mutate(UnlockMutation.AvailableMethodsChanged(methods))

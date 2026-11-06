@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.security.authentication.host.AuthUiHost
 import com.aozijx.passly.security.authentication.host.SecretHostResult
+import com.aozijx.passly.security.envelope.EnvelopeManager
 import java.security.GeneralSecurityException
 import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
@@ -24,6 +25,7 @@ class CredentialMethodExecutor
     constructor(
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val kdfRunner: KdfRunner,
+        private val kdfConfiguration: DeviceKdfConfiguration,
         private val session: VaultSessionController,
         private val attemptLimiter: CredentialAttemptLimiter,
     ) {
@@ -39,6 +41,13 @@ class CredentialMethodExecutor
                     AuthenticationFailureCode.METHOD_UNAVAILABLE,
                     request,
                 )
+            val parameters = kdfConfiguration.selected()
+            val authenticatedContext =
+                try {
+                    EnvelopeManager.authenticationAad(envelope, parameters)
+                } catch (_: IllegalArgumentException) {
+                    return failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                }
             attemptLimiter.beforeAttempt(method, request)?.let { limited ->
                 return MethodExecutionResult.Failure(limited)
             }
@@ -60,7 +69,7 @@ class CredentialMethodExecutor
                         try {
                             val ownedDek =
                                 kdfRunner.execute(secret) { workerSecret ->
-                                    val rawKey = KeyDerivation.deriveKeyBytesArgon2id(workerSecret, envelope.salt)
+                                    val rawKey = KeyDerivation.deriveKeyBytesArgon2id(workerSecret, envelope.salt, parameters.toCore())
                                     try {
                                         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
                                         cipher.init(
@@ -68,6 +77,7 @@ class CredentialMethodExecutor
                                             SecretKeySpec(rawKey, "AES"),
                                             GCMParameterSpec(128, envelope.iv),
                                         )
+                                        cipher.updateAAD(authenticatedContext)
                                         OwnedBytes(cipher.doFinal(envelope.ciphertext))
                                     } finally {
                                         rawKey.fill(0)

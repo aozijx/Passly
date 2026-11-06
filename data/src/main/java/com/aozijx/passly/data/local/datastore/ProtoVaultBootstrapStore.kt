@@ -3,11 +3,13 @@ package com.aozijx.passly.data.local.datastore
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
+import com.aozijx.passly.data.crypto.proto.AuthenticationKdfConfiguration
 import com.aozijx.passly.data.crypto.proto.BiometricBinding as BiometricBindingProto
 import com.aozijx.passly.data.crypto.proto.BiometricRotationJournal as BiometricRotationJournalProto
 import com.aozijx.passly.data.crypto.proto.BootstrapData
 import com.aozijx.passly.data.crypto.proto.EnvelopeEntry
 import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AutofillInboxKeyMaterial
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
@@ -16,6 +18,7 @@ import com.aozijx.passly.domain.access.model.BiometricRotationPhase
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
 import com.aozijx.passly.domain.access.model.KeyEnvelope
+import com.aozijx.passly.domain.access.port.AuthenticationKdfConfigurationStore
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
@@ -38,6 +41,7 @@ internal class ProtoVaultBootstrapStore
     constructor(
         @param:ApplicationContext private val context: Context,
     ) : VaultBootstrapStore,
+        AuthenticationKdfConfigurationStore,
         AutofillInboxBootstrapStore,
         BiometricConfigurationSource {
         private val dataStore: DataStore<BootstrapData>
@@ -45,6 +49,42 @@ internal class ProtoVaultBootstrapStore
 
         override val biometricConfiguration
             get() = dataStore.data.map(::readBiometricConfiguration).distinctUntilChanged()
+
+        override suspend fun load(): AuthenticationKdfParameters? =
+            dataStore.data
+                .first()
+                .takeIf(BootstrapData::hasAuthenticationKdf)
+                ?.authenticationKdf
+                ?.toDomain()
+
+        override suspend fun initializeIfAbsent(parameters: AuthenticationKdfParameters): AuthenticationKdfParameters {
+            val saved =
+                dataStore.updateData { current ->
+                    if (current.hasAuthenticationKdf()) return@updateData current
+                    check(current.envelopesCount == 0) { "Authentication KDF configuration missing for existing vault" }
+                    current.toBuilder().setAuthenticationKdf(parameters.toProto()).build()
+                }
+            return saved.authenticationKdf.toDomain()
+        }
+
+        private fun AuthenticationKdfParameters.toProto(): AuthenticationKdfConfiguration =
+            AuthenticationKdfConfiguration
+                .newBuilder()
+                .setVersion(version)
+                .setMemoryKib(memoryKiB)
+                .setIterations(iterations)
+                .setParallelism(parallelism)
+                .setKeyLengthBits(keyLengthBits)
+                .build()
+
+        private fun AuthenticationKdfConfiguration.toDomain(): AuthenticationKdfParameters =
+            AuthenticationKdfParameters(
+                version = version,
+                memoryKiB = memoryKib,
+                iterations = iterations,
+                parallelism = parallelism,
+                keyLengthBits = keyLengthBits,
+            )
 
         override suspend fun save(envelope: KeyEnvelope) {
             dataStore.updateData { current ->

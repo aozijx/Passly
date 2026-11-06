@@ -270,7 +270,26 @@ fun AuthenticationScreen(
         AppPasswordSetDialog(
             newPassword = passwordSetup.newPassword.toUiString(),
             confirmPassword = passwordSetup.confirmPassword.toUiString(),
-            confirmEnabled = passwordSetup.canSubmit(),
+            confirmEnabled = passwordSetup.canSubmit() && state.kdfParameters != null,
+            kdfHint =
+                when {
+                    state.kdfInitializationFailed -> {
+                        stringResource(R.string.auth_kdf_initialization_failed)
+                    }
+
+                    state.kdfParameters == null -> {
+                        stringResource(R.string.auth_kdf_calibrating)
+                    }
+
+                    else -> {
+                        stringResource(
+                            R.string.auth_kdf_selected,
+                            state.kdfParameters.memoryKiB / 1024,
+                            state.kdfParameters.iterations,
+                            state.kdfParameters.parallelism,
+                        )
+                    }
+                },
             onNewPasswordChange = { onAction(UnlockUiAction.NewAppPasswordChanged(it)) },
             onConfirmPasswordChange = { onAction(UnlockUiAction.ConfirmAppPasswordChanged(it)) },
             onConfirm = { onAction(UnlockUiAction.SetPasswordConfirmed) },

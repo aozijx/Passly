@@ -2,12 +2,19 @@ package com.aozijx.passly.feature.unlock.presentation
 
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 internal sealed interface UnlockMutation {
+    data class KdfParametersReady(
+        val parameters: AuthenticationKdfParameters,
+    ) : UnlockMutation
+
+    data object KdfInitializationFailed : UnlockMutation
+
     data class AvailableMethodsChanged(
         val methods: AuthenticationMethods,
     ) : UnlockMutation
@@ -72,6 +79,14 @@ internal object UnlockReducer {
         mutation: UnlockMutation,
     ): UnlockUiState =
         when (mutation) {
+            is UnlockMutation.KdfParametersReady -> {
+                state.copy(kdfParameters = mutation.parameters, kdfInitializationFailed = false)
+            }
+
+            UnlockMutation.KdfInitializationFailed -> {
+                state.copy(kdfInitializationFailed = true)
+            }
+
             is UnlockMutation.AvailableMethodsChanged -> {
                 state.copy(availableMethods = mutation.methods)
             }

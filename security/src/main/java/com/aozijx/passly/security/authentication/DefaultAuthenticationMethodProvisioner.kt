@@ -23,6 +23,7 @@ import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenanceResu
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.envelope.EnvelopeManager
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -37,6 +38,7 @@ class DefaultAuthenticationMethodProvisioner
     @Inject
     constructor(
         private val kdfRunner: KdfRunner,
+        private val kdfConfiguration: DeviceKdfConfiguration,
         private val dekManager: DekManager,
         private val session: VaultSessionController,
         private val authenticationManager: AuthenticationManager,
@@ -66,6 +68,7 @@ class DefaultAuthenticationMethodProvisioner
             val secret = SecretChars.take(password)
             val salt = KeyDerivation.generateSalt()
             return try {
+                val parameters = kdfConfiguration.selected()
                 runAppPasswordProvisioning(
                     store = vaultBootstrapStore,
                     salt = salt,
@@ -73,7 +76,7 @@ class DefaultAuthenticationMethodProvisioner
                     persist = {
                         kdfRunner
                             .execute(secret) { chars ->
-                                OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt))
+                                OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt, parameters.toCore()))
                             }.use { ownedKey ->
                                 val rawKey = ownedKey.consume()
                                 try {
@@ -84,6 +87,7 @@ class DefaultAuthenticationMethodProvisioner
                                             key,
                                             salt,
                                             KdfAlgorithm.ARGON2ID,
+                                            parameters,
                                         )
                                     } else {
                                         dekManager.initializeWithKey(
@@ -91,6 +95,7 @@ class DefaultAuthenticationMethodProvisioner
                                             key,
                                             salt,
                                             KdfAlgorithm.ARGON2ID,
+                                            parameters,
                                         )
                                     }
                                 } finally {
@@ -247,9 +252,11 @@ class DefaultAuthenticationMethodProvisioner
                 }
             val secret = SecretChars.take(code)
             return try {
+                val parameters = kdfConfiguration.selected()
+                val authenticatedContext = EnvelopeManager.authenticationAad(envelope, parameters)
                 val ownedKey =
                     kdfRunner.execute(secret) { chars ->
-                        OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, envelope.salt))
+                        OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, envelope.salt, parameters.toCore()))
                     }
                 val rawKey = ownedKey.consume()
                 try {
@@ -259,6 +266,7 @@ class DefaultAuthenticationMethodProvisioner
                         SecretKeySpec(rawKey, "AES"),
                         GCMParameterSpec(128, envelope.iv),
                     )
+                    cipher.updateAAD(authenticatedContext)
                     val dek = cipher.doFinal(envelope.ciphertext)
                     dek.fill(0)
                     true

@@ -97,6 +97,7 @@ internal class DefaultRecoveryCredentialGenerator
     @Inject
     constructor(
         private val kdfRunner: KdfRunner,
+        private val kdfConfiguration: DeviceKdfConfiguration,
         private val dekManager: DekManager,
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val authenticationManager: AuthenticationManager,
@@ -111,9 +112,10 @@ internal class DefaultRecoveryCredentialGenerator
             var envelope: KeyEnvelope? = null
             var ownershipTransferred = false
             return try {
+                val parameters = kdfConfiguration.selected()
                 val ownedKey =
                     kdfRunner.execute(secret) { chars ->
-                        OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt))
+                        OwnedBytes(KeyDerivation.deriveKeyBytesArgon2id(chars, salt, parameters.toCore()))
                     }
                 val rawKey = ownedKey.consume()
                 try {
@@ -125,6 +127,7 @@ internal class DefaultRecoveryCredentialGenerator
                                 wrappingKey = SecretKeySpec(rawKey, "AES"),
                                 salt = salt,
                                 algorithm = KdfAlgorithm.ARGON2ID,
+                                parameters = parameters,
                             )
                         }
                 } finally {

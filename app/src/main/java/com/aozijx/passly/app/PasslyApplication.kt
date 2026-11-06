@@ -12,10 +12,12 @@ import com.aozijx.passly.app.observability.ObservabilityRuntimeController
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.SessionActivityReporter
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,9 +49,12 @@ class PasslyApplication : Application() {
     lateinit var deviceLockController: DeviceLockController
 
     @Inject
+    lateinit var kdfParameterSource: AuthenticationKdfParameterSource
+
+    @Inject
     lateinit var logger: Logger
 
-    private val diagnosticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         if (BuildConfig.DEBUG) {
@@ -72,14 +77,25 @@ class PasslyApplication : Application() {
         // 诊断与通知
         observabilityRuntimeController.start()
 
+        // Fresh installs fix the authentication KDF parameters in bootstrap.pb before credentials exist.
+        applicationScope.launch {
+            try {
+                kdfParameterSource.selected()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // The setup screen reports initialization failure and allows a later retry.
+            }
+        }
+
         // 生物识别轮换对账（后台执行）
-        diagnosticsScope.launch { authenticationRuntimeMaintenance.reconcileStartupState() }
+        applicationScope.launch { authenticationRuntimeMaintenance.reconcileStartupState() }
 
         // 加载 SQLCipher
         try {
             System.loadLibrary("sqlcipher")
         } catch (e: UnsatisfiedLinkError) {
-            diagnosticsScope.launch {
+            applicationScope.launch {
                 logger.withRootTrace(Operations.ApplicationStartup) {
                     logger.log(LogStatements.Application.nativeLibraryLoadFailed(e))
                 }

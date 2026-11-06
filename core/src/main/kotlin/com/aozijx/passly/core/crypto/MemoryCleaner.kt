@@ -3,10 +3,10 @@ package com.aozijx.passly.core.crypto
 import sun.misc.Unsafe
 
 /**
- * 敏感数据安全清理工具。
+ * 尽力覆盖调用方仍持有的可变敏感缓冲。
  *
- * 使用 [Unsafe.storeFence] 确保写入操作在 wipe 返回前对所有线程可见，
- * 防止编译器优化掉零填充操作。
+ * 可用时在覆盖后执行 [Unsafe.storeFence]，用于写入排序。
+ * 这不保证 JVM、密码学提供者或系统产生的其他副本已被擦除。
  */
 object MemoryCleaner {
     private val unsafe =

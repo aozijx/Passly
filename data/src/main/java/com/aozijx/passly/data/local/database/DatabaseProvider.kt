@@ -29,7 +29,7 @@ class DatabaseProvider
         /**
          * 打开数据库。
          *
-         * @param key SQLCipher 加密密钥（由调用方从 DEK 派生，调用完毕后应擦除）
+         * @param key 调用方提供的 SQLCipher 密钥缓冲；当前会话传入 DEK 副本，调用完毕后应擦除。
          */
         suspend fun open(key: ByteArray): AppDatabase = open(DatabaseSchema.DATABASE_NAME, key)
 

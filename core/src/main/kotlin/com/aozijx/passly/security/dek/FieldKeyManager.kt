@@ -7,6 +7,8 @@ import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val DERIVE_LABEL = "passly-entry-field-key-v1"
+
 /**
  * 持有由 DEK 派生的字段加密密钥；只负责派生、复制和擦除。
  * 认证时长与锁定策略由 security.lock 负责。
@@ -56,9 +58,5 @@ class FieldKeyManager
                 MemoryCleaner.wipeByteArray(key)
                 key = null
             }
-        }
-
-        private companion object {
-            const val DERIVE_LABEL = "passly-entry-field-key-v1"
         }
     }

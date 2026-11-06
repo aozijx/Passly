@@ -7,6 +7,7 @@ import com.aozijx.passly.data.local.database.port.DatabaseResetController
 import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.datastore.ProtoVaultBootstrapStore
+import com.aozijx.passly.domain.access.port.AuthenticationKdfConfigurationStore
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
 import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
@@ -22,6 +23,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class VaultStorageModule {
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationKdfConfigurationStore(impl: ProtoVaultBootstrapStore): AuthenticationKdfConfigurationStore
+
     @Binds
     @Singleton
     abstract fun bindBiometricConfigurationSource(impl: ProtoVaultBootstrapStore): BiometricConfigurationSource

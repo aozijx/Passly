@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.unlock.presentation
 
 import com.aozijx.passly.core.crypto.MemoryCleaner
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
@@ -71,6 +72,8 @@ sealed interface UnlockPasswordSetupPhase {
 }
 
 data class UnlockUiState(
+    val kdfParameters: AuthenticationKdfParameters? = null,
+    val kdfInitializationFailed: Boolean = false,
     val availableMethods: AuthenticationMethods = AuthenticationMethods(),
     val appPassword: SensitiveValue = EmptySensitiveValue,
     val recoveryCode: SensitiveValue = EmptySensitiveValue,

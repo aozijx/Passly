@@ -246,4 +246,7 @@
     <string name="card_product">Card product</string>
     <string name="card_currency">Currency</string>
     <string name="card_bank_phone">Bank customer service phone</string>
+    <string name="auth_kdf_calibrating">Setting password protection parameters for this device…</string>
+    <string name="auth_kdf_initialization_failed">Could not save password protection parameters. Reopen the app to retry; existing data will not be reset automatically.</string>
+    <string name="auth_kdf_selected">Argon2id parameters saved for this device: %1$d MiB memory, %2$d iterations, parallelism %3$d. Future unlocks use these values.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 
+import com.aozijx.passly.core.crypto.KeyDerivation
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
@@ -31,7 +32,7 @@ class EncryptedBackupExporter
             val resourceEntries = bundle.resourceData.mapKeys { (id, _) -> "resources/$id" }
             val zipContent = BackupArchiveCodec.buildZip(documentJson, resourceEntries)
             return try {
-                EncryptedBackupContainerCodec.encrypt(zipContent, password)
+                EncryptedBackupContainerCodec.encrypt(zipContent, password, KeyDerivation.BASELINE_ARGON2ID_PARAMETERS)
             } finally {
                 documentJson.fill(0)
                 zipContent.fill(0)

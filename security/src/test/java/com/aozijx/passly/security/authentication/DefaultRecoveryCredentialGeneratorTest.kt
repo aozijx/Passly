@@ -13,6 +13,7 @@ import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
@@ -24,6 +25,7 @@ import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.model.SessionLockRequest
+import com.aozijx.passly.domain.access.port.AuthenticationKdfConfigurationStore
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.security.dek.DekManager
@@ -43,6 +45,14 @@ class DefaultRecoveryCredentialGeneratorTest {
             val manager =
                 DefaultRecoveryCredentialGenerator(
                     kdfRunner = runner,
+                    kdfConfiguration =
+                        DeviceKdfConfiguration(
+                            object : AuthenticationKdfConfigurationStore {
+                                override suspend fun load() = AuthenticationKdfParameters(0x13, 65_536, 3, 4, 256)
+
+                                override suspend fun initializeIfAbsent(parameters: AuthenticationKdfParameters) = parameters
+                            },
+                        ),
                     dekManager = DekManager(store, FieldKeyManager(), NoOpLogger),
                     vaultBootstrapStore = store,
                     authenticationManager = NoOpAuthenticationManager,
