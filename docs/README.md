@@ -101,10 +101,12 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [Passly Archive v1 协议](features/backup/passly-archive-v1.md)
 - [验证要求](features/backup/verification.md)
 
-### 系统集成与工具
+### 设置与系统集成
 
-- [通知设置](features/notification-settings.md)
-- [权限管理](features/permission-management.md)
+- [通知设置](features/settings/notification-settings.md)
+- [权限管理](features/settings/permission-management.md)
+
+### 系统工具
 #### 诊断日志
 
 - [总览](features/diagnostics/overview.md)

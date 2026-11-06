@@ -18,12 +18,12 @@ Camera 与 Notifications 行根据当前 API 和 `RuntimePermissionAccess` 展�
 
 SAF grant 状态不是传统 Runtime permission。备份目录重新选择、重新授权、清除与测试写入由 Backup 设置页面处理；权限管理页只展示 `PermissionManagementUiModel` 并发送语义动作。这样保留设置 URI 与操作系统 grant 的同一 owner。
 
-[`PermissionManagementViewModelTest`](../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/permissions/PermissionManagementViewModelTest.kt) 覆盖目录 Flow 失败的可见状态与重新订阅；共享权限申请租约和迟到结果由 [`PermissionRequestSessionTest`](../../app/src/test/java/com/aozijx/passly/app/platform/permission/PermissionRequestSessionTest.kt) 覆盖。
+[`PermissionManagementViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/permissions/PermissionManagementViewModelTest.kt) 覆盖目录 Flow 失败的可见状态与重新订阅；共享权限申请租约和迟到结果由 [`PermissionRequestSessionTest`](../../../app/src/test/java/com/aozijx/passly/app/platform/permission/PermissionRequestSessionTest.kt) 覆盖。
 
 ## 代码位置
 
 | 职责 | 类/函数 | 源码 |
 | --- | --- | --- |
-| 页面状态与权限快照 | `PermissionManagementViewModel.runtimeAccessUpdated(access)`、`refreshDirectoryAccess()`、`retryBackupDirectoryRead()` | [`PermissionManagementViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/permissions/PermissionManagementViewModel.kt) |
-| 平台 permission 读取与请求 | `PermissionsRoute()`、`permissionHost.access(permission)`、`permissionHost.request(permission)` | [`PermissionsRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/core/PermissionsRoute.kt)、[`PermissionRequestHost.kt`](../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestHost.kt) |
-| 持久 SAF 目录 grant 语义 | `BackupDirectoryGrantInspector` | [`BackupDirectoryGrantInspector.kt`](../../app/src/main/java/com/aozijx/passly/app/backup/BackupDirectoryGrantInspector.kt) |
+| 页面状态与权限快照 | `PermissionManagementViewModel.runtimeAccessUpdated(access)`、`refreshDirectoryAccess()`、`retryBackupDirectoryRead()` | [`PermissionManagementViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/permissions/PermissionManagementViewModel.kt) |
+| 平台 permission 读取与请求 | `PermissionsRoute()`、`permissionHost.access(permission)`、`permissionHost.request(permission)` | [`PermissionsRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/core/PermissionsRoute.kt)、[`PermissionRequestHost.kt`](../../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestHost.kt) |
+| 持久 SAF 目录 grant 语义 | `BackupDirectoryGrantInspector` | [`BackupDirectoryGrantInspector.kt`](../../../app/src/main/java/com/aozijx/passly/app/backup/BackupDirectoryGrantInspector.kt) |

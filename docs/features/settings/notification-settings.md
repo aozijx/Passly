@@ -20,12 +20,15 @@
 
 `NotificationsRoute` 在 STARTED 生命周期内消费权限请求、保存失败与系统设置导航 effect；Toast/notice 文案在消费时用当前资源解析。页面恢复前台时派发 `RefreshSystemNotificationState`，以最新系统状态重算可用性。
 
-对应行为测试见 [`NotificationSettingsViewModelTest`](../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/main/general/NotificationSettingsViewModelTest.kt)，覆盖 pending 请求复用、关开竞争、旧 owner/token、配置重建、平台重检及 Repository 写入失败。
+对应行为测试见 [`NotificationSettingsViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/main/general/NotificationSettingsViewModelTest.kt)，覆盖 pending 请求复用、关开竞争、旧 owner/token、配置重建、平台重检及 Repository 写入失败。
 
 ## 代码位置
 
 | 职责 | 类/函数 | 源码 |
 | --- | --- | --- |
-| 通知偏好与请求状态机 | `NotificationSettingsViewModel.onAction()`、`requestSystemNotificationsEnabled()`、`completeRuntimePermissionRequest(request)` | [`NotificationSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/general/NotificationSettingsViewModel.kt) |
-| Activity Result 与 STARTED effect 消费 | `NotificationsRoute()` | [`NotificationsRoute.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/general/NotificationsRoute.kt) |
-| Android 权限请求租约 | `rememberPermissionRequestHost()`、`PermissionRequestHost.request(permission)` | [`PermissionRequestHost.kt`](../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestHost.kt) |
+| 通知偏好与请求状态机 | `NotificationSettingsViewModel.onAction()`、`requestSystemNotificationsEnabled()`、`completeRuntimePermissionRequest(request)` | [`NotificationSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/general/NotificationSettingsViewModel.kt) |
+| Activity Result 与 STARTED effect 消费 | `NotificationsRoute()` | [`NotificationsRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/general/NotificationsRoute.kt) |
+| Android 权限请求租约 | `rememberPermissionRequestHost()`、`PermissionRequestHost.request(permission)` | [`PermissionRequestHost.kt`](../../../app/src/main/java/com/aozijx/passly/app/platform/permission/PermissionRequestHost.kt) |
+| 绑定页面 owner、重建后重发请求及离页清理 | `onPageEntered()`、`onPageExited(owner, preservePendingPermissionRequest)` | [`NotificationSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/general/NotificationSettingsViewModel.kt)、[`NotificationsRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/general/NotificationsRoute.kt) |
+| 在系统弹窗前验证请求身份和 owner，并重新确认平台状态后写偏好 | `canLaunchRuntimePermissionRequest(request)`、`completeRuntimePermissionRequest(request)`、`persistSystemNotificationsEnabled(enabled)` | [`NotificationSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/general/NotificationSettingsViewModel.kt) |
+| 将运行时申请启动结果折算为权限结果 Action | `permissionHost.request(RuntimePermission.POST_NOTIFICATIONS)` -> `RuntimePermissionGranted(request)` / `RuntimePermissionDenied(request)` | [`NotificationsRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/general/NotificationsRoute.kt) |
