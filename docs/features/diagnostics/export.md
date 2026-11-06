@@ -14,7 +14,11 @@ Top app bar 的保存/分享先由 `DiagnosticsViewModel.onAction(RequestExport(
 
 ## 文件写入与清理
 
-`ObservabilityExportService.export(permit, request)` 切到 IO，先消费 permit，flush 写队列，再读记录、按 event ID 去重并按时间排序。`SHARE` 创建格式 artifact 临时文件、编码并通过 FileProvider 分享；成功后尝试安排 10 分钟删除，调度失败时保留文件并依下一次分享时的过期清理回收。未成功分享时，在清理边界删除临时明文文件。`EXPORT_LOCAL` 要求 document URI，打开 provider 输出流并写编码内容；失败或取消时尝试删除系统预建 URI。
+`ObservabilityExportService.export(permit, request)` 切到 `Dispatchers.IO`，先用 `permitVerifier.consume(permit, EXPORT_SCOPE)` 消费一次性授权；校验失败返回 `Result.failure(SecurityException)`。通过后调用 `store.flush(FLUSH_TIMEOUT_MS)`（当前 300 ms），随后通过 `readRecords()` 从 `store.readPage(cursor, minOf(PAGE_SIZE, MAX_EXPORT_RECORDS - records.size))` 分页读取，单页最多 500 条、总计最多 5,000 条，再按 `eventId` 去重并按 `timestampMs`、`elapsedRealtimeMs`、`eventId.value` 排序。
+
+**当前 flush 返回值缺口：** `store.flush(300)` 的 Boolean 结果目前被忽略；即使 flush 超时或报告写入失败，导出仍会读取已有记录并继续生成文件，可能把不完整日志作为成功导出交付。该行为已登记在[诊断日志可靠性 TODO](../../superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)，尚未修复。fatal worker `Error` 目前也可能因 flush marker 完成而没有被 failure counter 观察到，详见同一 TODO Task 1。
+
+`SHARE` 创建格式 artifact 临时文件、编码并通过 FileProvider 分享；成功后尝试安排 10 分钟删除，调度失败时保留文件并依下一次分享时的过期清理回收。未成功分享时，在清理边界删除临时明文文件。`EXPORT_LOCAL` 要求 document URI，打开 provider 输出流并写编码内容；失败或取消时尝试删除系统预建 URI。
 
 两种格式都在读取、编码和写入边界检查协程取消。同步编码或日志读取不可中断时，在步骤返回后检查取消并执行补偿。普通读取/写入/分享异常以 `Result.failure` 返回；fatal `Error` 经清理后传播。清理 fatal Error 优先传播并保留原错误为 suppressed；分享已成功后，调度删除失败不撤销已交付文件。
 
