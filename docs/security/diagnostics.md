@@ -17,7 +17,7 @@
 - 密码、密钥、OTP secret、恢复码和 token；
 - 用户名、用户输入、URL、域名和文件路径；
 - 明文目标包名、Activity 全限定名、Android ID、serial 和 Build fingerprint；
-- `Throwable.message`、`localizedMessage`、suppressed exception 和第三方栈帧名。
+- `Throwable.message`、`localizedMessage`、suppressed exception、绝对源码路径和本地变量。
 
 目标包名只能以 `IdentifierNamespace.TARGET_PACKAGE` 进入 Keystore-backed HMAC 端口。校验或 HMAC 失败时
 拒绝字段，不能回退为明文、普通 SHA 或截断值。Debug 对合同违规抛出不含原值的 `LogContractViolation`；
@@ -26,8 +26,8 @@ Release 只返回匿名拒绝结果。
 ## 异常与错误
 
 异常只在 core 隐私边界转换成受限快照。WARN/ERROR/FATAL 业务语句必须携带受控错误码、原因码和异常对象；
-没有异常对象的已知降级使用 `degraded`。快照可包含 Passly 相对类名、方法、受限源码文件名和行号，但不包含
-绝对路径、第三方帧名或异常 message。原始异常文本不得用于用户提示或日志解释。
+没有异常对象的已知降级使用 `degraded`。快照最多保留 24 个经过字符清洗的应用与平台栈帧，可包含类名、方法、
+受限源码文件名和行号；不包含绝对路径、变量值、用户输入或异常 message。原始异常文本不得用于用户提示或日志解释。
 
 用户提示只来自错误目录中标记为 `USER_ACTIONABLE` 的资源映射。`INTERNAL` 错误没有用户文案，UI 不得显示
 原始错误码作为兜底。

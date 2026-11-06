@@ -30,6 +30,19 @@ class LogcatSink internal constructor(
                 truncatedSummary(record)
             }
         gateway.println(priority, tag, summary)
+        val stackFrames =
+            record
+                .error
+                ?.exception
+                ?.stackFrames
+                .orEmpty()
+        stackFrames.forEachIndexed { index, frame ->
+            gateway.println(
+                priority,
+                tag,
+                "stack_frame=${index + 1}/${stackFrames.size} ${frame.value}",
+            )
+        }
     }
 
     // 点分 tag：`log.tag.*` 系统属性不允许包含 '/'，'/' 会让 setprop 失效，
@@ -96,16 +109,16 @@ private object SafeLogcatRecordFormatter : LogcatRecordFormatter {
                 error.exception?.let { exception ->
                     append(" exception_kind=").append(exception.kind.name)
                     append(" exception_type=").append(exception.type.value)
-                    append(" app_stack=").append(exception.appStackFrames.joinToString(",") { it.value })
+                    append(" stack_frame_count=").append(exception.stackFrames.size)
                     append(" cause_types=").append(exception.causeTypes.joinToString(",") { it.value })
-                    append(" foreign_frame_count=").append(exception.foreignFrameCount)
+                    append(" external_frame_count=").append(exception.externalFrameCount)
                 }
             }
-            record.fields.values.toSortedMap(
-                compareBy<com.aozijx.passly.core.observability.LogFieldKey> { it.logcatPriority() }
-                    .thenBy { it.value },
-            )
-                .forEach { (key, value) ->
+            record.fields.values
+                .toSortedMap(
+                    compareBy<com.aozijx.passly.core.observability.LogFieldKey> { it.logcatPriority() }
+                        .thenBy { it.value },
+                ).forEach { (key, value) ->
                     append(' ').append(key.value).append('=').append(value.safeText())
                 }
         }

@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.observability
 
-import com.aozijx.passly.core.observability.AppStackFrame
 import com.aozijx.passly.core.observability.EnumName
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
@@ -19,6 +18,7 @@ import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SanitizedLogRecord
+import com.aozijx.passly.core.observability.SanitizedStackFrame
 import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
@@ -125,12 +125,12 @@ class LogRecordCodecTest {
                     exception =
                         ExceptionSnapshot(
                             type = ExceptionType("IllegalStateException"),
-                            appStackFrames =
+                            stackFrames =
                                 listOf(
-                                    AppStackFrame("autofill.Result#deliver(Result.kt:42)"),
+                                    SanitizedStackFrame("autofill.Result#deliver(Result.kt:42)"),
                                 ),
                             causeTypes = listOf(ExceptionType("RuntimeException")),
-                            foreignFrameCount = 3,
+                            externalFrameCount = 3,
                             kind = ExceptionKind.PLATFORM,
                         ),
                 ),

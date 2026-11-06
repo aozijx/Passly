@@ -11,6 +11,7 @@ import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -41,9 +42,9 @@ internal data class CanonicalDiagnosticsEvent(
                                 buildJsonObject {
                                     put("kind", exception.kind.exportValue)
                                     put("type", exception.type.value)
-                                    put("app_stack", JsonPrimitive(exception.appStackFrames.joinToString(",") { it.value }))
+                                    put("stack_frames", JsonArray(exception.stackFrames.map { JsonPrimitive(it.value) }))
                                     put("cause_kinds", JsonPrimitive(exception.causeTypes.joinToString(",") { it.value }))
-                                    put("foreign_frame_count", exception.foreignFrameCount)
+                                    put("external_frame_count", exception.externalFrameCount)
                                 },
                             )
                         }

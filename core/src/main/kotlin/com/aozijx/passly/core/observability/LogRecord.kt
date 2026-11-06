@@ -120,27 +120,27 @@ enum class ExceptionKind(
 }
 
 @JvmInline
-value class AppStackFrame(
+value class SanitizedStackFrame(
     val value: String,
 ) {
     init {
-        require(value.length <= 256 && value.matches(APP_STACK_FRAME_PATTERN)) {
-            "Invalid application stack frame"
+        require(value.length <= 256 && value.matches(SANITIZED_STACK_FRAME_PATTERN)) {
+            "Invalid sanitized stack frame"
         }
     }
 }
 
 data class ExceptionSnapshot(
     val type: ExceptionType,
-    val appStackFrames: List<AppStackFrame>,
+    val stackFrames: List<SanitizedStackFrame>,
     val causeTypes: List<ExceptionType>,
-    val foreignFrameCount: Int,
+    val externalFrameCount: Int,
     val kind: ExceptionKind = ExceptionKind.UNKNOWN,
 ) {
     init {
-        require(appStackFrames.size <= 24) { "Too many application stack frames" }
+        require(stackFrames.size <= 24) { "Too many sanitized stack frames" }
         require(causeTypes.size <= 3) { "Too many exception cause types" }
-        require(foreignFrameCount >= 0) { "Foreign frame count cannot be negative" }
+        require(externalFrameCount >= 0) { "External frame count cannot be negative" }
     }
 }
 
@@ -182,10 +182,10 @@ data class SanitizedLogRecord(
 )
 
 internal val OPAQUE_ID_PATTERN = Regex("^[A-Za-z0-9_-]{8,64}$")
-internal val APP_STACK_FRAME_PATTERN =
+internal val SANITIZED_STACK_FRAME_PATTERN =
     Regex(
         "^[A-Za-z0-9_$.-]{1,160}#[A-Za-z0-9_$<>-]{1,64}" +
-            "\\([A-Za-z][A-Za-z0-9_$-]{0,95}\\.(?:kt|java):[1-9][0-9]{0,6}\\)$",
+            "(?:\\([A-Za-z][A-Za-z0-9_$-]{0,95}\\.(?:kt|java)(?::[1-9][0-9]{0,6})?\\))?$",
     )
 
 fun EventKey.category(): LogCategory =

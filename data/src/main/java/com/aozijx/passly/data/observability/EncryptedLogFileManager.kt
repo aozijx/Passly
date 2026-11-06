@@ -201,15 +201,22 @@ internal class EncryptedLogFileManager(
         file: File,
         entry: Entry,
     ) {
-        DataOutputStream(FileOutputStream(file, false).buffered()).use { out ->
-            out.writeInt(FILE_MAGIC)
-            out.writeInt(FILE_VERSION)
-            out.write(entry.fileId)
-            out.writeLong(entry.createdAtMs)
-            out.writeInt(entry.wrappedKey.nonce.size)
-            out.write(entry.wrappedKey.nonce)
-            out.writeInt(entry.wrappedKey.ciphertext.size)
-            out.write(entry.wrappedKey.ciphertext)
+        FileOutputStream(file, false).use { fileOutput ->
+            val output = DataOutputStream(fileOutput.buffered())
+            try {
+                output.writeInt(FILE_MAGIC)
+                output.writeInt(FILE_VERSION)
+                output.write(entry.fileId)
+                output.writeLong(entry.createdAtMs)
+                output.writeInt(entry.wrappedKey.nonce.size)
+                output.write(entry.wrappedKey.nonce)
+                output.writeInt(entry.wrappedKey.ciphertext.size)
+                output.write(entry.wrappedKey.ciphertext)
+                output.flush()
+                fileOutput.fd.sync()
+            } finally {
+                output.close()
+            }
         }
         file.setLastModified(entry.createdAtMs)
     }

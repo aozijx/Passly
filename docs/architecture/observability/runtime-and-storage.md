@@ -27,21 +27,23 @@ FLIP 则跳过。前台设置读取 owner 可显式重试。消息设置快照�
 对 Failed 与 Loading 使用相同的既有抑制语义，设置冷源恢复后继续更新快照。
 
 `LogcatSink.kt` 是 observability 生产代码中唯一允许导入 `android.util.Log` 的文件。它只接收已脱敏记录，
-输出有限 Tag 和有界单行摘要，并保留 `event_id/trace_id/span_id`。Release 默认关闭 Logcat；Debug 在格式化前
+输出有限 Tag 和有界单行摘要，并保留 `event_id/trace_id/span_id`；异常帧逐行输出。Release 默认关闭 Logcat；Debug 在格式化前
 检查 `Log.isLoggable`，且永远不把原始 `Throwable` 交给 Android Log API。
 
 本地加密日志默认保存 INFO 及以上；诊断页可设为关闭、WARN 及以上、INFO 及以上或全部等级。设置只在加密
 `LogRecordStore` 边界过滤，不改变 `LocalAlertPolicy`、内存崩溃捕获、原崩溃委托、业务控制流或 Android Trace。
-设置尚未从 DataStore 加载时暂不写入本地 store。降低等级或关闭采集不删除既有记录；Release Logcat 仍默认关闭，
-Debug Logcat 仍由 Android Log 可见性控制，两者独立于本地加密记录策略。
+经脱敏的 FATAL 崩溃记录始终本地保存；设置未加载或关闭时，其他等级不写入本地 store。降低等级或关闭采集不删除既有
+记录；Release Logcat 仍默认关闭，Debug Logcat 仍由 Android Log 可见性控制，两者独立于本地加密记录策略。
 
 受控 Span 名称同时写入 `android.os.Trace`，供 Perfetto 分析。业务层不得调用 `printStackTrace` 或创建第二套
 静态 Logger/Service Locator。
 
 ## 非阻塞写入与背压
 
-加密 store 使用容量 256 的单线程队列，生产者线程只入队，不执行文件 I/O。队列满时优先淘汰待写 DEBUG，
-再淘汰 INFO；无法接收的记录仅按等级累计数量。ERROR/FATAL 可尝试一次独立 emergency write。
+加密 store 使用容量 256 的单线程队列，生产者线程只在确认 writer 接收状态和日志目录可写后入队，不执行文件 I/O。
+writer 在 50ms 窗口内最多合并 16 条记录，按文件大小分组加密追加，每个批次只打开并同步文件一次。flush 等待队列边界前
+的批次完成并 fsync；写入/状态检查失败会累计丢弃数，并使下一次 flush 明确失败。队列满时优先淘汰待写 DEBUG，再淘汰
+INFO；ERROR/FATAL 可尝试一次独立 emergency write。
 
 队列恢复并发生生命周期 flush 时，运行时写入一条 `application.log.overflow` 计数汇总。汇总不包含被丢弃内容，
 也不递归进入已饱和队列。
@@ -50,8 +52,8 @@ Debug Logcat 仍由 Android Log 可见性控制，两者独立于本地加密记
 返回失败且界面不得报告清除成功；若排空并删除成功，清除前已接受的记录不会在成功提示后重新出现。清除边界之后
 的写入在清除完成后继续入队。`LogRecordStore.clear()` 与诊断界面使用 `LogClearResult` 表达明确结果。
 
-崩溃路径先等待普通 flush 300 ms，再最多等待 emergency writer 200 ms。应急数据密钥在运行时预生成；崩溃时
-不访问 Keystore、不获取普通 writer lock，最后始终委托原 handler。
+崩溃路径先等待普通 flush 300 ms，再最多等待 emergency writer 200 ms；普通批次失败时使用内存捕获的脱敏 FATAL 记录
+写入独立应急文件。应急数据密钥在运行时预生成；崩溃时不访问 Keystore、不获取普通 writer lock，最后始终委托原 handler。
 
 ## 文件和轮换
 

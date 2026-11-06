@@ -10,13 +10,13 @@ class ExceptionSnapshotFactoryTest {
     private val factory = ExceptionSnapshotFactory()
 
     @Test
-    fun `snapshot never reads or emits throwable messages suppressed messages or foreign frames`() {
+    fun `snapshot keeps sanitized application and foreign frames without throwable messages or paths`() {
         val root = IllegalStateException("PASSWORD_SENTINEL")
         root.stackTrace =
             arrayOf(
                 StackTraceElement("com.aozijx.passly.feature.login.LoginUseCase", "invoke", "LoginUseCase.kt", 42),
                 StackTraceElement("com.aozijx.passly.feature.login.OtherUseCase", "invoke", "PATH_SENTINEL", 43),
-                StackTraceElement("com.bank.secret.CustomerActivity", "TOKEN_SENTINEL", "CustomerActivity.kt", 8),
+                StackTraceElement("com.bank.secret.CustomerActivity", "render", "CustomerActivity.kt", 8),
             )
         root.addSuppressed(IllegalArgumentException("OTP_SENTINEL"))
 
@@ -26,11 +26,15 @@ class ExceptionSnapshotFactoryTest {
         assertEquals("IllegalStateException", snapshot.type.value)
         assertEquals(ExceptionKind.AUTHENTICATION, snapshot.kind)
         assertEquals(
-            listOf("feature.login.LoginUseCase#invoke(LoginUseCase.kt:42)"),
-            snapshot.appStackFrames.map { it.value },
+            listOf(
+                "feature.login.LoginUseCase#invoke(LoginUseCase.kt:42)",
+                "feature.login.OtherUseCase#invoke",
+                "com.bank.secret.CustomerActivity#render(CustomerActivity.kt:8)",
+            ),
+            snapshot.stackFrames.map { it.value },
         )
-        assertEquals(2, snapshot.foreignFrameCount)
-        listOf("PASSWORD_SENTINEL", "PATH_SENTINEL", "TOKEN_SENTINEL", "OTP_SENTINEL", "com.bank.secret")
+        assertEquals(1, snapshot.externalFrameCount)
+        listOf("PASSWORD_SENTINEL", "PATH_SENTINEL", "OTP_SENTINEL")
             .forEach { assertFalse(encoded.contains(it)) }
     }
 
@@ -57,13 +61,13 @@ class ExceptionSnapshotFactoryTest {
 
         val snapshot = factory.create(root)
 
-        assertEquals(24, snapshot.appStackFrames.size)
+        assertEquals(24, snapshot.stackFrames.size)
         assertEquals(3, snapshot.causeTypes.size)
         assertTrue(snapshot.causeTypes.all { it.value.endsWith("Exception") })
     }
 
     @Test
-    fun `snapshot derives a readable class from a minified release frame`() {
+    fun `snapshot keeps mixed application and framework frames without package filtering`() {
         val root = IllegalStateException("secret")
         root.stackTrace =
             arrayOf(
@@ -74,9 +78,12 @@ class ExceptionSnapshotFactoryTest {
         val snapshot = factory.create(root, ExceptionKind.LIFECYCLE)
 
         assertEquals(
-            listOf("VaultSessionController#a(VaultSessionController.kt:321)"),
-            snapshot.appStackFrames.map { it.value },
+            listOf(
+                "b08#a(VaultSessionController.kt:321)",
+                "android.os.Handler#dispatchMessage(Handler.java:99)",
+            ),
+            snapshot.stackFrames.map { it.value },
         )
-        assertEquals(1, snapshot.foreignFrameCount)
+        assertEquals(2, snapshot.externalFrameCount)
     }
 }

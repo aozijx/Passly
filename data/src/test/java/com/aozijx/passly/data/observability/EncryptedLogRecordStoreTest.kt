@@ -62,6 +62,18 @@ class EncryptedLogRecordStoreTest {
     }
 
     @Test
+    fun `flush reports records rejected while storage is offline`() {
+        val store = newStore()
+        directory.deleteRecursively()
+
+        store.write(sampleRecord(1))
+
+        assertFalse(store.flush(2_000))
+        assertEquals(LogDropCounts(info = 1), store.drainDroppedCounts())
+        store.close()
+    }
+
+    @Test
     fun `retention removes expired log`() {
         val expiredLog =
             File(directory, "expired.log").apply {
@@ -410,7 +422,8 @@ class EncryptedLogRecordStoreTest {
     fun `store failure does not recursively log and later writes still succeed`() {
         val store = newStore()
         store.write(sampleRecord(1).copy(level = LogLevel.ERROR))
-        assertTrue(store.flush(2_000))
+        assertFalse(store.flush(2_000))
+        assertEquals(LogDropCounts(error = 1), store.drainDroppedCounts())
         store.write(sampleRecord(2))
         assertTrue(store.flush(2_000))
 
@@ -514,9 +527,9 @@ class EncryptedLogRecordStoreTest {
                     exception =
                         ExceptionSnapshot(
                             type = ExceptionType("IllegalStateException"),
-                            appStackFrames = emptyList(),
+                            stackFrames = emptyList(),
                             causeTypes = emptyList(),
-                            foreignFrameCount = 1,
+                            externalFrameCount = 1,
                         ),
                 ),
         )

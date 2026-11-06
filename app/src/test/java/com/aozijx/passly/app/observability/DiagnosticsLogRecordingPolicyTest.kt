@@ -23,12 +23,12 @@ import org.junit.Test
 
 class DiagnosticsLogRecordingPolicyTest {
     @Test
-    fun `unloaded and disabled settings do not persist records`() {
+    fun `unloaded and disabled settings retain fatal records only`() {
         val policy = DiagnosticsLogRecordingPolicy()
 
-        assertEquals(false, LogLevel.entries.any(policy::allows))
+        assertEquals(setOf(LogLevel.FATAL), LogLevel.entries.filter(policy::allows).toSet())
         policy.update(DiagnosticsLogRecordingMode.DISABLED)
-        assertEquals(false, LogLevel.entries.any(policy::allows))
+        assertEquals(setOf(LogLevel.FATAL), LogLevel.entries.filter(policy::allows).toSet())
     }
 
     @Test
@@ -65,16 +65,16 @@ class DiagnosticsLogRecordingPolicyTest {
         val fatal = record(LogLevel.FATAL)
 
         store.emit(info)
-        assertFalse(store.crashEmergencyWrite(fatal, 200L))
-        assertTrue(backing.records.isEmpty())
-        assertEquals(0, backing.emergencyWrites)
+        assertTrue(store.crashEmergencyWrite(fatal, 200L))
+        assertEquals(listOf(fatal), backing.records)
+        assertEquals(1, backing.emergencyWrites)
 
         policy.update(DiagnosticsLogRecordingMode.WARN_AND_ABOVE)
         store.emit(info)
         store.emit(fatal)
         assertTrue(store.crashEmergencyWrite(fatal, 200L))
-        assertEquals(listOf(fatal, fatal), backing.records)
-        assertEquals(1, backing.emergencyWrites)
+        assertEquals(listOf(fatal, fatal, fatal), backing.records)
+        assertEquals(2, backing.emergencyWrites)
         store.clear()
         assertEquals(1, backing.clearCalls)
     }

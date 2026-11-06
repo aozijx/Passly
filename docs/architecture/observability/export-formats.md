@@ -1,6 +1,6 @@
 # 诊断导出格式
 
-状态：当前实现（schema 1，代码核对：2026-11-02）。
+状态：当前实现（schema 2，代码核对：2026-11-06）。
 
 一次导出只读取、排序并生成一次 manifest。`JSONL` 是 canonical 事件表示，`TSV` 是其固定的人类可读投影，
 `ZIP` 打包两种表示与一个 manifest。查看筛选和搜索不改变导出内容。
@@ -23,10 +23,10 @@ context, error, trace, session
 ```
 
 缺失的可选对象不写 `null`。`context` 至少含 category，并优先排列 result、purpose、trigger、reason_code、
-elapsed_ms、timeout_ms、retry_count，其余已注册字段按键排序。异常只包含清洗后的 kind、type、应用栈、cause
-类型和外部帧数量。
+elapsed_ms、timeout_ms、retry_count，其余已注册字段按键排序。异常只包含清洗后的 kind、type、cause 类型、
+结构化 `stack_frames` 数组和 `external_frame_count`。
 
-`level`、`context.category` 和 `error.exception.kind` 的文本值是 schema 1 的稳定导出值，由日志模型显式定义；
+`level`、`context.category` 和 `error.exception.kind` 的文本值是 schema 2 的稳定导出值，由日志模型显式定义；
 它们不跟随 Kotlin enum 重命名。新增或变更值需作为导出格式变更审查。
 
 | 字段 | 当前值 |
@@ -34,6 +34,7 @@ elapsed_ms、timeout_ms、retry_count，其余已注册字段按键排序。异�
 | `level` | `DEBUG`、`INFO`、`WARN`、`ERROR`、`FATAL` |
 | `context.category` | `APPLICATION`、`DATABASE`、`SECURITY`、`AUTOFILL`、`BACKUP`、`VAULT` |
 | `error.exception.kind` | `DATABASE_IO`、`CRYPTO`、`AUTHENTICATION`、`PLATFORM`、`LIFECYCLE`、`IO`、`UNKNOWN` |
+| `error.exception.stack_frames` | 最多 24 个经过字符清洗的类名、方法名和可选源码位置 |
 
 ## TSV
 
@@ -59,8 +60,9 @@ ZIP 恰好包含 `manifest.json`、`logs.jsonl`、`logs.tsv`、`README.txt`。ZI
 | TSV | `text/tab-separated-values` | `passly_logs.tsv` |
 | ZIP | `application/zip` | `passly_logs.zip` |
 
-分享缓存使用 `passly_logs_<time>.<ext>`。当前只有 schema 1，不存在旧格式兼容路由。格式变化必须先定义
-schema 演进和解析行为，不能用文件名中的 v1/v2 代替协议字段。
+分享缓存使用 `passly_logs_<time>.<ext>`。schema 2 将单字符串应用栈字段替换为 `stack_frames` 数组，并将外部帧计数
+更名为 `external_frame_count`，不再输出旧字段别名。格式变化必须先定义 schema 演进和解析行为，不能用文件名中的
+v1/v2 代替协议字段。
 
 ## 代码位置
 

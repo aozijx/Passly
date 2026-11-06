@@ -1,6 +1,5 @@
 package com.aozijx.passly.data.observability
 
-import com.aozijx.passly.core.observability.AppStackFrame
 import com.aozijx.passly.core.observability.EnumName
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
@@ -20,6 +19,7 @@ import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.ProcessSessionId
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.SanitizedLogRecord
+import com.aozijx.passly.core.observability.SanitizedStackFrame
 import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
@@ -233,11 +233,11 @@ object LogRecordCodec {
         error.exception?.let { snapshot ->
             writeByte(snapshot.kind.wireId)
             writeString(snapshot.type.value, 64)
-            writeShort(snapshot.appStackFrames.size)
-            snapshot.appStackFrames.forEach { writeString(it.value, 256) }
+            writeShort(snapshot.stackFrames.size)
+            snapshot.stackFrames.forEach { writeString(it.value, 256) }
             writeShort(snapshot.causeTypes.size)
             snapshot.causeTypes.forEach { writeString(it.value, 64) }
-            writeInt(snapshot.foreignFrameCount)
+            writeInt(snapshot.externalFrameCount)
         }
     }
 
@@ -251,7 +251,7 @@ object LogRecordCodec {
                         ?: throw IllegalArgumentException("Invalid exception kind wire id")
                 val type = ExceptionType(readString(64))
                 val frameCount = readUnsignedShort().also { require(it <= MAX_FRAMES) }
-                val frames = List(frameCount) { AppStackFrame(readString(256)) }
+                val frames = List(frameCount) { SanitizedStackFrame(readString(256)) }
                 val causeCount = readUnsignedShort().also { require(it <= 3) }
                 val causes = List(causeCount) { ExceptionType(readString(64)) }
                 val foreignCount = readInt().also { require(it >= 0) }

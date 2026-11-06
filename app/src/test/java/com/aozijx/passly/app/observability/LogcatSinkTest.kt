@@ -2,6 +2,7 @@ package com.aozijx.passly.app.observability
 
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.ErrorPayload
+import com.aozijx.passly.core.observability.SanitizedStackFrame
 import com.aozijx.passly.core.observability.EventId
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.ExceptionKind
@@ -85,6 +86,18 @@ class LogcatSinkTest {
     }
 
     @Test
+    fun `debug sink emits stack frames as separate lines`() {
+        val gateway = RecordingLogGateway(loggable = true)
+        val sink = LogcatSink(isDebugBuild = true, gateway = gateway)
+
+        sink.emit(record(level = LogLevel.FATAL, withError = true, withStackFrames = true))
+
+        assertEquals(3, gateway.lines.size)
+        assertTrue(gateway.lines[1].message.contains("stack_frame=1/2 autofill.FillRoute#render(FillRoute.kt:42)"))
+        assertTrue(gateway.lines[2].message.contains("stack_frame=2/2 androidx.compose.MaterialSheet#show(Sheet.kt:7)"))
+    }
+
+    @Test
     fun `oversized summary emits identifiers and truncated flag in one line`() {
         val gateway = RecordingLogGateway(loggable = true)
         val sink = LogcatSink(isDebugBuild = true, gateway = gateway)
@@ -104,7 +117,7 @@ class LogcatSinkTest {
         assertTrue(line.length <= LogcatSink.MAX_SUMMARY_CHARS)
         assertFalse(line.contains('\n'))
         assertEquals(
-            "event_id=event_123 name=autofill.result.delivery_failed trace_id=trace_123 " +
+            "event_id=event_123 name=autofill.result.delivery_failed level=INFO trace_id=trace_123 " +
                 "span_id=span_1234 truncated=true",
             line,
         )
@@ -113,6 +126,7 @@ class LogcatSinkTest {
     private fun record(
         level: LogLevel = LogLevel.INFO,
         withError: Boolean = false,
+        withStackFrames: Boolean = false,
         fields: com.aozijx.passly.core.observability.LogFields =
             com.aozijx.passly.core.observability.LogFields.Empty,
     ) = SanitizedLogRecord(
@@ -134,9 +148,17 @@ class LogcatSinkTest {
                     exception =
                         ExceptionSnapshot(
                             type = ExceptionType("IllegalStateException"),
-                            appStackFrames = emptyList(),
+                            stackFrames =
+                                if (withStackFrames) {
+                                    listOf(
+                                        SanitizedStackFrame("autofill.FillRoute#render(FillRoute.kt:42)"),
+                                        SanitizedStackFrame("androidx.compose.MaterialSheet#show(Sheet.kt:7)"),
+                                    )
+                                } else {
+                                    emptyList()
+                                },
                             causeTypes = emptyList(),
-                            foreignFrameCount = 2,
+                            externalFrameCount = 2,
                             kind = ExceptionKind.PLATFORM,
                         ),
                 )

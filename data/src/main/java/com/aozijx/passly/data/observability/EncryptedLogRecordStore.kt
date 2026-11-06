@@ -10,19 +10,21 @@ import com.aozijx.passly.core.observability.sink.LogRecordPage
 import com.aozijx.passly.core.observability.sink.LogRecordStore
 import com.aozijx.passly.core.observability.sink.LogRecordStoreFactory
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.BufferedOutputStream
+import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.security.SecureRandom
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.Cipher
@@ -36,7 +38,7 @@ internal class EncryptedLogRecordStore(
     keyWrapper: LogKeyWrapper,
     private val nowMs: () -> Long = System::currentTimeMillis,
     private val random: SecureRandom = SecureRandom(),
-    maxFileBytes: Long = MAX_FILE_BYTES,
+    private val maxFileBytes: Long = MAX_FILE_BYTES,
     maxQueuedRecords: Int = MAX_QUEUED_RECORDS,
     maxTotalBytes: Long = EncryptedLogFileManager.MAX_TOTAL_BYTES,
     maxFiles: Int = EncryptedLogFileManager.MAX_FILES,
@@ -57,7 +59,11 @@ internal class EncryptedLogRecordStore(
         )
     private val crashClaimed = AtomicBoolean(false)
     private val overflowEmergencyClaimed = AtomicBoolean(false)
+    private val writeFailureCount = AtomicLong()
+    private val observedWriteFailureCount = AtomicLong()
     private val emergencyThreads = ConcurrentHashMap.newKeySet<Thread>()
+
+    @Volatile private var acceptingWrites = true
     private val droppedCounts = AtomicLongArray(LogLevel.entries.size)
     private val writer =
         ThreadPoolExecutor(
@@ -76,6 +82,11 @@ internal class EncryptedLogRecordStore(
 
     override fun write(record: SanitizedLogRecord) =
         synchronized(writeAcceptanceLock) {
+            if (!acceptingWrites || writer.isShutdown || !directory.isDirectory || !directory.canWrite()) {
+                recordDrop(record.level)
+                writeFailureCount.incrementAndGet()
+                return@synchronized
+            }
             val task = WriteTask(record)
             try {
                 writer.execute(task)
@@ -96,6 +107,7 @@ internal class EncryptedLogRecordStore(
                     if (emergencyWriteAsync(record, "overflow")) return@synchronized
                 }
                 recordDrop(record.level)
+                writeFailureCount.incrementAndGet()
             }
         }
 
@@ -207,6 +219,7 @@ internal class EncryptedLogRecordStore(
 
     override fun flush(timeoutMs: Long): Boolean {
         require(timeoutMs >= 0) { "Flush timeout cannot be negative" }
+        if (writer.isShutdown) return false
         val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs)
         val completed = CountDownLatch(1)
         writer.prestartCoreThread()
@@ -225,7 +238,8 @@ internal class EncryptedLogRecordStore(
                 TimeUnit.NANOSECONDS.timedJoin(emergencyThread, remaining)
                 if (emergencyThread.isAlive) return false
             }
-            true
+            val failures = writeFailureCount.get()
+            failures == observedWriteFailureCount.getAndSet(failures)
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
             false
@@ -262,13 +276,20 @@ internal class EncryptedLogRecordStore(
         }
 
     override fun close() {
-        writer.shutdown()
+        synchronized(writeAcceptanceLock) {
+            if (!acceptingWrites) return
+            acceptingWrites = false
+            writer.shutdown()
+        }
         val terminated =
             try {
                 if (writer.awaitTermination(500, TimeUnit.MILLISECONDS)) {
                     true
                 } else {
-                    writer.shutdownNow()
+                    writer.shutdownNow().filterIsInstance<WriteTask>().forEach { task ->
+                        recordDrop(task.record.level)
+                        writeFailureCount.incrementAndGet()
+                    }
                     writer.awaitTermination(500, TimeUnit.MILLISECONDS)
                 }
             } catch (_: InterruptedException) {
@@ -294,24 +315,132 @@ internal class EncryptedLogRecordStore(
         val record: SanitizedLogRecord,
     ) : Runnable {
         override fun run() {
+            val batch = mutableListOf(this)
+            var boundary: Runnable? = null
             try {
-                beforeWrite()
-                val plain = LogRecordCodec.encode(record)
-                try {
-                    synchronized(writeLock) {
-                        insideWriteLock()
-                        val entry = manager.currentEntry()
-                        val sequence = manager.countRecords(entry.file).toLong() + 1
-                        append(entry.file, entry, sequence, record.level.wireId, plain)
-                        manager.cleanup()
+                val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(BATCH_WINDOW_MS)
+                while (batch.size < MAX_BATCH_RECORDS) {
+                    val remaining = (deadline - System.nanoTime()).coerceAtLeast(0)
+                    if (remaining == 0L) break
+                    val queued = writer.queue.poll(remaining, TimeUnit.NANOSECONDS) ?: break
+                    if (queued is WriteTask) {
+                        batch += queued
+                    } else {
+                        boundary = queued
+                        break
                     }
-                } finally {
-                    plain.fill(0)
                 }
+                writeBatch(batch)
             } catch (error: Exception) {
                 if (error is InterruptedException) Thread.currentThread().interrupt()
-                // A sink failure is terminal for this record and must never recurse into Logger.
+                batch.forEach { recordDrop(it.record.level) }
+                writeFailureCount.addAndGet(batch.size.toLong())
+            } finally {
+                boundary?.run()
             }
+        }
+    }
+
+    private fun writeBatch(batch: List<WriteTask>) {
+        val encodedRecords = ArrayList<Pair<WriteTask, ByteArray>>(batch.size)
+        val encryptedFrames = ArrayList<ByteArray>(batch.size)
+        try {
+            batch.forEach { task ->
+                check(directory.isDirectory && directory.canWrite()) { "Log storage is offline" }
+                beforeWrite()
+                encodedRecords += task to LogRecordCodec.encode(task.record)
+            }
+            synchronized(writeLock) {
+                check(directory.isDirectory && directory.canWrite()) { "Log storage is offline" }
+                insideWriteLock()
+                var recordIndex = 0
+                while (recordIndex < encodedRecords.size) {
+                    val entry = manager.currentEntry()
+                    var sequence = manager.countRecords(entry.file).toLong()
+                    var estimatedBytes = 0L
+                    val batchStart = recordIndex
+                    while (recordIndex < encodedRecords.size) {
+                        val plain = encodedRecords[recordIndex].second
+                        val frameBytes = estimateEncryptedFrameBytes(plain.size)
+                        val projectedSize = entry.file.length() + estimatedBytes + frameBytes
+                        if (recordIndex > batchStart && projectedSize > maxFileBytes) break
+                        val (task, recordPlain) = encodedRecords[recordIndex]
+                        encryptedFrames += encryptFrame(entry, ++sequence, task.record.level.wireId, recordPlain)
+                        estimatedBytes += frameBytes
+                        recordIndex++
+                    }
+                    appendFrames(entry.file, encryptedFrames)
+                    encryptedFrames.clear()
+                    manager.cleanup()
+                }
+            }
+        } finally {
+            encryptedFrames.forEach { it.fill(0) }
+            encodedRecords.forEach { (_, plain) -> plain.fill(0) }
+        }
+    }
+
+    private fun encryptFrame(
+        entry: EncryptedLogFileManager.Entry,
+        sequence: Long,
+        level: Int,
+        plain: ByteArray,
+    ): ByteArray {
+        val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(
+            Cipher.ENCRYPT_MODE,
+            SecretKeySpec(entry.dataKey, "AES"),
+            GCMParameterSpec(EncryptedLogFileManager.TAG_BITS, nonce),
+        )
+        cipher.updateAAD(manager.recordAad(entry.fileId, sequence, level))
+        val encrypted = cipher.doFinal(plain)
+        return try {
+            ByteArrayOutputStream().use { bytes ->
+                DataOutputStream(bytes).use { output ->
+                    output.writeInt(nonce.size)
+                    output.write(nonce)
+                    output.writeLong(sequence)
+                    output.writeByte(level)
+                    output.writeInt(encrypted.size)
+                    output.write(encrypted)
+                }
+                bytes.toByteArray()
+            }
+        } finally {
+            nonce.fill(0)
+            encrypted.fill(0)
+        }
+    }
+
+    private fun estimateEncryptedFrameBytes(plainBytes: Int): Long =
+        FRAME_METADATA_BYTES.toLong() + plainBytes + EncryptedLogFileManager.GCM_TAG_BYTES
+
+    private fun appendFrames(
+        file: File,
+        frames: List<ByteArray>,
+    ) {
+        val originalLength = file.length()
+        try {
+            FileOutputStream(file, true).use { output ->
+                BufferedOutputStream(output).use { buffered ->
+                    frames.forEach(buffered::write)
+                    buffered.flush()
+                    output.fd.sync()
+                }
+            }
+        } catch (error: Throwable) {
+            try {
+                RandomAccessFile(file, "rw").use { rollback ->
+                    rollback.setLength(originalLength)
+                    rollback.fd.sync()
+                }
+            } catch (cleanupFailure: Throwable) {
+                if (cleanupFailure !== error) error.addSuppressed(cleanupFailure)
+            }
+            throw error
+        } finally {
+            frames.forEach { it.fill(0) }
         }
     }
 
@@ -378,7 +507,8 @@ internal class EncryptedLogRecordStore(
                                 .createTempFile("${prefix}_${nowMs()}_", ".tmp", directory)
                                 .also { stagingFile = it }
                         manager.writeHeader(staging, entry)
-                        append(staging, entry, 1, record.level.wireId, plain)
+                        val frame = encryptFrame(entry, 1, record.level.wireId, plain)
+                        appendFrames(staging, listOf(frame))
                         val completedFile = File(directory, "${staging.nameWithoutExtension}.log")
                         completed.set(staging.renameTo(completedFile))
                     } catch (caught: Throwable) {
@@ -420,6 +550,7 @@ internal class EncryptedLogRecordStore(
                         if (!completed.get()) cleanup { stagingFile?.delete() }
                         cleanup { plain?.fill(0) }
                         cleanup { entry.destroy() }
+                        if (!completed.get()) writeFailureCount.incrementAndGet()
                         cleanup { emergencyThreads.remove(Thread.currentThread()) }
                         (failure as? Error)?.let { throw it }
                     }
@@ -429,59 +560,6 @@ internal class EncryptedLogRecordStore(
         emergencyThreads.add(thread)
         thread.start()
         return thread
-    }
-
-    private fun append(
-        file: File,
-        entry: EncryptedLogFileManager.Entry,
-        sequence: Long,
-        level: Int,
-        plain: ByteArray,
-    ) {
-        val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(
-            Cipher.ENCRYPT_MODE,
-            SecretKeySpec(entry.dataKey, "AES"),
-            GCMParameterSpec(EncryptedLogFileManager.TAG_BITS, nonce),
-        )
-        cipher.updateAAD(manager.recordAad(entry.fileId, sequence, level))
-        val encrypted = cipher.doFinal(plain)
-        val originalLength = file.length()
-        try {
-            DataOutputStream(FileOutputStream(file, true).buffered()).use { out ->
-                out.writeInt(nonce.size)
-                out.write(nonce)
-                out.writeLong(sequence)
-                out.writeByte(level)
-                out.writeInt(encrypted.size)
-                out.write(encrypted)
-            }
-            file.setLastModified(entry.createdAtMs)
-        } catch (error: Throwable) {
-            try {
-                RandomAccessFile(file, "rw").use { it.setLength(originalLength) }
-            } catch (cleanupFailure: Throwable) {
-                when {
-                    cleanupFailure is Error && error !is Error -> {
-                        cleanupFailure.addSuppressed(error)
-                        throw cleanupFailure
-                    }
-
-                    cleanupFailure is CancellationException && error !is Error && error !is CancellationException -> {
-                        cleanupFailure.addSuppressed(error)
-                        throw cleanupFailure
-                    }
-
-                    cleanupFailure !== error -> {
-                        error.addSuppressed(cleanupFailure)
-                    }
-                }
-            }
-            throw error
-        } finally {
-            encrypted.fill(0)
-        }
     }
 
     private fun decrypt(
@@ -538,6 +616,9 @@ internal class EncryptedLogRecordStore(
         private const val TAG_BYTES = EncryptedLogFileManager.GCM_TAG_BYTES
         private const val MAX_FILE_BYTES = 1024 * 1024L
         private const val MAX_QUEUED_RECORDS = 256
+        private const val MAX_BATCH_RECORDS = 16
+        private const val BATCH_WINDOW_MS = 50L
+        private const val FRAME_METADATA_BYTES = 4 + NONCE_BYTES + 8 + 1 + 4
         private const val MAX_PAGE_RECORDS = 500
         private const val CLEAR_FLUSH_TIMEOUT_MS = 500L
         private const val CLOSE_TIMEOUT_MS = 500L

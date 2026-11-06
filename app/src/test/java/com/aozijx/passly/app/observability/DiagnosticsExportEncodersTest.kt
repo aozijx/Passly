@@ -1,6 +1,6 @@
 package com.aozijx.passly.app.observability
 
-import com.aozijx.passly.core.observability.AppStackFrame
+import com.aozijx.passly.core.observability.SanitizedStackFrame
 import com.aozijx.passly.core.observability.EnumName
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.ErrorPayload
@@ -30,6 +30,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -39,7 +40,7 @@ import org.junit.Test
 class DiagnosticsExportEncodersTest {
     private val manifest =
         ExportManifest(
-            schemaVersion = 1,
+            schemaVersion = 2,
             generatedAtMs = 1_700_000_000_999,
             recordCount = 2,
             appName = "Passly",
@@ -93,7 +94,7 @@ class DiagnosticsExportEncodersTest {
                 .jsonPrimitive.content,
         )
         assertEquals(
-            listOf("time", "timestamp_ms", "elapsed_realtime_ms", "level", "event", "event_id", "context", "error", "trace", "session"),
+            listOf("time", "timestamp_ms", "elapsed_realtime_ms", "level", "event", "event_id", "error", "trace", "session", "context"),
             objects.last().keys.toList(),
         )
         assertFalse(objects.last().containsKey("schema_version"))
@@ -103,7 +104,7 @@ class DiagnosticsExportEncodersTest {
     fun `standalone tsv has manifest header and fixed time first eight columns`() {
         val lines = encode(LogFormat.TSV, listOf(record("event_00000001", 100, 11))).lines()
 
-        assertTrue(lines[0].startsWith("# schema_version=1"))
+        assertTrue(lines[0].startsWith("# schema_version=2"))
         assertEquals("time\tlevel\tevent\toutcome\tdetails\texception\ttrace\tsession", lines[1])
         assertEquals(8, lines[2].split('\t').size)
         assertTrue(lines[2].startsWith("1970-01-01T00:00:00.100Z\tERROR\t"))
@@ -148,7 +149,7 @@ class DiagnosticsExportEncodersTest {
                         ReasonCode("PLATFORM_CALLBACK_FAILED"),
                         ExceptionSnapshot(
                             ExceptionType("IllegalStateException"),
-                            listOf(AppStackFrame("Safe#call(Safe.kt:42)")),
+                            listOf(SanitizedStackFrame("Safe#call(Safe.kt:42)")),
                             emptyList(),
                             1,
                             ExceptionKind.PLATFORM,
@@ -156,7 +157,16 @@ class DiagnosticsExportEncodersTest {
                     ),
             )
 
-        assertTrue(encodeBytes(LogFormat.JSONL, listOf(record)).decodeToString().contains("PLATFORM"))
+        val jsonl = encodeBytes(LogFormat.JSONL, listOf(record)).decodeToString()
+        assertTrue(jsonl.contains("PLATFORM"))
+        val exception =
+            Json.parseToJsonElement(jsonl.lineSequence().filter(String::isNotBlank).last()).jsonObject
+                .getValue("error").jsonObject
+                .getValue("exception").jsonObject
+        assertEquals(
+            listOf("Safe#call(Safe.kt:42)"),
+            exception.getValue("stack_frames").jsonArray.map { it.jsonPrimitive.content },
+        )
         LogFormat.entries.forEach { format ->
             val exported = encodeBytes(format, listOf(record)).decodeToString()
             assertFalse(exported.contains(secret))

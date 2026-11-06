@@ -80,9 +80,9 @@ class LogContractTest {
         assertThrows(IllegalArgumentException::class.java) {
             ExceptionSnapshot(
                 type = ExceptionType("IllegalStateException"),
-                appStackFrames = emptyList(),
+                stackFrames = emptyList(),
                 causeTypes = emptyList(),
-                foreignFrameCount = -1,
+                externalFrameCount = -1,
             )
         }
     }

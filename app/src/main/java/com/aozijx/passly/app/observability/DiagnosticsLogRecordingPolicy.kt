@@ -18,17 +18,16 @@ internal class DiagnosticsLogRecordingPolicy
             mode.set(value)
         }
 
-        fun allows(level: LogLevel): Boolean =
-            when (mode.get()) {
+        fun allows(level: LogLevel): Boolean {
+            // A sanitized fatal record is retained locally even when routine diagnostics are off.
+            if (level == LogLevel.FATAL) return true
+            return when (mode.get()) {
                 DiagnosticsLogRecordingMode.DISABLED, null -> {
                     false
                 }
 
                 DiagnosticsLogRecordingMode.WARN_AND_ABOVE -> {
-                    when (level) {
-                        LogLevel.DEBUG, LogLevel.INFO -> false
-                        LogLevel.WARN, LogLevel.ERROR, LogLevel.FATAL -> true
-                    }
+                    level == LogLevel.WARN || level == LogLevel.ERROR
                 }
 
                 DiagnosticsLogRecordingMode.INFO_AND_ABOVE -> {
@@ -39,6 +38,7 @@ internal class DiagnosticsLogRecordingPolicy
                     true
                 }
             }
+        }
     }
 
 internal class PolicyLogRecordStore(
