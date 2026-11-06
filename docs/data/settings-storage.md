@@ -1,5 +1,7 @@
 # 设置存储
 
+状态：当前实现（代码核对：2026-11-06）。
+
 Passly 使用两个 Proto DataStore 保存用户偏好：
 
 - `app_preferences.proto` → `app_preferences.pb`：外观、界面、交互、自动填充、Vault 视图、消息和备份目录。
@@ -90,6 +92,37 @@ flowchart LR
 `InterfaceSettingsViewModel` 只从界面与列表偏好的 Flow 组合页面状态，不提前修改选择；写入成功保持静默，
 失败经只读 `errors` Flow 发布 `UiErrorMessage`，不暴露内部异常文本。取消继续传播，页面销毁后的迟到失败不再通知。
 `InterfaceRoute` 在 STARTED 生命周期内消费错误，在消费时用当前 `LocalResources` 解析文案。
+
+### 设置读取与写入的函数调用链
+
+以“隐藏系统栏”设置为例，`InterfaceSettingsViewModel.onAction(SetHideSystemBars(action.enabled))` 调
+`saveSetting { settingsRepository.setHideSystemBars(action.enabled) }`。`saveSetting(write)` 只在
+`uiState.value is Ready` 且 `pageEffects.currentOwner` 非空时启动 `viewModelScope.launch`，并把原写入闭包作为
+`write` 参数传给 `writePreferenceWithFeedback(failureRes, onFailure, write)`；`onFailure` 绑定发起时的 owner，调用
+`pageEffects.tryEmit(owner, errorMessage)`，已离开的页面不能接收迟到错误。
+
+`writePreferenceWithFeedback` 先执行 `write()`。`CancellationException` 原样抛出；普通 `Exception` 先执行
+`currentCoroutineContext().ensureActive()`，再用 `failureRes` 映射为本地 `UiErrorMessage` 并调用 `onFailure`；成功后
+也执行 `ensureActive()`，然后才调用可选 `onSuccess`。它不捕获 fatal `Error`，也不把存储失败乐观写入页面选择。
+
+最终 `ProtoAppPreferencesStore.setHideSystemBars(enabled)` 调
+`updateInterface { hideSystemBars = enabled }`，继而 `update { current -> setInterfacePrefs(current.interfacePrefs.toBuilder().apply(block)) }`，
+最后由 `dataStore.updateData { current -> current.toBuilder().apply { block(current) }.build() }` 原子更新 Proto。其他同组字段分别经
+`setTopBarCollapsible(enabled)`、`setQuickFilterBarCollapsible(enabled)`、`setAppCornerRadius(radiusDp)` 或
+`setEntryHierarchyDisplayMode(mode)` 进入对应 helper；圆角在写 Proto 前调用 `AppCornerRadiusConstraints.normalize(radiusDp)`。
+
+读取一侧，`ProtoAppPreferencesStore.preferences` 是 `dataStore.data.tagCorruptSettingsData()`；属性 Flow 再通过 `map`
+解码成 Domain 设置。`InterfaceSettingsViewModel` 将 `settingsRepository.interfaceSettings` 与
+`librarySettingsRepository.libraryViewSettings` 传给 `combine`，转成 `InterfaceSettingsUiState.Ready`，再交给
+`RecoverableRead(source, viewModelScope)`。其 `state` 的 `Loading / Ready / Failed` 映射为页面状态；读取异常后由
+`RecoverableRead.retryWhen` 管理 owner 和重新订阅：`IOException` 显示 `Failed(IO)` 后按退避自动重试，损坏数据和其他普通
+异常显示对应失败态并等待 `settingsRead.retry()`；`CancellationException` 与 fatal `Error` 不转换成页面失败。由于源 Flow
+异常终止后不会自动复活，重试会重新收集 cold `source`，不是等待已终止的同一订阅恢复。
+
+当前对应测试分别是 [`RecoverableReadTest`](../../app/src/test/java/com/aozijx/passly/app/settings/RecoverableReadTest.kt)
+（IO 退避重试、损坏数据显式重试、跨 owner retry、取消传播）和
+[`InterfaceSettingsViewModelTest`](../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/appearance/InterfaceSettingsViewModelTest.kt)
+（源异常可见并重订阅、写入失败保留 Repository 真相、成功静默、页面退出后迟到失败被拒绝）。
 
 外观设置的五类偏好、隐私设置的六类偏好以及自动填充设置的九类偏好也使用同一写入边界。
 自动填充严格 host 匹配选项由 Proto optional bool tag 9 保存，默认开启；它只控制候选匹配范围。
