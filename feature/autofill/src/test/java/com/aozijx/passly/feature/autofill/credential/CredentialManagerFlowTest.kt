@@ -39,7 +39,7 @@ import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.entry.model.EntryDraft
-import com.aozijx.passly.domain.entry.port.EntryCreation
+import com.aozijx.passly.domain.autofill.port.AutofillEntryCreation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
@@ -415,13 +415,8 @@ class CredentialManagerFlowTest {
         }
     }
 
-    private class RecordingEntryCreation : EntryCreation {
+    private class RecordingEntryCreation : AutofillEntryCreation {
         var createCalls = 0
-
-        override suspend fun invoke(draft: EntryDraft): AppResult<EntryId> {
-            createCalls++
-            return AppResult.Success(EntryId("saved-entry"))
-        }
 
         override suspend fun createFromAutofill(
             draft: EntryDraft,

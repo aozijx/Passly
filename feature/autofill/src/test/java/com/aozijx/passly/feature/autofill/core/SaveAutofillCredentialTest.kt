@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.port.EntryCreation
+import com.aozijx.passly.domain.autofill.port.AutofillEntryCreation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -95,12 +95,10 @@ class SaveAutofillCredentialTest {
         val entryCreation: RecordingEntryCreation,
     )
 
-    private class RecordingEntryCreation : EntryCreation {
+    private class RecordingEntryCreation : AutofillEntryCreation {
         var createCalls = 0
         var savedDraft: EntryDraft? = null
         val inboxDraftIds = mutableListOf<AutofillInboxDraftId?>()
-
-        override suspend fun invoke(draft: EntryDraft): AppResult<EntryId> = persist(draft)
 
         override suspend fun createFromAutofill(
             draft: EntryDraft,
