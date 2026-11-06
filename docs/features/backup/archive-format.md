@@ -1,6 +1,6 @@
 # Passly Archive v1
 
-状态：当前实现（代码核对：2026-10-18）。
+状态：当前实现（代码核对：2026-11-06）。
 
 ## 文档身份
 
@@ -72,6 +72,12 @@ Bitwarden 导入当前支持 Login、Secure Note、Card、Identity 和 OTP；拒
 Passkey、附件 ZIP、附件描述和密码历史，避免静默丢失无法表达的数据。
 
 ## 代码位置
+
+导入调用顺序与请求参数传递见[备份导入与导出](import-export.md#导入服务调用链)。关键边界是
+`BackupArchiveServiceImpl.import(request)` 将同一原始 `payload` 先交给
+`BackupFormatRegistry.importer(request.format, payload)` 做 probe，再交给返回 Adapter 的
+`decode(payload, request.password, request.strategy)`；Passly JSON 和加密格式最终都进入
+`BackupImportPlanner.plan(bundle, strategy)`，而 Bitwarden 转换后直接调用通用 Validator。
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |

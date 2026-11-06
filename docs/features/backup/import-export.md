@@ -1,6 +1,6 @@
 # Backup 导入与导出
 
-状态：当前实现（代码核对：2026-10-29）。
+状态：当前实现（代码核对：2026-11-06）。
 
 Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 `feature/backup/presentation`；Presentation 和执行器
 共享的格式选择、导入选项、操作请求/结果及 `BackupOperationGateway` 位于 `feature/backup/contract`。稳定 wire format ID
@@ -51,6 +51,26 @@ SAF 存储实现负责解析字符串并执行平台操作。默认目录 tree g
 
 ## 导出
 
+### 导出服务调用链
+
+`BackupArchiveServiceImpl.export(request)` 在 `BackupIoDispatcher` 上用 `AppResult.runSuspendCatching` 编排：先以
+`request.format` 调用 `BackupFormatRegistry.exporter(formatId)` 选 Adapter，再以 Adapter 的
+`requiresPassword` 和 `request.password` 调用 `validatePassword(required, password)`。随后构造
+`BackupSnapshotReadOptions`：`includeIcons` 同时受用户选项与 `adapter.supportsIcons` 限制，
+`includeAttachments` 同时受用户选项与 `adapter.includesAttachments` 限制；`includeDeleted` 与
+`includedEntryTypes` 原样来自 `request.options`。该对象传给 `BackupSnapshotGateway.read(options)`。
+
+拿到 `BackupBundle` 后调用 `adapter.encode(bundle, request.password)`；返回的编码 `ByteArray` 传给
+`BackupFileStore.writeBytes(request.targetUri, encoded)`，写入结束或失败都在 `finally` 中清零 `encoded`。
+外层 `finally` 调用 `bundle.clearResourceData()` 清零每个资源数据数组。失败结果随后由
+`report(error, "backup_export")` 送入 `AppErrorReporter.report(error, ErrorReportContext(operation, category))`；
+错误上下文的 category 固定为 `BACKUP`。
+
+`BackupFormatRegistry.exporter(request.format)` 返回对应 Adapter；JSON Adapter 的
+`encode(bundle, password)` 调 `JsonBackupExporter.export(bundle)` 后编码 UTF-8。加密 Adapter 将同一
+`bundle` 与非空密码传给 `EncryptedBackupExporter.export(bundle, password)`。两种导出均由 Service 负责最终写入，
+Adapter 不持有目标 URI。
+
 1. 已解锁并通过备份导出认证后读取 Room 快照。
 2. `KeyedEntryArchiveMapper` 生成稳定键记录。
 3. Validator 在写文件前检查必填字段、值形状、引用和资源完整性。
@@ -73,6 +93,38 @@ TXT 是人类可读投影，不可恢复，且不输出 favorite 字段。
 提交导入或导出后，操作由 `BackupViewModel` 的任务持有，不随 Backup 页面离开而取消。页面离开会关闭尚未提交的配置并使旧页面通知失效；执行中的状态保留，重进时不接受第二个并行 Backup 操作，完成结果更新该操作状态。Activity/ViewModel 销毁会取消任务：操作 `finally` 擦除 UI 持有的密码，归档流程传播取消并补偿已创建的部分导出文件；导入事务按 Room/文件 journal 的回滚合同结束。SAF 文档选择回执绑定发起它的页面 owner 和一次性请求 ID，旧回执不能在重进后启动新的导入或导出。页面仍有效但宿主暂停时，选择器命令会等到 `STARTED` 后启动；页面离开会丢弃旧回执。导出选择命令入队失败时恢复 `ConfigureExport`，可重新提交；普通提示队列满时允许丢弃。
 
 ## 导入规划与事务
+
+### 导入服务调用链
+
+`BackupArchiveServiceImpl.import(request)` 在 `BackupIoDispatcher` 上先调用
+`BackupFileStore.readBytesSafely(request.sourceUri)` 得到完整输入 `payload`，然后调用
+`BackupFormatRegistry.importer(request.format, payload)`。若请求指定格式，Registry 仍要求该 Adapter 的
+`probe(payload) > 0`；未指定时计算所有 Adapter 的 probe 分数，只接受唯一最高分候选。选择后以
+`adapter.requiresPassword` 和 `request.password` 调用 `validatePassword(required, password)`，再把原始
+`payload`、密码和 `request.strategy` 原样传入 `adapter.decode(payload, password, strategy)`。
+
+Passly JSON Adapter 调 `JsonBackupImporter.import(bytes, strategy)`：严格 UTF-8 解码为 String，反序列化
+`JsonBackupPackage`，逐项 Base64 解码资源，组成 `BackupBundle`，再调用
+`BackupImportPlanner.plan(bundle, strategy).bundle`。加密 Adapter 调
+`EncryptedBackupImporter.import(container, password, strategy)`：先解密为 ZIP 字节，调用
+`BackupArchiveCodec.readZip(bytes)` 提取 `document.json` 和资源，反序列化 `BackupDocument` 并组成 bundle，
+最后同样调用 `BackupImportPlanner.plan(bundle, strategy).bundle`。Bitwarden Adapter 则先严格解码 UTF-8，
+解析 JSON tree、转换为 canonical `BackupDocument` 和记录，再由 `BackupBundleValidator.validate(bundle,
+requireResourceData = false)` 检查。
+
+解码成功后 Service 将 `bundle` 与 `request.mode` 传给 `BackupSnapshotGateway.restore(bundle, mode)`。
+返回的 restore 计数与 `bundle.compatibilitySummary` 计数合并为 `BackupImportResult`。无论 restore 成功或失败，
+`bundle.clearResourceData()` 清零资源字节；最外层 `finally` 清零输入 `payload`。失败结果经
+`report(error, "backup_import")` 上报。JSON 与加密解码器将未识别的 `Exception` 映射为 `BackupFailed`；Service
+仍通过 suspend 文件读取、快照恢复和 `AppResult.runSuspendCatching` 处理操作级失败与取消。同步 Adapter 解码函数本身
+没有 suspend cancellation checkpoint，不能把它描述成可中途响应协程取消。
+
+`BackupImportPlanner.plan(bundle, strategy)` 对 `STRICT` 调完整 `BackupBundleValidator.validate`；兼容策略先做结构头
+和资源完整性校验，再筛选未知类型/字段、逐 Entry 校验并裁剪无效项及其引用，最后形成兼容摘要。逐条校验当前使用
+`runCatching`，会捕获 `Throwable`，fatal `Error` 可能被误判为无效 Entry；待修复项见[备份扫描待办 Task 1](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md#task-1-兼容导入不能把-fatal-error-当成无效条目)。加密容器与
+Bitwarden/JSON 的具体校验字段见[归档格式](archive-format.md)。导入目前先将原始文件读入内存；JSON 文本、解密 ZIP、
+解压资源等副本的预算与峰值内存仍由[备份导入预算 TODO](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)跟踪，
+单文件读取上限不等同于全链路累计内存上限。
 
 Bitwarden 明文 JSON 的 OTP URI 使用 Domain 的 `OtpAuthUriCodec`，保留账户标签中的字面 `+`，只解码一次；
 没有 issuer 前缀的标签作为账户名。缺失或非法 HOTP counter、损坏数字、重复关键参数及不支持的生成参数
