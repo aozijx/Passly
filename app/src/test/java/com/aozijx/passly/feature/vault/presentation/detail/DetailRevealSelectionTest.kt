@@ -12,7 +12,7 @@ class DetailRevealSelectionTest {
         val card =
             DetailBankCardUiModel(
                 cardholder = null,
-                cardholderRevealed = false,
+                cardholderRevealed = true,
                 cardNumber = null,
                 cardNumberRevealed = false,
                 hasCardNumber = true,
@@ -33,7 +33,7 @@ class DetailRevealSelectionTest {
             )
 
         assertEquals(
-            setOf(DetailFieldUiModel.CARD_NUMBER, DetailFieldUiModel.CARDHOLDER),
+            setOf(DetailFieldUiModel.CARD_NUMBER),
             card.fieldsToReveal(),
         )
     }

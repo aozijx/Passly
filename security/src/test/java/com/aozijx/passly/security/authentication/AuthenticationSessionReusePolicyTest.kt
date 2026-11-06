@@ -22,11 +22,29 @@ class AuthenticationSessionReusePolicyTest {
 
     @Test
     fun `authenticated unlocked session remains reusable when freshness is not required`() {
+        val state = AuthenticationState.Authenticated(authenticatedAtMs = 1L)
+
         assertTrue(
             canReuseSession(
-                state = AuthenticationState.Authenticated(authenticatedAtMs = 1L),
+                state = state,
                 storageUnlocked = true,
                 requiresFreshAuthentication = false,
+                purpose = AuthenticationPurpose.UNLOCK_VAULT,
+            ),
+        )
+        assertFalse(
+            canReuseSession(
+                state = state,
+                storageUnlocked = false,
+                requiresFreshAuthentication = false,
+                purpose = AuthenticationPurpose.UNLOCK_VAULT,
+            ),
+        )
+        assertFalse(
+            canReuseSession(
+                state = state,
+                storageUnlocked = true,
+                requiresFreshAuthentication = true,
                 purpose = AuthenticationPurpose.UNLOCK_VAULT,
             ),
         )

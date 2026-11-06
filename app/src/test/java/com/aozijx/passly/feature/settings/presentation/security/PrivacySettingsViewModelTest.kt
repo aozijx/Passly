@@ -64,6 +64,44 @@ class PrivacySettingsViewModelTest {
         }
 
     @Test
+    fun `clear clipboard maps ownership result to the matching effect`() =
+        runTest {
+            var ownsClipboard = true
+            var clearCalls = 0
+            val repository =
+                object : SecuritySettingsRepository by EmptySecuritySettingsRepository {
+                    override val security = MutableStateFlow(SecuritySettings())
+                }
+            val model =
+                PrivacySettingsViewModel(repository) {
+                    clearCalls++
+                    ownsClipboard
+                }
+            model.onPageEntered()
+            val effects = mutableListOf<PrivacySettingsEffect>()
+            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            model.onAction(PrivacySettingsAction.ClearClipboardNow)
+            runCurrent()
+            assertEquals(listOf(PrivacySettingsEffect.ClipboardCleared), effects)
+
+            ownsClipboard = false
+            model.onAction(PrivacySettingsAction.ClearClipboardNow)
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    PrivacySettingsEffect.ClipboardCleared,
+                    PrivacySettingsEffect.ClipboardNotCleared,
+                ),
+                effects,
+            )
+            assertEquals(2, clearCalls)
+        }
+
+    @Test
     fun `all privacy preference failures retain source state and report errors`() =
         runTest {
             val repository =

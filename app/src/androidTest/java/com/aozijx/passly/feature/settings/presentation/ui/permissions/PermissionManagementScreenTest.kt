@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
@@ -86,6 +87,7 @@ class PermissionManagementScreenTest {
                                     ),
                                 ),
                             backupDirectory = directory,
+                            backupDirectoryReadState = RecoverableReadState.Ready("content://backup"),
                             manifestCapabilities =
                                 listOf(
                                     ManifestCapabilityUiModel(

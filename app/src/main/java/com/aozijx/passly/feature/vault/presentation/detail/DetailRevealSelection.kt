@@ -9,7 +9,6 @@ internal fun DetailBankCardUiModel.fieldsToReveal(): Set<DetailFieldUiModel> =
         if (hasCardNumber && !cardNumberRevealed) add(DetailFieldUiModel.CARD_NUMBER)
         if (hasCvv && !cvvRevealed) add(DetailFieldUiModel.CARD_CVV)
         if (hasPaymentPin && !paymentPinRevealed) add(DetailFieldUiModel.PAYMENT_PIN)
-        if (!cardholderRevealed) add(DetailFieldUiModel.CARDHOLDER)
     }
 
 internal fun DetailSshUiModel.fieldsToReveal(): Set<DetailFieldUiModel> =
