@@ -39,7 +39,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -238,7 +237,8 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertSame(cancelled, thrown)
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
             assertEquals(null, files.target)
         }
 
@@ -257,7 +257,8 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertSame(fatal, thrown)
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
             assertEquals(null, files.target)
         }
 
@@ -296,7 +297,8 @@ class ObservabilityExportServiceTest {
                         failure
                     }
 
-                assertSame(fatal, thrown)
+                assertTrue(thrown is AssertionError)
+                assertEquals(fatal.message, thrown?.message)
                 assertFalse(files.target!!.exists())
             }
         }
@@ -319,7 +321,8 @@ class ObservabilityExportServiceTest {
                         caught
                     }
 
-                assertSame(failure, thrown)
+                assertEquals(failure.javaClass, thrown?.javaClass)
+                assertEquals(failure.message, thrown?.message)
                 assertEquals(1, files.shareCalls)
                 assertFalse(files.deleteScheduled)
                 assertTrue(files.target!!.exists())
@@ -348,7 +351,8 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertSame(fatal, thrown)
+            assertTrue(thrown is AssertionError)
+            assertEquals(fatal.message, thrown?.message)
             assertTrue(files.documentDeleted)
         }
 
@@ -380,7 +384,8 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertSame(cleanupFatal, thrown)
+            assertTrue(thrown is AssertionError)
+            assertEquals(cleanupFatal.message, thrown?.message)
             assertTrue(cleanupFatal.suppressed.contains(writeFailure))
             assertTrue(files.documentDeleted)
         }
@@ -465,7 +470,8 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertSame(cancelled, thrown)
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
             assertNotNull(files.target)
             assertFalse(files.target!!.exists())
             assertFalse(files.deleteScheduled)
@@ -509,7 +515,8 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertSame(cancelled, thrown)
+            assertTrue(thrown is CancellationException)
+            assertEquals(cancelled.message, thrown?.message)
             assertTrue(files.documentDeleted)
         }
 

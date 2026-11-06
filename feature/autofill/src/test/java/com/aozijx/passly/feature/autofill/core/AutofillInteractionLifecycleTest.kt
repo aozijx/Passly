@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.autofill.core
 
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -23,6 +25,7 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionTimeout
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -180,6 +183,100 @@ class AutofillInteractionLifecycleTest {
                 AutofillInteractionState.ResolvingSelection(candidateId),
                 (selection as AutofillInteractionUpdate.Updated).snapshot.state,
             )
+        }
+
+    @Test
+    fun thrownAuthenticationFailureTerminatesSharedAttemptAndAllowsRetry() =
+        runTest {
+            val vault = FakeVault(AuthenticationState.Locked)
+            val authentication = ThrowOnceAuthenticationController(vault)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(authentication)
+            val start = StartAutofillInteraction(store, lease, vault)
+            val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+            val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+
+            val owner = async { runCatching { authorize(interaction.id) } }
+            authentication.firstAttemptStarted.await()
+            val waiter = async { runCatching { authorize(interaction.id) } }
+            runCurrent()
+
+            val failure = IllegalStateException("authentication host failed")
+            authentication.failFirstAttempt.complete(failure)
+
+            val ownerFailure = requireNotNull(owner.await().exceptionOrNull())
+            val waiterFailure = requireNotNull(waiter.await().exceptionOrNull())
+            assertEquals(failure::class, ownerFailure::class)
+            assertEquals(failure.message, ownerFailure.message)
+            assertEquals(failure::class, waiterFailure::class)
+            assertEquals(failure.message, waiterFailure.message)
+            assertEquals(
+                AutofillInteractionState.Failed(
+                    AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
+                ),
+                store.snapshot(interaction.id)?.state,
+            )
+            assertEquals(AuthenticationState.Locked, vault.authenticationState.value)
+            assertEquals(1, authentication.lockCount)
+
+            val retry = start(AutofillInteractionSource.LEGACY, scope(), false)
+            assertTrue(authorize(retry.id) is AutofillAuthorizationOutcome.Authorized)
+            assertEquals(2, authentication.authenticationCount)
+        }
+
+    @Test
+    fun fatalAuthenticationFailureIsSharedAndTerminatesAttempt() =
+        runTest {
+            val vault = FakeVault(AuthenticationState.Locked)
+            val authentication = ThrowOnceAuthenticationController(vault)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(authentication)
+            val start = StartAutofillInteraction(store, lease, vault)
+            val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+            val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+
+            val owner = async { runCatching { authorize(interaction.id) } }
+            authentication.firstAttemptStarted.await()
+            val waiter = async { runCatching { authorize(interaction.id) } }
+            runCurrent()
+            authentication.failFirstAttempt.complete(AssertionError("fatal authentication failure"))
+
+            assertTrue(owner.await().exceptionOrNull() is AssertionError)
+            assertTrue(waiter.await().exceptionOrNull() is AssertionError)
+            assertEquals(
+                AutofillInteractionState.Failed(
+                    AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
+                ),
+                store.snapshot(interaction.id)?.state,
+            )
+            assertEquals(AuthenticationState.Locked, vault.authenticationState.value)
+            assertEquals(1, authentication.lockCount)
+        }
+
+    @Test
+    fun cancelledAuthenticationCompletesSharedWaiterAndAllowsRetry() =
+        runTest {
+            val vault = FakeVault(AuthenticationState.Locked)
+            val authentication = ThrowOnceAuthenticationController(vault)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(authentication)
+            val start = StartAutofillInteraction(store, lease, vault)
+            val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+            val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+
+            val owner = async { runCatching { authorize(interaction.id) } }
+            authentication.firstAttemptStarted.await()
+            val waiter = async { authorize(interaction.id) }
+            runCurrent()
+            authentication.failFirstAttempt.complete(CancellationException("caller cancelled"))
+
+            assertTrue(owner.await().exceptionOrNull() is CancellationException)
+            assertTrue(waiter.await() is AutofillAuthorizationOutcome.Cancelled)
+            assertEquals(AutofillInteractionState.Cancelled, store.snapshot(interaction.id)?.state)
+            assertEquals(AuthenticationState.Locked, vault.authenticationState.value)
+            val retry = start(AutofillInteractionSource.LEGACY, scope(), false)
+            assertTrue(authorize(retry.id) is AutofillAuthorizationOutcome.Authorized)
+            assertEquals(2, authentication.authenticationCount)
         }
 
     @Test
@@ -464,6 +561,35 @@ class AutofillInteractionLifecycleTest {
 
         override suspend fun lock(request: SessionLockRequest) {
             lastLockReason = request.reason
+            lockCount++
+            vault.lock()
+        }
+    }
+
+    private class ThrowOnceAuthenticationController(
+        private val vault: FakeVault,
+    ) : AuthenticationRequester,
+        SessionLockController {
+        val firstAttemptStarted = CompletableDeferred<Unit>()
+        val failFirstAttempt = CompletableDeferred<Throwable>()
+        var authenticationCount = 0
+        var lockCount = 0
+
+        override suspend fun authenticate(
+            request: AuthenticationRequest,
+            input: AuthInput,
+        ): AuthenticationResult {
+            authenticationCount++
+            if (authenticationCount == 1) {
+                vault.authenticate()
+                firstAttemptStarted.complete(Unit)
+                throw failFirstAttempt.await()
+            }
+            vault.authenticate()
+            return AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+        }
+
+        override suspend fun lock(request: SessionLockRequest) {
             lockCount++
             vault.lock()
         }

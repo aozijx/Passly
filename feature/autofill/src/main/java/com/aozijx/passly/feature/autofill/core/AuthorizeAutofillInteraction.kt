@@ -3,6 +3,8 @@ package com.aozijx.passly.feature.autofill.core
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -51,8 +53,18 @@ internal class AuthorizeAutofillInteraction
                     )
                 finish(id, attempt, authentication)
             } catch (cancelled: CancellationException) {
-                withContext(NonCancellable) { cancelAttempt(id, attempt) }
+                withContext(NonCancellable) {
+                    try {
+                        cancelAttempt(id, attempt)
+                    } catch (cleanupFailure: Throwable) {
+                        cancelled.addSuppressed(cleanupFailure)
+                        failAttempt(id, attempt, cancelled)
+                    }
+                }
                 throw cancelled
+            } catch (failure: Throwable) {
+                withContext(NonCancellable) { failAttempt(id, attempt, failure) }
+                throw failure
             }
         }
 
@@ -155,15 +167,54 @@ internal class AuthorizeAutofillInteraction
             id: AutofillInteractionId,
             attempt: Attempt,
         ) {
-            val result = store.finish(id, AutofillInteractionState.Cancelled).update
-            val snapshot = (result as? AutofillInteractionUpdate.Updated)?.snapshot
-            val outcome =
-                if (snapshot == null) {
-                    AutofillAuthorizationOutcome.Rejected(AutofillInteractionRejection.INVALID_STATE)
-                } else {
-                    AutofillAuthorizationOutcome.Cancelled(snapshot, CancellationReason.CALLER)
+            try {
+                val result = store.finish(id, AutofillInteractionState.Cancelled).update
+                val snapshot = (result as? AutofillInteractionUpdate.Updated)?.snapshot
+                val outcome =
+                    if (snapshot == null) {
+                        AutofillAuthorizationOutcome.Rejected(AutofillInteractionRejection.INVALID_STATE)
+                    } else {
+                        AutofillAuthorizationOutcome.Cancelled(snapshot, CancellationReason.CALLER)
+                    }
+                complete(id, attempt, outcome)
+            } finally {
+                releaseAttemptLease(id, attempt)
+            }
+        }
+
+        private suspend fun failAttempt(
+            id: AutofillInteractionId,
+            attempt: Attempt,
+            failure: Throwable,
+        ) {
+            try {
+                store.fail(
+                    id,
+                    AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
+                )
+            } catch (cleanupFailure: Throwable) {
+                failure.addSuppressed(cleanupFailure)
+            }
+            try {
+                releaseAttemptLease(id, attempt)
+            } catch (cleanupFailure: Throwable) {
+                failure.addSuppressed(cleanupFailure)
+            } finally {
+                discardAttempt(id, attempt, failure)
+            }
+        }
+
+        private suspend fun releaseAttemptLease(
+            id: AutofillInteractionId,
+            attempt: Attempt,
+        ) {
+            try {
+                if (!attempt.hadUserOwnedVaultSession && vaultAccessState.hasAutofillSessionAccess()) {
+                    unlockLease.acquireOrBorrow(id, acquiredUnlock = true)
                 }
-            complete(id, attempt, outcome)
+            } finally {
+                unlockLease.release(id)
+            }
         }
 
         private suspend fun rejectAndComplete(
@@ -180,10 +231,19 @@ internal class AuthorizeAutofillInteraction
             id: AutofillInteractionId,
             attempt: Attempt,
             outcome: AutofillAuthorizationOutcome,
-        ) {
+        ) = withContext(NonCancellable) {
+            discardAttempt(id, attempt)
+            attempt.result.complete(outcome)
+        }
+
+        private suspend fun discardAttempt(
+            id: AutofillInteractionId,
+            attempt: Attempt,
+            failure: Throwable? = null,
+        ) = withContext(NonCancellable) {
             mutex.withLock {
                 if (attempts[id] === attempt.result) attempts.remove(id)
             }
-            attempt.result.complete(outcome)
+            if (failure != null) attempt.result.completeExceptionally(failure)
         }
     }
