@@ -39,6 +39,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -202,39 +203,24 @@ class ObservabilityExportServiceTest {
         }
 
     @Test
-    fun `failed deletion scheduling keeps an already shared export available`() =
+    fun `unavailable deletion scheduler keeps an already shared export available`() =
         runTest {
-            val files =
-                RecordingExportStorageGateway(
-                    cacheDirectory,
-                    scheduleDeletionAccepted = false,
-                )
-            val service = service(PageStore(listOf(record("event_00000001", 100))), files)
-
-            val result = service.export(TestPermit, shareRequest())
-
-            assertTrue(result.isSuccess)
-            assertEquals(1, files.shareCalls)
-            assertFalse(files.deleteScheduled)
-            assertTrue(files.target!!.exists())
-        }
-
-    @Test
-    fun `deletion scheduler exception keeps an already shared export available`() =
-        runTest {
-            val files =
+            listOf(
+                RecordingExportStorageGateway(cacheDirectory, scheduleDeletionAccepted = false),
                 RecordingExportStorageGateway(
                     cacheDirectory,
                     scheduleDeletionFailure = IllegalStateException("handler unavailable"),
-                )
-            val service = service(PageStore(listOf(record("event_00000001", 100))), files)
+                ),
+            ).forEach { files ->
+                val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
-            val result = service.export(TestPermit, shareRequest())
+                val result = service.export(TestPermit, shareRequest())
 
-            assertTrue(result.isSuccess)
-            assertEquals(1, files.shareCalls)
-            assertFalse(files.deleteScheduled)
-            assertTrue(files.target!!.exists())
+                assertTrue(result.isSuccess)
+                assertEquals(1, files.shareCalls)
+                assertFalse(files.deleteScheduled)
+                assertTrue(files.target!!.exists())
+            }
         }
 
     @Test
@@ -252,7 +238,7 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertEquals(cancelled.message, thrown?.message)
+            assertSame(cancelled, thrown)
             assertEquals(null, files.target)
         }
 
@@ -271,8 +257,7 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertTrue(thrown is AssertionError)
-            assertEquals(fatal.message, thrown?.message)
+            assertSame(fatal, thrown)
             assertEquals(null, files.target)
         }
 
@@ -291,82 +276,54 @@ class ObservabilityExportServiceTest {
         }
 
     @Test
-    fun `fatal share exception propagates after plaintext file cleanup`() =
+    fun `fatal share failures propagate after plaintext file cleanup`() =
         runTest {
-            val fatal = AssertionError("share fatal")
-            val files = RecordingExportStorageGateway(cacheDirectory, shareException = fatal)
-            val service = service(PageStore(emptyList()), files)
+            listOf(false, true).forEach { returnedAsFailure ->
+                val fatal = AssertionError(if (returnedAsFailure) "share result fatal" else "share fatal")
+                val files =
+                    RecordingExportStorageGateway(
+                        cacheDirectory,
+                        shareException = fatal.takeUnless { returnedAsFailure },
+                        shareResultFailure = fatal.takeIf { returnedAsFailure },
+                    )
+                val service = service(PageStore(emptyList()), files)
 
-            val thrown =
-                try {
-                    service.export(TestPermit, shareRequest())
-                    null
-                } catch (failure: AssertionError) {
-                    failure
-                }
+                val thrown =
+                    try {
+                        service.export(TestPermit, shareRequest())
+                        null
+                    } catch (failure: AssertionError) {
+                        failure
+                    }
 
-            assertTrue(thrown is AssertionError)
-            assertEquals(fatal.message, thrown?.message)
-            assertFalse(files.target!!.exists())
+                assertSame(fatal, thrown)
+                assertFalse(files.target!!.exists())
+            }
         }
 
     @Test
-    fun `fatal share result propagates after plaintext file cleanup`() =
+    fun `fatal scheduling failures propagate and leave shared export for retention sweep`() =
         runTest {
-            val fatal = AssertionError("share result fatal")
-            val files = RecordingExportStorageGateway(cacheDirectory, shareResultFailure = fatal)
-            val service = service(PageStore(emptyList()), files)
+            listOf<Throwable>(
+                AssertionError("schedule deletion fatal"),
+                CancellationException("schedule deletion cancelled"),
+            ).forEach { failure ->
+                val files = RecordingExportStorageGateway(cacheDirectory, scheduleDeletionFailure = failure)
+                val service = service(PageStore(emptyList()), files)
 
-            val thrown =
-                try {
-                    service.export(TestPermit, shareRequest())
-                    null
-                } catch (failure: AssertionError) {
-                    failure
-                }
+                val thrown =
+                    try {
+                        service.export(TestPermit, shareRequest())
+                        null
+                    } catch (caught: Throwable) {
+                        caught
+                    }
 
-            assertTrue(thrown is AssertionError)
-            assertEquals(fatal.message, thrown?.message)
-            assertFalse(files.target!!.exists())
-        }
-
-    @Test
-    fun `fatal schedule deletion failure propagates and leaves shared export for retention sweep`() =
-        runTest {
-            val fatal = AssertionError("schedule deletion fatal")
-            val files = RecordingExportStorageGateway(cacheDirectory, scheduleDeletionFailure = fatal)
-            val service = service(PageStore(emptyList()), files)
-
-            val thrown =
-                try {
-                    service.export(TestPermit, shareRequest())
-                    null
-                } catch (failure: AssertionError) {
-                    failure
-                }
-
-            assertTrue(thrown is AssertionError)
-            assertEquals(fatal.message, thrown?.message)
-            assertTrue(files.target!!.exists())
-        }
-
-    @Test
-    fun `schedule deletion cancellation propagates without removing already shared file`() =
-        runTest {
-            val cancelled = CancellationException("schedule deletion cancelled")
-            val files = RecordingExportStorageGateway(cacheDirectory, scheduleDeletionFailure = cancelled)
-            val service = service(PageStore(emptyList()), files)
-
-            val thrown =
-                try {
-                    service.export(TestPermit, shareRequest())
-                    null
-                } catch (failure: CancellationException) {
-                    failure
-                }
-
-            assertEquals(cancelled.message, thrown?.message)
-            assertTrue(files.target!!.exists())
+                assertSame(failure, thrown)
+                assertEquals(1, files.shareCalls)
+                assertFalse(files.deleteScheduled)
+                assertTrue(files.target!!.exists())
+            }
         }
 
     @Test
@@ -391,8 +348,7 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertTrue(thrown is AssertionError)
-            assertEquals(fatal.message, thrown?.message)
+            assertSame(fatal, thrown)
             assertTrue(files.documentDeleted)
         }
 
@@ -424,8 +380,7 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertTrue(thrown is AssertionError)
-            assertEquals(cleanupFatal.message, thrown?.message)
+            assertSame(cleanupFatal, thrown)
             assertTrue(cleanupFatal.suppressed.contains(writeFailure))
             assertTrue(files.documentDeleted)
         }
@@ -510,7 +465,7 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertEquals(cancelled.message, thrown?.message)
+            assertSame(cancelled, thrown)
             assertNotNull(files.target)
             assertFalse(files.target!!.exists())
             assertFalse(files.deleteScheduled)
@@ -554,7 +509,7 @@ class ObservabilityExportServiceTest {
                     failure
                 }
 
-            assertEquals(cancelled.message, thrown?.message)
+            assertSame(cancelled, thrown)
             assertTrue(files.documentDeleted)
         }
 
