@@ -264,90 +264,54 @@ class RuntimeSessionManagerTest {
         }
 
     @Test
-    fun `drain timeout cancellation propagates after cancelling leases and closing resource`() =
+    fun `drain timeout cancellation and fatal telemetry failures cancel leases and close resource`() =
         runBlocking {
-            val leaseStarted = CompletableDeferred<Unit>()
-            val resource = FakeResource()
-            val manager =
-                RuntimeSessionManager(
-                    resource = resource,
-                    keySource = SessionKeySource { byteArrayOf(9) },
-                    eventSink =
-                        SessionEventSink { event ->
-                            if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) {
-                                throw CancellationException("telemetry cancelled")
-                            }
-                        },
-                )
-            manager.unlock()
-            val reader =
-                launch {
-                    manager.read {
-                        leaseStarted.complete(Unit)
-                        awaitCancellation()
+            listOf<Throwable>(
+                CancellationException("telemetry cancelled"),
+                AssertionError("telemetry fatal"),
+            ).forEach { telemetryFailure ->
+                val leaseStarted = CompletableDeferred<Unit>()
+                val resource = FakeResource()
+                val manager =
+                    RuntimeSessionManager(
+                        resource = resource,
+                        keySource = SessionKeySource { byteArrayOf(9) },
+                        eventSink =
+                            SessionEventSink { event ->
+                                if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) throw telemetryFailure
+                            },
+                    )
+                manager.unlock()
+                val reader =
+                    launch {
+                        manager.read {
+                            leaseStarted.complete(Unit)
+                            awaitCancellation()
+                        }
                     }
-                }
-            leaseStarted.await()
+                leaseStarted.await()
 
-            val caught =
-                try {
+                val caught =
                     try {
-                        manager.seal(timeout = 1.milliseconds)
-                        null
-                    } catch (error: CancellationException) {
-                        error
+                        try {
+                            manager.seal(timeout = 1.milliseconds)
+                            null
+                        } catch (error: Throwable) {
+                            error
+                        }
+                    } finally {
+                        reader.cancelAndJoin()
                     }
-                } finally {
-                    reader.cancelAndJoin()
+
+                if (telemetryFailure is Error) {
+                    assertSame(telemetryFailure, caught)
+                } else {
+                    assertTrue(caught is CancellationException)
                 }
-
-            assertTrue(caught is CancellationException)
-            assertTrue(reader.isCancelled)
-            assertTrue(resource.closed)
-            assertEquals(SecureSessionState.SEALED, manager.lockState)
-        }
-
-    @Test
-    fun `drain timeout fatal telemetry error propagates after cancelling leases and closing resource`() =
-        runBlocking {
-            val leaseStarted = CompletableDeferred<Unit>()
-            val fatal = AssertionError("telemetry fatal")
-            val resource = FakeResource()
-            val manager =
-                RuntimeSessionManager(
-                    resource = resource,
-                    keySource = SessionKeySource { byteArrayOf(9) },
-                    eventSink =
-                        SessionEventSink { event ->
-                            if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) throw fatal
-                        },
-                )
-            manager.unlock()
-            val reader =
-                launch {
-                    manager.read {
-                        leaseStarted.complete(Unit)
-                        awaitCancellation()
-                    }
-                }
-            leaseStarted.await()
-
-            val caught =
-                try {
-                    try {
-                        manager.seal(timeout = 1.milliseconds)
-                        null
-                    } catch (error: AssertionError) {
-                        error
-                    }
-                } finally {
-                    reader.cancelAndJoin()
-                }
-
-            assertSame(fatal, caught)
-            assertTrue(reader.isCancelled)
-            assertTrue(resource.closed)
-            assertEquals(SecureSessionState.SEALED, manager.lockState)
+                assertTrue(reader.isCancelled)
+                assertTrue(resource.closed)
+                assertEquals(SecureSessionState.SEALED, manager.lockState)
+            }
         }
 
     @Test
@@ -486,63 +450,37 @@ class RuntimeSessionManagerTest {
         }
 
     @Test
-    fun `fatal open failure remains primary and carries cleanup failure`() =
+    fun `fatal open failure remains primary while cleanup failures are suppressed`() =
         runBlocking {
-            val fatal = AssertionError("primary open fatal")
-            val cleanupFatal = AssertionError("cleanup fatal")
-            val resource = FakeResource(closeFailure = cleanupFatal)
-            val manager =
-                RuntimeSessionManager(
-                    resource = resource,
-                    keySource = SessionKeySource { byteArrayOf(9) },
-                    eventSink =
-                        SessionEventSink { event ->
-                            if (event.reason == SessionTransitionReason.OPEN) throw fatal
-                        },
-                )
+            listOf<Throwable>(
+                AssertionError("cleanup fatal"),
+                IOException("cleanup failed"),
+            ).forEach { cleanupFailure ->
+                val fatal = AssertionError("primary open fatal")
+                val resource = FakeResource(closeFailure = cleanupFailure)
+                val manager =
+                    RuntimeSessionManager(
+                        resource = resource,
+                        keySource = SessionKeySource { byteArrayOf(9) },
+                        eventSink =
+                            SessionEventSink { event ->
+                                if (event.reason == SessionTransitionReason.OPEN) throw fatal
+                            },
+                    )
 
-            val caught =
-                try {
-                    manager.unlock()
-                    null
-                } catch (error: AssertionError) {
-                    error
-                }
+                val caught =
+                    try {
+                        manager.unlock()
+                        null
+                    } catch (error: AssertionError) {
+                        error
+                    }
 
-            assertSame(fatal, caught)
-            assertTrue(fatal.suppressed.any { it === cleanupFatal })
-            assertEquals(SecureSessionState.SEALED, manager.lockState)
-            assertEquals(1, resource.closeAttempts)
-        }
-
-    @Test
-    fun `fatal open failure retains identity when cleanup also fails`() =
-        runBlocking {
-            val fatal = AssertionError("primary open fatal")
-            val cleanupFailure = IOException("cleanup failed")
-            val resource = FakeResource(closeFailure = cleanupFailure)
-            val manager =
-                RuntimeSessionManager(
-                    resource = resource,
-                    keySource = SessionKeySource { byteArrayOf(9) },
-                    eventSink =
-                        SessionEventSink { event ->
-                            if (event.reason == SessionTransitionReason.OPEN) throw fatal
-                        },
-                )
-
-            val caught =
-                try {
-                    manager.unlock()
-                    null
-                } catch (error: AssertionError) {
-                    error
-                }
-
-            assertSame(fatal, caught)
-            assertTrue(fatal.suppressed.any { it === cleanupFailure })
-            assertEquals(SecureSessionState.SEALED, manager.lockState)
-            assertEquals(1, resource.closeAttempts)
+                assertSame(fatal, caught)
+                assertTrue(fatal.suppressed.any { it === cleanupFailure })
+                assertEquals(SecureSessionState.SEALED, manager.lockState)
+                assertEquals(1, resource.closeAttempts)
+            }
         }
 
     @Test

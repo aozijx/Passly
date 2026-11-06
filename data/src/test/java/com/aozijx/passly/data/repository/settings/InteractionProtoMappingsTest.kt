@@ -33,14 +33,6 @@ class InteractionProtoMappingsTest {
     }
 
     @Test
-    fun `autofill save prompts default to enabled`() {
-        val preferences = AutofillPreferences.getDefaultInstance()
-
-        assertTrue(preferences.savePromptsEnabled)
-        assertTrue(readAutofill(preferences).savePromptsEnabled)
-    }
-
-    @Test
     fun `autofill strict domain matching defaults to enabled and can be disabled`() {
         assertTrue(AutofillPreferences.getDefaultInstance().strictDomainMatching)
         assertTrue(readAutofill(AutofillPreferences.getDefaultInstance()).strictDomainMatching)
@@ -68,28 +60,4 @@ class InteractionProtoMappingsTest {
         }
     }
 
-    @Test
-    fun `autofill save prompt value maps independently from credential manager`() {
-        val combinations =
-            listOf(
-                false to false,
-                false to true,
-                true to false,
-                true to true,
-            )
-
-        combinations.forEach { (savePromptsEnabled, credentialManagerEnabled) ->
-            val preferences =
-                AutofillPreferences
-                    .newBuilder()
-                    .setSavePromptsEnabled(savePromptsEnabled)
-                    .setCredentialManagerEnabled(credentialManagerEnabled)
-                    .build()
-
-            val settings = readAutofill(preferences)
-
-            assertEquals(savePromptsEnabled, settings.savePromptsEnabled)
-            assertEquals(credentialManagerEnabled, settings.credentialManagerEnabled)
-        }
-    }
 }

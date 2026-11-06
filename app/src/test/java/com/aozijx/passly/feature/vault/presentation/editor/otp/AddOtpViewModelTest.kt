@@ -53,7 +53,7 @@ class AddOtpViewModelTest {
         session: SecureSessionAccessState = AuthenticatedSession,
     ): AddOtpViewModel {
         val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
-        return AddOtpViewModel(create, session, editFixture.loader, editFixture.editor)
+        return AddOtpViewModel(create, session, editFixture.editor)
     }
 
     @Test
@@ -210,11 +210,10 @@ class AddOtpViewModelTest {
                 AddOtpViewModel(
                     createEntryUseCase(session = fixture.access),
                     fixture.access,
-                    loadEditableEntry = fixture.loader,
                     editDetailEntry = fixture.editor,
                 )
 
-            model.loadExistingEntry("otp-edit")
+            model.loadExistingEntry(fixture.editableSeed(entry.id))
             advanceUntilIdle()
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
             assertEquals(secret, model.uiState.value.form.secret)

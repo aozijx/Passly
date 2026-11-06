@@ -62,6 +62,7 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
+import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -1053,6 +1054,7 @@ class DetailViewModelTest {
                 exportEntryQr = ExportEntryQrUseCase(authGate, sensitive, activity, testLogger()),
                 secureSessionAccessState = access,
                 revealEntryFields = RevealEntryFieldsUseCase(authGate, fieldReader, sensitive, activity),
+                loadEditableEntry = LoadEditableEntryUseCase(entries, sensitive, authGate, access, activity),
                 editDetailEntry = EditDetailEntryUseCase(entries, entries, access, testLogger()),
                 copyEntryFieldUseCase =
                     CopyEntryFieldUseCase(

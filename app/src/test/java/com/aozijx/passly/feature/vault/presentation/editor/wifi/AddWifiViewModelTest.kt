@@ -64,11 +64,10 @@ class AddWifiViewModelTest {
                 AddWifiViewModel(
                     CreateEntryUseCase(RecordingRepository(), fixture.access, EntryDraftMaterializer(), testLogger()),
                     fixture.access,
-                    loadEditableEntry = fixture.loader,
                     editDetailEntry = fixture.editor,
                 )
 
-            model.loadExistingEntry("wifi-edit")
+            model.loadExistingEntry(fixture.editableSeed(entry.id))
             advanceUntilIdle()
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
             assertEquals("wifi-secret", model.uiState.value.form.password)
@@ -485,7 +484,6 @@ class AddWifiViewModelTest {
         return AddWifiViewModel(
             createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
             secureSessionAccessState = session,
-            loadEditableEntry = editFixture.loader,
             editDetailEntry = editFixture.editor,
         )
     }

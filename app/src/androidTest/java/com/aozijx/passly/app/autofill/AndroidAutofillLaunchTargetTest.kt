@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity
-import com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras
+import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,11 +23,11 @@ class AndroidAutofillLaunchTargetTest {
 
         assertEquals(context.packageName, legacy.`package`)
         assertEquals(AutofillAuthActivity::class.java.name, legacy.component?.className)
-        assertEquals(AutofillLaunchExtras.ACTION_LEGACY_FILL, legacy.action)
+        assertEquals(AutofillHostLaunchContract.ACTION_LEGACY_FILL, legacy.action)
         assertEquals(context.packageName, credential.`package`)
         assertEquals(AutofillAuthActivity::class.java.name, credential.component?.className)
         assertEquals(context.packageName, accessibility.`package`)
         assertEquals(AutofillAuthActivity::class.java.name, accessibility.component?.className)
-        assertEquals(AutofillLaunchExtras.ACTION_ACCESSIBILITY_FILL, accessibility.action)
+        assertEquals(AutofillHostLaunchContract.ACTION_ACCESSIBILITY_FILL, accessibility.action)
     }
 }

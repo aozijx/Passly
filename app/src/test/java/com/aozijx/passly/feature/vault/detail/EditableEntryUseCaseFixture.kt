@@ -27,6 +27,8 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -44,6 +46,17 @@ internal class EditableEntryUseCaseFixture(
 
     val loader = LoadEditableEntryUseCase(query, sensitiveFields, authorization, access, activity)
     val editor = EditDetailEntryUseCase(query, command, access, testLogger())
+
+    suspend fun editableSeed(entryId: EntryId): EntryEditorSeedConsumeResult =
+        when (val result = loader(entryId)) {
+            is EditableEntryLoadResult.Loaded -> {
+                EntryEditorSeedConsumeResult.Consumed(EntryEditorSeed.Editable(result.entry, result.authentication))
+            }
+
+            else -> {
+                EntryEditorSeedConsumeResult.Missing
+            }
+        }
 
     companion object {
         fun unsupportedEntry() =

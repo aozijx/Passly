@@ -52,7 +52,7 @@ class DefaultRecoveryCodeDraftFactoryTest {
         }
 
     @Test
-    fun `restricted session is rejected before authorization`() =
+    fun `recovery mode rejects draft creation before authorization`() =
         runBlocking {
             val session = FakeSession(AuthenticationState.RecoveryMode(1L))
             val gate = RecordingGate()

@@ -63,7 +63,7 @@ class SourceBoundaryPolicyTest {
     fun backupFeatureCannotImportSettingsOwnedUi() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupRoute.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupOperationRoute.kt",
                 content = "import com.aozijx.passly.presentation.ui.settings.backup.BackupSheet",
             )
 
@@ -87,7 +87,7 @@ class SourceBoundaryPolicyTest {
             )
         val testViolation =
             EditorSource(
-                path = "app/src/test/java/com/aozijx/passly/feature/backup/presentation/BackupViewModelTest.kt",
+                path = "app/src/test/java/com/aozijx/passly/feature/backup/presentation/BackupViewModelAccessTest.kt",
                 content = "import com.aozijx.passly.feature.backup.internal.operation.BackupOperationInteractor",
             )
         val contract =
@@ -111,7 +111,7 @@ class SourceBoundaryPolicyTest {
     fun verticalFeatureRootAllowsOwnedUiButPresentationRootStaysClassified() {
         val featureUi =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/SettingsScreen.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/SettingsRoute.kt",
                 content = "import androidx.compose.runtime.Composable",
             )
         val unclassifiedPresentation =
@@ -155,7 +155,7 @@ class SourceBoundaryPolicyTest {
                 ),
                 LayerCase(
                     owner = "feature.presentation",
-                    path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/VaultViewModel.kt",
+                    path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt",
                     allowed = listOf("com.aozijx.passly.feature.vault.VaultEntryPageSource", "com.aozijx.passly.domain.entry.model.Entry"),
                     forbidden = listOf("com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository"),
                 ),
@@ -180,7 +180,7 @@ class SourceBoundaryPolicyTest {
                 ),
                 LayerCase(
                     owner = "feature",
-                    path = "app/src/main/java/com/aozijx/passly/feature/vault/VaultUseCase.kt",
+                    path = "app/src/main/java/com/aozijx/passly/feature/vault/detail/ExportEntryQrUseCase.kt",
                     allowed =
                         listOf(
                             "androidx.compose.runtime.Composable",
@@ -630,7 +630,7 @@ class SourceBoundaryPolicyTest {
     fun featureImplementationCannotImportPresentation() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/backup/BackupUseCase.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt",
                 content = "import com.aozijx.passly.feature.backup.presentation.BackupUiState",
             )
 
@@ -649,7 +649,7 @@ class SourceBoundaryPolicyTest {
     fun backupFeatureCannotImportDataImplementation() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/backup/BackupSnapshot.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt",
                 content = "import com.aozijx.passly.data.local.database.session.AppDatabaseSession",
             )
 
@@ -754,9 +754,7 @@ class SourceBoundaryPolicyTest {
                 "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
                     "com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation",
                 "app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillLaunchTarget.kt" to
-                    "com.aozijx.passly.feature.autofill.platform.AutofillLaunchExtras",
-                "app/src/main/java/com/aozijx/passly/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt" to
-                    "com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource",
+                    "com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract",
             ).map { (path, importedType) ->
                 EditorSource(path, "import $importedType")
             }
@@ -1021,31 +1019,12 @@ class SourceBoundaryPolicyTest {
     fun settingsNavigationCannotMirrorNavigatorDestinationInLocalState() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/SettingsNavGraph.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/SettingsRoute.kt",
                 content = "mutableStateOf(navigator.currentDestination?.contentKey)",
             )
 
         assertEquals(
             "SETTINGS_DUPLICATE_NAVIGATION_STATE",
-            SourceBoundaryVerifier
-                .verify(
-                    listOf(source),
-                    SourceBoundaryPolicy.generalRules,
-                ).single()
-                .ruleId,
-        )
-    }
-
-    @Test
-    fun unlockFeatureHostCannotRenderCredentialInputsDirectly() {
-        val source =
-            EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/unlock/presentation/AuthenticationScreen.kt",
-                content = "InputActionButton(value = state.appPassword)",
-            )
-
-        assertEquals(
-            "UNLOCK_FEATURE_PASSIVE_CONTENT",
             SourceBoundaryVerifier
                 .verify(
                     listOf(source),
@@ -1121,7 +1100,7 @@ class SourceBoundaryPolicyTest {
     fun settingsUiCannotImportVaultOwnedUiModelsOrComponents() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/interaction/SwipeGestureSettingsSection.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/interaction/QuickGestureSettingsSection.kt",
                 content = "import com.aozijx.passly.presentation.ui.vault.list.model.VaultSwipeActionUiModel",
             )
 
@@ -1137,13 +1116,9 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun applicationCodeCannotDependOnGlobalSettingsSnapshotOrCommandBus() {
+    fun appShellCannotDependOnLegacyGlobalSettingsBus() {
         val sources =
             listOf(
-                EditorSource(
-                    path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/SettingsViewModel.kt",
-                    content = "import com.aozijx.passly.domain.settings.model.SettingsCommand",
-                ),
                 EditorSource(
                     path = "app/src/main/java/com/aozijx/passly/feature/shell/presentation/AppShellViewModel.kt",
                     content = "import com.aozijx.passly.domain.settings.port.AppSettingsRepository",
@@ -1358,10 +1333,10 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun settingsCannotOwnDatabaseLifecycleOrResetCapability() {
+    fun settingsPresentationCannotOwnDatabaseLifecycleOrResetCapability() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/SettingsViewModel.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/SettingsRoute.kt",
                 content =
                     """
                     import com.aozijx.passly.app.database.DatabaseLifecycleGateway

@@ -64,11 +64,10 @@ class AddPasswordViewModelTest {
                     createEntryUseCase(fixture.access),
                     fixture.access,
                     installedAppDirectory = directory { emptyList() },
-                    loadEditableEntry = fixture.loader,
                     editDetailEntry = fixture.editor,
                 )
 
-            model.loadExistingEntry("login-1")
+            model.loadExistingEntry(fixture.editableSeed(entry.id))
             advanceUntilIdle()
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
             assertEquals("old-secret", model.uiState.value.form.password)
@@ -319,7 +318,6 @@ class AddPasswordViewModelTest {
             createEntryUseCase = createEntryUseCase(session),
             secureSessionAccessState = session,
             installedAppDirectory = directory,
-            loadEditableEntry = editFixture.loader,
             editDetailEntry = editFixture.editor,
         )
     }

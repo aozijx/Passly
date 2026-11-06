@@ -10,9 +10,9 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.feature.scanner.presentation.ScannerImportHandlingResult
-import com.aozijx.passly.feature.scanner.presentation.ScannerImportOutcome
-import com.aozijx.passly.feature.scanner.presentation.ScannerImportSession
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultOutcome
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultSession
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -127,35 +127,35 @@ class ScannedOtpImportViewModelTest {
                     }
                 }
             val viewModel = model(repository, MutableAccess(), this)
-            val firstSession = ScannerImportSession()
+            val firstSession = ScannerResultSession()
             val first =
                 async {
                     firstSession.confirm {
                         if (viewModel.importScannedOtp(OtpConfig(secret = "MY"))) {
-                            ScannerImportHandlingResult.Applied
+                            ScannerResultHandling.Handled
                         } else {
-                            ScannerImportHandlingResult.Rejected
+                            ScannerResultHandling.Rejected
                         }
                     }
                 }
             runCurrent()
             firstSession.close()
-            val secondSession = ScannerImportSession()
+            val secondSession = ScannerResultSession()
             val secondResult =
                 secondSession.confirm {
                     if (viewModel.importScannedOtp(OtpConfig(secret = "MY"))) {
-                        ScannerImportHandlingResult.Applied
+                        ScannerResultHandling.Handled
                     } else {
-                        ScannerImportHandlingResult.Rejected
+                        ScannerResultHandling.Rejected
                     }
                 }
             runCurrent()
 
             assertEquals(1, writes)
-            assertEquals(ScannerImportOutcome.Rejected, secondResult)
+            assertEquals(ScannerResultOutcome.Rejected, secondResult)
             persistence.complete(AppResult.Success(EntryId("saved")))
             runCurrent()
-            assertEquals(ScannerImportOutcome.Ignored, first.await())
+            assertEquals(ScannerResultOutcome.Ignored, first.await())
         }
 
     @Test

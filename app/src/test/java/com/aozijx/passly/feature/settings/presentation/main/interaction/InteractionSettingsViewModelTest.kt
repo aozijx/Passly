@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.settings.presentation.main.interaction
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
@@ -187,22 +186,5 @@ class InteractionSettingsViewModelTest {
             currentInteraction.value = currentInteraction.value.copy(isPullToSearchEnabled = enabled)
         }
 
-        override suspend fun setAutofillEnabled(enabled: Boolean) = Unit
-
-        override suspend fun setAutofillPresentation(presentation: AutofillPresentation) = Unit
-
-        override suspend fun setCredentialManagerEnabled(enabled: Boolean) = Unit
-
-        override suspend fun setAutofillStrictDomainMatching(enabled: Boolean) = Unit
-
-        override suspend fun setAutofillAuthenticationRequired(required: Boolean) = Unit
-
-        override suspend fun setAutofillOtpEnabled(enabled: Boolean) = Unit
-
-        override suspend fun setAutofillSavePromptsEnabled(enabled: Boolean) = Unit
-
-        override suspend fun setUnmatchedAutofillSuggestionsEnabled(enabled: Boolean) = Unit
-
-        override suspend fun setAutofillMaxSuggestions(count: Int) = Unit
     }
 }

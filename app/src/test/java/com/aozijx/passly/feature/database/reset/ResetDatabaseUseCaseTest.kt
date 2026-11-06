@@ -50,7 +50,7 @@ class ResetDatabaseUseCaseTest {
         }
 
     @Test
-    fun `restricted session is rejected before authorization`() =
+    fun `recovery mode rejects database reset before authorization`() =
         runTest {
             val gate = RecordingGate(AuthorizationDecision.ALLOW)
             val gateway = RecordingGateway()

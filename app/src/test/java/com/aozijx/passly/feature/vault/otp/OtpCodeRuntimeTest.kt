@@ -99,12 +99,12 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `stale HOTP fresh authentication failure cannot clear a newer config`() =
-        assertStaleHotpFailureKeepsNewCode { FreshAuthenticationRequiredException() }
-
-    @Test
-    fun `stale HOTP session lock failure cannot clear a newer config`() =
-        assertStaleHotpFailureKeepsNewCode { SessionLockedException("stale HOTP consume") }
+    fun `stale HOTP authorization failures cannot clear a newer config`() {
+        listOf<() -> Exception>(
+            { FreshAuthenticationRequiredException() },
+            { SessionLockedException("stale HOTP consume") },
+        ).forEach(::assertStaleHotpFailureKeepsNewCode)
+    }
 
     @Test
     fun `visible otp waits for fresh authentication without crashing`() =
@@ -442,72 +442,20 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `stale fresh authentication failure cannot clear a newer config`() =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            val oldConfigGate = CompletableDeferred<Unit>()
-            var loadCount = 0
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = scope,
-                    loadOtpConfig = {
-                        loadCount++
-                        if (loadCount == 1) {
-                            oldConfigGate.await()
-                            throw FreshAuthenticationRequiredException()
-                        }
-                        validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
-                    },
-                    codeGenerator = { OtpResult.Success("code-$loadCount") },
-                )
-
-            coordinator.subscribe("fresh-auth-entry")
-            coordinator.entryChanged("fresh-auth-entry")
-            assertEquals("code-2", coordinator.readyCode("fresh-auth-entry"))
-            oldConfigGate.complete(Unit)
-            yield()
-
-            assertEquals("code-2", coordinator.readyCode("fresh-auth-entry"))
-            scope.cancel()
-        }
+    fun `stale config read authorization failures cannot clear a newer config`() {
+        listOf(
+            FreshAuthenticationRequiredException(),
+            SessionLockedException("stale config read"),
+        ).forEach(::assertStaleConfigReadFailureKeepsNewCode)
+    }
 
     @Test
-    fun `stale session lock failure cannot clear a newer config`() =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            val oldConfigGate = CompletableDeferred<Unit>()
-            var loadCount = 0
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = scope,
-                    loadOtpConfig = {
-                        loadCount++
-                        if (loadCount == 1) {
-                            oldConfigGate.await()
-                            throw SessionLockedException("stale config read")
-                        }
-                        validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
-                    },
-                    codeGenerator = { OtpResult.Success("code-$loadCount") },
-                )
-
-            coordinator.subscribe("session-lock-entry")
-            coordinator.entryChanged("session-lock-entry")
-            assertEquals("code-2", coordinator.readyCode("session-lock-entry"))
-            oldConfigGate.complete(Unit)
-            yield()
-
-            assertEquals("code-2", coordinator.readyCode("session-lock-entry"))
-            scope.cancel()
-        }
-
-    @Test
-    fun `stale fresh authentication refresh failure cannot clear a newer config`() =
-        assertStaleRefreshFailureKeepsNewCode { FreshAuthenticationRequiredException() }
-
-    @Test
-    fun `stale session lock refresh failure cannot clear a newer config`() =
-        assertStaleRefreshFailureKeepsNewCode { SessionLockedException("stale refresh") }
+    fun `stale refresh authorization failures cannot clear a newer config`() {
+        listOf<() -> Exception>(
+            { FreshAuthenticationRequiredException() },
+            { SessionLockedException("stale refresh") },
+        ).forEach(::assertStaleRefreshFailureKeepsNewCode)
+    }
 
     @Test
     fun `release before config load completes does not leave orphan refresh state`() =
@@ -759,42 +707,10 @@ class OtpCodeRuntimeTest {
 
     private fun OtpCodeRuntime.readyCode(entryId: String): String? = (states.value[entryId] as? OtpCodeState.Ready)?.code
 
-    private fun assertStaleRefreshFailureKeepsNewCode(failure: () -> Exception) =
+    private fun assertStaleConfigReadFailureKeepsNewCode(failure: Exception) =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            val staleReadGate = CompletableDeferred<Unit>()
-            var loadCount = 0
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = scope,
-                    loadOtpConfig = {
-                        loadCount++
-                        if (loadCount == 2) {
-                            staleReadGate.await()
-                            throw failure()
-                        }
-                        validTotpConfig().copy(secret = if (loadCount == 1) "JBSWY3DPEHPK3PXP" else "MFRGGZDFMZTWQ2LK")
-                    },
-                    codeGenerator = { OtpResult.Success("code-$loadCount") },
-                )
-            coordinator.activate("refresh-entry")
-            val nextMovingFactor = (System.currentTimeMillis() / 30 + 1) * 30
-            val oldRefresh = scope.launch { coordinator.refreshStates(nextMovingFactor) }
-            coordinator.entryChanged("refresh-entry")
-
-            assertEquals("code-3", coordinator.readyCode("refresh-entry"))
-            staleReadGate.complete(Unit)
-            oldRefresh.join()
-
-            assertEquals("code-3", coordinator.readyCode("refresh-entry"))
-            scope.cancel()
-        }
-
-    private fun assertStaleHotpFailureKeepsNewCode(failure: () -> Exception) =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            val consumeGate = CompletableDeferred<Unit>()
-            val consumeStarted = CompletableDeferred<Unit>()
+            val oldConfigGate = CompletableDeferred<Unit>()
             var loadCount = 0
             val coordinator =
                 OtpCodeRuntime(
@@ -802,29 +718,99 @@ class OtpCodeRuntimeTest {
                     loadOtpConfig = {
                         loadCount++
                         if (loadCount == 1) {
-                            OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 7)
-                        } else {
-                            validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
+                            oldConfigGate.await()
+                            throw failure
                         }
+                        validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
                     },
                     codeGenerator = { OtpResult.Success("code-$loadCount") },
-                    consumeHotpCode = {
-                        consumeStarted.complete(Unit)
-                        consumeGate.await()
-                        throw failure()
-                    },
                 )
-            coordinator.activate("changing-HOTP-entry")
-            val staleCopy = scope.async { coordinator.codeForCopy("changing-HOTP-entry") }
-            consumeStarted.await()
 
-            coordinator.entryChanged("changing-HOTP-entry")
-            assertEquals("code-2", coordinator.readyCode("changing-HOTP-entry"))
+            try {
+                coordinator.subscribe("stale-config-entry")
+                coordinator.entryChanged("stale-config-entry")
+                assertEquals("code-2", coordinator.readyCode("stale-config-entry"))
+                oldConfigGate.complete(Unit)
+                yield()
 
-            consumeGate.complete(Unit)
-            assertEquals(null, staleCopy.await())
-            assertEquals("code-2", coordinator.readyCode("changing-HOTP-entry"))
-            scope.cancel()
+                assertEquals("code-2", coordinator.readyCode("stale-config-entry"))
+            } finally {
+                scope.cancel()
+            }
+        }
+
+    private fun assertStaleRefreshFailureKeepsNewCode(failure: () -> Exception) =
+        runBlocking {
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            try {
+                val staleReadGate = CompletableDeferred<Unit>()
+                var loadCount = 0
+                val coordinator =
+                    OtpCodeRuntime(
+                        scope = scope,
+                        loadOtpConfig = {
+                            loadCount++
+                            if (loadCount == 2) {
+                                staleReadGate.await()
+                                throw failure()
+                            }
+                            validTotpConfig().copy(secret = if (loadCount == 1) "JBSWY3DPEHPK3PXP" else "MFRGGZDFMZTWQ2LK")
+                        },
+                        codeGenerator = { OtpResult.Success("code-$loadCount") },
+                    )
+                coordinator.activate("refresh-entry")
+                val nextMovingFactor = (System.currentTimeMillis() / 30 + 1) * 30
+                val oldRefresh = scope.launch { coordinator.refreshStates(nextMovingFactor) }
+                coordinator.entryChanged("refresh-entry")
+
+                assertEquals("code-3", coordinator.readyCode("refresh-entry"))
+                staleReadGate.complete(Unit)
+                oldRefresh.join()
+
+                assertEquals("code-3", coordinator.readyCode("refresh-entry"))
+            } finally {
+                scope.cancel()
+            }
+        }
+
+    private fun assertStaleHotpFailureKeepsNewCode(failure: () -> Exception) =
+        runBlocking {
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            try {
+                val consumeGate = CompletableDeferred<Unit>()
+                val consumeStarted = CompletableDeferred<Unit>()
+                var loadCount = 0
+                val coordinator =
+                    OtpCodeRuntime(
+                        scope = scope,
+                        loadOtpConfig = {
+                            loadCount++
+                            if (loadCount == 1) {
+                                OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 7)
+                            } else {
+                                validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
+                            }
+                        },
+                        codeGenerator = { OtpResult.Success("code-$loadCount") },
+                        consumeHotpCode = {
+                            consumeStarted.complete(Unit)
+                            consumeGate.await()
+                            throw failure()
+                        },
+                    )
+                coordinator.activate("changing-HOTP-entry")
+                val staleCopy = scope.async { coordinator.codeForCopy("changing-HOTP-entry") }
+                consumeStarted.await()
+
+                coordinator.entryChanged("changing-HOTP-entry")
+                assertEquals("code-2", coordinator.readyCode("changing-HOTP-entry"))
+
+                consumeGate.complete(Unit)
+                assertEquals(null, staleCopy.await())
+                assertEquals("code-2", coordinator.readyCode("changing-HOTP-entry"))
+            } finally {
+                scope.cancel()
+            }
         }
 
     private fun validTotpConfig() =

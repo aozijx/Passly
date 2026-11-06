@@ -22,6 +22,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -82,16 +83,20 @@ class AutofillInboxQueueWriterTest {
     @Test
     fun cancellationFromStorageIsPropagated() =
         runBlocking {
+            val cancellation = CancellationException("cancelled")
             val material = keyMaterialCodec.generateAndWrap(dek)
-            val store = MemoryRecordStore(failure = CancellationException("cancelled"))
+            val store = MemoryRecordStore(failure = cancellation)
             val writer = writer(material, store)
 
-            try {
-                writer.enqueue(AutofillInboxSource.LEGACY_SERVICE, draft())
-                error("Expected cancellation")
-            } catch (_: CancellationException) {
-                assertTrue(true)
-            }
+            val thrown =
+                try {
+                    writer.enqueue(AutofillInboxSource.LEGACY_SERVICE, draft())
+                    null
+                } catch (failure: CancellationException) {
+                    failure
+                }
+
+            assertSame(cancellation, thrown)
         }
 
     private fun writer(

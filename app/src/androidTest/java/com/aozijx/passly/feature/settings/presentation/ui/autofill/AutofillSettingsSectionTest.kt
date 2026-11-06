@@ -24,7 +24,7 @@ class AutofillSettingsSectionTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun savePromptAndPresentationOptionsRemainAvailableWithoutCredentialManagerSupport() {
+    fun presentationOptionsRemainAvailableWithoutCredentialManagerSupport() {
         val settings =
             AutofillSettingsUiModel(
                 enabled = true,
@@ -32,13 +32,7 @@ class AutofillSettingsSectionTest {
                 credentialManagerEnabled = false,
                 supportsCredentialManager = false,
                 requireAuthentication = true,
-                includeOtp = true,
-                savePromptsEnabled = true,
-                allowUnmatchedSuggestions = false,
                 strictDomainMatching = true,
-                maxSuggestions = 5,
-                minSuggestions = 1,
-                maxSuggestionsLimit = 10,
                 canEditPreferences = true,
                 preferencesRefreshing = false,
                 preferencesFailed = false,
@@ -53,11 +47,6 @@ class AutofillSettingsSectionTest {
             }
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-        composeRule
-            .onNodeWithText(
-                context.getString(R.string.settings_autofill_save_prompts),
-            ).assertIsDisplayed()
 
         composeRule
             .onNodeWithText(context.getString(R.string.settings_autofill_presentation))
@@ -159,13 +148,7 @@ class AutofillSettingsSectionTest {
             credentialManagerEnabled = false,
             supportsCredentialManager = false,
             requireAuthentication = true,
-            includeOtp = true,
-            savePromptsEnabled = true,
-            allowUnmatchedSuggestions = false,
             strictDomainMatching = true,
-            maxSuggestions = 5,
-            minSuggestions = 1,
-            maxSuggestionsLimit = 10,
             canEditPreferences = true,
             preferencesRefreshing = false,
             preferencesFailed = false,

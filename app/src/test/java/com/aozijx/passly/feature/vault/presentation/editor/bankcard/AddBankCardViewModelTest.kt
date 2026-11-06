@@ -47,7 +47,7 @@ class AddBankCardViewModelTest {
         session: SecureSessionAccessState,
     ): AddBankCardViewModel {
         val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
-        return AddBankCardViewModel(create, session, editFixture.loader, editFixture.editor)
+        return AddBankCardViewModel(create, session, editFixture.editor)
     }
 
     @Test
@@ -72,11 +72,10 @@ class AddBankCardViewModelTest {
                 AddBankCardViewModel(
                     createEntryUseCase(),
                     fixture.access,
-                    loadEditableEntry = fixture.loader,
                     editDetailEntry = fixture.editor,
                 )
 
-            model.loadExistingEntry("card-edit")
+            model.loadExistingEntry(fixture.editableSeed(entry.id))
             advanceUntilIdle()
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
             assertEquals("4111111111111111", model.uiState.value.form.cardNumber)
