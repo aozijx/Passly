@@ -121,7 +121,7 @@ class ScannerViewModelTest {
         }
 
     @Test
-    fun `stopped and destroyed scanner rejects late input`() =
+    fun `explicitly stopped scanner rejects late input`() =
         runTest {
             var decodes = 0
             val model =
@@ -130,17 +130,32 @@ class ScannerViewModelTest {
                     BarcodeImageResult.Decoded("image")
                 }
             model.onAction(ScannerUiAction.StopScanning)
+            model.onAction(ScannerUiAction.HostStarted)
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
             model.onAction(ScannerUiAction.BarcodeDetected("late"))
             runCurrent()
             assertEquals(0, decodes)
             assertEquals(ScannerUiState.Stopped, model.uiState.value)
+        }
+
+    @Test
+    fun `destroyed scanner rejects late input`() =
+        runTest {
+            var decodes = 0
+            val model =
+                model {
+                    decodes++
+                    BarcodeImageResult.Decoded("image")
+                }
             ViewModelStore().apply {
                 put("scanner", model)
                 clear()
             }
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("late")))
             model.onAction(ScannerUiAction.StartScanning)
             model.onAction(ScannerUiAction.BarcodeDetected("after destroy"))
+            runCurrent()
+            assertEquals(0, decodes)
             assertEquals(ScannerUiState.Stopped, model.uiState.value)
         }
 
@@ -216,6 +231,18 @@ class ScannerViewModelTest {
             model.onAction(ScannerUiAction.HostStopped)
             assertEquals(ScannerUiState.Stopped, model.uiState.value)
             model.onAction(ScannerUiAction.HostStarted)
+            model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
+            runCurrent()
+
+            assertEquals(ScannerUiState.ShowingResult(ScannerResult("selected photo")), model.uiState.value)
+        }
+
+    @Test
+    fun `photo picker result can take ownership while host remains paused`() =
+        runTest {
+            val model = model { BarcodeImageResult.Decoded("selected photo") }
+
+            model.onAction(ScannerUiAction.HostStopped)
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
             runCurrent()
 

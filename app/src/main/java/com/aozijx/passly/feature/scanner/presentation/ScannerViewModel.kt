@@ -40,6 +40,8 @@ class ScannerViewModel internal constructor(
             val scope: CoroutineScope,
         ) : Work
 
+        data object HostPaused : Work
+
         data object Stopped : Work
 
         data object Destroyed : Work
@@ -113,7 +115,7 @@ class ScannerViewModel internal constructor(
 
     private fun pauseForHost() {
         when (work) {
-            Work.Stopped, Work.Destroyed -> {
+            Work.HostPaused, Work.Stopped, Work.Destroyed -> {
                 return
             }
 
@@ -127,7 +129,7 @@ class ScannerViewModel internal constructor(
                     ScannerUiState.ProcessingImage,
                     ScannerUiState.Stopped,
                     -> {
-                        replaceWork(Work.Stopped)
+                        replaceWork(Work.HostPaused)
                         mutate(ScannerMutation.Stopped)
                     }
                 }
@@ -141,9 +143,13 @@ class ScannerViewModel internal constructor(
                 Unit
             }
 
-            Work.Stopped -> {
+            Work.HostPaused -> {
                 replaceWork(newWork())
                 if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
+            }
+
+            Work.Stopped -> {
+                Unit
             }
         }
     }
@@ -170,6 +176,7 @@ class ScannerViewModel internal constructor(
     }
 
     private fun decodeImage(image: ImageRef) {
+        if (work == Work.Stopped || work == Work.Destroyed) return
         val owner = newWork()
         replaceWork(owner)
         if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
