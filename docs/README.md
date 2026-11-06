@@ -70,11 +70,15 @@
 - [Passly Archive v1 协议](features/backup/passly-archive-v1.md)
 - [验证要求](features/backup/verification.md)
 
-### 其他功能
+### 系统集成
+
+- [通知设置](features/notification-settings.md)
+- [权限管理](features/permission-management.md)
+
+### 工具
 
 - [诊断日志](features/diagnostics/viewer-and-export.md)
 - [二维码扫描](features/scanner/overview.md)
-- [权限与消息](features/permissions-and-messages.md)
 
 ## 开发约定
 

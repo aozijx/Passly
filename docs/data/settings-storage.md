@@ -150,7 +150,8 @@ Legacy Autofill、Credential Manager 和保存 Activity 通过同一个 persiste
 - 根消息不添加没有读取、拒绝或迁移行为的版本字段；需要迁移路由时，版本字段与规则一起引入。
 - Serializer 遇到损坏输入抛出 `CorruptionException`，不静默重置整个设置文件。
 
-消息通知权限和系统能力是交付条件，不是偏好值；相关设计见[权限与消息](../features/permissions-and-messages.md)。
+消息通知权限和系统能力是交付条件，不是偏好值；用户偏好与权限申请见[通知设置](../features/notification-settings.md)，
+权限中心只展示平台状态，见[权限管理](../features/permission-management.md)。
 
 
 ## 代码位置
