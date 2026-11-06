@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.navigation
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
@@ -94,33 +95,63 @@ internal fun NavGraphBuilder.registerVaultGraph(
     registerEditorEditDestination(
         navGraphBuilder = this,
         route = AppRoute.EditPassword.route,
-    ) { entryId ->
-        AddPasswordEditorRoute(
-            onBack = context.navigateBack,
-            onSaved = context.navigateBack,
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = this,
-            editEntryId = entryId,
-        )
-    }
+        navController = navController,
+        { seedToken, consumeSeed ->
+            AddPasswordEditorRoute(
+                onBack = context.navigateBack,
+                onSaved = context.navigateBack,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this,
+                editSeedToken = seedToken,
+                consumeEditSeed = consumeSeed,
+            )
+        },
+    )
     registerEditorEditDestination(
         navGraphBuilder = this,
         route = AppRoute.EditOtp.route,
-    ) { entryId ->
-        AddOtpEditorRoute(context.navigateBack, context.navigateBack, sharedTransitionScope, this, editEntryId = entryId)
-    }
+        navController = navController,
+        { seedToken, consumeSeed ->
+            AddOtpEditorRoute(
+                context.navigateBack,
+                context.navigateBack,
+                sharedTransitionScope,
+                this,
+                editSeedToken = seedToken,
+                consumeEditSeed = consumeSeed,
+            )
+        },
+    )
     registerEditorEditDestination(
         navGraphBuilder = this,
         route = AppRoute.EditBankCard.route,
-    ) { entryId ->
-        AddBankCardEditorRoute(context.navigateBack, context.navigateBack, sharedTransitionScope, this, editEntryId = entryId)
-    }
+        navController = navController,
+        { seedToken, consumeSeed ->
+            AddBankCardEditorRoute(
+                context.navigateBack,
+                context.navigateBack,
+                sharedTransitionScope,
+                this,
+                editSeedToken = seedToken,
+                consumeEditSeed = consumeSeed,
+            )
+        },
+    )
     registerEditorEditDestination(
         navGraphBuilder = this,
         route = AppRoute.EditWifi.route,
-    ) { entryId ->
-        AddWifiEditorRoute(context.navigateBack, context.navigateBack, sharedTransitionScope, this, editEntryId = entryId)
-    }
+        navController = navController,
+        { seedToken, consumeSeed ->
+            AddWifiEditorRoute(
+                context.navigateBack,
+                context.navigateBack,
+                sharedTransitionScope,
+                this,
+                editSeedToken = seedToken,
+                consumeEditSeed = consumeSeed,
+            )
+        },
+    )
 
     composable(
         route = AppRoute.AddWifiFromSeed.route,
@@ -146,6 +177,7 @@ internal fun NavGraphBuilder.registerVaultGraph(
                         is EntryEditorSeedConsumeResult.Consumed -> {
                             when (val seed = consumed.seed) {
                                 is EntryEditorSeed.Wifi -> AddWifiInitialContent.Scanned(seed.payload)
+                                is EntryEditorSeed.Editable -> AddWifiInitialContent.SeedUnavailable
                             }
                         }
 
@@ -182,30 +214,64 @@ internal fun NavGraphBuilder.registerVaultGraph(
             backStackEntry.arguments
                 ?.getString(AppRoute.Detail.ARG_ENTRY_ID)
                 ?: return@composable
+        val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
         DetailRoute(
             entryId = entryId,
             onBack = context.navigateBack,
             onOpenRelatedEntry = {
                 context.navigateToRoute(AppRoute.Detail.createRoute(it))
             },
-            onEditFullForm = { type ->
-                VaultEditorDestinationRegistry.editRouteFor(type, entryId)?.let(context.navigateToRoute)
+            onEditFullForm = { editableEntry ->
+                when (val staged = seedCoordinator.stage(editableEntry)) {
+                    is EntryEditorSeedStageResult.Staged -> {
+                        val route =
+                            VaultEditorDestinationRegistry.editRouteFor(
+                                editableEntry.entry.type,
+                                staged.token.value,
+                            )
+                        if (route == null) {
+                            seedCoordinator.discard(staged.token)
+                        } else {
+                            context.navigateToRoute(route)
+                        }
+                    }
+
+                    EntryEditorSeedStageResult.AccessDenied -> {
+                        Unit
+                    }
+                }
             },
         )
     }
 }
 
-private fun NavGraphBuilder.registerEditorEditDestination(
+private fun registerEditorEditDestination(
     navGraphBuilder: NavGraphBuilder,
     route: String,
-    content: @Composable AnimatedVisibilityScope.(String) -> Unit,
+    navController: NavHostController,
+    content: @Composable AnimatedVisibilityScope.(String, (String) -> EntryEditorSeedConsumeResult) -> Unit,
 ) {
     navGraphBuilder.composable(
         route = route,
-        arguments = listOf(navArgument("entryId") { type = NavType.StringType }),
+        arguments = listOf(navArgument("seedToken") { type = NavType.StringType }),
     ) { backStackEntry ->
-        val entryId = backStackEntry.arguments?.getString("entryId") ?: return@composable
-        content(entryId)
+        val seedToken = backStackEntry.arguments?.getString("seedToken") ?: return@composable
+        val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
+        DisposableEffect(seedToken, seedCoordinator) {
+            onDispose {
+                when (val parsed = EditorSeedToken.parse(seedToken)) {
+                    is EditorSeedTokenParseResult.Valid -> seedCoordinator.discard(parsed.token)
+                    EditorSeedTokenParseResult.Invalid -> Unit
+                }
+            }
+        }
+        val consumeSeed: (String) -> EntryEditorSeedConsumeResult = { rawToken ->
+            when (val parsed = EditorSeedToken.parse(rawToken)) {
+                is EditorSeedTokenParseResult.Valid -> seedCoordinator.consume(parsed.token)
+                EditorSeedTokenParseResult.Invalid -> EntryEditorSeedConsumeResult.Missing
+            }
+        }
+        content(seedToken, consumeSeed)
     }
 }
 

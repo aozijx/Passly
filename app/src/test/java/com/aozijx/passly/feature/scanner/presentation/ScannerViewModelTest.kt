@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.scanner.presentation
 
+import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
@@ -134,10 +135,10 @@ class ScannerViewModelTest {
             runCurrent()
             assertEquals(0, decodes)
             assertEquals(ScannerUiState.Stopped, model.uiState.value)
-            model.javaClass
-                .getDeclaredMethod("onCleared")
-                .apply { isAccessible = true }
-                .invoke(model)
+            ViewModelStore().apply {
+                put("scanner", model)
+                clear()
+            }
             model.onAction(ScannerUiAction.StartScanning)
             model.onAction(ScannerUiAction.BarcodeDetected("after destroy"))
             assertEquals(ScannerUiState.Stopped, model.uiState.value)

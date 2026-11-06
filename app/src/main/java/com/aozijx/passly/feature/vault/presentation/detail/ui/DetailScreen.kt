@@ -22,7 +22,7 @@ fun DetailScreen(
     onBack: () -> Unit,
     onAction: (DetailUiAction) -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
-    onEditFullForm: (com.aozijx.passly.domain.entry.model.EntryType) -> Unit,
+    onEditFullForm: () -> Unit,
     onFaviconUploadRequested: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -36,7 +36,7 @@ fun DetailScreen(
                 onTitleEditStarted = { onAction(DetailUiAction.StartTitleEdit) },
                 onTitleSaved = { onAction(DetailUiAction.SaveTitle) },
                 onFavoriteToggled = { onAction(DetailUiAction.ToggleFavorite) },
-                onEditFullForm = { onEditFullForm(model.header.entryType) },
+                onEditFullForm = onEditFullForm,
                 onBack = onBack,
             )
         },

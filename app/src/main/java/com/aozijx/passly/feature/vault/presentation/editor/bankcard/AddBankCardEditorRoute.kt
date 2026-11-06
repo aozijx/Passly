@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.bankcard.AddBankCardEditorScreen
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
@@ -22,7 +23,8 @@ fun AddBankCardEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    editEntryId: String? = null,
+    editSeedToken: String? = null,
+    consumeEditSeed: ((String) -> EntryEditorSeedConsumeResult)? = null,
 ) {
     val viewModel = hiltViewModel<AddBankCardViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -35,11 +37,13 @@ fun AddBankCardEditorRoute(
             animatedVisibilityScope = animatedVisibilityScope,
         )
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
-    LaunchedEffect(viewModel, editEntryId) {
-        editEntryId?.let(viewModel::loadExistingEntry)
+    LaunchedEffect(viewModel, editSeedToken) {
+        editSeedToken?.let { token ->
+            viewModel.loadExistingEntry(consumeEditSeed?.invoke(token) ?: EntryEditorSeedConsumeResult.Missing)
+        }
     }
-    LaunchedEffect(uiState.loadFailed, editEntryId) {
-        if (editEntryId != null && uiState.loadFailed) {
+    LaunchedEffect(uiState.loadFailed, editSeedToken) {
+        if (editSeedToken != null && uiState.loadFailed) {
             snackbarHostState.showSnackbar(loadFailedMessage)
         }
     }
@@ -50,6 +54,6 @@ fun AddBankCardEditorRoute(
         onBack = onBack,
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
-        isEditingExisting = editEntryId != null,
+        isEditingExisting = editSeedToken != null,
     )
 }

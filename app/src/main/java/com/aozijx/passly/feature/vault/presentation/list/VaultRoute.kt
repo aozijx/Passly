@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -36,6 +35,9 @@ import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
@@ -56,7 +58,6 @@ import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 import java.net.URI
 import java.net.URISyntaxException
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun VaultRoute(
     vaultViewModel: VaultViewModel,
@@ -121,9 +122,7 @@ internal fun VaultRoute(
             return
         }
 
-        is RecoverableReadState.Ready -> {
-            Unit
-        }
+        is RecoverableReadState.Ready -> {}
     }
 
     val display =
@@ -259,37 +258,60 @@ internal fun VaultRoute(
                 ),
     ) {
         ScannerRoute(
-            onResult = result@{ rawValue ->
+            resolveResult = resolve@{ rawValue ->
                 val otpConfig = (OtpAuthUriCodec.parse(rawValue) as? OtpUriParseResult.Parsed)?.config
                 if (otpConfig != null) {
-                    return@result if (scannedOtpImportViewModel.importScannedOtp(otpConfig)) {
-                        ScannerResultHandling.Handled
-                    } else {
-                        ScannerResultHandling.Rejected
-                    }
+                    return@resolve ScannerResultPlan(
+                        presentation = ScannerResultPresentation(
+                            showCopyAction = false,
+                            primaryActionLabel = ScannerPrimaryActionLabel.Save,
+                        ),
+                        confirm = {
+                            if (scannedOtpImportViewModel.importScannedOtp(otpConfig)) {
+                                ScannerResultHandling.Handled
+                            } else {
+                                ScannerResultHandling.Rejected
+                            }
+                        },
+                    )
                 }
 
                 val wifiPayload =
                     (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
                 if (wifiPayload != null) {
-                    return@result when (
-                        navigation.navigate(VaultDestinationRequest.EditScannedWifi(wifiPayload))
-                    ) {
-                        VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
-                        VaultNavigationResult.UnsupportedDestination,
-                        VaultNavigationResult.AccessDenied,
-                        -> ScannerResultHandling.Rejected
-                    }
+                    return@resolve ScannerResultPlan(
+                        presentation = ScannerResultPresentation.DEFAULT,
+                        confirm = {
+                            when (navigation.navigate(VaultDestinationRequest.EditScannedWifi(wifiPayload))) {
+                                VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
+                                VaultNavigationResult.UnsupportedDestination,
+                                VaultNavigationResult.AccessDenied,
+                                -> ScannerResultHandling.Rejected
+                            }
+                        },
+                    )
                 }
 
                 val webUri =
-                    rawValue.toScannedWebUri() ?: return@result ScannerResultHandling.Rejected
-                if (context.openScannedWebLink(webUri)) {
-                    ScannerResultHandling.Handled
-                } else {
-                    Toast.makeText(context, R.string.scanner_open_link_failed, Toast.LENGTH_SHORT).show()
-                    ScannerResultHandling.Rejected
+                    rawValue.toScannedWebUri()
+                if (webUri != null) {
+                    return@resolve ScannerResultPlan(
+                        presentation = ScannerResultPresentation.DEFAULT,
+                        confirm = {
+                            if (context.openScannedWebLink(webUri)) {
+                                ScannerResultHandling.Handled
+                            } else {
+                                Toast.makeText(context, R.string.scanner_open_link_failed, Toast.LENGTH_SHORT).show()
+                                ScannerResultHandling.Rejected
+                            }
+                        },
+                    )
                 }
+
+                ScannerResultPlan(
+                    presentation = ScannerResultPresentation.DEFAULT,
+                    confirm = { ScannerResultHandling.Rejected },
+                )
             },
             onDismiss = { overlay = VaultOverlay.None },
         )

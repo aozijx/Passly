@@ -51,7 +51,7 @@ internal fun ScannerScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
-            isBusy = model.isHandlingResult,
+            isBusy = model.isResultActionLocked,
             onAction = onAction,
         )
 
@@ -83,8 +83,8 @@ internal fun ScannerScreen(
                 is ScannerUiState.ShowingResult -> {
                     ScannerResultCard(
                         rawValue = scannerState.result.rawValue,
-                        compact = !adaptiveLayout.isAtLeastMedium,
-                        isBusy = model.isHandlingResult,
+                        isBusy = model.isResultActionLocked,
+                        presentation = model.resultPresentation,
                         onAction = onAction,
                     )
                 }

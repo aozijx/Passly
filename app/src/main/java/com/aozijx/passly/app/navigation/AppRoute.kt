@@ -27,20 +27,20 @@ sealed class AppRoute(
 
     data object AddWifi : AppRoute("vault/add/wifi")
 
-    data object EditPassword : AppRoute("vault/edit/password/{entryId}") {
-        fun createRoute(entryId: String) = "vault/edit/password/$entryId"
+    data object EditPassword : AppRoute("vault/edit/password/{seedToken}") {
+        fun createRoute(seedToken: String) = "vault/edit/password/$seedToken"
     }
 
-    data object EditOtp : AppRoute("vault/edit/otp/{entryId}") {
-        fun createRoute(entryId: String) = "vault/edit/otp/$entryId"
+    data object EditOtp : AppRoute("vault/edit/otp/{seedToken}") {
+        fun createRoute(seedToken: String) = "vault/edit/otp/$seedToken"
     }
 
-    data object EditBankCard : AppRoute("vault/edit/bankcard/{entryId}") {
-        fun createRoute(entryId: String) = "vault/edit/bankcard/$entryId"
+    data object EditBankCard : AppRoute("vault/edit/bankcard/{seedToken}") {
+        fun createRoute(seedToken: String) = "vault/edit/bankcard/$seedToken"
     }
 
-    data object EditWifi : AppRoute("vault/edit/wifi/{entryId}") {
-        fun createRoute(entryId: String) = "vault/edit/wifi/$entryId"
+    data object EditWifi : AppRoute("vault/edit/wifi/{seedToken}") {
+        fun createRoute(seedToken: String) = "vault/edit/wifi/$seedToken"
     }
 
     data object AddWifiFromSeed : AppRoute("vault/add/wifi/from-seed/{seedToken}") {

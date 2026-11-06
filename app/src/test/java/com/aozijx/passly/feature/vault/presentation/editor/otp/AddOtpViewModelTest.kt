@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
+import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -166,10 +167,10 @@ class AddOtpViewModelTest {
         runTest {
             val model = createViewModel()
             model.onAction(AddOtpAction.UriChanged("invalid", true))
-            model.javaClass
-                .getDeclaredMethod("onCleared")
-                .apply { isAccessible = true }
-                .invoke(model)
+            ViewModelStore().apply {
+                put("otp", model)
+                clear()
+            }
             val events = mutableListOf<AddOtpEvent>()
             backgroundScope.launch { model.events.toList(events) }
             runCurrent()

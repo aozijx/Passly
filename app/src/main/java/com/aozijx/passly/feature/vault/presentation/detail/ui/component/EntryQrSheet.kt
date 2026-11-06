@@ -49,6 +49,7 @@ fun EntryQrSheet(
     val kind =
         when (state) {
             DetailQrState.Hidden -> return
+            is DetailQrState.Authorizing -> return
             is DetailQrState.Loading -> state.kind
             is DetailQrState.Ready -> state.kind
             is DetailQrState.Failed -> state.kind
@@ -103,6 +104,7 @@ fun EntryQrSheet(
                 ) {
                     when (state) {
                         DetailQrState.Hidden -> Unit
+                        is DetailQrState.Authorizing -> Unit
                         is DetailQrState.Loading -> CircularWavyProgressIndicator()
                         is DetailQrState.Failed -> Text(stringResource(R.string.vault_qr_generation_failed))
                         is DetailQrState.Ready -> EntryQrImage(state.content)

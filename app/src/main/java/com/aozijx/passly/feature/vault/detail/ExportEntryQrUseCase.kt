@@ -37,7 +37,10 @@ internal class ExportEntryQrUseCase
         private val activityRecorder: ActivityRecorder,
         private val logger: Logger,
     ) {
-        suspend operator fun invoke(entry: Entry): EntryQrExportResult {
+        suspend operator fun invoke(
+            entry: Entry,
+            onAuthorized: () -> Unit = {},
+        ): EntryQrExportResult {
             var pending = OwnedChars.EMPTY
             var transferred = false
 
@@ -60,6 +63,7 @@ internal class ExportEntryQrUseCase
                                         authorizationGate.authorize(
                                             AuthorizationScope.Global(AuthenticationPurpose.REVEAL_SECRET),
                                         ) {
+                                            onAuthorized()
                                             val wifi =
                                                 sensitiveFieldRepository.readBundle(entry.id).wifi
                                                     ?: return@authorize EntryQrExportResult.Unavailable
@@ -86,6 +90,7 @@ internal class ExportEntryQrUseCase
                                                 SensitiveAccessAction.REVEAL,
                                             ),
                                         ) { permit ->
+                                            onAuthorized()
                                             val revealed =
                                                 sensitiveFieldRepository.reveal(
                                                     entry.id,

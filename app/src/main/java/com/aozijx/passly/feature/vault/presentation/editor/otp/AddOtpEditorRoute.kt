@@ -28,6 +28,10 @@ import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.otp.AddOtpEditorScreen
@@ -39,7 +43,8 @@ fun AddOtpEditorRoute(
     onSaved: () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    editEntryId: String? = null,
+    editSeedToken: String? = null,
+    consumeEditSeed: ((String) -> EntryEditorSeedConsumeResult)? = null,
 ) {
     val viewModel = hiltViewModel<AddOtpViewModel>()
     val context = LocalContext.current
@@ -63,11 +68,13 @@ fun AddOtpEditorRoute(
     }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
-    LaunchedEffect(viewModel, editEntryId) {
-        editEntryId?.let(viewModel::loadExistingEntry)
+    LaunchedEffect(viewModel, editSeedToken) {
+        editSeedToken?.let { token ->
+            viewModel.loadExistingEntry(consumeEditSeed?.invoke(token) ?: EntryEditorSeedConsumeResult.Missing)
+        }
     }
-    LaunchedEffect(uiState.loadFailed, editEntryId) {
-        if (editEntryId != null && uiState.loadFailed) {
+    LaunchedEffect(uiState.loadFailed, editSeedToken) {
+        if (editSeedToken != null && uiState.loadFailed) {
             snackbarHostState.showSnackbar(loadFailedMessage)
         }
     }
@@ -98,7 +105,7 @@ fun AddOtpEditorRoute(
         onScan = { overlay = OtpEditorOverlay.Scanner },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
-        isEditingExisting = editEntryId != null,
+        isEditingExisting = editSeedToken != null,
     )
 
     AnimatedVisibility(
@@ -117,13 +124,27 @@ fun AddOtpEditorRoute(
                 ),
     ) {
         ScannerRoute(
-            onResult = { rawValue ->
+            resolveResult = { rawValue ->
                 val config = (OtpAuthUriCodec.parse(rawValue) as? OtpUriParseResult.Parsed)?.config
-                if (config != null && viewModel.tryApplyScannedConfig(config)) {
-                    ScannerResultHandling.Handled
-                } else {
-                    ScannerResultHandling.Rejected
-                }
+                val presentation =
+                    if (config != null) {
+                        ScannerResultPresentation(
+                            showCopyAction = false,
+                            primaryActionLabel = ScannerPrimaryActionLabel.Use,
+                        )
+                    } else {
+                        ScannerResultPresentation.DEFAULT
+                    }
+                ScannerResultPlan(
+                    presentation = presentation,
+                    confirm = {
+                        if (config != null && viewModel.tryApplyScannedConfig(config)) {
+                            ScannerResultHandling.Handled
+                        } else {
+                            ScannerResultHandling.Rejected
+                        }
+                    },
+                )
             },
             onDismiss = { overlay = OtpEditorOverlay.None },
         )

@@ -31,15 +31,19 @@ import kotlinx.coroutines.launch
 
 @Composable
 internal fun ScannerRoute(
-    onResult: suspend (String) -> ScannerResultHandling,
+    resolveResult: (String) -> ScannerResultPlan,
     onDismiss: () -> Unit,
 ) {
     val viewModel = hiltViewModel<ScannerViewModel>()
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val resultSession = remember(state) { ScannerResultSession() }
+    val resultSession = remember { ScannerResultSession() }
     val resultPhase by resultSession.phase.collectAsStateWithLifecycle()
+    val resultValue = (state as? ScannerUiState.ShowingResult)?.result?.rawValue
+    val resultPlan = remember(resultValue) {
+        resultValue?.let(resolveResult)
+    }
     DisposableEffect(resultSession) {
         onDispose { resultSession.close() }
     }
@@ -105,9 +109,9 @@ internal fun ScannerRoute(
             ScannerScreenAction.ScanAgain -> viewModel.onAction(ScannerUiAction.StartScanning)
             ScannerScreenAction.CopyResult -> viewModel.onAction(ScannerUiAction.CopyText)
             ScannerScreenAction.ConfirmResult -> {
-                val result = (state as? ScannerUiState.ShowingResult)?.result ?: return
+                val plan = resultPlan ?: return
                 scope.launch {
-                    when (resultSession.confirm { onResult(result.rawValue) }) {
+                    when (resultSession.confirm { plan.confirm() }) {
                         ScannerResultOutcome.Handled -> dismissScanner()
                         ScannerResultOutcome.Ignored -> Unit
                         ScannerResultOutcome.Rejected -> {
@@ -123,7 +127,8 @@ internal fun ScannerRoute(
 
     val screenModel = ScannerScreenModel(
         content = state,
-        isHandlingResult = resultPhase == ScannerResultPhase.Handling,
+        isResultActionLocked = resultPhase != ScannerResultPhase.Ready,
+        resultPresentation = resultPlan?.presentation ?: ScannerResultPresentation.DEFAULT,
     )
 
     BoxWithConstraints(

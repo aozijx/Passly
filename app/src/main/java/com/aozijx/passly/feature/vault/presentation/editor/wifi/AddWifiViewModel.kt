@@ -10,10 +10,11 @@ import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
-import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
-import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
+import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,6 @@ class AddWifiViewModel
     internal constructor(
         createEntryUseCase: EntryCreation,
         private val secureSessionAccessState: SecureSessionAccessState,
-        private val loadEditableEntry: LoadEditableEntryUseCase,
         private val editDetailEntry: EditDetailEntryUseCase,
     ) : ViewModel() {
         private sealed interface InitializationPhase {
@@ -39,7 +39,6 @@ class AddWifiViewModel
 
         private var initializationPhase: InitializationPhase = InitializationPhase.Pending
         private var editingEntryId: EntryId? = null
-        private var editLoadJob: kotlinx.coroutines.Job? = null
         private val _uiState = MutableStateFlow(AddWifiUiState())
         val uiState = _uiState.asStateFlow()
         private val writeSession =
@@ -75,45 +74,20 @@ class AddWifiViewModel
             return AddWifiInitializationGate.NeedsInitialContent
         }
 
-        fun loadExistingEntry(rawEntryId: String) {
+        fun loadExistingEntry(result: EntryEditorSeedConsumeResult) {
             if (editingEntryId != null) return
-            val entryId =
-                runCatching { EntryId(rawEntryId) }.getOrNull() ?: run {
-                    _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
-                    return
-                }
-            editingEntryId = entryId
-            initializationPhase = InitializationPhase.Complete
-            if (!writeSession.canEdit()) {
-                _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
+            val seed = (result as? EntryEditorSeedConsumeResult.Consumed)?.seed as? EntryEditorSeed.Editable
+            if (seed == null || !seed.matchesCurrentAccess(EntryType.WIFI, secureSessionAccessState) || !writeSession.canEdit()) {
+                failEditLoad()
                 return
             }
-            val authentication = secureSessionAccessState.authenticationState.value
-            _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Loading)
-            editLoadJob =
-                viewModelScope.launch {
-                    when (val result = loadEditableEntry(entryId)) {
-                        is EditableEntryLoadResult.Loaded -> {
-                            if (result.entry.type != EntryType.WIFI || result.entry.id != entryId ||
-                                authentication !== result.authentication ||
-                                secureSessionAccessState.authenticationState.value !== result.authentication ||
-                                !secureSessionAccessState.hasFullSecureSessionAccess()
-                            ) {
-                                failEditLoad()
-                            } else {
-                                _uiState.value =
-                                    _uiState.value
-                                        .withForm(
-                                            _uiState.value.form.fromEntry(result.entry),
-                                        ).copy(loadPhase = EditorLoadPhase.Ready)
-                            }
-                        }
-
-                        else -> {
-                            failEditLoad()
-                        }
-                    }
-                }
+            editingEntryId = seed.entry.id
+            initializationPhase = InitializationPhase.Complete
+            _uiState.value =
+                _uiState.value.copy(
+                    form = _uiState.value.form.fromEntry(seed.entry),
+                    loadPhase = EditorLoadPhase.Ready,
+                )
         }
 
         fun onAction(action: AddWifiAction) {
@@ -195,8 +169,6 @@ class AddWifiViewModel
         }
 
         private fun clearSensitiveContent() {
-            editLoadJob?.cancel()
-            editLoadJob = null
             _uiState.value =
                 AddWifiUiState(
                     loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,

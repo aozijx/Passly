@@ -20,11 +20,14 @@ import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
+import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
@@ -70,6 +73,7 @@ class DetailViewModel
         exportEntryQr: ExportEntryQrUseCase,
         private val secureSessionAccessState: SecureSessionAccessState,
         private val revealEntryFields: RevealEntryFieldsUseCase,
+        private val loadEditableEntry: LoadEditableEntryUseCase,
         private val editDetailEntry: EditDetailEntryUseCase,
         private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
         private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
@@ -97,7 +101,10 @@ class DetailViewModel
         private val revisionRevealStore = DetailRevisionRevealStore()
         private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
         private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
-        private val qrSession = DetailQrSession(viewModelScope, secureSessionAccessState, exportEntryQr::invoke)
+        private val qrSession =
+            DetailQrSession(viewModelScope, secureSessionAccessState) { entry, onAuthorized ->
+                exportEntryQr(entry, onAuthorized)
+            }
         val qrState = qrSession.state
         private var entryLoadJob: Job? = null
         private var historyJob: Job? = null
@@ -123,6 +130,22 @@ class DetailViewModel
         val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
         private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
         val effects = _effects.receiveAsFlow()
+
+        suspend fun prepareEntryForEdit(): EntryEditorSeed.Editable? {
+            val sourceEntry = _uiState.value.entry ?: return null
+            if (!secureSessionAccessState.hasFullSecureSessionAccess()) return null
+            val result = loadEditableEntry(sourceEntry.id)
+            if (result !is EditableEntryLoadResult.Loaded) return null
+            if (result.entry.id != sourceEntry.id || result.entry.type != sourceEntry.type ||
+                secureSessionAccessState.authenticationState.value !== result.authentication ||
+                !secureSessionAccessState.hasFullSecureSessionAccess() ||
+                _uiState.value.entry?.id != sourceEntry.id
+            ) {
+                return null
+            }
+            return EntryEditorSeed.Editable(result.entry, result.authentication)
+        }
+
         private val _otpState = MutableStateFlow<OtpCodeState?>(null)
         val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
         private val revisionRevealState = MutableStateFlow(emptyMap<SensitiveFieldKey, SensitiveValue>())

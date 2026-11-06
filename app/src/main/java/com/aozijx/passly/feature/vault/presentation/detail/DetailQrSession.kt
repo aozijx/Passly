@@ -16,8 +16,17 @@ import kotlinx.coroutines.launch
 internal class DetailQrSession(
     private val scope: CoroutineScope,
     private val access: SecureSessionAccessState,
-    private val export: suspend (Entry) -> EntryQrExportResult,
+    private val export: suspend (Entry, () -> Unit) -> EntryQrExportResult,
 ) {
+    constructor(
+        scope: CoroutineScope,
+        access: SecureSessionAccessState,
+        export: suspend (Entry) -> EntryQrExportResult,
+    ) : this(scope, access, { entry, onAuthorized ->
+        onAuthorized()
+        export(entry)
+    })
+
     private val mutableState = MutableStateFlow<DetailQrState>(DetailQrState.Hidden)
     val state = mutableState.asStateFlow()
     private var requestJob: Job? = null
@@ -45,12 +54,16 @@ internal class DetailQrSession(
                 else -> return
             }
         val currentGeneration = generation
-        mutableState.value = DetailQrState.Loading(kind)
+        mutableState.value = DetailQrState.Authorizing(kind)
         requestJob =
             scope.launch {
                 val result =
                     try {
-                        export(entry)
+                        export(entry) {
+                            if (currentGeneration == generation && access.hasFullSecureSessionAccess()) {
+                                mutableState.value = DetailQrState.Loading(kind)
+                            }
+                        }
                     } catch (cancelled: CancellationException) {
                         if (currentGeneration == generation) mutableState.value = DetailQrState.Hidden
                         throw cancelled

@@ -12,6 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,25 +27,31 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailScreen
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 
 @Composable
 fun DetailRoute(
     entryId: String,
     onBack: () -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
-    onEditFullForm: (EntryType) -> Unit,
+    onEditFullForm: (EntryEditorSeed.Editable) -> Unit,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
 ) {
     val viewModel = hiltViewModel<DetailViewModel>()
     val context = LocalContext.current
     val resources = LocalResources.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val editScope = rememberCoroutineScope()
+    var editPreparationJob by remember(viewModel) { mutableStateOf<Job?>(null) }
     val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val qrState by viewModel.qrState.collectAsStateWithLifecycle()
@@ -69,6 +79,8 @@ fun DetailRoute(
         onDispose { viewModel.onAction(DetailUiAction.ClearSensitiveState) }
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        editPreparationJob?.cancel()
+        editPreparationJob = null
         viewModel.onAction(DetailUiAction.DismissEntryQr)
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -122,7 +134,16 @@ fun DetailRoute(
         onBack = onBack,
         onAction = viewModel::onAction,
         onOpenRelatedEntry = onOpenRelatedEntry,
-        onEditFullForm = onEditFullForm,
+        onEditFullForm = {
+            if (editPreparationJob?.isActive != true) {
+                editPreparationJob =
+                    editScope.launch {
+                        val editable = viewModel.prepareEntryForEdit() ?: return@launch
+                        currentCoroutineContext().ensureActive()
+                        onEditFullForm(editable)
+                    }
+            }
+        },
         onFaviconUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
     )
 }

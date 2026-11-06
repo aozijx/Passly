@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.password
 
+import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
@@ -161,8 +162,10 @@ class AddPasswordViewModelTest {
                 )
             model.onAction(AddPasswordAction.LoadAssociatedApps)
             runCurrent()
-            val clear = model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }
-            clear.invoke(model)
+            ViewModelStore().apply {
+                put("password", model)
+                clear()
+            }
             release.complete(Unit)
             advanceUntilIdle()
             assertTrue(
@@ -184,8 +187,10 @@ class AddPasswordViewModelTest {
                             emptyList()
                         },
                 )
-            val clear = model.javaClass.getDeclaredMethod("onCleared").apply { isAccessible = true }
-            clear.invoke(model)
+            ViewModelStore().apply {
+                put("password", model)
+                clear()
+            }
             model.onAction(AddPasswordAction.LoadAssociatedApps)
             advanceUntilIdle()
             assertEquals(0, queries)
@@ -211,9 +216,10 @@ class AddPasswordViewModelTest {
         viewModel.onAction(AddPasswordAction.TitleChanged("Mail"))
         viewModel.onAction(AddPasswordAction.PasswordChanged("secret"))
 
-        val onCleared = viewModel.javaClass.getDeclaredMethod("onCleared")
-        onCleared.isAccessible = true
-        onCleared.invoke(viewModel)
+        ViewModelStore().apply {
+            put("password", viewModel)
+            clear()
+        }
 
         assertEquals("", viewModel.uiState.value.form.password)
         assertEquals("", viewModel.uiState.value.form.title)

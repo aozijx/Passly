@@ -19,16 +19,16 @@ internal object VaultEditorDestinationRegistry {
 
     fun editRouteFor(
         type: EntryType,
-        entryId: String,
+        seedToken: String,
     ): String? =
         when (type) {
-            EntryType.LOGIN -> AppRoute.EditPassword.createRoute(entryId)
+            EntryType.LOGIN -> AppRoute.EditPassword.createRoute(seedToken)
 
-            EntryType.OTP -> AppRoute.EditOtp.createRoute(entryId)
+            EntryType.OTP -> AppRoute.EditOtp.createRoute(seedToken)
 
-            EntryType.BANK_CARD -> AppRoute.EditBankCard.createRoute(entryId)
+            EntryType.BANK_CARD -> AppRoute.EditBankCard.createRoute(seedToken)
 
-            EntryType.WIFI -> AppRoute.EditWifi.createRoute(entryId)
+            EntryType.WIFI -> AppRoute.EditWifi.createRoute(seedToken)
 
             EntryType.ACCOUNT, EntryType.NOTE, EntryType.ID_CARD, EntryType.PASSPORT,
             EntryType.DRIVER_LICENSE, EntryType.SSH_KEY, EntryType.PASSKEY,

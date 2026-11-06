@@ -24,6 +24,10 @@ import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
 import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
 import com.aozijx.passly.feature.vault.presentation.editor.ui.wifi.AddWifiEditorScreen
@@ -35,7 +39,8 @@ fun AddWifiEditorRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     loadInitialContent: () -> AddWifiInitialContent = { AddWifiInitialContent.Blank },
-    editEntryId: String? = null,
+    editSeedToken: String? = null,
+    consumeEditSeed: ((String) -> EntryEditorSeedConsumeResult)? = null,
 ) {
     val viewModel = hiltViewModel<AddWifiViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -51,9 +56,9 @@ fun AddWifiEditorRoute(
     var overlay by remember { mutableStateOf<WifiEditorOverlay>(WifiEditorOverlay.None) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
-    LaunchedEffect(viewModel, editEntryId) {
-        if (editEntryId != null) {
-            viewModel.loadExistingEntry(editEntryId)
+    LaunchedEffect(viewModel, editSeedToken) {
+        if (editSeedToken != null) {
+            viewModel.loadExistingEntry(consumeEditSeed?.invoke(editSeedToken) ?: EntryEditorSeedConsumeResult.Missing)
         } else {
             when (viewModel.beginInitialization()) {
                 AddWifiInitializationGate.NeedsInitialContent -> {
@@ -73,8 +78,8 @@ fun AddWifiEditorRoute(
             }
         }
     }
-    LaunchedEffect(uiState.loadFailed, editEntryId) {
-        if (editEntryId != null && uiState.loadFailed) {
+    LaunchedEffect(uiState.loadFailed, editSeedToken) {
+        if (editSeedToken != null && uiState.loadFailed) {
             snackbarHostState.showSnackbar(loadFailedMessage)
         }
     }
@@ -86,7 +91,7 @@ fun AddWifiEditorRoute(
         onScan = { overlay = WifiEditorOverlay.Scanner },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
-        isEditingExisting = editEntryId != null,
+        isEditingExisting = editSeedToken != null,
     )
 
     AnimatedVisibility(
@@ -105,13 +110,24 @@ fun AddWifiEditorRoute(
                 ),
     ) {
         ScannerRoute(
-            onResult = { rawValue ->
+            resolveResult = { rawValue ->
                 val payload = (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
-                if (payload != null && viewModel.tryApplyScannedWifi(payload)) {
-                    ScannerResultHandling.Handled
-                } else {
-                    ScannerResultHandling.Rejected
-                }
+                val presentation =
+                    if (payload != null) {
+                        ScannerResultPresentation(primaryActionLabel = ScannerPrimaryActionLabel.Use)
+                    } else {
+                        ScannerResultPresentation.DEFAULT
+                    }
+                ScannerResultPlan(
+                    presentation = presentation,
+                    confirm = {
+                        if (payload != null && viewModel.tryApplyScannedWifi(payload)) {
+                            ScannerResultHandling.Handled
+                        } else {
+                            ScannerResultHandling.Rejected
+                        }
+                    },
+                )
             },
             onDismiss = { overlay = WifiEditorOverlay.None },
         )

@@ -5,6 +5,10 @@ import com.aozijx.passly.feature.vault.detail.EntryQrKind
 sealed interface DetailQrState {
     data object Hidden : DetailQrState
 
+    data class Authorizing(
+        val kind: EntryQrKind,
+    ) : DetailQrState
+
     data class Loading(
         val kind: EntryQrKind,
     ) : DetailQrState

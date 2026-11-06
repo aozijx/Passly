@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.navigation
 
+import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
@@ -69,14 +70,14 @@ class EntryEditorSeedCoordinatorTest {
         }
 
     @Test
-    fun `destroyed coordinator rejects late stage and consume calls`() {
+    fun `clearing view model store rejects late stage and consume calls`() {
         val session = MutableSession(AuthenticationState.Authenticated(1L))
         val coordinator = EntryEditorSeedCoordinator(session, EntryEditorSeedStore())
+        val store = ViewModelStore()
+        store.put("seed-coordinator", coordinator)
         val staged = coordinator.stage(seed) as EntryEditorSeedStageResult.Staged
-        coordinator.javaClass
-            .getDeclaredMethod("onCleared")
-            .apply { isAccessible = true }
-            .invoke(coordinator)
+
+        store.clear()
 
         assertEquals(EntryEditorSeedStageResult.AccessDenied, coordinator.stage(seed))
         assertEquals(EntryEditorSeedConsumeResult.AccessDenied, coordinator.consume(staged.token))

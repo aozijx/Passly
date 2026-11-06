@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
+import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.result.AppResult
@@ -229,9 +230,10 @@ class AddWifiViewModelTest {
             session.unlock()
             runCurrent()
             assertTrue(model.tryApplyScannedWifi(scanned))
-            val onCleared = model.javaClass.getDeclaredMethod("onCleared")
-            onCleared.isAccessible = true
-            onCleared.invoke(model)
+            ViewModelStore().apply {
+                put("wifi", model)
+                clear()
+            }
             assertFalse(model.tryApplyScannedWifi(scanned))
             assertEquals("", model.uiState.value.form.ssid)
             assertEquals("", model.uiState.value.form.password)
@@ -441,9 +443,10 @@ class AddWifiViewModelTest {
             assertEquals("", viewModel.uiState.value.form.ssid)
 
             enterValidWpa(viewModel)
-            val onCleared = viewModel.javaClass.getDeclaredMethod("onCleared")
-            onCleared.isAccessible = true
-            onCleared.invoke(viewModel)
+            ViewModelStore().apply {
+                put("wifi", viewModel)
+                clear()
+            }
 
             assertEquals("", viewModel.uiState.value.form.password)
             assertEquals("", viewModel.uiState.value.form.ssid)

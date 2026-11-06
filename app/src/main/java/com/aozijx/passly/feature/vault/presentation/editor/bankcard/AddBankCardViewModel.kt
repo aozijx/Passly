@@ -9,10 +9,11 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
-import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
-import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
+import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,12 +26,10 @@ class AddBankCardViewModel
     internal constructor(
         createEntryUseCase: EntryCreation,
         private val secureSessionAccessState: SecureSessionAccessState,
-        private val loadEditableEntry: LoadEditableEntryUseCase,
         private val editDetailEntry: EditDetailEntryUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(AddBankCardUiState())
         private var editingEntryId: EntryId? = null
-        private var editLoadJob: kotlinx.coroutines.Job? = null
         val uiState = _uiState.asStateFlow()
         private val writeSession =
             EditorWriteSession(
@@ -52,44 +51,19 @@ class AddBankCardViewModel
             )
         internal val effects = writeSession.effects
 
-        fun loadExistingEntry(rawEntryId: String) {
+        fun loadExistingEntry(result: EntryEditorSeedConsumeResult) {
             if (editingEntryId != null) return
-            val entryId =
-                runCatching { EntryId(rawEntryId) }.getOrNull() ?: run {
-                    _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
-                    return
-                }
-            editingEntryId = entryId
-            if (!writeSession.canEdit()) {
-                _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Failed, loadFailed = true)
+            val seed = (result as? EntryEditorSeedConsumeResult.Consumed)?.seed as? EntryEditorSeed.Editable
+            if (seed == null || !seed.matchesCurrentAccess(EntryType.BANK_CARD, secureSessionAccessState) || !writeSession.canEdit()) {
+                failEditLoad()
                 return
             }
-            val authentication = secureSessionAccessState.authenticationState.value
-            _uiState.value = _uiState.value.copy(loadPhase = EditorLoadPhase.Loading)
-            editLoadJob =
-                viewModelScope.launch {
-                    when (val result = loadEditableEntry(entryId)) {
-                        is EditableEntryLoadResult.Loaded -> {
-                            if (result.entry.type != EntryType.BANK_CARD || result.entry.id != entryId ||
-                                authentication !== result.authentication ||
-                                secureSessionAccessState.authenticationState.value !== result.authentication ||
-                                !secureSessionAccessState.hasFullSecureSessionAccess()
-                            ) {
-                                failEditLoad()
-                            } else {
-                                _uiState.value =
-                                    _uiState.value.copy(
-                                        form = _uiState.value.form.fromEntry(result.entry),
-                                        loadPhase = EditorLoadPhase.Ready,
-                                    )
-                            }
-                        }
-
-                        else -> {
-                            failEditLoad()
-                        }
-                    }
-                }
+            editingEntryId = seed.entry.id
+            _uiState.value =
+                _uiState.value.copy(
+                    form = _uiState.value.form.fromEntry(seed.entry),
+                    loadPhase = EditorLoadPhase.Ready,
+                )
         }
 
         fun onAction(action: AddBankCardAction) {
@@ -191,8 +165,6 @@ class AddBankCardViewModel
         }
 
         private fun clearSensitiveContent() {
-            editLoadJob?.cancel()
-            editLoadJob = null
             _uiState.value =
                 AddBankCardUiState(
                     loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,

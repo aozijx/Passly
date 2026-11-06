@@ -68,6 +68,9 @@ internal class EntryEditorSeedCoordinator
                 }
 
                 is Access.Granted -> {
+                    if (seed is EntryEditorSeed.Editable && seed.authentication !== access.authentication) {
+                        return EntryEditorSeedStageResult.AccessDenied
+                    }
                     ownership = Ownership.Staged(access.authentication)
                     EntryEditorSeedStageResult.Staged(store.stage(seed))
                 }
@@ -78,6 +81,10 @@ internal class EntryEditorSeedCoordinator
                 Access.Denied -> EntryEditorSeedConsumeResult.AccessDenied
                 is Access.Granted -> store.consume(token)
             }
+
+        fun discard(token: EditorSeedToken) {
+            if (store.discard(token) && ownership is Ownership.Staged) ownership = Ownership.Empty
+        }
 
         private fun currentAccess(): Access {
             if (ownership == Ownership.Destroyed) return Access.Denied
