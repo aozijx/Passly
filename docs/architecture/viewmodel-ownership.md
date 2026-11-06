@@ -15,3 +15,11 @@ Autofill Activity 通过 Activity ViewModel owner 管理平台授权、发现/�
 ## 架构门禁
 
 `verifyArchitecture` 检查 ViewModel 声明到另一个 ViewModel 的依赖边，并允许 Route/Activity composition owner 协调多个状态 owner。对应实现和正反例位于 [`ViewModelDependencyVerifier.kt`](../../buildSrc/src/main/kotlin/passly/ViewModelDependencyVerifier.kt) 与 [`SourceBoundaryViewModelTest.kt`](../../buildSrc/src/test/kotlin/passly/SourceBoundaryViewModelTest.kt)。这是轻量源码检查，不做完整 Kotlin 语义解析：目前识别普通函数参数、局部 `val`/`var`，以及同一逻辑行的表达式函数参数遮蔽；复杂 lambda、多行表达式、destructuring 和扫描输入外部的符号解析仍需人工审查。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码 |
+| --- | --- | --- |
+| 识别 ViewModel 声明并查找跨 owner 类型引用 | `ViewModelDependencyVerifier.verify(sources)` | [`ViewModelDependencyVerifier.kt`](../../buildSrc/src/main/kotlin/passly/ViewModelDependencyVerifier.kt) |
+| 注册架构门禁聚合任务 | `ModuleBoundariesPlugin.apply(target)` 中的 `verifyArchitecture` 任务注册 | [`ModuleBoundariesPlugin.kt`](../../buildSrc/src/main/kotlin/passly/ModuleBoundariesPlugin.kt) |
+| ViewModel 依赖声明边界回归 | `SourceBoundaryViewModelTest` | [`SourceBoundaryViewModelTest.kt`](../../buildSrc/src/test/kotlin/passly/SourceBoundaryViewModelTest.kt) |
