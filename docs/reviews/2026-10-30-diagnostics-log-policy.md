@@ -24,5 +24,5 @@
 
 ## 当前实现文档
 
-- [诊断查看与导出](../features/diagnostics/viewer-and-export.md)
+- [诊断查看与导出](../features/diagnostics/overview.md)
 - [日志运行时与加密存储](../architecture/observability/runtime-and-storage.md)

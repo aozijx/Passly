@@ -77,7 +77,7 @@
 
 ### 工具
 
-- [诊断日志](features/diagnostics/viewer-and-export.md)
+- [诊断日志](features/diagnostics/overview.md)
 - [二维码扫描](features/scanner/overview.md)
 
 ## 开发约定
