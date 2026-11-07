@@ -121,6 +121,15 @@ internal class EditorWriteSession(
                             }
                         }
                         throw cancelled
+                    } catch (fatal: Error) {
+                        if (phase === attempt) {
+                            try {
+                                close()
+                            } catch (cleanupFailure: Throwable) {
+                                if (cleanupFailure !== fatal) fatal.addSuppressed(cleanupFailure)
+                            }
+                        }
+                        throw fatal
                     } catch (_: Exception) {
                         EditorSaveEffect.Failed
                     }

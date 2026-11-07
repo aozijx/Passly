@@ -9,17 +9,21 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -206,6 +210,34 @@ class EditorWriteSessionTest {
             assertEquals(listOf(EditorSaveEffect.Failed), effects)
             assertFalse(fixture.saving)
             assertEquals("original", fixture.form)
+        }
+
+    @Test
+    fun fatalFailureClearsTheFormClosesTheSessionAndPropagatesTheError() =
+        runTest {
+            val fatal = LinkageError("fatal write failure")
+            val failures = mutableListOf<Throwable>()
+            val job = SupervisorJob()
+            val scope =
+                CoroutineScope(
+                    job + StandardTestDispatcher(testScheduler) +
+                        CoroutineExceptionHandler { _, failure -> failures += failure },
+                )
+            val fixture = Fixture(scope) { throw fatal }
+
+            try {
+                fixture.save()
+                runCurrent()
+
+                assertSame(fatal, failures.single())
+                assertEquals("", fixture.form)
+                assertFalse(fixture.saving)
+                assertFalse(fixture.session.canEdit())
+            } finally {
+                fixture.session.close()
+                job.cancel()
+                runCurrent()
+            }
         }
 
     @Test
