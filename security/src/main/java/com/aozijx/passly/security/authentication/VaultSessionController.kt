@@ -400,20 +400,21 @@ class VaultSessionController
                 failure as? Error
             }
 
-        private suspend fun clearSecurityAccess(): Error? {
-            var fatal: Error? = null
+        private fun revokeAuthorizationPermits(): Error? =
             try {
                 authorizationPermitRevoker.revokeAll()
+                null
             } catch (failure: Error) {
-                fatal = failure
+                failure
             }
+
+        private suspend fun clearSensitiveDataKeys(): Error? =
             try {
                 sensitiveDataKeyClearer.clear()
+                null
             } catch (failure: Error) {
-                fatal = combineFatal(fatal, failure)
+                failure
             }
-            return fatal
-        }
 
         private fun combineFatal(
             primary: Error?,
@@ -433,7 +434,7 @@ class VaultSessionController
          * 根据 [LockReason] 决定锁定强度。
          * 使用 [SecureSessionState] 强度比较，仅当目标强度高于当前状态时才执行。
          *
-         * - SOFT_LOCKED（USER / IDLE_TIMEOUT）：阻止新租约，数据库保持打开
+         * - SOFT_LOCKED（USER / IDLE_TIMEOUT）：阻止新租约、等待活动 lease 排空，数据库保持打开
          * - SEALED（AUTOFILL_REQUEST_FINISHED / BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：
          *   排干 + 关库 + 擦 DEK
          */
@@ -445,24 +446,26 @@ class VaultSessionController
                     timeoutMs = if (request.reason.toLockLevel() == SecureSessionState.SEALED) 5_000 else 0,
                 ) {
                     mutex.withLock {
-                        if (!shouldApplyLock(mutableAuthenticationState.value, request.reason)) return@withLock
+                        val stateBeforeLock = mutableAuthenticationState.value
+                        if (!shouldApplyLock(stateBeforeLock, request.reason)) return@withLock
+                        // Preserve recovery-mode identity before publishing Locking.
+                        val targetLevel =
+                            if (stateBeforeLock is AuthenticationState.RecoveryMode) {
+                                SecureSessionState.SEALED
+                            } else {
+                                request.reason.toLockLevel()
+                            }
+                        val shouldEscalate = lockStateManager.state.shouldEscalateTo(targetLevel)
+                        if (shouldEscalate) {
+                            transition(AuthenticationState.Locking(request.reason))
+                            idleJob?.cancel()
+                            idleJob = null
+                        }
+
                         var cleanupCancellation: CancellationException? = null
                         var cleanupFatal: Error? = null
                         withContext(NonCancellable) {
-                            cleanupFatal = clearSecurityAccess()
-                            // A recovery session never degrades to a soft lock: closing it must wipe its DEK.
-                            val targetLevel =
-                                if (mutableAuthenticationState.value is AuthenticationState.RecoveryMode) {
-                                    SecureSessionState.SEALED
-                                } else {
-                                    request.reason.toLockLevel()
-                                }
-                            val shouldEscalate = lockStateManager.state.shouldEscalateTo(targetLevel)
-                            if (shouldEscalate) {
-                                transition(AuthenticationState.Locking(request.reason))
-                                idleJob?.cancel()
-                                idleJob = null
-                            }
+                            cleanupFatal = revokeAuthorizationPermits()
 
                             when (targetLevel) {
                                 SecureSessionState.SOFT_LOCKED -> {
@@ -490,8 +493,8 @@ class VaultSessionController
                                 }
                             }
 
-                            // A previously sealed session may still have a staged DEK; fatal soft-lock
-                            // cleanup also escalates so no sensitive key remains available.
+                            // Drain the resource before clearing key material used by active leases.
+                            var databaseSealed = false
                             if (targetLevel == SecureSessionState.SEALED || cleanupFatal != null) {
                                 cleanupFatal =
                                     combineFatal(
@@ -501,6 +504,21 @@ class VaultSessionController
                                             onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
                                         ),
                                     )
+                                databaseSealed = true
+                            }
+
+                            cleanupFatal = combineFatal(cleanupFatal, clearSensitiveDataKeys())
+                            if (targetLevel == SecureSessionState.SEALED || cleanupFatal != null) {
+                                if (!databaseSealed) {
+                                    cleanupFatal =
+                                        combineFatal(
+                                            cleanupFatal,
+                                            sealDatabaseForLock(
+                                                onCancellation = { cleanupCancellation = it },
+                                                onFailure = { recordFailure(it, Reasons.SessionSealFailed) },
+                                            ),
+                                        )
+                                }
                                 dekManager.lock()
                                 lockStateManager.mark(SecureSessionState.SEALED)
                             }

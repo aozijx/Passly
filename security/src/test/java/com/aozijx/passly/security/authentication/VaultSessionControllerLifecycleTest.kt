@@ -66,6 +66,54 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultSessionControllerLifecycleTest {
     @Test
+    fun `lock publishes authentication revocation before sensitive key cleanup suspends`() =
+        runMainTest { dispatcher ->
+            val clearStarted = CompletableDeferred<Unit>()
+            val finishClear = CompletableDeferred<Unit>()
+            val databaseSession = YieldingDatabaseSession(pauseSoftLock = true)
+            val controller =
+                createController(
+                    dispatcher = dispatcher,
+                    databaseSession = databaseSession,
+                    timeout = MutableStateFlow(1_000L),
+                    lockOnBackground = MutableStateFlow(false),
+                    clearSensitiveKey =
+                        SensitiveDataKeyClearer {
+                            clearStarted.complete(Unit)
+                            finishClear.await()
+                        },
+                )
+            controller.transition(AuthenticationState.Authenticated(0L))
+            val locking =
+                async(dispatcher) {
+                    controller.lock(SessionLockRequest(LockReason.USER, LockTrigger.USER_ACTION))
+                }
+
+            try {
+                databaseSession.softLockStarted.await()
+
+                assertTrue(controller.authenticationState.value is AuthenticationState.Locking)
+                assertFalse(controller.hasFullSecureSessionAccess())
+                assertFalse("sensitive keys must remain until active leases drain", clearStarted.isCompleted)
+
+                databaseSession.allowSoftLockToFinish.complete(Unit)
+                clearStarted.await()
+
+                assertTrue(controller.authenticationState.value is AuthenticationState.Locking)
+                assertTrue(databaseSession.softLockCompleted)
+                assertFalse(controller.hasFullSecureSessionAccess())
+
+                finishClear.complete(Unit)
+                locking.await()
+                assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
+            } finally {
+                databaseSession.allowSoftLockToFinish.complete(Unit)
+                finishClear.complete(Unit)
+                locking.cancel()
+            }
+        }
+
+    @Test
     fun `fatal reset result is propagated after locking the session`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("fatal reset result")
@@ -892,6 +940,7 @@ class VaultSessionControllerLifecycleTest {
         private val sealFailure: Throwable? = null,
         private val softLockFailure: Throwable? = null,
         private val pauseUnlock: Boolean = false,
+        private val pauseSoftLock: Boolean = false,
         private val unlockFailure: Throwable? = null,
         private val sealResult: Result<Unit> = Result.success(Unit),
         initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
@@ -904,6 +953,8 @@ class VaultSessionControllerLifecycleTest {
         val sealStarted = CompletableDeferred<Unit>()
         val allowSealToFinish = CompletableDeferred<Unit>()
         val unlockStarted = CompletableDeferred<Unit>()
+        val softLockStarted = CompletableDeferred<Unit>()
+        val allowSoftLockToFinish = CompletableDeferred<Unit>()
         val allowUnlockToFinish = CompletableDeferred<Unit>()
 
         override suspend fun unlock(): Throwable? {
@@ -919,6 +970,8 @@ class VaultSessionControllerLifecycleTest {
         override suspend fun softLock() {
             lockState = SecureSessionState.SOFT_LOCKED
             yield()
+            softLockStarted.complete(Unit)
+            if (pauseSoftLock) allowSoftLockToFinish.await()
             softLockCompleted = true
             softLockFailure?.let { throw it }
         }
