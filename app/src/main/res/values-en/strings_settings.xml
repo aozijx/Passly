@@ -234,6 +234,7 @@
   <string name="database_reset_title">Permanently clear Passly data</string>
   <string name="database_reset_description">Delete the database, attachments, and custom images, then create an empty database. App settings and authentication methods are kept.</string>
   <string name="database_reset_action">Clear permanently</string>
+  <string name="database_reset_loading">Clearing…</string>
   <string name="database_reset_confirm_title">Permanently clear Passly data?</string>
   <string name="database_reset_confirm_message">This permanently deletes the database, attachments, and custom images and cannot be undone. App settings and authentication methods will be kept. You will need to verify your identity again after confirming.</string>
   <string name="database_reset_confirm_action">Verify and clear</string>

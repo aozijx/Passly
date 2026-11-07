@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.database.presentation.reset
 
+import androidx.annotation.StringRes
+import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 data class DatabaseResetUiState(
@@ -7,15 +9,37 @@ data class DatabaseResetUiState(
 )
 
 sealed interface DatabaseResetPhase {
-    data object Idle : DatabaseResetPhase
+    @get:StringRes
+    val titleRes: Int
+    val isButtonEnabled: Boolean
+    val isLoading: Boolean
 
-    data object Resetting : DatabaseResetPhase
+    data object Idle : DatabaseResetPhase {
+        override val titleRes = R.string.database_reset_action
+        override val isButtonEnabled = true
+        override val isLoading = false
+    }
 
-    data object Completed : DatabaseResetPhase
+    data object Resetting : DatabaseResetPhase {
+        override val titleRes = R.string.database_reset_loading
+        override val isButtonEnabled = false
+        override val isLoading = true
+    }
+
+    data object Completed : DatabaseResetPhase {
+        override val titleRes = R.string.database_reset_success
+        override val isButtonEnabled = false
+        override val isLoading = false
+    }
 
     data class Failed(
         val reason: DatabaseResetFailure,
-    ) : DatabaseResetPhase
+    ) : DatabaseResetPhase {
+        @get:StringRes
+        override val titleRes = reason.titleRes
+        override val isButtonEnabled = false
+        override val isLoading = false
+    }
 }
 
 sealed interface DatabaseResetFailure {
@@ -27,6 +51,15 @@ sealed interface DatabaseResetFailure {
         val message: UiErrorMessage,
     ) : DatabaseResetFailure
 }
+
+private val DatabaseResetFailure.titleRes: Int
+    @StringRes
+    get() =
+        when (this) {
+            DatabaseResetFailure.SessionRestricted -> R.string.database_reset_error_session_restricted
+            DatabaseResetFailure.AuthorizationDenied -> R.string.database_reset_error_authorization_denied
+            is DatabaseResetFailure.Unexpected -> message.resourceId
+        }
 
 sealed interface DatabaseResetUiAction {
     data object Reset : DatabaseResetUiAction
@@ -40,6 +73,8 @@ internal sealed interface DatabaseResetMutation {
     data object ResetCancelled : DatabaseResetMutation
 
     data object ResetCompleted : DatabaseResetMutation
+
+    data object ResetSuccessFeedbackElapsed : DatabaseResetMutation
 
     data class ResetFailed(
         val reason: DatabaseResetFailure,

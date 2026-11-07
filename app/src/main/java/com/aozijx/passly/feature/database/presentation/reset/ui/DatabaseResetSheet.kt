@@ -1,5 +1,11 @@
 package com.aozijx.passly.feature.database.presentation.reset.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,11 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,11 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetFailure
-import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetPhase
 import com.aozijx.passly.feature.database.presentation.reset.DatabaseResetUiState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun DatabaseResetSheet(
     state: DatabaseResetUiState,
@@ -36,8 +42,6 @@ internal fun DatabaseResetSheet(
     onDismiss: () -> Unit,
 ) {
     var showConfirm by remember { mutableStateOf(false) }
-    val isResetting = state.phase == DatabaseResetPhase.Resetting
-    val isCompleted = state.phase == DatabaseResetPhase.Completed
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -56,43 +60,34 @@ internal fun DatabaseResetSheet(
                 text = stringResource(R.string.database_reset_description),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            when (val phase = state.phase) {
-                DatabaseResetPhase.Idle -> {
-                    Unit
-                }
-
-                DatabaseResetPhase.Resetting -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        CircularProgressIndicator()
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.phase.isButtonEnabled,
+                onClick = { showConfirm = true },
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+            ) {
+                val motionScheme = MaterialTheme.motionScheme
+                AnimatedContent(
+                    targetState = state.phase,
+                    transitionSpec = {
+                        fadeIn(animationSpec = motionScheme.defaultEffectsSpec()) +
+                            slideInVertically(animationSpec = motionScheme.defaultSpatialSpec()) { it / 3 } togetherWith
+                            fadeOut(animationSpec = motionScheme.defaultEffectsSpec()) +
+                            slideOutVertically(animationSpec = motionScheme.defaultSpatialSpec()) { -it / 3 }
+                    },
+                    label = "database_reset_button_content",
+                ) { phase ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (phase.isLoading) {
+                            LoadingIndicator(modifier = Modifier.padding(vertical = 2.dp))
+                        }
+                        Text(stringResource(phase.titleRes))
                     }
                 }
-
-                DatabaseResetPhase.Completed -> {
-                    Text(
-                        stringResource(R.string.database_reset_success),
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-
-                is DatabaseResetPhase.Failed -> {
-                    Text(
-                        text = phase.reason.message(),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-            OutlinedButton(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isResetting && !isCompleted,
-                onClick = { showConfirm = true },
-            ) {
-                Text(
-                    stringResource(R.string.database_reset_action),
-                    color = MaterialTheme.colorScheme.error,
-                )
             }
         }
     }
@@ -100,13 +95,13 @@ internal fun DatabaseResetSheet(
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = {
-                if (!isResetting) showConfirm = false
+                if (!state.phase.isLoading) showConfirm = false
             },
             title = { Text(stringResource(R.string.database_reset_confirm_title)) },
             text = { Text(stringResource(R.string.database_reset_confirm_message)) },
             confirmButton = {
                 TextButton(
-                    enabled = !isResetting,
+                    enabled = !state.phase.isLoading,
                     onClick = {
                         showConfirm = false
                         onReset()
@@ -120,26 +115,10 @@ internal fun DatabaseResetSheet(
             },
             dismissButton = {
                 TextButton(
-                    enabled = !isResetting,
+                    enabled = !state.phase.isLoading,
                     onClick = { showConfirm = false },
                 ) { Text(stringResource(R.string.cancel)) }
             },
         )
     }
 }
-
-@Composable
-private fun DatabaseResetFailure.message(): String =
-    when (this) {
-        DatabaseResetFailure.SessionRestricted -> {
-            stringResource(R.string.database_reset_error_session_restricted)
-        }
-
-        DatabaseResetFailure.AuthorizationDenied -> {
-            stringResource(R.string.database_reset_error_authorization_denied)
-        }
-
-        is DatabaseResetFailure.Unexpected -> {
-            stringResource(message.resourceId)
-        }
-    }

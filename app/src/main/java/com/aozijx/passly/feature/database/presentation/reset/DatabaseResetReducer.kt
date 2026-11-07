@@ -26,6 +26,14 @@ internal object DatabaseResetReducer {
                 state.copy(phase = DatabaseResetPhase.Completed)
             }
 
+            DatabaseResetMutation.ResetSuccessFeedbackElapsed -> {
+                if (state.phase == DatabaseResetPhase.Completed) {
+                    state.copy(phase = DatabaseResetPhase.Idle)
+                } else {
+                    state
+                }
+            }
+
             is DatabaseResetMutation.ResetFailed -> {
                 state.copy(
                     phase = DatabaseResetPhase.Failed(mutation.reason),

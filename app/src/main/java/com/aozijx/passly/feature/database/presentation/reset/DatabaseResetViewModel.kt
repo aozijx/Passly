@@ -8,6 +8,7 @@ import com.aozijx.passly.feature.database.reset.ResetDatabaseUseCase
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,6 +51,8 @@ class DatabaseResetViewModel
                 when (val result = resetDatabase()) {
                     DatabaseResetResult.Completed -> {
                         mutate(DatabaseResetMutation.ResetCompleted)
+                        delay(SUCCESS_FEEDBACK_DURATION_MILLIS)
+                        mutate(DatabaseResetMutation.ResetSuccessFeedbackElapsed)
                     }
 
                     DatabaseResetResult.Cancelled -> {
@@ -83,5 +86,9 @@ class DatabaseResetViewModel
 
         private fun mutate(mutation: DatabaseResetMutation) {
             _uiState.value = DatabaseResetReducer.reduce(_uiState.value, mutation)
+        }
+
+        private companion object {
+            const val SUCCESS_FEEDBACK_DURATION_MILLIS = 3_000L
         }
     }
