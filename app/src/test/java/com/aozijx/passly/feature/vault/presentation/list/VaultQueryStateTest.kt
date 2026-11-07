@@ -12,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -97,13 +98,13 @@ class VaultQueryStateTest {
                     entryTypes = emptySet(),
                     hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
                 )
-            val states = MutableSharedFlow<VaultQueryState>(replay = 1, extraBufferCapacity = 2)
+            val states = MutableSharedFlow<VaultQueryState?>(replay = 1, extraBufferCapacity = 2)
             states.tryEmit(initial)
             val loadedQueries = mutableListOf<String>()
             val collection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                     states
-                        .switchQueryGenerations { query ->
+                        .switchRecoverableQueryGenerations(unavailable = flowOf(-1)) { query ->
                             loadedQueries += query.searchText
                             flowOf(loadedQueries.size)
                         }.collect {}
@@ -114,7 +115,6 @@ class VaultQueryStateTest {
             runCurrent()
             assertEquals(listOf("mail"), loadedQueries)
 
-            assertEquals(listOf("mail"), loadedQueries)
             collection.cancel()
         }
 
@@ -130,7 +130,7 @@ class VaultQueryStateTest {
                     entryTypes = emptySet(),
                     hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
                 )
-            val states = MutableSharedFlow<VaultQueryState>(replay = 1)
+            val states = MutableSharedFlow<VaultQueryState?>(replay = 1)
             states.emit(initial)
             val allLoads = mutableListOf<EntryHierarchyDisplayMode?>()
             val passwordLoads = mutableListOf<EntryHierarchyDisplayMode?>()
@@ -138,7 +138,7 @@ class VaultQueryStateTest {
             val allCollection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                     states
-                        .switchQueryGenerations { query ->
+                        .switchRecoverableQueryGenerations(unavailable = flowOf(Unit)) { query ->
                             allLoads += query.hierarchyMode
                             flowOf(Unit)
                         }.collect {}
@@ -146,8 +146,8 @@ class VaultQueryStateTest {
             val passwordCollection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                     states
-                        .map { it.copy(entryTypes = setOf(EntryType.LOGIN)) }
-                        .switchQueryGenerations { query ->
+                        .map { it?.copy(entryTypes = setOf(EntryType.LOGIN)) }
+                        .switchRecoverableQueryGenerations(unavailable = flowOf(Unit)) { query ->
                             passwordLoads += query.hierarchyMode
                             flowOf(Unit)
                         }.collect {}
@@ -178,7 +178,7 @@ class VaultQueryStateTest {
                     entryTypes = emptySet(),
                     hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
                 )
-            val states = MutableSharedFlow<VaultQueryState>(replay = 1)
+            val states = MutableSharedFlow<VaultQueryState?>(replay = 1)
             states.emit(initial)
             val started = mutableListOf<String>()
             val cancelled = mutableListOf<String>()
@@ -186,7 +186,7 @@ class VaultQueryStateTest {
             val collection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                     states
-                        .switchQueryGenerations { query ->
+                        .switchRecoverableQueryGenerations(unavailable = flowOf(Unit)) { query ->
                             flow<Unit> {
                                 started += query.searchText
                                 try {
@@ -214,7 +214,8 @@ class VaultQueryStateTest {
             val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
             val observed = mutableListOf<VaultQueryState>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED))
+                buildRecoverableVaultQueryStates(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
+                    .filterNotNull()
                     .collect(observed::add)
             }
             runCurrent()
@@ -237,7 +238,8 @@ class VaultQueryStateTest {
             val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
             val observed = mutableListOf<VaultQueryState>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                buildVaultQueryStates(states, flowOf(EntryHierarchyDisplayMode.COLLAPSED))
+                buildRecoverableVaultQueryStates(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
+                    .filterNotNull()
                     .collect(observed::add)
             }
             runCurrent()
@@ -264,12 +266,15 @@ class VaultQueryStateTest {
                 MutableStateFlow(
                     VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort),
                 )
-            val hierarchyModes = MutableStateFlow(EntryHierarchyDisplayMode.COLLAPSED)
+            val settings =
+                MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
+                    readyLibrarySettingsState(EntryHierarchyDisplayMode.COLLAPSED),
+                )
             val observed = mutableListOf<VaultQueryState>()
 
             val collection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    buildVaultQueryStates(uiStates, hierarchyModes).collect(observed::add)
+                    buildRecoverableVaultQueryStates(uiStates, settings).filterNotNull().collect(observed::add)
                 }
             runCurrent()
             assertEquals(emptyList<VaultQueryState>(), observed)
@@ -289,7 +294,7 @@ class VaultQueryStateTest {
             runCurrent()
             assertEquals(createdAtDescendingSort.toggled(), observed.last().sort)
 
-            hierarchyModes.value = EntryHierarchyDisplayMode.EXPANDED
+            settings.value = readyLibrarySettingsState(EntryHierarchyDisplayMode.EXPANDED)
             runCurrent()
             assertEquals(EntryHierarchyDisplayMode.EXPANDED, observed.last().hierarchyMode)
 
@@ -308,4 +313,15 @@ private val createdAtDescendingSort =
     EntrySort(
         field = EntrySortField.CREATED_AT,
         direction = SortDirection.DESC,
+    )
+
+private fun readyLibrarySettings(mode: EntryHierarchyDisplayMode) =
+    flowOf(readyLibrarySettingsState(mode))
+
+private fun readyLibrarySettingsState(mode: EntryHierarchyDisplayMode) =
+    RecoverableReadState.Ready(
+        LibraryViewSettings(
+            sort = createdAtDescendingSort,
+            entryHierarchyDisplayMode = mode,
+        ),
     )

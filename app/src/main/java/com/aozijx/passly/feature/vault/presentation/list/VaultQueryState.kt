@@ -52,43 +52,17 @@ internal data class VaultQueryState(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal fun <T> Flow<VaultQueryState>.switchQueryGenerations(load: (EntryListQuery) -> Flow<T>): Flow<T> =
-    map(VaultQueryState::toEntryListQuery)
-        .distinctUntilChanged()
-        .flatMapLatest(load)
-
-@OptIn(ExperimentalCoroutinesApi::class)
 internal fun <T> Flow<VaultQueryState?>.switchRecoverableQueryGenerations(
     unavailable: Flow<T>,
     load: (EntryListQuery) -> Flow<T>,
 ): Flow<T> =
-    distinctUntilChanged()
-        .flatMapLatest { state ->
-            state?.let { load(it.toEntryListQuery()) } ?: unavailable
+    map { state -> state?.toEntryListQuery() }
+        .distinctUntilChanged()
+        .flatMapLatest { query ->
+            query?.let(load) ?: unavailable
         }
 
 @OptIn(FlowPreview::class)
-internal fun buildVaultQueryStates(
-    uiStates: Flow<VaultUiState>,
-    hierarchyModes: Flow<EntryHierarchyDisplayMode>,
-): Flow<VaultQueryState> {
-    val (effectiveSearch, selection) = uiStates.queryInputs()
-
-    return combine(
-        effectiveSearch,
-        selection,
-        hierarchyModes.distinctUntilChanged(),
-    ) { search, currentSelection, hierarchy ->
-        VaultQueryState.create(
-            searchText = search,
-            category = currentSelection.category,
-            sort = currentSelection.sort,
-            entryTypes = currentSelection.entryTypes,
-            hierarchyMode = hierarchy,
-        )
-    }.distinctUntilChanged()
-}
-
 internal fun buildRecoverableVaultQueryStates(
     uiStates: Flow<VaultUiState>,
     librarySettings: Flow<RecoverableReadState<LibraryViewSettings>>,

@@ -36,6 +36,7 @@ ViewModel 可随 Settings 条目保留，下次打开时重新加载。
 - 标签分类通过 `json_each` 发现，忽略大小写并稳定排序；编辑与导入入口必须规范化标签空白。
 - 有效搜索文本先去重，再防抖 250 ms；无关 UI 状态刷新及只改变首尾空白的输入不会重置搜索截止时间。
   分类、排序和层级即时传播，搜索等待期间沿用上次已生效的文本。查询变化通过 `flatMapLatest` 取消旧 Pager。
+- 查询代际以 `VaultQueryState.toEntryListQuery()` 的结果为准，再去重并切换 Pager。Presentation 状态变化若没有改变 Room 查询就复用当前 Pager；例如类型筛选启用时，层级偏好不参与实际查询。
 
 数据库整体由 SQLCipher 保护，因此摘要可参与 SQL 查询；高敏值不进入分页行。
 
