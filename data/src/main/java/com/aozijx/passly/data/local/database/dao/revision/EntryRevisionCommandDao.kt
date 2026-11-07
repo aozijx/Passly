@@ -11,9 +11,6 @@ interface EntryRevisionCommandDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertStrict(revision: EntryRevisionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertAllStrict(revisions: List<EntryRevisionEntity>)
-
     @Query("DELETE FROM entry_revisions WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String): Int
 

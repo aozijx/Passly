@@ -25,6 +25,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.OtpResult
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -87,7 +88,7 @@ class HotpCodeConsumptionTransactionTest {
                     ?.counter,
             )
             assertEquals(1, database.entryQueryDao().getById(ENTRY_ID)?.version)
-            assertTrue(database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).isEmpty())
+            assertTrue(database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().isEmpty())
         }
 
     @Test

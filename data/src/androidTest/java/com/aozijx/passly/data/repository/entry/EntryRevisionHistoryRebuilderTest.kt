@@ -22,10 +22,14 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,14 +72,26 @@ class EntryRevisionHistoryRebuilderTest {
                 notes = "deleted note",
                 deletedAt = 40L,
             )
+            database.secretFieldCommandDao().insertAllStrict(
+                listOf(
+                    EntrySecretFieldEntity(
+                        entryId = ENTRY_ONE,
+                        fieldKey = SensitiveFieldKey.PASSWORD.name,
+                        valueCipher = SENSITIVE_CIPHER,
+                        keyVersion = 2,
+                        updatedAt = 3L,
+                    ),
+                ),
+            )
             seedObsoleteRevision(ENTRY_ONE, version = 7)
             seedObsoleteRevision(ENTRY_TWO, version = 2)
+            val sensitiveCodec = SensitiveRevisionSnapshotCodec()
             val rebuilder =
                 EntryRevisionHistoryRebuilder(
                     revisionWriter =
                         EntryRevisionWriter(
                             contentCodec,
-                            SensitiveRevisionSnapshotCodec(),
+                            sensitiveCodec,
                             EntryIconResourceCleaner { },
                             EntryActivityWriter(),
                         ),
@@ -90,7 +106,23 @@ class EntryRevisionHistoryRebuilderTest {
             assertEquals(3, database.entryQueryDao().getById(ENTRY_TWO)?.version)
             assertBaseline(ENTRY_ONE, version = 8, title = "First", notes = "first note")
             assertBaseline(ENTRY_TWO, version = 3, title = "Deleted", notes = "deleted note")
-            assertEquals(2, database.entryRevisionQueryDao().countAll())
+            assertEquals(
+                2,
+                database.entryRevisionQueryDao().observeByEntryId(ENTRY_ONE).first().size +
+                    database.entryRevisionQueryDao().observeByEntryId(ENTRY_TWO).first().size,
+            )
+            val activeSensitive =
+                sensitiveCodec.decode(
+                    database.entryRevisionQueryDao().observeByEntryId(ENTRY_ONE).first().single().sensitiveFieldCipherSet,
+                )
+            assertEquals(listOf(SensitiveFieldKey.PASSWORD), activeSensitive.map { it.key })
+            assertArrayEquals(SENSITIVE_CIPHER, activeSensitive.single().valueCipher)
+            assertEquals(2, activeSensitive.single().keyVersion)
+            val deletedSensitive =
+                sensitiveCodec.decode(
+                    database.entryRevisionQueryDao().observeByEntryId(ENTRY_TWO).first().single().sensitiveFieldCipherSet,
+                )
+            assertTrue(deletedSensitive.isEmpty())
         }
 
     private suspend fun assertBaseline(
@@ -99,7 +131,7 @@ class EntryRevisionHistoryRebuilderTest {
         title: String,
         notes: String,
     ) {
-        val revisions = database.entryRevisionQueryDao().getByEntryId(entryId)
+        val revisions = database.entryRevisionQueryDao().observeByEntryId(entryId).first()
         assertEquals(1, revisions.size)
         val revision = revisions.single()
         assertEquals(version, revision.version)
@@ -168,5 +200,6 @@ class EntryRevisionHistoryRebuilderTest {
     private companion object {
         const val ENTRY_ONE = "entry-1"
         const val ENTRY_TWO = "entry-2"
+        val SENSITIVE_CIPHER = byteArrayOf(4, 2, 7, 1)
     }
 }

@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.domain.entry.model.EntryType
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -49,7 +50,7 @@ class EntryRevisionLifecycleDaoTest {
             )
             assertEquals(
                 (51 downTo 2).toList(),
-                database.entryRevisionQueryDao().getByEntryId("entry-a").map { it.version },
+                database.entryRevisionQueryDao().observeByEntryId("entry-a").first().map { it.version },
             )
         }
 
@@ -65,20 +66,24 @@ class EntryRevisionLifecycleDaoTest {
                     revision("entry-a", version = 2, createdAt = 30L, revisionId = "revision-3"),
                     revision("entry-b", version = 2, createdAt = 30L, revisionId = "revision-4"),
                 )
-            database.entryRevisionCommandDao().insertAllStrict(revisions)
+            revisions.forEach { database.entryRevisionCommandDao().insertStrict(it) }
 
             assertEquals(
                 2,
                 database.entryRevisionCommandDao().deleteOldestBeyondGlobalLimit(keepCount = 2),
             )
-            assertEquals(2, database.entryRevisionQueryDao().countAll())
+            assertEquals(
+                2,
+                database.entryRevisionQueryDao().observeByEntryId("entry-a").first().size +
+                    database.entryRevisionQueryDao().observeByEntryId("entry-b").first().size,
+            )
             assertEquals(
                 listOf("revision-3"),
-                database.entryRevisionQueryDao().getByEntryId("entry-a").map { it.revisionId },
+                database.entryRevisionQueryDao().observeByEntryId("entry-a").first().map { it.revisionId },
             )
             assertEquals(
                 listOf("revision-4"),
-                database.entryRevisionQueryDao().getByEntryId("entry-b").map { it.revisionId },
+                database.entryRevisionQueryDao().observeByEntryId("entry-b").first().map { it.revisionId },
             )
         }
 
@@ -97,7 +102,7 @@ class EntryRevisionLifecycleDaoTest {
                     updatedAt = 10L,
                 ),
             )
-            assertEquals(1, database.entryRevisionQueryDao().getByEntryId("entry-a").size)
+            assertEquals(1, database.entryRevisionQueryDao().observeByEntryId("entry-a").first().size)
 
             database.withTransaction {
                 assertEquals(1, database.entryRevisionCommandDao().deleteByEntryId("entry-a"))
@@ -110,7 +115,7 @@ class EntryRevisionLifecycleDaoTest {
                 )
             }
 
-            assertEquals(0, database.entryRevisionQueryDao().countAll())
+            assertEquals(0, database.entryRevisionQueryDao().observeByEntryId("entry-a").first().size)
         }
 
     @Test
@@ -118,9 +123,9 @@ class EntryRevisionLifecycleDaoTest {
         runBlocking {
             insertEntry("active")
             insertEntry("deleted")
-            database.entryRevisionCommandDao().insertAllStrict(
-                listOf(revision("active", 1), revision("deleted", 1)),
-            )
+            listOf(revision("active", 1), revision("deleted", 1)).forEach {
+                database.entryRevisionCommandDao().insertStrict(it)
+            }
             database.entryCommandDao().optimisticSoftDelete(
                 entryId = "deleted",
                 expectedVersion = 1,
@@ -135,9 +140,13 @@ class EntryRevisionLifecycleDaoTest {
 
             assertEquals(
                 listOf("active"),
-                database.entryRevisionQueryDao().getByEntryId("active").map { it.entryId },
+                database.entryRevisionQueryDao().observeByEntryId("active").first().map { it.entryId },
             )
-            assertEquals(1, database.entryRevisionQueryDao().countAll())
+            assertEquals(
+                1,
+                database.entryRevisionQueryDao().observeByEntryId("active").first().size +
+                    database.entryRevisionQueryDao().observeByEntryId("deleted").first().size,
+            )
         }
 
     private suspend fun insertEntry(id: String) {

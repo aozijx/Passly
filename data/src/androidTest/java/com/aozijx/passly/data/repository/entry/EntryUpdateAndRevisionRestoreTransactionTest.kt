@@ -41,6 +41,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -52,7 +53,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class EntryRevisionRestoreTransactionTest {
+class EntryUpdateAndRevisionRestoreTransactionTest {
     private lateinit var database: AppDatabase
     private lateinit var fieldKeyProvider: TestFieldKeyProvider
     private lateinit var contentCodec: EntryContentSnapshotCodec
@@ -95,7 +96,7 @@ class EntryRevisionRestoreTransactionTest {
                 }
             assertEquals(EntryContentUpdate.Unchanged, update)
             assertEquals(2, database.entryQueryDao().getById(ENTRY_ID)!!.version)
-            assertEquals(2, database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).size)
+            assertEquals(2, database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().size)
             assertEquals(0, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
         }
 
@@ -113,10 +114,19 @@ class EntryRevisionRestoreTransactionTest {
                 )
             }
             assertEquals(3, database.entryQueryDao().getById(ENTRY_ID)!!.version)
-            assertEquals(3, database.entryRevisionQueryDao().getLatest(ENTRY_ID)!!.version)
+            val latest = database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().first()
+            assertEquals(3, latest.version)
             val activity = database.entryActivityQueryDao().getByEntryId(ENTRY_ID).single()
             assertEquals(ActivityType.UPDATE, activity.activityType)
             assertEquals(3, activity.revisionVersion)
+            val updatedBundle =
+                database.secretFieldQueryDao().getField(ENTRY_ID, SecretBundleCodec.FIELD_KEY)!!
+            assertEquals(
+                "rewritten",
+                bundleCodec.decrypt(updatedBundle.valueCipher, ENTRY_ID, EntryType.LOGIN).notes,
+            )
+            val latestContent = contentCodec.decrypt(latest.entryContentCipher, ENTRY_ID, EntryType.LOGIN)
+            assertEquals("rewritten", latestContent.secret.notes)
             assertArrayEquals(
                 CURRENT_PASSWORD_CIPHER,
                 database.secretFieldQueryDao().getField(ENTRY_ID, SensitiveFieldKey.PASSWORD.name)!!.valueCipher,
@@ -201,7 +211,7 @@ class EntryRevisionRestoreTransactionTest {
             val restoredRows = database.secretFieldQueryDao().getAll(ENTRY_ID)
             val restoredBundle = restoredRows.single { it.fieldKey == SecretBundleCodec.FIELD_KEY }
             val restoredPassword = restoredRows.single { it.fieldKey == SensitiveFieldKey.PASSWORD.name }
-            val latest = database.entryRevisionQueryDao().getLatest(ENTRY_ID)!!
+            val latest = database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().first()
 
             assertEquals(3, restoredVersion.value)
             assertEquals(3, restored.version)
@@ -219,11 +229,14 @@ class EntryRevisionRestoreTransactionTest {
             assertArrayEquals(HISTORICAL_PASSWORD_CIPHER, restoredPassword.valueCipher)
             assertEquals(3, latest.version)
             assertEquals(RevisionChange.VERSION_RESTORED.name, latest.changeType)
-            assertEquals(3, database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).size)
-            assertEquals(
-                "Historical",
-                contentCodec.decrypt(latest.entryContentCipher, ENTRY_ID, EntryType.LOGIN).summary.title,
-            )
+            assertEquals(3, database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().size)
+            val latestContent = contentCodec.decrypt(latest.entryContentCipher, ENTRY_ID, EntryType.LOGIN)
+            assertEquals("Historical", latestContent.summary.title)
+            assertEquals("historical notes", latestContent.secret.notes)
+            val latestSensitive = sensitiveCodec.decode(latest.sensitiveFieldCipherSet)
+            assertEquals(listOf(SensitiveFieldKey.PASSWORD), latestSensitive.map { it.key })
+            assertArrayEquals(HISTORICAL_PASSWORD_CIPHER, latestSensitive.single().valueCipher)
+            assertEquals(1, latestSensitive.single().keyVersion)
             assertEquals(
                 1,
                 database.entryActivityQueryDao().countByEntryIdAndType(ENTRY_ID, ActivityType.VERSION_RESTORED),
@@ -280,13 +293,15 @@ class EntryRevisionRestoreTransactionTest {
                     .capabilityFlags
                     .hasEntryCapability(EntryCapability.PASSWORD),
             )
-            assertTrue(!verifier.consumed)
+            assertFalse(verifier.consumed)
         }
 
     @Test
     fun staleVersion_rollsBackWithoutChangingCurrentEntry() =
         runBlocking {
             seedCurrentAndHistoricalRevision()
+            val entryBefore = database.entryQueryDao().getById(ENTRY_ID)!!
+            val secretRowsBefore = database.secretFieldQueryDao().getAll(ENTRY_ID)
             val transaction =
                 EntryRevisionRestoreTransaction(
                     contentCodec = contentCodec,
@@ -312,8 +327,19 @@ class EntryRevisionRestoreTransactionTest {
                 }.exceptionOrNull()
 
             assertTrue("stale restore must fail with Conflict, got $failure", failure is Conflict)
-            assertEquals("Current", database.entryQueryDao().getById(ENTRY_ID)?.title)
-            assertEquals(2, database.entryRevisionQueryDao().getByEntryId(ENTRY_ID).size)
+            assertEquals(entryBefore, database.entryQueryDao().getById(ENTRY_ID))
+            val secretRowsAfter = database.secretFieldQueryDao().getAll(ENTRY_ID)
+            assertEquals(
+                secretRowsBefore.map { it.fieldKey }.toSet(),
+                secretRowsAfter.map { it.fieldKey }.toSet(),
+            )
+            secretRowsBefore.forEach { before ->
+                val after = secretRowsAfter.single { it.fieldKey == before.fieldKey }
+                assertArrayEquals(before.valueCipher, after.valueCipher)
+                assertEquals(before.keyVersion, after.keyVersion)
+                assertEquals(before.updatedAt, after.updatedAt)
+            }
+            assertEquals(2, database.entryRevisionQueryDao().observeByEntryId(ENTRY_ID).first().size)
             assertEquals(0, database.entryActivityQueryDao().countByEntryId(ENTRY_ID))
         }
 
@@ -388,8 +414,7 @@ class EntryRevisionRestoreTransactionTest {
                     emptyList()
                 },
             )
-        database.entryRevisionCommandDao().insertAllStrict(
-            listOf(
+        listOf(
                 EntryRevisionEntity(
                     revisionId = REVISION_ID,
                     entryId = ENTRY_ID,
@@ -425,8 +450,7 @@ class EntryRevisionRestoreTransactionTest {
                     changeType = RevisionChange.VALUE_CHANGED.name,
                     createdAt = 2L,
                 ),
-            ),
-        )
+        ).forEach { database.entryRevisionCommandDao().insertStrict(it) }
     }
 
     private object TestPermit : AuthorizationPermit

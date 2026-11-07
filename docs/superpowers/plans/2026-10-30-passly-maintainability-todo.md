@@ -328,14 +328,15 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 36：按生产消费闭包收敛修订 Room DAO
 
-- [x] 移除没有调用者的 `EntryRevisionQueryDao.getByVersion(entryId, version)`；保留 `getByEntryId()`、`getLatest()` 的测试用途审查单独处理，要求覆盖恢复后最新快照正确。
-- [x] 移除无生产/测试消费者的 `EntryRevisionCommandDao.upsertForImport()`、`upsertAllForImport()` 与 `deleteBefore(timestamp)`。完整备份合同排除修订历史；精确符号扫描未发现导入、迁移、维护或反射调用。`insertAllStrict()` 仍由生命周期测试使用，留待后续审查。
-- [ ] 保留有实际事务消费者的方法：普通修订写入、恢复、删除、按条目/全局裁剪、清空回收站修订和旧图标引用回收；保留 `countByIconCustomReference()` 等图标引用保护查询。变更只收窄 DAO API，不改 Room Schema/internal format 版本 1，也不把修订持久化职责搬到 App/Presentation。
-- [ ] 迁移或保留 `RoomObservationSessionTest` 中 `observeByEntryId()` 的 session gate 覆盖，以及 EntryRevision restore/history rebuilder、历史裁剪和图标引用回收的数据库行为断言；更新受影响测试与正式修订历史文档（若行为合同有变化），运行 Data 仪器定向测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 移除没有调用者的 `EntryRevisionQueryDao.getByVersion()`、`getByEntryId()`、`getLatest()`、`countAll()`；测试改为消费生产 `observeByEntryId()` Flow，并继续断言历史顺序、总量和恢复后最新快照。
+- [x] 移除无消费者的 `EntryRevisionCommandDao.upsertForImport()`、`upsertAllForImport()`、`deleteBefore(timestamp)` 与测试专用 `insertAllStrict()`；生命周期测试改为逐条 `insertStrict()`。完整备份合同排除修订历史。
+- [x] 保留有实际事务消费者的方法：普通修订写入、恢复、删除、按条目/全局裁剪、清空回收站修订和旧图标引用回收；保留 `countByIconCustomReference()` 等图标引用保护查询。未改 Room Schema/internal format 版本 1，也未把修订持久化职责搬到 App/Presentation。
+- [x] 将 `RoomObservationSessionTest`、EntryRevision restore/history rebuilder、历史裁剪和图标引用回收断言保留并迁移到生产读取路径；内部 DAO API 收敛不改变正式修订历史文档合同。Data 主源码、AndroidTest 源码编译、`verifyArchitecture`、`git diff --check` 通过。
+- [ ] 在可用设备上运行受影响的 Data instrumentation tests；当前无连接设备，运行时数据库行为尚未验证。
 
-**证据：** 精确搜索 `EntryRevisionQueryDao` 方法后，`getByVersion()` 只在 DAO 声明；`getByEntryId()` 目前由 HOTP 消费事务、修订恢复/历史重建和生命周期仪器测试读取；`getLatest()` 仅由 `EntryRevisionRestoreTransactionTest` 两处断言调用；`countAll()` 为历史重建和生命周期测试提供存量断言。生产 Repository 通过 `observeByEntryId()` 发布修订元数据，并通过 `getById()` 加载、揭示和恢复目标修订；`EntryRevisionWriter`、永久删除、清空回收站、图标回收路径消费其余裁剪与图标引用查询。Command DAO 的 `insertStrict()`、删除/裁剪方法有生产事务消费者；`upsertForImport()` 与 `upsertAllForImport()` 只有声明，且 [`docs/features/backup/backup-workflows.md`](../../features/backup/backup-workflows.md) 明确完整备份不含修订历史；`deleteBefore()` 也只有 DAO 声明。`insertAllStrict()` 当前仅由修订历史仪器测试直接调用，恢复生产路径没有批量插入 EntryRevision 的消费者。该收敛不得误删针对历史上限、恢复后新版本、清空回收站及附件/图标引用保护的行为验证。
+**证据：** 当前生产 Repository 通过 `observeByEntryId()` 发布修订元数据，通过 `getById()` 加载、揭示和恢复目标修订；`EntryRevisionWriter`、永久删除、清空回收站与图标回收路径消费其余写入、裁剪及图标引用查询。`getByEntryId()`、`getLatest()`、`countAll()` 和 `insertAllStrict()` 仅被仪器测试使用，现已改用生产 Flow 和逐条严格插入；Import upsert 与 `deleteBefore()` 无调用点，且 [`docs/features/backup/backup-workflows.md`](../../features/backup/backup-workflows.md) 明确完整备份不含修订历史。更新保留历史上限、恢复后最新快照、清空回收站及附件/图标引用保护行为断言。
 
-**2026-11-08 批次：** 删除从未消费的修订 `getByVersion()`、`upsertForImport()`、`upsertAllForImport()` 与 `deleteBefore()`；备份文档确认修订历史不属于导入合同。未改表结构或 schema。`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`、`verifyArchitecture` 通过（63 项任务执行）；instrumentation tests 因当前无连接设备未运行。
+**2026-11-08 批次：** 删除修订 DAO 中无消费者的查询、Import 写入和过期清理方法；把所有测试专用 get/count/batch insert 调用迁到 `observeByEntryId()` 与逐条 `insertStrict()`，保留行为断言。未改表结构或 schema。`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`、`verifyArchitecture` 通过；目标文件 `git diff --check` 通过；instrumentation tests 因当前无连接设备未运行。
 
 <a id="task-78"></a>
 
