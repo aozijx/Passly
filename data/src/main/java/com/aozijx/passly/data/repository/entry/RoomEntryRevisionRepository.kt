@@ -105,21 +105,26 @@ internal class RoomEntryRevisionRepository
                         if (!permitConsumer.consumeReveal(permit, entryId, revisionId, keys)) {
                             throw ValidationError()
                         }
-                        keys.map { key ->
-                            RevealedRevisionSensitiveField(
-                                revisionId = revisionId.value,
-                                entryId = entryId,
-                                key = key,
-                                value =
-                                    OwnedChars.fromString(
-                                        secretFieldCodec.decrypt(
-                                            entryId = entryId.value,
-                                            key = key,
-                                            cipher = fieldsByKey.getValue(key).valueCipher,
-                                        ),
+                        buildSensitiveResults(
+                            keys = keys,
+                            create = { key ->
+                                OwnedChars.fromString(
+                                    secretFieldCodec.decrypt(
+                                        entryId = entryId.value,
+                                        key = key,
+                                        cipher = fieldsByKey.getValue(key).valueCipher,
                                     ),
-                            )
-                        }
+                                )
+                            },
+                            assemble = { key, value ->
+                                RevealedRevisionSensitiveField(
+                                    revisionId = revisionId.value,
+                                    entryId = entryId,
+                                    key = key,
+                                    value = value,
+                                )
+                            },
+                        )
                     }
                 }
             }

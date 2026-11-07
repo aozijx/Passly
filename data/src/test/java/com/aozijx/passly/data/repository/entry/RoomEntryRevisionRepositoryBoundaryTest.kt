@@ -9,7 +9,10 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.sensitive.OwnedChars
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -61,6 +64,52 @@ class RoomEntryRevisionRepositoryBoundaryTest {
             verifier.consumedScope,
         )
     }
+
+    @Test
+    fun `partially built sensitive results are wiped when a later field fails`() =
+        runTest {
+            val created = mutableListOf<OwnedChars>()
+            val failure = IllegalStateException("second field decrypt failed")
+
+            val actualFailure =
+                runCatching {
+                    buildSensitiveResults(
+                        keys = listOf("first", "second"),
+                        create = { key ->
+                            if (key == "second") throw failure
+                            OwnedChars.fromString("first-value").also(created::add)
+                        },
+                        assemble = { _, value -> value },
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, actualFailure)
+            assertEquals(1, created.size)
+            assertTrue(created.single().isWiped)
+        }
+
+    @Test
+    fun `created sensitive values are wiped when result assembly fails`() =
+        runTest {
+            val created = mutableListOf<OwnedChars>()
+            val failure = IllegalStateException("result assembly failed")
+
+            val actualFailure =
+                runCatching {
+                    buildSensitiveResults(
+                        keys = listOf("first", "second"),
+                        create = { key -> OwnedChars.fromString(key).also(created::add) },
+                        assemble = { key, value ->
+                            if (key == "second") throw failure
+                            value
+                        },
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, actualFailure)
+            assertEquals(2, created.size)
+            assertTrue(created.all(OwnedChars::isWiped))
+        }
 
     private object TestPermit : AuthorizationPermit
 

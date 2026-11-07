@@ -27,8 +27,10 @@ import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -118,8 +120,118 @@ class RevealEntryFieldsUseCaseTest {
             )
         }
 
+    @Test
+    fun `revealed values are wiped when activity recording fails`() =
+        runTest {
+            val repository = RevealingRepository()
+            val failure = IllegalStateException("activity recording failed")
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = RecordingAuthorizationGate(allowed = true),
+                    entryFieldReader = RecordingFieldReader("must-not-read"),
+                    sensitiveFieldRepository = repository,
+                    activityRecorder = RecordingActivityRecorder(failure),
+                )
+
+            val actualFailure =
+                runCatching {
+                    useCase.reveal(
+                        entry = entry(EntryType.LOGIN),
+                        requestedFields = setOf(FieldKey.PASSWORD),
+                        recordLowSensitivityAccess = false,
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, actualFailure)
+            assertEquals(1, repository.revealedValues.size)
+            assertTrue(repository.revealedValues.single().isWiped)
+        }
+
+    @Test
+    fun `revealed values are wiped when activity recording is cancelled`() =
+        runTest {
+            val repository = RevealingRepository()
+            val cancellation = CancellationException("activity recording cancelled")
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = RecordingAuthorizationGate(allowed = true),
+                    entryFieldReader = RecordingFieldReader("must-not-read"),
+                    sensitiveFieldRepository = repository,
+                    activityRecorder = RecordingActivityRecorder(cancellation),
+                )
+
+            val actualFailure =
+                runCatching {
+                    useCase.reveal(
+                        entry = entry(EntryType.LOGIN),
+                        requestedFields = setOf(FieldKey.PASSWORD),
+                        recordLowSensitivityAccess = false,
+                    )
+                }.exceptionOrNull()
+
+            assertSame(cancellation, actualFailure)
+            assertEquals(1, repository.revealedValues.size)
+            assertTrue(repository.revealedValues.single().isWiped)
+        }
+
+    @Test
+    fun `revealed values are wiped when authorization suspending boundary cancels`() =
+        runTest {
+            val repository = RevealingRepository()
+            val cancellation = CancellationException("authorization boundary cancelled")
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = RecordingAuthorizationGate(allowed = true, failureAfterBlock = cancellation),
+                    entryFieldReader = RecordingFieldReader("must-not-read"),
+                    sensitiveFieldRepository = repository,
+                    activityRecorder = RecordingActivityRecorder(),
+                )
+
+            val actualFailure =
+                runCatching {
+                    useCase.reveal(
+                        entry = entry(EntryType.LOGIN),
+                        requestedFields = setOf(FieldKey.PASSWORD),
+                        recordLowSensitivityAccess = false,
+                    )
+                }.exceptionOrNull()
+
+            assertSame(cancellation, actualFailure)
+            assertEquals(1, repository.revealedValues.size)
+            assertTrue(repository.revealedValues.single().isWiped)
+        }
+
+    @Test
+    fun `low sensitivity field read failure after an earlier value propagates`() =
+        runTest {
+            val failure = IllegalStateException("second field read failed")
+            val reader = RecordingFieldReader(value = "first-field", failureAt = FieldKey.NOTES, failure = failure)
+            val activity = RecordingActivityRecorder()
+            val useCase =
+                RevealEntryFieldsUseCase(
+                    authorizationGate = RecordingAuthorizationGate(allowed = false),
+                    entryFieldReader = reader,
+                    sensitiveFieldRepository = RevealingRepository(),
+                    activityRecorder = activity,
+                )
+
+            val actualFailure =
+                runCatching {
+                    useCase.reveal(
+                        entry = entry(EntryType.LOGIN),
+                        requestedFields = linkedSetOf(FieldKey.USERNAME, FieldKey.NOTES),
+                        recordLowSensitivityAccess = true,
+                    )
+                }.exceptionOrNull()
+
+            assertSame(failure, actualFailure)
+            assertEquals(listOf(FieldKey.USERNAME, FieldKey.NOTES), reader.keys)
+            assertTrue(activity.activities.isEmpty())
+        }
+
     private class RecordingAuthorizationGate(
         private val allowed: Boolean,
+        private val failureAfterBlock: Throwable? = null,
     ) : AuthorizationGate {
         var scope: AuthorizationScope? = null
 
@@ -130,7 +242,9 @@ class RevealEntryFieldsUseCaseTest {
         ): AuthorizationResult<T> {
             this.scope = scope
             return if (allowed) {
-                AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
+                val value = block(object : AuthorizationPermit {})
+                failureAfterBlock?.let { throw it }
+                AuthorizationResult.Allowed(value)
             } else {
                 AuthorizationResult.Denied(
                     AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE),
@@ -141,6 +255,8 @@ class RevealEntryFieldsUseCaseTest {
 
     private class RecordingFieldReader(
         private val value: String,
+        private val failureAt: FieldKey? = null,
+        private val failure: Throwable? = null,
     ) : EntryFieldReader {
         val keys = mutableListOf<FieldKey>()
 
@@ -150,11 +266,14 @@ class RevealEntryFieldsUseCaseTest {
             key: FieldKey,
         ): String {
             keys += key
+            if (key == failureAt) throw requireNotNull(failure)
             return value
         }
     }
 
     private class RevealingRepository : SensitiveFieldRepository {
+        val revealedValues = mutableListOf<OwnedChars>()
+
         override suspend fun revealMany(
             entryId: EntryId,
             keys: Set<SensitiveFieldKey>,
@@ -162,7 +281,9 @@ class RevealEntryFieldsUseCaseTest {
             permit: AuthorizationPermit,
         ): List<RevealedSensitiveField> =
             keys.map { key ->
-                RevealedSensitiveField(entryId, key, OwnedChars.fromString(key.name))
+                OwnedChars.fromString(key.name).also(revealedValues::add).let { value ->
+                    RevealedSensitiveField(entryId, key, value)
+                }
             }
 
         override suspend fun getPresence(entryId: EntryId) = SensitiveFieldPresence(entryId, emptySet())
@@ -177,7 +298,9 @@ class RevealEntryFieldsUseCaseTest {
         override suspend fun readBundle(entryId: EntryId) = EntrySecret()
     }
 
-    private class RecordingActivityRecorder : ActivityRecorder {
+    private class RecordingActivityRecorder(
+        private val failure: Throwable? = null,
+    ) : ActivityRecorder {
         val activities = mutableListOf<ActivityType>()
 
         override suspend fun recordUsage(
@@ -185,6 +308,7 @@ class RevealEntryFieldsUseCaseTest {
             type: ActivityType,
         ): AppResult<Unit> {
             activities += type
+            failure?.let { throw it }
             return AppResult.Success(Unit)
         }
 

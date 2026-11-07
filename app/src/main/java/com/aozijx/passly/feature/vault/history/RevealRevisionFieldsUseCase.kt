@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.history
 
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
@@ -23,6 +24,8 @@ internal class RevealRevisionFieldsUseCase
             keys: Set<SensitiveFieldKey>,
         ): RevisionOperationResult<List<RevealedRevisionSensitiveField>> {
             if (keys.isEmpty()) return RevisionOperationResult.Succeeded(emptyList())
+            val ownedValues = mutableListOf<RevealedRevisionSensitiveField>()
+            var transferred = false
             val scope =
                 AuthorizationScope.SensitiveRevision(
                     entryId = entryId,
@@ -30,15 +33,25 @@ internal class RevealRevisionFieldsUseCase
                     fieldKeys = keys,
                     action = SensitiveRevisionAccessAction.REVEAL,
                 )
-            return when (
-                val result =
-                    authorizationGate.authorize(scope) { permit ->
-                        repository.reveal(entryId, revisionId, keys, permit)
-                    }
-            ) {
-                is AuthorizationResult.Allowed -> result.value.toRevisionOperationResult()
-                is AuthorizationResult.Denied -> RevisionOperationResult.AuthenticationDenied(result.failure)
-                AuthorizationResult.Cancelled -> RevisionOperationResult.Cancelled
+            return try {
+                when (
+                    val result =
+                        authorizationGate.authorize(scope) { permit ->
+                            repository.reveal(entryId, revisionId, keys, permit).also { revealed ->
+                                if (revealed is AppResult.Success) ownedValues.addAll(revealed.data)
+                            }
+                        }
+                ) {
+                    is AuthorizationResult.Allowed ->
+                        result.value.toRevisionOperationResult().also { operationResult ->
+                            transferred = operationResult is RevisionOperationResult.Succeeded
+                        }
+
+                    is AuthorizationResult.Denied -> RevisionOperationResult.AuthenticationDenied(result.failure)
+                    AuthorizationResult.Cancelled -> RevisionOperationResult.Cancelled
+                }
+            } finally {
+                if (!transferred) ownedValues.forEach { it.value.wipe() }
             }
         }
     }

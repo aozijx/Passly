@@ -73,19 +73,15 @@ internal class RoomSensitiveFieldRepository
                 ) {
                     return@queryFullVault emptyList()
                 }
-                keys.mapNotNull { key ->
-                    val entity =
-                        secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
-                            ?: return@mapNotNull null
-                    RevealedSensitiveField(
-                        entryId = entryId,
-                        key = key,
-                        value =
-                            OwnedChars.fromString(
-                                codec.decrypt(entryId.value, key, entity.valueCipher),
-                            ),
-                    )
-                }
+                buildSensitiveResults(
+                    keys = keys,
+                    create = { key ->
+                        val entity = secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
+                            ?: return@buildSensitiveResults null
+                        OwnedChars.fromString(codec.decrypt(entryId.value, key, entity.valueCipher))
+                    },
+                    assemble = { key, value -> RevealedSensitiveField(entryId, key, value) },
+                )
             }
 
         override suspend fun readBundle(entryId: EntryId): EntrySecret =

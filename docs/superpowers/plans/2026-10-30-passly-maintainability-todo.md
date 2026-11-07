@@ -24,7 +24,7 @@
 | Autofill 后续 | [唯一后续清单](2026-11-07-passly-autofill-followups.md)；[模块实施记录](2026-11-06-autofill-feature-module.md)、[BottomSheet 实施记录](2026-11-06-autofill-bottom-sheet-auth-contract.md) | 21 宿主验收、82 设置策略；81 授权异常与 33 系统观察已完成，不再作为当前待办 |
 | Scanner | [审查 TODO](2026-11-06-passly-scanner-review-followups.md)、[取景框计划](2026-11-06-scanner-entry-and-framing.md) | 42、51、86；显式关闭/宿主暂停区分在专题 Task 4 |
 | Vault / OTP | [搜索 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP TODO](2026-11-06-passly-otp-review-followups.md) | 27、32、34–36、42、43 |
-| Backup / 诊断 | [Backup TODO](2026-11-06-passly-backup-review-followups.md)、[数据端口迁移计划](2026-11-07-backup-data-port.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 39–41、73、74、77、86 |
+| Backup / 诊断 | [Backup TODO](2026-11-06-passly-backup-review-followups.md)、[数据端口迁移审查记录](../../reviews/2026-11-07-backup-data-port-migration.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 39–41、73、74、77、86 |
 | 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 26、37、43–46、59、64；安全 Task 2 统一持有非合作 lease 关闭清单 |
 
 ## Autofill 重构后的清理
@@ -92,11 +92,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 43：保证条目与修订敏感揭示异常时擦除部分结果
 
-- [ ] 为 `RevealEntryFieldsUseCase.reveal()` 建立局部敏感值所有权交接：`OwnedChars` 在返回前由 UseCase 持有；任何后续字段读取、授权、Repository reveal 或活动记录 suspend 调用异常/取消时都必须擦除已累计值与未交接的 reveal 结果，然后原样重抛取消/错误。成功返回时仅将明确纳入结果的值转交调用方，不能双重 wipe 或遗留未采纳的敏感结果。
-- [ ] 同时闭合 Data producer 的部分返回清理：`RoomSensitiveFieldRepository.revealMany()` 与 `RoomEntryRevisionRepository.reveal()` 都在查询/解密迭代中逐个创建 `OwnedChars`；若后续字段 decrypt 或整体查询抛错，已创建容器不可从未返回的 List 交给上层清理。令 Repository 在构造列表期间拥有已揭示值，失败时 wipe 全部后重抛，再仅在完整结果返回时转移所有权。
-- [ ] 增加可控失败与取消测试：Data 侧普通字段及 revision 第二个字段 decrypt/查询失败，UseCase 侧低敏字段读取后授权失败抛错、高敏 reveal 后 `ActivityRecorder.recordUsage` 抛错/取消、字段读取中途抛错；断言每个已创建 `OwnedChars` 已 wipe，取消仍传播且成功/拒绝路径行为不变。再核实 Detail 与 History ViewModel 对返回值的发布/离页清理合同，运行 Data Repository、Reveal UseCase/Detail/History 生命周期定向测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 为 `RevealEntryFieldsUseCase.reveal()` 建立局部敏感值所有权交接，并为 `RevealRevisionFieldsUseCase` 补齐授权门在 Repository 返回后失败/取消时的清理。异常退出时擦除已累计值，成功返回才转交；Detail ViewModel 收到结果后再交给 `DetailWorkSession`，History ViewModel 对迟到结果 wipe、对当前结果交给 revision reveal store。
+- [x] Data producer 使用同一局部 owner 构造 `RoomSensitiveFieldRepository.revealMany()` 与 `RoomEntryRevisionRepository.reveal()` 结果；DAO/decrypt/assembly 失败时擦除部分结果后原样重抛。可控后续字段失败测试已覆盖 builder 的部分累积清理。
+- [x] 覆盖读取/创建中途失败、授权后置取消、记录异常/取消、组装失败与调用方交接。低敏字段测试确认前一字段已读取后第二字段异常原样传播；该分支与高敏字段共用同一局部 owner/finally 清理，不额外注入只用于测试的 OwnedChars factory。实际 DAO/decrypt 调用位于共享 builder 的 create block 中，后续创建失败由同一行为测试覆盖。Detail/History 的发布、迟到结果 wipe 与离页清理合同按 ViewModel、工作会话和两个 reveal store 复核。
 
-**证据：** `RevealEntryFieldsUseCase.reveal()` 先将低敏感字段用 `OwnedChars.fromNullableString()` 放进局部 `values`，之后可能继续读取多个字段、调用 `AuthorizationGate.authorize()` 和 `SensitiveFieldRepository.revealMany()`，最后还可能挂起调用 `ActivityRecorder.recordUsage()`；整个过程没有 `try/finally`。上述任一步骤异常或取消都会让方法在返回 map 前丢弃局部引用且不 wipe 已建容器；尤其在高敏授权/揭示成功后 activity recording 抛错时，全部解密值都已进入 `values`。调用方 `DetailViewModel.revealFields()` 只有收到 map 后才把它交给 `DetailWorkSession.publishReveals()`，后者能清理迟到或发布失败的值，却无法接管 UseCase 异常退出时从未返回的 map。Data 侧 `RoomSensitiveFieldRepository.revealMany()` 在 `keys.mapNotNull`、`RoomEntryRevisionRepository.reveal()` 在 `keys.map` 中也逐项创建 `OwnedChars`；若第二个及后续 `codec.decrypt()` 或 DAO 查询抛错，前面生成的结果列表不会返回给上层，当前实现同样没有局部失败清理。现有 `RevealEntryFieldsUseCaseTest` 仅覆盖低敏/高敏成功与授权拒绝，并在成功后由测试手动 wipe；仓库精确搜索未发现 `RoomSensitiveFieldRepository`/`RoomEntryRevisionRepository` 的 reveal 异常清理行为测试，也没有 UseCase 读取/授权/activity recording 抛错、取消用例或断言生产边界清理责任。该问题是静态敏感资源所有权缺口，尚未由运行时测试复现。
+**证据：** `RevealEntryFieldsUseCase` 在 authorize 调用前跟踪低敏 `OwnedChars`，并跟踪授权 block 内返回的高敏结果；`finally` 只把实际放入成功返回 map 的值交给调用方，异常/取消时擦除全部已持有值。`RevealEntryFieldsUseCaseTest` 7/7 通过，覆盖第二个低敏字段读取异常传播、activity recording 异常/取消、授权 suspend 边界取消及既有成功/拒绝行为；擦除断言覆盖 activity 异常/取消和授权 block 完成后的取消。Data 新增 `buildSensitiveResults`，两个 Room Repository 都经此 helper 创建/组装结果；后续 create/decrypt/DAO 或 assemble 失败时擦除已累积值后重抛，`RoomEntryRevisionRepositoryBoundaryTest` 4/4 通过，分别验证后续 create 与 assemble 失败。History UseCase 暂持 Repository 的成功 reveal 结果，只有 `RevisionOperationResult.Succeeded` 才转移所有权；gate 在 block 返回后取消与成功转移测试已执行，`EntryRevisionUseCasesTest` 6/6 通过。GC 授权回调收敛后 worker 测试 7/7 通过。`DetailViewModelTest` 24/24、`DetailWorkSessionTest` 18/18、`DetailRevealStoreTest` 2/2、`DetailRevisionRevealStoreTest` 1/1 通过。`:data:compileDebugAndroidTestKotlin`、根 `verifyArchitecture`、定向 `git diff --check` 均通过。调用方能在 store 接管成功结果；viewmodel 离页/替换时取消工作并清除 store，`RevealRevisionFieldsUseCase` 对授权边界无法返回的值兜底擦除。此 task 完成。
 
 <a id="task-59"></a>
 

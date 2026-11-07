@@ -25,14 +25,18 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveF
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
+import java.util.concurrent.CancellationException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EntryRevisionUseCasesTest {
@@ -78,6 +82,53 @@ class EntryRevisionUseCasesTest {
 
             assertSame(RevisionOperationResult.Cancelled, result)
             assertEquals(null, repository.revealedKeys)
+        }
+
+    @Test
+    fun `revealed revision values are wiped when authorization boundary cancels after repository returns`() =
+        runBlocking {
+            val value = OwnedChars.fromString("revision-secret")
+            val repository = RecordingRevisionRepository(revealedValues = listOf(value))
+            val cancellation = CancellationException("authorization boundary cancelled")
+            val useCase =
+                RevealRevisionFieldsUseCase(
+                    repository,
+                    RecordingAuthorizationGate(failureAfterBlock = cancellation),
+                )
+
+            val actualFailure =
+                runCatching {
+                    useCase(
+                        EntryId("entry"),
+                        EntryRevisionId("revision"),
+                        setOf(SensitiveFieldKey.PASSWORD),
+                    )
+                }.exceptionOrNull()
+
+            assertSame(cancellation, actualFailure)
+            assertTrue(value.isWiped)
+        }
+
+    @Test
+    fun `successful reveal transfers revision value to caller`() =
+        runBlocking {
+            val value = OwnedChars.fromString("revision-secret")
+            val useCase =
+                RevealRevisionFieldsUseCase(
+                    RecordingRevisionRepository(revealedValues = listOf(value)),
+                    RecordingAuthorizationGate(),
+                )
+
+            val result =
+                useCase(
+                    EntryId("entry"),
+                    EntryRevisionId("revision"),
+                    setOf(SensitiveFieldKey.PASSWORD),
+                )
+
+            assertTrue(result is RevisionOperationResult.Succeeded)
+            assertSame(value, (result as RevisionOperationResult.Succeeded).value.single().value)
+            assertFalse(value.isWiped)
         }
 
     @Test
@@ -137,6 +188,7 @@ class EntryRevisionUseCasesTest {
 
     private class RecordingAuthorizationGate(
         private val result: AuthorizationResult<Any?>? = null,
+        private val failureAfterBlock: Throwable? = null,
     ) : AuthorizationGate {
         var scope: AuthorizationScope? = null
 
@@ -147,13 +199,17 @@ class EntryRevisionUseCasesTest {
             block: suspend (AuthorizationPermit) -> T,
         ): AuthorizationResult<T> {
             this.scope = scope
-            return result as AuthorizationResult<T>? ?: AuthorizationResult.Allowed(block(TestPermit))
+            if (result != null) return result as AuthorizationResult<T>
+            val value = block(TestPermit)
+            failureAfterBlock?.let { throw it }
+            return AuthorizationResult.Allowed(value)
         }
     }
 
     private class RecordingRevisionRepository(
         private val snapshot: RedactedEntryRevision? = null,
         private val restoreResult: AppResult<EntryVersion> = AppResult.success(EntryVersion(8)),
+        private val revealedValues: List<OwnedChars> = emptyList(),
     ) : EntryRevisionRepository {
         var revealedKeys: Set<SensitiveFieldKey>? = null
         var restoredVersion: EntryVersion? = null
@@ -177,7 +233,11 @@ class EntryRevisionUseCasesTest {
             permit: AuthorizationPermit,
         ): AppResult<List<RevealedRevisionSensitiveField>> {
             revealedKeys = keys
-            return AppResult.success(emptyList())
+            return AppResult.success(
+                revealedValues.map { value ->
+                    RevealedRevisionSensitiveField(revisionId.value, entryId, keys.first(), value)
+                },
+            )
         }
 
         override suspend fun restore(
