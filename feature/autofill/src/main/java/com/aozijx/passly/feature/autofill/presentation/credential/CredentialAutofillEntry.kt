@@ -88,15 +88,18 @@ private fun deliverCredentialResult(
 ) {
     try {
         val committed =
-            resultClaim.commit {
+            resultClaim.commit { markPlatformCommitted ->
                 when (completion) {
                     is CredentialResponseCompletion.Immediate -> {
                         onComplete(AutofillHostCompletion(android.app.Activity.RESULT_OK, completion.resultIntent))
+                        markPlatformCommitted()
                     }
 
                     is CredentialResponseCompletion.CommittedSelection -> {
-                        resultDelivery.commitResult(completion.receipt) {
+                        resultDelivery.commitResult(completion.receipt) { markDeliveryCommitted ->
                             onComplete(AutofillHostCompletion(android.app.Activity.RESULT_OK, completion.resultIntent))
+                            markDeliveryCommitted()
+                            markPlatformCommitted()
                         }
                     }
                 }
@@ -114,7 +117,11 @@ private fun cancelCredential(
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     try {
-        if (resultClaim.commit { onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED)) }) {
+        if (resultClaim.commit { markPlatformCommitted ->
+                onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                markPlatformCommitted()
+            }
+        ) {
             viewModel.cancelActiveInteraction()
         }
     } catch (_: Exception) {

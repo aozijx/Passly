@@ -58,7 +58,7 @@ internal class AutofillResultDelivery internal constructor(
     /** Commits the result to Android before releasing Autofill-owned access. */
     fun commitResult(
         receipt: AutofillSelectionReceipt,
-        commitToPlatform: () -> Unit,
+        commitToPlatform: (markPlatformCommitted: () -> Unit) -> Unit,
     ) {
         val webScope = receipt.webScope?.normalized()
         var webDeliverySessionAtMs: Long? = null
@@ -106,8 +106,11 @@ internal class AutofillResultDelivery internal constructor(
                         val deliveryStartedAt = monotonicTimeMs()
                         logger.log(LogStatements.Autofill.resultDeliveryStarted())
                         try {
-                            commitToPlatform()
-                            platformCommitted = true
+                            commitToPlatform {
+                                check(!platformCommitted) { "Autofill platform result was marked committed more than once" }
+                                platformCommitted = true
+                            }
+                            check(platformCommitted) { "Autofill platform callback returned without committing" }
                         } catch (error: Exception) {
                             try {
                                 logger.log(

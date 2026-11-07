@@ -67,7 +67,7 @@ private fun deliverLegacyResult(
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     try {
-        viewModel.commitPlatformResult {
+        viewModel.commitPlatformResult { markPlatformCommitted ->
             when (result) {
                 is AutofillFillResult.Discovery -> {
                     val response =
@@ -80,6 +80,7 @@ private fun deliverLegacyResult(
                     if (response == null) {
                         viewModel.cancel()
                         onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                        markPlatformCommitted()
                     } else {
                         onComplete(
                             AutofillHostCompletion(
@@ -87,6 +88,7 @@ private fun deliverLegacyResult(
                                 Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response),
                             ),
                         )
+                        markPlatformCommitted()
                     }
                 }
 
@@ -95,32 +97,37 @@ private fun deliverLegacyResult(
                     if (dataset == null) {
                         viewModel.cancel()
                         onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                        markPlatformCommitted()
                     } else {
                         val platformResult =
                             when (result.target) {
                                 LegacyAutofillResultTarget.DATASET -> dataset
                                 LegacyAutofillResultTarget.RESPONSE -> FillResponse.Builder().addDataset(dataset).build()
                             }
-                        resultDelivery.commitResult(result.receipt) {
+                        resultDelivery.commitResult(result.receipt) { markDeliveryCommitted ->
                             val resultIntent = Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, platformResult)
                             if (result.target == LegacyAutofillResultTarget.DATASET) {
                                 resultIntent.putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
                             }
                             onComplete(AutofillHostCompletion(android.app.Activity.RESULT_OK, resultIntent))
+                            markDeliveryCommitted()
+                            markPlatformCommitted()
                         }
                     }
                 }
 
                 AutofillFillResult.Cancelled -> {
                     onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                    markPlatformCommitted()
                 }
             }
         }
     } catch (_: Exception) {
         viewModel.cancel()
         try {
-            viewModel.commitPlatformResult {
+            viewModel.commitPlatformResult { markPlatformCommitted ->
                 onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                markPlatformCommitted()
             }
         } catch (_: Exception) {
             onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))

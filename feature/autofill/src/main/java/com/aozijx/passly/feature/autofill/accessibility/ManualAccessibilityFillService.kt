@@ -105,8 +105,9 @@ class ManualAccessibilityFillService : AccessibilityService() {
                         claim.targetPackage,
                     )
                 try {
-                    resultDelivery.commitResult(claim.receipt) {
+                    resultDelivery.commitResult(claim.receipt) { markPlatformCommitted ->
                         check(claim.commit()) { "Accessibility target is unavailable" }
+                        markPlatformCommitted()
                     }
                     logger.log(LogStatements.Autofill.fallbackDelivered(fields))
                 } catch (cancelled: CancellationException) {

@@ -53,7 +53,7 @@ internal class AutofillFillViewModel
 
         private var currentRequest: AutofillFillRequest? = null
 
-        fun commitPlatformResult(deliver: () -> Unit): Boolean {
+        fun commitPlatformResult(deliver: (markPlatformCommitted: () -> Unit) -> Unit): Boolean {
             val state = mutableUiState.value
             if (state !is AutofillFillUiState.Result && state !is AutofillFillUiState.Error) return false
             val committed = resultClaim.commit(deliver)

@@ -9,12 +9,17 @@ internal class AutofillActivityResultClaim {
     val isClaimed: Boolean
         get() = claimed.get()
 
-    fun commit(deliverToPlatform: () -> Unit): Boolean {
+    fun commit(deliverToPlatform: (markPlatformCommitted: () -> Unit) -> Unit): Boolean {
         if (!claimed.compareAndSet(false, true)) return false
+        var platformCommitted = false
         try {
-            deliverToPlatform()
+            deliverToPlatform {
+                check(!platformCommitted) { "Autofill platform result was marked committed more than once" }
+                platformCommitted = true
+            }
+            check(platformCommitted) { "Autofill platform result callback returned without committing" }
         } catch (error: Throwable) {
-            claimed.compareAndSet(true, false)
+            if (!platformCommitted) claimed.compareAndSet(true, false)
             throw error
         }
         return true

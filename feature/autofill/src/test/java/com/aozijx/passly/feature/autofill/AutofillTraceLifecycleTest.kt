@@ -81,8 +81,9 @@ class AutofillTraceLifecycleTest {
                     continuations = continuations,
                 )
 
-            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {
+            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) { markPlatformCommitted ->
                 assertNull(lockController.reason)
+                markPlatformCommitted()
             }
             runCurrent()
 
@@ -193,7 +194,9 @@ class AutofillTraceLifecycleTest {
                     continuations = continuations,
                 )
 
-            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {}
+            delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) { markPlatformCommitted ->
+                markPlatformCommitted()
+            }
             runCurrent()
 
             assertEquals(Events.Application.TraceResumeUnavailable, records.first().event)
@@ -237,11 +240,13 @@ class AutofillTraceLifecycleTest {
                 )
             val callbacks = mutableListOf<String>()
 
-            delivery.commitResult(AutofillSelectionReceipt(legacy.id, EntryId("legacy-entry"))) {
+            delivery.commitResult(AutofillSelectionReceipt(legacy.id, EntryId("legacy-entry"))) { markPlatformCommitted ->
                 callbacks += "legacy_dataset"
+                markPlatformCommitted()
             }
-            delivery.commitResult(AutofillSelectionReceipt(credential.id, EntryId("credential-entry"))) {
+            delivery.commitResult(AutofillSelectionReceipt(credential.id, EntryId("credential-entry"))) { markPlatformCommitted ->
                 callbacks += "credential_intent"
+                markPlatformCommitted()
             }
             runCurrent()
 

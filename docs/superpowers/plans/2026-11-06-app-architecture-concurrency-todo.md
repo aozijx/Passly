@@ -17,7 +17,7 @@
 
 ## 当前架构基线
 
-- Gradle 模块为 `:app`、`:core`、`:core:common`、`:data`、`:domain`、`:runtime:session`、`:security`。业务 Feature 位于 `:app` 包中；当前正式架构文档不为每个页面/流程建立 Gradle 模块。
+- 当前 Gradle 模块包括 `:app`、`:core`、`:core:common`、`:data`、`:domain`、`:runtime:session`、`:security`、`:feature:autofill`。Autofill 已抽为独立 Android library；该模块直接依赖 `:core`、`:domain`、`:runtime:session`，`:app` 显式依赖它。App 保留共享认证 Activity 宿主与窄平台适配，其余业务 Feature 主要仍在 App 包内。权威依赖白名单见 [`build.gradle.kts`](../../../build.gradle.kts) 中的 `verifyModuleBoundaries` 配置。
 - 当前主结构是分层 MVVM + 单向数据流：UI → Route/ViewModel → Feature UseCase/应用流程（按需要）→ Domain port → Data Repository；Security 拥有认证和安全会话编排，Runtime Session 拥有资源无关的会话状态机。
 - 当前项目版本目录记录 Kotlin `2.3.20`、kotlinx.coroutines `1.11.0`。线程切换现状并不统一：一部分操作接收注入的 `CoroutineDispatcher`（例如 Backup dispatcher、`RuntimeSessionManager`），多处实现直接引用 `Dispatchers.IO/Default`。
 - 页面任务主要由 `viewModelScope` 管理；Application、Security singleton 与 Android Service 有多个独立 `SupervisorJob` Scope。KDF、加密日志写入和 CameraX 分析分别使用专用单线程 Executor/线程池。
@@ -27,14 +27,18 @@
 - 日志已经分层：`core` 定义记录/Store 接口，`data` 持有加密日志存储，`app` 持有 logger 组合、crash capture 和生命周期协调。`EncryptedLogRecordStore` 使用有界单线程 `ThreadPoolExecutor`，append 后调用 `fd.sync()`；uncaught crash handler 会限时 flush，失败后使用独立 emergency-write 路径。独立进程只能提供一定故障隔离，不能保证进程存活，也不能替代持久队列、同步写入和进程死亡验证。
 - 本次目录与依赖检索未发现 WorkManager 依赖或调用；是否需要持久后台任务要由具体业务的进程死亡合同决定，不作为全局并发改造的前置条件。
 
+## 执行入口与去重（2026-11-07）
+
+先按[主维护待办](2026-10-30-passly-maintainability-todo.md)处理 Task 86 验证基线和 26/37/59 等具体合同及 [Autofill 后续清单](2026-11-07-passly-autofill-followups.md)，本页广域提案不排在已确认问题之前。Task 1 中 Autofill 模块比较/抽取已被当前迁移替代，剩余为边界与宿主验收；诊断独立进程仍待决策。Task 6 持久设置已有 RecoverableRead，不重新实现；Task 7 引用实际 owner 清单，不复制主待办 80/83/84。
+
 ## 待办
 
 ### Task 1：确定目标架构与 GoF 使用边界
 
 - [ ] 依据当前模块与包边界确认目标仍是分层 MVVM + UDF。将 `:app` 中的流程明确为 Feature/Application 工作流；只有稳定、跨层共享且不依赖页面状态的规则进入 Domain；持久化继续由 Data；认证、密钥与会话访问继续由 Security/Runtime 拥有。
-- [ ] 在架构决策记录中比较至少三条路线：现有模块内分层加固；拆分更多 Feature Gradle 模块；全局事件/Actor 或总线驱动。记录复杂度、边界收益、迁移成本及状态/取消风险。初始建议采用第一条，除非调用闭包或构建指标提供反证。
+- [ ] 在架构决策记录中比较至少三条路线：现有模块内分层加固；按已验证的依赖闭包/构建隔离证据拆分其他 Feature Gradle 模块；全局事件/Actor 或总线驱动。`:feature:autofill` 已完成切换，不再作为未来拆分候选；本项只评估是否需要更多模块。记录复杂度、边界收益、迁移成本及状态/取消风险。
 - [ ] 单独比较 Gradle 模块拆分、Android 独立进程和独立持久化/服务三个不同决策。新增 Gradle module 只改变编译依赖/API 边界，不形成 crash/process isolation；`android:process` 则引入独立 Application/Hilt 单例、IPC 和跨进程数据/状态合同。不得用“加模块”满足进程隔离需求，也不得用“独立进程”代替 durable log write。
-- [ ] 针对用户提出的 Autofill 与日志独立化分别给出结论：Autofill 模块候选以可验证的依赖闭包、build isolation 或复用为依据，不以页面/文件大小为依据；日志若需独立进程，先定义需要保住的故障类型、事件交付方式、最大丢失窗口、IPC 失败回退、Room/DataStore/会话共享和强杀测试。以当前已有的队列、`fd.sync()`、crash flush/emergency-write 机制为对照，不预先认为必须迁移。
+- [ ] 日志若考虑独立进程，先定义故障类型、事件交付、最大丢失窗口、IPC 失败回退、Room/DataStore/会话共享和强杀验证；以现有队列、`fd.sync()`、crash flush/emergency-write 机制为对照。
 - [ ] 编写 GoF 模式使用表并用现有代码示例校验：State 用于有穷状态机；Adapter 隔离 Android/持久化协议；Strategy 仅用于确有多实现的行为；Command/UseCase 表达有意义的业务动作；Flow/StateFlow 承担观察数据流；Factory 由 DI 或真实构造变化驱动。明确简单一对一包装、无实际替换的 Strategy、全局 Observer/EventBus 和只转发调用的 Coordinator 不作为默认做法。
 - [ ] 与 `docs/architecture/overview.md`、`docs/architecture/package-boundaries.md`、`docs/architecture/viewmodel-ownership.md`、`docs/development/architecture-and-state.md` 和 `docs/development/maintenance-boundaries.md` 对照，找出重叠、冲突或缺失后再更新长期规则；本计划不是正式架构合同。
 
@@ -55,8 +59,13 @@
 
 ### Task 4：逐处审查同步桥接和生命周期终止
 
-- [ ] 审计 `ManualAccessibilityFillService.onDestroy()` 的 `runBlocking { expireAll(...) }`：确认 Android 回调所需的同步终态、是否可能阻塞主线程、interaction 与 lease 是否必须在回调返回前结束，以及服务取消/进程终止时的替代保证。若保留，写明可验证的等待上限和错误合同；若迁移，不能留下悬挂租约或无 owner 清理。
-- [ ] 审计 `AutofillResultDelivery.commitResult()` 的同步桥：保持“平台结果成功交付后才完成选择并关闭 Autofill-owned access”的提交顺序；分析平台 callback 异常、logger 异常、取消、fatal `Error` 与超时。只在能保持同步系统接口、状态 claim 恰好一次和 lease barrier 的情况下改变实现。
+- [ ] 审计 [`ManualAccessibilityFillService.onDestroy()`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt) 的 `runBlocking { finishInteraction.expireAll(AutofillInteractionSource.ACCESSIBILITY) }`：调用顺序为 `onDestroy()` → [`expireAll(source)`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/FinishAutofillInteraction.kt) → `store.activeIds(source)` → 对每个 ID 调 `expire(id)` → `finish(id, AutofillInteractionState.Expired)` → `store.finish(id, state)` → 若 transitioned 则 [`unlockLease.release(id)`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt)；release 在 `NonCancellable` 中获取 Mutex，最后一个 borrower 可能继续调用 `SessionLockController.lock(SessionLockRequest(LockReason.AUTOFILL_REQUEST_FINISHED, LockTrigger.AUTOFILL_COMPLETION))`。代码未传 timeout；待确认回调线程、最坏等待与逐 ID 顺序清理是否符合需要。
+  - **待验证缺陷：** `AutofillUnlockLease.lockOwnedSessionIfPendingLocked()` 对普通 `Exception` 安排 retry 后仍重新抛出；此异常穿过 `release()` 和 `expire()` 会中断 `expireAll()` 的 `forEach`。当前 interaction 已先由 `store.finish()` 转为终态，但后续 active IDs 可能未过期；`onDestroy()` 的 `scope.cancel()` 与 `super.onDestroy()` 位于 `runBlocking` 之后且没有 `finally`，也可能跳过。下一步用 SessionLockController 注入普通失败覆盖多个 active ID 的服务级/协作测试，确认系统回调可否抛错及资源后果，再决定把逐项清理改成独立失败收集或保证 teardown 的窄 `finally`；fatal `Error` 仍须清理后传播。源码静态证据成立，设备/生命周期行为尚未复现。
+  - 等待合同也未确认：整条 `runBlocking` 链没有 timeout，`release()` 的 `NonCancellable` 临界段会等待 Mutex 与 `SessionLockController.lock()` 返回。检查回调线程、最坏等待、锁失败 retry 和 `onDestroy()` 返回保证。证据：`feature/autofill/.../ManualAccessibilityFillService.kt`、`core/FinishAutofillInteraction.kt`、`runtime/AutofillUnlockLease.kt`。先保留桥接，不直接删除。
+- [ ] 核对 `AutofillResultDelivery.commitResult()` 的同步提交与清理合同：平台结果完成后再完成 selection 并关闭 Autofill-owned access；检查 callback 异常、诊断失败、取消、fatal `Error`、scope 取消和无界等待。Activity claim 只在显式 marker 后终结；宿主级配置重建及 callback 部分副作用后失败由[Autofill Task 21](2026-11-07-passly-autofill-followups.md#task-21)唯一维护。
+  - **当前调用链合同：** `deliverLegacyResult()`、`deliverCredentialResult()` 与 Accessibility 都经 `AutofillResultDelivery.commitResult()` 同步交付；提交前普通异常可重试，显式 marker 后的普通日志/trace 异常不能把成功改成失败。提交前失败释放 web delivery claim 与 completion barrier；收尾失败作为 suppressed 保留，若清理抛 fatal `Error` 而主失败不是 `Error`，则 fatal cleanup error 优先传播。成功后 `scope.launch` 完成 selection，discard trace 并释放 completion barrier。
+  - **已修复（2026-11-07），宿主验收仍待完成：** `AutofillResultDeliveryTest.fatal trace capture failure after platform delivery still completes selection and releases lease` 与 `AutofillActivityResultClaimTest.fatal failure after platform commit marker keeps the claim terminal` 验证 runtime selection 收尾及显式 marker 后 claim 保持终态；全量 Feature Autofill 单测 152 项、`verifyArchitecture` 和 AndroidTest 源码编译通过。单测不覆盖 Activity 外层 observer/claim 的宿主交错。当前 Activity claim 依赖 `onComplete` 返回后的 marker；如果 callback 在部分执行 `setResult` 等副作用后抛错，恢复合同仍未由宿主测试确定，保留在 Autofill Task 21。
+  - 同步 `runBlocking` 的调用线程与最长等待、completion scope 被取消时 barrier/lease 的处置仍待验证；不要把普通诊断失败的恢复能力扩大描述为覆盖 fatal `Error`。
 - [ ] 审计 `ObservabilityRuntimeController` 中 `runBlocking` 的位置和调用线程（生命周期 flush、前次退出摘要、崩溃捕获）。保留 crash/lifecycle 尾声所需的同步可观测性，同时避免普通页面路径无界等待；fatal 错误不可被普通诊断失败吞掉。
 - [ ] 对其余生产 `runBlocking` 做全量闭包搜索；按“不可避免的同步边界”“能改为 suspend/异步 owner”“测试专用”分类，检查主线程、锁重入、dispatcher starvation、超时、取消及调用结束后的资源状态。不是所有 `runBlocking` 都属于缺陷。
 
@@ -96,7 +105,7 @@
 - `runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/SessionLeaseGate.kt`、`RuntimeSessionManager.kt`：会话状态、lease 与资源退出并发。
 - `security/src/main/java/com/aozijx/passly/security/authentication/SingleThreadKdfRunner.kt`：KDF 单线程执行、取消和 worker secret 清理。
 - `data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt`、`app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt`：有界日志队列、flush 与生命周期/崩溃桥接。
-- `feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt`：系统 callback 与 synchronous cleanup 边界。
+- `feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/FinishAutofillInteraction.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt`：系统 callback、逐 interaction 终结与 lease 释放调用链。
 - `app/src/main/AndroidManifest.xml`、`data/src/main/java/com/aozijx/passly/data/local/datastore/AppPreferencesDataStore.kt`、`SecurityPreferencesDataStore.kt`、`data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`：组件进程声明与当前 DataStore/Room 创建方式。
 
 ## 外部技术依据

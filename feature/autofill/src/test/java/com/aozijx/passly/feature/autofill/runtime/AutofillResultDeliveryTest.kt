@@ -109,8 +109,9 @@ class AutofillResultDeliveryTest {
 
             delivery.commitResult(
                 receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
-            ) {
+            ) { markPlatformCommitted ->
                 platformDeliveries++
+                markPlatformCommitted()
                 logger.failTraces = true
             }
             runCurrent()
@@ -154,8 +155,9 @@ class AutofillResultDeliveryTest {
                 try {
                     delivery.commitResult(
                         receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
-                    ) {
+                    ) { markPlatformCommitted ->
                         platformDeliveries++
+                        markPlatformCommitted()
                         logger.fatalCaptureFailure = fatal
                     }
                     null
@@ -199,7 +201,7 @@ class AutofillResultDeliveryTest {
             val receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))
 
             try {
-                delivery.commitResult(receipt) {
+                delivery.commitResult(receipt) { _ ->
                     throw IllegalStateException("platform rejected result")
                 }
                 throw AssertionError("expected platform callback failure")
@@ -211,7 +213,10 @@ class AutofillResultDeliveryTest {
             assertNull(lockController.reason)
 
             var successfulDeliveries = 0
-            delivery.commitResult(receipt) { successfulDeliveries++ }
+            delivery.commitResult(receipt) { markPlatformCommitted ->
+                successfulDeliveries++
+                markPlatformCommitted()
+            }
             runCurrent()
 
             assertEquals(1, successfulDeliveries)
@@ -249,7 +254,7 @@ class AutofillResultDeliveryTest {
 
             delivery.commitResult(
                 receipt = AutofillSelectionReceipt(completedInteraction.id, EntryId("entry-1")),
-            ) {}
+            ) { markPlatformCommitted -> markPlatformCommitted() }
             val nextInteraction =
                 async(start = CoroutineStart.UNDISPATCHED) {
                     StartAutofillInteraction(store, lease, accessState)(
@@ -297,8 +302,9 @@ class AutofillResultDeliveryTest {
 
             delivery.commitResult(
                 receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
-            ) {
+            ) { markPlatformCommitted ->
                 assertNull(lockController.reason)
+                markPlatformCommitted()
             }
             runCurrent()
 
@@ -344,7 +350,7 @@ class AutofillResultDeliveryTest {
 
             delivery.commitResult(
                 receipt = AutofillSelectionReceipt(selected.id, EntryId("entry-1")),
-            ) {}
+            ) { markPlatformCommitted -> markPlatformCommitted() }
             runCurrent()
 
             assertEquals(AutofillInteractionState.Completed, store.snapshot(selected.id)?.state)
