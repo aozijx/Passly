@@ -79,7 +79,6 @@ class PermissionManagementViewModel
                 PermissionManagementUiMapper
                     .map(
                         runtimeAccess = runtimeAccess,
-                        directoryUri = directoryUri,
                         directoryStatus = directoryStatus,
                     ).copy(backupDirectoryReadState = directoryReadState)
         }

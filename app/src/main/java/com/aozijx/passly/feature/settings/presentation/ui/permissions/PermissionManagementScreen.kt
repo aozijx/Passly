@@ -17,7 +17,6 @@ import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.feature.settings.presentation.permissions.PermissionManagementScreenAction
 import com.aozijx.passly.feature.settings.presentation.permissions.PermissionManagementUiState
-import com.aozijx.passly.feature.settings.presentation.permissions.RuntimePermissionUiAction
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
@@ -40,27 +39,15 @@ internal fun PermissionManagementScreen(
             SegmentedSettingsGroup(
                 items =
                     state.runtimePermissions.map { item ->
-                        val title = stringResource(item.permission.titleRes)
-                        val subtitle = stringResource(item.access.summaryRes)
-                        when (item.action) {
-                            RuntimePermissionUiAction.REQUEST,
-                            RuntimePermissionUiAction.OPEN_SETTINGS,
-                            -> {
-                                navigationSettingsGroupItem(
-                                    key = "permissions.runtime.${item.permission.name}",
-                                    title = title,
-                                    subtitle = subtitle,
-                                    value = stringResource(item.action.labelRes),
-                                    onClick = {
-                                        onAction(
-                                            PermissionManagementScreenAction.RuntimePermissionSelected(
-                                                item.permission,
-                                            ),
-                                        )
-                                    },
-                                )
-                            }
-                        }
+                        navigationSettingsGroupItem(
+                            key = "permissions.runtime.${item.permission.name}",
+                            title = stringResource(item.permission.titleRes),
+                            subtitle = stringResource(item.access.summaryRes),
+                            value = stringResource(item.access.actionLabelRes),
+                            onClick = {
+                                onAction(PermissionManagementScreenAction.RuntimePermissionSelected(item.permission))
+                            },
+                        )
                     },
             )
         }
@@ -84,21 +71,13 @@ internal fun PermissionManagementScreen(
 
                 is RecoverableReadState.Ready -> {
                     val directoryStatus = stringResource(state.backupDirectory.status.summaryRes)
-                    val directorySummary =
-                        state.backupDirectory.label?.let { label ->
-                            stringResource(
-                                R.string.settings_permissions_backup_status_with_name,
-                                label,
-                                directoryStatus,
-                            )
-                        } ?: directoryStatus
                     SegmentedSettingsGroup(
                         items =
                             listOf(
                                 navigationSettingsGroupItem(
                                     key = "permissions.backup.directory",
                                     title = stringResource(R.string.settings_permissions_backup_directory),
-                                    subtitle = directorySummary,
+                                    subtitle = directoryStatus,
                                     value = stringResource(R.string.settings_permissions_backup_manage),
                                     onClick = {
                                         onAction(PermissionManagementScreenAction.OpenBackupSettings)
@@ -139,28 +118,21 @@ private val RuntimePermission.titleRes: Int
 private val RuntimePermissionAccess.summaryRes: Int
     get() =
         when (this) {
-            RuntimePermissionAccess.GRANTED -> {
-                R.string.settings_permissions_status_granted
-            }
-
-            RuntimePermissionAccess.REQUESTABLE -> {
-                R.string.settings_permissions_status_requestable
-            }
-
-            RuntimePermissionAccess.SETTINGS_REQUIRED -> {
-                R.string.settings_permissions_status_settings_required
-            }
-
-            RuntimePermissionAccess.NOT_APPLICABLE -> {
-                error("Not-applicable permissions are not displayed")
-            }
+            RuntimePermissionAccess.GRANTED -> R.string.settings_permissions_status_granted
+            RuntimePermissionAccess.REQUESTABLE -> R.string.settings_permissions_status_requestable
+            RuntimePermissionAccess.SETTINGS_REQUIRED -> R.string.settings_permissions_status_settings_required
+            RuntimePermissionAccess.NOT_APPLICABLE -> R.string.settings_permissions_status_not_applicable
         }
 
-private val RuntimePermissionUiAction.labelRes: Int
+private val RuntimePermissionAccess.actionLabelRes: Int
     get() =
         when (this) {
-            RuntimePermissionUiAction.REQUEST -> R.string.settings_permissions_action_request
-            RuntimePermissionUiAction.OPEN_SETTINGS -> R.string.settings_permissions_action_manage
+            RuntimePermissionAccess.GRANTED,
+            RuntimePermissionAccess.SETTINGS_REQUIRED,
+            RuntimePermissionAccess.NOT_APPLICABLE,
+            -> R.string.settings_permissions_action_manage
+
+            RuntimePermissionAccess.REQUESTABLE -> R.string.settings_permissions_action_request
         }
 
 private val PersistedDirectoryAccessStatus.summaryRes: Int

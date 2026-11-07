@@ -16,16 +16,9 @@ data class PermissionManagementUiState(
 data class RuntimePermissionUiModel(
     val permission: RuntimePermission,
     val access: RuntimePermissionAccess,
-    val action: RuntimePermissionUiAction,
 )
 
-enum class RuntimePermissionUiAction {
-    REQUEST,
-    OPEN_SETTINGS,
-}
-
 data class BackupDirectoryUiModel(
-    val label: String? = null,
     val status: PersistedDirectoryAccessStatus =
         PersistedDirectoryAccessStatus.NOT_CONFIGURED,
 )

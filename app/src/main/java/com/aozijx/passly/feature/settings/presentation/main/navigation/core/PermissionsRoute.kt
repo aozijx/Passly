@@ -18,7 +18,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
-import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import com.aozijx.passly.core.permission.model.RuntimePermissionAccess
@@ -35,28 +34,17 @@ internal fun PermissionsRoute(
     val viewModel: PermissionManagementViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var permissionResultGeneration by remember { mutableIntStateOf(0) }
-
-    val permissionDeniedMessage = stringResource(R.string.settings_permissions_request_denied)
     val permissionBusyMessage = stringResource(R.string.settings_permissions_request_busy)
-    val permissionUnavailableMessage =
-        stringResource(
-            R.string.settings_permissions_request_unavailable,
-        )
-    val settingsUnavailableMessage =
-        stringResource(
-            R.string.settings_permissions_system_settings_unavailable,
-        )
+    val permissionUnavailableMessage = stringResource(R.string.settings_permissions_request_unavailable)
+    val settingsUnavailableMessage = context.getString(R.string.settings_permissions_system_settings_unavailable)
 
     fun showMessage(message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     val permissionHost =
-        rememberPermissionRequestHost("settings.permissions") { _, result ->
+        rememberPermissionRequestHost("settings.permissions") { _, _ ->
             permissionResultGeneration++
-            if (result is PermissionRequestOutcome.Denied) {
-                showMessage(permissionDeniedMessage)
-            }
         }
 
     fun refreshRuntimeAccess() {
@@ -74,9 +62,9 @@ internal fun PermissionsRoute(
                 ),
             )
         } catch (_: ActivityNotFoundException) {
-            showMessage(settingsUnavailableMessage)
+            Toast.makeText(context, settingsUnavailableMessage, Toast.LENGTH_SHORT).show()
         } catch (_: SecurityException) {
-            showMessage(settingsUnavailableMessage)
+            Toast.makeText(context, settingsUnavailableMessage, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -84,33 +72,20 @@ internal fun PermissionsRoute(
         when (permissionHost.access(permission)) {
             RuntimePermissionAccess.GRANTED,
             RuntimePermissionAccess.SETTINGS_REQUIRED,
-            -> {
-                openApplicationSettings()
-            }
-
-            RuntimePermissionAccess.NOT_APPLICABLE -> {
-                showMessage(permissionUnavailableMessage)
-            }
+            RuntimePermissionAccess.NOT_APPLICABLE,
+            -> openApplicationSettings()
 
             RuntimePermissionAccess.REQUESTABLE -> {
                 when (permissionHost.request(permission)) {
-                    PermissionRequestStart.Launched -> {
-                        Unit
-                    }
+                    PermissionRequestStart.Launched -> Unit
 
-                    PermissionRequestStart.AlreadyGranted -> {
-                        permissionResultGeneration++
-                    }
+                    PermissionRequestStart.AlreadyGranted -> permissionResultGeneration++
 
-                    PermissionRequestStart.Busy -> {
-                        showMessage(permissionBusyMessage)
-                    }
+                    PermissionRequestStart.Busy -> showMessage(permissionBusyMessage)
 
                     PermissionRequestStart.NotApplicable,
                     PermissionRequestStart.HostUnavailable,
-                    -> {
-                        showMessage(permissionUnavailableMessage)
-                    }
+                    -> showMessage(permissionUnavailableMessage)
                 }
             }
         }

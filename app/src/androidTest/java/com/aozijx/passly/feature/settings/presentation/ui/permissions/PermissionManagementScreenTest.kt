@@ -16,7 +16,6 @@ import com.aozijx.passly.feature.settings.presentation.permissions.BackupDirecto
 import com.aozijx.passly.feature.settings.presentation.permissions.ManifestCapabilityUiModel
 import com.aozijx.passly.feature.settings.presentation.permissions.PermissionManagementScreenAction
 import com.aozijx.passly.feature.settings.presentation.permissions.PermissionManagementUiState
-import com.aozijx.passly.feature.settings.presentation.permissions.RuntimePermissionUiAction
 import com.aozijx.passly.feature.settings.presentation.permissions.RuntimePermissionUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -34,7 +33,6 @@ class PermissionManagementScreenTest {
             actions = actions,
             directory =
                 BackupDirectoryUiModel(
-                    label = "backup",
                     status = PersistedDirectoryAccessStatus.GRANTED,
                 ),
         )
@@ -83,7 +81,6 @@ class PermissionManagementScreenTest {
                                     RuntimePermissionUiModel(
                                         permission = RuntimePermission.CAMERA,
                                         access = RuntimePermissionAccess.REQUESTABLE,
-                                        action = RuntimePermissionUiAction.REQUEST,
                                     ),
                                 ),
                             backupDirectory = directory,

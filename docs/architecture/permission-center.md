@@ -52,12 +52,12 @@ flowchart LR
 - 产品开关与授权状态分离；永久拒绝后由 UI 引导系统设置，中心不自动循环请求。
 - `PermissionRequestHost.access()` 每次从系统状态、请求历史和 rationale 计算
   `GRANTED`、`REQUESTABLE`、`SETTINGS_REQUIRED` 或 `NOT_APPLICABLE`，不缓存授权真值。
-- `PermissionsRoute` 只拥有运行时权限的 Activity Result launcher、应用详情设置 Intent、生命周期刷新与用户反馈；
-  `PermissionManagementScreen` 只渲染不可变状态并发送语义动作。
-- 权限管理页进入和恢复到前台时重新读取运行时权限；请求结果返回后也立即刷新，因而能反映用户在
-  系统设置中的授权或撤销。
-- 页面只展示当前 Android 版本适用的运行时权限。`POST_NOTIFICATIONS` 在 API 33 以下不显示，
-  不用无关的新权限替代不适用项。
+- `PermissionsRoute` 通过 `PermissionRequestHost` 读取状态、发起运行时权限请求，并拥有应用详情设置
+  Intent 与生命周期刷新；`PermissionManagementScreen` 只渲染不可变状态并发送语义动作。
+- 权限管理页恢复到前台时重新读取运行时权限，因此能反映用户在系统设置中的授权或撤销。
+- 页面始终展示 `RuntimePermission` 清单中的权限，不按访问状态过滤。`REQUESTABLE` 点击后请求；
+  `GRANTED`、`SETTINGS_REQUIRED` 和 `NOT_APPLICABLE` 点击后打开系统应用设置。
+  `POST_NOTIFICATIONS` 在 API 33 以下显示为不适用。
 
 ## 备份目录访问
 
