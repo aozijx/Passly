@@ -35,6 +35,7 @@ import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.lock.LockStateManager
+import java.security.SecureRandom
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
@@ -409,7 +410,7 @@ class VaultSessionControllerLifecycleTest {
             val controller =
                 VaultSessionController(
                     dekManager = dekManager,
-                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom()),
                     authorizationPermitRevoker = { },
                     sessionManager = session,
                     vaultBootstrapStore = bootstrap,
@@ -461,7 +462,7 @@ class VaultSessionControllerLifecycleTest {
             val controller =
                 VaultSessionController(
                     dekManager = dekManager,
-                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom()),
                     authorizationPermitRevoker = { },
                     sessionManager = session,
                     vaultBootstrapStore = bootstrap,
@@ -506,7 +507,7 @@ class VaultSessionControllerLifecycleTest {
             val controller =
                 VaultSessionController(
                     dekManager = dekManager,
-                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher)),
+                    sensitiveDataKeyClearer = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom()),
                     authorizationPermitRevoker = { },
                     sessionManager = session,
                     vaultBootstrapStore = bootstrap,
@@ -552,6 +553,7 @@ class VaultSessionControllerLifecycleTest {
                             bootstrap,
                             dekManager,
                             CoroutineScope(dispatcher),
+                            SecureRandom(),
                         ),
                     authorizationPermitRevoker = { },
                     sessionManager = databaseSession,
@@ -605,6 +607,7 @@ class VaultSessionControllerLifecycleTest {
                             bootstrap,
                             dekManager,
                             CoroutineScope(dispatcher),
+                            SecureRandom(),
                         ),
                     authorizationPermitRevoker = { },
                     sessionManager = databaseSession,
@@ -761,7 +764,7 @@ class VaultSessionControllerLifecycleTest {
             val logger = RecordingLogger()
             val bootstrap = EmptyVaultBootstrapStore()
             val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
-            val sensitiveKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
+            val sensitiveKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom())
             val databaseSession = YieldingDatabaseSession()
             val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
             val timeout = MutableStateFlow(1L)
@@ -838,7 +841,7 @@ class VaultSessionControllerLifecycleTest {
         val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
         val sensitiveDataKeyClearer =
             clearSensitiveKey
-                ?: SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher))
+                ?: SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom())
         val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
         return VaultSessionController(
             dekManager = dekManager,

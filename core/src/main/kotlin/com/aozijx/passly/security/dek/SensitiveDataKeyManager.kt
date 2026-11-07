@@ -29,10 +29,10 @@ class SensitiveDataKeyManager
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val dekManager: DekManager,
         @param:SensitiveKeyScope private val scope: CoroutineScope,
+        private val random: SecureRandom,
     ) : SensitiveKeyFreshnessState,
         SensitiveDataKeyClearer {
         private val mutex = Mutex()
-        private val random = SecureRandom()
         private var cachedKey: ByteArray? = null
         private var expiresAtNanos: Long = 0L
         private var clearJob: Job? = null
@@ -83,14 +83,21 @@ class SensitiveDataKeyManager
             try {
                 val envelope = vaultBootstrapStore.loadSensitiveKeyEnvelope()
                 if (envelope != null) return unwrap(envelope, wrappingKey)
-                val key = ByteArray(KEY_BYTES).also(random::nextBytes)
-                val wrapped = wrap(key, wrappingKey)
+                val key = ByteArray(KEY_BYTES)
+                var handedOff = false
                 try {
-                    vaultBootstrapStore.saveSensitiveKeyEnvelope(wrapped)
+                    random.nextBytes(key)
+                    val wrapped = wrap(key, wrappingKey)
+                    try {
+                        vaultBootstrapStore.saveSensitiveKeyEnvelope(wrapped)
+                    } finally {
+                        MemoryCleaner.wipeByteArray(wrapped)
+                    }
+                    handedOff = true
+                    return key
                 } finally {
-                    MemoryCleaner.wipeByteArray(wrapped)
+                    if (!handedOff) MemoryCleaner.wipeByteArray(key)
                 }
-                return key
             } finally {
                 MemoryCleaner.wipeByteArray(wrappingKey)
             }
@@ -107,15 +114,20 @@ class SensitiveDataKeyManager
             key: ByteArray,
             wrappingKey: ByteArray,
         ): ByteArray {
-            val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(random::nextBytes)
-            val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
-            cipher.init(
-                Cipher.ENCRYPT_MODE,
-                SecretKeySpec(wrappingKey, CryptoConfig.AES_KEY_ALGORITHM),
-                GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, nonce),
-            )
-            cipher.updateAAD(WRAP_LABEL.toByteArray(Charsets.UTF_8))
-            return byteArrayOf(ENVELOPE_VERSION) + nonce + cipher.doFinal(key)
+            val nonce = ByteArray(CryptoConfig.IV_LENGTH)
+            return try {
+                random.nextBytes(nonce)
+                val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
+                cipher.init(
+                    Cipher.ENCRYPT_MODE,
+                    SecretKeySpec(wrappingKey, CryptoConfig.AES_KEY_ALGORITHM),
+                    GCMParameterSpec(CryptoConfig.GCM_TAG_BITS, nonce),
+                )
+                cipher.updateAAD(WRAP_LABEL.toByteArray(Charsets.UTF_8))
+                byteArrayOf(ENVELOPE_VERSION) + nonce + cipher.doFinal(key)
+            } finally {
+                MemoryCleaner.wipeByteArray(nonce)
+            }
         }
 
         private fun unwrap(

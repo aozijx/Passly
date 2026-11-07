@@ -9,6 +9,13 @@ import javax.inject.Singleton
 
 private const val DERIVE_LABEL = "passly-entry-field-key-v1"
 
+/** Owns activation and removal of the key derived for protected entry fields. */
+interface FieldKeyLifecycle {
+    fun deriveAndSet(dek: ByteArray)
+
+    fun clear()
+}
+
 /**
  * 持有由 DEK 派生的字段加密密钥；只负责派生、复制和擦除。
  * 认证时长与锁定策略由 security.lock 负责。
@@ -16,7 +23,9 @@ private const val DERIVE_LABEL = "passly-entry-field-key-v1"
 @Singleton
 class FieldKeyManager
     @Inject
-    constructor() : FieldKeyProvider {
+    constructor() :
+    FieldKeyProvider,
+        FieldKeyLifecycle {
         private val lock = Any()
 
         @Volatile
@@ -38,7 +47,7 @@ class FieldKeyManager
          * 使用 HMAC-SHA256(dek, "passly-entry-field-key-v1") 作为派生方式。
          * 每次认证成功后由 [DekManager] 调用。
          */
-        fun deriveAndSet(dek: ByteArray) {
+        override fun deriveAndSet(dek: ByteArray) {
             synchronized(lock) {
                 val mac = Mac.getInstance("HmacSHA256")
                 mac.init(SecretKeySpec(dek, "HmacSHA256"))
@@ -53,7 +62,7 @@ class FieldKeyManager
          *
          * 由 [DekManager.lock] 调用。
          */
-        fun clear() {
+        override fun clear() {
             synchronized(lock) {
                 MemoryCleaner.wipeByteArray(key)
                 key = null

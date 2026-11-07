@@ -16,18 +16,21 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 @Singleton
 class DekManager
     @Inject
     constructor(
         private val vaultBootstrapStore: VaultBootstrapStore,
-        private val fieldKeyManager: FieldKeyManager,
+        private val fieldKeyLifecycle: FieldKeyLifecycle,
         private val logger: Logger,
     ) {
         private val mutex = Mutex()
@@ -114,6 +117,8 @@ class DekManager
                     } catch (e: javax.crypto.AEADBadTagException) {
                         logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.AuthenticationFailed, degraded = true))
                         DekUnlockResult.Failed(DekUnlockError.AUTH_FAILED)
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (e: IllegalArgumentException) {
                         logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekVerificationFailed))
                         DekUnlockResult.Failed(DekUnlockError.DEK_VERIFY_FAILED)
@@ -145,6 +150,8 @@ class DekManager
                         cacheAndUnlock(dek)
                         logger.log(LogStatements.Security.vaultUnlocked())
                         DekUnlockResult.Success
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (e: IllegalArgumentException) {
                         logger.log(LogStatements.Security.vaultOperationFailed(e, Reasons.DekVerificationFailed))
                         DekUnlockResult.Failed(DekUnlockError.DEK_VERIFY_FAILED)
@@ -216,35 +223,73 @@ class DekManager
         suspend fun lock() {
             logger.inSpan(Operations.VaultKeyManagement) {
                 mutex.withLock {
-                    _state = DekState.Locking
-                    _isUnlocked.value = false
-                    logger.log(LogStatements.Security.vaultLockStarted())
-                }
-                mutex.withLock {
-                    wipeCurrentDek()
-                    fieldKeyManager.clear()
-                    _state = DekState.Locked
-                    logger.log(LogStatements.Security.vaultLocked())
+                    withContext(NonCancellable) {
+                        val previousState = _state
+                        _state = DekState.Locking
+                        _isUnlocked.value = false
+
+                        var failure: Throwable? = null
+
+                        fun attempt(action: () -> Unit) {
+                            try {
+                                action()
+                            } catch (error: Throwable) {
+                                failure = mergeFailure(failure, error)
+                            }
+                        }
+
+                        attempt { logger.log(LogStatements.Security.vaultLockStarted()) }
+                        if (previousState is DekState.Unlocked) {
+                            attempt { MemoryCleaner.wipeByteArray(previousState.dek) }
+                        }
+                        attempt { fieldKeyLifecycle.clear() }
+
+                        _state = DekState.Locked
+                        _isUnlocked.value = false
+                        attempt { logger.log(LogStatements.Security.vaultLocked()) }
+                        failure?.let { throw it }
+                    }
                 }
             }
         }
 
         private fun cacheAndUnlock(dek: ByteArray) {
             val cloned = dek.clone()
-            wipeCurrentDek()
-            _state = DekState.Unlocked(cloned)
-            _isUnlocked.value = true
-            fieldKeyManager.deriveAndSet(dek)
-            MemoryCleaner.wipeByteArray(dek)
-        }
-
-        private fun wipeCurrentDek() {
-            when (val s = _state) {
-                is DekState.Unlocked -> {
-                    MemoryCleaner.wipeByteArray(s.dek)
+            val previousState = _state
+            _state = DekState.Locking
+            _isUnlocked.value = false
+            try {
+                if (previousState is DekState.Unlocked) {
+                    MemoryCleaner.wipeByteArray(previousState.dek)
                 }
-
-                else -> {}
+                fieldKeyLifecycle.clear()
+                fieldKeyLifecycle.deriveAndSet(dek)
+                _state = DekState.Unlocked(cloned)
+                _isUnlocked.value = true
+            } catch (error: Throwable) {
+                MemoryCleaner.wipeByteArray(cloned)
+                var failure: Throwable = error
+                try {
+                    fieldKeyLifecycle.clear()
+                } catch (cleanupError: Throwable) {
+                    failure = mergeFailure(failure, cleanupError)
+                }
+                _state = DekState.Locked
+                _isUnlocked.value = false
+                throw failure
+            } finally {
+                MemoryCleaner.wipeByteArray(dek)
             }
         }
+
+        private fun mergeFailure(
+            primary: Throwable?,
+            next: Throwable,
+        ): Throwable =
+            when {
+                primary == null -> next
+                primary === next -> primary
+                next is Error && primary !is Error -> next.apply { addSuppressed(primary) }
+                else -> primary.apply { addSuppressed(next) }
+            }
     }

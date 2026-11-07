@@ -8,14 +8,18 @@ import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.testing.testLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -25,6 +29,7 @@ import org.junit.Test
 class SensitiveDataKeyManagerTest {
     private lateinit var store: InMemoryVaultBootstrapStore
     private lateinit var scope: CoroutineScope
+    private lateinit var dekManager: DekManager
     private lateinit var manager: SensitiveDataKeyManager
 
     @Before
@@ -32,10 +37,10 @@ class SensitiveDataKeyManagerTest {
         runBlocking {
             store = InMemoryVaultBootstrapStore()
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-            val dekManager = DekManager(store, FieldKeyManager(), testLogger())
+            dekManager = DekManager(store, FieldKeyManager(), testLogger())
             val result = dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { it.toByte() })
             check(result == DekUnlockResult.Success)
-            manager = SensitiveDataKeyManager(store, dekManager, scope)
+            manager = SensitiveDataKeyManager(store, dekManager, scope, CapturingSecureRandom())
         }
 
     @After
@@ -56,6 +61,90 @@ class SensitiveDataKeyManagerTest {
             assertArrayEquals(first, second)
             first.fill(0)
             second.fill(0)
+        }
+
+    @Test
+    fun `new key is wiped when nonce generation fails before handoff`() =
+        runBlocking {
+            val random = CapturingSecureRandom(failingCall = 2, failure = IllegalStateException("nonce generation failed"))
+            val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
+
+            val failure =
+                withContext(NonCancellable) {
+                    runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
+                }
+
+            assertTrue(failure is IllegalStateException)
+            assertEquals(2, random.buffers.size)
+            random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
+        }
+
+    @Test
+    fun `new key is wiped when random generation fails partway through`() =
+        runBlocking {
+            val random = CapturingSecureRandom(failingCall = 1, failure = IllegalStateException("key generation failed"))
+            val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
+
+            val failure =
+                withContext(NonCancellable) {
+                    runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
+                }
+
+            assertTrue(failure is IllegalStateException)
+            assertEquals(1, random.buffers.size)
+            assertArrayEquals(ByteArray(random.buffers.first().size), random.buffers.first())
+        }
+
+    @Test
+    fun `new key is wiped when envelope persistence fails before handoff`() =
+        runBlocking {
+            val random = CapturingSecureRandom()
+            val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
+            store.sensitiveKeySaveFailure = IllegalStateException("sensitive envelope save failed")
+
+            val failure =
+                withContext(NonCancellable) {
+                    runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
+                }
+
+            assertTrue(failure is IllegalStateException)
+            assertEquals(2, random.buffers.size)
+            random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
+        }
+
+    @Test
+    fun `new key is wiped when envelope persistence is cancelled or fatal`() =
+        runBlocking {
+            listOf(CancellationException("save cancelled"), AssertionError("fatal save failure")).forEach { failure ->
+                val random = CapturingSecureRandom()
+                val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
+                store.sensitiveKeySaveFailure = failure
+
+                val observed =
+                    withContext(NonCancellable) {
+                        runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
+                    }
+
+                assertTrue(observed is CancellationException || observed is AssertionError)
+                assertEquals(2, random.buffers.size)
+                random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
+            }
+            store.sensitiveKeySaveFailure = null
+        }
+
+    @Test
+    fun `new key is wiped after successful caller handoff`() =
+        runBlocking {
+            val random = CapturingSecureRandom()
+            val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
+
+            candidate.withProvisionedKey { key ->
+                assertTrue(key.any { it != 0.toByte() })
+                assertTrue(key === random.buffers.first())
+            }
+
+            assertArrayEquals(ByteArray(random.buffers.first().size), random.buffers.first())
+            random.buffers.drop(1).forEach { assertArrayEquals(ByteArray(it.size), it) }
         }
 
     @Test
@@ -100,6 +189,7 @@ class SensitiveDataKeyManagerTest {
         private var verificationTag: ByteArray? = null
         var sensitiveKeyEnvelope: ByteArray? = null
             private set
+        var sensitiveKeySaveFailure: Throwable? = null
         private var attachmentKeyEnvelope: ByteArray? = null
 
         override suspend fun save(envelope: KeyEnvelope) {
@@ -123,6 +213,7 @@ class SensitiveDataKeyManagerTest {
         override suspend fun loadVerificationTag(): ByteArray? = verificationTag?.clone()
 
         override suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray) {
+            sensitiveKeySaveFailure?.let { throw it }
             sensitiveKeyEnvelope = envelope.clone()
         }
 

@@ -20,9 +20,9 @@ class AttachmentDataKeyManager
     constructor(
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val dekManager: DekManager,
+        private val random: SecureRandom,
     ) {
         private val mutex = Mutex()
-        private val random = SecureRandom()
 
         suspend fun <T> withKey(block: (ByteArray) -> T): T =
             mutex.withLock {
@@ -38,14 +38,21 @@ class AttachmentDataKeyManager
             val wrappingKey = deriveWrappingKey()
             try {
                 vaultBootstrapStore.loadAttachmentKeyEnvelope()?.let { return unwrap(it, wrappingKey) }
-                val key = ByteArray(KEY_BYTES).also(random::nextBytes)
-                val envelope = wrap(key, wrappingKey)
+                val key = ByteArray(KEY_BYTES)
+                var handedOff = false
                 try {
-                    vaultBootstrapStore.saveAttachmentKeyEnvelope(envelope)
+                    random.nextBytes(key)
+                    val envelope = wrap(key, wrappingKey)
+                    try {
+                        vaultBootstrapStore.saveAttachmentKeyEnvelope(envelope)
+                    } finally {
+                        MemoryCleaner.wipeByteArray(envelope)
+                    }
+                    handedOff = true
+                    return key
                 } finally {
-                    MemoryCleaner.wipeByteArray(envelope)
+                    if (!handedOff) MemoryCleaner.wipeByteArray(key)
                 }
-                return key
             } finally {
                 MemoryCleaner.wipeByteArray(wrappingKey)
             }
@@ -60,8 +67,9 @@ class AttachmentDataKeyManager
             key: ByteArray,
             wrappingKey: ByteArray,
         ): ByteArray {
-            val nonce = ByteArray(CryptoConfig.IV_LENGTH).also(random::nextBytes)
+            val nonce = ByteArray(CryptoConfig.IV_LENGTH)
             return try {
+                random.nextBytes(nonce)
                 val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
                 cipher.init(
                     Cipher.ENCRYPT_MODE,

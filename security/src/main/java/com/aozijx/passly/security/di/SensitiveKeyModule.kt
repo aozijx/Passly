@@ -3,6 +3,7 @@ package com.aozijx.passly.security.di
 import com.aozijx.passly.core.crypto.FieldKeyProvider
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.runtime.session.SessionKeySource
+import com.aozijx.passly.security.dek.FieldKeyLifecycle
 import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
@@ -13,6 +14,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import java.security.SecureRandom
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +33,10 @@ internal abstract class SensitiveKeyModule {
 
     @Binds
     @Singleton
+    abstract fun bindFieldKeyLifecycle(implementation: FieldKeyManager): FieldKeyLifecycle
+
+    @Binds
+    @Singleton
     abstract fun bindSensitiveKeyFreshnessState(implementation: SensitiveDataKeyManager): SensitiveKeyFreshnessState
 
     @Binds
@@ -38,6 +44,10 @@ internal abstract class SensitiveKeyModule {
     abstract fun bindSensitiveDataKeyClearer(implementation: SensitiveDataKeyManager): SensitiveDataKeyClearer
 
     companion object {
+        @Provides
+        @Singleton
+        fun provideSecureRandom(): SecureRandom = SecureRandom()
+
         @Provides
         @Singleton
         @SensitiveKeyScope
