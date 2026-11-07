@@ -4,10 +4,10 @@ import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,12 +16,14 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,11 +36,11 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun TrashEntryCard(
     entry: TrashEntryUiModel,
     busy: Boolean,
-    isOperating: Boolean,
     onRestore: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -52,30 +54,34 @@ internal fun TrashEntryCard(
                         DateUtils.MINUTE_IN_MILLIS,
                     ).toString()
             }.orEmpty()
+    val supportingText =
+        entry.username.takeIf(String::isNotBlank)
+            ?: entry.associatedDomain?.takeIf(String::isNotBlank)
+            ?: entry.associatedAppPackage?.takeIf(String::isNotBlank)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.extraLarge,
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             ),
     ) {
-        Column {
+        Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp),
+                        .padding(bottom = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large,
                 ) {
                     Box(
-                        modifier = Modifier.size(52.dp),
+                        modifier = Modifier.size(48.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         VaultItemIcon(
@@ -98,7 +104,17 @@ internal fun TrashEntryCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.size(6.dp))
+                    if (!supportingText.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.size(3.dp))
+                        Text(
+                            text = supportingText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(7.dp))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -132,58 +148,61 @@ internal fun TrashEntryCard(
             }
 
             Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
+                FilledTonalButton(
                     enabled = !busy,
                     onClick = onRestore,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(
                         imageVector = Icons.Default.RestoreFromTrash,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(stringResource(R.string.restore))
                 }
-                TextButton(
+                OutlinedButton(
                     enabled = !busy,
                     onClick = onDelete,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.weight(1f),
                 ) {
-                    val destructiveColor =
-                        if (busy) {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        }
                     Icon(
                         imageVector = Icons.Default.DeleteForever,
                         contentDescription = null,
-                        tint = destructiveColor,
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = stringResource(R.string.settings_trash_delete),
-                        color = destructiveColor,
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.settings_swipe_action_delete))
                 }
             }
+        }
+    }
+}
 
-            if (isOperating) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                )
-            }
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun TrashEntryOperationLoading() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(128.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            LoadingIndicator()
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -113,12 +113,6 @@ internal fun TrashBottomSheet(
                 enabled = !isLoading && entries.isNotEmpty() && !isBusy,
                 onEmpty = { confirmEmpty = true },
             )
-            Text(
-                text = stringResource(R.string.settings_trash_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-            )
 
             when (error) {
                 TrashErrorUiState.Hidden -> {
@@ -147,6 +141,10 @@ internal fun TrashBottomSheet(
                     TrashLoading()
                 }
 
+                isEmptying -> {
+                    TrashLoading()
+                }
+
                 error is TrashErrorUiState.LoadFailed -> {
                     Unit
                 }
@@ -170,13 +168,16 @@ internal fun TrashBottomSheet(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(entries, key = { entry -> entry.id }) { entry ->
-                            TrashEntryCard(
-                                entry = entry,
-                                busy = isBusy,
-                                isOperating = activeEntryId == entry.id,
-                                onRestore = { onRestore(entry) },
-                                onDelete = { pendingDelete = entry },
-                            )
+                            if (activeEntryId == entry.id) {
+                                TrashEntryOperationLoading()
+                            } else {
+                                TrashEntryCard(
+                                    entry = entry,
+                                    busy = isBusy,
+                                    onRestore = { onRestore(entry) },
+                                    onDelete = { pendingDelete = entry },
+                                )
+                            }
                         }
                     }
                 }
@@ -273,34 +274,29 @@ private fun TrashHeader(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 4.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Surface(
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            shape = MaterialTheme.shapes.medium,
-        ) {
-            Icon(
-                imageVector = Icons.Default.DeleteSweep,
-                contentDescription = null,
-                modifier = Modifier.padding(12.dp),
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.settings_trash_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
-            if (count > 0) {
+        }
+        if (count > 0) {
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                shape = MaterialTheme.shapes.large,
+            ) {
                 Text(
                     text = pluralStringResource(R.plurals.settings_trash_count, count, count),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
         }
         TextButton(
             enabled = enabled,
@@ -342,20 +338,15 @@ private fun TrashHeader(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TrashLoading() {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.large,
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 20.dp),
+                .heightIn(min = 240.dp)
+                .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier.padding(40.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            ContainedLoadingIndicator()
-        }
+        LoadingIndicator()
     }
 }
 
