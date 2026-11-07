@@ -254,6 +254,36 @@ internal object UnlockReducer {
                 UnlockFailureMessage.BiometricKeyInvalidated
             }
 
+            AuthenticationFailureCode.BUSY -> {
+                UnlockFailureMessage.AuthenticationBusy
+            }
+
+            AuthenticationFailureCode.HOST_UNAVAILABLE -> {
+                UnlockFailureMessage.AuthenticationHostUnavailable
+            }
+
+            AuthenticationFailureCode.METHOD_UNAVAILABLE,
+            AuthenticationFailureCode.KEY_MISSING,
+            -> {
+                UnlockFailureMessage.AuthenticationMethodUnavailable
+            }
+
+            AuthenticationFailureCode.CRYPTO_OBJECT_INVALID -> {
+                UnlockFailureMessage.AuthenticationHostUnavailable
+            }
+
+            AuthenticationFailureCode.ENVELOPE_CORRUPTED -> {
+                UnlockFailureMessage.SessionUnavailable
+            }
+
+            AuthenticationFailureCode.SESSION_MODE_RESTRICTED -> {
+                UnlockFailureMessage.AuthenticationRestricted
+            }
+
+            AuthenticationFailureCode.SESSION_TRANSITION_FAILED -> {
+                UnlockFailureMessage.SessionUnavailable
+            }
+
             else -> {
                 UnlockFailureMessage.Generic
             }

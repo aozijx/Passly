@@ -19,6 +19,16 @@ sealed interface UnlockFailureMessage {
 
     data object BiometricKeyInvalidated : UnlockFailureMessage
 
+    data object AuthenticationBusy : UnlockFailureMessage
+
+    data object AuthenticationHostUnavailable : UnlockFailureMessage
+
+    data object AuthenticationMethodUnavailable : UnlockFailureMessage
+
+    data object AuthenticationRestricted : UnlockFailureMessage
+
+    data object SessionUnavailable : UnlockFailureMessage
+
     data object PasswordTooShort : UnlockFailureMessage
 
     data object AppPasswordSetupFailed : UnlockFailureMessage

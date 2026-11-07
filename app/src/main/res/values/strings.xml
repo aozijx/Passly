@@ -166,6 +166,11 @@
   <string name="auth_error_method_incorrect_attempts">%1$s错误，还可尝试 %2$d 次</string>
   <string name="auth_error_rate_limited">尝试次数过多，请 %1$d 秒后再试</string>
   <string name="auth_error_failed">验证失败，请重试</string>
+  <string name="auth_error_busy">正在进行其他认证，请稍后重试</string>
+  <string name="auth_error_host_unavailable">无法打开认证界面，请重试或使用其他认证方式</string>
+  <string name="auth_error_method_unavailable">此认证方式当前不可用，请使用其他方式或在设置中重新配置</string>
+  <string name="auth_error_session_restricted">当前会话状态不允许进行此认证，请返回后重试</string>
+  <string name="auth_error_session_unavailable">无法安全开启会话，请重试；若持续出现，请重新启动应用</string>
   <string name="auth_error_app_password_setup_failed">应用密码设置失败，请重试</string>
   <string name="auth_error_password_too_short">应用密码至少需要 6 位</string>
   <!-- 条目元数据 -->

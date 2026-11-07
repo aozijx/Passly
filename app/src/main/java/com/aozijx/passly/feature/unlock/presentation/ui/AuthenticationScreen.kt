@@ -342,6 +342,26 @@ private fun UnlockFailureMessage.localized(methodLabel: String? = null): String 
             stringResource(R.string.notice_security_key_invalidated)
         }
 
+        UnlockFailureMessage.AuthenticationBusy -> {
+            stringResource(R.string.auth_error_busy)
+        }
+
+        UnlockFailureMessage.AuthenticationHostUnavailable -> {
+            stringResource(R.string.auth_error_host_unavailable)
+        }
+
+        UnlockFailureMessage.AuthenticationMethodUnavailable -> {
+            stringResource(R.string.auth_error_method_unavailable)
+        }
+
+        UnlockFailureMessage.AuthenticationRestricted -> {
+            stringResource(R.string.auth_error_session_restricted)
+        }
+
+        UnlockFailureMessage.SessionUnavailable -> {
+            stringResource(R.string.auth_error_session_unavailable)
+        }
+
         UnlockFailureMessage.PasswordTooShort -> {
             stringResource(
                 R.string.auth_error_password_too_short,

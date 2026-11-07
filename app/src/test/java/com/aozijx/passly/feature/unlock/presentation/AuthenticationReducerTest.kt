@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.model.AttemptStatus
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import org.junit.Assert.assertEquals
@@ -119,6 +120,71 @@ class AuthenticationReducerTest {
 
         val failure = (failed.verificationPhase as UnlockVerificationPhase.Failed).failure
         assertEquals(UnlockFailureMessage.BiometricKeyInvalidated, failure.message)
+    }
+
+    @Test
+    fun `unlock reports remaining password attempts`() {
+        val started =
+            UnlockReducer.reduce(
+                UnlockUiState(),
+                UnlockMutation.AuthenticationStarted(AuthenticationMethod.APP_PASSWORD),
+            )
+
+        val failed =
+            UnlockReducer.reduce(
+                started,
+                UnlockMutation.AuthenticationFailed(
+                    method = AuthenticationMethod.APP_PASSWORD,
+                    failure =
+                        AuthenticationFailure(
+                            code = AuthenticationFailureCode.CREDENTIAL_INCORRECT,
+                            method = AuthenticationMethod.APP_PASSWORD,
+                            attempts = AttemptStatus(used = 2, limit = 5),
+                        ),
+                ),
+            )
+
+        val failure = (failed.verificationPhase as UnlockVerificationPhase.Failed).failure
+        assertEquals(UnlockFailureMessage.IncorrectCredential(remainingAttempts = 3), failure.message)
+    }
+
+    @Test
+    fun `unlock maps current authentication failure codes to supported messages`() {
+        val expectedMessages =
+            mapOf(
+                AuthenticationFailureCode.BUSY to UnlockFailureMessage.AuthenticationBusy,
+                AuthenticationFailureCode.HOST_UNAVAILABLE to UnlockFailureMessage.AuthenticationHostUnavailable,
+                AuthenticationFailureCode.METHOD_UNAVAILABLE to UnlockFailureMessage.AuthenticationMethodUnavailable,
+                AuthenticationFailureCode.KEY_MISSING to UnlockFailureMessage.AuthenticationMethodUnavailable,
+                AuthenticationFailureCode.KEY_INVALIDATED to UnlockFailureMessage.BiometricKeyInvalidated,
+                AuthenticationFailureCode.CRYPTO_OBJECT_INVALID to UnlockFailureMessage.AuthenticationHostUnavailable,
+                AuthenticationFailureCode.CREDENTIAL_INCORRECT to UnlockFailureMessage.IncorrectCredential(null),
+                AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION to UnlockFailureMessage.Generic,
+                AuthenticationFailureCode.ENVELOPE_CORRUPTED to UnlockFailureMessage.SessionUnavailable,
+                AuthenticationFailureCode.LAST_METHOD_REQUIRED to UnlockFailureMessage.Generic,
+                AuthenticationFailureCode.RATE_LIMITED to UnlockFailureMessage.RateLimited(1L),
+                AuthenticationFailureCode.SESSION_MODE_RESTRICTED to UnlockFailureMessage.AuthenticationRestricted,
+                AuthenticationFailureCode.SESSION_TRANSITION_FAILED to UnlockFailureMessage.SessionUnavailable,
+            )
+
+        expectedMessages.forEach { (code, expectedMessage) ->
+            val started =
+                UnlockReducer.reduce(
+                    UnlockUiState(),
+                    UnlockMutation.AuthenticationStarted(AuthenticationMethod.APP_PASSWORD),
+                )
+            val failed =
+                UnlockReducer.reduce(
+                    started,
+                    UnlockMutation.AuthenticationFailed(
+                        method = AuthenticationMethod.APP_PASSWORD,
+                        failure = AuthenticationFailure(code),
+                    ),
+                )
+
+            val actualMessage = (failed.verificationPhase as UnlockVerificationPhase.Failed).failure.message
+            assertEquals("Unexpected message for $code", expectedMessage, actualMessage)
+        }
     }
 
     @Test
