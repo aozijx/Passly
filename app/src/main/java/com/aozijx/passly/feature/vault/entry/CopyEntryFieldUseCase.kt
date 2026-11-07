@@ -35,7 +35,7 @@ internal class CopyEntryFieldUseCase
             entryId: EntryId,
             entryType: EntryType,
             fieldKey: FieldKey,
-            canDeliver: () -> Boolean = { true },
+            canDeliver: () -> Boolean,
         ): CopyEntryFieldResult {
             val canWrite = deliveryGuard(canDeliver)
             val sensitiveKey = EntryTypeDefinitions.sensitiveStorageKey(entryType, fieldKey)
@@ -135,7 +135,7 @@ internal class CopyOtpCodeUseCase
     ) {
         suspend operator fun invoke(
             entryId: EntryId,
-            canDeliver: () -> Boolean = { true },
+            canDeliver: () -> Boolean,
             codeProvider: suspend () -> String?,
         ): CopyEntryFieldResult {
             val canWrite = deliveryGuard(canDeliver)

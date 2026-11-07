@@ -427,8 +427,10 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [x] 成功保存 `EntryType.OTP` 的 `FieldKey.OTP_SECRET` 或成功恢复包含不同 OTP 配置的历史修订后，立即使当前 Detail 工作流中的 OTP schedule/code 失效，并基于已持久化的新配置重新生成；在 OTP 周期边界到达前，展示和复制都不得继续使用旧配置对应的 TOTP。保存失败、无效编辑、同值编辑和页面/认证 owner 替换分别保留正确的缓存与取消行为。
 - [ ] 为 Route 生命周期补宿主行为验证：OTP 编辑成功返回时 Detail 刷新当前条目，编辑取消/失败不会触发保存成功路径；Vault 列表恢复时只刷新仍可见订阅，离开后不重新激活无 owner 条目。当前无跨 ViewModel 全局广播桥。
 - [ ] 增加 Route/编辑器宿主行为回归：OTP secret 保存成功后返回 Detail 时展示与 copy 使用新配置；离页/锁定期间迟到结果不得覆盖当前状态。运行 OtpCodeRuntime、DetailViewModel 与 Vault OTP 订阅相关测试、`verifyArchitecture` 和 `git diff --check`。
+- [x] 将 Vault 列表 `copyField()` 与 `copyOtp()` 的剪贴板写入绑定到 page owner：退出 Route 后授权恢复不得写入剪贴板或发出旧页面事件；仍有效 owner 可正常复制。
 
 **实现边界：** Detail 与 Vault List 通过独立 Runtime 持有各自 OTP state。OTP 编辑页保存成功返回前台时，Route 刷新本 Runtime 当前仍请求的条目；Detail 的成功历史修订恢复分支也立即刷新当前条目。`entryChanged()` 保留 active/subscription owner，只撤销旧 epoch、schedule 与验证码，再对仍有 owner 的条目异步重载；不会把临时列表订阅提升成永久 active entry。激活读取由 entry epoch 去重，但显式 owner/config 变化可以替换未完成读取的 epoch，旧结果及其认证/锁定异常不能覆盖新配置。Detail ViewModel 现在覆盖前台重载与 restore 成功/失败；未覆盖真实 Route lifecycle、编辑成功返回、锁定或离页期间晚到结果。
+**Vault 列表复制 owner 修复（2026-11-07）：** `VaultViewModel.copyField()` / `copyOtp()` 向 copy use case 传递 `pageEffects.isActive(owner)` 作为 `canDeliver`，并移除两个 use case 的默认 `{ true }`，使调用方必须明确提供交付条件。宿主行为测试覆盖授权等待期间离页后字段与 OTP 都不写剪贴板、活动 owner 字段复制仍成功并发出事件；`VaultViewModelClipboardOwnerTest` 3 项与 `CopyEntryFieldUseCaseTest` 7 项测试通过。唯一详细验收留在本 Task；OTP 产品行为另见[OTP Task 1](2026-11-06-passly-otp-review-followups.md#task-1)。
 **ticker 验证：** `start()` 现使用可替换的毫秒时钟（生产默认 `System.currentTimeMillis`），测试通过受控时钟与 coroutine test scheduler 驱动周期边界。回归验证一个条目普通读取异常清除旧码、其他条目同轮继续刷新、失败条目下一轮恢复；显式 `refreshStates(nowSeconds)` 测试仍保留，用来验证具体移动因子和 copy 状态。
 
 <a id="task-29"></a>

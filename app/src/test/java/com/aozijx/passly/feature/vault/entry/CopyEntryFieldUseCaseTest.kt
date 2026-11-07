@@ -39,7 +39,7 @@ class CopyEntryFieldUseCaseTest {
         runTest {
             val fixture = fixture(entry = entry(username = "alice"))
 
-            val result = fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME)
+            val result = fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME, canDeliver = { true })
 
             assertEquals(CopyEntryFieldResult.Copied, result)
             assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), fixture.gate.scope)
@@ -54,7 +54,7 @@ class CopyEntryFieldUseCaseTest {
             val value = OwnedChars.fromString("secret")
             val fixture = fixture(entry = entry(), revealed = value)
 
-            val result = fixture.useCase(ENTRY_ID, EntryType.LOGIN, FieldKey.PASSWORD)
+            val result = fixture.useCase(ENTRY_ID, EntryType.LOGIN, FieldKey.PASSWORD, canDeliver = { true })
 
             assertEquals(CopyEntryFieldResult.Copied, result)
             assertEquals(
@@ -136,7 +136,7 @@ class CopyEntryFieldUseCaseTest {
         runTest {
             val fixture = fixture(entry = entry(), allowed = false)
 
-            val result = fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME)
+            val result = fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME, canDeliver = { true })
 
             assertEquals(CopyEntryFieldResult.NotAuthorized, result)
             assertEquals(0, fixture.query.reads)
@@ -153,7 +153,7 @@ class CopyEntryFieldUseCaseTest {
             var reads = 0
 
             val result =
-                CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID) {
+                CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID, canDeliver = { true }) {
                     reads++
                     "123456"
                 }
@@ -174,7 +174,7 @@ class CopyEntryFieldUseCaseTest {
             var reads = 0
 
             val result =
-                CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID) {
+                CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID, canDeliver = { true }) {
                     reads++
                     "123456"
                 }

@@ -205,7 +205,14 @@ class VaultViewModel
             if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_access)) return
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
-                when (copyEntryField(EntryId(entryId), entryType, fieldKey)) {
+                when (
+                    copyEntryField(
+                        EntryId(entryId),
+                        entryType,
+                        fieldKey,
+                        canDeliver = { pageEffects.isActive(owner) },
+                    )
+                ) {
                     CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.FieldCopied(fieldKey))
 
                     CopyEntryFieldResult.NotAuthorized,
@@ -220,7 +227,10 @@ class VaultViewModel
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 when (
-                    copyOtpCode(EntryId(entryId)) {
+                    copyOtpCode(
+                        EntryId(entryId),
+                        canDeliver = { pageEffects.isActive(owner) },
+                    ) {
                         (totp.states.value[entryId] as? OtpCodeState.Ready)?.code
                     }
                 ) {
