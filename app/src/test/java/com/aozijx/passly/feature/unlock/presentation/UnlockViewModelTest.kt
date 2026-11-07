@@ -51,11 +51,13 @@ class UnlockViewModelTest {
             viewModel.onAction(UnlockUiAction.SetPasswordClicked)
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged(PASSWORD))
             viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged(PASSWORD))
+            val submittedPassword =
+                (viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing).newPassword as OwnedChars
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
 
             val submittedSetup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing
-            val submittedPassword = submittedSetup.newPassword as OwnedChars
+            assertTrue(submittedSetup.newPassword.isEmpty)
 
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged("another-long-password"))
             viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged("another-long-password"))
@@ -138,6 +140,8 @@ class UnlockViewModelTest {
                 (viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing).phase,
             )
 
+            viewModel.onAction(UnlockUiAction.NewAppPasswordChanged(PASSWORD))
+            viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged(PASSWORD))
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
 

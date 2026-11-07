@@ -39,11 +39,13 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked)
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(PASSWORD))
+            val submittedPassword =
+                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).newPassword as OwnedChars
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
 
             val submittedSetup = viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing
-            val submittedPassword = submittedSetup.newPassword as OwnedChars
+            assertTrue(submittedSetup.newPassword.isEmpty)
 
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged("another-long-password"))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged("another-long-password"))
@@ -80,10 +82,10 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked)
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(PASSWORD))
-            viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
-            runCurrent()
             val submittedPassword =
                 (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).newPassword as OwnedChars
+            viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
+            runCurrent()
 
             viewModel.onPageExited(oldOwner)
             viewModel.onPageEntered()
@@ -154,6 +156,8 @@ class RecoveryModeViewModelTest {
                 (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).phase,
             )
 
+            viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
+            viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(PASSWORD))
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
 

@@ -33,6 +33,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -49,6 +50,8 @@ class RecoveryCodeSettingsViewModelTest {
             val owner = model.onPageEntered()
 
             model.onAction(RecoveryCodeSettingsAction.VerificationInputChanged("recovery-code"))
+            val submittedInput =
+                (model.uiState.value.verification as RecoveryCodeVerificationUiState.Editing).input as OwnedChars
             model.onAction(RecoveryCodeSettingsAction.Verify)
             runCurrent()
             val verifying = model.uiState.value.verification
@@ -60,12 +63,11 @@ class RecoveryCodeSettingsViewModelTest {
             runCurrent()
 
             val accepted = model.uiState.value.verification as RecoveryCodeVerificationUiState.Accepted
-            val acceptedInput = accepted.input as OwnedChars
-            assertEquals("recovery-code", accepted.input.toCharArray().concatToString())
+            assertTrue(accepted.input.isEmpty)
+            assertTrue(submittedInput.isWiped)
             assertEquals("recovery-code", provisioner.verifiedCode)
 
             model.onPageExited(owner)
-            assertEquals(true, acceptedInput.isWiped)
         }
 
     @Test

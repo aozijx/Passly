@@ -127,6 +127,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **完成证据（2026-11-07）：** `UnlockViewModel` 与 `RecoveryModeViewModel` 现在以 owner 内单飞标志拒绝 Saving 期间的编辑、重开、关闭和第二次提交；Reducer 也拒绝 Saving 状态变更，并擦除被丢弃的敏感输入。恢复页面退出会丢弃当前草稿，旧请求完成不能向重新进入的页面投递结果。两组新增 ViewModel 测试覆盖成功、结构化失败、取消后重试、普通异常映射、并发命令抑制、离页/重入和 `OwnedChars`/局部数组清理。App Password Settings 已有操作进行态与页面 owner guard；Recovery Code Settings 已有 `commitInFlight` 和 Committing dismiss guard，且页面退出后通过提交核对恢复持久事实，不需重复增加锁。定向 Unlock/Recovery ViewModel 与 Reducer 测试以及 `verifyArchitecture` 通过；最终 `git diff --check` 通过。生产依赖仍通过 Domain `AuthenticationMethodProvisioner`，没有引入实现类依赖或兼容桥接。
 
+**2026-11-07 测试语义校正：** 全量 App 单测发现认证输入清理后仍有旧断言把 Saving/Accepted 状态当作持有原 `OwnedChars`，取消重试也未重新输入。测试改为提交前保留 owned-buffer 引用并断言提交后状态为空、原缓冲已擦除；重试前显式重新输入。Unlock、Recovery Mode、Recovery Code Settings 定向测试通过；完整 `:app:testDebugUnitTest` 1024 项通过。
+
 <a id="task-42"></a>
 
 ### Task 42：让共享条目编辑能力由条目编辑层持有
