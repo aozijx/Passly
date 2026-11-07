@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.detail
+package com.aozijx.passly.feature.vault.entry
 
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
@@ -28,7 +28,6 @@ import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.testing.RecordingTestLogger
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
