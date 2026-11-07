@@ -110,6 +110,8 @@
 
 **2026-11-07 API 36 结构注入验收：** 新增 AndroidTest APK 内的独立攻击方包 `com.aozijx.passly.feature.autofill.test`，其 `AutofillOriginAttackActivity` 通过自定义 `EditText.onProvideAutofillStructure()` 将 `login.example.com` 写入系统 `ViewStructure`；测试 APK 没有 `asset_statements` manifest 声明。临时启用的 `CaptureAutofillService` 收到系统 `FillRequest` 后由生产 `AutofillStructureParser` 解析，验证 Activity package 仍是攻击方包、webDomain 保留为伪报 host、结构包含至少两个可编辑字段且没有多 origin 歧义。`AutofillOriginAttackInstrumentedTest` 在 Pixel_8_Pro API 36 通过 1/1；随后完整 `:feature:autofill:connectedDebugAndroidTest` 在同一设备通过 13/13（PendingIntent 2 项、响应工厂 10 项、攻击结构 1 项）。`secure/autofill_service` 在 `finally` 后恢复到 Passly Debug Legacy 服务。该证据证明未关联测试包可以向系统结构声明别站 host，不证明 Passly provider 已在真实 App/认证交互中阻止绕过；还需用同一攻击方直接验收 Passly provider 的未确认与确认流程，并在 API 31 与当前 API 覆盖关联/可信调用方和 scope/取消情形。此前 capture Service 返回空 `FillResponse` 曾触发平台参数异常，现改为合法无数据响应；首次失败报告保留在 Gradle 报告目录。
 
+**2026-11-07 API 31 设备检查：** 当前 `D:\AndroidSDK\system-images\android-31` 目录为空，未找到 `avdmanager` 或 `sdkmanager`；因此本机尚无可启动的 API 31 system image，未运行该级别测试。API 31 验收仍是待办，不能从 API 36 结果外推。
+
 <a id="task-7"></a>
 
 ## Task 7：统一主密码创建策略
