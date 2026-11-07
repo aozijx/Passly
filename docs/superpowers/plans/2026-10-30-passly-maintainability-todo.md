@@ -8,7 +8,7 @@
 
 | 顺序 | 执行入口 | 依赖与原因 |
 | --- | --- | --- |
-| 1 / P1 | [安全 Tasks 6、8、2](2026-11-06-passly-security-scan-followups.md)，本页 26、37、43、59 | 接收方身份、敏感数组、lease 关闭、撤权与提交事实；26/37 先统一生命周期/线性化定义 |
+| 1 / P1 | [安全 Tasks 6、2](2026-11-06-passly-security-scan-followups.md)，本页 26、37、43、59 | 接收方身份、lease 关闭、撤权与提交事实；26/37 先统一生命周期/线性化定义；安全 Task 8 已完成 |
 | 2 / P1 | 本页 38、42、40、41、32；[Backup Tasks 1、5](2026-11-06-passly-backup-review-followups.md)；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | 保存期输入、seed/流资源、操作终态、分类查询、flush；先固定失败结果再改 owner |
 | 3 / P2 | 本页 46、51；[安全 Tasks 3、4、7、9](2026-11-06-passly-security-scan-followups.md)、Backup Tasks 2、3、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；资源预算先于最低设备验收；Autofill 设置策略待办由专题清单维护 |
 | 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
@@ -39,7 +39,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - 运行 `gradlew.bat :app:testDebugUnitTest :feature:autofill:testDebugUnitTest --continue --no-parallel --max-workers=2`：首轮 App 主/测试源码编译通过，987 项中 9 失败；Autofill test 任务 UP-TO-DATE。详见 Task 86。
 - 收尾运行 `gradlew.bat :app:testDebugUnitTest :feature:autofill:testDebugUnitTest :app:lintDebug :feature:autofill:lintDebug --continue --no-parallel --max-workers=2 --quiet`：App **984 项/9 失败**，仍为诊断 8 项与 Scanner 1 项；Lint 为 app **2 errors/27 warnings**、Autofill **5 errors/1 warning**，构建退出 1。Autofill 单测 XML 131/0，任务复用缓存。
 - 执行期间有其他工作推进 Autofill/Scanner/Backup 和测试；本页保留这些并发改动及 Task 21 的同期纠正。统计与验证绑定各次工作区采样，不保证后续变化；新备份端口计划由其原 owner 继续维护。
-- 本轮仅更新待办与本地维护规则；保留既有和并发改动，未修改生产/测试实现，未暂存、提交或推送。设备仪器、APK Analyzer、KDF/低内存基准、强杀持久性未执行，不沿用历史通过记录代替。
+- 2026-11-07 首轮仅更新待办与本地维护规则，未修改生产/测试实现；后续安全 Task 8 批次完成敏感数组清理和状态一致性修复并单独记录验证。保留既有和并发改动；设备仪器、APK Analyzer、KDF/低内存基准、强杀持久性未执行，不沿用历史通过记录代替。
 
 ## P0：当前无工程门禁阻断
 
@@ -227,7 +227,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 84：全量审计 ViewModel 与 Coordinator 的职责归属并整理分层规范
 
-- [ ] 对当前 34 个生产 ViewModel 逐个完成调用闭包审计，输出保留/迁移/合并/继续调查及其证据，不按行数或类名自动判断。清点范围：Shell/宿主（`AppShellViewModel`、`AppThemeSettingsViewModel`、`AppNoticeHostViewModel`、`AuthenticationHostOwnerViewModel`）；Vault（`VaultViewModel`、`VaultDisplayViewModel`、`TrashViewModel`、`DetailViewModel`、`ScannedOtpImportViewModel`、四种 `Add*ViewModel`）；Settings/Backup（`AutofillSettingsViewModel`、`SecuritySettingsViewModel`、`RecoveryCodeSettingsViewModel`、`PrivacySettingsViewModel`、`AppPasswordSettingsViewModel`、`InterfaceSettingsViewModel`、`AppearanceSettingsViewModel`、`PermissionManagementViewModel`、`InteractionSettingsViewModel`、`NotificationSettingsViewModel`、`DiagnosticsViewModel`、`DataManagementSettingsViewModel`、`StorageSettingsViewModel`、`BackupViewModel`）；Autofill（`AutofillFillViewModel`、`CredentialResponseViewModel`、`AccessibilityFillViewModel`）；Scanner/Unlock/Recovery/Database（`ScannerViewModel`、`UnlockViewModel`、`RecoveryModeViewModel`、`DatabaseResetViewModel`）。同时覆盖每页 Route/Activity/Content 的实际消费者、DI 绑定、相关测试及下面被调用的 UseCase/Interactor/Repository/Coordinator/Store，而非只看 ViewModel 文件。
+- [ ] 对当前 `:app`、`:security`、`:feature:autofill` 中 34 个生产 ViewModel 逐个完成调用闭包审计，输出保留/迁移/合并/继续调查及其证据，不按行数或类名自动判断。清点范围：Shell/宿主（`AppShellViewModel`、`AppThemeSettingsViewModel`、`AppNoticeHostViewModel` 属于 App，`AuthenticationHostOwnerViewModel` 属于 Security）；Vault（`VaultViewModel`、`VaultDisplayViewModel`、`TrashViewModel`、`DetailViewModel`、`ScannedOtpImportViewModel`、四种 `Add*ViewModel`）；Settings/Backup（`AutofillSettingsViewModel`、`SecuritySettingsViewModel`、`RecoveryCodeSettingsViewModel`、`PrivacySettingsViewModel`、`AppPasswordSettingsViewModel`、`InterfaceSettingsViewModel`、`AppearanceSettingsViewModel`、`PermissionManagementViewModel`、`InteractionSettingsViewModel`、`NotificationSettingsViewModel`、`DiagnosticsViewModel`、`DataManagementSettingsViewModel`、`StorageSettingsViewModel`、`BackupViewModel`）；Autofill 工作流（`AutofillFillViewModel`、`CredentialResponseViewModel`、`AccessibilityFillViewModel`，均属于 `:feature:autofill`）；Scanner/Unlock/Recovery/Database（`ScannerViewModel`、`UnlockViewModel`、`RecoveryModeViewModel`、`DatabaseResetViewModel`）。同时覆盖每页 Route/Activity/Content 的实际消费者、DI 绑定、相关测试及下面被调用的 UseCase/Interactor/Repository/Coordinator/Store，而非只看 ViewModel 文件。
 - [ ] 将执行职责从页面状态协调中归位：已确认的 Detail 修订历史初始化候选引用 Task 83，避免重复建项；重点审查 `RecoveryCodeSettingsViewModel.confirmAndEnable()` 与 `reconcileInterruptedCommit()` 中的提交后事实核对、`NonCancellable` 恢复、取消与 fatal `Error` 分支。这些负责 durable commit 协调的流程应由 `RecoveryCodeDraftInteractor` 或 Security 应用操作 owner 统一定义结果；ViewModel 保留页面状态、披露草稿和 owner 有效性投影。任何迁移都须保持 commit 前失败、持久化后异常、取消、fatal `Error`、离页与敏感值擦除合同，并通过 ViewModel/Interactor 行为测试证明状态不会错误回滚或允许重复提交。
 - [ ] 审查 `StorageSettingsViewModel` 同时直接协调 cache 清理/大小读取、诊断日志清理/大小读取和 log-recording 偏好写入的边界：分别核对 `AppCacheStore`、`DiagnosticsLogStore`、`DiagnosticsLogSettingsRepository` 的所属层和所有消费者，区分简单单仓库读写、跨能力业务动作、格式化展示和页面错误状态；只有行为契约/事务/复用确有 owner 时才提取 UseCase 或应用服务，并让刷新/清理任务的取消、锁定、失败反馈仍由一个清楚的页面或工作流 owner 管理。
 - [ ] 审查 `AppShellViewModel` 对外观/界面/安全设置流、认证状态、session lock 及 database failure/retry 的组合是否仍是 Shell 页面所需的屏幕投影和生命周期 owner。沿 `DatabaseSessionRecovery`、`DatabaseSessionRetryCoordinator`、`RecoverableRead` 到具体执行端检查是否有重复 retry 状态机、重复事实副本或可独立取消的子 owner；保留合法的应用 Shell 聚合，不为了减少构造器参数把状态拆进一对一转发 Coordinator。

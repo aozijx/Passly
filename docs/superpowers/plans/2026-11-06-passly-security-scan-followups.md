@@ -62,7 +62,9 @@
 
 ## 完成顺序与验证记录
 
-优先处理本轮确认的 Task 6（接收方身份），再处理 Task 8（DEK 清理）、Task 2（lease 关闭）与 Task 7（主密码创建策略）；Task 9 已开始实施全新安装时的一次校准和持久化，仍需资源与设备验证。Task 1/5 的产品策略裁定不阻塞这些独立整改。Task 3/4 继续按设备资源预算治理。实现前检查当前调用者、测试、文档和工作区改动；按项目文档选取验证。扫描结论只绑定实际审查快照，不能因为其他工作流推进 HEAD 就宣称新 HEAD 已完整通过扫描。
+**2026-11-07 排序：** Task 8 已完成并移出执行批次。接下来先处理 Task 6 接收方身份，再与主待办 26/37 协同定义 Task 2 非合作 lease 关闭、生命周期和撤权；详细清单只留本页。Task 7 为待裁定策略；Task 9 已有首次 KDF 参数实现，转持久化集成/设备资源验收，不重新描述为尚未接入。Task 3/4 按最低设备与前置拒绝预算治理，Task 1/5/10 保持策略/提示事项。主待办 Task 86 可先恢复验证基线，但不代替安全合同。
+
+本轮为源码维护复核，不是新的完整 Codex Security 扫描；原报告只绑定其快照，不沿用为当前 HEAD 全面通过。实现前核对工作区、caller 和 owner，按正式测试文档验证。
 
 ## 2026-11-06 官方规范复核补充
 
@@ -104,18 +106,23 @@
 - [ ] 明确 Unicode code point 长度、是否规范化及字符/UTF-8 字节预算；同一新合同贯穿创建和解锁，不允许意外 trim 或截断。
 - [ ] 覆盖所有新创建和解锁入口、长 passphrase、常见值、Unicode、取消、durable commit 前后失败及资源清理；旧开发信封按新格式明确拒绝。
 
+<a id="task-8"></a>
+
 ## Task 8：在状态替换前覆盖原缓存 DEK
 
-**状态：deferred；已确认清理缺陷，未独立认定为可利用漏洞。**
+**状态：已完成（2026-11-07）；已确认的清理缺陷已修复，未独立认定为可利用漏洞。**
 
-**证据：** `DekManager.lock()` 先 `_state = DekState.Locking`（224 行），再 `wipeCurrentDek()`（229 行）；后者仅对 `DekState.Unlocked` 的数组覆盖（246-250 行）。因此原缓存 DEK 被丢弃而未覆盖，与锁定清理意图不符。当前模型排除持续 root 读进程内存，故不将其夸大为普通应用可直接提取密钥。
+**修复：** 锁定时先保留原 `Unlocked` 状态引用，再撤权并发布 `Locking`，随后覆盖原 DEK、清字段 key，最后发布 `Locked`。清理段在 `NonCancellable` 中完成；日志或清理失败仍完成状态收尾并传播失败。DEK 派生字段 key 成功后才发布 `Unlocked`；失败会擦除候选缓存、清除字段 key 并回到 `Locked`。认证解封和初始化产生的 DEK 在其 owner 的 `finally` 中覆盖，传入 `setDek` 的数组由安装流程覆盖。
 
-**继续复核：** `lock()` 在发布 `Locking` 后、执行第二个清理临界区前调用 `logger.log(vaultLockStarted())`；若日志实现抛出异常，字段 key 清理与 `Locked` 发布都不会执行。`cacheAndUnlock()` 则先发布 `Unlocked` 和 `isUnlocked=true`，再调用 `FieldKeyManager.deriveAndSet()`；若密钥派生失败，已发布状态与字段 key 状态不一致。两条路径都需要故障注入验证，不能仅凭正常路径测试认定状态机安全。
+- [x] 在替换持有敏感数组的状态前保留并覆盖该数组；锁定遇到取消、日志失败或 fatal Error 时仍完成字段 key 清理和 `Locked` 发布。
+- [x] 回归测试保留实际缓存数组引用，锁定后断言其内容归零，并验证重复锁定及之后重新解锁。
+- [x] 注入锁定日志异常、取消、fatal Error 和字段密钥派生异常，验证清理、状态发布与重新认证的一致性；派生成功后才发布 `Unlocked`。
+- [x] 复核解封 DEK 由调用 owner 覆盖；JCA `SecretKeySpec`/provider 内部副本不纳入可验证擦除保证。
+- [x] 首次随机 key 的 nonce 生成、wrap、envelope 保存失败（包括取消和 fatal Error）都会覆盖尚未交接的 key；成功交接后由接收方 owner 负责，保留真实数组引用断言。
 
-- [ ] 在替换持有敏感数组的状态前保留并覆盖该数组，明确锁定的取消、日志失败和 fatal Error 清理顺序；完成字段 key 清理和 Locked 发布。
-- [ ] 行为回归测试保留实际缓存数组引用，锁定后断言其内容归零，并验证重复锁定、取消、事件异常以及之后重新解锁；不能只断言 state 为 Locked。
-- [ ] 注入锁定日志异常和字段密钥派生异常，验证状态发布、缓存 DEK、字段 key 与重新认证的一致性；将派生成功作为发布 `Unlocked` 的前置条件。
-- [ ] 复核认证信封解封后的临时 DEK 生命周期和 `SecretKeySpec` 副本；将其他可控明文遗漏列在同一清理边界修复，不宣称 JVM 全副本可验证擦除。
+**验证：** `:core:testDebugUnitTest` 94 项、`:security:testDebugUnitTest` 149 项通过；`verifyArchitecture`、`:app:compileDebugKotlin`、`:core:ktlintCheck` 及 security 主源码/测试源码定向 ktlint 通过。覆盖锁定时实际缓存数组清零、logger 抛普通异常/取消/fatal Error、字段 key 派生失败与取消，以及两类首次随机 key 的生成/保存失败和成功交接清理。未执行设备仪器测试；不声称 JVM/JCA 全部临时副本可擦除。
+
+<a id="task-9"></a>
 
 ## Task 9：首次创建并固定设备 Argon2id 参数
 
