@@ -2,75 +2,71 @@ package com.aozijx.passly.feature.scanner.presentation
 
 import android.graphics.Matrix
 import android.graphics.RectF
+import androidx.annotation.OptIn
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
+import androidx.camera.view.TransformExperimental
+import androidx.camera.view.transform.CoordinateTransform
+import androidx.camera.view.transform.ImageProxyTransformFactory
 import com.google.mlkit.vision.barcode.common.Barcode
 
 internal data class ScannerRecognitionRegion(
-    private val boundsInImage: RectF,
+    private val boundsInPreview: RectF,
+    private val imageToPreview: Matrix,
 ) {
     fun contains(barcode: Barcode): Boolean {
         val corners = barcode.cornerPoints
         if (!corners.isNullOrEmpty()) {
-            return corners.size == BARCODE_CORNER_COUNT && corners.all { corner ->
-                boundsInImage.contains(corner.x.toFloat(), corner.y.toFloat())
+            if (corners.size != BARCODE_CORNER_COUNT) return false
+            val points = FloatArray(corners.size * POINT_COORDINATE_COUNT)
+            corners.forEachIndexed { index, point ->
+                val coordinateIndex = index * POINT_COORDINATE_COUNT
+                points[coordinateIndex] = point.x.toFloat()
+                points[coordinateIndex + 1] = point.y.toFloat()
             }
+            return containsMappedPoints(points)
         }
+
         val bounds = barcode.boundingBox ?: return false
-        return boundsInImage.contains(bounds.left.toFloat(), bounds.top.toFloat()) &&
-            boundsInImage.contains(bounds.right.toFloat(), bounds.top.toFloat()) &&
-            boundsInImage.contains(bounds.right.toFloat(), bounds.bottom.toFloat()) &&
-            boundsInImage.contains(bounds.left.toFloat(), bounds.bottom.toFloat())
+        return containsMappedPoints(
+            floatArrayOf(
+                bounds.left.toFloat(), bounds.top.toFloat(),
+                bounds.right.toFloat(), bounds.top.toFloat(),
+                bounds.right.toFloat(), bounds.bottom.toFloat(),
+                bounds.left.toFloat(), bounds.bottom.toFloat(),
+            ),
+        )
+    }
+
+    private fun containsMappedPoints(points: FloatArray): Boolean {
+        imageToPreview.mapPoints(points)
+        return points.indices.step(POINT_COORDINATE_COUNT).all { index ->
+            boundsInPreview.contains(points[index], points[index + 1])
+        }
     }
 
     companion object {
         private const val BARCODE_CORNER_COUNT = 4
+        private const val POINT_COORDINATE_COUNT = 2
 
+        @OptIn(markerClass = [TransformExperimental::class])
         fun create(
             imageProxy: ImageProxy,
             previewView: PreviewView,
             viewfinderBounds: RectF,
         ): ScannerRecognitionRegion? {
-            if (previewView.width <= 0 || previewView.height <= 0) return null
-            val previewToImage = Matrix()
-            val imageToPreview = imageToPreviewTransform(imageProxy, previewView) ?: return null
-            if (!imageToPreview.invert(previewToImage)) return null
-
-            val boundsInImage = RectF(viewfinderBounds)
-            previewToImage.mapRect(boundsInImage)
-            return ScannerRecognitionRegion(boundsInImage)
-        }
-
-        private fun imageToPreviewTransform(
-            imageProxy: ImageProxy,
-            previewView: PreviewView,
-        ): Matrix? {
-            val cropRect = imageProxy.cropRect
-            val source = floatArrayOf(
-                cropRect.left.toFloat(), cropRect.top.toFloat(),
-                cropRect.right.toFloat(), cropRect.top.toFloat(),
-                cropRect.right.toFloat(), cropRect.bottom.toFloat(),
-                cropRect.left.toFloat(), cropRect.bottom.toFloat(),
-            )
-            val destination = floatArrayOf(
-                0f, 0f,
-                previewView.width.toFloat(), 0f,
-                previewView.width.toFloat(), previewView.height.toFloat(),
-                0f, previewView.height.toFloat(),
-            )
-            val shiftOffset = when (imageProxy.imageInfo.rotationDegrees) {
-                0 -> 0
-                90 -> 2
-                180 -> 4
-                270 -> 6
-                else -> return null
-            }
-            val originalDestination = destination.clone()
-            for (toIndex in destination.indices) {
-                destination[toIndex] = originalDestination[(toIndex + shiftOffset) % destination.size]
-            }
-
-            return Matrix().takeIf { matrix -> matrix.setPolyToPoly(source, 0, destination, 0, BARCODE_CORNER_COUNT) }
+            val previewOutputTransform = previewView.outputTransform ?: return null
+            val imageOutputTransform =
+                ImageProxyTransformFactory()
+                    .apply {
+                        // ML Kit returns barcode coordinates after rotationDegrees is applied.
+                        setUsingRotationDegrees(true)
+                    }
+                    .getOutputTransform(imageProxy)
+            val coordinateTransform =
+                CoordinateTransform(imageOutputTransform, previewOutputTransform)
+            val imageToPreview = Matrix().also(coordinateTransform::transform)
+            return ScannerRecognitionRegion(RectF(viewfinderBounds), imageToPreview)
         }
     }
 }

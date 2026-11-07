@@ -8,7 +8,7 @@
 
 相机授权由 `ScannerCameraHost` 请求；它只管理权限、Compose 生命周期和共享资源。`bindScannerCamera()` 创建 Preview 与 ImageAnalysis，`ScannerCameraSession.bind()` 等待 `previewView.viewPort`、布局尺寸和未销毁状态就绪后，再将 use case 放入同一 `UseCaseGroup`。`createScannerImageAnalysis()` 专管帧处理：用当前 `ImageProxy.cropRect`、旋转角度、预览尺寸和共享取景框创建 `ScannerRecognitionRegion`；坐标暂不可用时关闭并跳过该帧，不启动 ML Kit。有效时才构造 `InputImage`；回调先筛选有 `rawValue` 且实际 `cornerPoints` 四角都位于区域内的候选，无 corner points 时才检查 `boundingBox` 四角。`addOnCompleteListener` 关闭当前 `ImageProxy`。退出 effect 时设置原子 `disposed` 标志并由 Session 停止相机；组件释放时也关闭 executor 和 ML Kit scanner。
 
-`ScannerRoute` 从 `BoxWithConstraints` 读取可用尺寸，`ScannerViewfinderFrame.fitContainer()` 统一计算视框尺寸并一次性将 dp 几何转换为像素矩形；纯 `ScannerScreen` 只接收 `ScannerScreenModel`、这份几何和用户动作回调，`ScannerViewfinder` 绘制它，Route 同时把同一份几何交给 `ScannerCameraHost`。`ScannerScreenAction` 只表示屏幕上的用户操作；相机权限、识别结果和相机错误由 Host 回调直接进入 Route/ViewModel，不混入 UI 事件类型。`ScannerResultSession` 由 Route 生命周期持有，不随扫码 UI 状态重建；确认或关闭期间锁住结果操作，退出动画中的相册按钮保持禁用，避免页面退出时误触失效动作。`ScannerRecognitionRegion.create()` 每帧只构建一次 crop/rotation 矩阵并反向映射视框；候选的实际四角必须全部落在映射后的区域内，防止只因中心进入框内就接收实际越界的码。
+`ScannerRoute` 从 `BoxWithConstraints` 读取可用尺寸，`ScannerViewfinderFrame.fitContainer()` 统一计算视框尺寸并一次性将 dp 几何转换为像素矩形；纯 `ScannerScreen` 只接收 `ScannerScreenModel`、这份几何和用户动作回调，`ScannerViewfinder` 绘制它，Route 同时把同一份几何交给 `ScannerCameraHost`。`ScannerScreenAction` 只表示屏幕上的用户操作；相机权限、识别结果和相机错误由 Host 回调直接进入 Route/ViewModel，不混入 UI 事件类型。`ScannerResultSession` 由 Route 生命周期持有，不随扫码 UI 状态重建；确认或关闭期间锁住结果操作，退出动画中的相册按钮保持禁用，避免页面退出时误触失效动作。`ScannerRecognitionRegion.create()` 使用 CameraX `ImageProxyTransformFactory` 和 PreviewView 输出变换构造坐标转换；识别时将 ML Kit 返回的旋转后条码角点转换到 PreviewView 坐标，再与同一份取景框几何比较。候选的实际四角必须全部落在取景区域内，防止只因中心进入框内就接收实际越界的码。
 
 只有区域有效且条码四角完整位于取景区域内的候选才会触发扫描完成；没有 `rawValue` 的候选会在映射之前排除，避免挡住后续有效候选。
 

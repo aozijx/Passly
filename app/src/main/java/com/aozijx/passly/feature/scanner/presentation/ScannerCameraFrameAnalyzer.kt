@@ -6,6 +6,7 @@ import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.PreviewView
+import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executor
@@ -54,27 +55,39 @@ private fun analyzeScannerFrame(
         return
     }
 
-    val region = ScannerRecognitionRegion.create(imageProxy, previewView, viewfinderBounds)
-    if (region == null) {
-        imageProxy.close()
-        return
-    }
-
     val proxyClosed = AtomicBoolean(false)
     fun closeProxy() {
         if (proxyClosed.compareAndSet(false, true)) imageProxy.close()
     }
     var completionListenerRegistered = false
     try {
+        val mainExecutor = ContextCompat.getMainExecutor(previewView.context)
         scanner.process(InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees))
-            .addOnSuccessListener { barcodes ->
-                if (isDisposed()) return@addOnSuccessListener
-                barcodes.firstOrNull { barcode ->
-                    !barcode.rawValue.isNullOrBlank() && region.contains(barcode)
-                }?.rawValue?.let(onBarcodeDetected)
+            .addOnSuccessListener(mainExecutor) { barcodes ->
+                try {
+                    if (isDisposed()) return@addOnSuccessListener
+                    val region =
+                        ScannerRecognitionRegion.create(imageProxy, previewView, viewfinderBounds)
+                            ?: return@addOnSuccessListener
+                    barcodes.firstOrNull { barcode ->
+                        !barcode.rawValue.isNullOrBlank() && region.contains(barcode)
+                    }?.rawValue?.let(onBarcodeDetected)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    if (!isDisposed()) onFailure(error)
+                } finally {
+                    closeProxy()
+                }
             }
-            .addOnFailureListener { error -> if (!isDisposed()) onFailure(error) }
-            .addOnCompleteListener { closeProxy() }
+            .addOnFailureListener(mainExecutor) { error ->
+                try {
+                    if (!isDisposed()) onFailure(error)
+                } finally {
+                    closeProxy()
+                }
+            }
+            .addOnCompleteListener(mainExecutor) { closeProxy() }
         completionListenerRegistered = true
     } catch (cancelled: CancellationException) {
         throw cancelled
