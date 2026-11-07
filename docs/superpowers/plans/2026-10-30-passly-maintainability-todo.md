@@ -65,7 +65,9 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [x] 非合作 lease 超时关闭的详细清单由[安全 Task 2](2026-11-06-passly-security-scan-followups.md#task-2)持有；Task 2 已实现实际 drain 后关闭。
 - [ ] 与 Task 37 定义 soft-lock 对既有 lease 读写/观察的完成语义，覆盖排空/取消、授权撤销及迟到结果；仅拒绝新 lease 不等于操作结束。运行 Runtime、Security Session、Data Reset 定向测试。
 
-**2026-11-07 Runtime lifecycle 串行化：** `RuntimeSessionManager.lifecycleMutex` 保护完整 `unlock`（close-failure 检查、resume、key copy、resource open）、`softLock` 与 `seal`；`VaultSessionController` 的会话互斥继续作为外层 owner，`SecureDatabaseResetCoordinator` 也使用该外层互斥。锁顺序为 Security/reset session mutex → Runtime lifecycle mutex → SessionLeaseGate 的 resource/lease mutex；请求 lease 与执行资源操作分阶段取 gate 锁，`resumeIfOpen` 唯一的嵌套顺序为 resource mutex → lease mutex。五项屏障用例先在旧实现失败，再在新 owner 下通过，覆盖两个首次 unlock、open/seal、seal drain/unlock、soft-lock/resume 和 seal 调用方取消。Task 26 剩余与 Task 37 共管的 soft-lock 对既有操作语义，仍需 Data/Security 跨层验收。
+**2026-11-07 Runtime lifecycle 串行化：** `RuntimeSessionManager.lifecycleMutex` 保护完整 `unlock`（close-failure 检查、resume、key copy、resource open）、`softLock` 与 `seal`；`VaultSessionController` 的会话互斥继续作为外层 owner，`SecureDatabaseResetCoordinator` 也使用该外层互斥。锁顺序为 Security/reset session mutex → Runtime lifecycle mutex → SessionLeaseGate 的 resource/lease mutex；请求 lease 与执行资源操作分阶段取 gate 锁，`resumeIfOpen` 唯一的嵌套顺序为 resource mutex → lease mutex。五项屏障用例先在旧实现失败，再在新 owner 下通过，覆盖两个首次 unlock、open/seal、seal drain/unlock、soft-lock/resume 和 seal 调用方取消。
+
+**2026-11-07 soft-lock 排空批次：** Runtime 在 `softLock()` 发布 `SOFT_LOCKED` 后等待活动 lease；5 秒超时或调用方取消会请求登记 owner 取消，再在不可取消清理区等待实际退出，保留已打开的 handle。新增两项屏障回归，分别验证超时取消与调用方取消后仍等待、不关闭资源，且新 lease 被拒绝。Runtime 用例通过。Task 26 尚未完成：Security 当前仍先清除敏感会话 key，再调用 `sessionManager.softLock()`；因此须在 Task 37 独立批次中先发布认证撤权、调用并等待 Runtime 排空，再清除敏感 key，并完成 Data/Security 跨层调用闭包及 reset 验收。
 
 <a id="task-37"></a>
 

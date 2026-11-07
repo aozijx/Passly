@@ -70,7 +70,7 @@ class RuntimeSessionManager<Handle : Any>(
             result
         }
 
-    suspend fun softLock() = lifecycleMutex.withLock { leaseGate.softLock() }
+    suspend fun softLock(timeout: Duration = 5.seconds) = lifecycleMutex.withLock { leaseGate.softLock(timeout) }
 
     suspend fun seal(timeout: Duration = 5.seconds): Result<Unit> = lifecycleMutex.withLock { leaseGate.seal(timeout) }
 }

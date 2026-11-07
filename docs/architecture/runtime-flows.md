@@ -50,7 +50,7 @@ session transition event 由 `SessionEventSink` best-effort 记录，普通遥�
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 
 Activity 只通过 `AuthenticationHost` 提供 UI 能力；认证请求本身不携带 Activity、Launcher、Cipher 或
-PendingIntent。`VaultSessionController` 的 session mutex 是锁定、解锁和 reset 的外层 owner；`SecureDatabaseResetCoordinator` 使用同一个 session mutex。其内的 `RuntimeSessionManager.lifecycleMutex` 串行化 Runtime unlock/soft-lock/seal 生命周期转换。锁定撤权并发布 `Locking` 后，Runtime 随即拒绝新 lease。普通 drain 超时后只向活动 lease owner 发出取消请求；若操作忽略取消，锁定继续等待且 Room 保持打开，直到该 lease 实际退出，再在 IO dispatcher 关闭 Room、擦除会话密钥与 DEK。seal 调用方取消也不会遗弃已封存句柄；清理完毕后才传播取消。不会因固定宽限期结束就关闭仍在使用的句柄。
+PendingIntent。`VaultSessionController` 的 session mutex 是锁定、解锁和 reset 的外层 owner；`SecureDatabaseResetCoordinator` 使用同一个 session mutex。其内的 `RuntimeSessionManager.lifecycleMutex` 串行化 Runtime unlock/soft-lock/seal 生命周期转换。soft-lock 发布 `SOFT_LOCKED` 后拒绝新 lease，并等待已取得的 lease 退出；5 秒排空超时会请求取消活动 lease owner，之后仍等到实际退出，保留已打开的 Room handle。seal 同样在撤权后拒绝新 lease；排空后关闭 Room，超时取消后也继续等到实际退出。soft-lock 或 seal 的调用方取消会移交清理 owner，完成排空以及 seal 所需的关闭后才传播取消。不会因固定宽限期结束就关闭仍在使用的句柄。
 
 ## 一次性消息
 

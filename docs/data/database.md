@@ -135,8 +135,8 @@ stateDiagram-v2
 
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定先把 session gate 转为 `SEALED`，拒绝新 lease，再等待 active lease 排空并关闭数据库，最后由 Security owner 擦除 DEK 与会话密钥。及时排空时，关闭发生在 active lease 归零之后。
-- `RuntimeSessionManager` 使用单一 lifecycle mutex 串行化完整 unlock（含 key source 与资源 open）、soft-lock/resume 和 seal/close；Security 的 Vault session mutex 继续作为外层 owner，reset 也通过同一互斥。`seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT` 并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；调用方取消不会遗弃已发布 `SEALED` 的 handle。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；soft-lock 对既有 lease 的完成语义继续见[维护 TODO Task 26](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-26明确-runtime-session-生命周期转换的并发所有者)。
-- `SOFT_LOCKED` 会拒绝新 lease，但当前 `softLock()` 不等待或取消已经取得的 lease；在途 read/write 按其实际完成或取消结果结束。这一语义及锁定返回时机仍由维护 TODO Task 26 追踪。
+- `RuntimeSessionManager` 使用单一 lifecycle mutex 串行化完整 unlock（含 key source 与资源 open）、soft-lock/resume 和 seal/close；Security 的 Vault session mutex 继续作为外层 owner，reset 也通过同一互斥。`seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT` 并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；调用方取消不会遗弃已发布 `SEALED` 的 handle。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；soft-lock 也会在发布 `SOFT_LOCKED` 后等待既有 lease，5 秒超时或调用方取消时请求 owner 取消并等待实际排空，不关闭 handle。Security 清除敏感会话 key 的先后顺序仍见[维护 TODO Task 26](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-26明确-runtime-session-生命周期转换的并发所有者)。
+- `SOFT_LOCKED` 拒绝新 lease。既有操作正常完成时 soft-lock 等待其结束；5 秒排空超时或调用方取消会请求取消 owner，Runtime 仍等到实际退出后才返回，数据库 handle 保持打开。当前 `VaultSessionController` 仍先擦除敏感会话 key、再调用 Runtime soft-lock，因此清 key 仍可能与既有 lease 并行；维护 TODO Task 26/37 追踪跨层顺序修正。
 - 覆盖导入、Revision 恢复和多表写入必须在事务中完成，失败整体回滚。
 - 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；备份协议版本独立。
 关闭失败时保持 `SEALED` 并保留失败句柄；没有确认关闭成功前，不删除数据库文件或建立第二个 session。失败结果、撤权和重置边界见本页的会话关闭与重置合同。

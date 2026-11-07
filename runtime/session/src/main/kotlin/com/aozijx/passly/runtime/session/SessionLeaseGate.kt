@@ -191,17 +191,62 @@ internal class SessionLeaseGate<Handle : Any>(
         }
     }
 
-    suspend fun softLock() {
+    suspend fun softLock(timeout: Duration) {
         val startedAt = elapsedRealtimeMs()
         val fromState = mutableLockState.value
         leaseMutex.withLock { publishLockState(SecureSessionState.SOFT_LOCKED) }
-        emitTransition(
-            startedAt,
-            fromState,
-            SecureSessionState.SOFT_LOCKED,
-            SessionTransitionReason.SOFT_LOCK,
-            SessionLockType.SOFT,
-        )
+
+        var callerCancellation: CancellationException? = null
+        var drainTimedOut = false
+        try {
+            drainTimedOut = !waitForLeases(timeout)
+        } catch (cancelled: CancellationException) {
+            callerCancellation = cancelled
+        }
+
+        var cleanupFailure: Throwable? = null
+        withContext(NonCancellable) {
+            if (drainTimedOut) {
+                try {
+                    emitTransition(
+                        startedAt,
+                        fromState,
+                        SecureSessionState.SOFT_LOCKED,
+                        SessionTransitionReason.DRAIN_TIMEOUT,
+                        SessionLockType.SOFT,
+                        timeoutMs = timeout.inWholeMilliseconds,
+                        activeLeaseCount = activeLeases.get(),
+                    )
+                } catch (failure: CancellationException) {
+                    cleanupFailure = failure
+                } catch (failure: Error) {
+                    cleanupFailure = failure
+                }
+            }
+            if (drainTimedOut || callerCancellation != null) {
+                leaseOwners.keys.forEach(Job::cancel)
+            }
+            waitForLeases()
+            try {
+                emitTransition(
+                    startedAt,
+                    fromState,
+                    SecureSessionState.SOFT_LOCKED,
+                    SessionTransitionReason.SOFT_LOCK,
+                    SessionLockType.SOFT,
+                )
+            } catch (failure: CancellationException) {
+                cleanupFailure = cleanupFailure?.let { combineFailures(it, failure) } ?: failure
+            } catch (failure: Error) {
+                cleanupFailure = cleanupFailure?.let { combineFailures(it, failure) } ?: failure
+            }
+        }
+        if (cleanupFailure is Error) throw cleanupFailure
+        if (callerCancellation != null) {
+            cleanupFailure?.let { addSuppressed(callerCancellation, it) }
+            throw callerCancellation
+        }
+        cleanupFailure?.let { throw it }
     }
 
     suspend fun seal(timeout: Duration): Result<Unit> {
@@ -212,9 +257,7 @@ internal class SessionLeaseGate<Handle : Any>(
         var callerCancellation: CancellationException? = null
         val drained =
             try {
-                withTimeoutOrNull(timeout) {
-                    while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
-                }
+                waitForLeases(timeout)
             } catch (cancelled: CancellationException) {
                 callerCancellation = cancelled
                 null
@@ -225,7 +268,7 @@ internal class SessionLeaseGate<Handle : Any>(
         withContext(NonCancellable) {
             try {
                 cleanupResult =
-                    if (drained == null) {
+                    if (drained != true) {
                         closeAfterDrainTimeout(startedAt, fromState, timeout)
                     } else {
                         close() to null
@@ -301,7 +344,7 @@ internal class SessionLeaseGate<Handle : Any>(
         var closeThrown: Throwable? = null
         val closeResult =
             withContext(NonCancellable) {
-                while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+                waitForLeases()
                 try {
                     close()
                 } catch (failure: Throwable) {
@@ -318,6 +361,16 @@ internal class SessionLeaseGate<Handle : Any>(
             }
         }
         return closeResult to transitionFailure
+    }
+
+    private suspend fun waitForLeases(timeout: Duration): Boolean =
+        withTimeoutOrNull(timeout) {
+            waitForLeases()
+            true
+        } ?: false
+
+    private suspend fun waitForLeases() {
+        while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
     }
 
     suspend fun closeFailure(): Throwable? = resourceMutex.withLock { closeFailure }

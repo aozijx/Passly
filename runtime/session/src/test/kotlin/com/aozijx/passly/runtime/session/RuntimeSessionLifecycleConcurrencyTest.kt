@@ -9,6 +9,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -190,6 +191,127 @@ class RuntimeSessionLifecycleConcurrencyTest {
                 releaseSoftLock.complete(Unit)
                 softLocking.cancelAndJoin()
                 resuming.cancelAndJoin()
+            }
+        }
+
+    @Test
+    fun `soft lock rejects new leases and drains active leases without closing the handle`() =
+        runBlocking {
+            val leaseStarted = CompletableDeferred<Unit>()
+            val releaseLease = CompletableDeferred<Unit>()
+            val drainTimedOut = CompletableDeferred<Unit>()
+            val leaseFinished =
+                java.util.concurrent.atomic
+                    .AtomicBoolean(false)
+            val closedBeforeLeaseFinished =
+                java.util.concurrent.atomic
+                    .AtomicBoolean(false)
+            val resource =
+                TestResource(
+                    onClose = { closedBeforeLeaseFinished.set(!leaseFinished.get()) },
+                )
+            val manager =
+                RuntimeSessionManager(
+                    resource = resource,
+                    keySource = SessionKeySource { byteArrayOf(9) },
+                    eventSink =
+                        SessionEventSink { event ->
+                            if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) drainTimedOut.complete(Unit)
+                        },
+                )
+            manager.unlock()
+            val reader =
+                async {
+                    manager.read {
+                        try {
+                            leaseStarted.complete(Unit)
+                            withContext(NonCancellable) { releaseLease.await() }
+                            value
+                        } finally {
+                            leaseFinished.set(true)
+                        }
+                    }
+                }
+            leaseStarted.await()
+            val softLocking = async { manager.softLock(timeout = 1.milliseconds) }
+
+            try {
+                drainTimedOut.await()
+                assertEquals(SecureSessionState.SOFT_LOCKED, manager.lockState)
+                assertFalse("soft lock must await the active lease", softLocking.isCompleted)
+                assertFalse("soft lock must keep the open resource", resource.closed)
+                assertEquals(0, resource.closeCount)
+
+                val rejectedRead =
+                    try {
+                        manager.read { value }
+                        null
+                    } catch (failure: SessionLockedException) {
+                        failure
+                    }
+                assertTrue(rejectedRead is SessionLockedException)
+
+                releaseLease.complete(Unit)
+                reader.join()
+                softLocking.await()
+
+                assertTrue(reader.isCancelled)
+                assertTrue(leaseFinished.get())
+                assertFalse(closedBeforeLeaseFinished.get())
+                assertFalse(resource.closed)
+                assertEquals(0, resource.closeCount)
+                assertEquals(SecureSessionState.SOFT_LOCKED, manager.lockState)
+            } finally {
+                releaseLease.complete(Unit)
+                reader.cancelAndJoin()
+                softLocking.cancelAndJoin()
+            }
+        }
+
+    @Test
+    fun `soft lock cancellation drains active leases before propagating`() =
+        runBlocking {
+            val leaseStarted = CompletableDeferred<Unit>()
+            val releaseLease = CompletableDeferred<Unit>()
+            val resource = TestResource()
+            val manager =
+                RuntimeSessionManager(
+                    resource = resource,
+                    keySource = SessionKeySource { byteArrayOf(9) },
+                )
+            manager.unlock()
+            val reader =
+                async {
+                    manager.read {
+                        leaseStarted.complete(Unit)
+                        withContext(NonCancellable) { releaseLease.await() }
+                        value
+                    }
+                }
+            leaseStarted.await()
+            val softLocking = async { manager.softLock() }
+            while (manager.lockState != SecureSessionState.SOFT_LOCKED) delay(1)
+
+            try {
+                softLocking.cancel()
+                yield()
+
+                assertFalse("cancelled soft lock must keep the active handle open", resource.closed)
+                assertFalse("soft lock cleanup must wait for the active lease", softLocking.isCompleted)
+
+                releaseLease.complete(Unit)
+                reader.join()
+                softLocking.join()
+
+                assertTrue(reader.isCancelled)
+                assertTrue(softLocking.isCancelled)
+                assertFalse(resource.closed)
+                assertEquals(0, resource.closeCount)
+                assertEquals(SecureSessionState.SOFT_LOCKED, manager.lockState)
+            } finally {
+                releaseLease.complete(Unit)
+                reader.cancelAndJoin()
+                softLocking.cancelAndJoin()
             }
         }
 
