@@ -1,7 +1,7 @@
-import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
+    alias(libs.plugins.ktlint)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
@@ -17,7 +17,7 @@ val keystoreProperties =
     Properties().apply {
         val keystoreFile = rootProject.file("keystore.properties")
         if (keystoreFile.exists()) {
-            load(FileInputStream(keystoreFile))
+            keystoreFile.inputStream().use { load(it) }
         }
     }
 
@@ -61,10 +61,6 @@ android {
         versionCode = 8
         versionName = "0.3.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    androidResources {
-        localeFilters += listOf("zh-rCN", "en")
     }
 
     signingConfigs {
@@ -122,8 +118,6 @@ android {
         disable +=
             setOf(
                 "AndroidGradlePluginVersion",
-//            "GradleDependency",
-//            "NewerVersionAvailable",
                 "OldTargetApi",
             )
     }
@@ -155,10 +149,13 @@ dependencies {
     implementation(project(":runtime:session"))
     implementation(project(":security"))
 
-    // Android Core
+    // Android core
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.appcompat)
+
+    // Data and serialization
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.jackson.core)
 
     // Lifecycle & Navigation
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -186,14 +183,13 @@ dependencies {
     implementation(libs.androidx.compose.material3.adaptive.layout)
     implementation(libs.androidx.compose.material3.adaptive.navigation)
 
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.palette)
-
     // Security & Biometric
     implementation(libs.androidx.biometric)
 
     // Data-facing UI adapters
     implementation(libs.androidx.paging.compose)
+
+    // Shared utilities
     implementation(libs.uuid.creator)
 
     // CameraX
@@ -205,10 +201,13 @@ dependencies {
     // Barcode Scanning & QR Code
     implementation(libs.barcode.scanning)
 
-    // Image Loading
+    // Images and media
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.coil.svg)
+    implementation(libs.androidx.palette)
+
+    // Networking
     implementation(libs.okhttp)
 
     // Hilt

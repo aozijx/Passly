@@ -1,63 +1,65 @@
 [versions]
 # 构建与工具 (Build & Tooling)
 agp = "9.4.1"
-# Kotlin and KSP upgrades are validated together.
-kotlin = "2.3.20"
-ksp = "2.3.9"
-ktlintGradle = "14.2.0"
-ktlint = "1.8.0"
-hilt = "2.60.1"
 androidCompileSdk = "37"
 androidMinSdk = "31"
 androidTargetSdk = "37"
+# Kotlin and KSP upgrades are validated together.
+kotlin = "2.3.20"
+ksp = "2.3.9"
 jvmToolchain = "21"
+ktlintGradle = "14.2.0"
+ktlint = "1.8.0"
+protobuf-plugin = "0.10.1"
 
 # Android 核心 (Android Core)
-coreKtx = "1.19.1"
 appcompat = "1.8.0"
-palette = "1.0.0"
+coreKtx = "1.19.1"
 
 # 生命周期与架构 (Lifecycle & Architecture)
-lifecycleRuntimeKtx = "2.11.0"
+hilt = "2.60.1"
 lifecycleProcess = "2.11.0"
+lifecycleRuntimeKtx = "2.11.0"
 navigationCompose = "2.10.2"
 hilt-lifecycle-viewmodel-compose = "1.4.0"
 
 # Jetpack Compose & UI
-composeBom = "2026.09.00"
 activityCompose = "1.13.0"
-foundation = "1.12.1"
-material3 = "1.5.0-beta01"
-googleMaterial = "1.14.0"
-materialIcons = "1.7.8"
 compose-adaptive = "1.3.0"
+composeBom = "2026.09.00"
+foundation = "1.12.1"
+googleMaterial = "1.14.0"
+material3 = "1.5.0-rc01"
+materialIcons = "1.7.8"
 
-# 数据持久化 (Data Storage)
-room = "2.8.4"
+# Data & Persistence
+room = "2.8.5"
 paging = "3.5.3"
-datastore = "1.2.1"
-protobuf-plugin = "0.10.0"
+sqlite = "2.7.1"
+sqlcipher = "4.20.0"
+datastore = "1.3.0"
 protobuf-javalite = "4.36.2"
 kotlinxSerializationJson = "1.12.0"
+jacksonCore = "2.22.4"
+
+# Runtime & Shared Utilities
 kotlinxCoroutines = "1.11.0"
-sqlite = "2.7.1"
-# SQLCipher upgrades require encrypted database compatibility verification.
-sqlcipher = "4.19.1"
-uuidCreator = "6.1.1"
 guava = "33.7.2-android"
+uuidCreator = "6.1.1"
 
-# 凭据管理器 / 自动填充 (Credentials & Autofill)
-credentials = "1.6.0"
+# Credentials & Security
 autofill = "1.3.0"
-
-# 安全与加密 (Security & Auth)
-biometric = "1.4.0-alpha07"
+credentials = "1.6.0"
 argon2kt = "1.6.0"
+biometric = "1.4.0-beta01"
 
-# 媒体与多媒体 (Media & Utilities)
+# Media & Content Rendering
 coil = "2.7.0"
-okhttp = "5.5.0"
+palette = "1.1.0"
 markwon = "4.6.2"
+
+# 网络 (Networking)
+okhttp = "5.5.0"
 
 # 相机与扫码 (Camera & Barcode)
 barcodeScanningBundled = "17.3.0"
@@ -65,87 +67,98 @@ cameraxVersion = "1.6.2"
 zxing = "3.5.4"
 
 # 测试 (Testing)
+androidxTestRunner = "1.7.0"
+espressoCore = "3.7.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
-espressoCore = "3.7.0"
-androidxTestRunner = "1.7.0"
 
 [libraries]
 # Android 核心
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
-androidx-palette = { group = "androidx.palette", name = "palette", version.ref = "palette" }
+jackson-core = { group = "com.fasterxml.jackson.core", name = "jackson-core", version.ref = "jacksonCore" }
 
 # 生命周期与架构
-androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
-androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleRuntimeKtx" }
-androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
-androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "hilt-lifecycle-viewmodel-compose" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
 # Jetpack Compose & UI
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+
+# Material components and activity integration
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
-androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
-google-material = { group = "com.google.android.material", name = "material", version.ref = "googleMaterial" }
 androidx-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIcons" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIcons" }
+google-material = { group = "com.google.android.material", name = "material", version.ref = "googleMaterial" }
 
 # Material Adaptive
 androidx-compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive", version.ref = "compose-adaptive" }
 androidx-compose-material3-adaptive-layout = { group = "androidx.compose.material3.adaptive", name = "adaptive-layout", version.ref = "compose-adaptive" }
 androidx-compose-material3-adaptive-navigation = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation", version.ref = "compose-adaptive" }
 
-# 依赖注入 (Hilt)
+# 生命周期与依赖注入
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
-
-# 数据持久化 (Room & DataStore & Serialization)
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
-androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
-androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
-androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
-androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
-protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf-javalite" }
-protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf-javalite" }
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
-kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
-kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
-androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
-sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
-uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
 javax-inject = { module = "javax.inject:javax.inject", version = "1" }
 
-# 凭据管理器 / 自动填充 (Credentials & Autofill)
+# Data & Persistence
+# Room & Paging
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+
+androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
+androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
+
+# SQLite & SQLCipher
+androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
+sqlcipher = { module = "net.zetetic:sqlcipher-android", version.ref = "sqlcipher" }
+
+# Preferences & serialization
+androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf-javalite" }
+protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf-javalite" }
+
+# Runtime & shared utilities
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "uuidCreator" }
+
+# Credentials & Security
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-autofill = { group = "androidx.autofill", name = "autofill", version.ref = "autofill" }
-
-# 安全与加密
-androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 argon2kt = { module = "com.lambdapioneer.argon2kt:argon2kt", version.ref = "argon2kt" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 
-# 媒体与多媒体
-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+# Media & Content Rendering
 coil-core = { module = "io.coil-kt:coil", version.ref = "coil" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
-okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+androidx-palette = { group = "androidx.palette", name = "palette", version.ref = "palette" }
 markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
 markwon-ext-strikethrough = { module = "io.noties.markwon:ext-strikethrough", version.ref = "markwon" }
 markwon-ext-tables = { module = "io.noties.markwon:ext-tables", version.ref = "markwon" }
 markwon-ext-tasklist = { module = "io.noties.markwon:ext-tasklist", version.ref = "markwon" }
+
+# 网络 (Networking)
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 # 相机与扫码
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraxVersion" }
@@ -156,22 +169,29 @@ barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref =
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 
 # 测试相关
-junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestRunner" }
-androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
+# Android Gradle Plugin
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
+# Kotlin compiler plugins
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+
+# Build tooling
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
+
+# Additional plugins
 androidx-room = { id = "androidx.room", version.ref = "room" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }

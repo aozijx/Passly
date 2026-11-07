@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.ktlint)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
@@ -39,7 +40,6 @@ dependencies {
     implementation(project(":runtime:session"))
 
     implementation(libs.androidx.biometric)
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(platform(libs.androidx.compose.bom))

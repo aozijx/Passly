@@ -52,14 +52,11 @@
             android:theme="@style/Theme.Passly.AutofillFill"
             tools:targetApi="34" />
 
-        <!-- 支持 Android 13（API 33）及以上系统的“按应用语言偏好”（Per-App Language）功能。-->
+        <!-- Android 12 及以下由 AppCompat 持久化应用语言；Android 13 及以上由系统保存。 -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
             android:enabled="false"
             android:exported="false">
-            <intent-filter>
-                <action android:name="androidx.appcompat.app.AppLocalesMetadataHolderService" />
-            </intent-filter>
             <meta-data
                 android:name="autoStoreLocales"
                 android:value="true" />

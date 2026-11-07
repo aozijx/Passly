@@ -1,4 +1,5 @@
 plugins {
+    alias(libs.plugins.ktlint)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -70,7 +71,6 @@ dependencies {
     implementation(libs.protobuf.javalite)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.uuid.creator)
-    implementation(libs.coil.core)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)

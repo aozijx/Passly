@@ -19,19 +19,21 @@ configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
 }
 
 subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    pluginManager.withPlugin("org.jlleitschuh.gradle.ktlint") {
+        configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+            version.set(ktlintEngineVersion)
+        }
 
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version.set(ktlintEngineVersion)
-    }
-
-    tasks.matching { it.name == "check" }.configureEach {
-        dependsOn("ktlintCheck")
+        tasks.matching { it.name == "check" }.configureEach {
+            dependsOn("ktlintCheck")
+        }
     }
 }
 
 val ktlintCheckBuildLogic =
     tasks.register<GradleBuild>("ktlintCheckBuildLogic") {
+        group = "verification"
+        description = "Checks Kotlin source and Gradle scripts in buildSrc."
         dir = layout.projectDirectory.dir("buildSrc").asFile
         buildName = "passlyBuildLogicCheck"
         tasks = listOf("ktlintCheck")
@@ -39,16 +41,20 @@ val ktlintCheckBuildLogic =
 
 val ktlintFormatBuildLogic =
     tasks.register<GradleBuild>("ktlintFormatBuildLogic") {
+        group = "formatting"
+        description = "Formats Kotlin source and Gradle scripts in buildSrc."
         dir = layout.projectDirectory.dir("buildSrc").asFile
         buildName = "passlyBuildLogicFormat"
         tasks = listOf("ktlintFormat")
     }
 
+val ktlintProjects = subprojects.filter { it.buildFile.isFile }
+
 tasks.register("ktlintCheckAll") {
     group = "verification"
     description = "Checks Kotlin source and Gradle Kotlin scripts in every project."
     dependsOn("ktlintCheck")
-    dependsOn(subprojects.map { "${it.path}:ktlintCheck" })
+    dependsOn(ktlintProjects.map { "${it.path}:ktlintCheck" })
     dependsOn(ktlintCheckBuildLogic)
 }
 
@@ -56,7 +62,7 @@ tasks.register("ktlintFormatAll") {
     group = "formatting"
     description = "Formats Kotlin source and Gradle Kotlin scripts in every project."
     dependsOn("ktlintFormat")
-    dependsOn(subprojects.map { "${it.path}:ktlintFormat" })
+    dependsOn(ktlintProjects.map { "${it.path}:ktlintFormat" })
     dependsOn(ktlintFormatBuildLogic)
 }
 

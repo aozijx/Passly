@@ -1,9 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity
             android:name="com.aozijx.passly.feature.autofill.attack.AutofillOriginAttackActivity"
             android:exported="true"
             android:label="Autofill Origin Test Target" />
+
         <service
             android:name="com.aozijx.passly.feature.autofill.attack.CaptureAutofillService"
             android:exported="true"
