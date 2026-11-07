@@ -2,14 +2,12 @@
 
 **2026-11-07 复核/排序：** 已完成的 Task 1/3/4/5 从本待办移除，其实现合同与验证记录分别留在[导入工作流](../../features/backup/import.md)、[备份验证](../../features/backup/verification.md)和[操作生命周期](../../features/backup/operation-lifecycle.md)。剩余仅 Task 2，按实现依赖先迁移 FileStore/Service/Adapter 流接口，再迁移格式解析与输出。
 
-**状态：** Task 2 设计草案按用户最新决定改为分块 AEAD 新容器，不保留旧 v1 加密文件导入；待审核后拆分实现计划。Task 4 的内存边界评估已完成并迁入操作生命周期文档。
+**状态：** Task 2 已批准实施：保留数字容器版本 1，使用分块 AEAD 载荷并删除旧单块布局导入；按实现计划逐批完成。Task 4 的内存边界评估已完成并迁入操作生命周期文档。
 
 ## Task 2：将备份导入与导出迁移到端到端流式 I/O
 
-- [ ] 审核 [`流式备份设计`](../specs/2026-11-07-backup-streaming-import-design.md)，确认分块 AEAD v2 framing、256 MiB 文件预算、KDF 参数边界、ZIP/JSON 资源限制与单遍格式识别。
-- [ ] 在删除 `probe(ByteArray)` 前定义 `format = null` 的无整档缓存分派合同：`DefaultBackupOperationGateway.performImport()` 当前固定传 `format = null`，`BackupFormatRegistry.importer(null, payload)` 再对完整 payload 运行各 Adapter 的 `probe()`；Passly/Bitwarden JSON 的区分字段可处于任意 root 属性顺序。明确大型字段先于区分字段时如何保留已消费数据并交给唯一 Adapter，既不整档缓存/复制，也不丢掉现有自动识别；覆盖大数组先行、区分字段末尾、属性重排、嵌套诱饵和歧义 root。
-- [ ] 在审核通过后编写实现计划；先迁移 FileStore、Service 和全部 Adapter 契约，再切换 JSON、Bitwarden、Text 与加密格式的读写实现，删除完整文件 ByteArray API 和旧 v1 单块加密路径，不增加双路 API/兼容转发。
+- [ ] 执行 [`流式备份实施计划`](2026-11-07-backup-streaming-implementation.md)：容器 magic/version 保留 `PSLYBKP1`/1，载荷采用分块 AEAD；root `document`/`items` 单遍分派、完整流式 I/O、迁移测试与旧单块路径删除。
 - [ ] 流式解析时执行输入、记录数、单资源和累计资源限制；失败、取消、认证失败与部分恢复路径清理临时数组，且只有完整认证和 EOF 校验成功后才启动 restore。
-- [ ] 更新正式格式/导入文档与验证矩阵；覆盖新容器认证、截断/尾随数据、错误密码/KDF 参数、资源边界、取消和清理；旧 v1 加密文件按用户要求不提供兼容导入。
+- [ ] 更新正式格式/导入文档与验证矩阵；覆盖容器认证、截断/尾随数据、错误密码/KDF 参数、资源边界、取消和清理；旧单块 version 1 加密文件不提供兼容导入。
 
-**当前证据：** `BackupFileStore.readBytesSafely()` 返回受 256 MiB 限制的完整 `ByteArray`；Adapter probe/decode/encode 与 `BackupArchiveServiceImpl` 继续持有完整 payload。`DefaultBackupOperationGateway.performImport()` 将 `format = null` 传给 `BackupImportRequest`；`BackupArchiveServiceImpl.import(request)` 将 `request.format` 和完整 payload 交给 `BackupFormatRegistry.importer(requestedFormat, payload)`，后者依次运行各 `probe(payload)` 并按分数选唯一 Adapter。现行探测扫描完整字节串，因此能匹配位置任意的字段，却也会把嵌套同名字段当候选信号；设计中的单遍 root parser 尚未说明字段解析早于最终格式判定时如何向选中 Adapter 移交已消费内容。Passly JSON 构造完整文本和 Base64 字符串，Bitwarden 先建完整 `JsonElement` 并重序列化，加密导入会同时持有密文、AES-GCM `doFinal()` 返回的整份 ZIP 与解压资源。现有单资源 16 MiB、资源累计 128 MiB、文档 16 MiB、ZIP 解压累计 128 MiB、100,000 条记录限制需要移到分块读取/追加前检查。
+**当前证据：** 当前 `BackupFileStore.readBytesSafely()` 返回受 256 MiB 限制的完整 `ByteArray`；Adapter probe/decode/encode 与 `BackupArchiveServiceImpl` 继续持有完整 payload。`DefaultBackupOperationGateway.performImport()` 将 `format = null` 传给 `BackupImportRequest`；Service 当前读取整档后调用 score-based `probe(payload)`。现有探测会把嵌套同名字段当候选信号。已批准设计规定 JSON 单遍 root dispatcher 在同一 parser 中构造最终 Bundle：只认 root `document`/`items`，忽略嵌套诱饵，root 两者并存则拒绝；resources/folders 前置时在既有资源/记录上限内累积，保留 `format = null` 自动识别。Passly JSON 当前构造完整文本和 Base64 字符串，Bitwarden 先建完整 `JsonElement` 并重序列化，加密导入同时持有密文、整份 ZIP 与解压资源。现有单资源 16 MiB、资源累计 128 MiB、文档 16 MiB、ZIP 解压累计 128 MiB、100,000 条记录限制将迁移到分块读取/追加前检查。

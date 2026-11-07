@@ -157,6 +157,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [Autofill BottomSheet 认证合同实施计划](superpowers/plans/2026-11-06-autofill-bottom-sheet-auth-contract.md)
 - [Autofill Feature Module 实施计划](superpowers/plans/2026-11-06-autofill-feature-module.md)
 - [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
+- [Backup 端到端流式重构实施计划](superpowers/plans/2026-11-07-backup-streaming-implementation.md)
 
 #### 待办按开发流程归档
 

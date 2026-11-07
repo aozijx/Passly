@@ -2,11 +2,11 @@
 
 **设计依据：** [`2026-11-07-backup-streaming-import-design.md`](../specs/2026-11-07-backup-streaming-import-design.md)（用户已审核批准，Task 2）。
 
-**执行状态：** 实施计划待审核。按 Task 2 整体切换，不保留旧/新双路 API；生产代码、迁移测试和正式文档分成同一 Task 的实现提交与文档提交。
+**执行状态：** 用户已批准执行。容器数字版本号保留为 1，载荷改为分块 AEAD；按 Task 2 整体切换，不保留旧/新双路 API；生产代码、迁移测试和正式文档分成实现提交与文档提交。
 
 ## 实施约束
 
-- Passly 加密备份迁移到新分块 AES-GCM record 协议；删除旧 v1 全量密文/明文 `ByteArray` codec 与旧 v1 文件导入支持，不添加 fallback/兼容转发。
+- Passly 加密备份保留 magic `PSLYBKP1`/数字版本号 1，载荷整体迁移到新分块 AES-GCM record 协议；删除旧单块布局、全量密文/明文 `ByteArray` codec 与旧布局文件导入支持，不添加 fallback/兼容转发。
 - 文件 cap 仍为 256 MiB；资源和 ZIP cap 按设计执行，且全部在分配/扩容前检查。
 - 平台 JCA 按每个有序 record 建立 AES-GCM 操作；tag 校验通过前不得向 ZIP parser 交付该块。terminal 和物理 EOF 校验完成前不得调用 restore。
 - 先写失败用例再实现对应路径；每个变更检查现有调用者、DI、test fakes、格式文档与 source-boundary。不要留下旧 `ByteArray` 通路或临时兼容层。
@@ -29,11 +29,11 @@
 
 1. 先为输入恰好 256 MiB/多 1 byte、输出完整容器 cap、短读/取消/流关闭写边界测试；为 chunk tag、序号、terminal、EOF、KDF 范围、帧长度与数组清理写失败用例。
 2. FileStore 改为受限 `openInput(uri)` 与受限输出流回调，Android 实现直接包住 ContentResolver stream；删除 `readBytesSafely()` / `writeBytes()`。
-3. 将 `EncryptedBackupContainerCodec` 整体替换为唯一的 v2 canonical header + frame codec：validate-before-allocation、每 record 新建/初始化 JCA GCM 操作、固定 1 MiB chunk、独立 16-byte tag、terminal 统计与 EOF 校验。旧 `FORMAT_VERSION=1` parser/encryptor/decryptor 和完整密文类型一并删除。
+3. 将 `EncryptedBackupContainerCodec` 整体替换为唯一的 canonical version 1 header + frame codec：保留 magic/version `PSLYBKP1`/1，validate-before-allocation、每 record 新建/初始化 JCA GCM 操作、固定 1 MiB chunk、独立 16-byte tag、terminal 统计与 EOF 校验。旧单块 version 1 parser/encryptor/decryptor 和完整密文类型一并删除；不得保留旧布局导入兼容。
 4. 将 ZIP codec 改为 `InputStream`/`OutputStream` 逐 entry 读取/写入；每次资源 append 前校验 ZIP entry、文档、单项、累计资源、总展开量和条目数；auth stream 完整 drain 到 terminal 后才返回 Bundle。
 5. 输入、输出、plain chunk、cipher/tag、terminal 与 ZIP scratch buffers 在 `finally` 覆盖；失败时清理已创建资源数组。
 
-**验证：** 新 codec round-trip、每种 tag/metadata tamper、record reorder/重复/跳号、长度伪造、terminal 缺失/篡改、terminal 后尾随数据、错误密码、危险 KDF、截断、exact cap/+1、cancel 和 buffer wipe；旧 v1 fixtures/测试路径删除。
+**验证：** 新分块 codec round-trip、每种 tag/metadata tamper、record reorder/重复/跳号、长度伪造、terminal 缺失/篡改、terminal 后尾随数据、错误密码、危险 KDF、截断、exact cap/+1、cancel 和 buffer wipe；旧单块 version 1 fixtures/测试路径删除。
 
 ## Task 2.2：一次迁移 Service、Registry 与 Adapter 契约
 
@@ -51,7 +51,7 @@
 
 1. 修改 service 编排测试，先证明 import/export 都将 streams 直接交给 store/adapter，成功、普通失败、认证失败、restore 失败和取消时关闭正确的资源并清理 Bundle。
 2. 同一切换中把 `encode(...): ByteArray`、`probe(ByteArray)`、`decode(ByteArray,...)` 改成 stream contracts；所有 call sites、fakes、DI binding 一并迁移，不留下 adapter overload。
-3. 用一次输入遍历的分派替换全量 probe：固定 encrypted v2 magic 选择 encrypted importer；JSON 根对象由 streaming token parser 在同一遍中识别 Passly/Bitwarden 并生成最终 Bundle。删除 `BackupProbe.containsAscii(ByteArray)` 与旧 score-based payload probing。
+3. 用一次输入遍历的分派替换全量 probe：固定 encrypted magic/version `PSLYBKP1`/1 选择 encrypted importer；JSON 根对象由唯一 streaming dispatcher 在同一遍中识别并构造 Passly/Bitwarden Bundle。root `document`/`items` 为互斥强判别字段；前置 resources/folders 在各自限制内累积，嵌套标记忽略。删除 `BackupProbe.containsAscii(ByteArray)` 与旧 score-based payload probing。
 4. service 只在 adapter 已完整验证对应格式后才调用 `restore`；加密 adapter 的完成条件是所有 data tag、terminal tag、total count/bytes 和物理 EOF 均通过。
 5. export 直接把 adapter 输出接到受限 `OutputStream`；操作返回前沿用 `BackupBundle`/资源缓冲所有权合同。
 
@@ -102,7 +102,7 @@
 
 1. Text exporter 改为 `Writer`/`Appendable` 流式逐条渲染；保留文本格式当前输出内容与 resource/favorite exclusion。
 2. Encrypted exporter 把 ZIP writer 接到 chunk encrypting stream；encrypted importer 把 chunk decrypting stream 接到 ZIP parser；确保 ZIP parser close/EOF 行为不跳过 terminal 验证。
-3. 删掉 v1 `EncryptedBackupExporter.export(...): ByteArray`、`EncryptedBackupImporter.import(ByteArray,...)`、整 ZIP 临时数组和旧 round-trip fixtures。
+3. 删掉旧单块 `EncryptedBackupExporter.export(...): ByteArray`、`EncryptedBackupImporter.import(ByteArray,...)`、整 ZIP 临时数组和旧 round-trip fixtures。
 4. 资源及密钥在 Adapter、service 和 Gateway 各自清理其所有数组；fatal `Error`、取消原样传播。
 
 **验证：** Text 输出字段顺序/escaping 与排除合同；encrypted ZIP 与 JSON wire round-trip；空资源/空记录、multi-chunk、每块边界、错误 tag/terminal 和部分 output cleanup。
@@ -113,7 +113,7 @@
 
 - `docs/features/backup/import.md`
 - `docs/features/backup/export.md`
-- 删除 `docs/features/backup/passly-archive-v1.md`；新增 `docs/features/backup/passly-archive-v2.md` 并修正所有链接/文件名，不保留误导性的 v1 current-contract 文档
+- 更新 `docs/features/backup/passly-archive-v1.md` 以记载数字版本 1 的新分块布局、并明确旧单块 version 1 布局不兼容；不创建 v2 文档，修正所有过时链接/描述
 - `docs/features/backup/verification.md`
 - `docs/superpowers/plans/2026-11-06-passly-backup-review-followups.md`
 - `docs/superpowers/plans/2026-10-30-passly-maintainability-todo.md` 中 Task 2 的排序/状态行
@@ -121,14 +121,14 @@
 **步骤：**
 
 1. 搜索 `readBytesSafely`、`writeBytes`、`encode(...): ByteArray`、`decode(ByteArray`、`probe(ByteArray`、`EncryptedBackupContainerCodec` v1、`BackupJson.*String/JsonElement` 与所有 adapter fake，删除剩余旧生产/测试路径。
-2. 对照设计更新格式文档：v2 canonical header/record/nonce/AAD/terminal、KDF cap、输入/输出预算、资源 limits、旧 v1 停止导入事实、tag/EOF 后 restore 的时序。
+2. 对照设计更新格式文档：保留数字版本 1 的 canonical header/record/nonce/AAD/terminal、KDF cap、输入/输出预算、资源 limits、旧单块 version 1 停止导入事实、tag/EOF 后 restore 的时序。
 3. 更新验证矩阵和导入/导出文档，移除已删除类型、v1 fixtures、full-buffer API 与过时测试入口；将 Task 2 标为实现完成并从 TODO 移除，仅在正式 topic docs 留当前实现合同。
 4. 执行定向 Adapter/codec/service tests、`:app:testDebugUnitTest --no-build-cache --no-parallel --max-workers=2`、`verifyArchitecture`、`git diff --check`，分别记录实际通过/未运行结果。
-5. 审查 staged diff，确认实现 commit 只包含 Backup Task 2 生产代码和测试；正式文档/task 状态用独立 `docs(backup): document streaming v2 archive` commit。其它 checkout 改动保持 unstaged。
+5. 审查 staged diff，确认实现 commit 只包含 Backup Task 2 生产代码和测试；正式文档/task 状态用独立 `docs(backup): document chunked v1 archive` commit。其它 checkout 改动保持 unstaged。
 
 ## 预计提交批次
 
 1. `refactor(backup): replace full-buffer archive flow with streaming`：Task 2 生产代码、切换后的 adapter/service/codec tests、旧路径删除、依赖版本目录和 DI 一次完成；不提交不完整过渡 API。
-2. `docs(backup): document streaming v2 archive`：Task 2 正式格式/验证/导入导出文档和完成后的 TODO 清理。
+2. `docs(backup): document chunked v1 archive`：Task 2 正式格式/验证/导入导出文档和完成后的 TODO 清理。
 
 两次提交都应在实施前确认工作区其他 Task 的 staged 状态；只暂存此处列出的 Backup 路径与明确属于 Backup 的 shared contract。Local skills 与其它 Task 文件不进入提交。

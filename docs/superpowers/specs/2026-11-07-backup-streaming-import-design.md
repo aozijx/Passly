@@ -1,6 +1,6 @@
 # Backup 端到端流式重构设计
 
-**状态：** 按用户最新决定修订，待重新审核。加密备份切换为新分块 AEAD 容器；不保留旧 v1 导入兼容路径。
+**状态：** 用户已批准实现。容器保留数字版本号 `1`，其载荷改为分块 AEAD record；旧单块 v1 布局不兼容、不导入。
 
 ## 目标
 
@@ -8,9 +8,9 @@
 
 ## 非目标
 
-- 不改变稳定格式 ID、JSON 字段名、归档 key、KDF 算法标识或 keyed-entry wire keys；Passly 加密容器协议升为分块 record 格式，替换 v1。
+- 不改变稳定格式 ID、JSON 字段名、归档 key、KDF 算法标识或 keyed-entry wire keys；容器 magic/version 仍为 `PSLYBKP1`/`1`，但其加密载荷采用分块 record 格式。
 - 不降低输入文件 cap，也不写临时明文文件。
-- 不保留旧 v1 单块 AES-GCM codec、完整文件 `ByteArray` adapter、双路 API、fallback 或兼容层。
+- 不保留旧单块 AES-GCM codec、完整文件 `ByteArray` adapter、双路 API、fallback 或兼容层。数字版本号虽仍为 1，旧单块 v1 文件不能导入。
 - 不声称精确限制 JVM 对象图驻留字节数；以输入/资源/记录数上限和固定流 buffer 限制处理字节，最终领域对象仍由记录数及内容决定。
 
 ## 当前实现与问题
@@ -21,7 +21,7 @@
 
 ### 备选方案
 
-1. **端到端流式和分块 AES-GCM v2（选择）**：FileStore、Service、所有 Adapter、JSON/Bitwarden、ZIP 和加密容器同一批切换为 streams。平台 JCA 每个有序 record 独立 `AES/GCM/NoPadding` 操作，每块以 `doFinal()` 校验 tag 后才向 ZIP parser 交付；terminal record 认证整条流的 chunk 数/总字节数并要求物理 EOF 后才允许 restore。不引入 Bouncy Castle；移除旧 v1 codec，不做兼容导入。
+1. **端到端流式和分块 AES-GCM（选择，容器版本号仍为 1）**：FileStore、Service、所有 Adapter、JSON/Bitwarden、ZIP 和加密容器同一批切换为 streams。平台 JCA 每个有序 record 独立 `AES/GCM/NoPadding` 操作，每块以 `doFinal()` 校验 tag 后才向 ZIP parser 交付；terminal record 认证整条流的 chunk 数/总字节数并要求物理 EOF 后才允许 restore。不引入 Bouncy Castle；删除旧单块 v1 codec 和导入路径。
 2. **Bouncy Castle 单一长 GCM 流（舍弃）**：引入新密码库；GCM streaming 更新会在最终 tag 校验前输出明文，需要暂存整份明文或额外验证机制。独立 record JCA 直接在块边界完成认证且无完整密文缓存。
 3. **仅在当前 `ByteArray` 内做分块解码（舍弃）**：完整原始文件仍需驻留，全文 String/tree 与整份 ZIP 副本仍存在。
 4. **临时明文文件中转（舍弃）**：解密 ZIP 和 JSON 会落盘，新增明文残留和本地敏感数据边界。
@@ -30,10 +30,9 @@
 
 - `BackupFileStore` 只暴露有界输入流/输出流合同；调用边界拥有并关闭 stream。删除 `readBytesSafely()`、`writeBytes()` 和只服务它们的全量数组封装。
 - Service 在同一计数边界内读取/写入，所有 adapter probe/decode/encode 改为流接口；输入/输出达到 256 MiB 上限前继续读取/写入允许，下一字节到来前拒绝，输出 cap 计算容器 header、全部 record metadata/tag 和 terminal。
-- Registry 不得只看文件前缀识别 JSON：目前 adapter 会根据 root fields 给整份 payload 评分，marker 可以出现在任意 root 属性位置。使用单遍、深度感知 root parser，属性顺序不敏感、忽略嵌套诱饵，并拒绝有歧义的 root shape；移除旧 `probe(ByteArray)`。
+- Registry 不得只看文件前缀识别 JSON：目前 adapter 会根据 root fields 给整份 payload 评分，marker 可以出现在任意 root 属性位置。JSON 由唯一的 root-aware streaming dispatcher 在一次解析中构造最终候选 Bundle，不把已消费 token 移交给另一个 reader；属性顺序不敏感，忽略嵌套诱饵，并拒绝有歧义的 root shape。root `document` 是 Passly 判别字段，root `items` 是 Bitwarden 判别字段；仅在 root 层出现 `document` 和 `items` 两者时报告歧义。`resourcesBase64` 可先于 `document`，解析成受既有 16/128 MiB 限制的 Passly resource accumulator；Bitwarden `folders` 可先于 `items`，保留受 100,000 条记录上限约束的必要 folder ID 索引。解析过程中发现另一格式判别字段时立即拒绝歧义。没有强判别字段则报未知格式。这样主体数组可在判别字段之前出现，无需整档缓存、重开流或删除 `format = null` 自动识别；同一 parser 最终返回对应 Bundle。移除旧 `probe(ByteArray)`。
 
-**待补分派合同：** 正常导入由 `DefaultBackupOperationGateway.performImport()` 以 `format = null` 创建 `BackupImportRequest`；Service 以完整 payload 调 `BackupFormatRegistry.importer(request.format, payload)`，当前 registry 再运行全部 Adapter 的 `probe(payload)`。若 JSON 的格式区分字段位于大型记录数组之后，单遍解析会在选出 Adapter 前先消费可能属于该 Adapter 的主体数据。实现计划必须定义已消费字段如何由同一个 parser/dispatcher 继续生成目标 `BackupBundle`，或明确定义采用的另一种受界方案；不能以小前缀假设、整档缓存/复制、不可重现的双重打开，或删除 `format = null` 自动识别来绕过。验证需把大数组放在区分字段之前，并覆盖末尾判型字段、字段重排、嵌套诱饵及歧义 root。
-- Passly encrypted v2 header 由固定宽度 canonical 字节组成：magic `PSLYBKP2`、version 2、固定 header length、KDF/cipher IDs、Argon2 version/iterations/memoryKiB/parallelism/key bits、salt 长度和 16-byte salt、4-byte nonce prefix、固定 1 MiB chunk size、固定 16-byte tag 长度。unsigned integers 均为 big-endian；header length 与字段常量逐项精确核验。所有字段在分配或派生密钥前做静态硬上限校验；当前 KDF cap 为 iterations `1..10`、memory `8..262144 KiB`、parallelism `1..8`。每次 export 使用新 salt 和随机 nonce prefix。
+- Passly encrypted header 保留 magic `PSLYBKP1` 和 version `1`，header 其余字段由固定宽度 canonical 字节组成：固定 header length、KDF/cipher IDs、Argon2 version/iterations/memoryKiB/parallelism/key bits、salt 长度和 16-byte salt、4-byte nonce prefix、固定 1 MiB chunk size、固定 16-byte tag 长度。unsigned integers 均为 big-endian；header length 与字段常量逐项精确核验。所有字段在分配或派生密钥前做静态硬上限校验；当前 KDF cap 为 iterations `1..10`、memory `8..262144 KiB`、parallelism `1..8`。每次 export 使用新 salt 和随机 nonce prefix。数字版本号仍为 1 不代表兼容原单块 v1 payload；旧布局在 frame 解析时拒绝。
 - 每个 frame 布局固定为 `type(1 byte) | sequence(8 byte) | plaintextLength(4 byte) | ciphertext(plaintextLength) | tag(16 byte)`。整数为 big-endian。Data type 的明文长度 `1..1 MiB`；Nonce 为 `4-byte header prefix || 8-byte big-endian sequence`；AAD 为完整原始 header 字节拼接该 frame 固定 header。Sequence 从 0 连续递增，重复、倒序、跳号、溢出、未规定 type 均拒绝。
 - 唯一 terminal frame 使用保留 type、长度 16；AEAD 加密的 16-byte 明文是 `totalDataFrameCount(8-byte big-endian) || totalPlaintextBytes(8-byte big-endian)`。Terminal 用下一个 sequence 独立 nonce，AAD 编码仍是完整 header 加 frame header。空容器仍必须有 terminal。Terminal tag 通过后必须确认底层输入是物理 EOF；缺 terminal、总量不符、末尾添加任意数据均失败。ZIP parser 达到 ZIP EOF 后，Service 继续 drain record decoder 到 terminal/EOF，不能提前 restore。
 - Importer 每次只读一个有界 frame；校验 sequence、长度、tag 后才把明文块写进 Service 内的私有受限 ZIP/parser。即使各 chunk 已认证，Bundle 在 terminal 与 EOF 全部验证前也不得触发 restore、数据库/文件写入或任何外部副作用。所有失败/取消路径清理私有 Bundle 资源和暂存块。
@@ -65,13 +64,13 @@
 
 ## 密码学边界
 
-Android Conscrypt 的 AES-GCM `update()` 会缓存输入直到 `doFinal()`；Oracle 也指出 `CipherInputStream` 可能不会重抛完整性异常。因此不使用 provider 长流或 `CipherInputStream`。每个有界 v2 frame 单独调用平台 JCA AES-GCM `doFinal()`，只有 tag 通过才释放该块；terminal 认证完整长度和 frame 数并要求物理 EOF。实现源与合同：[AOSP Conscrypt `OpenSSLAeadCipher`](https://android.googlesource.com/platform/external/conscrypt/%2B/22595bfd47b61fc496b95061a08e79c4d4b5bfd0/common/src/main/java/org/conscrypt/OpenSSLAeadCipher.java)、[Oracle `CipherInputStream`](https://docs.oracle.com/en/java/javase/26/docs/api/java.base/javax/crypto/CipherInputStream.html)。
+Android Conscrypt 的 AES-GCM `update()` 会缓存输入直到 `doFinal()`；Oracle 也指出 `CipherInputStream` 可能不会重抛完整性异常。因此不使用 provider 长流或 `CipherInputStream`。每个有界 record 单独调用平台 JCA AES-GCM `doFinal()`，只有 tag 通过才释放该块；terminal 认证完整长度和 frame 数并要求物理 EOF。实现源与合同：[AOSP Conscrypt `OpenSSLAeadCipher`](https://android.googlesource.com/platform/external/conscrypt/%2B/22595bfd47b61fc496b95061a08e79c4d4b5bfd0/common/src/main/java/org/conscrypt/OpenSSLAeadCipher.java)、[Oracle `CipherInputStream`](https://docs.oracle.com/en/java/javase/26/docs/api/java.base/javax/crypto/CipherInputStream.html)。
 
 ## 验收
 
 - 生产 adapter 全部使用 InputStream/OutputStream；静态搜索确认无整档 `ByteArray` 通路、v1 encrypted implementation、双路 fallback 或兼容转发；资源数组只在 Bundle/domain boundary 保留。
 - 256 MiB 输入恰好达到上限可读；第 256 MiB+1 字节在累积前失败并关闭流。输出上限包含 header、record metadata/tag 和 terminal，并在写超限帧前失败。
-- v2 encrypted 往返、wrong password/KDF 越界、header tamper、chunk tag tamper、跨块重排、重复/跳号序号、缺 terminal、total length/count 篡改、错误 frame length、尾部数据、截断、取消与清理覆盖；旧 v1 fixtures/实现不再保留。
+- version 1 分块加密往返、wrong password/KDF 越界、header tamper、chunk tag tamper、跨块重排、重复/跳号序号、缺 terminal、total length/count 篡改、错误 frame length、尾部数据、截断、取消与清理覆盖；旧单块 version 1 fixtures/实现不再保留。
 - JSON/ZIP 的单项/累计边界值与越界、畸形 UTF-8/Base64/JSON/ZIP、重复资源、属性重排/嵌套诱饵、未知格式、Bitwarden 不支持字段和记录数边界均覆盖。资源限额在 accumulator 扩容前执行。
 - encrypted ZIP parser 完成但 terminal 无效/缺失/之后有尾随数据时，不调用 restore；认证完整且输入物理 EOF、ZIP/Bundle 校验通过后 restore 才启动。
 - 取消/普通异常/fatal `Error` 清理暂存块、Bundle 资源和密码副本；部分 export 文件补偿删除结果沿用 Gateway 已记录合同。
