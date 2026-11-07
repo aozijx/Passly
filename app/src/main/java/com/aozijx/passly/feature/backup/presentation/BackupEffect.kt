@@ -28,4 +28,6 @@ internal sealed interface BackupNoticeEffect : BackupEffect {
     data class Failed(
         val operation: BackupOperation,
     ) : BackupNoticeEffect
+
+    data object ExportCleanupFailed : BackupNoticeEffect
 }

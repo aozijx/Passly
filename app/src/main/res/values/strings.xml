@@ -92,6 +92,7 @@
   <string name="backup_error_unknown">操作失败：未知错误</string>
   <string name="backup_directory_permission_ok">目录写入权限正常</string>
   <string name="backup_directory_permission_failed">目录写入失败，请重新选择</string>
+  <string name="backup_export_cleanup_failed">导出失败，未能删除不完整文件；请检查备份位置并手动删除残留文件</string>
   <string name="database_open_error_title">无法打开数据库</string>
   <string name="database_open_error_message">数据库密钥或结构不匹配。请重试；如果问题仍然存在，请关闭应用。</string>
   <string name="database_open_retry_action">重试打开数据库</string>

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.operation
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
@@ -39,6 +40,151 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DefaultBackupOperationGatewayTest {
+    @Test
+    fun `returned export failure exposes incomplete target when deletion returns false`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate).apply { deleteResult = false }
+            var passwordCopy: CharArray? = null
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = object : BackupArchiveService by UnusedBackupService {
+                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> {
+                            passwordCopy = request.password
+                            return AppResult.failure(BackupFailed())
+                        }
+                    },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+            val request = exportRequest().copy(password = OwnedChars.fromString("secret"))
+
+            val result = gateway.exportToUri(request, "content://documents/export", deleteOnFailure = true)
+
+            assertTrue(result is BackupExecutionResult.ExportCleanupFailed)
+            assertEquals(listOf("content://documents/export"), storage.deletedUris)
+            assertTrue(requireNotNull(passwordCopy).all { it == '\u0000' })
+        }
+
+    @Test
+    fun `returned export failure exposes ordinary deletion exception`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val deletionFailure = IOException("delete failed")
+            val storage = RecordingStorageSupport(gate).apply { deleteFailure = deletionFailure }
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = object : BackupArchiveService by UnusedBackupService {
+                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                    },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val result = gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+
+            assertTrue(result is BackupExecutionResult.ExportCleanupFailed)
+            assertTrue("cleanup exception must be retained", (result as BackupExecutionResult.ExportCleanupFailed).cleanupFailure === deletionFailure)
+        }
+
+    @Test
+    fun `returned export failure remains ordinary failure when cleanup succeeds`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate)
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = object : BackupArchiveService by UnusedBackupService {
+                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                    },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val result = gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertEquals(listOf("content://documents/export"), storage.deletedUris)
+        }
+
+    @Test
+    fun `returned export failure does not delete a caller-owned target when cleanup is disabled`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate)
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = object : BackupArchiveService by UnusedBackupService {
+                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                    },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val result = gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = false)
+
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertTrue(storage.deletedUris.isEmpty())
+        }
+
+    @Test
+    fun `returned export failure propagates cancellation from cleanup`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val cancellation = CancellationException("cleanup cancelled")
+            val storage = RecordingStorageSupport(gate).apply { deleteFailure = cancellation }
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = object : BackupArchiveService by UnusedBackupService {
+                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                    },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            assertCancellation(cancellation) {
+                gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+            }
+        }
+
+    @Test
+    fun `returned export failure propagates fatal cleanup error`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val fatal = AssertionError("fatal delete failure")
+            val storage = RecordingStorageSupport(gate).apply { deleteFailure = fatal }
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = object : BackupArchiveService by UnusedBackupService {
+                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                    },
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = noopErrorReporter,
+                )
+
+            val thrown =
+                try {
+                    gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
+                    error("Expected cleanup fatal error")
+                } catch (failure: AssertionError) {
+                    failure
+                }
+
+            assertSame(fatal, thrown)
+        }
+
     @Test
     fun `operation request is independent from presentation state`() {
         val request = exportRequest()

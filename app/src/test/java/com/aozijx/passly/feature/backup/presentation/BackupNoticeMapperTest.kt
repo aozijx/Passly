@@ -19,6 +19,7 @@ class BackupNoticeMapperTest {
                 BackupNoticeEffect.DirectoryWritable to
                     NoticeCode.BACKUP_DIRECTORY_CHECK_COMPLETED,
                 BackupNoticeEffect.Failed(BackupOperation.EXPORT) to NoticeCode.BACKUP_EXPORT_FAILED,
+                BackupNoticeEffect.ExportCleanupFailed to NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED,
                 BackupNoticeEffect.Failed(BackupOperation.IMPORT) to NoticeCode.BACKUP_IMPORT_FAILED,
                 BackupNoticeEffect.Failed(BackupOperation.DIRECTORY_CHECK) to
                     NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED,

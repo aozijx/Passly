@@ -51,6 +51,11 @@ internal sealed interface BackupExecutionResult {
     data class Failure(
         val error: AppError,
     ) : BackupExecutionResult
+
+    data class ExportCleanupFailed(
+        val error: AppError,
+        val cleanupFailure: Throwable,
+    ) : BackupExecutionResult
 }
 
 internal enum class BackupOperation {

@@ -85,6 +85,7 @@
   <string name="backup_error_unknown">Operation failed: Unknown error</string>
   <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
   <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
+  <string name="backup_export_cleanup_failed">Export failed and the incomplete file could not be deleted. Check the backup location and remove any partial file.</string>
   <!-- Database errors -->
   <string name="database_open_error_title">Unable to open database</string>
   <string name="database_open_error_message">The database key or schema doesn’t match. Try again; if the problem continues, close the app.</string>

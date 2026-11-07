@@ -145,6 +145,9 @@ internal class DefaultBackupOperationGateway
                         if (deleteOnFailure) {
                             val cleanupFailure = tryDeleteFailedExport(targetUri)
                             if (cleanupFailure is CancellationException || cleanupFailure is Error) throw cleanupFailure
+                            if (cleanupFailure != null) {
+                                return BackupExecutionResult.ExportCleanupFailed(result.error, cleanupFailure)
+                            }
                         }
                         BackupExecutionResult.Failure(result.error)
                     }

@@ -276,6 +276,11 @@ internal class BackupViewModel
                     emitEffect(owner, BackupNoticeEffect.Failed(operation))
                     mutateIfExecuting(operation, BackupMutation.OperationFailed(operation, result.error))
                 }
+
+                is BackupExecutionResult.ExportCleanupFailed -> {
+                    emitEffect(owner, BackupNoticeEffect.ExportCleanupFailed)
+                    mutateIfExecuting(operation, BackupMutation.OperationFailed(operation, result.error))
+                }
             }
         }
 

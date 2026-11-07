@@ -71,6 +71,14 @@ fun defaultNoticeCodePolicy(code: NoticeCode): NoticeCodePolicy =
             )
         }
 
+        NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED -> {
+            NoticeCodePolicy(
+                NoticeTopic.BACKUP,
+                NoticeLevel.ERROR,
+                DeliveryPolicy.PREFER_IN_APP,
+            )
+        }
+
         NoticeCode.BACKUP_IMPORT_COMPLETED -> {
             NoticeCodePolicy(
                 NoticeTopic.BACKUP,

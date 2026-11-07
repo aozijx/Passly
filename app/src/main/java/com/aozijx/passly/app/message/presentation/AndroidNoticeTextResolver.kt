@@ -73,6 +73,10 @@ class AndroidNoticeTextResolver
                     R.string.backup_error_unknown
                 }
 
+                NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED -> {
+                    R.string.backup_export_cleanup_failed
+                }
+
                 NoticeCode.BACKUP_IMPORT_COMPLETED -> {
                     R.string.backup_import_success
                 }

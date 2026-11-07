@@ -1,8 +1,8 @@
 # Passly Backup 文档扫描待办
 
-**2026-11-07 复核/排序：** Tasks 1/3/5 retained；Task 1 fatal 边界与 Task 3 service 编排测试已实现并验证；Task 4 为敏感 String 驻留评估，不升级为外泄结论。Task 5 与主待办 41 共用 Gateway 结果合同；下一步落实 Task 2 前置/累计预算。已有 ZIP 单项/累计 cap 和 bundle 限制，不描述为完全无上限；缺口是物化前拒绝及峰值副本预算。
+**2026-11-07 复核/排序：** Tasks 1/3/5 retained；Task 1 fatal 边界与 Task 3 service 编排测试已实现并验证；Task 5 清理失败反馈已实现并补测试，但本次运行被无关认证测试源码编译错误阻断。Task 4 为敏感 String 驻留评估，不升级为外泄结论。下一步落实 Task 2 前置/累计预算；已有 ZIP 单项/累计 cap 和 bundle 限制，不描述为完全无上限；缺口是物化前拒绝及峰值副本预算。
 
-**状态：** 待实现与验证。条目来自 2026-11-06 对归档调用链的静态核对；本文件记录问题和验收，不代表已修改运行实现。
+**状态：** Task 1/3 已实现并有针对性验证；Task 5 已实现，测试执行受无关源码编译错误阻断；Task 2/4 待实现与评估。条目来自对归档调用链的静态核对；本文件记录问题和验收进展。
 
 ## Task 1：兼容导入不能把 fatal Error 当成无效条目
 
@@ -43,8 +43,8 @@
 
 ## Task 5：不要静默丢弃导出结果失败后的目标清理错误
 
-- [ ] 明确 `DefaultBackupOperationGateway.performExport(request, targetUri, deleteOnFailure)` 在 `BackupArchiveService.export(...)` 返回 `AppResult.Failure` 且 `deleteOnFailure == true` 时的清理结果合同。Gateway 应保留主导出失败，同时让普通清理失败或 `deleteDocument(targetUri) == false` 可被页面 owner 感知；不得声称不完整文件已删除，也不得将该情况当作普通可重试失败而不说明可能残留的目标文件。
-- [ ] 为 Archive Service 返回 `AppResult.Failure` 的路径覆盖删除成功、删除返回 false、删除抛普通异常、取消与 fatal `Error`；分别断言 Gateway 结果、清理/主错误优先级和 suppressed 关系、页面提示与密码副本擦除。区分 Service 返回 Failure 与抛异常的路径，后者当前由 Gateway catch 分支处理，不能用它替代本任务覆盖。
-- [ ] 更新备份操作结果合同与工作流文档；保持 `deleteOnFailure == false` 的指定目标语义不变，并保留取消传播和 fatal `Error` 传播。
+- [x] 明确 `DefaultBackupOperationGateway.performExport(request, targetUri, deleteOnFailure)` 在 `BackupArchiveService.export(...)` 返回 `AppResult.Failure` 且 `deleteOnFailure == true` 时的清理结果合同。Gateway 保留主导出错误，并通过专门结果和页面提示暴露普通清理失败或删除返回 false，说明目标可能残留。
+- [x] 为 Archive Service 返回 `AppResult.Failure` 的路径覆盖删除成功、删除返回 false、删除抛普通异常、取消与 fatal `Error`；另验证删除禁用时不删目标，及密码副本最终擦除。异常抛出路径仍与返回 Failure 路径分别覆盖。
+- [x] 更新备份操作结果合同与工作流文档；保持 `deleteOnFailure == false` 的指定目标语义不变，并保留取消传播和 fatal `Error` 传播。
 
-**当前证据（2026-11-06）：** `BackupArchiveServiceImpl.export(request)` 在 `AppResult.runSuspendCatching` 中执行格式选择、授权后的快照/编码/写入，普通异常以 `AppResult.Failure` 返回并调用 `report(error, "backup_export")`。`DefaultBackupOperationGateway.performExport()` 收到该结果后，在 `deleteOnFailure` 为真时调用 `tryDeleteFailedExport(targetUri)`；该 helper 在 `NonCancellable` 中删除，删除返回 false 会构造 `IOException`，抛出的异常也作为 `Throwable` 返回。当前 `AppResult.Failure` 分支只重抛清理阶段的 `CancellationException`/fatal `Error`，普通清理异常被忽略，随后只返回 `BackupExecutionResult.Failure(result.error)`。相邻 catch 分支会以 `preferBackupCleanupFailure(error, cleanupFailure)` 合并普通异常，因此两种失败形态行为不同。`DefaultBackupOperationGatewayTest` 已覆盖取消/异常抛出时的删除与 fatal 清理优先级，但没有覆盖 Service 返回 `AppResult.Failure` 后普通删除失败或 `false`；这会让可能仍存在的部分文件没有独立的 UI 提示。当前仅记录待实现/验证项，未修改生产逻辑。
+**实现与验证（2026-11-07）：** `AppResult.Failure` 分支现返回 `ExportCleanupFailed(originalError, cleanupFailure)`，只在补偿删除失败时触发；ViewModel 仍用原导出错误更新失败状态，并发出独立残留提示。已添加删除返回 false、普通异常、删除成功、`deleteOnFailure == false`、取消和 fatal `Error` 的 Gateway 测试，以及残留提示的通知码映射测试；运行定向任务时 `:app:compileDebugUnitTestKotlin` 被无关的 `UnlockViewModelTest.kt:39` SAM 编译错误阻断，故本任务测试尚未执行。Service 抛异常路径继续维持原有 cleanup 主次与 suppressed 规则。对应工作流合同见[操作生命周期](../../features/backup/operation-lifecycle.md)。

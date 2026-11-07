@@ -26,6 +26,8 @@ internal fun BackupNoticeEffect.toNoticeCode(): NoticeCode =
                 BackupOperation.DIRECTORY_CHECK -> NoticeCode.BACKUP_DIRECTORY_CHECK_FAILED
             }
         }
+
+        BackupNoticeEffect.ExportCleanupFailed -> NoticeCode.BACKUP_EXPORT_CLEANUP_FAILED
     }
 
 internal fun BackupNoticeEffect.toNoticeArguments(): Map<ArgumentKey, ArgumentValue> {
