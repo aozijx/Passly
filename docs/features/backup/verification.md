@@ -27,14 +27,14 @@ version 和 container version 的测试必须分开。
 | 归档字段映射 | [`KeyedEntryArchiveRoundTripTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveRoundTripTest.kt) | `KeyedEntryArchiveMapper.toArchiveRecord()` / `toDomainEntry()` 的银行卡、OTP 和稳定键往返；对应断言包括 `serializedBankCardUsesStableKeyedFieldsAndRoundTrips`、`otpRoundTripPreservesEveryTypeAlgorithmAndEncoding`。 |
 | Canonical 文档和容器 | [`BackupCodecTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupCodecTest.kt) | JSON、ZIP、Argon2id/AES-GCM 容器的往返、认证头、篡改、错误密码、危险 KDF 参数和输入上限拒绝。 |
 | 严格/兼容规划 | [`BackupImportPlannerTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlannerTest.kt) | 未知字段在兼容策略中忽略、未知/结构无效 Entry 在兼容模式跳过而严格模式拒绝、兼容验证只将 `IllegalArgumentException` 计作条目无效并传播 fatal `Error`、重复顶层 Link ID 两种策略都拒绝。 |
+| Service 编排 | [`BackupArchiveServiceImplTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImplTest.kt) | 导出选项按请求与 Adapter 能力裁剪、导入格式与 payload/密码/策略路由、恢复模式与结果摘要合并、密码必填校验；覆盖成功/普通失败/取消后的字节清理与错误报告。 |
 | wire 值完整性 | [`BackupArchiveKeyRegistryTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistryTest.kt)、[`KeyedBackupWireModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/KeyedBackupWireModelTest.kt) | Registry 覆盖领域类型与稳定键、模型不依赖数据库 payload 类型。 |
 | 上层操作与部分文件清理 | [`DefaultBackupOperationGatewayTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGatewayTest.kt)、`BackupCreatedDocumentCleanupTest`、`BackupWriteTestCleanupTest` | 目标 URI 的授权范围、取消传播、部分导出文件删除和清理错误优先级；这不直接证明 archive service 内部的 Adapter 参数传递。 |
 | 恢复文件 journal | [`RestoreFileJournalTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/RestoreFileJournalTest.kt)、`RoomBackupFaviconResourceTest` | Room 恢复时附件/图标文件变更的 journal 补偿和资源引用保护。 |
 
-`BackupArchiveServiceImpl.export(request)` 和 `import(request)` 当前没有对应的专用测试类。现有 Codec、Planner、Gateway
-测试分别覆盖相邻组件，但未直接断言 service 如何把 `BackupExportRequest.options` 变成
-`BackupSnapshotReadOptions`、将 `targetUri/sourceUri` 传入 FileStore、把 `mode/strategy/password` 传给恢复或 Adapter，
-以及在成功、普通失败与取消后清零 `payload`、编码结果和 bundle 资源。此验证缺口排入[备份扫描待办 Task 3](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)。
+`BackupArchiveServiceImplTest` 直接断言 `BackupExportRequest.options` 到 `BackupSnapshotReadOptions` 的能力裁剪、
+URI/格式/密码/策略/导入模式的流向、结果摘要合并，以及 service 所拥有的 encoded payload 和 bundle 资源字节
+在成功、普通失败与取消后的清理。它不代替 Codec、Planner、Gateway、Room 或 Android provider 的组件测试。
 
 严格策略和兼容策略共享同一 canonical 校验合同，但不能仅凭 `BackupImportPlannerTest` 推断每个格式 Adapter 的
 异常映射、密码传递和资源清理都已覆盖。修改 Adapter 时还需分别核对 `PasslyJsonFormatAdapter.decode()`、

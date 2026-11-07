@@ -1,6 +1,6 @@
 # Passly Backup 文档扫描待办
 
-**2026-11-07 复核/排序：** Tasks 1/2/3/5 retained；Task 4 为敏感 String 驻留评估，不升级为外泄结论。先按主待办 Task 86 恢复反馈基线；Task 5 与主待办 41 共用 Gateway 结果合同，Task 1 fatal 边界已实现并验证；下一步落实 Task 2 前置/累计预算与 Task 3 编排测试。已有 ZIP 单项/累计 cap 和 bundle 限制，不描述为完全无上限；缺口是物化前拒绝及峰值副本预算。
+**2026-11-07 复核/排序：** Tasks 1/3/5 retained；Task 1 fatal 边界与 Task 3 service 编排测试已实现并验证；Task 4 为敏感 String 驻留评估，不升级为外泄结论。Task 5 与主待办 41 共用 Gateway 结果合同；下一步落实 Task 2 前置/累计预算。已有 ZIP 单项/累计 cap 和 bundle 限制，不描述为完全无上限；缺口是物化前拒绝及峰值副本预算。
 
 **状态：** 待实现与验证。条目来自 2026-11-06 对归档调用链的静态核对；本文件记录问题和验收，不代表已修改运行实现。
 
@@ -25,13 +25,13 @@
 
 ## Task 3：覆盖 BackupArchiveService 编排的参数与清理合同
 
-- [ ] 新增针对 `BackupArchiveServiceImpl.export(request)` 的专用单测：验证 `request.format/password/options/targetUri` 分别流向 Registry、`validatePassword`、`BackupSnapshotReadOptions`、Adapter 和 `BackupFileStore.writeBytes`；特别断言 `includeIcons` 与 `includeAttachments` 同时受请求选项和 Adapter 能力限制，其他筛选项按请求传递。
-- [ ] 新增针对 `BackupArchiveServiceImpl.import(request)` 的专用单测：验证 `sourceUri` 传给 `readBytesSafely`，`format + payload` 传给 probe 分派，`password/strategy` 传给 decode，`bundle + mode` 传给 `restore`，并验证 `BackupImportResult` 合并 restore 计数与兼容摘要。
-- [ ] 通过可观察 ByteArray/资源引用断言成功、decode/restore 普通失败和取消路径的 payload、encoded bytes、bundle resource data 清理；确认失败才调用 `AppErrorReporter.report`，report operation 分别为 `backup_export` 与 `backup_import`，且取消不会伪装成普通失败。
-- [ ] 保留组件测试职责：Codec 证明 wire/container，Planner 证明策略筛选，Gateway 证明授权/目标清理；Service 测试只验证真实编排与跨组件参数合同，不复制底层编解码用例。
-- [ ] 更新 [`备份验证要求`](../../features/backup/verification.md) 的测试映射，并验证新增测试能在不依赖 Android 文件 provider、Room 或真实 KDF 慢路径的情况下稳定运行。
+- [x] 新增针对 `BackupArchiveServiceImpl.export(request)` 的专用单测：验证 `request.format/password/options/targetUri` 分别流向 Registry、`validatePassword`、`BackupSnapshotReadOptions`、Adapter 和 `BackupFileStore.writeBytes`；特别断言 `includeIcons` 与 `includeAttachments` 同时受请求选项和 Adapter 能力限制，其他筛选项按请求传递。
+- [x] 新增针对 `BackupArchiveServiceImpl.import(request)` 的专用单测：验证 `sourceUri` 传给 `readBytesSafely`，`format + payload` 传给 probe 分派，`password/strategy` 传给 decode，`bundle + mode` 传给 `restore`，并验证 `BackupImportResult` 合并 restore 计数与兼容摘要。
+- [x] 通过可观察 ByteArray/资源引用断言成功、decode/restore 普通失败和取消路径的 payload、encoded bytes、bundle resource data 清理；确认失败才调用 `AppErrorReporter.report`，report operation 分别为 `backup_export` 与 `backup_import`，且取消不会伪装成普通失败。
+- [x] 保留组件测试职责：Codec 证明 wire/container，Planner 证明策略筛选，Gateway 证明授权/目标清理；Service 测试只验证真实编排与跨组件参数合同，不复制底层编解码用例。
+- [x] 更新 [`备份验证要求`](../../features/backup/verification.md) 的测试映射，并验证新增测试能在不依赖 Android 文件 provider、Room 或真实 KDF 慢路径的情况下稳定运行。
 
-**当前证据（2026-11-06）：** `app/src/test` 有 `BackupCodecTest`、`BackupImportPlannerTest`、`DefaultBackupOperationGatewayTest` 和 Room 文件 journal 测试，但没有 `BackupArchiveServiceImpl` 对应测试文件。Service 本身负责格式选择、选项能力裁剪、参数传递、资源/输入清零和错误报告；相邻单测分别覆盖这些组件，却没有端到端断言上述拼接合同。此项为测试覆盖缺口，不是已确认运行时故障。
+**实现与验证（2026-11-07）：** 新增 `BackupArchiveServiceImplTest` 8 项，不使用 Android provider、Room、真实 KDF 或 UI 慢路径。覆盖导出请求/能力裁剪、导入格式 probe 与参数路由、恢复摘要合并、必填密码、编码/读取/资源字节在成功/普通失败/取消后的清零，以及失败报告和取消传播；`:app:testDebugUnitTest --tests "com.aozijx.passly.feature.backup.internal.archive.BackupArchiveServiceImplTest" --no-build-cache --no-parallel --max-workers=2` 通过。测试职责映射见[备份验证](../../features/backup/verification.md)。
 
 ## Task 4：评估备份口令在 Compose String 投影中的驻留范围
 
