@@ -46,6 +46,7 @@ import com.aozijx.passly.security.dek.FieldKeyManager
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
 import java.lang.reflect.Proxy
+import java.security.SecureRandom
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -169,6 +170,7 @@ class EntryRevisionRestoreTransactionTest {
                 bootstrap,
                 DekManager(bootstrap, fieldKeyManager, unusedPort<Logger>()),
                 CoroutineScope(Dispatchers.Unconfined),
+                SecureRandom(),
             )
         val store = SecretFieldStore(SecretFieldCodec(SensitiveFieldEncryptor(manager)), bundleCodec, DatabaseClock())
         val activityWriter = EntryActivityWriter()

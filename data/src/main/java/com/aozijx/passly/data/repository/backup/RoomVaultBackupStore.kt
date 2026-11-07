@@ -2,6 +2,7 @@ package com.aozijx.passly.data.repository.backup
 
 import android.content.Context
 import com.aozijx.passly.core.crypto.AttachmentContentProtector
+import com.aozijx.passly.core.error.model.SessionModeRestricted
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
@@ -55,7 +56,9 @@ internal class RoomVaultBackupStore
         private val logger: Logger,
     ) : VaultBackupStore {
         override suspend fun read(options: VaultBackupReadOptions): VaultBackupSnapshot =
-            databaseSession.query {
+            databaseSession.queryFullVault(
+                onDenied = { throw SessionModeRestricted() },
+            ) {
                 val selectedEntities =
                     entryQueryDao()
                         .getAll()
@@ -181,7 +184,9 @@ internal class RoomVaultBackupStore
                     var existingEntryCount = 0
 
                     try {
-                        databaseSession.transaction {
+                        databaseSession.transactionFullVault(
+                            onDenied = { throw SessionModeRestricted() },
+                        ) {
                             if (mode == VaultBackupRestoreMode.OVERWRITE) clearAllVaultData()
 
                             snapshot.entries.forEach { sourceEntry ->

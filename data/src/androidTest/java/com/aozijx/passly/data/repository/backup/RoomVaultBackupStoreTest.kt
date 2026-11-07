@@ -52,6 +52,8 @@ import com.aozijx.passly.security.dek.SensitiveDataKeyManager
 import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
 import java.io.File
 import java.security.MessageDigest
+import java.security.SecureRandom
+import javax.inject.Provider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,6 +72,7 @@ import org.junit.runner.RunWith
 class RoomVaultBackupStoreTest {
     private lateinit var context: Context
     private lateinit var session: AppDatabaseSession
+    private lateinit var access: SecureSessionAccessState
     private lateinit var fieldKeyManager: FieldKeyManager
     private lateinit var store: RoomVaultBackupStore
 
@@ -79,11 +82,13 @@ class RoomVaultBackupStoreTest {
         context = ApplicationProvider.getApplicationContext()
         context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
         val logger = NoOpLogger
+        access = TestSessionAccess()
         session =
             AppDatabaseSession(
                 resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                 keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                 eventLogger = DatabaseSessionEventLogger(logger),
+                accessState = Provider { access },
             )
         assertEquals(null, runBlocking { session.unlock() })
         fieldKeyManager = FieldKeyManager().apply { deriveAndSet(DATABASE_KEY) }
@@ -93,6 +98,7 @@ class RoomVaultBackupStoreTest {
                 bootstrapStore,
                 DekManager(bootstrapStore, fieldKeyManager, logger),
                 CoroutineScope(Dispatchers.Unconfined),
+                SecureRandom(),
             )
         val secretStore =
             SecretFieldStore(
@@ -100,7 +106,6 @@ class RoomVaultBackupStoreTest {
                 SecretBundleCodec(FieldEncryptor(fieldKeyManager, AesGcmCryptoEngine())),
                 DatabaseClock(),
             )
-        val access = TestSessionAccess()
         val attachmentGc = AttachmentResourceGarbageCollector(context, session, access, logger)
         store =
             RoomVaultBackupStore(
@@ -155,7 +160,7 @@ class RoomVaultBackupStoreTest {
 
             assertEquals(0, result.importedEntryCount)
             assertEquals(1, result.existingEntryCount)
-            assertEquals("Keep", session.query { entryQueryDao().getById("existing")?.title })
+            assertEquals("Keep", session.queryForMaintenance { entryQueryDao().getById("existing")?.title })
         }
 
     @Test
@@ -171,8 +176,8 @@ class RoomVaultBackupStoreTest {
 
             assertEquals(1, result.importedEntryCount)
             assertEquals(0, result.existingEntryCount)
-            assertFalse(session.query { entryQueryDao().exists("old") })
-            assertEquals("New", session.query { entryQueryDao().getById("new")?.title })
+            assertFalse(session.queryForMaintenance { entryQueryDao().exists("old") })
+            assertEquals("New", session.queryForMaintenance { entryQueryDao().getById("new")?.title })
         }
 
     @Test
@@ -234,7 +239,7 @@ class RoomVaultBackupStoreTest {
 
             store.restore(snapshot(entries = listOf(entry), resources = listOf(icon)), VaultBackupRestoreMode.OVERWRITE)
 
-            val restoredPath = requireNotNull(session.query { entryQueryDao().getById(entry.id.value)?.iconCustomReference })
+            val restoredPath = requireNotNull(session.queryForMaintenance { entryQueryDao().getById(entry.id.value)?.iconCustomReference })
             assertTrue(File(restoredPath).isFile)
             assertTrue(restoredPath.contains("favicon_restored_"))
             val restored =
@@ -292,8 +297,8 @@ class RoomVaultBackupStoreTest {
                 }
 
             assertNotNull(failure)
-            assertTrue(session.query { entryQueryDao().exists("existing") })
-            assertFalse(session.query { entryQueryDao().exists("entry-rollback") })
+            assertTrue(session.queryForMaintenance { entryQueryDao().exists("existing") })
+            assertFalse(session.queryForMaintenance { entryQueryDao().exists("entry-rollback") })
             assertTrue(
                 VaultResourcePaths.vaultImagesDir(context)
                     .listFiles()
@@ -306,7 +311,7 @@ class RoomVaultBackupStoreTest {
         id: String,
         title: String,
         deletedAt: Long? = null,
-    ) = session.transaction {
+    ) = session.transactionForMaintenance {
         entryCommandDao().insertStrict(
             EntryEntity(
                 entryId = id,
@@ -322,7 +327,7 @@ class RoomVaultBackupStoreTest {
     private suspend fun insertNote(
         id: String,
         title: String,
-    ) = session.transaction {
+    ) = session.transactionForMaintenance {
         entryCommandDao().insertStrict(
             EntryEntity(
                 entryId = id,
@@ -355,7 +360,7 @@ class RoomVaultBackupStoreTest {
         )
 
     private class TestSessionAccess : SecureSessionAccessState {
-        override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Locked)
+        override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
 
         override fun isUnlocked() = true
     }

@@ -38,7 +38,7 @@ internal class DatabaseCleanerImpl
         private val databaseSession: AppDatabaseSession,
     ) : DatabaseCleaner {
         override suspend fun clearAllData(): DatabaseClearResult =
-            databaseSession.transaction { clearAllVaultData() }
+            databaseSession.transactionForMaintenance { clearAllVaultData() }
     }
 
 /** Clears user data in the caller's existing transaction, without re-entering the session. */

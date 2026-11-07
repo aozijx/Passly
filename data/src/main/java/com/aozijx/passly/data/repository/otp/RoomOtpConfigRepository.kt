@@ -2,7 +2,6 @@ package com.aozijx.passly.data.repository.otp
 
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.otp.OtpResult
@@ -15,21 +14,20 @@ internal class RoomOtpConfigRepository
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val secretFieldStore: SecretFieldStore,
         private val hotpCodeConsumption: HotpCodeConsumptionTransaction,
     ) : OtpConfigRepository {
         override suspend fun getConfig(entryId: String): OtpConfig? {
-            if (!sessionState.hasFullSecureSessionAccess()) return null
-            return databaseSession.query {
+            return databaseSession.queryFullVault(
+                onDenied = { null },
+            ) {
                 secretFieldStore.readOtpConfig(this, entryId)
             }
         }
 
         override suspend fun consumeHotpCode(entryId: String): OtpResult {
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                return OtpResult.Failure(OtpGenerationError.InvalidSecret)
-            }
-            return databaseSession.transaction { hotpCodeConsumption.consume(this, entryId) }
+            return databaseSession.transactionFullVault(
+                onDenied = { OtpResult.Failure(OtpGenerationError.InvalidSecret) },
+            ) { hotpCodeConsumption.consume(this, entryId) }
         }
     }

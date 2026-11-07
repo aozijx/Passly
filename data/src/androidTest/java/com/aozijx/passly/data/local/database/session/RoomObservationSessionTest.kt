@@ -44,6 +44,7 @@ import com.aozijx.passly.runtime.session.SessionLockedException
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Provider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -79,6 +80,49 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class RoomObservationSessionTest {
     @Test
+    fun databaseCommandsRecheckAuthorizationAfterLeaseAcquisition() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val access = AccessAfterFirstCheck()
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
+                )
+
+            try {
+                assertNull(session.unlock())
+
+                val queryResult =
+                    session.queryFullVault(
+                        onDenied = { "authorization revoked" },
+                    ) {
+                        throw AssertionError("query block ran after authorization was revoked")
+                    }
+                assertEquals("authorization revoked", queryResult)
+                assertEquals(2, access.checks)
+
+                access.checks = 0
+                val transactionResult =
+                    session.transactionFullVault(
+                        onDenied = { "authorization revoked" },
+                    ) {
+                        throw AssertionError("transaction block ran after authorization was revoked")
+                    }
+                assertEquals("authorization revoked", transactionResult)
+                assertEquals(2, access.checks)
+            } finally {
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun activePagingRestartsOnceAfterDatabaseResetAndKeepsQueryFilters() =
         runBlocking {
@@ -86,6 +130,7 @@ class RoomObservationSessionTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
+            val access = FixedAuthenticatedAccess()
             val failReopen = AtomicBoolean(false)
             val session =
                 AppDatabaseSession(
@@ -96,10 +141,10 @@ class RoomObservationSessionTest {
                             DATABASE_KEY.copyOf()
                         },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
                 )
-            val access = FixedAuthenticatedAccess()
             val controller = VaultDatabaseResetController(context, session, logger)
-            val store = RoomEntryPagingStore(session, access)
+            val store = RoomEntryPagingStore(session)
             val query =
                 EntryListQuery(
                     searchText = "needle",
@@ -149,7 +194,7 @@ class RoomObservationSessionTest {
                 awaitPageEmissions(pageEmissions, 1)
                 assertNull(session.unlock())
                 awaitPageEmissions(pageEmissions, 2)
-                session.transaction {
+                session.transactionForMaintenance {
                     entryCommandDao().insertStrict(
                         EntryEntity(entryId = "before-match", entryType = EntryType.LOGIN, title = "Needle before"),
                     )
@@ -171,7 +216,7 @@ class RoomObservationSessionTest {
                 assertEquals(beforeResetEmissions + 2, pageEmissions.get())
                 assertEquals(1, pageSourceGenerations.get())
 
-                session.transaction {
+                session.transactionForMaintenance {
                     entryCommandDao().insertStrict(
                         EntryEntity(entryId = "after-match", entryType = EntryType.LOGIN, title = "Needle after"),
                     )
@@ -206,11 +251,13 @@ class RoomObservationSessionTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
+            val access = FixedAuthenticatedAccess()
             val session =
                 AppDatabaseSession(
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                     keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { FixedAuthenticatedAccess() },
                 )
             val transactionStarted = CompletableDeferred<Unit>()
             val releaseTransaction = CompletableDeferred<Unit>()
@@ -219,7 +266,7 @@ class RoomObservationSessionTest {
                 assertNull(session.unlock())
                 val transaction =
                     async(Dispatchers.IO) {
-                        session.transaction {
+                        session.transactionForMaintenance {
                             entryCommandDao().insertStrict(EntryEntity(entryId = "lease-entry", title = "Committed"))
                             transactionStarted.complete(Unit)
                             releaseTransaction.await()
@@ -234,7 +281,7 @@ class RoomObservationSessionTest {
 
                 assertFalse(transaction.isCompleted)
                 assertFalse(sealing.isCompleted)
-                val rejectedRead = runCatching { session.query { entryQueryDao().getById("lease-entry") } }
+                val rejectedRead = runCatching { session.queryForMaintenance { entryQueryDao().getById("lease-entry") } }
                 assertTrue(rejectedRead.exceptionOrNull() is SessionLockedException)
 
                 releaseTransaction.complete(Unit)
@@ -242,7 +289,7 @@ class RoomObservationSessionTest {
                 sealing.await()
 
                 assertNull(session.unlock())
-                assertEquals("Committed", session.query { entryQueryDao().getById("lease-entry")?.title })
+                assertEquals("Committed", session.queryForMaintenance { entryQueryDao().getById("lease-entry")?.title })
             } finally {
                 releaseTransaction.complete(Unit)
                 session.seal()
@@ -262,6 +309,7 @@ class RoomObservationSessionTest {
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                     keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { FixedAuthenticatedAccess() },
                 )
             val transactionStarted = CompletableDeferred<Unit>()
             var transaction: Job? = null
@@ -270,7 +318,7 @@ class RoomObservationSessionTest {
                 assertNull(session.unlock())
                 val runningTransaction =
                     async(Dispatchers.IO) {
-                        session.transaction {
+                        session.transactionForMaintenance {
                             entryCommandDao().insertStrict(EntryEntity(entryId = "timeout-lease-entry", title = "Rolled back"))
                             transactionStarted.complete(Unit)
                             awaitCancellation()
@@ -285,7 +333,7 @@ class RoomObservationSessionTest {
                 assertTrue("timed-out transaction must be cancelled", runningTransaction.isCancelled)
                 assertEquals(SecureSessionState.SEALED, session.lockState)
                 assertNull(session.unlock())
-                assertNull(session.query { entryQueryDao().getById("timeout-lease-entry") })
+                assertNull(session.queryForMaintenance { entryQueryDao().getById("timeout-lease-entry") })
             } finally {
                 transaction?.cancelAndJoin()
                 session.seal()
@@ -300,13 +348,14 @@ class RoomObservationSessionTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
+            val access = FixedAuthenticatedAccess()
             val session =
                 AppDatabaseSession(
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                     keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
                 )
-            val access = FixedAuthenticatedAccess()
             val authenticatedState = access.authenticationState.value
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val activities = ObservationProbe<EntryActivityEntity>()
@@ -319,7 +368,7 @@ class RoomObservationSessionTest {
 
             try {
                 assertNull(session.unlock())
-                session.transaction {
+                session.transactionForMaintenance {
                     entryCommandDao().insertStrict(EntryEntity(entryId = "entry-a", title = "A"))
                     entryCommandDao().insertStrict(EntryEntity(entryId = "entry-b", title = "B"))
                     entryActivityCommandDao().insertIdempotent(
@@ -350,17 +399,17 @@ class RoomObservationSessionTest {
 
                 jobs +=
                     scope.launch {
-                        activityObservations(session, access, activities)
+                        activityObservations(session, activities)
                             .collect(activityValues::send)
                     }
                 jobs +=
                     scope.launch {
-                        linkObservations(session, access, links)
+                        linkObservations(session, links)
                             .collect(linkValues::send)
                     }
                 jobs +=
                     scope.launch {
-                        revisionObservations(session, access, revisions)
+                        revisionObservations(session, revisions)
                             .collect(revisionValues::send)
                     }
 
@@ -405,23 +454,21 @@ class RoomObservationSessionTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
+            val access = FixedAuthenticatedAccess()
             val session =
                 AppDatabaseSession(
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                     keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
                 )
-            val access = FixedAuthenticatedAccess()
             val attempts = AtomicInteger()
             val daoEmissionStarted = CompletableDeferred<Unit>()
             val releaseDaoEmission = CompletableDeferred<Unit>()
             val oldCollectorFinished = CompletableDeferred<Unit>()
             val values = Channel<String>(Channel.UNLIMITED)
             val observation =
-                session.observeWhenReadable(
-                    authorized = access.isAuthorized,
-                    emptyValue = { "locked" },
-                ) {
+                session.observeFullVaultWhenReadable(emptyValue = { "locked" }) {
                     if (attempts.incrementAndGet() == 1) {
                         flow {
                             try {
@@ -473,21 +520,19 @@ class RoomObservationSessionTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
+            val access = FixedAuthenticatedAccess()
             val session =
                 AppDatabaseSession(
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                     keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
                 )
-            val access = FixedAuthenticatedAccess()
             val attempts = AtomicInteger()
             val values = Channel<String>(Channel.UNLIMITED)
             val failures = Channel<Throwable>(Channel.UNLIMITED)
             val observation =
-                session.observeWhenReadable(
-                    authorized = access.isAuthorized,
-                    emptyValue = { "locked" },
-                ) {
+                session.observeFullVaultWhenReadable(emptyValue = { "locked" }) {
                     if (attempts.incrementAndGet() == 1) {
                         flow { throw SessionLockedException("simulated lock/emission race") }
                     } else {
@@ -520,14 +565,10 @@ class RoomObservationSessionTest {
 
     private fun <T> gatedObservations(
         session: AppDatabaseSession,
-        access: SecureSessionAccessState,
         probe: ObservationProbe<T>,
         query: suspend com.aozijx.passly.data.local.database.AppDatabase.() -> Flow<List<T>>,
     ): Flow<List<T>> =
-        session.observeWhenReadable(
-            authorized = access.isAuthorized,
-            emptyValue = { emptyList() },
-        ) {
+        session.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
             query()
                 .onStart { probe.starts.incrementAndGet() }
                 .onCompletion { probe.completions.incrementAndGet() }
@@ -535,21 +576,18 @@ class RoomObservationSessionTest {
 
     private fun activityObservations(
         session: AppDatabaseSession,
-        access: SecureSessionAccessState,
         probe: ObservationProbe<EntryActivityEntity>,
-    ) = gatedObservations(session, access, probe) { entryActivityQueryDao().observeAll() }
+    ) = gatedObservations(session, probe) { entryActivityQueryDao().observeAll() }
 
     private fun linkObservations(
         session: AppDatabaseSession,
-        access: SecureSessionAccessState,
         probe: ObservationProbe<EntryLinkEntity>,
-    ) = gatedObservations(session, access, probe) { entryLinkQueryDao().observeAll() }
+    ) = gatedObservations(session, probe) { entryLinkQueryDao().observeAll() }
 
     private fun revisionObservations(
         session: AppDatabaseSession,
-        access: SecureSessionAccessState,
         probe: ObservationProbe<EntryRevisionEntity>,
-    ) = gatedObservations(session, access, probe) {
+    ) = gatedObservations(session, probe) {
         entryRevisionQueryDao().observeByEntryId("entry-a")
     }
 
@@ -615,6 +653,18 @@ class RoomObservationSessionTest {
     private class ObservationProbe<T> {
         val starts = AtomicInteger()
         val completions = AtomicInteger()
+    }
+
+    private class AccessAfterFirstCheck : SecureSessionAccessState {
+        override val authenticationState =
+            kotlinx.coroutines.flow.MutableStateFlow<AuthenticationState>(
+                AuthenticationState.Authenticated(authenticatedAtMs = 1L),
+            )
+        var checks = 0
+
+        override fun isUnlocked() = true
+
+        override fun hasFullSecureSessionAccess() = ++checks == 1
     }
 
     private class FixedAuthenticatedAccess : SecureSessionAccessState {

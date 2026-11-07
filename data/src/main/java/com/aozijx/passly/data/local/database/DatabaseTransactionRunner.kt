@@ -8,7 +8,6 @@ import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,21 +15,20 @@ import javax.inject.Singleton
  * 统一事务运行器。
  *
  * 职责：
- * - 包裹数据库事务边界（通过 [AppDatabaseSession.transaction]）
- * - 包裹读操作（通过 [AppDatabaseSession.query]）
+ * - 包裹数据库事务边界（通过授权感知的 [AppDatabaseSession.transactionFullVault]）
+ * - 包裹读操作（通过授权感知的 [AppDatabaseSession.queryFullVault]）
  * - 供应 [AppDatabase] 接收者作用域，供内部 lambda 安全访问 DAO
  * - 错误映射（乐观锁冲突等）
  *
  * Command Handler 通过此类间接访问数据库，不直接引用 DAO、Room、withTransaction。
  *
- * 读/写操作的租约管理由 [AppDatabaseSession] 负责，本类不再额外调用 [SessionStateProvider]。
+ * 读/写操作的授权复核与租约管理由 [AppDatabaseSession] 在执行 DAO block 前统一完成。
  */
 @Singleton
 internal class DatabaseTransactionRunner
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val errorReporter: AppErrorReporter,
     ) {
         /**
@@ -40,25 +38,31 @@ internal class DatabaseTransactionRunner
         suspend fun <T> write(
             operation: String,
             block: suspend AppDatabase.() -> T,
-        ): AppResult<T> = writeWithAccess(operation, sessionState::hasFullSecureSessionAccess, block)
+        ): AppResult<T> =
+            writeWithAccess(operation) {
+                databaseSession.transactionFullVault(
+                    onDenied = { throw SessionModeRestricted() },
+                    block = block,
+                )
+            }
 
         suspend fun <T> writeForAutofill(
             operation: String,
             block: suspend AppDatabase.() -> T,
-        ): AppResult<T> = writeWithAccess(operation, sessionState::hasAutofillSessionAccess, block)
+        ): AppResult<T> =
+            writeWithAccess(operation) {
+                databaseSession.transactionAutofill(
+                    onDenied = { throw SessionModeRestricted() },
+                    block = block,
+                )
+            }
 
         private suspend fun <T> writeWithAccess(
             operation: String,
-            isAuthorized: () -> Boolean,
-            block: suspend AppDatabase.() -> T,
+            persist: suspend () -> T,
         ): AppResult<T> {
             val result =
-                AppResult.runSuspendCatching {
-                    if (!isAuthorized()) throw SessionModeRestricted()
-                    databaseSession.transaction {
-                        block()
-                    }
-                }
+                AppResult.runSuspendCatching { persist() }
             if (result is AppResult.Failure) report(result.error, operation)
             return result
         }
@@ -72,8 +76,9 @@ internal class DatabaseTransactionRunner
         ): AppResult<T> {
             val result =
                 AppResult.runSuspendCatching {
-                    requireFullSecureSessionAccess()
-                    databaseSession.query {
+                    databaseSession.queryFullVault(
+                        onDenied = { throw SessionModeRestricted() },
+                    ) {
                         block()
                     }
                 }
@@ -99,12 +104,6 @@ internal class DatabaseTransactionRunner
         fun checkAffectedRows(affectedRows: Int) {
             if (affectedRows == 0) {
                 throw Conflict()
-            }
-        }
-
-        private fun requireFullSecureSessionAccess() {
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                throw SessionModeRestricted()
             }
         }
 

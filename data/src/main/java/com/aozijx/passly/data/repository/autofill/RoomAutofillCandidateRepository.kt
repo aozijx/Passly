@@ -4,7 +4,6 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.AutofillDomainNormalization
 import com.aozijx.passly.domain.autofill.AutofillScope
 import com.aozijx.passly.domain.autofill.model.AUTOFILL_CANDIDATE_LIMIT
@@ -21,10 +20,8 @@ internal class RoomAutofillCandidateRepository
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
     ) : AutofillCandidateRepository {
         override suspend fun search(query: AutofillCandidateQuery): List<AutofillCandidateSummary> {
-            if (!sessionState.hasAutofillSessionAccess()) return emptyList()
             val applicationId = AutofillScope.normalizeApplicationId(query.packageName)
             val domainNormalization = AutofillScope.normalizeDomain(query.webDomain)
             if (domainNormalization == AutofillDomainNormalization.Invalid) return emptyList()
@@ -37,7 +34,9 @@ internal class RoomAutofillCandidateRepository
             if (candidateApplicationId == null && domain == null) return emptyList()
             val boundedLimit = query.limit.coerceIn(1, MAX_CANDIDATES)
 
-            return databaseSession.query {
+            return databaseSession.queryAutofill(
+                onDenied = { emptyList() },
+            ) {
                 val matched =
                     buildList {
                         candidateApplicationId?.let {

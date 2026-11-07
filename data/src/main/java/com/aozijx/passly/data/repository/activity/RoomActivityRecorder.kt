@@ -7,7 +7,6 @@ import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.entry.command.EntryActivityWriter
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
@@ -20,7 +19,6 @@ internal class RoomActivityRecorder
     constructor(
         private val databaseTransactions: DatabaseTransactionRunner,
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val activityWriter: EntryActivityWriter,
         private val clock: DatabaseClock,
     ) : ActivityRecorder {
@@ -40,18 +38,14 @@ internal class RoomActivityRecorder
         }
 
         override suspend fun deleteByEntryId(entryId: String) {
-            requireFullSecureSessionAccess("activity.deleteByEntryId")
-            databaseSession.transaction { entryActivityCommandDao().deleteByEntryId(entryId) }
+            databaseSession.transactionFullVault(
+                onDenied = { throw SessionModeRestricted() },
+            ) { entryActivityCommandDao().deleteByEntryId(entryId) }
         }
 
         override suspend fun deleteBefore(timestamp: Long) {
-            requireFullSecureSessionAccess("activity.deleteBefore")
-            databaseSession.transaction { entryActivityCommandDao().deleteBefore(timestamp) }
-        }
-
-        private fun requireFullSecureSessionAccess(operation: String) {
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                throw SessionModeRestricted()
-            }
+            databaseSession.transactionFullVault(
+                onDenied = { throw SessionModeRestricted() },
+            ) { entryActivityCommandDao().deleteBefore(timestamp) }
         }
     }

@@ -10,11 +10,9 @@ import com.aozijx.passly.data.codec.revisionChangeFromStorageKey
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.local.database.session.observeWhenReadable
 import com.aozijx.passly.data.repository.entry.command.InitializeEntryRevisionHistory
 import com.aozijx.passly.data.repository.entry.command.RestoreEntryRevisionExecutor
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
@@ -36,7 +34,6 @@ internal class RoomEntryRevisionRepository
     constructor(
         private val databaseSession: AppDatabaseSession,
         private val databaseTransactions: DatabaseTransactionRunner,
-        private val sessionState: SecureSessionAccessState,
         private val contentCodec: EntryContentSnapshotCodec,
         private val sensitiveCodec: SensitiveRevisionSnapshotCodec,
         private val secretFieldCodec: SecretFieldCodec,
@@ -47,7 +44,7 @@ internal class RoomEntryRevisionRepository
         override suspend fun initializeHistory(): AppResult<Unit> = historyInitializer.execute()
 
         override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> =
-            databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            databaseSession.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
                 entryRevisionQueryDao()
                     .observeByEntryId(entryId.value)
                     .map { revisions -> revisions.map(EntryRevisionEntity::toRevisionMetadata) }

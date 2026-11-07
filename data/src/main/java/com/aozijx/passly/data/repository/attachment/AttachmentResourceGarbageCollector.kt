@@ -109,7 +109,9 @@ class AttachmentResourceGarbageCollector
                         hasFullAccess = access::hasFullSecureSessionAccess,
                         onItemFailure = { logger.log(LogStatements.Application.resourceCleanupFailed(it)) },
                         loadBatch = { afterEnqueuedAt, afterResourceId ->
-                            databaseSession.query {
+                            databaseSession.queryFullVault(
+                                onDenied = { emptyList() },
+                            ) {
                                 if (afterEnqueuedAt == null || afterResourceId == null) {
                                     attachmentResourceDao().getPendingGc(batchSize)
                                 } else {
@@ -138,7 +140,9 @@ class AttachmentResourceGarbageCollector
         private suspend fun drainOne(item: AttachmentResourceEntity): Boolean {
             if (!access.hasFullSecureSessionAccess()) return false
             val stillUnreferenced =
-                databaseSession.transaction {
+                databaseSession.transactionFullVault(
+                    onDenied = { false },
+                ) {
                     val hasRefs =
                         attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
                             attachmentResourceDao().revisionRefCount(item.resourceId) > 0
@@ -166,7 +170,9 @@ class AttachmentResourceGarbageCollector
                 }
             if (!deleted) {
                 if (!access.hasFullSecureSessionAccess()) return false
-                databaseSession.transaction {
+                databaseSession.transactionFullVault(
+                    onDenied = { Unit },
+                ) {
                     attachmentResourceDao().recordAttempt(item.resourceId, System.currentTimeMillis())
                 }
                 logger.log(
@@ -178,7 +184,9 @@ class AttachmentResourceGarbageCollector
             }
 
             if (!access.hasFullSecureSessionAccess()) return false
-            databaseSession.transaction {
+            databaseSession.transactionFullVault(
+                onDenied = { Unit },
+            ) {
                 val hasRefs =
                     attachmentResourceDao().currentRefCount(item.resourceId) > 0 ||
                         attachmentResourceDao().revisionRefCount(item.resourceId) > 0

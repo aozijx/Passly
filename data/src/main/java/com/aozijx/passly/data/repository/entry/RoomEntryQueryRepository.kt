@@ -4,7 +4,6 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
@@ -21,14 +20,14 @@ internal class RoomEntryQueryRepository
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val secretFieldStore: SecretFieldStore,
     ) : EntryQueryRepository,
         EntryTagQuery {
         override suspend fun getById(entryId: EntryId): Entry? {
-            if (!sessionState.hasFullSecureSessionAccess()) return null
-            return databaseSession.query {
-                val metaEntity = entryQueryDao().getById(entryId.value) ?: return@query null
+            return databaseSession.queryFullVault(
+                onDenied = { null },
+            ) {
+                val metaEntity = entryQueryDao().getById(entryId.value) ?: return@queryFullVault null
                 val summary = EntryProfileMapper.fromEntity(metaEntity)
                 val secret = secretFieldStore.readBundle(this, entryId.value, metaEntity.entryType)
                 EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
@@ -36,8 +35,9 @@ internal class RoomEntryQueryRepository
         }
 
         override suspend fun findAllTags(): Set<String> {
-            if (!sessionState.hasFullSecureSessionAccess()) return emptySet()
-            return databaseSession.query {
+            return databaseSession.queryFullVault(
+                onDenied = { emptySet() },
+            ) {
                 entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
             }
         }

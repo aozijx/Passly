@@ -25,24 +25,22 @@ Room 实例或越过锁定边界持有 DAO。
 
 ### 查询与事务的调用链
 
-写命令通常从 `DatabaseTransactionRunner.write(operation, block)` 进入。它将
-`sessionState::hasFullSecureSessionAccess` 与 `operation` 一并交给 `writeWithAccess(...)`；Autofill 专用命令
-调用 `writeForAutofill(operation, block)`，门控谓词改为 `hasAutofillSessionAccess()`。Runner 通过
-`AppResult.runSuspendCatching { ... }` 映射普通 `Exception` 为 `AppResult.Failure`，重抛
-`CancellationException`；随后调用 `databaseSession.transaction { block() }`。失败结果再以相同的 `operation`
-传给 `errorReporter.report(error, ErrorReportContext(operation = OperationCode(operation), category = DATABASE))`。
+写命令通常从 `DatabaseTransactionRunner.write(operation, block)` 进入。Runner 使用
+`AppResult.runSuspendCatching { ... }` 映射普通 `Exception` 为 `AppResult.Failure`、重抛
+`CancellationException`，并按 operation 报告失败。直接 Repository 命令也使用相同的 session API，并提供各自既有的拒绝结果。
 
-`AppDatabaseSession.transaction(block)` 将接收者闭包传给 `RuntimeSessionManager.write(block)`；Runtime 经
-`SessionLeaseGate.write(block)` 调用 `acquireLease()`，在 `leaseMutex` 内确认状态为 `UNLOCKED` 并登记当前 coroutine
-Job 和 active lease 数，再由 `resolveHandle()` 取得当前 Room handle。事务调用
-`AppDatabaseSessionResource.transaction(handle, block)`，最终执行
-`handle.withTransaction { handle.block() }`。读取对应地经过 `AppDatabaseSession.query(block)` →
-`RuntimeSessionManager.read(block)` → `SessionLeaseGate.read(block)`，同样先取 lease/handle，但直接运行 `handle.block()`，
-不包 Room 写事务。两条路径都在 `finally` 调用 `releaseLease(owner)`；DAO 和 Room 接收者不得逃出闭包。
+`AppDatabaseSession` 直接通过惰性 Security access-state provider 查询 `SecureSessionAccessState`；Data Repository 不再
+传递授权谓词或注入重复的 session state。Full Vault 和 Autofill 分别使用语义明确的 query/transaction 方法，并提供原有
+拒绝结果。session API 在进入 Runtime 前检查一次授权，以保留 null/空值/业务失败结果；取得 Runtime lease、解析 handle 后，
+在 DAO block 前再次检查。第二次检查是数据库命令的 admission point：`AuthenticationState.Locking` 发布后到达该点的命令
+会返回拒绝结果，不触达 DAO；已通过该点的操作持有 lease，Runtime soft-lock/seal 必须等它真实退出后才完成。
+`transaction` 的二次检查位于 Room 事务回调内，但在命令 DAO block 前；运行时不会把取消请求当作事务已退出。两条 Runtime
+路径都在 `finally` 调用 `releaseLease(owner)`；DAO 和 Room 接收者不得逃出闭包。
 
-授权检查发生在 `DatabaseTransactionRunner` 进入 session API 之前，session lease 检查则发生在获取 lease 时；二者目前
-不是一个原子操作。所有直接调用 `AppDatabaseSession.query/transaction` 的 Repository 也不经过 Runner。认证撤权与排队
-数据库操作的统一线性化合同及需审查的旁路见[维护 TODO Task 37](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)。
+`queryForMaintenance/transactionForMaintenance` 是显式的内部维护入口，仍受 Runtime lease 与数据库锁状态保护；当前
+`DatabaseCleaner` 使用此入口。附件 GC 仍在文件副作用前检查完整会话，并通过 Full Vault transaction/query API 访问数据库。
+Room 观察 Flow 由 `AppDatabaseSession.observeFullVaultWhenReadable()` 从 Security access-state provider 读取认证 Flow，
+再组合 Runtime lock/generation gate。Reset 与锁定、恢复模式、Autofill 释放之间尚未完成的跨层终态验收见[维护 TODO Task 37](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)。
 
 备份协议与交互属于 `app/feature/backup`；Feature 只能通过明确的快照适配边界接触数据库数据，不能把
 Room Entity 当作可移植协议。
@@ -136,7 +134,7 @@ stateDiagram-v2
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定先把 session gate 转为 `SEALED`，拒绝新 lease，再等待 active lease 排空并关闭数据库，最后由 Security owner 擦除 DEK 与会话密钥。及时排空时，关闭发生在 active lease 归零之后。
 - `RuntimeSessionManager` 使用单一 lifecycle mutex 串行化完整 unlock（含 key source 与资源 open）、soft-lock/resume 和 seal/close；Security 的 Vault session mutex 继续作为外层 owner，reset 也通过同一互斥。`seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT` 并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；调用方取消不会遗弃已发布 `SEALED` 的 handle。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；soft-lock 也会在发布 `SOFT_LOCKED` 后等待既有 lease，5 秒超时或调用方取消时请求 owner 取消并等待实际排空，不关闭 handle。Security 清除敏感会话 key 的先后顺序仍见[维护 TODO Task 26](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-26明确-runtime-session-生命周期转换的并发所有者)。
-- `SOFT_LOCKED` 拒绝新 lease。既有操作正常完成时 soft-lock 等待其结束；5 秒排空超时或调用方取消会请求取消 owner，Runtime 仍等到实际退出后才返回，数据库 handle 保持打开。`VaultSessionController` 现在等待 Runtime soft-lock 排空后再擦除敏感会话 key；直接 Repository 的授权快照仍可能早于排队 lease 获取，统一入口复核由维护 TODO Task 37 追踪。
+- `SOFT_LOCKED` 拒绝新 lease。既有操作正常完成时 soft-lock 等待其结束；5 秒排空超时或调用方取消会请求取消 owner，Runtime 仍等到实际退出后才返回，数据库 handle 保持打开。`VaultSessionController` 等待 Runtime soft-lock 排空后再擦除敏感会话 key；Data 命令在 lease 内、DAO block 前再次检查授权。真实 Security/Data 并发终态仍由维护 TODO Task 37 追踪。
 - 覆盖导入、Revision 恢复和多表写入必须在事务中完成，失败整体回滚。
 - 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；备份协议版本独立。
 关闭失败时保持 `SEALED` 并保留失败句柄；没有确认关闭成功前，不删除数据库文件或建立第二个 session。失败结果、撤权和重置边界见本页的会话关闭与重置合同。
@@ -183,9 +181,9 @@ Database Reset Sheet 由其可见 Route owner 注册/退出。关闭 Sheet 或�
 | Room schema 与数据库定义 | `AppDatabase` | [`AppDatabase.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/AppDatabase.kt) |
 | 数据库依赖提供 | `DatabaseProvider` | [`DatabaseProvider.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt) |
 | 数据库命令读写入口与错误映射 | `DatabaseTransactionRunner.read(operation, block)`、`write(operation, block)`、`writeForAutofill(operation, block)` | [`DatabaseTransactionRunner.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/DatabaseTransactionRunner.kt) |
-| Room 类型的 session API | `AppDatabaseSession.query(block)`、`transaction(block)`、`observeFlow(block)`、`unlock()`、`softLock()`、`seal()` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
+| Room 类型的 session API | `queryFullVault`、`queryAutofill`、`transactionFullVault`、`transactionAutofill`、`observeFullVaultWhenReadable()`、显式维护入口、`unlock()`、`softLock()`、`seal()` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
 | 通用 session lease / lock 状态机 | `RuntimeSessionManager.read(block)`、`write(block)`、`observe(block)`、`unlock()`、`softLock()`、`seal(timeout)`；`SessionLeaseGate.acquireLease()`、`releaseLease()`、`closeAfterDrainTimeout()`、`close()` | [`RuntimeSessionManager.kt`](../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/RuntimeSessionManager.kt)、[`SessionLeaseGate.kt`](../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/SessionLeaseGate.kt) |
 | Room open、close 与事务适配 | `AppDatabaseSessionResource.open(key)`、`close(handle)`、`transaction(handle, block)` | [`AppDatabaseSessionResource.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSessionResource.kt) |
-| Vault 数据库重置与可读观察 gate | `VaultDatabaseResetController.reset()`、`observeWhenReadable()` | [`VaultDatabaseResetController.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/port/VaultDatabaseResetController.kt)、[`AppDatabaseSessionObservations.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSessionObservations.kt) |
+| Vault 数据库重置与可读观察 gate | `VaultDatabaseResetController.reset()`、`observeFullVaultWhenReadable()` | [`VaultDatabaseResetController.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/port/VaultDatabaseResetController.kt)、[`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
 | 秘密字段替换、读取与 OTP 配置读取 | `SecretFieldStore.replaceAll()`、`readBundle()`、`readField()`、`readOtpConfig()` | [`SecretFieldStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
 | 查找元数据策略决策 | [ADR-0018](../decisions/ADR-0018-lookup-metadata-strategy.md) | [`ADR-0018-lookup-metadata-strategy.md`](../decisions/ADR-0018-lookup-metadata-strategy.md) |

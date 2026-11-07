@@ -6,7 +6,6 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialSelection
@@ -27,19 +26,17 @@ internal class RoomAutofillCredentialResolver
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val secretFieldStore: SecretFieldStore,
         private val logger: Logger,
     ) : AutofillCredentialResolver {
         override suspend fun resolve(selection: AutofillCredentialSelection): AutofillCredentialResolution {
-            if (!sessionState.hasAutofillSessionAccess()) {
-                return AutofillCredentialResolution.NotFound
-            }
             return try {
-                databaseSession.query {
+                databaseSession.queryAutofill(
+                    onDenied = { AutofillCredentialResolution.NotFound },
+                ) {
                     val entity = entryQueryDao().getById(selection.entryId.value)
                     if (entity == null || entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
-                        return@query resolveAutofillCredential(entity, password = null, otpCode = null)
+                        return@queryAutofill resolveAutofillCredential(entity, password = null, otpCode = null)
                     }
                     val password =
                         secretFieldStore.readField(

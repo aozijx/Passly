@@ -6,11 +6,9 @@ import com.aozijx.passly.data.local.database.DatabaseClock
 import com.aozijx.passly.data.local.database.DatabaseTransactionRunner
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.local.database.session.observeWhenReadable
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.command.EntryRevisionWriter
 import com.aozijx.passly.data.repository.entry.command.PostCommitCleanup
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
@@ -27,7 +25,6 @@ internal class RoomEntryLinkRepository
     constructor(
         private val databaseTransactions: DatabaseTransactionRunner,
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val revisionHelper: EntryRevisionWriter,
         private val secretFieldStore: SecretFieldStore,
         private val clock: DatabaseClock,
@@ -35,35 +32,31 @@ internal class RoomEntryLinkRepository
         private val postCommitCleanup: PostCommitCleanup,
     ) : EntryLinkRepository {
         override fun observeAll(): Flow<List<EntryLink>> =
-            databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            databaseSession.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
                 entryLinkQueryDao()
                     .observeAll()
                     .map { links -> links.map { it.toDomain() } }
             }
 
         override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> =
-            databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            databaseSession.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
                 entryLinkQueryDao()
                     .observeByEntryId(entryId.value)
                     .map { links -> links.map { it.toDomain() } }
             }
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                emptyList()
-            } else {
-                databaseSession.query {
-                    entryLinkQueryDao().getByEntryId(entryId.value).map { it.toDomain() }
-                }
+            databaseSession.queryFullVault(
+                onDenied = { emptyList() },
+            ) {
+                entryLinkQueryDao().getByEntryId(entryId.value).map { it.toDomain() }
             }
 
         override suspend fun getAll(): List<EntryLink> =
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                emptyList()
-            } else {
-                databaseSession.query {
-                    entryLinkQueryDao().getAll().map { it.toDomain() }
-                }
+            databaseSession.queryFullVault(
+                onDenied = { emptyList() },
+            ) {
+                entryLinkQueryDao().getAll().map { it.toDomain() }
             }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {

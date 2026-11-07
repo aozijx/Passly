@@ -7,6 +7,7 @@ import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.data.local.database.AppDatabase
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.RuntimeSessionManager
 import com.aozijx.passly.runtime.session.SecureSessionState
@@ -17,6 +18,7 @@ import com.aozijx.passly.runtime.session.SessionTransitionEvent
 import com.aozijx.passly.runtime.session.SessionTransitionReason
 import com.aozijx.passly.runtime.session.SessionUnlockResult
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 
@@ -28,6 +30,7 @@ class AppDatabaseSession
         resource: AppDatabaseSessionResource,
         keySource: SessionKeySource,
         eventLogger: DatabaseSessionEventLogger,
+        private val accessState: Provider<SecureSessionAccessState>,
     ) : SessionStateProvider,
         DatabaseSessionLifecycle {
         private val runtime =
@@ -44,11 +47,90 @@ class AppDatabaseSession
 
         override val lockGenerationFlow = runtime.lockGenerationFlow
 
-        suspend fun <T> query(block: suspend AppDatabase.() -> T): T = runtime.read(block)
+        /**
+         * Checks access before lease acquisition to preserve the caller's denied result, then again
+         * inside the lease immediately before the DAO block to close authorization races.
+         */
+        internal suspend fun <T> queryFullVault(
+            onDenied: () -> T,
+            block: suspend AppDatabase.() -> T,
+        ): T =
+            queryWithAccess(
+                access = { hasFullSecureSessionAccess() },
+                onDenied = onDenied,
+                block = block,
+            )
 
-        suspend fun <T> transaction(block: suspend AppDatabase.() -> T): T = runtime.write(block)
+        internal suspend fun <T> queryAutofill(
+            onDenied: () -> T,
+            block: suspend AppDatabase.() -> T,
+        ): T =
+            queryWithAccess(
+                access = { hasAutofillSessionAccess() },
+                onDenied = onDenied,
+                block = block,
+            )
 
-        fun <T> observeFlow(block: suspend AppDatabase.() -> Flow<T>): Flow<T> = runtime.observe(block)
+        internal suspend fun <T> transactionFullVault(
+            onDenied: () -> T,
+            block: suspend AppDatabase.() -> T,
+        ): T =
+            transactionWithAccess(
+                access = { hasFullSecureSessionAccess() },
+                onDenied = onDenied,
+                block = block,
+            )
+
+        internal suspend fun <T> transactionAutofill(
+            onDenied: () -> T,
+            block: suspend AppDatabase.() -> T,
+        ): T =
+            transactionWithAccess(
+                access = { hasAutofillSessionAccess() },
+                onDenied = onDenied,
+                block = block,
+            )
+
+        internal suspend fun <T> queryForMaintenance(block: suspend AppDatabase.() -> T): T = runtime.read(block)
+
+        internal suspend fun <T> transactionForMaintenance(block: suspend AppDatabase.() -> T): T = runtime.write(block)
+
+        private suspend fun <T> queryWithAccess(
+            access: SecureSessionAccessState.() -> Boolean,
+            onDenied: () -> T,
+            block: suspend AppDatabase.() -> T,
+        ): T {
+            val currentAccessState = accessState.get()
+            if (!currentAccessState.access()) return onDenied()
+            return runtime.read {
+                if (!currentAccessState.access()) return@read onDenied()
+                block()
+            }
+        }
+
+        private suspend fun <T> transactionWithAccess(
+            access: SecureSessionAccessState.() -> Boolean,
+            onDenied: () -> T,
+            block: suspend AppDatabase.() -> T,
+        ): T {
+            val currentAccessState = accessState.get()
+            if (!currentAccessState.access()) return onDenied()
+            return runtime.write {
+                if (!currentAccessState.access()) return@write onDenied()
+                block()
+            }
+        }
+
+        internal fun <T> observeFullVaultWhenReadable(
+            emptyValue: () -> T,
+            query: suspend AppDatabase.() -> Flow<T>,
+        ): Flow<T> =
+            observeDatabaseFlowWhenReadable(
+                readAccess = observeDatabaseReadAccess(accessState.get().isAuthorized, lockStateFlow, lockGenerationFlow),
+                emptyValue = emptyValue,
+            ) {
+                runtime.observe(query)
+            }
 
         override suspend fun unlock(): Throwable? =
             when (val result = runtime.unlock()) {

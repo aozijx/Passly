@@ -6,10 +6,8 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.aozijx.passly.data.local.database.query.buildEntryPagingQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.local.database.session.observeWhenReadable
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
@@ -24,16 +22,12 @@ internal class RoomEntryPagingStore
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
     ) : EntryPagingStore {
         override fun pages(
             query: EntryListQuery,
             config: PagingConfig,
         ): Flow<PagingData<EntryListItem>> =
-            databaseSession.observeWhenReadable(
-                authorized = sessionState.isAuthorized,
-                emptyValue = { PagingData.empty() },
-            ) {
+            databaseSession.observeFullVaultWhenReadable(emptyValue = { PagingData.empty() }) {
                 Pager(config = config) {
                     entryQueryDao().paging(buildEntryPagingQuery(query))
                 }.flow.map { pagingData ->

@@ -27,6 +27,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionKeySource
 import java.io.File
+import javax.inject.Provider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -46,12 +47,12 @@ class AttachmentResourceGarbageCollectorTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
-            val session = createSession(context, logger)
+            val (session, access) = createSession(context, logger)
             val resources = (1..130).map { index -> createPendingResource(context, index) }
 
             try {
                 assertNull(session.unlock())
-                session.transaction {
+                session.transactionForMaintenance {
                     resources.forEach { (id, file) ->
                         attachmentResourceDao().insertStrict(
                             AttachmentResourceEntity(
@@ -64,7 +65,6 @@ class AttachmentResourceGarbageCollectorTest {
                         )
                     }
                 }
-                val access = AuthenticatedAccess(session)
                 session.seal()
                 AttachmentResourceGarbageCollector(context, session, access, logger)
                 assertNull(session.unlock())
@@ -72,14 +72,14 @@ class AttachmentResourceGarbageCollectorTest {
                 withTimeout(20_000L) {
                     while (
                         resources.any { (_, file) -> file.exists() } ||
-                        session.query { attachmentResourceDao().getPendingGc(200).isNotEmpty() }
+                        session.queryForMaintenance { attachmentResourceDao().getPendingGc(200).isNotEmpty() }
                     ) {
                         delay(10L)
                     }
                 }
 
                 assertTrue(resources.none { (_, file) -> file.exists() })
-                assertTrue(session.query { attachmentResourceDao().getPendingGc(200).isEmpty() })
+                assertTrue(session.queryForMaintenance { attachmentResourceDao().getPendingGc(200).isEmpty() })
             } finally {
                 session.seal()
                 resources.forEach { (_, file) -> file.deleteRecursively() }
@@ -94,7 +94,7 @@ class AttachmentResourceGarbageCollectorTest {
             val context = ApplicationProvider.getApplicationContext<Context>()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
-            val session = createSession(context, logger)
+            val (session, access) = createSession(context, logger)
             val (resourceId, resourceFile) = createPendingResource(context, 1001)
             val childFile = File(resourceFile, "still-present")
 
@@ -103,7 +103,7 @@ class AttachmentResourceGarbageCollectorTest {
                 resourceFile.delete()
                 resourceFile.mkdirs()
                 childFile.writeText("prevent directory deletion")
-                session.transaction {
+                session.transactionForMaintenance {
                     attachmentResourceDao().insertStrict(
                         AttachmentResourceEntity(
                             resourceId = resourceId,
@@ -114,26 +114,25 @@ class AttachmentResourceGarbageCollectorTest {
                         ),
                     )
                 }
-                val access = AuthenticatedAccess(session)
                 session.seal()
                 AttachmentResourceGarbageCollector(context, session, access, logger)
                 assertNull(session.unlock())
 
                 withTimeout(10_000L) {
-                    while (session.query { attachmentResourceDao().getById(resourceId)?.attemptCount ?: 0 } == 0) {
+                    while (session.queryForMaintenance { attachmentResourceDao().getById(resourceId)?.attemptCount ?: 0 } == 0) {
                         delay(10L)
                     }
                 }
                 childFile.delete()
 
                 withTimeout(10_000L) {
-                    while (resourceFile.exists() || session.query { attachmentResourceDao().getById(resourceId) != null }) {
+                    while (resourceFile.exists() || session.queryForMaintenance { attachmentResourceDao().getById(resourceId) != null }) {
                         delay(10L)
                     }
                 }
 
                 assertFalse(resourceFile.exists())
-                assertNull(session.query { attachmentResourceDao().getById(resourceId) })
+                assertNull(session.queryForMaintenance { attachmentResourceDao().getById(resourceId) })
             } finally {
                 session.seal()
                 resourceFile.deleteRecursively()
@@ -157,17 +156,19 @@ class AttachmentResourceGarbageCollectorTest {
                     writeText("encrypted")
                 }
             val logger = NoOpLogger
+            val access = AuthenticatedAccess()
             val session =
                 AppDatabaseSession(
                     resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
                     keySource = SessionKeySource { DATABASE_KEY.copyOf() },
                     eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
                 )
-            val access = AuthenticatedAccess(session)
+            access.bind(session)
 
             try {
                 assertNull(session.unlock())
-                session.transaction {
+                session.transactionForMaintenance {
                     attachmentResourceDao().insertStrict(
                         AttachmentResourceEntity(
                             resourceId = resourceId,
@@ -186,12 +187,12 @@ class AttachmentResourceGarbageCollectorTest {
                 assertNull(session.unlock())
 
                 withTimeout(10_000L) {
-                    while (resourceFile.exists() || session.query { attachmentResourceDao().getById(resourceId) } != null) {
+                    while (resourceFile.exists() || session.queryForMaintenance { attachmentResourceDao().getById(resourceId) } != null) {
                         delay(10L)
                     }
                 }
                 assertFalse(resourceFile.exists())
-                assertNull(session.query { attachmentResourceDao().getById(resourceId) })
+                assertNull(session.queryForMaintenance { attachmentResourceDao().getById(resourceId) })
             } finally {
                 session.seal()
                 resourceFile.delete()
@@ -199,26 +200,35 @@ class AttachmentResourceGarbageCollectorTest {
             }
         }
 
-    private class AuthenticatedAccess(
-        private val session: AppDatabaseSession,
-    ) : SecureSessionAccessState {
+    private class AuthenticatedAccess : SecureSessionAccessState {
+        private var isDatabaseUnlocked: () -> Boolean = { true }
+
         override val authenticationState =
             MutableStateFlow<AuthenticationState>(
                 AuthenticationState.Authenticated(authenticatedAtMs = 1L),
             )
 
-        override fun isUnlocked() = session.lockStateFlow.value == SecureSessionState.UNLOCKED
+        override fun isUnlocked() = isDatabaseUnlocked()
+
+        fun bind(session: AppDatabaseSession) {
+            isDatabaseUnlocked = { session.lockStateFlow.value == SecureSessionState.UNLOCKED }
+        }
     }
 
     private fun createSession(
         context: Context,
         logger: Logger,
-    ): AppDatabaseSession =
-        AppDatabaseSession(
+    ): Pair<AppDatabaseSession, AuthenticatedAccess> {
+        val access = AuthenticatedAccess()
+        val session = AppDatabaseSession(
             resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
             keySource = SessionKeySource { DATABASE_KEY.copyOf() },
             eventLogger = DatabaseSessionEventLogger(logger),
+            accessState = Provider { access },
         )
+        access.bind(session)
+        return session to access
+    }
 
     private fun createPendingResource(
         context: Context,

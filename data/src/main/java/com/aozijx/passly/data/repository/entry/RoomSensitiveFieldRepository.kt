@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
@@ -25,29 +24,26 @@ internal class RoomSensitiveFieldRepository
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
         private val codec: SecretFieldCodec,
         private val fieldStore: SecretFieldStore,
         private val permitVerifier: AuthorizationPermitVerifier,
     ) : SensitiveFieldRepository {
         override suspend fun getPresence(entryId: EntryId): SensitiveFieldPresence =
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                SensitiveFieldPresence(entryId, emptySet())
-            } else {
-                databaseSession.query {
-                    SensitiveFieldPresence(
-                        entryId,
-                        secretFieldQueryDao()
-                            .getKeys(entryId.value)
-                            .mapNotNull { keyName ->
-                                if (keyName == SecretFieldKeys.STRUCT_BUNDLE) {
-                                    null
-                                } else {
-                                    sensitiveFieldKeyFromStorageKey(keyName)
-                                }
-                            }.toSet(),
-                    )
-                }
+            databaseSession.queryFullVault(
+                onDenied = { SensitiveFieldPresence(entryId, emptySet()) },
+            ) {
+                SensitiveFieldPresence(
+                    entryId,
+                    secretFieldQueryDao()
+                        .getKeys(entryId.value)
+                        .mapNotNull { keyName ->
+                            if (keyName == SecretFieldKeys.STRUCT_BUNDLE) {
+                                null
+                            } else {
+                                sensitiveFieldKeyFromStorageKey(keyName)
+                            }
+                        }.toSet(),
+                )
             }
 
         override suspend fun reveal(
@@ -63,43 +59,40 @@ internal class RoomSensitiveFieldRepository
             action: SensitiveAccessAction,
             permit: AuthorizationPermit,
         ): List<RevealedSensitiveField> =
-            if (
-                !sessionState.hasFullSecureSessionAccess() ||
-                !permitVerifier.consume(
-                    permit,
-                    AuthorizationScope.SensitiveFields(
-                        entryId = entryId,
-                        fieldKeys = keys,
-                        action = action,
-                    ),
-                )
+            databaseSession.queryFullVault(
+                onDenied = { emptyList() },
             ) {
-                emptyList()
-            } else {
-                databaseSession.query {
-                    keys.mapNotNull { key ->
-                        val entity =
-                            secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
-                                ?: return@mapNotNull null
-                        RevealedSensitiveField(
+                if (!permitVerifier.consume(
+                        permit,
+                        AuthorizationScope.SensitiveFields(
                             entryId = entryId,
-                            key = key,
-                            value =
-                                OwnedChars.fromString(
-                                    codec.decrypt(entryId.value, key, entity.valueCipher),
-                                ),
-                        )
-                    }
+                            fieldKeys = keys,
+                            action = action,
+                        ),
+                    )
+                ) {
+                    return@queryFullVault emptyList()
+                }
+                keys.mapNotNull { key ->
+                    val entity =
+                        secretFieldQueryDao().getField(entryId.value, key.toStorageKey())
+                            ?: return@mapNotNull null
+                    RevealedSensitiveField(
+                        entryId = entryId,
+                        key = key,
+                        value =
+                            OwnedChars.fromString(
+                                codec.decrypt(entryId.value, key, entity.valueCipher),
+                            ),
+                    )
                 }
             }
 
         override suspend fun readBundle(entryId: EntryId): EntrySecret =
-            if (!sessionState.hasFullSecureSessionAccess()) {
-                EntrySecret()
-            } else {
-                databaseSession.query {
-                    val entryType = entryQueryDao().getById(entryId.value)?.entryType ?: return@query EntrySecret()
-                    fieldStore.readBundle(this, entryId.value, entryType)
-                }
+            databaseSession.queryFullVault(
+                onDenied = { EntrySecret() },
+            ) {
+                val entryType = entryQueryDao().getById(entryId.value)?.entryType ?: return@queryFullVault EntrySecret()
+                fieldStore.readBundle(this, entryId.value, entryType)
             }
     }

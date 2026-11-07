@@ -2,10 +2,8 @@ package com.aozijx.passly.data.repository.entry
 
 import com.aozijx.passly.data.local.database.query.buildEntryCategoryQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
-import com.aozijx.passly.data.local.database.session.observeWhenReadable
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import javax.inject.Inject
@@ -20,10 +18,9 @@ internal class RoomEntryListQueryRepository
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-        private val sessionState: SecureSessionAccessState,
     ) : EntryListQueryRepository {
         override val deletedEntries: Flow<List<EntryListItem>> =
-            databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            databaseSession.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
                 entryQueryDao()
                     .observeDeleted()
                     .map { entities ->
@@ -35,7 +32,7 @@ internal class RoomEntryListQueryRepository
             }
 
         override val availableCategories: Flow<List<String>> =
-            databaseSession.observeWhenReadable(sessionState.isAuthorized, emptyValue = { emptyList() }) {
+            databaseSession.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
                 entryQueryDao()
                     .observeCategories(buildEntryCategoryQuery())
                     .flowOn(Dispatchers.IO)

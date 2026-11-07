@@ -202,7 +202,7 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 
 底层抛出的异常与清理阶段捕获的异常都以 ERROR 和标准错误码记录安全异常快照；清理阶段的日志不能改变原有控制流，
 数据库关闭失败后仍继续擦除密钥并发布 Locked。业务拒绝属于 WARN 降级，尚未到期或因返回前台取消的后台倒计时不是锁库失败。
-锁定取得互斥权并开始状态转换后，撤权、清除敏感字段密钥、软锁/封存和擦除 DEK 在 `NonCancellable` 区完成；调用方取消或软锁/封存操作抛出取消异常时，都会在终态发布后继续传播并记录为 `LockCancelled`，不会记成锁定失败。尚在等待互斥权时被取消的请求不会启动锁定。
+锁定取得互斥权后先发布 `AuthenticationState.Locking`，再于 `NonCancellable` 区撤销授权 permit、等待 Runtime soft-lock/seal 排空 lease，之后清除敏感字段密钥并按封存合同擦除 DEK。Data 命令在 lease 内、DAO block 前复核 Full Vault 或 Autofill 授权；锁定前已通过 admission 的操作由 Runtime drain 等待真实退出，之后进入 admission 的操作被拒绝。调用方取消或软锁/封存操作抛出取消异常时，都会在终态发布后继续传播并记录为 `LockCancelled`，不会记成锁定失败。尚在等待互斥权时被取消的请求不会启动锁定。reset、恢复模式和 Autofill 释放的终态一致性仍在维护 TODO Task 37 验收。
 `AutofillAuthenticated` 的临时会话所有权不变：必须先向平台交付填充结果，再释放 Autofill interaction 并触发封存；
 普通 `Authenticated` 会话不会被延迟到达的 Autofill 释放关闭。
 
