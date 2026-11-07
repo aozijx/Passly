@@ -60,6 +60,10 @@ internal sealed interface BackupMutation {
 
     data object OperationSucceeded : BackupMutation
 
+    data class ExportSucceeded(
+        val fileName: String,
+    ) : BackupMutation
+
     data class OperationFailed(
         val operation: BackupOperation,
         val error: AppError,
@@ -82,6 +86,13 @@ internal object BackupReducer {
             BackupMutation.OperationSucceeded,
             -> {
                 state.copy(workflow = BackupWorkflow.Idle)
+            }
+
+            is BackupMutation.ExportSucceeded -> {
+                state.copy(
+                    workflow = BackupWorkflow.Idle,
+                    recentExportFileName = mutation.fileName,
+                )
             }
 
             is BackupMutation.ExportPrepared -> {

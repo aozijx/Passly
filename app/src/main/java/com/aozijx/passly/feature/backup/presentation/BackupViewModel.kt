@@ -162,6 +162,7 @@ internal class BackupViewModel
                 execute(
                     operation = BackupOperation.EXPORT,
                     password = options.password,
+                    exportFileName = options.fileName,
                 ) {
                     backupOperationGateway.exportToConfiguredDirectory(options.toRequest())
                 }
@@ -206,6 +207,7 @@ internal class BackupViewModel
             execute(
                 operation = BackupOperation.EXPORT,
                 password = options.password,
+                exportFileName = options.fileName,
             ) {
                 backupOperationGateway.exportToUri(
                     request = options.toRequest(),
@@ -230,6 +232,7 @@ internal class BackupViewModel
         private fun execute(
             operation: BackupOperation,
             password: SensitiveValue,
+            exportFileName: String? = null,
             block: suspend () -> BackupExecutionResult,
         ) {
             val owner =
@@ -240,7 +243,7 @@ internal class BackupViewModel
             mutate(BackupMutation.OperationStarted(operation))
             viewModelScope.launch {
                 try {
-                    applyResult(block(), operation, owner)
+                    applyResult(block(), operation, owner, exportFileName)
                 } finally {
                     password.wipe()
                 }
@@ -251,6 +254,7 @@ internal class BackupViewModel
             result: BackupExecutionResult,
             operation: BackupOperation,
             owner: Any,
+            exportFileName: String?,
         ) {
             when (result) {
                 BackupExecutionResult.DirectoryWritable -> {
@@ -260,7 +264,11 @@ internal class BackupViewModel
 
                 BackupExecutionResult.ExportSucceeded -> {
                     emitEffect(owner, BackupNoticeEffect.ExportSucceeded)
-                    mutateIfExecuting(operation, BackupMutation.OperationSucceeded)
+                    mutateIfExecuting(
+                        operation,
+                        exportFileName?.let(BackupMutation::ExportSucceeded)
+                            ?: BackupMutation.OperationSucceeded,
+                    )
                 }
 
                 is BackupExecutionResult.ImportSucceeded -> {

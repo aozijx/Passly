@@ -11,6 +11,7 @@ import com.aozijx.passly.feature.backup.contract.ImportMode
 
 internal data class BackupUiState(
     val workflow: BackupWorkflow = BackupWorkflow.Idle,
+    val recentExportFileName: String? = null,
 )
 
 internal sealed interface BackupWorkflow {

@@ -130,7 +130,7 @@ fun BackupOperationRoute(
 
     BackupRestoreDetail(
         backupPathLabel = directoryLabel,
-        lastExportFileLabel = lastExportFileLabel,
+        lastExportFileLabel = state.recentExportFileName ?: lastExportFileLabel,
         onExport = { viewModel.onAction(BackupUiAction.OpenExportOptions) },
         onImport = {
             pageOwner.value?.let { owner ->
