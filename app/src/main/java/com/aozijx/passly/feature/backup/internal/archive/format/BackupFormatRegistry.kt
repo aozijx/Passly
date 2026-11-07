@@ -2,62 +2,69 @@ package com.aozijx.passly.feature.backup.internal.archive.format
 
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
+import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupContainerHeader
+import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupContainerV1Spec
+import com.aozijx.passly.feature.backup.internal.archive.format.json.JsonFormatDispatcher
+import java.io.InputStream
+import java.io.PushbackInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Resolves external formats without coupling the service to concrete codecs.
- *
- * Adding an importer only requires a new adapter and one DI multibinding.
- */
+internal data class BackupImportSelection(
+    val adapter: BackupImportAdapter,
+    val input: InputStream,
+)
+
+/** Resolves external formats without coupling the service to concrete codecs. */
 @Singleton
 internal class BackupFormatRegistry
     @Inject
     constructor(
         exporters: Set<@JvmSuppressWildcards BackupExportAdapter>,
         importers: Set<@JvmSuppressWildcards BackupImportAdapter>,
+        private val jsonDispatcher: JsonFormatDispatcher,
     ) {
         private val exportersById = exporters.associateUnique("export")
         private val importersById = importers.associateUnique("import")
-        private val importers = importers.sortedBy { it.formatId.value }
-
         fun exporter(formatId: BackupFormatId): BackupExportAdapter = exportersById[formatId] ?: throw BackupFailed()
 
-        fun importer(
+        fun selectImporter(
             requestedFormat: BackupFormatId?,
-            payload: ByteArray,
-        ): BackupImportAdapter {
+            source: InputStream,
+        ): BackupImportSelection {
             if (requestedFormat != null) {
-                val adapter = importersById[requestedFormat] ?: throw BackupFailed()
-                if (adapter.probe(payload) <= 0) throw BackupFailed()
-                return adapter
+                return BackupImportSelection(importersById[requestedFormat] ?: throw BackupFailed(), source)
             }
-
-            val candidates =
-                importers
-                    .map { it to it.probe(payload) }
-                    .filter { (_, score) -> score > 0 }
-            val bestScore =
-                candidates.maxOfOrNull { it.second }
-                    ?: throw BackupFailed()
-            val best = candidates.filter { it.second == bestScore }
-            if (best.size != 1) {
-                throw BackupFailed()
+            val input = PushbackInputStream(source, BackupContainerV1Spec.MAGIC_LENGTH)
+            val prefix = ByteArray(BackupContainerV1Spec.MAGIC_LENGTH)
+            var length = 0
+            while (length < prefix.size) {
+                val count = input.read(prefix, length, prefix.size - length)
+                if (count < 0) break
+                if (count == 0) {
+                    val next = input.read()
+                    if (next < 0) break
+                    prefix[length++] = next.toByte()
+                } else {
+                    length += count
+                }
             }
-            return best.single().first
+            if (length > 0) input.unread(prefix, 0, length)
+            val adapter =
+                if (BackupContainerHeader.hasMagic(prefix, length)) {
+                    importersById[BackupFormats.PASSLY_ENCRYPTED] ?: throw BackupFailed()
+                } else {
+                    jsonDispatcher
+                }
+            return BackupImportSelection(adapter, input)
         }
 
-        private fun <T> Set<T>.associateUnique(kind: String): Map<BackupFormatId, T> where T : Any {
+        private fun <T : BackupFormatAdapter> Set<T>.associateUnique(kind: String): Map<BackupFormatId, T> {
             val result = linkedMapOf<BackupFormatId, T>()
             forEach { adapter ->
-                val id =
-                    when (adapter) {
-                        is BackupExportAdapter -> adapter.formatId
-                        is BackupImportAdapter -> adapter.formatId
-                        else -> error("Unknown backup adapter")
-                    }
-                require(result.put(id, adapter) == null) {
-                    "Duplicate backup $kind adapter: ${id.value}"
+                require(result.put(adapter.formatId, adapter) == null) {
+                    "Duplicate backup $kind adapter: ${adapter.formatId.value}"
                 }
             }
             return result

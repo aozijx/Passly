@@ -1,10 +1,14 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
-import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.LogCategory
+import com.aozijx.passly.core.observability.LogStatement
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
@@ -36,67 +40,66 @@ internal class BackupArchiveServiceImpl
         private val formatRegistry: BackupFormatRegistry,
         private val fileStore: BackupFileStore,
         private val errorReporter: AppErrorReporter,
+        private val logger: Logger,
         @param:BackupIoDispatcher private val ioDispatcher: CoroutineDispatcher,
     ) : BackupArchiveService {
         override suspend fun export(request: BackupExportRequest): AppResult<Unit> =
             withContext(ioDispatcher) {
-                val result =
-                    AppResult.runSuspendCatching {
-                        val adapter = formatRegistry.exporter(request.format)
-                        validatePassword(adapter.requiresPassword, request.password)
-                        val bundle =
-                            snapshotGateway.read(
-                                BackupSnapshotReadOptions(
-                                    includeIcons = request.options.includeIcons && adapter.supportsIcons,
-                                    includeAttachments =
-                                        request.options.includeAttachments && adapter.includesAttachments,
-                                    includeDeleted = request.options.includeDeleted,
-                                    includedEntryTypes = request.options.includedEntryTypes,
-                                ),
-                            )
-                        try {
-                            val encoded = adapter.encode(bundle, request.password)
-                            try {
-                                fileStore.writeBytes(request.targetUri, encoded)
-                            } finally {
-                                encoded.fill(0)
-                            }
-                        } finally {
-                            bundle.clearResourceData()
-                        }
-                    }
-                if (result is AppResult.Failure) report(result.error, "backup_export")
-                result
+                runLoggedOperation(
+                    operation = Operations.BackupExport,
+                    started = LogStatements.Backup.exportStarted(),
+                    completed = LogStatements.Backup::exportCompleted,
+                ) { exportArchive(request) }
             }
 
         override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> =
             withContext(ioDispatcher) {
-                val result =
-                    AppResult.runSuspendCatching {
-                        val payload = fileStore.readBytesSafely(request.sourceUri)
-                        try {
-                            val adapter = formatRegistry.importer(request.format, payload)
-                            validatePassword(adapter.requiresPassword, request.password)
-                            val bundle = adapter.decode(payload, request.password, request.strategy)
-                            try {
-                                val restore = snapshotGateway.restore(bundle, request.mode)
-                                BackupImportResult(
-                                    importedEntryCount = restore.importedEntryCount,
-                                    existingEntryCount = restore.existingEntryCount,
-                                    skippedEntryCount = bundle.compatibilitySummary.skippedEntryCount,
-                                    ignoredFieldCount = bundle.compatibilitySummary.ignoredFieldCount,
-                                    prunedLinkCount = bundle.compatibilitySummary.prunedLinkCount,
-                                    prunedResourceCount = bundle.compatibilitySummary.prunedResourceCount,
-                                )
-                            } finally {
-                                bundle.clearResourceData()
-                            }
-                        } finally {
-                            payload.fill(0)
-                        }
-                    }
-                if (result is AppResult.Failure) report(result.error, "backup_import")
-                result
+                runLoggedOperation(
+                    operation = Operations.BackupImport,
+                    started = LogStatements.Backup.importStarted(),
+                    completed = LogStatements.Backup::importCompleted,
+                ) { importArchive(request) }
+            }
+
+        private suspend fun exportArchive(request: BackupExportRequest) {
+            val adapter = formatRegistry.exporter(request.format)
+            validatePassword(adapter.requiresPassword, request.password)
+            val bundle =
+                snapshotGateway.read(
+                    BackupSnapshotReadOptions(
+                        includeIcons = request.options.includeIcons && adapter.supportsIcons,
+                        includeAttachments = request.options.includeAttachments && adapter.includesAttachments,
+                        includeDeleted = request.options.includeDeleted,
+                        includedEntryTypes = request.options.includedEntryTypes,
+                    ),
+                )
+            try {
+                fileStore.openOutput(request.targetUri).use { output ->
+                    adapter.encode(bundle, request.password, output)
+                }
+            } finally {
+                bundle.clearResourceData()
+            }
+        }
+
+        private suspend fun importArchive(request: BackupImportRequest): BackupImportResult =
+            fileStore.openInput(request.sourceUri).use { source ->
+                val selection = formatRegistry.selectImporter(request.format, source)
+                validatePassword(selection.adapter.requiresPassword, request.password)
+                val bundle = selection.adapter.decode(selection.input, request.password, request.strategy)
+                try {
+                    val restore = snapshotGateway.restore(bundle, request.mode)
+                    BackupImportResult(
+                        importedEntryCount = restore.importedEntryCount,
+                        existingEntryCount = restore.existingEntryCount,
+                        skippedEntryCount = bundle.compatibilitySummary.skippedEntryCount,
+                        ignoredFieldCount = bundle.compatibilitySummary.ignoredFieldCount,
+                        prunedLinkCount = bundle.compatibilitySummary.prunedLinkCount,
+                        prunedResourceCount = bundle.compatibilitySummary.prunedResourceCount,
+                    )
+                } finally {
+                    bundle.clearResourceData()
+                }
             }
 
         private fun validatePassword(
@@ -106,19 +109,26 @@ internal class BackupArchiveServiceImpl
             if (required && (password == null || password.isEmpty())) throw BackupFailed()
         }
 
-        private suspend fun report(
-            error: AppError,
-            operation: String,
-        ) {
-            errorReporter.report(
-                error = error,
-                context =
-                    ErrorReportContext(
-                        operation = OperationCode(operation),
-                        category = LogCategory.BACKUP,
-                    ),
-            )
-        }
+        private suspend fun <T> runLoggedOperation(
+            operation: OperationCode,
+            started: LogStatement,
+            completed: (Long) -> LogStatement,
+            action: suspend () -> T,
+        ): AppResult<T> =
+            logger.inSpan(operation) {
+                logger.log(started)
+                val startedAt = monotonicTimeMs()
+                val result = AppResult.runSuspendCatching(action)
+                when (result) {
+                    is AppResult.Success -> logger.log(completed(monotonicTimeMs() - startedAt))
+                    is AppResult.Failure ->
+                        errorReporter.report(
+                            error = result.error,
+                            context = ErrorReportContext(operation = operation, category = LogCategory.BACKUP),
+                        )
+                }
+                result
+            }
     }
 
 private fun BackupBundle.clearResourceData() {

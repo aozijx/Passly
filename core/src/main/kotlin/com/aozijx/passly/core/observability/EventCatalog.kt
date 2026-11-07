@@ -198,6 +198,10 @@ object Events {
     object Backup {
         val Error = EventKey("backup.error.reported")
         val ResourceCleanupFailed = EventKey("backup.resource_cleanup.failed")
+        val ExportStarted = EventKey("backup.export.started")
+        val ExportCompleted = EventKey("backup.export.completed")
+        val ImportStarted = EventKey("backup.import.started")
+        val ImportCompleted = EventKey("backup.import.completed")
     }
 
     object Vault {
@@ -282,6 +286,10 @@ object Events {
             Autofill.FallbackFailed,
             Backup.Error,
             Backup.ResourceCleanupFailed,
+            Backup.ExportStarted,
+            Backup.ExportCompleted,
+            Backup.ImportStarted,
+            Backup.ImportCompleted,
             Vault.Error,
             Vault.EntryCreateStarted,
             Vault.EntryCreateCompleted,
@@ -309,6 +317,8 @@ object Operations {
     val ResourceCleanup = OperationCode("resource_cleanup")
     val PackageIconLoad = OperationCode("package_icon_load")
     val BackupRestore = OperationCode("backup_restore")
+    val BackupExport = OperationCode("backup_export")
+    val BackupImport = OperationCode("backup_import")
     val VaultOtpImport = OperationCode("vault_otp_import")
     val Scanner = OperationCode("scanner")
     val VaultKeyManagement = OperationCode("vault_key_management")

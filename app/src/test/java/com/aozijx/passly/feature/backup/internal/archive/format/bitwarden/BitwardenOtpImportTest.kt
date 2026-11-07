@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
 
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import java.io.ByteArrayInputStream
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
@@ -9,7 +10,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class BitwardenOtpImportTest {
-    private val adapter = BitwardenJsonImportAdapter()
+    private val adapter = BitwardenJsonImportAdapter(BitwardenJsonParser())
 
     @Test
     fun `URI label keeps literal plus and decodes escaped content once`() {
@@ -126,7 +127,7 @@ class BitwardenOtpImportTest {
             )}}}]}"""
                 .toByteArray(Charsets.UTF_8)
         return adapter
-            .decode(payload, password = null, strategy = strategy)
+            .decode(ByteArrayInputStream(payload), password = null, strategy = strategy)
             .document.entries
             .single { it.type == "otp" }
     }

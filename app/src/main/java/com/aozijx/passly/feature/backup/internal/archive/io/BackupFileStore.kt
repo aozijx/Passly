@@ -1,21 +1,24 @@
 package com.aozijx.passly.feature.backup.internal.archive.io
 
+import java.io.InputStream
+import java.io.OutputStream
+
 /**
  * 文件存储接口，抽象备份的 IO 层。
  * 当前实现通过 Android ContentResolver 读写 URI。
  */
 interface BackupFileStore {
-    fun writeBytes(
+    fun openOutput(
         uri: String,
-        data: ByteArray,
-    )
+        maxBytes: Long = MAX_BYTES,
+    ): OutputStream
 
-    fun readBytesSafely(
+    fun openInput(
         uri: String,
-        maxBytes: Long = MAX_READ_BYTES,
-    ): ByteArray
+        maxBytes: Long = MAX_BYTES,
+    ): InputStream
 
     companion object {
-        const val MAX_READ_BYTES = 256 * 1024 * 1024L // 256MB
+        const val MAX_BYTES = 256 * 1024 * 1024L
     }
 }

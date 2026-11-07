@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.text
 
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
+import java.io.Writer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,5 +20,6 @@ class TextVaultExporter
         fun export(
             records: List<BackupEntryRecord>,
             options: TextExportOptions = TextExportOptions(),
-        ): String = renderer.render(records, options = options)
+            output: Writer,
+        ) = renderer.write(records, output, options = options)
     }

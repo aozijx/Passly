@@ -15,10 +15,7 @@ import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
-import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdapter
-import com.aozijx.passly.feature.backup.internal.archive.format.containsAscii
-import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
 import com.aozijx.passly.feature.backup.internal.archive.mapper.toOtpArchiveFields
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomFieldValue
@@ -29,13 +26,11 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import java.io.InputStream
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Imports Bitwarden plaintext JSON exports into Passly's canonical bundle.
@@ -46,32 +41,19 @@ import kotlinx.serialization.json.jsonPrimitive
 @Singleton
 internal class BitwardenJsonImportAdapter
     @Inject
-    constructor() : BackupImportAdapter {
+    constructor(
+        private val parser: BitwardenJsonParser,
+    ) : BackupImportAdapter {
         override val formatId: BackupFormatId = BackupFormats.BITWARDEN_JSON
         override val requiresPassword: Boolean = false
 
-        override fun probe(payload: ByteArray): Int =
-            if (
-                (
-                    payload.containsAscii("\"items\"") ||
-                        (
-                            payload.containsAscii("\"encrypted\"") &&
-                                payload.containsAscii("\"data\"")
-                        )
-                )
-            ) {
-                70
-            } else {
-                0
-            }
-
         override fun decode(
-            payload: ByteArray,
+            input: InputStream,
             password: CharArray?,
             strategy: BackupImportStrategy,
         ): BackupBundle =
             try {
-                decodeValidated(payload)
+                decodeParsed(parser.parse(input))
             } catch (error: BackupFailed) {
                 throw error
             } catch (_: OtpGenerationError) {
@@ -80,13 +62,10 @@ internal class BitwardenJsonImportAdapter
                 throw BackupFailed()
             }
 
-        private fun decodeValidated(payload: ByteArray): BackupBundle {
-            val rawRoot =
-                BackupJson.parseToJsonElement(payload.decodeStrictUtf8("Bitwarden JSON")).jsonObject
-            if (rawRoot["encrypted"]?.jsonPrimitive?.booleanOrNull == true) {
+        internal fun decodeParsed(export: BitwardenExport): BackupBundle {
+            if (export.encrypted) {
                 throw BackupFailed()
             }
-            val export = BackupJson.decodeFromString<BitwardenExport>(rawRoot.toString())
             val folderNames = export.folders.associate { it.id to it.name }
             val now = System.currentTimeMillis()
             val importedRecords =

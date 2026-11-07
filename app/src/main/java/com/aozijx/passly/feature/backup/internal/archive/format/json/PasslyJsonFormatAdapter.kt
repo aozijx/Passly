@@ -4,11 +4,11 @@ import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupExportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdapter
-import com.aozijx.passly.feature.backup.internal.archive.format.containsAscii
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import java.io.InputStream
+import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,26 +28,18 @@ internal class PasslyJsonFormatAdapter
         override fun encode(
             bundle: BackupBundle,
             password: CharArray?,
-        ): ByteArray = exporter.export(bundle).toByteArray(Charsets.UTF_8)
-
-        override fun probe(payload: ByteArray): Int =
-            if (
-                payload.containsAscii("\"document\"") &&
-                payload.containsAscii("\"format\"") &&
-                payload.containsAscii("\"${BackupDocument.FORMAT}\"")
-            ) {
-                90
-            } else {
-                0
-            }
+            output: OutputStream,
+        ) {
+            exporter.export(bundle, output)
+        }
 
         override fun decode(
-            payload: ByteArray,
+            input: InputStream,
             password: CharArray?,
             strategy: BackupImportStrategy,
         ): BackupBundle =
             try {
-                importer.import(payload, strategy)
+                importer.import(input, strategy)
             } catch (error: BackupFailed) {
                 throw error
             } catch (_: Exception) {

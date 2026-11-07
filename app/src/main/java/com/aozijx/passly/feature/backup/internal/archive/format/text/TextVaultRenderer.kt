@@ -29,28 +29,28 @@ class TextVaultRenderer
                 .ofPattern("yyyy-MM-dd HH:mm")
                 .withZone(ZoneId.systemDefault())
 
-        fun render(
+        fun write(
             entries: List<BackupEntryRecord>,
+            output: Appendable,
             resources: List<BackupResourceRecord> = emptyList(),
             options: TextExportOptions = TextExportOptions(),
-        ): String {
-            val sb = StringBuilder()
-            sb.appendLine("Passly 文本导出")
-            sb.appendLine("导出时间: ${formatTimestamp(System.currentTimeMillis())}")
-            sb.appendLine("条目数量: ${entries.size}")
-            sb.appendLine()
+        ) {
+            output.appendLine("Passly 文本导出")
+            output.appendLine("导出时间: ${formatTimestamp(System.currentTimeMillis())}")
+            output.appendLine("条目数量: ${entries.size}")
+            output.appendLine()
 
             entries.forEachIndexed { index, entry ->
-                if (index > 0) sb.appendLine()
-                sb.appendLine("----------------------------------------")
-                renderEntry(sb, entry, options)
+                if (index > 0) output.appendLine()
+                output.appendLine("----------------------------------------")
+                renderEntry(output, entry, options)
             }
 
             if (resources.isNotEmpty() && options.includeTechnicalInfo) {
-                sb.appendLine()
-                sb.appendLine("附件:")
+                output.appendLine()
+                output.appendLine("附件:")
                 resources.forEach { resource ->
-                    sb.appendLine(
+                    output.appendLine(
                         "  ${resource.fileName ?: resource.id} (${resource.mimeType ?: "未知类型"}, ${
                             formatSize(
                                 resource.size,
@@ -60,47 +60,46 @@ class TextVaultRenderer
                 }
             }
 
-            return sb.toString()
         }
 
         private fun renderEntry(
-            sb: StringBuilder,
+            output: Appendable,
             entry: BackupEntryRecord,
             options: TextExportOptions,
         ) {
             val fields = entry.fields.associate { it.key to it.value }
-            appendField(sb, "标题", fields["title"]?.text)
-            appendField(sb, "类型", entry.type)
+            appendField(output, "标题", fields["title"]?.text)
+            appendField(output, "类型", entry.type)
             entry.fields.forEach { field ->
                 if (field.key in NON_INLINE_FIELDS) {
                     return@forEach
                 }
-                appendField(sb, fieldLabel(field.key), field.value.toDisplayText())
+                appendField(output, fieldLabel(field.key), field.value.toDisplayText())
             }
             fields["custom_fields"]?.customFields.orEmpty().forEach { field ->
-                appendField(sb, "自定义字段.${field.name}", field.value)
+                appendField(output, "自定义字段.${field.name}", field.value)
             }
             fields["notes"]?.text?.let { notes ->
                 val lines = notes.lines()
                 if (lines.size == 1) {
-                    appendField(sb, "备注", notes)
+                    appendField(output, "备注", notes)
                 } else {
-                    sb.appendLine("备注: ${lines.first()}")
+                    output.appendLine("备注: ${lines.first()}")
                     lines.drop(1).take(options.maxNotesLines - 1).forEach { line ->
-                        sb.appendLine("      $line")
+                        output.appendLine("      $line")
                     }
                     if (lines.size > options.maxNotesLines) {
-                        sb.appendLine("      ...（共 ${lines.size} 行）")
+                        output.appendLine("      ...（共 ${lines.size} 行）")
                     }
                 }
             }
 
             // 技术信息（仅在显式开启时输出）
             if (options.includeTechnicalInfo) {
-                appendField(sb, "条目 ID", entry.id)
-                appendField(sb, "版本", entry.revision.toString())
-                appendField(sb, "创建时间", formatTimestamp(entry.createdAt))
-                appendField(sb, "更新时间", formatTimestamp(entry.updatedAt))
+                appendField(output, "条目 ID", entry.id)
+                appendField(output, "版本", entry.revision.toString())
+                appendField(output, "创建时间", formatTimestamp(entry.createdAt))
+                appendField(output, "更新时间", formatTimestamp(entry.updatedAt))
             }
         }
 
@@ -118,12 +117,12 @@ class TextVaultRenderer
         private fun fieldLabel(key: String): String = FIELD_LABELS[key] ?: key
 
         private fun appendField(
-            sb: StringBuilder,
+            output: Appendable,
             label: String,
             value: String?,
         ) {
             if (value.isNullOrBlank()) return
-            sb.appendLine("$label: $value")
+            output.appendLine("$label: $value")
         }
 
         private fun formatTimestamp(epochMillis: Long): String = dateFormatter.format(Instant.ofEpochMilli(epochMillis))

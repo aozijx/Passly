@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -22,6 +23,12 @@ import com.aozijx.passly.feature.backup.internal.model.BackupExportRequest
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
 import com.aozijx.passly.feature.backup.internal.model.BackupImportRequest
+import com.aozijx.passly.testing.RecordingTestLogger
+import com.aozijx.passly.testing.testLogger
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,10 +50,19 @@ class BackupArchiveServiceImplTest {
             val fileStore = FakeBackupFileStore()
             val reporter = RecordingErrorReporter()
             val exporter = FakeExportAdapter()
+            val logger = RecordingTestLogger()
             val importer = FakeImportAdapter()
             val password = charArrayOf('s', 'e', 'c', 'r', 'e', 't')
             val requestedTypes = setOf(EntryType.ACCOUNT)
-            val service = service(snapshotGateway, fileStore, reporter, exporter, setOf(importer), UnconfinedTestDispatcher(testScheduler))
+            val service = service(
+                snapshotGateway,
+                fileStore,
+                reporter,
+                exporter,
+                setOf(importer),
+                UnconfinedTestDispatcher(testScheduler),
+                logger,
+            )
 
             exporter.supportsIcons = false
             exporter.includesAttachments = false
@@ -78,6 +94,10 @@ class BackupArchiveServiceImplTest {
 
             assertTrue(firstResult is AppResult.Success)
             assertTrue(secondResult is AppResult.Success)
+            assertEquals(
+                listOf(Events.Backup.ExportStarted, Events.Backup.ExportCompleted, Events.Backup.ExportStarted, Events.Backup.ExportCompleted),
+                logger.events.map { it.event },
+            )
             assertEquals(
                 listOf(
                     BackupSnapshotReadOptions(false, false, false, requestedTypes),
@@ -116,7 +136,6 @@ class BackupArchiveServiceImplTest {
                 )
 
             assertTrue(result is AppResult.Failure)
-            assertTrue(encoded.all { it == 0.toByte() })
             assertTrue(resource.all { it == 0.toByte() })
             assertEquals(1, reporter.reports.size)
             assertEquals("backup_export", reporter.reports.single().second.operation.value)
@@ -156,7 +175,6 @@ class BackupArchiveServiceImplTest {
                 }
 
             assertSame(cancellation, propagated)
-            assertTrue(encoded.all { it == 0.toByte() })
             assertTrue(resource.all { it == 0.toByte() })
             assertTrue(reporter.reports.isEmpty())
         }
@@ -215,7 +233,6 @@ class BackupArchiveServiceImplTest {
             assertTrue(importResult is AppResult.Failure)
             assertTrue(importSnapshot.restoredBundle == null)
             assertTrue(requiredImporter.decodedPayload == null)
-            assertTrue(importPayload.all { it == 0.toByte() })
             assertEquals("backup_import", importReporter.reports.single().second.operation.value)
         }
 
@@ -271,20 +288,17 @@ class BackupArchiveServiceImplTest {
                 (result as AppResult.Success).data,
             )
             assertEquals("content://backup/import", fileStore.readUri)
-            assertSame(payload, importer.probedPayloads.single())
-            assertSame(payload, importer.decodedPayload)
+            assertEquals(payload.toList(), importer.decodedPayload?.toList())
             assertSame(password, importer.decodedPassword)
             assertEquals(BackupImportStrategy.STRICT, importer.decodedStrategy)
             assertSame(bundle, snapshotGateway.restoredBundle)
             assertEquals(ImportMode.APPEND, snapshotGateway.restoredMode)
-            assertTrue(otherImporter.probedPayloads.isEmpty())
-            assertTrue(payload.all { it == 0.toByte() })
             assertTrue(resource.all { it == 0.toByte() })
             assertTrue(reporter.reports.isEmpty())
         }
 
     @Test
-    fun importDecodeFailureClearsPayloadAndReportsTheImportOperation() =
+    fun importDecodeFailureClosesInputAndReportsTheImportOperation() =
         runTest {
             val payload = byteArrayOf(0x41, 0x42)
             val fileStore = FakeBackupFileStore(readBytes = payload)
@@ -311,13 +325,12 @@ class BackupArchiveServiceImplTest {
                 )
 
             assertTrue(result is AppResult.Failure)
-            assertTrue(payload.all { it == 0.toByte() })
             assertEquals(1, reporter.reports.size)
             assertEquals("backup_import", reporter.reports.single().second.operation.value)
         }
 
     @Test
-    fun importRestoreFailureClearsPayloadAndBundleResourcesAndReportsFailure() =
+    fun importRestoreFailureClosesInputAndClearsBundleResources() =
         runTest {
             val payload = byteArrayOf(0x41, 0x42)
             val resource = byteArrayOf(9, 8, 7)
@@ -346,13 +359,12 @@ class BackupArchiveServiceImplTest {
                 )
 
             assertTrue(result is AppResult.Failure)
-            assertTrue(payload.all { it == 0.toByte() })
             assertTrue(resource.all { it == 0.toByte() })
             assertEquals("backup_import", reporter.reports.single().second.operation.value)
         }
 
     @Test
-    fun importCancellationPropagatesAndClearsPayloadAndBundleResourcesWithoutReporting() =
+    fun importCancellationPropagatesAndClearsBundleResourcesWithoutReporting() =
         runTest {
             val payload = byteArrayOf(0x41, 0x42)
             val resource = byteArrayOf(9, 8, 7)
@@ -387,7 +399,6 @@ class BackupArchiveServiceImplTest {
                 }
 
             assertSame(cancellation, propagated)
-            assertTrue(payload.all { it == 0.toByte() })
             assertTrue(resource.all { it == 0.toByte() })
             assertTrue(reporter.reports.isEmpty())
         }
@@ -399,12 +410,24 @@ class BackupArchiveServiceImplTest {
         exporter: FakeExportAdapter,
         importers: Set<BackupImportAdapter>,
         dispatcher: CoroutineDispatcher,
+        logger: com.aozijx.passly.core.observability.Logger = testLogger(),
     ) =
         BackupArchiveServiceImpl(
             snapshotGateway = snapshotGateway,
-            formatRegistry = BackupFormatRegistry(setOf(exporter), importers),
+            formatRegistry =
+                BackupFormatRegistry(
+                    setOf(exporter),
+                    importers,
+                    com.aozijx.passly.feature.backup.internal.archive.format.json.JsonFormatDispatcher(
+                        com.aozijx.passly.feature.backup.internal.archive.format.json.JsonBackupImporter(),
+                        com.aozijx.passly.feature.backup.internal.archive.format.bitwarden.BitwardenJsonImportAdapter(
+                            com.aozijx.passly.feature.backup.internal.archive.format.bitwarden.BitwardenJsonParser(),
+                        ),
+                    ),
+                ),
             fileStore = fileStore,
             errorReporter = reporter,
+            logger = logger,
             ioDispatcher = dispatcher,
         )
 
@@ -440,15 +463,20 @@ class BackupArchiveServiceImplTest {
         val writtenUris = mutableListOf<String>()
         val writtenCopies = mutableListOf<ByteArray>()
 
-        override fun readBytesSafely(uri: String, maxBytes: Long): ByteArray {
+        override fun openInput(uri: String, maxBytes: Long): InputStream {
             readUri = uri
-            return readBytes
+            return ByteArrayInputStream(readBytes.copyOf())
         }
 
-        override fun writeBytes(uri: String, data: ByteArray) {
-            writtenUris += uri
-            writtenCopies += data.copyOf()
+        override fun openOutput(uri: String, maxBytes: Long): OutputStream {
             writeFailure?.let { throw it }
+            writtenUris += uri
+            return object : ByteArrayOutputStream() {
+                override fun close() {
+                    writtenCopies += toByteArray()
+                    super.close()
+                }
+            }
         }
     }
 
@@ -461,9 +489,13 @@ class BackupArchiveServiceImplTest {
         override var supportsIcons = true
         val passwords = mutableListOf<CharArray?>()
 
-        override fun encode(bundle: BackupBundle, password: CharArray?): ByteArray {
+        override fun encode(bundle: BackupBundle, password: CharArray?, output: OutputStream) {
             passwords += password
-            return encoded
+            try {
+                output.write(encoded)
+            } finally {
+                encoded.fill(0)
+            }
         }
     }
 
@@ -473,17 +505,12 @@ class BackupArchiveServiceImplTest {
         var decodeFailure: Throwable? = null,
     ) : BackupImportAdapter {
         override val requiresPassword: Boolean = true
-        val probedPayloads = mutableListOf<ByteArray>()
         var decodedPayload: ByteArray? = null
         var decodedPassword: CharArray? = null
         var decodedStrategy: BackupImportStrategy? = null
 
-        override fun probe(payload: ByteArray): Int {
-            probedPayloads += payload
-            return if (payload.firstOrNull() == 0x41.toByte()) 1 else 0
-        }
-
-        override fun decode(payload: ByteArray, password: CharArray?, strategy: BackupImportStrategy): BackupBundle {
+        override fun decode(input: InputStream, password: CharArray?, strategy: BackupImportStrategy): BackupBundle {
+            val payload = input.readBytes()
             decodedPayload = payload
             decodedPassword = password
             decodedStrategy = strategy

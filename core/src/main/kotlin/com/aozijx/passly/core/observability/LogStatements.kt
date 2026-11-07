@@ -754,6 +754,16 @@ object LogStatements {
     }
 
     object Backup {
+        fun exportStarted(): LogStatement = InfoStatement(Events.Backup.ExportStarted, LogFields.Empty)
+
+        fun exportCompleted(elapsedMs: Long): LogStatement =
+            InfoStatement(Events.Backup.ExportCompleted, LogFields.Empty.withElapsed(elapsedMs))
+
+        fun importStarted(): LogStatement = InfoStatement(Events.Backup.ImportStarted, LogFields.Empty)
+
+        fun importCompleted(elapsedMs: Long): LogStatement =
+            InfoStatement(Events.Backup.ImportCompleted, LogFields.Empty.withElapsed(elapsedMs))
+
         fun resourceCleanupFailed(throwable: Throwable): LogStatement =
             WarningStatement(
                 Events.Backup.ResourceCleanupFailed,

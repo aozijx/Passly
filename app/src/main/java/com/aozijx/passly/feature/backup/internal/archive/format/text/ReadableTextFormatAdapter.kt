@@ -4,6 +4,7 @@ import com.aozijx.passly.feature.backup.internal.archive.format.BackupExportAdap
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
 import com.aozijx.passly.feature.backup.internal.model.BackupFormats
+import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,8 +22,10 @@ internal class ReadableTextFormatAdapter
         override fun encode(
             bundle: BackupBundle,
             password: CharArray?,
-        ): ByteArray =
-            exporter
-                .export(bundle.document.entries, TextExportOptions())
-                .toByteArray(Charsets.UTF_8)
+            output: OutputStream,
+        ) {
+            output.writer(Charsets.UTF_8).use { writer ->
+                exporter.export(bundle.document.entries, TextExportOptions(), writer)
+            }
+        }
     }

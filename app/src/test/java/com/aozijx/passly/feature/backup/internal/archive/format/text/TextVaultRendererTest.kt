@@ -25,7 +25,7 @@ class TextVaultRendererTest {
                     ),
             )
 
-        val output = TextVaultRenderer().render(listOf(entry))
+        val output = StringBuilder().also { TextVaultRenderer().write(listOf(entry), it) }.toString()
 
         assertTrue(output.contains("标题: Example"))
         assertTrue(output.contains("用户名: user"))

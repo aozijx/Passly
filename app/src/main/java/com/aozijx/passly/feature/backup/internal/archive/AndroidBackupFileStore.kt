@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
+import com.aozijx.passly.feature.backup.internal.archive.io.LimitedInputStream
+import com.aozijx.passly.feature.backup.internal.archive.io.LimitedOutputStream
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -41,26 +43,13 @@ internal class AndroidBackupFileStore
             }
         }
 
-        override fun writeBytes(
-            uri: String,
-            data: ByteArray,
-        ) {
-            openOutputStream(uri).use {
-                it.write(data)
-                it.flush()
-            }
-        }
-
-        override fun readBytesSafely(
+        override fun openOutput(
             uri: String,
             maxBytes: Long,
-        ): ByteArray {
-            val stream = openInputStream(uri)
-            return stream.use { input ->
-                val limited =
-                    com.aozijx.passly.feature.backup.internal.archive.io
-                        .LimitedInputStream(input, maxBytes)
-                limited.readBytes()
-            }
-        }
+        ): OutputStream = LimitedOutputStream(openOutputStream(uri), maxBytes)
+
+        override fun openInput(
+            uri: String,
+            maxBytes: Long,
+        ): InputStream = LimitedInputStream(openInputStream(uri), maxBytes)
     }

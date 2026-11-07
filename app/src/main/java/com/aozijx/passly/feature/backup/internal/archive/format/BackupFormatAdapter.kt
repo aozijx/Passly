@@ -3,14 +3,16 @@ package com.aozijx.passly.feature.backup.internal.archive.format
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.model.BackupFormatId
+import java.io.InputStream
+import java.io.OutputStream
 
-/**
- * Encodes the canonical [BackupBundle] into one external format.
- *
- * Adapters contain no database, Android URI, or UI code.
- */
-internal interface BackupExportAdapter {
+/** Shared identity of a format codec. */
+internal interface BackupFormatAdapter {
     val formatId: BackupFormatId
+}
+
+/** Encodes the canonical [BackupBundle] into one external format. */
+internal interface BackupExportAdapter : BackupFormatAdapter {
     val includesAttachments: Boolean
     val supportsIcons: Boolean
     val requiresPassword: Boolean
@@ -18,23 +20,16 @@ internal interface BackupExportAdapter {
     fun encode(
         bundle: BackupBundle,
         password: CharArray?,
-    ): ByteArray
+        output: OutputStream,
+    )
 }
 
-/**
- * Decodes one external format into the canonical [BackupBundle].
- *
- * [probe] must be cheap and side-effect free. A score of zero means no match;
- * larger scores indicate a more definitive signature.
- */
-internal interface BackupImportAdapter {
-    val formatId: BackupFormatId
+/** Decodes one external format into the canonical [BackupBundle]. */
+internal interface BackupImportAdapter : BackupFormatAdapter {
     val requiresPassword: Boolean
 
-    fun probe(payload: ByteArray): Int
-
     fun decode(
-        payload: ByteArray,
+        input: InputStream,
         password: CharArray?,
         strategy: BackupImportStrategy = BackupImportStrategy.STRICT,
     ): BackupBundle

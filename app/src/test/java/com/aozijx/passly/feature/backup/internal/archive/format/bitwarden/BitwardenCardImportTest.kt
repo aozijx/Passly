@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
 
 import com.aozijx.passly.domain.entry.policy.EntryValidation
 import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
+import java.io.ByteArrayInputStream
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
@@ -13,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BitwardenCardImportTest {
-    private val adapter = BitwardenJsonImportAdapter()
+    private val adapter = BitwardenJsonImportAdapter(BitwardenJsonParser())
 
     @Test
     fun completeExpiryUsesDomainFormatAndProducesAValidCard() {
@@ -93,7 +94,7 @@ class BitwardenCardImportTest {
             """{"items":[{"id":"card-1","type":3,"name":"Card","card":$card$custom}]}"""
                 .toByteArray(Charsets.UTF_8)
         return adapter
-            .decode(payload, password = null, strategy = strategy)
+            .decode(ByteArrayInputStream(payload), password = null, strategy = strategy)
             .document.entries
             .single { it.type == "bank_card" }
     }

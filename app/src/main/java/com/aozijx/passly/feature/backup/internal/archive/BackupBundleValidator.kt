@@ -8,6 +8,8 @@ object BackupBundleValidator {
 
     const val MAX_RESOURCE_BYTES = 16 * 1024 * 1024
     const val MAX_TOTAL_RESOURCE_BYTES = 128 * 1024 * 1024
+    const val MAX_DOCUMENT_BYTES = 16 * 1024 * 1024
+    const val MAX_ARCHIVE_BYTES = 128L * 1024 * 1024
     const val MAX_ENTRIES = 100_000
     const val MAX_RESOURCES = 100_000
 

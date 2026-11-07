@@ -13,6 +13,10 @@ class LimitedInputStream(
 ) : FilterInputStream(input) {
     private var totalRead: Long = 0
 
+    init {
+        require(maxBytes >= 0)
+    }
+
     override fun read(): Int {
         val result = super.read()
         if (result >= 0) {
@@ -27,8 +31,10 @@ class LimitedInputStream(
         off: Int,
         len: Int,
     ): Int {
+        require(off >= 0 && len >= 0 && off <= b.size - len)
+        if (len == 0) return 0
         val remaining = maxBytes - totalRead
-        val allowed = minOf(len.toLong(), remaining + 1).coerceAtLeast(1).toInt()
+        val allowed = if (remaining >= len.toLong()) len else (remaining + 1).toInt()
         val result = super.read(b, off, allowed)
         if (result > 0) {
             totalRead += result
