@@ -36,32 +36,27 @@
 
 ## Task 3：限制未认证备份头触发的 Argon2 资源消耗
 
-- [ ] 根据最低支持 Android 设备可承受的资源预算，确定导入专用的 Argon2 memory、iteration、parallelism 上限。导出强度合同与导入防滥用合同分开裁定；不得因复用 validator 而意外削弱导出保护，也不得沿用当前 256 MiB 导入内存上限而不说明依据。
-- [ ] 在昂贵派生开始前拒绝超限参数；保持格式 v1 的头部解析与认证语义，不假设可以在 AES-GCM 验证前信任 header。评估完整文件缓冲与 ciphertext 拷贝叠加后的峰值内存，必要时一并收紧导入文件上限或避免重复持有大数组。
-- [ ] 用注入的 KDF 派生函数验证每个超限参数都在派生前失败；覆盖允许的边界值、畸形 header、错误口令/认证失败和导出路径，证明既不执行超额 KDF，也不改变有效 v1 备份互操作。
-- [ ] 更新备份安全/格式文档，区分导出参数、导入上限、用户选择文件这一前置条件和设备资源假设。
+- [ ] 根据最低支持 Android 设备可承受的资源预算，确定导入专用的 Argon2 memory、iteration、parallelism 上限。导出强度合同与导入防滥用合同分开裁定；不要把用户已确认保留的 256 MiB 文件上限当作 KDF 资源依据。
+- [ ] 在昂贵派生开始前拒绝超限参数；header 在认证前均视为不可信。评估 KDF 自身资源成本和设备可用性，不再把已删除的完整文件/ciphertext 缓冲列为现有实现路径。
+- [ ] 用注入的 KDF 派生函数验证每个超限参数都在派生前失败；覆盖允许的边界值、畸形 header、错误口令/认证失败和导出路径，保护当前分块 AEAD 数字版本 1 的有效合同。旧单块布局不提供兼容导入。
+- [ ] 更新备份安全/格式文档，区分导出参数、导入上限、用户选择文件这一前置条件和设备资源假设；记录容器版本号 1 当前对应分块布局。
 
-**当前证据（2026-11-06）：** `EncryptedBackupContainerCodec` 仍允许导入 memory `256 * 1024 KiB`、iterations 10、parallelism 8；`decrypt()` 解析未认证 header 后先调用 `deriveKey(...)`，之后才执行 AES-GCM `doFinal`。`BackupFileStore.MAX_READ_BYTES` 仍为 256 MiB，Android 实现会将输入读入内存。
+**当前证据（2026-11-07）：** 容器已改为分块 AEAD 输入流；每个 data record 的 tag 通过后才向 ZIP reader 交付该块，terminal 与物理 EOF 完整验证前不调用 restore。文件仍限制为 256 MiB，但 Android FileStore 不再整体读入内存。KDF 上限仍是 iterations 10、memory 262144 KiB、parallelism 8，导入前按 `BackupContainerV1Spec` 拒绝范围外参数；最低支持设备的 KDF 资源预算仍需独立评估。旧单块容器路径已删除，数值容器版本 1 当前指向分块布局。
 
-**验收：** 精确备份容器测试通过；KDF 超限用例证明派生函数未调用；新格式参数往返和畸形输入拒绝通过；若导入预算淘汰旧开发备份，明确报错，不提供隐式兼容分支；Room/备份格式版本不变；`git diff --check` 通过。
+**验收：** 分块备份容器测试通过；KDF 超限用例证明派生函数未调用；当前分块格式参数往返和畸形输入拒绝通过；明确旧单块布局停止导入；Room/备份格式版本不变；`git diff --check` 通过。
 
 <a id="task-4"></a>
 
-## Task 4：限制各类备份导入的内存放大
+## Task 4：限制各类备份导入的内存放大（代码整改已完成）
 
-- [ ] 在输入变成完整 String 和对象图之前定义并执行 JSON 专属原始字节上限；为记录数、aggregate 资源字节数、Base64 扩张及解码对象分配建立一致预算。若选择流式解析，确保所有输入读取都受同一上限约束；单纯在反序列化后检查单资源长度不能作为前置保护。
-- [ ] 将同一内存预算审查扩展到 Bitwarden JSON 与加密 archive：确认 JSON tree 重序列化/再次反序列化、archive ciphertext/decrypted payload/ZIP entry 解码的峰值副本；ZIP 路径约束和单条目限制不能替代容器读取及累计字节上限。明确每种格式在哪一步拒绝、所有副本是否能及时释放。
-- [ ] 核对 `BackupFileStore.readBytesSafely()` 的全局默认上限和 `BackupArchiveServiceImpl` 格式分派方式；避免为了某个格式收紧后破坏其他格式，或在不同调用路径绕过限制。
-- [ ] 为超限原始文件、单资源及 aggregate 资源、畸形 UTF-8/Base64、恰好达到上限的有效备份添加边界测试。验证拒绝发生在大型文本/资源集合完整物化之前，并确保失败清理资源字节且不把敏感内容写入错误消息。
-- [ ] 更新备份导入格式文档，记录各格式输入预算、验证顺序和峰值内存假设；保留现有 JSON key 与格式互操作。
+- [x] JSON token 读取执行嵌套深度、字符串、记录数、单资源和累计资源预算；Base64 解码在受限累积器内完成。
+- [x] Bitwarden 逐条解析并限制单条 record 缓冲；加密 records 逐条认证，terminal/EOF 验证后才 restore；ZIP entry、文档、资源和总展开量均受限。
+- [x] FileStore、Registry、format adapter 和 archive service 切换到受限流；完整输入、密文和 ZIP 明文数组路径已移除。
+- [x] 增加边界与失败清理回归，并更新正式格式和验证文档；全量 App JVM 单测及架构验证通过。
 
-**当前证据（2026-11-06）：** `BackupOperationRoute` 仅在用户触发导入后启动 `ActivityResultContracts.OpenDocument()`，收到 URI 后以 `BackupUiAction.StartImport(uri.toString(), owner, requestId)` 交给 ViewModel；因此当前可见路径要求用户主动选择文件，尚未发现远程或后台输入源。`BackupArchiveServiceImpl.import(request)` 在 `BackupIoDispatcher` 上调用 `fileStore.readBytesSafely(request.sourceUri)`，接口默认 `maxBytes = BackupFileStore.MAX_READ_BYTES = 256 * 1024 * 1024L`；Android 实现以 `LimitedInputStream(input, maxBytes)` 包装 ContentResolver 流，再调用 `readBytes()` 物化完整 `payload`。之后 `BackupFormatRegistry.importer(request.format, payload)` 将完整数组传给指定 Adapter 的 `probe(payload)`，或传给每个候选 Adapter 的 `probe(payload)`；选中后 `validatePassword(adapter.requiresPassword, request.password)`，再原样调用 `adapter.decode(payload, request.password, request.strategy)`。
+**完成记录（2026-11-07）：** 导入仍由用户选择的 URI 触发。FileStore 与格式 adapter 使用受限流；JSON parser 以 Jackson Core token 流处理，限制字符串长度和嵌套深度，资源 Base64 在解码过程中执行 16 MiB 单项与 128 MiB 累计上限；Bitwarden 逐条解析并限制单条 record 缓冲；加密容器逐 record 认证并流入 ZIP parser。ZIP 解压、文档、资源与条目数限制保留，且不再叠加完整原始 payload、完整密文和完整 ZIP 明文副本。bundle 最终仍持有待恢复 records/resources；资源数组在操作结束时清零。`:app:testDebugUnitTest` 与 `verifyArchitecture` 通过。最低设备峰值内存/KDF 耗时基准未运行，分别由设备资源预算工作跟踪，不阻塞本项代码整改关闭。
 
-格式分支的物化次序不同。Passly JSON 的 Adapter 调 `JsonBackupImporter.import(payload, strategy)`，先 `decodeStrictUtf8()` 创建完整 String，再反序列化整个 `JsonBackupPackage`（包括 Base64 字符串），逐资源检查 `MAX_ENCODED_RESOURCE_CHARS` 后解码 Base64，组成 bundle 并调用 `BackupImportPlanner.plan(bundle, strategy)`；该单资源检查发生在 JSON 对象图已创建之后。Bitwarden Adapter 同样先创建完整 UTF-8 String，再 `parseToJsonElement(...).jsonObject`，通过 `rawRoot.toString()` 重序列化并 `decodeFromString<BitwardenExport>()`，再映射记录及调用 `BackupBundleValidator.validate(bundle, requireResourceData = false)`。加密 Adapter 调 `EncryptedBackupImporter.import(payload, password, strategy)`；容器解析复制 ciphertext，KDF 后 AES-GCM `doFinal()` 生成完整 ZIP 明文，`BackupArchiveCodec.readZip(zipContent)` 再逐条读取到独立数组并保存在资源 Map 中，之后严格 UTF-8 解码文档、构建 bundle、调用 planner。ZIP 读取限制解压总字节 128 MiB、文档 16 MiB、单资源 16 MiB、条目 100,001 个；这些是 ZIP 层限制，不计入原始 payload、密文/明文容器、文本/JSON 对象和 bundle 的同时存活副本。
-
-当前安全边界结论：未发现无需用户选择文件即可到达此导入路径的调用者，所以扫描候选不能仅凭这些分配认定为外部可利用漏洞；但用户选择极大/特制文件可能让应用进程承受明显内存压力，仍应按资源预算和导入健壮性事项设计、验证。尚无最低设备内存预算、并发/峰值测量或“拒绝发生在文本/对象图物化前”的证据，故整体累计预算仍未闭合；不要把 `readBytesSafely` 的单文件 cap 或 ZIP 层 cap 描述为全链路内存预算。
-
-**验收：** 精确 JSON 导入和格式互操作测试通过；超限输入在资源物化前被拒绝；格式版本不变；相关模块验证、`verifyArchitecture` 与 `git diff --check` 通过。
+代码路径、边界测试、用户选择输入前提和当前预算见[Archive v1 格式说明](../../features/backup/passly-archive-v1.md)及[验证矩阵](../../features/backup/verification.md)。最低设备峰值内存/KDF 耗时基准未运行，分别由设备资源预算工作跟踪，不阻塞本项代码整改关闭。
 
 <a id="task-5"></a>
 

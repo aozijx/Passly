@@ -26,9 +26,10 @@ version 和 container version 的测试必须分开。
 | 行为 | 当前测试入口 | 主要证明 |
 | --- | --- | --- |
 | 归档字段映射 | [`KeyedEntryArchiveRoundTripTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveRoundTripTest.kt) | `KeyedEntryArchiveMapper.toRecord(entry, attachmentIds)` / `toEntry(record)` 的银行卡、OTP 和稳定键往返；对应断言包括 `bankCardRoundTripPreservesBusinessFieldsAndStableWireKeys`、`otpRoundTripPreservesEveryTypeAlgorithmAndEncoding`。 |
-| Canonical 文档和容器 | [`BackupCodecTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupCodecTest.kt) | JSON、ZIP、Argon2id/AES-GCM 容器的往返、认证头、篡改、错误密码、危险 KDF 参数和输入上限拒绝。 |
+| 加密 Header 与 record 流 | [`BackupContainerHeaderTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupContainerHeaderTest.kt)、[`ChunkedBackupStreamsTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/ChunkedBackupStreamsTest.kt) | 数字容器版本 1 与动态 KDF 子版本、跨块往返、记录 tag 篡改和 terminal 后尾随字节拒绝；测试密钥派生为确定性替身，不验证 Argon2 JNI。 |
+| JSON/ZIP 与加密编排 | [`BackupCodecTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupCodecTest.kt)、[`JsonBackupStreamTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/format/json/JsonBackupStreamTest.kt) | ZIP 和加密流组合往返、文件/字段不泄露、JSON 流 round-trip、root decoy 忽略、Passly/Bitwarden 自动分派与歧义根拒绝。 |
 | 严格/兼容规划 | [`BackupImportPlannerTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlannerTest.kt) | 未知字段在兼容策略中忽略、未知/结构无效 Entry 在兼容模式跳过而严格模式拒绝、兼容验证只将 `IllegalArgumentException` 计作条目无效并传播 fatal `Error`、重复顶层 Link ID 两种策略都拒绝。 |
-| Service 编排 | [`BackupArchiveServiceImplTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImplTest.kt) | 导出选项按请求与 Adapter 能力裁剪、导入格式与 payload/密码/策略路由、恢复模式与结果摘要合并、密码必填校验；覆盖成功/普通失败/取消后的字节清理与错误报告。 |
+| Service 编排与日志 | [`BackupArchiveServiceImplTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImplTest.kt) | 导出选项按请求与 Adapter 能力裁剪、导入格式与 payload/密码/策略路由、恢复模式与结果摘要合并、密码必填校验；覆盖成功/普通失败/取消后的字节清理、错误报告以及成功操作的 start/completed 事件。 |
 | wire 值完整性 | [`BackupArchiveKeyRegistryTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistryTest.kt)、[`BackupCodecTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupCodecTest.kt) | Registry 覆盖领域类型与稳定键；`fieldArchiveV1_wireFieldNamesAreStableAndIndependentFromDatabasePayloads` 覆盖文档版本、字段值编码和稳定 wire keys。 |
 | 上层操作与部分文件清理 | [`DefaultBackupOperationGatewayTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGatewayTest.kt)、`BackupCreatedDocumentCleanupTest`、`BackupWriteTestCleanupTest` | 目标 URI 的授权范围、取消传播、部分导出文件删除和清理错误优先级；Service 返回导出失败后清理返回 false/抛普通异常时保留主错误并发出目标可能残留的提示；这不直接证明 archive service 内部的 Adapter 参数传递。 |
 | Room 快照与资源写入 | [`RoomVaultBackupStoreTest`](../../../data/src/androidTest/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStoreTest.kt)、[`VaultRestoreFileJournalTest`](../../../data/src/test/java/com/aozijx/passly/data/repository/backup/VaultRestoreFileJournalTest.kt)、[`RestoredAttachmentFileTest`](../../../data/src/test/java/com/aozijx/passly/data/repository/backup/RestoredAttachmentFileTest.kt) | Domain 快照筛选与资源读写、追加/覆盖、同一 Room 会话事务和资源文件变更补偿；迁移计划记录 Room instrumentation 在 Pixel_8_Pro AVD 上 6/6 通过。 |
@@ -37,8 +38,8 @@ version 和 container version 的测试必须分开。
 | App Gateway Domain/archive 边界 | [`AppBackupSnapshotGatewayTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGatewayTest.kt)、[`BackupSnapshotArchiveMapperTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/BackupSnapshotArchiveMapperTest.kt) | 稳定图标键、archive→Domain 资源 ID/字节所有权、兼容过滤后覆盖保护，以及映射失败时清除快照资源缓冲。 |
 
 `BackupArchiveServiceImplTest` 直接断言 `BackupExportRequest.options` 到 `BackupSnapshotReadOptions` 的能力裁剪、
-URI/格式/密码/策略/导入模式的流向、结果摘要合并，以及 service 所拥有的 encoded payload 和 bundle 资源字节
-在成功、普通失败与取消后的清理。它不代替 Codec、Planner、Gateway、Room 或 Android provider 的组件测试。
+URI/格式/密码/策略/导入模式的流向、结果摘要合并，以及 service 持有的 bundle 资源字节在成功、普通失败与取消后的清理。
+它不代替 Codec、Planner、Gateway、Room 或 Android provider 的组件测试。
 
 严格策略和兼容策略共享同一 canonical 校验合同，但不能仅凭 `BackupImportPlannerTest` 推断每个格式 Adapter 的
 异常映射、密码传递和资源清理都已覆盖。修改 Adapter 时还需分别核对 `PasslyJsonFormatAdapter.decode()`、

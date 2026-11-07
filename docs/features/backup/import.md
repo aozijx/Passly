@@ -6,36 +6,29 @@
 
 ### 导入服务调用链
 
-`BackupArchiveServiceImpl.import(request)` 在 `BackupIoDispatcher` 上先调用
-`BackupFileStore.readBytesSafely(request.sourceUri)` 得到完整输入 `payload`，然后调用
-`BackupFormatRegistry.importer(request.format, payload)`。若请求指定格式，Registry 仍要求该 Adapter 的
-`probe(payload) > 0`；未指定时计算所有 Adapter 的 probe 分数，只接受唯一最高分候选。选择后以
-`adapter.requiresPassword` 和 `request.password` 调用 `validatePassword(required, password)`，再把原始
-`payload`、密码和 `request.strategy` 原样传入 `adapter.decode(payload, password, strategy)`。
+`BackupArchiveServiceImpl.import(request)` 在 `BackupIoDispatcher` 上打开受 256 MiB 限制的输入流，并把它交给
+`BackupFormatRegistry`。Registry 只读取并回退 8-byte magic：匹配 `PSLYBKP1` 时选择加密 Adapter，否则由
+`JsonFormatDispatcher` 在一次 JSON token 遍历中按根级 `document`/`items` 分派；嵌套同名字段不会影响选择，两个标记同时出现会拒绝。
+Passly 的 `resourcesBase64` 和 Bitwarden 的 `folders` 可出现在判别字段之前，均按对应预算逐项消费。
 
-Passly JSON Adapter 调 `JsonBackupImporter.import(bytes, strategy)`：严格 UTF-8 解码为 String，反序列化
-`JsonBackupPackage`，逐项 Base64 解码资源，组成 `BackupBundle`，再调用
-`BackupImportPlanner.plan(bundle, strategy).bundle`。加密 Adapter 调
-`EncryptedBackupImporter.import(container, password, strategy)`：先解密为 ZIP 字节，调用
-`BackupArchiveCodec.readZip(bytes)` 提取 `document.json` 和资源，反序列化 `BackupDocument` 并组成 bundle，
-最后同样调用 `BackupImportPlanner.plan(bundle, strategy).bundle`。Bitwarden Adapter 则先严格解码 UTF-8，
-解析 JSON tree、转换为 canonical `BackupDocument` 和记录，再由 `BackupBundleValidator.validate(bundle,
-requireResourceData = false)` 检查。
+Passly JSON 使用 Jackson Core 保留不超过 16 MiB 的 canonical document，并增量解码每项 Base64 资源；Bitwarden
+每次只缓冲一个有大小上限的 JSON record，再映射为 canonical records。加密 Adapter 将分块 GCM 解密流接到
+`BackupZipCodec`；每个数据块先通过 tag 验证才交给 ZIP reader。ZIP 中央目录读完后，Importer 继续排空同一解密流，
+直至 terminal 统计、terminal tag 和物理 EOF 全部验证成功，然后解析文档并执行
+`BackupImportPlanner.plan(bundle, strategy)`。旧单块 v1 payload 不作为兼容路径接受。
 
-解码成功后 Service 将 `bundle` 与 `request.mode` 传给 `BackupSnapshotGateway.restore(bundle, mode)`。
-返回的 restore 计数与 `bundle.compatibilitySummary` 计数合并为 `BackupImportResult`。无论 restore 成功或失败，
-`bundle.clearResourceData()` 清零资源字节；最外层 `finally` 清零输入 `payload`。失败结果经
-`report(error, "backup_import")` 上报。JSON 与加密解码器将未识别的 `Exception` 映射为 `BackupFailed`；Service
-仍通过 suspend 文件读取、快照恢复和 `AppResult.runSuspendCatching` 处理操作级失败与取消。同步 Adapter 解码函数本身
-没有 suspend cancellation checkpoint，不能把它描述成可中途响应协程取消。
+解码成功后 Service 才调用 `BackupSnapshotGateway.restore(bundle, mode)`。返回的 restore 计数与
+`bundle.compatibilitySummary` 合并为 `BackupImportResult`。无论 restore 成功或失败，Service 清零资源数组并关闭
+输入流。每次导入在 `backup_import` trace span 中记录开始和成功耗时；失败由 `AppErrorReporter` 以
+`BACKUP` 分类及 `backup_import` operation 上报。日志不包含密码、URI、文档字段或资源内容。取消和 fatal `Error`
+继续传播；同步 token 解码本身没有 suspend cancellation checkpoint。
 
 `BackupImportPlanner.plan(bundle, strategy)` 对 `STRICT` 调完整 `BackupBundleValidator.validate`；兼容策略先做结构头
 和资源完整性校验，再筛选未知类型/字段、逐 Entry 校验并裁剪无效项及其引用，最后形成兼容摘要。逐条校验只将
 `IllegalArgumentException` 作为该 Entry 的结构/业务验证失败并计入跳过摘要；fatal `Error` 原样传播并终止规划，不会被误判为兼容成功。
 回归覆盖预期校验异常跳过与 fatal 错误传播。加密容器与
-Bitwarden/JSON 的具体校验字段见[归档格式](passly-archive-v1.md)。导入目前先将原始文件读入内存；JSON 文本、解密 ZIP、
-解压资源等副本的预算与峰值内存仍由[备份导入预算 TODO](../../superpowers/plans/2026-11-06-passly-backup-review-followups.md)跟踪，
-单文件读取上限不等同于全链路累计内存上限。
+Bitwarden/JSON 的具体校验字段和字节预算见[归档格式](passly-archive-v1.md)。文件读取、canonical document、单资源、
+资源总量、ZIP 展开总量和条目数量分别受限；这些预算作用于不同层级，不应相互替代。
 
 Bitwarden 明文 JSON 的 OTP URI 使用 Domain 的 `OtpAuthUriCodec`，保留账户标签中的字面 `+`，只解码一次；
 没有 issuer 前缀的标签作为账户名。缺失或非法 HOTP counter、损坏数字、重复关键参数及不支持的生成参数
@@ -81,8 +74,9 @@ Bitwarden 银行卡的完整合法年月经 Domain `CardExpiry` 统一为 `MM/YY
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 读取源 URI、识别格式、解码、规划并委托恢复 | `BackupArchiveServiceImpl` 调 `BackupFileStore.readBytesSafely(request.sourceUri)`、`BackupFormatRegistry.importer(request.format, payload)`，再调 `BackupSnapshotGateway.restore(bundle, request.mode)` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt)、[`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt)、[`BackupFormatRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatRegistry.kt) |
-| Passly JSON、加密容器及 Bitwarden 格式解码 | `BackupImportAdapter.decode(payload, password, strategy)`；JSON/Encrypted 委托 importer，Bitwarden 当前固定校验并忽略策略差异 | [`BackupFormatAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatAdapter.kt)、[`PasslyJsonFormatAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/json/PasslyJsonFormatAdapter.kt)、[`PasslyEncryptedFormatAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/PasslyEncryptedFormatAdapter.kt)、[`BitwardenJsonImportAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/bitwarden/BitwardenJsonImportAdapter.kt) |
+| 打开源 URI、识别格式、委托恢复 | `BackupFileStore.openInput(uri)`、`BackupFormatRegistry.importer(format, input)`、`BackupSnapshotGateway.restore(bundle, mode)` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt)、[`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt)、[`BackupFormatRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatRegistry.kt) |
+| 单遍识别 JSON 根格式 | `JsonFormatDispatcher.decode(input, password, strategy)` | [`JsonFormatDispatcher.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/json/JsonFormatDispatcher.kt) |
+| 各格式解码为 canonical bundle | `BackupImportAdapter.decode(input, password, strategy)` | [`BackupFormatAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatAdapter.kt)、[`JsonBackupImporter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/json/JsonBackupImporter.kt)、[`EncryptedBackupImporter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupImporter.kt)、[`BitwardenJsonImportAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/bitwarden/BitwardenJsonImportAdapter.kt) |
 | 兼容筛选或严格验证并形成 canonical bundle | `BackupImportPlanner.plan(bundle, strategy)`、`KeyedEntryArchiveMapper.toEntry(record)` | [`BackupImportPlanner.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlanner.kt)、[`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt) |
 | Archive bundle 映射为 Domain snapshot 并执行覆盖保护 | `AppBackupSnapshotGateway.restore(bundle, mode)` 中的 records/links/resources 映射 | [`AppBackupSnapshotGateway.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGateway.kt) |
 | 在完整 Vault 事务中写 Entry、关系与资源 | `RoomVaultBackupStore.restore(snapshot, mode)`、`VaultRestoreFileJournal.replace(target, content)`、`rollback()`、`commit()` | [`RoomVaultBackupStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStore.kt)、[`VaultRestoreFileJournal.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/backup/VaultRestoreFileJournal.kt) |

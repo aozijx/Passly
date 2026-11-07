@@ -1,6 +1,6 @@
 # Backup 端到端流式重构设计
 
-**状态：** 用户已批准实现。容器保留数字版本号 `1`，其载荷改为分块 AEAD record；旧单块 v1 布局不兼容、不导入。
+**状态：** 已实施。容器保留数字版本号 `1`，载荷采用分块 AEAD record；旧单块 v1 布局不兼容、不导入。实现后的当前合同见[Archive v1 格式说明](../../features/backup/passly-archive-v1.md)和[实施记录](../plans/2026-11-07-backup-streaming-implementation.md)。
 
 ## 目标
 
@@ -13,11 +13,19 @@
 - 不保留旧单块 AES-GCM codec、完整文件 `ByteArray` adapter、双路 API、fallback 或兼容层。数字版本号虽仍为 1，旧单块 v1 文件不能导入。
 - 不声称精确限制 JVM 对象图驻留字节数；以输入/资源/记录数上限和固定流 buffer 限制处理字节，最终领域对象仍由记录数及内容决定。
 
-## 当前实现与问题
+## 重构开始时的基线（2026-11-07）
 
 `BackupFileStore.readBytesSafely()` 将最多 256 MiB 文件返回完整 `ByteArray`。Service 把完整 payload 交给 Adapter，export Adapter 也返回完整 encoded `ByteArray`。Passly JSON 构建全文 UTF-8 `String` 和每个 Base64 资源 `String`；Bitwarden JSON 构建完整 `JsonElement`，再重序列化并解析 DTO。旧 encrypted import 还会同时保留整份密文、JCA AES-GCM `doFinal()` 返回的整份 ZIP 和 ZIP 解压资源。现有限额包括输入 256 MiB、Passly 资源单项 16 MiB/累计 128 MiB、加密归档 document 16 MiB/ZIP 单项 16 MiB/解压累计 128 MiB、ZIP 100,001 entries、JSON 100,000 records；部分累计检查在完整分配后执行。
 
 ## 方案
+
+### 实现职责划分
+
+- `io/LimitedInputStream.kt` 与新增的 `io/LimitedOutputStream.kt` 分别负责单一方向的字节预算；`BackupFileStore` 只打开受限流，不负责格式和编码。
+- `format/encrypted/BackupContainerHeader.kt` 只拥有 canonical header 的编码、解码和 KDF 参数校验。`format/encrypted/BackupRecordCrypto.kt` 复用 record 常量、nonce/AAD 编码和 JCA 操作；`ChunkedBackupInputStream.kt` 与 `ChunkedBackupOutputStream.kt` 分别拥有输入和输出状态、terminal 与 EOF 验证。不要增加只转发调用的 facade，也不要把旧 ByteArray codec 留作第二条路径。
+- `format/encrypted/BackupZipCodec.kt` 只读写 ZIP entry 和资源预算；`EncryptedBackupImporter` / `EncryptedBackupExporter` 编排 ZIP、header stream、JSON document 和资源所有权，不复制密码学细节。协议常量集中在 `BackupContainerV1Spec`，头部、record crypto 和输入/输出流各由对应单一 owner 处理。
+- `format/json/JsonFormatDispatcher.kt` 负责一次 root token 遍历和格式歧义判定；`JsonBackupImporter` 负责 Passly document 与资源导入，`BitwardenJsonParser` 逐条解析受限 record，再由 Bitwarden adapter 做领域映射。两条路径共享 `JsonStreamSupport` 和 Base64 resource reader，不共享格式规则。
+- `BackupArchiveServiceImpl` 只负责 store、adapter、snapshot gateway 的流路由、资源生命周期和操作日志；`BackupFormatRegistry` 负责唯一 adapter 注册及输入前缀探测/回放。不要在 Registry、Adapter 和 Service 各自重复 probe、读取或预算包装。
 
 ### 备选方案
 
@@ -39,10 +47,10 @@
 
 ### JSON、Bitwarden 与 ZIP 流式处理
 
-- Passly JSON 用 token reader 逐字段处理。`resourcesBase64` 字符串按转义字符与 Base64 quantum 分段解码，单项 16 MiB 和累计 128 MiB 必须在目标数组扩容/写入前检查；document 子树直接解码成 `BackupDocument`，不先建立完整 package/tree/Base64 String。重复/非法资源键、畸形 UTF-8/Base64 和不完整 JSON 拒绝并清理。
-- Bitwarden JSON 按 item-at-a-time 生成最终 `BackupBundle` 记录，不先构建完整 `JsonElement`、重序列化字符串或全量 `BitwardenExport` DTO。Folders 只保留必要索引；第 100,001 item 在构造前拒绝。`encrypted`、unsupported fields/types 与非空 attachments/passwordHistory/FIDO2 等现有拒绝规则在缓存任意大子树前执行；未知字段仍遵循 `ignoreUnknownKeys = true`。
+- Passly JSON 用 Jackson token reader 单遍处理 root fields。`resourcesBase64` 经共同 reader 逐项解码并受单项 16 MiB、累计 128 MiB、资源数量及 ID 约束；`document` 子树保留在最多 16 MiB 的可擦除缓冲区后再解码为 `BackupDocument`，不建立整份 package/tree/Base64 String。重复/非法资源键、畸形 UTF-8/Base64 和不完整 JSON 拒绝并清理。
+- Bitwarden JSON 按 item-at-a-time 复制一个最多 8 MiB 的 record、解码为单条 DTO 并累积在数量有界的列表，再映射为 canonical bundle；不构建完整 `JsonElement` 或重序列化字符串。第 100,001 item/folder 在解析前拒绝；未知字段跳过其值子树，unsupported fields/types 与非空 attachments/passwordHistory/FIDO2 等现有拒绝规则仍由 adapter 负责。
 - ZIP encoder/decoder 全程接 streams。Document 最多 16 MiB；资源单项最多 16 MiB；document 加资源解压总量最多 128 MiB；条目最多 100,001（document + 100,000 resources）。每条限制在追加 accumulator 前执行。
-- 资源 accumulator 释放每个临时块；分别在 append 前检查单项、资源累计与 document+resources 总展开量。最终合并只允许当前资源多一份受 16 MiB 约束的副本，禁止 `ByteArrayOutputStream.toByteArray()` 复制所有资源。
+- 资源 reader 对每项使用最多 16 MiB 的可擦除缓冲区，转换为 Bundle 所有的 resource 数组后立即擦除缓冲区；分别检查单项、资源累计与 document+resources 总展开量。禁止建立整份资源拼接副本。
 - 所有 export adapter 改为直接写 `OutputStream`：Passly JSON 资源 Base64 按块输出，Bitwarden JSON 按记录输出，Text 写 `Writer`，encrypted ZIP 直接进入分块 AEAD writer。移除旧整档 `encode(): ByteArray`、`probe(ByteArray)`、`decode(ByteArray, ...)` 和 v1 单块加/解密路径。`BackupBundle.resourceData: Map<String, ByteArray>` 仍是最终领域资源边界，不是整档 I/O API。
 
 ## 预算

@@ -20,7 +20,7 @@
 
 ### 1. 未认证备份头可触发高成本 Argon2 派生
 
-**严重度：低。** `EncryptedBackupContainerCodec.decrypt()` 在验证 AES-GCM tag 前读取未认证 header 参数并调用 `deriveKey(...)`。当前导入限制允许 memory `256 * 1024 KiB`、iterations 10、parallelism 8，可能在口令认证前消耗显著设备资源。
+**严重度：低（2026-11-06 扫描快照）。** 当时的单块容器 decoder 在验证 AES-GCM tag 前读取未认证 header 参数并调用 `deriveKey(...)`。当前分块实现仍需在认证首条记录前依据未认证 header 派生密钥；导入范围仍允许 memory `256 * 1024 KiB`、iterations 10、parallelism 8，可能消耗显著设备资源。旧实现类已删除；当前 KDF 资源预算状态见下方后续跟踪记录。
 
 **整改方向：** 在 KDF 执行前应用有设备资源依据的导入专属上限；区分导出强度与导入防滥用限制，并评估文件及重复缓冲造成的峰值内存。详见[安全整改跟踪](../superpowers/plans/2026-11-06-passly-security-scan-followups.md)中的 Task 3。
 
@@ -29,6 +29,8 @@
 **严重度：低。** 通用文件读取上限为 256 MiB。原生 JSON 会将完整输入转为 String、解析对象并解码 Base64 资源；Bitwarden JSON 会构建完整 JSON tree 并再次序列化/反序列化；加密 archive 会在 ZIP 检查前缓冲、复制和解密 payload。现有单文件/部分 ZIP 限制尚未证明所有格式路径均受统一累计内存预算约束。
 
 **整改方向：** 为各格式设定读取前的字节、记录和累计资源预算，尽可能在完整物化前拒绝超限输入，并验证失败清理。详见[安全整改跟踪](../superpowers/plans/2026-11-06-passly-security-scan-followups.md)中的 Task 4。
+
+**后续状态（2026-11-07）：** Task 4 的代码整改已完成：FileStore、格式 parser 和加密容器采用受限流，JSON/Bitwarden/ZIP 有记录及资源预算；全量 App JVM 单测和架构检查通过。当前仍保留用户选择的 256 MiB 文件上限；该发现描述的是 2026-11-06 扫描修订的实现，不代表当前代码状态。KDF 参数的低设备资源上限仍由 Task 3 单独跟踪。
 
 ### 3. lease 取消宽限期后仍可能关闭正在使用的数据库
 

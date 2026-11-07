@@ -4,7 +4,7 @@
 
 **范围：** 将 Backup 的 Room 快照读取、恢复与资源文件事务从 App 实现迁移到 Domain port / Data 实现，并核对导出缓冲所有权。
 
-**状态：** Data port 迁移完成。Archive Service 的跨组件参数路由与缓冲清理由现有 `BackupArchiveServiceImplTest` 覆盖，已列入[验证矩阵](../features/backup/verification.md#service-编排)，不再保留已关闭的 Task 3 引用；未完成的端到端流式 I/O 与导入累计内存预算归[Backup 后续清单 Task 2](../superpowers/plans/2026-11-06-passly-backup-review-followups.md#task-2-将备份导入与导出迁移到端到端流式-io)。
+**状态：** Data port 迁移与端到端流式 I/O 重构均已完成。Archive Service 的跨边界参数路由、流关闭及缓冲清理由[验证矩阵](../features/backup/verification.md#service-编排)和对应测试覆盖；本记录保留 Data 端口迁移证据，不再引用已关闭的流式待办。
 
 ## 当前调用合同
 
@@ -58,7 +58,7 @@ App 没有 Backup 专属的设备测试。`BackupArchiveServiceImplTest` 已验�
 `options` 与 `targetUri` 路由，按 Adapter capability 裁剪 `BackupSnapshotReadOptions`，并在编码、写入失败或取消时清理
 bundle/resource 缓冲；`import(request)` 按 `sourceUri`、`format`、`password`、`strategy`、`mode` 路由，恢复失败或取消时清理
 payload 与 bundle 资源。上述已由验证矩阵记录，不作为开放 TODO。兼容导入将普通无效条目异常限制为
-`IllegalArgumentException`、传播 fatal `Error`，以及指定 URI 导出失败后的目标文件补偿合同，分别由验证矩阵与[导出清理说明](../features/backup/export.md)记录；当前未完成的累计读取预算和完整 payload 缓冲移除归 Task 2 的流式迁移验收。
+`IllegalArgumentException`、传播 fatal `Error`，以及指定 URI 导出失败后的目标文件补偿合同，分别由验证矩阵与[导出清理说明](../features/backup/export.md)记录。当前 FileStore、格式 adapter 和 archive service 以受限流传递内容；流式协议与累计读取预算见[格式说明](../features/backup/passly-archive-v1.md)。
 
 ## 代码位置
 

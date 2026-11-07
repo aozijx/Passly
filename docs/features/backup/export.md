@@ -15,16 +15,15 @@
 `includeAttachments` 同时受用户选项与 `adapter.includesAttachments` 限制；`includeDeleted` 与
 `includedEntryTypes` 原样来自 `request.options`。该对象传给 `BackupSnapshotGateway.read(options)`。
 
-拿到 `BackupBundle` 后调用 `adapter.encode(bundle, request.password)`；返回的编码 `ByteArray` 传给
-`BackupFileStore.writeBytes(request.targetUri, encoded)`，写入结束或失败都在 `finally` 中清零 `encoded`。
-外层 `finally` 调用 `bundle.clearResourceData()` 清零每个资源数据数组。失败结果随后由
-`report(error, "backup_export")` 送入 `AppErrorReporter.report(error, ErrorReportContext(operation, category))`；
-错误上下文的 category 固定为 `BACKUP`。
+拿到 `BackupBundle` 后打开受 256 MiB 限制的输出流，调用 `adapter.encode(bundle, request.password, output)`。
+Adapter 直接输出到目标，不构造完整编码文件副本；外层 `finally` 调用 `bundle.clearResourceData()` 清零每个资源数据数组。
+导出在 `backup_export` trace span 中记录开始和成功耗时。失败结果由
+`AppErrorReporter.report(error, ErrorReportContext(operation, category))` 上报，operation 为 `backup_export`，
+category 固定为 `BACKUP`。日志不包含密码、URI、文档字段或资源内容。
 
-`BackupFormatRegistry.exporter(request.format)` 返回对应 Adapter；JSON Adapter 的
-`encode(bundle, password)` 调 `JsonBackupExporter.export(bundle)` 后编码 UTF-8。加密 Adapter 将同一
-`bundle` 与非空密码传给 `EncryptedBackupExporter.export(bundle, password)`。两种导出均由 Service 负责最终写入，
-Adapter 不持有目标 URI。
+`BackupFormatRegistry.exporter(request.format)` 返回对应 Adapter。Passly JSON 使用 Jackson generator 写出有界
+document，并逐个流式生成资源 Base64；TXT 使用 Writer 逐项渲染。加密 Adapter 把 ZIP 输出直接接到 chunked
+AES-GCM record 流，格式固定使用容器版本 1。两种导出均由 Service 负责打开/关闭目标流，Adapter 不持有目标 URI。
 
 1. 已解锁并通过备份导出认证后读取 Room 快照。
 2. `KeyedEntryArchiveMapper` 生成稳定键记录。
@@ -53,6 +52,6 @@ TXT 是人类可读投影，不可恢复，且不输出 favorite 字段。
 | 选择格式、验证密码、创建快照、编码并写目标 | `BackupArchiveServiceImpl.export(request)`、`BackupFormatRegistry.exporter(formatId)` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt)、[`BackupFormatRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatRegistry.kt) |
 | 把导出选项转换为领域快照读取参数 | `BackupSnapshotReadOptions(...)`、`AppBackupSnapshotGateway.read(options)`、`RoomVaultBackupStore.read(options)` | [`BackupSnapshotGateway.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/snapshot/BackupSnapshotGateway.kt)、[`AppBackupSnapshotGateway.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGateway.kt)、[`RoomVaultBackupStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStore.kt) |
 | 稳定键映射及 bundle 校验 | `BackupSnapshotArchiveMapper.toBundle(snapshot, appVersion, exportedAt)`、`KeyedEntryArchiveMapper.toRecord(entry, attachmentIds)`、`BackupBundleValidator.validate(bundle, requireResourceData)` | [`BackupSnapshotArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/BackupSnapshotArchiveMapper.kt)、[`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt)、[`BackupBundleValidator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupBundleValidator.kt) |
-| 编码格式并写入单文件或 tree 目标 | `BackupExportAdapter.encode(bundle, password)`、`BackupArchiveServiceImpl` 调 `BackupFileStore.writeBytes(request.targetUri, encoded)`（接口形参 `uri`, `data`） | [`BackupFormatAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatAdapter.kt)、[`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt) |
+| 编码格式并流式写入单文件或 tree 目标 | `BackupExportAdapter.encode(bundle, password, output)`、`BackupFileStore.openOutput(uri)` | [`BackupFormatAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatAdapter.kt)、[`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt) |
 | 按 `deleteOnFailure` 处理部分导出文件并清理密码副本 | `DefaultBackupOperationGateway.performExport(request, targetUri, deleteOnFailure)`、`tryDeleteFailedExport(targetUri)` | [`DefaultBackupOperationGateway.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt) |
 | 将残留文件结果映射为操作失败与专门通知 | `BackupViewModel.applyResult(ExportCleanupFailed)`、`BackupNoticeMapper.toNoticeCode()` | [`BackupViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupViewModel.kt)、[`BackupNoticeMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupNoticeMapper.kt) |

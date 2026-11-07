@@ -1,6 +1,6 @@
 # Passly Archive v1
 
-状态：当前实现（代码核对：2026-11-06）。
+状态：当前实现（代码核对：2026-11-07）。
 
 ## 文档身份
 
@@ -53,19 +53,13 @@ JSON 使用 Base64；加密 ZIP 使用 `resources/<resource-id>`。路径穿越�
 
 ## 加密容器
 
-- magic：ASCII `PSLYBKP1`；container version 1；整数 big-endian；
-- Argon2id v1.3：iterations 3、memory 65536 KiB、parallelism 4；
-- AES-256-GCM：16-byte salt、12-byte nonce、128-bit tag；
-- `EncryptedBackupExporter.export(bundle, password)` 固定传入 `KeyDerivation.BASELINE_ARGON2ID_PARAMETERS` 调 `EncryptedBackupContainerCodec.encrypt(zipContent, password, parameters)`；认证 Envelope 的 `DeviceKdfConfiguration` 不参与备份。
-- 从 magic 到 nonce 的完整头部作为 AAD；每次导出生成新 salt 和 nonce；容器解析后，KDF 参数为 Argon2 v1.3、256-bit key、iterations `1..10`、memory `8192..262144 KiB`、parallelism `1..8` 才可继续。导出与导入都经过同一 `validateContainerKdf(parameters)` 范围检查；导入还在 KDF 前验证容器总长、头长、salt/nonce/tag/ciphertext 长度和无尾随字节。
-- 错误密码与认证失败统一表现为密码错误或文件损坏。
-
-导入调用顺序是 `EncryptedBackupImporter.import(container, password, strategy)` →
-`EncryptedBackupContainerCodec.decrypt(container, password)` → `parse(container)` →
-构造并检查 `Argon2idParameters` / `validateContainerKdf(parameters)` → `deriveKey(password, salt, parameters)` →
-AES-GCM `doFinal(ciphertext)`。头部参数虽未认证前仍是不可信输入，但必须先通过结构和资源上限，才能触发 Argon2；之后头部作为 AAD 参与 GCM 验证。
-
-AES-GCM 明文是包含 `document.json` 与 resources 的完整 ZIP，因此文档和资源属于同一认证边界。
+- Header 使用 ASCII magic `PSLYBKP1`、container version `1`、80-byte canonical header 和 big-endian 整数。头字段依次为 KDF/cipher id、Argon2 参数、salt/prefix 长度、chunk size 与 tag 长度，之后是 16-byte salt 和 4-byte nonce prefix。
+- Argon2id 参数由 `Argon2idParameters` 保存并原样编码；Argon2 v1.3 的参数版本为 `0x13`，当前导出默认 iterations 3、memory 65536 KiB、parallelism 4、key 256 bit。容器版本与 KDF 子版本是不同字段，不互相代替。
+- 导入在派生密钥前拒绝不安全参数：iterations `1..10`、memory `8192..262144 KiB`、parallelism `1..8`、key 256 bit。认证系统的设备 KDF 设置不参与文件格式。
+- 每条记录头为 `type:u8 | sequence:u64be | plaintextLength:u32be`。Data type 为 1，明文最多 1 MiB；terminal type 为 2，明文固定 16 bytes，包含 data record 数与总明文字节数。每条记录使用独立 AES-256-GCM 操作和 16-byte tag。
+- Nonce 是 4-byte 每文件随机 prefix 加 8-byte big-endian 连续序号；完整原始 Header 与 record header 拼接为 AAD。Data sequence 从 0 开始；terminal 使用下一个序号。即使 ZIP reader 已读完中央目录，也必须继续排空容器，验证 terminal 统计、terminal tag 和物理 EOF，之后才能规划或恢复。
+- 每个 chunk 的 tag 通过后才向 ZIP reader 释放明文；错误密码、损坏记录、缺失 terminal、错误统计和尾随字节均失败。导出和导入均为流接口，外部文件上限为 256 MiB。
+- Header/record layout 的职责分别属于 `BackupContainerHeader` 与 `BackupRecordCrypto`；输入/输出分别由 `ChunkedBackupInputStream` / `ChunkedBackupOutputStream` 负责；ZIP entry 由 `BackupZipCodec` 处理。旧单块 v1 payload 不再导入，magic 与数字版本仍保持 v1。
 
 ## 输入上限
 
@@ -78,15 +72,15 @@ Passkey、附件 ZIP、附件描述和密码历史，避免静默丢失无法表
 
 ## 代码位置
 
-导入调用顺序与请求参数传递见[备份导入规划与事务](import.md#导入服务调用链)。关键边界是
-`BackupArchiveServiceImpl.import(request)` 将同一原始 `payload` 先交给
-`BackupFormatRegistry.importer(request.format, payload)` 做 probe，再交给返回 Adapter 的
-`decode(payload, request.password, request.strategy)`；Passly JSON 和加密格式最终都进入
-`BackupImportPlanner.plan(bundle, strategy)`，而 Bitwarden 转换后直接调用通用 Validator。
+导入调用顺序与请求参数传递见[备份导入规划与事务](import.md#导入服务调用链)。Service 将有界输入流交给
+Registry；加密 magic 直接选择加密 Adapter，JSON 由 `JsonFormatDispatcher` 按根级字段单遍选择 Passly 或 Bitwarden。
+三种格式最后都产出 canonical `BackupBundle`，再经 `BackupImportPlanner.plan(bundle, strategy)`。
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 注册归档稳定类型键 | `BackupArchiveKeyRegistry` | [`BackupArchiveKeyRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistry.kt) |
 | 在稳定键与领域 Entry 之间映射 | `KeyedEntryArchiveMapper` | [`KeyedEntryArchiveMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveMapper.kt) |
-| 编码与验证备份归档 | `BackupArchiveCodec`、`KeyedBackupBundleValidator.validate()` | [`BackupArchiveCodec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupArchiveCodec.kt)、[`KeyedBackupBundleValidator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/KeyedBackupBundleValidator.kt) |
-| 加密备份参数、容器头校验与派生顺序 | `EncryptedBackupExporter.export(bundle, password)`、`EncryptedBackupImporter.import(container, password, strategy)`、`EncryptedBackupContainerCodec.encrypt(...)` / `decrypt(...)` / `validateContainerKdf(parameters)` | [`EncryptedBackupExporter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupExporter.kt)、[`EncryptedBackupImporter.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupImporter.kt)、[`EncryptedBackupContainerCodec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/EncryptedBackupContainerCodec.kt) |
+| ZIP document/resource entry 校验 | `BackupZipCodec`、`KeyedBackupBundleValidator.validate()` | [`BackupZipCodec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupZipCodec.kt)、[`KeyedBackupBundleValidator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/KeyedBackupBundleValidator.kt) |
+| 固定协议字段与安全范围 | `BackupContainerV1Spec` | [`BackupContainerV1Spec.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupContainerV1Spec.kt) |
+| Header 与 record 编码/认证 | `BackupContainerHeader`、`BackupRecordCrypto` | [`BackupContainerHeader.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupContainerHeader.kt)、[`BackupRecordCrypto.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/BackupRecordCrypto.kt) |
+| 记录加密流与解密流 | `ChunkedBackupOutputStream`、`ChunkedBackupInputStream` | [`ChunkedBackupOutputStream.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/ChunkedBackupOutputStream.kt)、[`ChunkedBackupInputStream.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/encrypted/ChunkedBackupInputStream.kt) |
