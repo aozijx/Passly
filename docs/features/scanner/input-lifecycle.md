@@ -1,6 +1,6 @@
 # 扫描输入与生命周期
 
-状态：相机/图片主链路已实现；输入恢复与关闭竞态仍待修正和验证。
+状态：相机/图片主链路已实现；`Work.HostPaused` 与显式 `Work.Stopped` 已区分，仍待 Route/Activity Result 关闭竞态、图片解码器取消/客户端清理及设备坐标验收。
 
 相机帧和相册图片都产生原始扫码文本，但输入资源及取消合同不同。`ScannerCameraHost` 持有 CameraX/ML Kit 与 `ImageProxy`；`ScannerViewModel` 持有扫描任务 owner、原始结果状态、剪贴板写入和语义 effect；`ScannerRoute` 持有相册选择、生命周期 effect 与 owner 提供的结果计划。扫码层不解析内容类型，调用方在自己的业务入口转换。
 
@@ -18,7 +18,7 @@
 
 ## 相册图片输入
 
-`ScannerRoute` 通过 `rememberImagePicker { uri, _ -> ... }` 将平台 URI 包装为 `ImageRef(uri.toString())`，并派发 `ScannerUiAction.DecodeImage(image)`。选择照片前先派发 `StartScanning`。`ScannerViewModel.decodeImage(image)` 即使宿主生命周期回调暂时仍处于 `Stopped`，也会创建新 owner、恢复扫描状态后开始图片处理，避免结果回调被旧状态提前丢弃；随后在 owner scope 中调用注入的 `decode(image)`。
+`ScannerRoute` 通过 `rememberImagePicker { uri, _ -> ... }` 将平台 URI 包装为 `ImageRef(uri.toString())`，并派发 `ScannerUiAction.DecodeImage(image)`。选择照片前先派发 `StartScanning`。若 picker 期间宿主停止，`ScannerViewModel.pauseForHost()` 把 owner 设为 `Work.HostPaused` 并让 UI reducer 进入 `Stopped`；图片结果到达时，`decodeImage(image)` 允许从 `HostPaused` 接管新 owner、恢复扫描状态并开始处理。显式 `StopScanning` 则设为 `Work.Stopped`，同一 `DecodeImage(image)` 会被拒绝；销毁后也拒绝输入。接管后在新 owner scope 中调用注入的 `decode(image)`。
 
 默认解码器 `BarcodeImageDecoder.decode(ref)` 以 `withContext(Dispatchers.IO)` 调用 `InputImage.fromFilePath(context, ref.value.toUri())`，之后通过 `suspendCancellableCoroutine` 创建 ML Kit client 并调用 `scanner.process(image)`。完成 listener 先关闭 client；若 continuation 已取消就丢弃结果，否则把首个非空值变为 `Decoded(rawValue)`，无值返回 `NoBarcode`，Task 失败返回 `Failed(error)`。回到 ViewModel 后先执行 `currentCoroutineContext().ensureActive()` 并比较 `work === owner`，再把文本交给 `completeScan(rawValue)` 或发出图片失败 effect；这样旧图片的迟到回调不能更新新任务。
 
@@ -30,7 +30,7 @@
 
 `ScannerViewModelTest` 分别覆盖显式停止、销毁后的迟到输入拒绝，以及宿主暂停期间 picker 结果接管 owner；HostStarted 只恢复 `Work.HostPaused`。这些回归断言和实现已更新，但本轮尚未运行测试。复制文本同样在当前 owner scope 中运行，传给 `SensitiveClipboardWriter.writeSensitiveIf(text) { work === owner }` 的资格闭包会在平台写入前再次核对 owner。
 
-一次性复制、图片提示和震动由 Route 消费；用户可见提示只传 effect 类型，异常文本不进入 Toast。相册选择返回后生命周期 collector 先恢复扫描，随后图片回调派发解码 action。CameraHost 内的原始回调不直接写库或持久化扫描内容。
+一次性复制、图片提示和震动由 Route 消费；用户可见提示只传 effect 类型，异常文本不进入 Toast。`rememberImagePicker` 的 Activity Result callback 派发 `DecodeImage(ImageRef(uri.toString()))`；`collectScannerRouteEffects()` 在生命周期进入 `STARTED` 时派发 `HostStarted`。源码没有建立这两个回调的先后屏障，不能假设照片结果一定在恢复 effect 之后到达。ViewModel 已允许 `HostPaused` 接管有效图片结果，并拒绝显式 `Stopped`/`Destroyed` 后的输入；Route/Activity Result 与关闭交错仍见[扫码待办 Task 4](../../superpowers/plans/2026-11-06-passly-scanner-review-followups.md#task-4区分显式关闭与宿主暂停后的输入恢复资格)。CameraHost 内的原始回调不直接写库或持久化扫描内容。
 
 任务 owner、迟到图片结果和宿主暂停行为由 [`ScannerViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/ScannerViewModelTest.kt) 覆盖；Route 生命周期 effect 由 [`ScannerRouteEffectsTest`](../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/ScannerRouteEffectsTest.kt) 覆盖。它们使用注入的 decode lambda 验证 ViewModel 编排，不调用真正的 ML Kit client；`BarcodeImageDecoder` 同步注册取消/错误与 scanner client 清理仍由扫码待办要求补专用测试。
 
