@@ -1,6 +1,6 @@
 # 通知设置
 
-状态：当前实现（代码核对：2026-11-06）。
+状态：当前实现（代码核对：2026-11-07）。
 
 通知设置将用户偏好与 Android 投递能力分开处理：产品通知总开关、可选消息和主题开关由 Repository 持久化；运行时 `POST_NOTIFICATIONS` 权限、应用通知总开关和通知渠道可用性由平台读取。保存“开启”前必须重新确认平台可用，系统权限不足时不能把产品偏好乐观写成开启。
 
@@ -10,9 +10,11 @@
 
 `NotificationsRoute` 收到 permission effect 后先调用 `viewModel.canLaunchRuntimePermissionRequest(request)`；它要求请求对象身份仍是当前 pending、开启意图仍有效且 owner 仍活跃。通过后调用 `permissionHost.request(POST_NOTIFICATIONS)`。Activity Result 按 `Granted/Denied` 映射为 `RuntimePermissionGranted(request)` 或 `RuntimePermissionDenied(request)`，请求 token 随结果原样回传。
 
-`completeRuntimePermissionRequest(request)` 再检查对象身份与 page owner，随后清除 pending 并重新调用 `readSystemNotificationState()`。只有 `enableWhenGranted` 仍为 true 且 `system.isPlatformAvailable` 才调用 `persistSystemNotificationsEnabled(true)`；否则不写开启偏好并反馈系统不可用。拒绝回调同样核对 token；用户已撤回开启意图时不显示拒绝通知。关闭开关会先把 pending 请求的 `enableWhenGranted` 设为 false，再调用 `persistSystemNotificationsEnabled(false)`，因此迟到授权不能重新开启偏好。
+另有未启动分支：`permissionHost.request(...)` 返回 `Busy` 或 `HostUnavailable` 时，Route 当前把它们也映射为 `RuntimePermissionDenied(request)`。这不是系统弹窗的拒绝回执；ViewModel 会按 token 清除 pending、重读平台状态，并在 `enableWhenGranted` 仍为 true 时发出拒绝提示。忙碌/宿主不可用需要自己的失败、保留意图或重试合同，不能把未启动当成用户拒绝；跟进见[维护 TODO Task 22](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-22)。
 
-页面离开时 `onPageExited(owner, preservePendingPermissionRequest)` 只清理原 owner 的请求；配置重建可将仍有效请求的 owner 置空，新 Route 经 `onPageEntered()` 绑定新 owner 并重发同一个 token。请求结果若来自旧 owner 或旧 token，会在 ViewModel 边界被忽略。请求标识和意图只在 ViewModel 内存中，不进入 SavedState 或 Proto。
+授权回调进入 `completeRuntimePermissionRequest(request)`，检查 request 对象身份和 pending owner 仍 active，再清除 pending 并重新调用 `readSystemNotificationState()`。只有 `enableWhenGranted` 仍为 true 且 `system.isPlatformAvailable` 才调用 `persistSystemNotificationsEnabled(true)`；否则不写开启偏好并反馈系统不可用。拒绝回调在 `onAction(RuntimePermissionDenied(request))` 分支只检查 request 对象身份，清除 pending，并在 `enableWhenGranted` 为 true 时发出拒绝提示；它没有单独检查 owner。正常离页时 `onPageExited(owner, preservePendingPermissionRequest=false)` 已清除该 owner 的 pending，因此旧 token 会失效。关闭开关会先把 pending 请求的 `enableWhenGranted` 设为 false，再调用 `persistSystemNotificationsEnabled(false)`，因此迟到授权不能重新开启偏好，迟到拒绝也不会显示拒绝通知。
+
+页面离开时 `onPageExited(owner, preservePendingPermissionRequest)` 只清理原 owner 的请求；配置重建可将仍有效请求的 owner 置空，新 Route 经 `onPageEntered()` 绑定新 owner 并重发同一个 token。真正离页清除 pending 后，旧 token 的 grant/deny 都会被忽略；配置重建保留同一 token，因此结果按新的 pending owner 处理。请求标识和意图只在 ViewModel 内存中，不进入 SavedState 或 Proto。拒绝分支与授权分支的 owner 校验位置不同；Activity/系统弹窗组合仍以 Task 22 设备验收为准。
 
 ## 消息偏好写入
 
