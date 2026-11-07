@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.presentation
 
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
@@ -123,6 +124,7 @@ class BackupViewModelAccessTest {
     private fun model(access: MutableAccess): BackupViewModel =
         BackupViewModel(
             backupOperationGateway = FakeBackupOperationGateway(),
+            errorReporter = AppErrorReporter { _, _ -> Unit },
             secureSessionAccessState = access,
         )
 

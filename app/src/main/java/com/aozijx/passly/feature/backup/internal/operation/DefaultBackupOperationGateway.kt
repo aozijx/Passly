@@ -47,20 +47,15 @@ internal class DefaultBackupOperationGateway
 
         override suspend fun checkDirectoryWritable(uri: String?): BackupExecutionResult {
             if (uri.isNullOrBlank()) return BackupExecutionResult.Failure(BackupFailed())
-            return storageSupport.checkDirectoryWritable(uri).fold(
+            val checkResult =
+                try {
+                    storageSupport.checkDirectoryWritable(uri)
+                } catch (failure: Throwable) {
+                    return failureResult(failure, OperationCode("backup_check_writable"))
+                }
+            return checkResult.fold(
                 onSuccess = { BackupExecutionResult.DirectoryWritable },
-                onFailure = { failure ->
-                    if (failure is CancellationException || failure is Error) throw failure
-                    val error = AppError.fromThrowable(failure)
-                    errorReporter.report(
-                        error,
-                        ErrorReportContext(
-                            operation = OperationCode("backup_check_writable"),
-                            category = LogCategory.BACKUP,
-                        ),
-                    )
-                    BackupExecutionResult.Failure(error)
-                },
+                onFailure = { failure -> failureResult(failure, OperationCode("backup_check_writable")) },
             )
         }
 
@@ -78,8 +73,7 @@ internal class DefaultBackupOperationGateway
                             fileName = request.fileName,
                             mimeType = request.format.mimeType,
                         ).getOrElse { error ->
-                            if (error is CancellationException || error is Error) throw error
-                            return@authorizeOperation BackupExecutionResult.Failure(AppError.fromThrowable(error))
+                            return@authorizeOperation failureResult(error, OperationCode("backup_create_export_target"))
                         }
                 performExport(request, targetUri, deleteOnFailure = true)
             }
@@ -101,17 +95,21 @@ internal class DefaultBackupOperationGateway
         private suspend fun authorizeOperation(
             purpose: AuthenticationPurpose,
             operation: suspend () -> BackupExecutionResult,
-        ): BackupExecutionResult =
-            when (
-                val authorization =
+        ): BackupExecutionResult {
+            val authorization =
+                try {
                     authorizationGate.authorize(AuthorizationScope.Global(purpose)) {
                         operation()
                     }
-            ) {
+                } catch (failure: Throwable) {
+                    return failureResult(failure, OperationCode(purpose.name.lowercase()))
+                }
+            return when (authorization) {
                 is AuthorizationResult.Allowed -> authorization.value
                 AuthorizationResult.Cancelled -> BackupExecutionResult.Cancelled
                 is AuthorizationResult.Denied -> BackupExecutionResult.Failure(BackupFailed())
             }
+        }
 
         private suspend fun performExport(
             request: BackupExportOperationRequest,
@@ -146,6 +144,7 @@ internal class DefaultBackupOperationGateway
                             val cleanupFailure = tryDeleteFailedExport(targetUri)
                             if (cleanupFailure is CancellationException || cleanupFailure is Error) throw cleanupFailure
                             if (cleanupFailure != null) {
+                                failureResult(cleanupFailure, OperationCode("backup_export_cleanup"))
                                 return BackupExecutionResult.ExportCleanupFailed(result.error, cleanupFailure)
                             }
                         }
@@ -176,7 +175,7 @@ internal class DefaultBackupOperationGateway
                         if (preferredFailure !== error) throw preferredFailure
                     }
                 }
-                BackupExecutionResult.Failure(AppError.fromThrowable(error))
+                failureResult(error, OperationCode("backup_export"))
             } finally {
                 password?.fill('\u0000')
             }
@@ -203,7 +202,7 @@ internal class DefaultBackupOperationGateway
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
-                BackupExecutionResult.Failure(AppError.fromThrowable(error))
+                failureResult(error, OperationCode("backup_import"))
             } finally {
                 password?.fill('\u0000')
             }
@@ -219,4 +218,17 @@ internal class DefaultBackupOperationGateway
                     failure
                 }
             }
+
+        private suspend fun failureResult(
+            failure: Throwable,
+            operation: OperationCode,
+        ): BackupExecutionResult.Failure {
+            if (failure is CancellationException || failure !is Exception) throw failure
+            val error = AppError.fromThrowable(failure)
+            errorReporter.report(
+                error,
+                ErrorReportContext(operation = operation, category = LogCategory.BACKUP),
+            )
+            return BackupExecutionResult.Failure(error)
+        }
     }

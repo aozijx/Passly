@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.backup.presentation
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.error.model.AppError
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -93,6 +96,32 @@ class BackupViewModelLifecycleTest {
         }
 
     @Test
+    fun `thrown ordinary operation failure ends workflow logs and wipes password`() =
+        runTest {
+            val failure = IOException("gateway failure")
+            val reports = mutableListOf<AppError>()
+            val model =
+                model(errorReporter = AppErrorReporter { error, _ -> reports += error }) {
+                    throw failure
+                }
+            val owner = model.onPageEntered()
+            val requestId = requestImport(model, owner)
+            model.onAction(BackupUiAction.StartImport("content://backup/document", owner, requestId))
+            model.onAction(BackupUiAction.UpdatePassword("secret"))
+            val password = model.uiState.value.workflow.password() as OwnedChars
+            val effect = async { model.effects.first() }
+
+            model.onAction(BackupUiAction.SubmitImport)
+            runCurrent()
+
+            assertEquals(BackupNoticeEffect.Failed(BackupOperation.IMPORT), effect.await())
+            assertTrue(model.uiState.value.workflow is BackupWorkflow.Failed)
+            assertTrue(password.isWiped)
+            assertEquals(1, reports.size)
+            model.onPageExited(owner)
+        }
+
+    @Test
     fun `viewmodel destruction cancels import and wipes the owned password value`() =
         runTest {
             val started = CompletableDeferred<BackupImportOperationRequest>()
@@ -149,6 +178,7 @@ class BackupViewModelLifecycleTest {
             val model =
                 BackupViewModel(
                     backupOperationGateway = gateway,
+                    errorReporter = AppErrorReporter { _, _ -> Unit },
                     secureSessionAccessState =
                         object : SecureSessionAccessState {
                             override val authenticationState =
@@ -192,9 +222,13 @@ class BackupViewModelLifecycleTest {
             (effect.await() as BackupEffect.SelectImportDocument).requestId
         }
 
-    private fun model(performImport: suspend (BackupImportOperationRequest) -> BackupExecutionResult) =
+    private fun model(
+        errorReporter: AppErrorReporter = AppErrorReporter { _, _ -> Unit },
+        performImport: suspend (BackupImportOperationRequest) -> BackupExecutionResult,
+    ) =
         BackupViewModel(
             backupOperationGateway = FakeBackupOperationGateway(performImport),
+            errorReporter = errorReporter,
             secureSessionAccessState =
                 object : SecureSessionAccessState {
                     override val authenticationState =

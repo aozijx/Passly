@@ -41,6 +41,71 @@ import org.junit.Test
 
 class DefaultBackupOperationGatewayTest {
     @Test
+    fun `authorization exception becomes a reported backup failure`() =
+        runTest {
+            val gate = RecordingAuthorizationGate().apply { failure = IOException("authorization failed") }
+            val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = UnusedBackupService,
+                    storageSupport = RecordingStorageSupport(gate),
+                    authorizationGate = gate,
+                    errorReporter = AppErrorReporter { error, _ -> reported += error },
+                )
+
+            val result = gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = false)
+
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertEquals(1, reported.size)
+        }
+
+    @Test
+    fun `configured directory read exception becomes a reported backup failure`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val readFailure = IOException("directory settings read failed")
+            val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = kotlinx.coroutines.flow.flow<String?> { throw readFailure }
+                        },
+                    backupService = UnusedBackupService,
+                    storageSupport = RecordingStorageSupport(gate),
+                    authorizationGate = gate,
+                    errorReporter = AppErrorReporter { error, _ -> reported += error },
+                )
+
+            val result = gateway.exportToConfiguredDirectory(exportRequest())
+
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertEquals(1, reported.size)
+        }
+
+    @Test
+    fun `directory check exception becomes a reported backup failure`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val storage = RecordingStorageSupport(gate).apply { directoryCheckThrown = IOException("directory check failed") }
+            val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService = UnusedBackupService,
+                    storageSupport = storage,
+                    authorizationGate = gate,
+                    errorReporter = AppErrorReporter { error, _ -> reported += error },
+                )
+
+            val result = gateway.checkDirectoryWritable("content://tree")
+
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertEquals(1, reported.size)
+        }
+
+    @Test
     fun `returned export failure exposes incomplete target when deletion returns false`() =
         runTest {
             val gate = RecordingAuthorizationGate()
@@ -361,6 +426,42 @@ class DefaultBackupOperationGatewayTest {
         }
 
     @Test
+    fun `ordinary import exception becomes failure and clears the operation password`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val failure = IOException("import read failed")
+            var operationPassword: CharArray? = null
+            val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
+                                operationPassword = request.password
+                                throw failure
+                            }
+                        },
+                    storageSupport = RecordingStorageSupport(gate),
+                    authorizationGate = gate,
+                    errorReporter = AppErrorReporter { error, _ -> reported += error },
+                )
+            val result =
+                gateway.import(
+                    BackupImportOperationRequest(
+                        sourceUri = "content://documents/import",
+                        password = OwnedChars.fromString("secret"),
+                        mode = ImportMode.APPEND,
+                        strategy = BackupImportStrategy.STRICT,
+                    ),
+                )
+
+            assertTrue(result is BackupExecutionResult.Failure)
+            assertTrue(requireNotNull(operationPassword).all { it == '\u0000' })
+            assertEquals(1, reported.size)
+        }
+
+    @Test
     fun `failed partial export cleanup is attached to the original cancellation`() =
         runTest {
             val gate = RecordingAuthorizationGate()
@@ -516,6 +617,7 @@ class DefaultBackupOperationGatewayTest {
     private class RecordingAuthorizationGate : AuthorizationGate {
         var inside = false
         var scope: AuthorizationScope? = null
+        var failure: Throwable? = null
 
         override suspend fun <T> authorize(
             scope: AuthorizationScope,
@@ -523,6 +625,7 @@ class DefaultBackupOperationGatewayTest {
             block: suspend (AuthorizationPermit) -> T,
         ): AuthorizationResult<T> {
             this.scope = scope
+            failure?.let { throw it }
             inside = true
             return try {
                 AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
@@ -540,6 +643,7 @@ class DefaultBackupOperationGatewayTest {
         val deletedUris = mutableListOf<String>()
         var targetFailure: Throwable? = null
         var directoryCheckFailure: Throwable? = null
+        var directoryCheckThrown: Throwable? = null
         var deleteResult = true
         var deleteFailure: Throwable? = null
 
@@ -567,6 +671,7 @@ class DefaultBackupOperationGatewayTest {
 
         override suspend fun checkDirectoryWritable(directoryTreeUri: String): Result<Unit> {
             checkedDirectoryUri = directoryTreeUri
+            directoryCheckThrown?.let { throw it }
             return directoryCheckFailure?.let { Result.failure(it) } ?: Result.success(Unit)
         }
     }

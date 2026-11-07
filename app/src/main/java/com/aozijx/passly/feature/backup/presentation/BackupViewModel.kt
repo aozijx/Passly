@@ -2,7 +2,13 @@ package com.aozijx.passly.feature.backup.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.error.mapping.fromThrowable
+import com.aozijx.passly.core.error.model.AppError
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.observability.LogCategory
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.reporting.AppErrorReporter
+import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -17,6 +23,7 @@ import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +36,7 @@ internal class BackupViewModel
     constructor(
         private val backupOperationGateway: BackupOperationGateway,
         private val secureSessionAccessState: SecureSessionAccessState,
+        private val errorReporter: AppErrorReporter,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(BackupUiState())
         val uiState: StateFlow<BackupUiState> = _uiState.asStateFlow()
@@ -244,6 +252,18 @@ internal class BackupViewModel
             viewModelScope.launch {
                 try {
                     applyResult(block(), operation, owner, exportFileName)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    val error = AppError.fromThrowable(failure)
+                    errorReporter.report(
+                        error,
+                        ErrorReportContext(
+                            operation = OperationCode("backup_viewmodel_execute"),
+                            category = LogCategory.BACKUP,
+                        ),
+                    )
+                    applyResult(BackupExecutionResult.Failure(error), operation, owner, exportFileName)
                 } finally {
                     password.wipe()
                 }

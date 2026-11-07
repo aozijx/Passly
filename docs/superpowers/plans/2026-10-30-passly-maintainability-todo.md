@@ -179,11 +179,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 41：保证 Backup Gateway 异常能结束操作状态
 
-- [ ] 让 `DefaultBackupOperationGateway` 的公开操作遵守统一终态合同：`AuthorizationGate`、备份目录设置读取、SAF storage port 或 archive service 抛出的非取消异常都必须成为 `BackupExecutionResult.Failure`，不能越过 Gateway 边界；`CancellationException` 继续传播，提交/清理与敏感密码清零顺序保持不变。不要在 Gateway 与 ViewModel 两层重复捕获和映射同一异常。
-- [ ] 覆盖 `BackupViewModel.execute()` 的异常终态：操作开始后任何失败都应复位忙碌/Executing 状态、发布当前 page owner 的失败 effect 并保留可重试工作流；不得把原始异常直接抛进 `viewModelScope`，也不能把取消伪装成普通失败。Gateway 已返回 `Failure` 时继续沿现有 reducer/notice 映射处理。
-- [ ] 扩展 `DefaultBackupOperationGatewayTest`、`BackupViewModelLifecycleTest` 与 `BackupViewModelAccessTest`，至少注入配置目录 `Flow.first()` 失败、AuthorizationGate 抛异常、storage/check 或 archive service 抛异常及协程取消；断言 Result、页面终态、失败反馈、密码擦除和可重试性。将“设置流异常”与[DataStore 长期订阅恢复合同](../../data/settings-storage.md)分开，将“页面退出/执行取消”与页面工作所有权及退出取消合同分开；运行 Backup 定向测试、`verifyArchitecture` 和 `git diff --check`。
+- [x] 让 `DefaultBackupOperationGateway` 的公开操作遵守统一终态合同：`AuthorizationGate`、备份目录设置读取、SAF storage port 或 archive service 抛出的普通异常都变成 `BackupExecutionResult.Failure` 并通过 `AppErrorReporter` 记录；`CancellationException` 和 fatal `Error` 继续传播，提交/清理与敏感密码清零顺序保持不变。Gateway 映射后 ViewModel 不会重复处理同一异常。
+- [x] 覆盖 `BackupViewModel.execute()` 的异常终态：漏出的普通异常复位 Executing 状态、报告错误并经当前 page owner 发布失败 effect；密码仍在 `finally` 清除，可再次使用失败工作流；取消继续传播。
+- [x] 扩展 `DefaultBackupOperationGatewayTest`、`BackupViewModelLifecycleTest` 与 `BackupViewModelAccessTest`，注入目录 `Flow.first()`、AuthorizationGate、storage/check、archive service 和 ViewModel 普通异常，并保留协程取消、目标清理及敏感密码清零断言。Backup 包定向单测与 `verifyArchitecture`、`git diff --check` 已通过；一次性目录读取异常与 `RecoverableRead` 长期订阅恢复分别由不同 owner 验证。
 
-**证据：** `BackupViewModel.execute()` 先同步调用 `BackupMutation.OperationStarted`，协程体只在 `try/finally` 中调用 Gateway、映射正常返回结果和擦除密码；没有 catch。Gateway 抛出异常时不会调用 `applyResult(Failure)`，Reducer 会留在执行阶段，异常交给 `viewModelScope` 的未处理异常路径。`DefaultBackupOperationGateway.authorizeOperation()` 未映射 `AuthorizationGate.authorize()` 的异常；`exportToConfiguredDirectory()` 的 `settingsSource.backupDirectoryUri.first()` 位于捕获范围外；`checkDirectoryWritable()` 只处理 storage port 返回的 `Result`。Export/Import 映射 archive service 的普通异常，但不覆盖其之前的授权、配置读取或 target 创建步骤。已有 `DefaultBackupOperationGatewayTest` 覆盖部分返回失败与取消路径，`BackupViewModelLifecycleTest` 覆盖返回 `Failure`、销毁取消和密码清理；尚未覆盖上述端口直接抛出异常后的页面终态。该异常状态卡住由当前控制流直接推导，尚未通过新行为测试复现。
+**2026-11-08 Backup 异常终态批次：** `DefaultBackupOperationGateway` 在授权回调边界接住授权/操作普通异常，设置目录 `Flow.first()`、export target 创建、可写性检查和 archive service 的直接异常均映射到 `BackupExecutionResult.Failure` 并通过 `AppErrorReporter` 记录；取消与 fatal `Error` 原样传播，部分 export 清理优先级及操作密码 `finally` 清零保留。`BackupViewModel.execute()` 作为兜底边界将漏出的普通异常报告并映射到既有失败 mutation/notice，当前页面可重试；Gateway 已映射的结果不会再被 ViewModel 重复捕获。新增授权 gate、目录 Flow、storage check、import service 与 VM 抛错回归，包含报告次数、页面失败终态和密码清零。`:app:testDebugUnitTest --tests "com.aozijx.passly.feature.backup.*" verifyArchitecture` 通过；生成测试 XML 汇总 Backup package 119 项、0 failures/errors；`git diff --check` 通过。
 
 <a id="task-32"></a>
 
