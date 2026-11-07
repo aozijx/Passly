@@ -4,6 +4,8 @@
 
 **扫描基线：** 历史报告 `31407fa0-a844-4159-a842-24d931430f4b` 针对 `438083bdbf7e3c7cf42813d3637b22ce77fb7418`，虽生成全仓清单（1,536 个文件），人工审查仅集中于安全敏感路径。后续扫描 `8478ba3f-584f-4f5a-ae17-c91c05981435` 针对 `c41984deb4da90db11d8dfb10926dda391042a40` 完成时 HEAD 已前进，所以又对最新快照 `651ae33f552a02601ed5745e7d79aaba2a994586` 运行扫描 `5a9b077c-d16d-4ead-b5c5-25b0bc1dd29a`。最新报告重新确认三条低严重度问题；Wi-Fi 候选按当前 SECRET 策略驳回，产品策略一致性仍待明确。报告覆盖清单 1,632 个文件，但人工审查覆盖仍为 partial；详见扫描报告。
 
+<a id="task-1"></a>
+
 ## Task 1：裁定 Wi-Fi 密码的内联显示授权策略
 
 - [ ] 由产品/安全策略明确 Wi-Fi 密码“显示”与“复制/二维码导出”是否有意采用不同的新鲜认证要求。当前 Domain 将 `SECRET` 定义为解锁后披露类别，与 `HIGH_SENSITIVITY` 区分；现有测试明确验证 Wi-Fi 密码可在无字段级授权时内联 reveal。仅凭复制和 QR 有额外授权，不能推断内联显示一定违反策略。
@@ -14,6 +16,8 @@
 **当前证据（2026-11-06）：** `WifiEntryDefinition` 使用 `secret(FieldKey.PASSWORD)`；Domain 的 `SECRET` 与 `HIGH_SENSITIVITY` 是不同访问级别。`RevealEntryFieldsUseCaseTest` 明确名为 `wifi password is read as low sensitivity without field authorization`，验证该读取不触发字段授权；mapper 测试也锁定 Wi-Fi 密码留在加密 aggregate。Detail 路径要求完整安全会话并在锁定时清理状态，copy 与 QR 则各有额外授权。独立复核确认上述行为，但未发现能证明内联 reveal 违反既定安全策略的合同。因此这是待裁定的策略一致性候选，而非已验证漏洞。
 
 **验收：** 写明策略决定及依据；相关 Domain/Data/App 单测和文档一致。若改存储合同，检查调用者和跨层数据流、事务失败及新格式数据保留；旧开发数据如不兼容，给出明确重置/重新安装说明，不在运行时静默删库。持久化 key、Room schema 版本及备份格式版本保持 1。
+
+<a id="task-2"></a>
 
 ## Task 2：避免活动会话 lease 未退出时关闭数据库
 
@@ -26,6 +30,8 @@
 
 **验收：** 非合作 lease 测试证明 close 不早于 lease 退出/资源 abort；既有锁定、取消和 close 失败测试保持通过；用户提供的 Runtime lease 规则与实现和文档一致。
 
+<a id="task-3"></a>
+
 ## Task 3：限制未认证备份头触发的 Argon2 资源消耗
 
 - [ ] 根据最低支持 Android 设备可承受的资源预算，确定导入专用的 Argon2 memory、iteration、parallelism 上限。导出强度合同与导入防滥用合同分开裁定；不得因复用 validator 而意外削弱导出保护，也不得沿用当前 256 MiB 导入内存上限而不说明依据。
@@ -36,6 +42,8 @@
 **当前证据（2026-11-06）：** `EncryptedBackupContainerCodec` 仍允许导入 memory `256 * 1024 KiB`、iterations 10、parallelism 8；`decrypt()` 解析未认证 header 后先调用 `deriveKey(...)`，之后才执行 AES-GCM `doFinal`。`BackupFileStore.MAX_READ_BYTES` 仍为 256 MiB，Android 实现会将输入读入内存。
 
 **验收：** 精确备份容器测试通过；KDF 超限用例证明派生函数未调用；新格式参数往返和畸形输入拒绝通过；若导入预算淘汰旧开发备份，明确报错，不提供隐式兼容分支；Room/备份格式版本不变；`git diff --check` 通过。
+
+<a id="task-4"></a>
 
 ## Task 4：限制各类备份导入的内存放大
 
@@ -52,6 +60,8 @@
 当前安全边界结论：未发现无需用户选择文件即可到达此导入路径的调用者，所以扫描候选不能仅凭这些分配认定为外部可利用漏洞；但用户选择极大/特制文件可能让应用进程承受明显内存压力，仍应按资源预算和导入健壮性事项设计、验证。尚无最低设备内存预算、并发/峰值测量或“拒绝发生在文本/对象图物化前”的证据，故整体累计预算仍未闭合；不要把 `readBytesSafely` 的单文件 cap 或 ZIP 层 cap 描述为全链路内存预算。
 
 **验收：** 精确 JSON 导入和格式互操作测试通过；超限输入在资源物化前被拒绝；格式版本不变；相关模块验证、`verifyArchitecture` 与 `git diff --check` 通过。
+
+<a id="task-5"></a>
 
 ## Task 5：对齐诊断导出的堆栈帧隐私说明
 
@@ -81,11 +91,13 @@
 - [Android 敏感剪贴板](https://developer.android.com/privacy-and-security/risks/secure-clipboard-handling)：敏感标记用于抑制预览。现实现已有敏感标记、所有权令牌和定时清理，未据此报告缺失控制。
 - [Kotlin conventions](https://kotlinlang.org/docs/coding-conventions.html#property-names)：常量采用大写下划线；“文件顶部”是本项目更具体的本地约定，并非所有 Kotlin 项目必须遵守的官方位置规则。
 
+<a id="task-6"></a>
+
 ## Task 6：验证 Legacy Autofill 的网页接收方身份
 
 **状态：deferred；已确认安全问题，中严重度，CWE-346。**
 
-**证据：** `AutofillStructureParser.kt:96-99` 采用首个 `node.webDomain`；`LegacyPlatformAdapter.kt:40-45` 转发；`DiscoverAutofillCandidates.kt:119-124` 在有域名时去掉 package 查询约束。以上 feature 实现现位于 `:feature:autofill`；后续 scope/candidate 检查只保持该初始声明的一致性，最终由 `ResolveAutofillSelection` 读取凭据、`LegacyDatasetFactory` 写入请求的 AutofillIds，再由 App 宿主 `AutofillAuthActivity.finishLegacyWithResult()` 交付。当前未找到 DAL、应用签名/可信浏览器认证或未验证目标的泄露风险确认。
+**证据：** `AutofillStructureParser.kt:96-99` 采用首个 `node.webDomain`；`LegacyPlatformAdapter.kt:40-45` 转发；`DiscoverAutofillCandidates.kt:119-124` 在有域名时去掉 package 查询约束。以上 feature 实现现位于 `:feature:autofill`；后续 scope/candidate 检查只保持该初始声明的一致性，最终由 `ResolveAutofillSelection` 读取凭据、`LegacyDatasetFactory` 写入请求的 AutofillIds，再由 Feature `AutofillFeatureEntry.deliverLegacyResult()` 构造并交付 completion，App `AutofillAuthActivity.completeAutofill()` 执行最终系统回调。当前未找到 DAL、应用签名/可信浏览器认证或未验证目标的泄露风险确认。
 
 **攻击前提：** 普通恶意应用已安装、用户启用 Passly Autofill、库中有其冒充站点的条目，并主动选择/完成所需认证。高影响但有这些前提，故定为中严重度；不是无需交互的静默提取。系统 BIND 权限、严格域名匹配和普通解锁认证均不能证明目标应用拥有自报域名。Credential Manager 目前拒绝 populated origin，本问题限 Legacy 网页路径。
 
@@ -93,6 +105,8 @@
 - [ ] 对明确支持的未验证目标，展示真实应用/包和请求域名，解释跨应用泄露风险并单独确认；普通解锁成功不能替代该确认。确认绑定 interaction、调用方身份、域名和选中条目，替换、锁定和重建后不得复用过期确认。
 - [ ] 使用无关联测试 App 的自定义 ViewStructure 冒充已有站点，证明正常选择/认证不能越过 origin 控制。覆盖合法签名浏览器、关联 App、确认/取消、scope 替换和 API 31/当前 API。
 - [ ] 同步 Autofill 安全文档和中英文风险文案；不把未实现的验证写成已有能力。
+
+<a id="task-7"></a>
 
 ## Task 7：统一主密码创建策略
 
@@ -138,6 +152,8 @@
 - [ ] 为 `ProtoVaultBootstrapStore` 增加真实 DataStore 持久化往返及并发首次写入测试；当前纯参数与信封 AAD 测试未覆盖 Proto 字段 10 的落盘、重启读取和 first-writer-wins 合同。
 
 **本次验证：** `:domain:test` 187 项、`:core:testDebugUnitTest` 80 项、`:security:testDebugUnitTest` 149 项及 `:data:testDebugUnitTest` 通过；`:core:ktlintCheck`、`:security:ktlintCheck`、`:data:ktlintCheck`、`verifyArchitecture`、`:app:processDebugResources`、`:app:compileDebugKotlin` 通过。App 单测编译被并行 Autofill 迁移下 `RecoveryModeBoundaryTest` 访问 `internal StartAutofillInteraction` 的错误阻断。全仓 KtLint 被其他工作流的 Autofill、Scanner、诊断文件问题阻断；本次改动文件在报告中无违例。无连接设备，未做首次启动时长、低内存和实际解锁仪器验证。
+
+<a id="task-10"></a>
 
 ## Task 10：避免把字符池估算当作可证明的密码强度
 
