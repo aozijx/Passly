@@ -123,6 +123,73 @@ class RoomObservationSessionTest {
         }
 
     @Test
+    fun revokedAccessRejectsNewRoomCommandsWhileAdmittedTransactionFinishes() =
+        runBlocking {
+            System.loadLibrary("sqlcipher")
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            val logger = NoOpLogger
+            val access = MutableAuthenticatedAccess()
+            val session =
+                AppDatabaseSession(
+                    resource = AppDatabaseSessionResource(DatabaseProvider(context, logger)),
+                    keySource = SessionKeySource { DATABASE_KEY.copyOf() },
+                    eventLogger = DatabaseSessionEventLogger(logger),
+                    accessState = Provider { access },
+                )
+            val transactionStarted = CompletableDeferred<Unit>()
+            val finishTransaction = CompletableDeferred<Unit>()
+
+            try {
+                assertNull(session.unlock())
+                val transaction =
+                    async(Dispatchers.IO) {
+                        session.transactionFullVault(
+                            onDenied = { false },
+                        ) {
+                            entryCommandDao().insertStrict(
+                                EntryEntity(entryId = "admitted-before-lock", title = "Committed"),
+                            )
+                            transactionStarted.complete(Unit)
+                            finishTransaction.await()
+                            true
+                        }
+                    }
+                transactionStarted.await()
+
+                access.authenticationState.value = AuthenticationState.Locked
+                val softLock = async(Dispatchers.IO) { session.softLock() }
+                withTimeout(10_000L) {
+                    session.lockStateFlow.first { it == SecureSessionState.SOFT_LOCKED }
+                }
+
+                val rejected =
+                    session.queryFullVault(
+                        onDenied = { "access revoked" },
+                    ) {
+                        throw AssertionError("query block ran after authentication was revoked")
+                    }
+                assertEquals("access revoked", rejected)
+                assertFalse(transaction.isCompleted)
+                assertFalse(softLock.isCompleted)
+
+                finishTransaction.complete(Unit)
+                assertTrue(transaction.await())
+                softLock.await()
+                assertEquals(
+                    "Committed",
+                    session.queryForMaintenance {
+                        entryQueryDao().getById("admitted-before-lock")?.title
+                    },
+                )
+            } finally {
+                finishTransaction.complete(Unit)
+                session.seal()
+                context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
+            }
+        }
+
+    @Test
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun activePagingRestartsOnceAfterDatabaseResetAndKeepsQueryFilters() =
         runBlocking {
@@ -668,6 +735,15 @@ class RoomObservationSessionTest {
     }
 
     private class FixedAuthenticatedAccess : SecureSessionAccessState {
+        override val authenticationState =
+            kotlinx.coroutines.flow.MutableStateFlow<AuthenticationState>(
+                AuthenticationState.Authenticated(authenticatedAtMs = 1L),
+            )
+
+        override fun isUnlocked() = true
+    }
+
+    private class MutableAuthenticatedAccess : SecureSessionAccessState {
         override val authenticationState =
             kotlinx.coroutines.flow.MutableStateFlow<AuthenticationState>(
                 AuthenticationState.Authenticated(authenticatedAtMs = 1L),
