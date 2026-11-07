@@ -64,7 +64,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [x] 审计并收口数据库命令入口。`DatabaseTransactionRunner`、Entry/Link/Sensitive/OTP Repository、Autofill Candidate/Credential Resolver、Backup Store、Activity Recorder 与附件 GC 均迁移到 Full Vault 或 Autofill 专用 session API；删除 Repository/runner 自己的授权检查与重复注入。GC 仍在文件副作用前核验 Full Vault。数据库清理使用单独命名的 maintenance API，仍受 Runtime lease/lock gate 保护。没有无授权的通用 `query/transaction` 重载。
 - [x] 统一 `DatabaseTransactionRunner.read()`、`write()` 与 `writeForAutofill()` 的 lease 内授权复核；直接 Full Vault 与 Autofill 命令使用同一个 `AppDatabaseSession` admission 边界。新增边界回归分别让 read/write 的授权第一次为真、lease 内复核时为假，并断言 DAO block 不运行。
 - [ ] 增加可控挂起的跨层终态回归：在 Security lock 等待数据库 lease/resource 与敏感 key 清理时，从 runner、直接 Full Vault Repository 与 Autofill Repository 发起读写，验证线性化点之后新命令不触达 DAO；已进入事务准确报告提交/回滚/取消结果，敏感 permit、会话、DEK、key 与 lock state 一致。边界与真实 Repository 集成测试证明调用闭包后，不需为每个薄适配器复制同一测试。
-- [ ] 核对恢复模式切换、Autofill 会话结束与 idle timeout 的撤权顺序，并补真实 Data lease 与 reset/lock 交错验收；Security fake-session 已覆盖 lock 等待 reset 重开，但尚未覆盖 Room lease/DAO 终态。运行 Security、Runtime Session、Data 事务/会话、`verifyArchitecture` 与 `git diff --check`。Android instrumentation 是否可运行待确认。
+- [x] 串行执行当前 Security、Runtime Session、Data JVM 单测与 `verifyArchitecture`：Security 179/179、Runtime Session 34/34、Data 170/170；目标变更 `git diff --check` 通过。
+- [ ] 在可用设备上验收真实 Data lease/Room DAO 与 Security reset/lock 交错终态；当前 `adb devices` 无连接设备，instrumentation runtime 尚未执行。恢复模式、Autofill session 结束和 idle timeout 的撤权次序仍需按本项统一验收。
 
 **审查证据：** 原调用闭包中 Runner 与多个 Repository 各自只在获取 lease 前检查授权。当前 `AppDatabaseSession` 通过 Hilt `Provider<SecureSessionAccessState>` 获取当前 Security owner，并按 Full Vault/Autofill 语义提供 protected query/transaction；旧的无授权通用 command API 与逐调用谓词均已删除。普通命令入口均已迁移；maintenance API 只给数据库清理与测试 fixture 使用，GC 不使用旁路。Room observations 也由 `AppDatabaseSession.observeFullVaultWhenReadable()` 内部读取授权 Flow，再组合 Runtime lock/generation 重新订阅，Repository 不再注入或传递授权状态。当前边界测试用可控 access-state 验证第二次授权拒绝时 read/write DAO block 不运行；它还未验证真实锁定与 Repository/Autofill 并发入口的提交/取消终态，因此 Task 37 仍未完成。
 
@@ -77,6 +78,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 **2026-11-07 生命周期顺序复核：** idle/background 与 Autofill 结果完成后的释放都调用 `VaultSessionController.lock()`；RecoveryMode 锁定升级为 SEALED，Autofill 最后一个 borrower 释放受结果完成屏障保护。Reset 由 `SecureDatabaseResetCoordinator` 在同一 Security `sessionMutex` 下执行，先 SEALED，再按 Runtime lock state 恢复或撤销 permit/清 key；`security lock waits for database reset to finish reopening` 屏障测试验证 lock 等待 reset 完成。该测试使用可控 DatabaseSession fake，真实 Room lease/DAO 结果与 reset/lock 交错仍未联合验收，因此保留 Task 37。
 
 **2026-11-07 Room 列表订阅收敛：** `DatabaseReadAccess` 在授权、lock state 与 lock generation 合流时采样当前 generation，避免快速重开时组合出重复的可读代际并重启 Room Pager 两次。`RoomObservationSessionTest` 现覆盖真实 SQLCipher PagingSource 的新增、编辑更新、过滤与重置恢复；`:data:testDebugUnitTest` 与设备 `RoomObservationSessionTest` 全类通过。Task 37 仍待真实 Security 撤权与 Data reset 并发终态验收。
+
+**2026-11-08 JVM 验证批次：** Security 全量 179/179、Runtime Session 34/34、Data JVM 170/170 均通过；`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin` 和 `verifyArchitecture` 通过。Security 锁定异常测试将跨协程边界的异常对象 identity 断言收敛为类型与 message，保留清敏、终态和 suppressed failure 断言。一次合并 Gradle 构建曾因 Core Hilt 聚合 wrapper 编译失败；随后独立强制 Data JVM 全量执行通过。`adb devices` 无设备，真实 Room instrumentation 与跨层 reset/lock 仍待验收。
 <a id="task-26"></a>
 
 ### Task 26：明确 Runtime Session 生命周期转换的并发所有者
