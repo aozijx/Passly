@@ -282,6 +282,8 @@ class VaultViewModelClipboardOwnerTest {
     private object TestEntryListQueryRepository : EntryListQueryRepository {
         override val availableCategories: Flow<List<String>> = flowOf(emptyList())
         override val deletedEntries: Flow<List<EntryListItem>> = flowOf(emptyList())
+
+        override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> = emptyList()
     }
 
     private class TestSettingsRepository : LibraryViewSettingsRepository {

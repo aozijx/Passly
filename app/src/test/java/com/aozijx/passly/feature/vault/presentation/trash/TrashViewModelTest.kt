@@ -394,6 +394,8 @@ class TrashViewModelTest {
             object : EntryListQueryRepository {
                 override val deletedEntries = rows
                 override val availableCategories = flowOf(emptyList<String>())
+
+                override suspend fun getActiveByType(entryType: EntryType) = emptyList<EntryListItem>()
             }
         val access =
             object : SecureSessionAccessState {

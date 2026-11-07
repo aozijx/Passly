@@ -40,11 +40,13 @@
 - Add `suspend fun getActiveByType(entryType: EntryType): List<EntryListItem>`; the Data implementation uses the existing active-by-type DAO and `EntryListItemMapper`.
 - Add a Detail interactor that loads active LOGIN summaries, excludes self and existing direct RELATED_TO links, and binds only when both IDs still appear in the active LOGIN result.
 
-- [ ] Write tests proving active LOGIN-only candidates, self/existing-link exclusion, no plaintext reads, endpoint revalidation, and duplicate handling.
-- [ ] Run the interactor/query focused tests and confirm the new cases fail for the missing behavior.
-- [ ] Implement the summary query and bind interactor by reusing `EntryLinkRepository` and `EntryLink.create()`.
-- [ ] Run affected App/Data tests, `verifyArchitecture`, and `git diff --check`.
+- [x] Write tests proving active LOGIN-only candidates, self/existing-link exclusion, no plaintext reads, endpoint revalidation, and duplicate handling.
+- [x] Run the interactor/query focused tests and confirm the new cases fail for the missing behavior.
+- [x] Implement the summary query and bind interactor by reusing `EntryLinkRepository` and `EntryLink.create()`.
+- [x] Run affected App/Data tests, `verifyArchitecture`, and `git diff --check`.
 - [ ] Commit `feat(vault): query and bind saved password entries`.
+
+**Task 1 evidence (2026-11-07):** `RelatedPasswordBindingTest` first failed to compile because the new interactor and `EntryListQueryRepository.getActiveByType` API were absent. The implementation now returns `EntryListItem` summaries from the active-by-type DAO without reading secret bundles, filters self/related candidates, revalidates active LOGIN endpoints before writing, canonicalizes symmetric `RELATED_TO` links, and treats an existing relation as idempotent. The four focused App tests pass; `:data:testDebugUnitTest` and `verifyArchitecture` pass; `git diff --check` passes.
 
 ### Task 2: Include direct related-password links in Detail loading
 

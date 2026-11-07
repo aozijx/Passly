@@ -4,6 +4,7 @@ import com.aozijx.passly.data.local.database.query.buildEntryCategoryQuery
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryListItemMapper
 import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import javax.inject.Inject
@@ -19,6 +20,15 @@ internal class RoomEntryListQueryRepository
     constructor(
         private val databaseSession: AppDatabaseSession,
     ) : EntryListQueryRepository {
+        override suspend fun getActiveByType(entryType: EntryType) =
+            databaseSession.queryFullVault(
+                onDenied = { emptyList() },
+            ) {
+                entryQueryDao().getActiveByType(entryType).map { entity ->
+                    EntryListItemMapper.assemble(entity, EntryProfileMapper.fromEntity(entity))
+                }
+            }
+
         override val deletedEntries: Flow<List<EntryListItem>> =
             databaseSession.observeFullVaultWhenReadable(emptyValue = { emptyList() }) {
                 entryQueryDao()
