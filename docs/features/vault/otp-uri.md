@@ -18,7 +18,7 @@
 Scanner 将损坏或不支持的 OTP URI 保留为普通文本；编辑器报告解析失败并保留已经输入的凭据，不改用
 另一种算法或猜测计数器。
 
-扫码由 `VaultRoute` 与 `AddOtpEditorRoute` 的 `resolveResult(rawValue)` 在 owner 边界调用 `OtpAuthUriCodec.parse(rawValue)`；解析出的 `config` 被保存在确认计划中，只有 `Parsed(config)` 才进入对应的导入或表单应用流程。扫描结果 owner 与回执合同见[Scanner 结果交接](../scanner/import-results.md)。OTP 编辑器手动粘贴则由 `AddOtpViewModel.onAction(UriChanged(value, reportFailure))` 进入
+扫码由 `VaultRoute` 与 `AddOtpEditorRoute` 的 `resolveResult(rawValue)` 在 owner 边界调用 `OtpAuthUriCodec.parse(rawValue)`；解析出的 `config` 被保存在确认计划中，只有 `Parsed(config)` 才进入对应的导入或表单应用流程。扫描结果 owner 与回执合同见[Scanner 结果交接](../scanner/result-handoff.md)。OTP 编辑器手动粘贴则由 `AddOtpViewModel.onAction(UriChanged(value, reportFailure))` 进入
 `updateUri(value, reportFailure)`，传入 `value` 解析；成功时将 `parsed.config` 映射到当前表单，只有请求允许报告失败时才发
 `UriParseFailed`。扫码得到的 config 由 `tryApplyScannedConfig(config)` 填入当前表单，不再重复 parse，也不直接保存。
 

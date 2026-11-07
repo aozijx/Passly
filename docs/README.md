@@ -127,7 +127,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 - [总览](features/scanner/overview.md)
 - [输入生命周期](features/scanner/input-lifecycle.md)
-- [导入结果](features/scanner/import-results.md)
+- [结果交接](features/scanner/result-handoff.md)
 
 ## 4. 验证、维护与交付
 
