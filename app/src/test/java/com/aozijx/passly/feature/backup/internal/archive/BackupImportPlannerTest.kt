@@ -8,10 +8,29 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class BackupImportPlannerTest {
+    @Test
+    fun candidateValidationSkipsOnlyExpectedValidationExceptions() {
+        assertFalse(
+            BackupImportPlanner.isCandidateValid {
+                throw IllegalArgumentException("invalid entry")
+            },
+        )
+
+        val fatalError = AssertionError("fatal validator failure")
+        val propagated =
+            assertThrows(AssertionError::class.java) {
+                BackupImportPlanner.isCandidateValid { throw fatalError }
+            }
+
+        assertSame(fatalError, propagated)
+    }
+
     @Test
     fun compatibleImportIgnoresUnknownFields() {
         val plan =
@@ -61,6 +80,24 @@ class BackupImportPlannerTest {
         assertThrows(IllegalArgumentException::class.java) {
             BackupImportPlanner.plan(source, BackupImportStrategy.STRICT)
         }
+    }
+
+    @Test
+    fun compatibleImportSkipsEntryRejectedByStructuralValidation() {
+        val plan =
+            BackupImportPlanner.plan(
+                bundle(
+                    entry("note", listOf(BackupFieldRecord("password", BackupFieldValue.text("invalid")))),
+                    entry(
+                        "note",
+                        listOf(BackupFieldRecord("title", BackupFieldValue.text("Known"))),
+                    ).copy(id = "valid-note"),
+                ),
+                BackupImportStrategy.COMPATIBLE,
+            )
+
+        assertEquals(listOf("valid-note"), plan.bundle.document.entries.map { it.id })
+        assertEquals(1, plan.summary.skippedEntryCount)
     }
 
     @Test

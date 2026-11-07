@@ -15,6 +15,14 @@ internal data class BackupImportPlan(
 internal object BackupImportPlanner {
     private val archiveOnlyFields = setOf("icon_name", "icon_color")
 
+    internal fun isCandidateValid(validate: () -> Unit): Boolean =
+        try {
+            validate()
+            true
+        } catch (_: IllegalArgumentException) {
+            false
+        }
+
     fun plan(
         bundle: BackupBundle,
         strategy: BackupImportStrategy,
@@ -45,7 +53,7 @@ internal object BackupImportPlanner {
                     }
                 val candidate = entry.copy(fields = knownFields, attachmentIds = emptyList())
                 val valid =
-                    runCatching {
+                    isCandidateValid {
                         BackupBundleValidator.validate(
                             BackupBundle(
                                 document =
@@ -57,7 +65,7 @@ internal object BackupImportPlanner {
                             ),
                             requireResourceData = false,
                         )
-                    }.isSuccess
+                    }
                 if (!valid) {
                     skippedEntryCount++
                     null

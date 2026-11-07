@@ -1,15 +1,17 @@
 # Passly Backup 文档扫描待办
 
+**2026-11-07 复核/排序：** Tasks 1/2/3/5 retained；Task 4 为敏感 String 驻留评估，不升级为外泄结论。先按主待办 Task 86 恢复反馈基线；Task 5 与主待办 41 共用 Gateway 结果合同，Task 1 fatal 边界已实现并验证；下一步落实 Task 2 前置/累计预算与 Task 3 编排测试。已有 ZIP 单项/累计 cap 和 bundle 限制，不描述为完全无上限；缺口是物化前拒绝及峰值副本预算。
+
 **状态：** 待实现与验证。条目来自 2026-11-06 对归档调用链的静态核对；本文件记录问题和验收，不代表已修改运行实现。
 
 ## Task 1：兼容导入不能把 fatal Error 当成无效条目
 
-- [ ] 检查 `BackupImportPlanner.plan(bundle, strategy)` 兼容分支逐 Entry 校验处的 `runCatching { BackupBundleValidator.validate(...) }`。Kotlin `runCatching` 捕获 `Throwable`，当前 `isSuccess` 将 `OutOfMemoryError`、`LinkageError` 等 fatal `Error` 解释为普通候选校验失败，随后可能把该 Entry 计入 `skippedEntryCount` 并继续导入。
-- [ ] 收窄候选校验失败分类：只把预期的结构/业务验证异常转换为“跳过该条目”，让 fatal `Error` 原样逸出；不要掩盖恢复资源清理或主错误传播合同。
-- [ ] 增加兼容导入测试，证明候选验证抛出的普通校验异常可跳过该条目，而 fatal `Error` 不会变成成功的兼容导入结果；同时保留未知字段/类型的计数行为。
-- [ ] 更新导入工作流文档和兼容导入验证记录，说明何种错误会跳过单个 Entry、何种错误终止整个导入。
+- [x] 检查 `BackupImportPlanner.plan(bundle, strategy)` 兼容分支逐 Entry 校验处原有的 `runCatching { BackupBundleValidator.validate(...) }`。Kotlin `runCatching` 捕获 `Throwable`，会把 fatal `Error` 误记为普通候选验证失败并继续导入。
+- [x] 收窄候选校验失败分类：只把 `IllegalArgumentException`（validator 的结构/业务 `require` 失败）转换为“跳过该条目”，fatal `Error` 原样逸出。
+- [x] 增加兼容导入测试，证明 `IllegalArgumentException` 会跳过候选、fatal `Error` 不会变成成功的兼容导入结果；保留未知字段/类型及结构无效条目的行为。
+- [x] 更新导入工作流文档和兼容导入验证记录，说明何种错误会跳过单个 Entry、何种错误终止整个导入。
 
-**当前证据（2026-11-06）：** `BackupImportPlanner.kt` 的兼容策略对每个候选构造无附件的 `BackupBundle` 并调用 `BackupBundleValidator.validate(..., requireResourceData = false)`；其结果由 `runCatching { ... }.isSuccess` 判定。Kotlin `runCatching` 捕获所有 `Throwable`，因此 fatal `Error` 会被当作 `valid = false`，计入跳过分支。相邻的 `JsonBackupImporter` 与 `BackupArchiveCodec.readZip()` 也使用 `catch(Throwable)`，但只在解码失败时擦除已分配的资源缓冲后立即 `throw error`；这类窄清理逻辑保留原 fatal 传播，不是本 Task 的同一问题。此条是静态确认，尚未运行测试或修改实现。
+**实现与验证（2026-11-07）：** 逐 Entry 分类提取为 `BackupImportPlanner.isCandidateValid()`，仅捕获 validator 用 `require` 发出的 `IllegalArgumentException`；其余异常和 fatal `Error` 均继续传播。新增分类测试证明 fatal `AssertionError` 保持同一实例逸出，并覆盖结构无效条目跳过；原有未知字段、未知类型、严格策略与重复 Link 测试保留。`BackupImportPlannerTest` 定向运行通过。正式流程与验证映射见[导入工作流](../../features/backup/import.md)和[备份验证](../../features/backup/verification.md)。
 
 **验收：** 验证异常按兼容合同计数；fatal `Error` 从规划器传播且不产生部分恢复成功；相关导入测试和质量门禁通过。
 
