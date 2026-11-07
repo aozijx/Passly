@@ -1,8 +1,8 @@
 # Passly Backup 文档扫描待办
 
-**2026-11-07 复核/排序：** Tasks 1/3/5 retained；Task 1 fatal 边界与 Task 3 service 编排测试已实现并验证；Task 5 清理失败反馈已实现并补测试，但本次运行被无关认证测试源码编译错误阻断。Task 4 为敏感 String 驻留评估，不升级为外泄结论。下一步落实 Task 2 前置/累计预算；已有 ZIP 单项/累计 cap 和 bundle 限制，不描述为完全无上限；缺口是物化前拒绝及峰值副本预算。
+**2026-11-07 复核/排序：** Tasks 1/3/5 retained；Task 1 fatal 边界、Task 3 service 编排测试与 Task 5 清理失败反馈均已实现并通过定向验证。Task 4 为敏感 String 驻留评估，不升级为外泄结论。Task 2 采用保留 256 MiB 输入上限的端到端流式方案；现有 ZIP 单项/累计 cap 和 bundle 限制仍需核对流式路径能否在完整资源物化前拒绝超限输入。
 
-**状态：** Task 1/3 已实现并有针对性验证；Task 5 已实现，测试执行受无关源码编译错误阻断；Task 2/4 待实现与评估。条目来自对归档调用链的静态核对；本文件记录问题和验收进展。
+**状态：** Task 1/3/5 已实现并有针对性验证；Task 2/4 待实现与评估。条目来自对归档调用链的静态核对；本文件记录问题和验收进展。
 
 ## Task 1：兼容导入不能把 fatal Error 当成无效条目
 
@@ -47,4 +47,4 @@
 - [x] 为 Archive Service 返回 `AppResult.Failure` 的路径覆盖删除成功、删除返回 false、删除抛普通异常、取消与 fatal `Error`；另验证删除禁用时不删目标，及密码副本最终擦除。异常抛出路径仍与返回 Failure 路径分别覆盖。
 - [x] 更新备份操作结果合同与工作流文档；保持 `deleteOnFailure == false` 的指定目标语义不变，并保留取消传播和 fatal `Error` 传播。
 
-**实现与验证（2026-11-07）：** `AppResult.Failure` 分支现返回 `ExportCleanupFailed(originalError, cleanupFailure)`，只在补偿删除失败时触发；ViewModel 仍用原导出错误更新失败状态，并发出独立残留提示。已添加删除返回 false、普通异常、删除成功、`deleteOnFailure == false`、取消和 fatal `Error` 的 Gateway 测试，以及残留提示的通知码映射测试；运行定向任务时 `:app:compileDebugUnitTestKotlin` 被无关的 `UnlockViewModelTest.kt:39` SAM 编译错误阻断，故本任务测试尚未执行。Service 抛异常路径继续维持原有 cleanup 主次与 suppressed 规则。对应工作流合同见[操作生命周期](../../features/backup/operation-lifecycle.md)。
+**实现与验证（2026-11-07）：** `AppResult.Failure` 分支现返回 `ExportCleanupFailed(originalError, cleanupFailure)`，只在补偿删除失败时触发；ViewModel 仍用原导出错误更新失败状态，并发出独立残留提示。Gateway 测试覆盖删除返回 false、普通异常、删除成功、`deleteOnFailure == false`、取消和 fatal `Error`，并验证密码副本擦除；通知码映射测试覆盖残留提示。`:app:testDebugUnitTest --tests "com.aozijx.passly.feature.backup.internal.operation.DefaultBackupOperationGatewayTest" --tests "com.aozijx.passly.feature.backup.presentation.BackupNoticeMapperTest" --no-build-cache --no-parallel --max-workers=2` 通过。Service 抛异常路径继续维持原有 cleanup 主次与 suppressed 规则。对应工作流合同见[操作生命周期](../../features/backup/operation-lifecycle.md)。
