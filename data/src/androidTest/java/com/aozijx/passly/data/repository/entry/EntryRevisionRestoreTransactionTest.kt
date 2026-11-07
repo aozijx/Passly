@@ -6,8 +6,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
+import com.aozijx.passly.data.testing.NoCallSensitiveFieldCryptor
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
 import com.aozijx.passly.core.error.model.Conflict
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
@@ -27,7 +28,6 @@ import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationPermitVerifier
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
@@ -41,14 +41,6 @@ import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
-import com.aozijx.passly.security.dek.DekManager
-import com.aozijx.passly.security.dek.FieldKeyManager
-import com.aozijx.passly.security.dek.SensitiveDataKeyManager
-import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
-import java.lang.reflect.Proxy
-import java.security.SecureRandom
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -62,7 +54,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EntryRevisionRestoreTransactionTest {
     private lateinit var database: AppDatabase
-    private lateinit var fieldKeyManager: FieldKeyManager
+    private lateinit var fieldKeyProvider: TestFieldKeyProvider
     private lateinit var contentCodec: EntryContentSnapshotCodec
     private lateinit var bundleCodec: SecretBundleCodec
     private val sensitiveCodec = SensitiveRevisionSnapshotCodec()
@@ -75,11 +67,8 @@ class EntryRevisionRestoreTransactionTest {
                 .inMemoryDatabaseBuilder(context)
                 .allowMainThreadQueries()
                 .build()
-        fieldKeyManager =
-            FieldKeyManager().apply {
-                deriveAndSet(ByteArray(32) { (it + 11).toByte() })
-            }
-        val fieldEncryptor = FieldEncryptor(fieldKeyManager, AesGcmCryptoEngine())
+        fieldKeyProvider = TestFieldKeyProvider(ByteArray(32) { (it + 11).toByte() })
+        val fieldEncryptor = FieldEncryptor(fieldKeyProvider, AesGcmCryptoEngine())
         contentCodec = EntryContentSnapshotCodec(fieldEncryptor)
         bundleCodec = SecretBundleCodec(fieldEncryptor)
     }
@@ -87,7 +76,7 @@ class EntryRevisionRestoreTransactionTest {
     @After
     fun tearDown() {
         database.close()
-        fieldKeyManager.clear()
+        fieldKeyProvider.clear()
     }
 
     @Test
@@ -164,15 +153,7 @@ class EntryRevisionRestoreTransactionTest {
 
     private fun updateTransaction(): EntryUpdateTransaction {
         // These edits must never request field-level keys, even when ciphertext is present.
-        val bootstrap = unusedPort<VaultBootstrapStore>()
-        val manager =
-            SensitiveDataKeyManager(
-                bootstrap,
-                DekManager(bootstrap, fieldKeyManager, unusedPort<Logger>()),
-                CoroutineScope(Dispatchers.Unconfined),
-                SecureRandom(),
-            )
-        val store = SecretFieldStore(SecretFieldCodec(SensitiveFieldEncryptor(manager)), bundleCodec, DatabaseClock())
+        val store = SecretFieldStore(SecretFieldCodec(NoCallSensitiveFieldCryptor), bundleCodec, DatabaseClock())
         val activityWriter = EntryActivityWriter()
         return EntryUpdateTransaction(
             store,
@@ -180,12 +161,6 @@ class EntryRevisionRestoreTransactionTest {
             activityWriter,
         )
     }
-
-    private inline fun <reified T> unusedPort(): T =
-        Proxy.newProxyInstance(
-            T::class.java.classLoader,
-            arrayOf(T::class.java),
-        ) { _, _, _ -> error("This edit must not access field-level key management") } as T
 
     @Test
     fun restore_replacesSnapshotAndCreatesReversibleLatestRevision() =

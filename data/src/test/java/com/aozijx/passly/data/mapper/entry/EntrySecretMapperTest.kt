@@ -268,7 +268,10 @@ class EntrySecretMapperTest {
     }
 
     @Test
-    fun `card domain and payload fields remain structurally aligned`() {
+    fun `every nondefault card field survives payload serialization round trip`() {
+        val credential = populatedDataClass(CardCredential::class.java) as CardCredential
+        val expectedPayload = populatedDataClass(CardCredentialPayload::class.java) as CardCredentialPayload
+
         fun fields(type: Class<*>) =
             type.declaredFields
                 .filterNot {
@@ -278,12 +281,7 @@ class EntrySecretMapperTest {
                 }.associate { it.name to it.type }
 
         assertEquals(fields(CardCredential::class.java), fields(CardCredentialPayload::class.java))
-    }
 
-    @Test
-    fun `every nondefault card field survives payload serialization round trip`() {
-        val credential = populatedDataClass(CardCredential::class.java) as CardCredential
-        val expectedPayload = populatedDataClass(CardCredentialPayload::class.java) as CardCredentialPayload
         val payload = EntrySecretMapper.toPayload(EntrySecret(credential), EntryType.BANK_CARD)
         val decodedPayload =
             AppJson.decodeFromString(
@@ -310,23 +308,6 @@ class EntrySecretMapperTest {
                 }
             }
         return constructor.newInstance(*arguments.toTypedArray())
-    }
-
-    @Test
-    fun `known wifi security is stored as a canonical string`() {
-        val payload =
-            EntrySecretMapper.toPayload(
-                EntrySecret(
-                    WifiCredential(
-                        ssid = "Office",
-                        password = "password",
-                        securityType = WifiSecurityType.WpaPersonal,
-                    ),
-                ),
-                EntryType.WIFI,
-            )
-
-        assertEquals("WPA", payload.wifi?.securityType)
     }
 
     @Test

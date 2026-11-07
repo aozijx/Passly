@@ -6,7 +6,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
-import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
+import com.aozijx.passly.data.testing.TestSensitiveFieldCryptor
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.entry.SecretFieldCodec
 import com.aozijx.passly.data.codec.toStorageKey
@@ -16,7 +17,6 @@ import com.aozijx.passly.data.local.database.TestDatabaseFactory
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
@@ -25,14 +25,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.OtpResult
-import com.aozijx.passly.security.dek.DekManager
-import com.aozijx.passly.security.dek.FieldKeyManager
-import com.aozijx.passly.security.dek.SensitiveDataKeyManager
-import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
-import java.lang.reflect.Proxy
-import java.security.SecureRandom
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -44,7 +36,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class HotpCodeConsumptionTransactionTest {
     private lateinit var database: AppDatabase
-    private lateinit var keyManager: FieldKeyManager
+    private lateinit var fieldKeyProvider: TestFieldKeyProvider
     private lateinit var secretFieldStore: SecretFieldStore
     private lateinit var transaction: HotpCodeConsumptionTransaction
 
@@ -56,29 +48,11 @@ class HotpCodeConsumptionTransactionTest {
                 .inMemoryDatabaseBuilder(context)
                 .allowMainThreadQueries()
                 .build()
-        keyManager = FieldKeyManager().apply { deriveAndSet(ByteArray(32) { (it + 17).toByte() }) }
-        val noCallBootstrapStore =
-            Proxy.newProxyInstance(
-                VaultBootstrapStore::class.java.classLoader,
-                arrayOf(VaultBootstrapStore::class.java),
-            ) { _, _, _ -> null } as VaultBootstrapStore
-        val noCallLogger =
-            Proxy.newProxyInstance(
-                Logger::class.java.classLoader,
-                arrayOf(Logger::class.java),
-            ) { _, _, _ -> null } as Logger
-        val dekManager = DekManager(noCallBootstrapStore, keyManager, noCallLogger)
-        val sensitiveKeyManager =
-            SensitiveDataKeyManager(
-                noCallBootstrapStore,
-                dekManager,
-                CoroutineScope(Dispatchers.Unconfined),
-                SecureRandom(),
-            )
-        val bundleEncryptor = FieldEncryptor(keyManager, AesGcmCryptoEngine())
+        fieldKeyProvider = TestFieldKeyProvider(ByteArray(32) { (it + 17).toByte() })
+        val bundleEncryptor = FieldEncryptor(fieldKeyProvider, AesGcmCryptoEngine())
         secretFieldStore =
             SecretFieldStore(
-                SecretFieldCodec(SensitiveFieldEncryptor(sensitiveKeyManager)),
+                SecretFieldCodec(TestSensitiveFieldCryptor),
                 SecretBundleCodec(bundleEncryptor),
                 DatabaseClock(),
             )
@@ -88,7 +62,7 @@ class HotpCodeConsumptionTransactionTest {
     @After
     fun tearDown() {
         database.close()
-        keyManager.clear()
+        fieldKeyProvider.clear()
     }
 
     @Test

@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
 import com.aozijx.passly.data.codec.entry.SecretBundleCodec
 import com.aozijx.passly.data.codec.revision.EntryContentSnapshotCodec
 import com.aozijx.passly.data.codec.revision.SensitiveRevisionSnapshotCodec
@@ -22,7 +23,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
-import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -33,7 +33,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EntryRevisionHistoryRebuilderTest {
     private lateinit var database: AppDatabase
-    private lateinit var fieldKeyManager: FieldKeyManager
+    private lateinit var fieldKeyProvider: TestFieldKeyProvider
     private lateinit var contentCodec: EntryContentSnapshotCodec
     private lateinit var bundleCodec: SecretBundleCodec
 
@@ -45,11 +45,8 @@ class EntryRevisionHistoryRebuilderTest {
                 .inMemoryDatabaseBuilder(context)
                 .allowMainThreadQueries()
                 .build()
-        fieldKeyManager =
-            FieldKeyManager().apply {
-                deriveAndSet(ByteArray(32) { (it + 17).toByte() })
-            }
-        val fieldEncryptor = FieldEncryptor(fieldKeyManager, AesGcmCryptoEngine())
+        fieldKeyProvider = TestFieldKeyProvider(ByteArray(32) { (it + 17).toByte() })
+        val fieldEncryptor = FieldEncryptor(fieldKeyProvider, AesGcmCryptoEngine())
         contentCodec = EntryContentSnapshotCodec(fieldEncryptor)
         bundleCodec = SecretBundleCodec(fieldEncryptor)
     }
@@ -57,7 +54,7 @@ class EntryRevisionHistoryRebuilderTest {
     @After
     fun tearDown() {
         database.close()
-        fieldKeyManager.clear()
+        fieldKeyProvider.clear()
     }
 
     @Test

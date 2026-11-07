@@ -2,6 +2,7 @@ package com.aozijx.passly.data.codec.revision
 
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
+import com.aozijx.passly.core.crypto.FieldKeyProvider
 import com.aozijx.passly.data.codec.DatabaseRecordAad
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryProfile
@@ -11,7 +12,6 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -67,15 +67,13 @@ class EntryContentSnapshotCodecTest {
         }
 
     private suspend fun withCodec(block: suspend (EntryContentSnapshotCodec, FieldEncryptor) -> Unit) {
-        val keyManager =
-            FieldKeyManager().apply {
-                deriveAndSet(ByteArray(32) { (it + 3).toByte() })
-            }
+        val key = ByteArray(32) { (it + 3).toByte() }
+        val keyProvider = FieldKeyProvider { key.clone() }
         try {
-            val encryptor = FieldEncryptor(keyManager, AesGcmCryptoEngine())
+            val encryptor = FieldEncryptor(keyProvider, AesGcmCryptoEngine())
             block(EntryContentSnapshotCodec(encryptor), encryptor)
         } finally {
-            keyManager.clear()
+            key.fill(0)
         }
     }
 
