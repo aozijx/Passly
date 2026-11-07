@@ -44,11 +44,31 @@ internal class TrashViewModel
         }
 
         private var observation: Observation = Observation.Pending
+        private var sheetSession = 0L
+        private var operationJob: Job? = null
         private val _uiState = MutableStateFlow(TrashUiState())
         val uiState: StateFlow<TrashUiState> = _uiState.asStateFlow()
 
         init {
             observeTrash()
+        }
+
+        fun onSheetOpened() {
+            if (observation == Observation.Pending) {
+                sheetSession += 1
+                observeTrash()
+            }
+        }
+
+        fun onSheetClosed() {
+            val previous = observation
+            if (previous == Observation.Destroyed) return
+            sheetSession += 1
+            observation = Observation.Pending
+            if (previous is Observation.Active) previous.job.cancel()
+            operationJob?.cancel()
+            operationJob = null
+            _uiState.value = TrashUiState()
         }
 
         private fun observeTrash() {
@@ -82,7 +102,7 @@ internal class TrashViewModel
         private fun isCurrentObservation(ticket: Any): Boolean = (observation as? Observation.Active)?.ticket === ticket
 
         fun onAction(action: TrashUiAction) {
-            if (observation == Observation.Destroyed) return
+            if (observation !is Observation.Active) return
             when (action) {
                 is TrashUiAction.Restore -> {
                     runEntryAction(action.entryId) {
@@ -147,7 +167,8 @@ internal class TrashViewModel
             operation: suspend () -> TrashCommandResult,
         ) {
             mutate(started)
-            viewModelScope.launch {
+            val session = sheetSession
+            val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
                 try {
                     val result =
                         try {
@@ -155,15 +176,26 @@ internal class TrashViewModel
                         } catch (cancelled: CancellationException) {
                             throw cancelled
                         } catch (failure: Exception) {
-                            mutate(TrashMutation.ActionFailed(failure.toUiErrorMessage(fallback)))
+                            if (isCurrentSession(session)) {
+                                mutate(TrashMutation.ActionFailed(failure.toUiErrorMessage(fallback)))
+                            }
                             return@launch
                         }
-                    applyResult(result, fallback)
+                    currentCoroutineContext().ensureActive()
+                    if (isCurrentSession(session)) applyResult(result, fallback)
                 } finally {
-                    mutate(finished)
+                    if (isCurrentSession(session)) {
+                        operationJob = null
+                        mutate(finished)
+                    }
                 }
             }
+            operationJob = job
+            job.start()
         }
+
+        private fun isCurrentSession(session: Long): Boolean =
+            sheetSession == session && observation is Observation.Active
 
         private fun applyResult(
             result: TrashCommandResult,
@@ -195,8 +227,11 @@ internal class TrashViewModel
 
         override fun onCleared() {
             val previous = observation
+            sheetSession += 1
             observation = Observation.Destroyed
             if (previous is Observation.Active) previous.job.cancel()
+            operationJob?.cancel()
+            operationJob = null
             _uiState.value = TrashUiState()
         }
     }

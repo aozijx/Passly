@@ -28,7 +28,6 @@ import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiEditorRou
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiInitialContent
 import com.aozijx.passly.feature.vault.presentation.list.VaultRoute
 import com.aozijx.passly.feature.vault.presentation.list.VaultViewModel
-import com.aozijx.passly.feature.vault.presentation.trash.TrashRoute
 
 internal fun NavGraphBuilder.registerVaultGraph(
     context: ShellNavigationContext,
@@ -49,10 +48,6 @@ internal fun NavGraphBuilder.registerVaultGraph(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = this,
             )
-        }
-
-        composable(AppRoute.Trash.route) {
-            TrashRoute(onDismiss = context.navigateBack)
         }
     }
 

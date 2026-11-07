@@ -17,8 +17,6 @@ sealed class AppRoute(
 
     data object Vault : AppRoute("vault")
 
-    data object Trash : AppRoute("vault/trash")
-
     data object AddPassword : AppRoute("vault/add/password")
 
     data object AddOtp : AppRoute("vault/add/otp")

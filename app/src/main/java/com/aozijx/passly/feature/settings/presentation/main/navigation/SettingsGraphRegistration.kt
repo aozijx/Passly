@@ -5,11 +5,14 @@ import androidx.navigation.compose.composable
 import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.app.navigation.ShellNavigationContext
 
-internal fun NavGraphBuilder.registerSettingsGraph(context: ShellNavigationContext) {
+internal fun NavGraphBuilder.registerSettingsGraph(
+    context: ShellNavigationContext,
+    onOpenTrash: () -> Unit,
+) {
     composable(AppRoute.Settings.route) {
         SettingsRoute(
             onOuterBack = context.navigateBack,
-            onOpenTrash = { context.navigateToRoute(AppRoute.Trash.route) },
+            onOpenTrash = onOpenTrash,
         )
     }
 }

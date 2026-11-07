@@ -1,16 +1,25 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.ViewModelStoreOwner
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashBottomSheet
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashErrorUiState
 
 @Composable
-internal fun TrashRoute(onDismiss: () -> Unit) {
-    val viewModel = hiltViewModel<TrashViewModel>()
+internal fun TrashRoute(
+    viewModelStoreOwner: ViewModelStoreOwner,
+    onDismiss: () -> Unit,
+) {
+    val viewModel = hiltViewModel<TrashViewModel>(viewModelStoreOwner)
+    DisposableEffect(viewModel) {
+        viewModel.onSheetOpened()
+        onDispose(viewModel::onSheetClosed)
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val operation = state.operation
     val content = state.content

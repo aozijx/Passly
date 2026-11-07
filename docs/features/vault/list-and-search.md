@@ -9,10 +9,9 @@
 
 ## 回收站读取
 
-从 Settings 打开回收站时仍以模态底部表单呈现，并通过导航返回 Settings。Trash destination 只组合 `TrashRoute`；
-底部表单的遮罩后背景由 `PasslyNavHost` 根 Surface 提供，不额外渲染 Vault 页面。因而 Vault 的 Paging、可见 OTP
-订阅和页面 effect collector 只由真正的 Vault destination 持有，导航转场期间离开的旧 Vault 页仍遵循
-`VaultViewModel` 的 `PageEffects` owner 过滤规则。
+从 Settings 点击回收站时直接显示模态底部表单，不新增导航目的地；关闭后仍停留在 Settings。
+弹层使用当前导航栈条目提供 Hilt ViewModel 的 SavedState owner。弹层进入组合时启动回收站订阅，关闭或离开组合时取消；
+ViewModel 可随 Settings 条目保留，下次打开时重新加载。
 
 回收站单独订阅 `EntryListQueryRepository.deletedEntries`。普通查询异常进入明确的失败状态并显示重试入口；
 `CancellationException` 与 fatal `Error` 原样传播，不转成可重试的页面失败。
