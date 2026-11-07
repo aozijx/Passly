@@ -50,7 +50,7 @@ session transition event 由 `SessionEventSink` best-effort 记录，普通遥�
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 
 Activity 只通过 `AuthenticationHost` 提供 UI 能力；认证请求本身不携带 Activity、Launcher、Cipher 或
-PendingIntent。锁定由 `VaultSessionController` 拒绝新 lease、等待活跃操作、在 IO dispatcher 关闭 Room，再擦除会话密钥与 DEK。
+PendingIntent。锁定由 `VaultSessionController` 撤权并发布 `Locking`，Runtime 随即拒绝新 lease。普通 drain 超时后只向活动 lease owner 发出取消请求；若操作忽略取消，锁定继续等待且 Room 保持打开，直到该 lease 实际退出，再在 IO dispatcher 关闭 Room、擦除会话密钥与 DEK。不会因固定宽限期结束就关闭仍在使用的句柄。
 
 ## 一次性消息
 

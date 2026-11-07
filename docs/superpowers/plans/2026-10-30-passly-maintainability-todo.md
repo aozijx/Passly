@@ -65,7 +65,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [ ] 非合作 lease 超时关闭的详细清单由[安全 Task 2](2026-11-06-passly-security-scan-followups.md#task-2)持有；本项设计/验证包括该合同，不复制第二份步骤。
 - [ ] 与 Task 37 定义 soft-lock 对既有 lease 读写/观察的完成语义，覆盖排空/取消、授权撤销及迟到结果；仅拒绝新 lease 不等于操作结束。运行 Runtime、Security Session、Data Reset 定向测试。
 
-**2026-11-07：retained。** SessionLeaseGate.open 在 resource.open 时无统一转换互斥；seal 状态发布、drain、close 分阶段执行。closeAfterDrainTimeout 仍忽略 100ms grace 结果并无条件 close。合作式测试不能证明非合作 lease 安全。resumeIfOpen:75–90 已在 resourceMutex 内检查 handle 并发布 UNLOCKED，移除旧“释放锁后、seal 完整返回、迟到 resume 才发布”的时序；seal 发布 SEALED 与资源 close 之间的竞争仍在。
+**2026-11-07 部分更新：** `resumeIfOpen` 已在 `resourceMutex` 内检查 handle 并发布 `UNLOCKED`，移除旧“释放锁后、seal 完整返回、迟到 resume 才发布”的时序；安全 Task 2 现要求超时后请求取消 lease，并在实际 drain 前保持资源打开，已增加非合作 lease 回归测试。Task 26 仍未完成：`SessionLeaseGate.open` 在 `resource.open` 时没有统一转换互斥，seal 状态发布、drain、close 仍分阶段执行；open/resume/seal/soft-lock 的整体并发 owner 与屏障测试继续待办。
 
 <a id="task-37"></a>
 

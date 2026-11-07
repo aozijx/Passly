@@ -7,16 +7,19 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -811,6 +814,70 @@ class RuntimeSessionManagerTest {
         }
 
     @Test
+    fun `seal timeout keeps resource open until noncooperative lease exits`() =
+        runBlocking {
+            val leaseStarted = CompletableDeferred<Unit>()
+            val releaseLease = CompletableDeferred<Unit>()
+            val transactionFinished = AtomicReference(false)
+            val closedBeforeTransactionFinished = AtomicReference(false)
+            val timeoutObserved = CompletableDeferred<Unit>()
+            val resource =
+                FakeResource(
+                    onClose = { closedBeforeTransactionFinished.set(!transactionFinished.get()) },
+                    onTransactionFinished = { transactionFinished.set(true) },
+                )
+            val manager =
+                RuntimeSessionManager(
+                    resource = resource,
+                    keySource = SessionKeySource { byteArrayOf(9) },
+                    eventSink =
+                        SessionEventSink { event ->
+                            if (event.reason == SessionTransitionReason.DRAIN_TIMEOUT) {
+                                timeoutObserved.complete(Unit)
+                            }
+                        },
+                )
+            manager.unlock()
+
+            val writer =
+                async {
+                    manager.write {
+                        leaseStarted.complete(Unit)
+                        withContext(NonCancellable) { releaseLease.await() }
+                        value
+                    }
+                }
+            leaseStarted.await()
+            val sealing = async { manager.seal(timeout = 1.milliseconds) }
+
+            try {
+                timeoutObserved.await()
+                delay(250)
+
+                assertEquals(SecureSessionState.SEALED, manager.lockState)
+                assertFalse("a live transaction must keep its resource open", resource.closed)
+                assertEquals("close must wait for the active lease to release", 0, resource.closeAttempts)
+                assertFalse("sealing must wait for the transaction to stop", sealing.isCompleted)
+                runCatching { manager.read { value } }
+                    .onSuccess { error("sealed session accepted a read") }
+                    .onFailure { assertTrue(it is SessionLockedException) }
+
+                releaseLease.complete(Unit)
+                writer.join()
+                sealing.await()
+
+                assertTrue(transactionFinished.get())
+                assertFalse(closedBeforeTransactionFinished.get())
+                assertTrue(resource.closed)
+                assertEquals(1, resource.closeAttempts)
+            } finally {
+                releaseLease.complete(Unit)
+                writer.cancelAndJoin()
+                sealing.cancelAndJoin()
+            }
+        }
+
+    @Test
     fun `close failure remains terminal until process restart`() =
         runBlocking {
             val failure = IllegalStateException("close failed")
@@ -887,6 +954,7 @@ class RuntimeSessionManagerTest {
         private val closeFailure: Throwable? = null,
         private val cancelAfterOpen: CancellationException? = null,
         private val onClose: () -> Unit = {},
+        private val onTransactionFinished: () -> Unit = {},
     ) : SessionResource<FakeHandle> {
         var openedWith: ByteArray? = null
         var closed = false
@@ -911,7 +979,12 @@ class RuntimeSessionManagerTest {
         override suspend fun <T> transaction(
             handle: FakeHandle,
             block: suspend FakeHandle.() -> T,
-        ): T = handle.block()
+        ): T =
+            try {
+                handle.block()
+            } finally {
+                onTransactionFinished()
+            }
     }
 
     private data class FakeHandle(

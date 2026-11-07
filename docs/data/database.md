@@ -135,7 +135,7 @@ stateDiagram-v2
 
 - 错误密钥或 Schema 不匹配必须返回明确错误，禁止自动删库。
 - 锁定先把 session gate 转为 `SEALED`，拒绝新 lease，再等待 active lease 排空并关闭数据库，最后由 Security owner 擦除 DEK 与会话密钥。及时排空时，关闭发生在 active lease 归零之后。
-- 排空超时时，`seal(timeout = 5.seconds)` 当前取消登记的 lease owner Job，再等待固定 100 ms grace；随后即使 active lease 仍非零也调用资源 `close()`。`Job.cancel()` 只请求取消，不能证明 Room transaction/read 或 native 操作已经退出；资源端也没有独立的 abort/强制中止合同。因此不能把超时分支描述成“租约已排空后安全关闭”，该路径的关闭与仍活动操作之间的安全边界仍待闭合，见[维护 TODO Task 26](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-26明确-runtime-session-生命周期转换的并发所有者)。
+- `seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT`，并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；等待期间 session 保持 `SEALED` 并拒绝新 lease。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；open/resume/seal 生命周期转换的整体并发 owner 仍见[维护 TODO Task 26](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-26明确-runtime-session-生命周期转换的并发所有者)。
 - `SOFT_LOCKED` 会拒绝新 lease，但当前 `softLock()` 不等待或取消已经取得的 lease；在途 read/write 按其实际完成或取消结果结束。这一语义及锁定返回时机仍由维护 TODO Task 26 追踪。
 - 覆盖导入、Revision 恢复和多表写入必须在事务中完成，失败整体回滚。
 - 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；备份协议版本独立。
@@ -162,6 +162,8 @@ Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 
 尚未开始封存时收到的取消会阻止重置启动；执行期间的取消不能留下“已封存但未清理”的半完成状态。
 
 如果底层数据库句柄关闭失败，Runtime 仍立即拒绝所有新访问，并在普通可恢复异常时通过 Kotlin `Result<Unit>` 失败结果返回原因；取消与 fatal `Error` 继续传播。Runtime 尽力发出 `CLOSE_FAILED`，Data logger 将普通关闭故障记录为 `DatabaseResourceCloseFailed`。该进程中的 session 保持 `SEALED`：保留失败句柄作为未关闭的资源事实，不重试关闭、不创建第二个 Room/SQLCipher 句柄；只有进程重启才能建立新 session。永久重置把成功关闭视为删库和删除托管资源的前置条件，因此关闭失败时跳过所有删除且不尝试重开，将错误返回给调用方。Security 协调器随后撤销授权、清除 DEK/敏感数据密钥并保持认证锁定。
+
+普通 lease drain 超时会发出 `DRAIN_TIMEOUT` 取消请求事件并取消当前 lease owner；它不表示操作已经退出。Runtime 从此拒绝新访问，但继续持有 Room 句柄并在不可取消区等待活动 lease 归零，随后才关闭数据库。Security 锁定期间认证状态保持 `Locking`；lease 退出且关闭成功后再擦除 DEK 并发布 `Locked`。若操作一直不退出，锁定继续等待，不强制关闭正在使用的 Room 句柄。句柄关闭失败则按上段保持封存，进程重启后恢复。
 
 数据库重置与认证锁定、解锁共用 Security 会话互斥。重置期间不报告完整 Vault 访问；重开成功后恢复会话，
 重开失败则撤销授权、清除敏感数据密钥并转入锁定状态。活动查询流同时要求认证授权和数据库会话为 `UNLOCKED`；

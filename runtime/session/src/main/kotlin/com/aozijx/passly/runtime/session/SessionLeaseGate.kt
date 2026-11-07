@@ -262,9 +262,7 @@ internal class SessionLeaseGate<Handle : Any>(
         var closeThrown: Throwable? = null
         val closeResult =
             withContext(NonCancellable) {
-                withTimeoutOrNull(POST_CANCEL_GRACE_MS) {
-                    while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
-                }
+                while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
                 try {
                     close()
                 } catch (failure: Throwable) {
@@ -425,7 +423,6 @@ internal class SessionLeaseGate<Handle : Any>(
 
     private companion object {
         const val DRAIN_POLL_MS = 50L
-        const val POST_CANCEL_GRACE_MS = 100L
         const val NANOS_PER_MILLISECOND = 1_000_000L
     }
 }

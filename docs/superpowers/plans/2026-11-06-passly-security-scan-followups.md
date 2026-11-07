@@ -21,12 +21,14 @@
 
 ## Task 2：避免活动会话 lease 未退出时关闭数据库
 
-- [ ] 重新设计 `SessionLeaseGate.closeAfterDrainTimeout()` 的超时合同。`Job.cancel()` 只是取消请求；100 ms grace 到期后不得在 `activeLeases > 0` 时调用通用 `SessionResource.close()`。
-- [ ] 优先保持资源打开并让 vault 留在不可用/封存状态，直到所有 lease 退出；若必须强制释放，则在 `SessionResource` 增加资源端可验证的 abort 合同，并明确其终止正在执行事务/读写的语义，再执行 close。
-- [ ] 增加不响应协程取消的活动 lease 测试：断言普通 close 不会与操作重叠；若走 abort 路径，证明 abort 完成后 lease 不再使用 handle 才 close。保留现有合作式取消测试，并覆盖超时、清理失败和重试/恢复行为。
-- [ ] 同步更新锁定/数据库会话文档与事件语义，区分 lease drain 超时、取消请求、资源 abort 和资源 close；记录失败后用户可见的封存状态及恢复方式。
+- [x] 重新设计 `SessionLeaseGate.closeAfterDrainTimeout()` 的超时合同。`Job.cancel()` 只是取消请求；移除第二个 100 ms grace，`activeLeases > 0` 时不调用通用 `SessionResource.close()`。
+- [x] 超时后将运行时会话保持 `SEALED`、拒绝新访问、请求取消所有 lease owner，并在不可取消区等待既有 lease 实际退出后再关闭资源；无需引入未经验证的资源 abort 或兼容接口。
+- [x] 增加忽略协程取消的活动事务测试，证明超时后资源仍打开、封存状态拒绝新读，lease 退出后才关闭。保留合作式取消测试、关闭失败 terminal/reopen 拒绝测试及进程重启恢复测试。
+- [x] 同步更新锁定/数据库会话文档与事件语义，说明 `DRAIN_TIMEOUT` 是取消请求而非 lease 已退出；封存期间锁定保持等待，实际 drain 后关闭并完成 DEK 擦除。关闭失败仍保持封存且仅进程重启后恢复。
 
-**当前证据（2026-11-06）：** `SessionLeaseGate.seal()` 先将会话置为 `SEALED` 并等待 lease drain；超时后取消 lease owner，再最多等待 `POST_CANCEL_GRACE_MS = 100`，之后无条件调用 `close()`。`AppDatabaseSessionResource.close()` 直接关闭 Room database，`SessionResource` 没有 abort 合同。现有 `seal timeout cancels active write before closing resource` 测试的操作通过 `awaitCancellation()` 合作退出，没有覆盖忽略取消且 active lease 仍存活时的关闭竞态。源代码路径成立；运行时是否存在具体非合作 caller 尚未确认。
+**2026-11-07 修复与验证：** `seal timeout keeps resource open until noncooperative lease exits` 先在旧实现上失败，复现 100 ms 后仍关闭活动事务；移除 `POST_CANCEL_GRACE_MS` 后通过。`:runtime:session:test` 与 `verifyArchitecture` 通过；已有 `close failure remains terminal until process restart` 锁定关闭失败结果、禁止同进程重开，并验证新 Runtime 实例可恢复。非合作 lease 若永不退出，锁定保持 `Locking`、Runtime 保持 `SEALED`，不会强制关闭仍被使用的句柄；lease 最终退出后锁定继续完成。
+
+**实现前证据（2026-11-06）：** `SessionLeaseGate.seal()` 先将会话置为 `SEALED` 并等待 lease drain；超时后取消 lease owner，再最多等待 `POST_CANCEL_GRACE_MS = 100`，之后无条件调用 `close()`。`AppDatabaseSessionResource.close()` 直接关闭 Room database，`SessionResource` 没有 abort 合同。旧测试中的操作通过 `awaitCancellation()` 合作退出，没有覆盖忽略取消且 active lease 仍存活时的关闭竞态。
 
 **验收：** 非合作 lease 测试证明 close 不早于 lease 退出/资源 abort；既有锁定、取消和 close 失败测试保持通过；用户提供的 Runtime lease 规则与实现和文档一致。
 
