@@ -14,7 +14,7 @@
 
 - Direct password relations are `RELATED_TO` links whose two endpoints are active, saved `EntryType.LOGIN` entries.
 - Unlink removes only the link; it does not delete either entry.
-- Reuse `EntryLinkRepository.delete(linkId)` and its current transaction, revision snapshot and attachment cleanup; do not change Room schema, relation storage or repository contract.
+- Reuse `EntryLinkRepository.delete(linkId)` to delete the existing bind-link row by ID. `RoomEntryLinkRepository` already performs this in its transaction, snapshots both endpoints, and schedules/drains existing attachment cleanup; do not add a table/column, migration, DAO method, or change the repository contract.
 - A left swipe opens confirmation. Dismissing confirmation leaves the link unchanged; confirming removes only the selected link.
 - Bind/unlink work belongs to the current Detail entry and secure-session owner. Propagate cancellation, suppress stale results, log ordinary operation failures and keep a retry path.
 - Use existing Material 3 components and swipe container; add no dependency or image asset. Update Chinese and English resources together.
@@ -78,6 +78,7 @@
 **Interfaces:**
 - Rename class `RelatedPasswordBinding` to `RelatedPasswordLinks`; retain `candidates(sourceEntryId: EntryId)` and `bind(sourceEntryId: EntryId, targetEntryId: EntryId)` signatures.
 - Add `suspend fun unlink(sourceEntryId: EntryId, targetEntryId: EntryId, linkId: EntryLinkId): AppResult<Unit>`; the service verifies the current edge has that ID, `RELATED_TO` type, and the same endpoints in either direction before calling `EntryLinkRepository.delete(linkId)`.
+- Do not modify `EntryLinkEntity`, `EntryLinkCommandDao`, `EntryLinkRepository`, Room schema version, or backup representation for unlink; this operation removes one already-persisted relationship record through the existing repository path.
 
 - [ ] **Step 1: Add failing unlink tests.** In `RelatedPasswordLinksTest`, add `unlinkDeletesSelectedSymmetricRelatedToLink`, `unlinkIsIdempotentWhenLinkIsAbsent`, `unlinkRejectsMismatchedLinkIdOrEndpoints`, `unlinkRejectsInactiveOrNonLoginEndpoints`, `unlinkLeavesUnrelatedLinkTypesUntouched`, and `unlinkLogsRepositoryFailureAndPropagatesCancellation`.
 - [ ] **Step 2: Run `RelatedPasswordLinksTest` and confirm the new unlink cases fail.**
