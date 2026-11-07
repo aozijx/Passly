@@ -9,8 +9,8 @@
 | 顺序 | 执行入口 | 依赖与原因 |
 | --- | --- | --- |
 | 1 / P1 | [安全 Tasks 6、2](2026-11-06-passly-security-scan-followups.md)，本页 37→26、59 | 接收方身份、lease 关闭、撤权与提交事实；先完成 Data admission 与撤权线性化，再闭合 Runtime/reset 跨层终态；Task 43 已完成，安全 Task 8 已完成 |
-| 2 / P1 | 本页 38、42、40、41、32；[Backup Tasks 1、5](2026-11-06-passly-backup-review-followups.md)；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | 保存期输入、seed/流资源、操作终态、分类查询、flush；先固定失败结果再改 owner |
-| 3 / P2 | 本页 46、51；[安全 Tasks 3、4、7、9](2026-11-06-passly-security-scan-followups.md)、Backup Tasks 2、3、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；资源预算先于最低设备验收；Autofill 设置策略待办由专题清单维护 |
+| 2 / P1 | 本页 38、42、40、41、32；[Backup Task 2、4](2026-11-06-passly-backup-review-followups.md)；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | 保存期输入、seed/流资源、操作终态、分类查询、flush；先固定失败结果再改 owner |
+| 3 / P2 | 本页 46、51；[安全 Tasks 3、4、7、9](2026-11-06-passly-security-scan-followups.md)、Backup Task 2、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；备份流式格式迁移先于最低设备验收；Autofill 设置策略待办由专题清单维护 |
 | 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
 | 5 / P3 | 本页 83 → 84/80，39、35、34、36、78、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；39/77 先稳定诊断可靠性 |
 
