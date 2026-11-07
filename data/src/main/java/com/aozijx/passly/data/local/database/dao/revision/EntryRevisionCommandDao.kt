@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Upsert
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 
 @Dao
@@ -14,12 +13,6 @@ interface EntryRevisionCommandDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAllStrict(revisions: List<EntryRevisionEntity>)
-
-    @Upsert
-    suspend fun upsertForImport(revision: EntryRevisionEntity)
-
-    @Upsert
-    suspend fun upsertAllForImport(revisions: List<EntryRevisionEntity>)
 
     @Query("DELETE FROM entry_revisions WHERE entryId = :entryId")
     suspend fun deleteByEntryId(entryId: String): Int
@@ -60,6 +53,4 @@ interface EntryRevisionCommandDao {
     )
     suspend fun deleteForDeletedEntries(): Int
 
-    @Query("DELETE FROM entry_revisions WHERE createdAt < :timestamp")
-    suspend fun deleteBefore(timestamp: Long): Int
 }

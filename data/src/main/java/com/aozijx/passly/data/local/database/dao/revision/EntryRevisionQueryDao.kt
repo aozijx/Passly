@@ -13,12 +13,6 @@ interface EntryRevisionQueryDao {
     @Query("SELECT * FROM entry_revisions WHERE entryId = :entryId ORDER BY version DESC")
     suspend fun getByEntryId(entryId: String): List<EntryRevisionEntity>
 
-    @Query("SELECT * FROM entry_revisions WHERE entryId = :entryId AND version = :version")
-    suspend fun getByVersion(
-        entryId: String,
-        version: Int,
-    ): EntryRevisionEntity?
-
     @Query("SELECT * FROM entry_revisions WHERE entryId = :entryId AND revisionId = :revisionId LIMIT 1")
     suspend fun getById(
         entryId: String,
