@@ -6,6 +6,51 @@ import kotlin.test.assertTrue
 
 class SourceBoundaryPolicyTest {
     @Test
+    fun entryAndAccessPackagesCannotDependOnAutofill() {
+        val entryImport =
+            EditorSource(
+                path = "/domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt",
+                content = "import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId",
+            )
+        val accessImport =
+            EditorSource(
+                path = "/domain/src/main/kotlin/com/aozijx/passly/domain/access/port/InboxAccess.kt",
+                content = "import com.aozijx.passly.domain.autofill.model.AutofillInboxStoredRecord",
+            )
+        val entryQualifiedReference =
+            entryImport.copy(content = "val id = com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId")
+        val accessQualifiedReference =
+            accessImport.copy(content = "val record = com.aozijx.passly.domain.autofill.model.AutofillInboxStoredRecord")
+        val entryDecoys =
+            entryImport.copy(
+                content =
+                    """
+                    // com.aozijx.passly.domain.autofill.model.CommentOnly
+                    val text = "com.aozijx.passly.domain.autofill.model.StringOnly"
+                    val lookalike = com.aozijx.passly.domain.autofillish.model.Unrelated
+                    """.trimIndent(),
+            )
+
+        assertEquals(
+            "DOMAIN_ENTRY_NO_AUTOFILL",
+            SourceBoundaryVerifier.verify(listOf(entryImport), SourceBoundaryPolicy.layerRules).singleOrNull()?.ruleId,
+        )
+        assertEquals(
+            "DOMAIN_ACCESS_NO_AUTOFILL",
+            SourceBoundaryVerifier.verify(listOf(accessImport), SourceBoundaryPolicy.layerRules).singleOrNull()?.ruleId,
+        )
+        assertEquals(
+            "DOMAIN_ENTRY_NO_AUTOFILL",
+            SourceBoundaryVerifier.verify(listOf(entryQualifiedReference), SourceBoundaryPolicy.layerRules).singleOrNull()?.ruleId,
+        )
+        assertEquals(
+            "DOMAIN_ACCESS_NO_AUTOFILL",
+            SourceBoundaryVerifier.verify(listOf(accessQualifiedReference), SourceBoundaryPolicy.layerRules).singleOrNull()?.ruleId,
+        )
+        assertEquals(emptyList(), SourceBoundaryVerifier.verify(listOf(entryDecoys), SourceBoundaryPolicy.layerRules))
+    }
+
+    @Test
     fun unregisteredFeatureBusinessCannotImportPresentationIncludingAliasesAndWildcards() {
         for (imported in listOf(
             "com.aozijx.passly.feature.sync_engine2.presentation.SyncUiState",
@@ -749,10 +794,8 @@ class SourceBoundaryPolicyTest {
                     "com.aozijx.passly.feature.autofill.presentation.AutofillFeatureEntry",
                 "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
                     "com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion",
-                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
-                    "com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation",
-                "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt" to
-                    "com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation",
+                "app/src/main/java/com/aozijx/passly/app/autofill/AutofillPlatformModule.kt" to
+                    "com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget",
                 "app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillLaunchTarget.kt" to
                     "com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract",
             ).map { (path, importedType) ->
@@ -763,6 +806,23 @@ class SourceBoundaryPolicyTest {
             SourceBoundaryVerifier
                 .verify(reviewedImports, SourceBoundaryPolicy.generalRules)
                 .isEmpty(),
+        )
+
+        val obsoleteHostImports =
+            listOf(
+                "com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation",
+                "com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation",
+            ).map { importedType ->
+                EditorSource(
+                    path = "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt",
+                    content = "import $importedType",
+                )
+            }
+        assertEquals(
+            listOf("AUTOFILL_MODULE_API", "AUTOFILL_MODULE_API"),
+            SourceBoundaryVerifier
+                .verify(obsoleteHostImports, SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId },
         )
 
         val implementationImport =

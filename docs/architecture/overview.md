@@ -1,7 +1,8 @@
 # 架构总览
 
-Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feature 保留在 `app` 内，以包组织职责；当前规模下
-不再为每个页面或流程建立 `:feature:*` 模块，避免 API/implementation 空壳和过细依赖图。
+Passly 按稳定、可复用的技术边界拆分 Gradle 模块。多数业务 feature 仍在 `:app` 内以包组织职责；Autofill
+已独立为 `:feature:autofill`，因为它拥有可隔离的 Android 服务、候选编排、结果交付与 feature-level 测试边界。
+不按页面或文件数量拆模块；其他拆分须由依赖闭包、构建隔离或真实复用需求证明收益。
 
 当前模块：
 
@@ -14,6 +15,8 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 - `:runtime:session`：资源无关的安全会话状态机与租约管理；
 - `:security`：认证方式执行、授权、Android Keystore 适配与安全会话编排；只依赖稳定的 Domain/Core/Runtime
   契约，不依赖 Data 实现或 Feature UI；
+- `:feature:autofill`：Autofill、Accessibility 与 Credential Manager 服务、候选/填充流程、结果交付和对应页面；
+  只依赖 `:core`、`:domain`、`:runtime:session`，不依赖 App、Data 或 Security；
 - `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
 - `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式与稳定键映射
   位于 `feature/backup/internal/archive`；直接访问 Room 的快照适配位于 `app/database/backup`。
@@ -22,11 +25,15 @@ Passly 只按稳定、可复用的技术边界拆分 Gradle 模块。业务 feat
 
 ```mermaid
 flowchart LR
-    APP[":app · Shell / feature / navigation / DI"] --> FEATURE["app 内 feature 包"]
+    APP[":app · Shell / app 内 feature / navigation / DI"] --> FEATURE["app 内 feature 包"]
+    APP --> AUTOFILL[":feature:autofill"]
     APP --> DATA[":data · 数据与持久化实现"]
     APP --> SECURITY[":security · 认证与安全会话实现"]
     FEATURE --> CORE[":core"]
     FEATURE --> D[":domain"]
+    AUTOFILL --> CORE
+    AUTOFILL --> D
+    AUTOFILL --> SESSION[":runtime:session"]
     SECURITY --> SESSION
     SECURITY --> CORE
     SECURITY --> D
@@ -43,7 +50,8 @@ Data 自己拥有 Repository、存储与数据策略的 Hilt binding。App 负�
 数据库快照代码是一个明确、局部的数据集成点，其他 feature 继续通过 Domain 契约使用 Data。
 
 Domain 不按 UI 页面镜像目录，但可为跨平台入口共享的稳定业务契约建立能力包。`autofill` 的候选、作用域和
-Repository 端口属于这种契约；Android Autofill/Credential Manager 编排仍属于 App。`backup`、通知和数据库
+Repository 端口属于这种契约；Android Autofill/Credential Manager 编排由 `:feature:autofill` 拥有，App 提供
+认证 Activity 宿主及平台适配。`backup`、通知和数据库
 生命周期属于 App/Data/Runtime 边界，不在 Domain 中建立同名协议实现。应用偏好由 `domain/settings` 下按职责拆分的
 模型与端口统一表达，Data 只负责两个 Proto DataStore 的映射和实现（`data/local/datastore` +
 `data/repository/settings`）。领域内部只使用 `model`、
@@ -51,8 +59,10 @@ Repository 端口属于这种契约；Android Autofill/Credential Manager 编排
 继续分组。
 
 `verifyModuleBoundaries` 校验每个真实 Gradle 模块的直接项目依赖白名单和依赖环，并自动接入各模块的
-`check` 生命周期。新增模块必须先声明允许的依赖方向；未加入依赖的实现类型不会进入编译 classpath，因此
-类型可见性继续由 Kotlin/Java 编译器保证。`app/feature/<name>` 是代码组织边界，不伪装成 Gradle 模块。
+`check` 生命周期。`:feature:autofill` 的白名单为 `:core`、`:domain`、`:runtime:session`，并要求 `:app`
+直接依赖该模块；新增模块必须先声明允许的依赖方向。未加入依赖的实现类型不会进入编译 classpath，因此
+类型可见性继续由 Kotlin/Java 编译器保证。`app/feature/<name>` 是多数 App 内业务的代码组织边界，不伪装成
+Gradle 模块。
 
 ## 安全职责
 
@@ -88,11 +98,12 @@ flowchart LR
 
 ## Feature 与 UI
 
-App 内按业务聚合：流程与平台适配放在 `feature/<name>`，对应的页面、ViewModel、UI state/effect 和导航放在
-`feature/<name>/presentation`。同一业务内，非 UI 代码不导入 presentation；Android 入口需要启动页面时通过
-`app` 层的显式启动适配器连接。跨 Feature 的纯视觉组件进入 `:core`，但必须通过参数或
+多数业务在 App 内按业务聚合：流程与平台适配放在 `app/feature/<name>`，对应的页面、ViewModel、UI state/effect
+和导航放在其 `presentation` 子包。Autofill 则整体位于 `:feature:autofill`，只有认证 Activity 宿主和窄平台
+适配在 App。各 Feature 内非 UI 代码不导入 presentation；Android 入口启动页面时通过所属 Feature 的稳定宿主合同
+连接。跨 Feature 的纯视觉组件进入 `:core`，但必须通过参数或
 Composable slot 接收文案和内容，不能依赖 app 的 `R` 或具体业务类型。只有出现真实的独立发布、显著构建隔离
-或多宿主复用需求时，才重新评估 feature Gradle 模块。
+或多宿主复用需求时，才评估新增 feature Gradle 模块；Autofill 模块已经落地，不是待拆候选。
 
 推荐布局：
 
