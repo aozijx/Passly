@@ -74,6 +74,10 @@ EXPANDED 先用根条目的收藏和排序值定位组，再在组内先显示�
 锁定/seal 使可读状态立即为 false，取消旧流并返回空数据；重新解锁才创建新 Pager。禁止在 factory 中用
 `runBlocking` 取数据库或缓存跨会话 DAO/数据库实例。
 
+密码条目的新增和编辑都写入 `entries` 表，当前 `EntryListQuery` 对应的 Room `PagingSource` 观察该表并自动失效；
+列表订阅会重载当前页，不需要在创建或编辑返回后再发全量刷新信号。自动填充立即保存成功时也经过同一条 Vault 写入和列表订阅；
+若自动填充结果为 `Queued`，条目仍在 Autofill Inbox，只有 Inbox 导入完成、写入 `entries` 后才会出现在 Vault 列表。
+
 外部内容整体替换或永久重置数据库时也遵循同一会话边界：活动列表在 seal 时结束当前 Pager 并呈现空页，重开后
 通过 session state 重建一个 Pager，保留当前 `EntryListQuery` 的搜索、类型、分类和排序条件。列表不订阅第二个
 “全量刷新”信号；失败重开保持 SEALED 和空页，不回显重置前的页面内容。普通条目写入则继续依靠 Room invalidation。

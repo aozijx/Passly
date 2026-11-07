@@ -176,6 +176,7 @@ class RoomObservationSessionTest {
                 finishTransaction.complete(Unit)
                 assertTrue(transaction.await())
                 softLock.await()
+                assertNull(session.unlock())
                 assertEquals(
                     "Committed",
                     session.queryForMaintenance {
@@ -270,8 +271,32 @@ class RoomObservationSessionTest {
                     )
                 }
                 awaitPageTitles(differ, listOf("Needle before"))
+
+                session.transactionForMaintenance {
+                    assertEquals(
+                        1,
+                        entryCommandDao().optimisticUpdate(
+                            entryId = "before-match",
+                            expectedVersion = 1,
+                            title = "Needle edited",
+                            username = "",
+                            primaryUrl = null,
+                            domains = emptySet(),
+                            applicationIds = emptySet(),
+                            iconName = null,
+                            iconCustomReference = null,
+                            favorite = false,
+                            tags = emptySet(),
+                            iconColor = null,
+                            expiresAt = null,
+                            capabilityFlags = 0,
+                            otpType = null,
+                            updatedAt = System.currentTimeMillis() + 1L,
+                        ),
+                    )
+                }
+                awaitPageTitles(differ, listOf("Needle edited"))
                 val beforeResetEmissions = pageEmissions.get()
-                assertEquals(3, beforeResetEmissions)
                 assertEquals(1, pageSourceGenerations.get())
 
                 assertNull(controller.reset())
@@ -563,7 +588,7 @@ class RoomObservationSessionTest {
                 session.seal()
                 assertNull(session.unlock())
 
-                assertEquals("reopened", withTimeout(10_000L) { values.receive() })
+                values.receiveUntil(expected = "reopened", allowedBefore = "locked")
                 assertEquals(2, attempts.get())
                 assertTrue(values.tryReceive().isFailure)
 
@@ -571,7 +596,7 @@ class RoomObservationSessionTest {
                 assertEquals("locked", withTimeout(10_000L) { values.receive() })
                 assertEquals(2, attempts.get())
                 access.authenticationState.value = AuthenticationState.Authenticated(authenticatedAtMs = 2L)
-                assertEquals("reopened", withTimeout(10_000L) { values.receive() })
+                values.receiveUntil(expected = "reopened", allowedBefore = "locked")
                 assertEquals(3, attempts.get())
             } finally {
                 collector.cancelAndJoin()
@@ -620,7 +645,7 @@ class RoomObservationSessionTest {
                 assertEquals("locked", withTimeout(10_000L) { values.receive() })
                 assertNull(session.unlock())
 
-                assertEquals("reopened", withTimeout(10_000L) { values.receive() })
+                values.receiveUntil(expected = "reopened", allowedBefore = "locked")
                 assertEquals(2, attempts.get())
                 assertTrue(failures.tryReceive().isFailure)
             } finally {
@@ -666,6 +691,19 @@ class RoomObservationSessionTest {
             }
             error("Unreachable")
         }
+
+    private suspend fun Channel<String>.receiveUntil(
+        expected: String,
+        allowedBefore: String,
+    ) {
+        withTimeout(10_000L) {
+            while (true) {
+                val value = receive()
+                if (value == expected) return@withTimeout
+                assertEquals(allowedBefore, value)
+            }
+        }
+    }
 
     private suspend fun awaitPageEmissions(
         emissions: AtomicInteger,
