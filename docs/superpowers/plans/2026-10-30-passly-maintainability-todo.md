@@ -85,6 +85,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 Data admission 批次：** `AppDatabaseSession` 通过惰性 Security provider 直接读取认证权限，并在 lease 内再次核验；Repository 与 Runner 不再传递授权谓词或持有重复访问状态，Room observation 也由 session 集中读取认证 Flow。Full Vault、Autofill 与 maintenance 入口语义显式区分。新增 Room observation instrumentation 回归，分别验证 read/write 在第二次授权核验拒绝且 DAO block 不执行；`:app:kspDebugKotlin`、Data 主代码与 AndroidTest 源集编译通过。`:security:testDebugUnitTest` 与 `:runtime:session:test` 强制重跑通过；`adb devices` 无可用设备，instrumentation 未运行。同步修正数据库映射和认证文档。Task 37 仍待真实 Security/Data 并发终态、Autofill/Recovery/idle/reset 次序验收和定向验证。
 
+**2026-11-07 GC 授权回调收敛：** `AttachmentGarbageCollectionWorker` 不再接收 `hasFullAccess` 函数参数，改为在每个分页、条目与退避检查点直接查询 `SecureSessionAccessState`；生产调用点不再转发谓词，测试通过可变认证状态覆盖撤权边界。定向单测尝试运行但在 `:core:kspDebugKotlin` 被现有依赖图错误阻断：KSP 无法解析 `SensitiveDataKeyManager`（依赖追踪来自 `SensitiveFieldEncryptor`）；GC 测试尚未实际执行。`git diff --check` 无空白错误；Task 37 的整体跨层验证仍待完成。
+
 **2026-11-07 生命周期顺序审查：** idle/background 与 Autofill 结果完成后的释放都调用 `VaultSessionController.lock()`；RecoveryMode 锁定升级为 SEALED。Autofill 最后一个 borrower 释放受结果完成屏障保护。Reset 则由 `ResetDatabaseUseCase` 通过 Full Vault 状态与 `AuthorizationGate` 后调用 Data `DatabaseSessionLifecycle.seal()/unlock()`，未经过同一 Security lock owner；它与并发 lock 的交错尚无终态测试，因此保留 Task 37 未完成。
 <a id="task-43"></a>
 

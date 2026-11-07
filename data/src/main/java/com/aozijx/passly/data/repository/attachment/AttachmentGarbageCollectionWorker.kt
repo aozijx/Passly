@@ -1,6 +1,7 @@
 package com.aozijx.passly.data.repository.attachment
 
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
@@ -13,7 +14,7 @@ internal enum class AttachmentGcPassResult {
 /** Processes a stable paged snapshot, continuing past failed rows so they cannot starve later files. */
 internal suspend fun drainAttachmentGcPass(
     batchSize: Int,
-    hasFullAccess: () -> Boolean,
+    access: SecureSessionAccessState,
     onItemFailure: suspend (Exception) -> Unit = {},
     loadBatch: suspend (afterEnqueuedAt: Long?, afterResourceId: String?) -> List<AttachmentResourceEntity>,
     drainOne: suspend (AttachmentResourceEntity) -> Boolean,
@@ -23,12 +24,12 @@ internal suspend fun drainAttachmentGcPass(
     var cursorResourceId: String? = null
     var hadFailure = false
 
-    while (hasFullAccess()) {
+    while (access.hasFullSecureSessionAccess()) {
         val batch = loadBatch(cursorEnqueuedAt, cursorResourceId)
         if (batch.isEmpty()) return if (hadFailure) AttachmentGcPassResult.RETRY else AttachmentGcPassResult.COMPLETE
 
         for (item in batch) {
-            if (!hasFullAccess()) return AttachmentGcPassResult.LOCKED
+            if (!access.hasFullSecureSessionAccess()) return AttachmentGcPassResult.LOCKED
             try {
                 if (!drainOne(item)) hadFailure = true
             } catch (cancelled: CancellationException) {
@@ -51,7 +52,7 @@ internal suspend fun drainAttachmentGcPass(
 
 /** Retries transient cleanup failures with capped exponential backoff while full vault access remains. */
 internal suspend fun runAttachmentGcDrain(
-    hasFullAccess: () -> Boolean,
+    access: SecureSessionAccessState,
     drainPass: suspend () -> AttachmentGcPassResult,
     onFailure: suspend (Exception) -> Unit,
     waitBeforeRetry: suspend (Long) -> Unit = { delay(it) },
@@ -61,7 +62,7 @@ internal suspend fun runAttachmentGcDrain(
     require(initialDelayMs > 0 && maximumDelayMs >= initialDelayMs)
     var retryDelayMs = initialDelayMs
 
-    while (hasFullAccess()) {
+    while (access.hasFullSecureSessionAccess()) {
         val result =
             try {
                 drainPass()
@@ -80,7 +81,7 @@ internal suspend fun runAttachmentGcDrain(
             }
 
             AttachmentGcPassResult.RETRY -> {
-                if (!hasFullAccess()) return
+                if (!access.hasFullSecureSessionAccess()) return
                 waitBeforeRetry(retryDelayMs)
                 retryDelayMs = (retryDelayMs * 2).coerceAtMost(maximumDelayMs)
             }

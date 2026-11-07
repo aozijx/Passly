@@ -1,8 +1,12 @@
 package com.aozijx.passly.data.repository.attachment
 
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -21,7 +25,7 @@ class AttachmentGarbageCollectionWorkerTest {
             val result =
                 drainAttachmentGcPass(
                     batchSize = BATCH_SIZE,
-                    hasFullAccess = { true },
+                    access = MutableAccess(true),
                     onItemFailure = failures::add,
                     loadBatch = { cursorTime, cursorId ->
                         pending
@@ -55,19 +59,19 @@ class AttachmentGarbageCollectionWorkerTest {
     fun `drain pass stops before next database page after authorization is lost`() =
         runTest {
             val pending = (0 until BATCH_SIZE + 1).map(::pendingResource)
-            var authorized = true
+            val access = MutableAccess(true)
             var reads = 0
 
             val result =
                 drainAttachmentGcPass(
                     batchSize = BATCH_SIZE,
-                    hasFullAccess = { authorized },
+                    access = access,
                     loadBatch = { _, _ ->
                         reads += 1
                         pending.take(BATCH_SIZE)
                     },
                     drainOne = {
-                        authorized = false
+                        access.authorized = false
                         true
                     },
                 )
@@ -84,7 +88,7 @@ class AttachmentGarbageCollectionWorkerTest {
             val failures = mutableListOf<Exception>()
 
             runAttachmentGcDrain(
-                hasFullAccess = { true },
+                access = MutableAccess(true),
                 drainPass = {
                     attempts += 1
                     if (attempts < 4) throw IOException("temporary database failure")
@@ -108,7 +112,7 @@ class AttachmentGarbageCollectionWorkerTest {
             val delays = mutableListOf<Long>()
 
             runAttachmentGcDrain(
-                hasFullAccess = { true },
+                access = MutableAccess(true),
                 drainPass = {
                     attempts += 1
                     if (attempts == 1) AttachmentGcPassResult.RETRY else AttachmentGcPassResult.COMPLETE
@@ -126,23 +130,23 @@ class AttachmentGarbageCollectionWorkerTest {
     @Test
     fun `retry loop stops after authorization is lost during backoff`() =
         runTest {
-            var authorized = true
+            val access = MutableAccess(true)
             var attempts = 0
 
             runAttachmentGcDrain(
-                hasFullAccess = { authorized },
+                access = access,
                 drainPass = {
                     attempts += 1
                     AttachmentGcPassResult.RETRY
                 },
                 onFailure = {},
-                waitBeforeRetry = { authorized = false },
+                waitBeforeRetry = { access.authorized = false },
                 initialDelayMs = 5,
                 maximumDelayMs = 20,
             )
 
             assertEquals(1, attempts)
-            assertFalse(authorized)
+            assertFalse(access.authorized)
         }
 
     @Test
@@ -155,7 +159,7 @@ class AttachmentGarbageCollectionWorkerTest {
             val actual =
                 runCatching {
                     runAttachmentGcDrain(
-                        hasFullAccess = { true },
+                        access = MutableAccess(true),
                         drainPass = {
                             attempts += 1
                             throw fatal
@@ -183,7 +187,7 @@ class AttachmentGarbageCollectionWorkerTest {
             val actual =
                 runCatching {
                     runAttachmentGcDrain(
-                        hasFullAccess = { true },
+                        access = MutableAccess(true),
                         drainPass = {
                             attempts += 1
                             throw cancelled
@@ -209,6 +213,23 @@ class AttachmentGarbageCollectionWorkerTest {
             createdAt = 1L,
             enqueuedAt = 10L,
         )
+
+    private class MutableAccess(initiallyAuthorized: Boolean) : SecureSessionAccessState {
+        private val state =
+            MutableStateFlow<AuthenticationState>(
+                if (initiallyAuthorized) AuthenticationState.Authenticated(1L) else AuthenticationState.Locked,
+            )
+
+        override val authenticationState: StateFlow<AuthenticationState> = state
+
+        var authorized: Boolean
+            get() = state.value is AuthenticationState.Authenticated
+            set(value) {
+                state.value = if (value) AuthenticationState.Authenticated(1L) else AuthenticationState.Locked
+            }
+
+        override fun isUnlocked(): Boolean = authorized
+    }
 
     private companion object {
         const val BATCH_SIZE = 64

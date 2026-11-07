@@ -106,7 +106,7 @@ class AttachmentResourceGarbageCollector
                 withMutationLock {
                     drainAttachmentGcPass(
                         batchSize = batchSize,
-                        hasFullAccess = access::hasFullSecureSessionAccess,
+                        access = access,
                         onItemFailure = { logger.log(LogStatements.Application.resourceCleanupFailed(it)) },
                         loadBatch = { afterEnqueuedAt, afterResourceId ->
                             databaseSession.queryFullVault(
@@ -131,7 +131,7 @@ class AttachmentResourceGarbageCollector
 
         private suspend fun drainAfterUnlock() {
             runAttachmentGcDrain(
-                hasFullAccess = access::hasFullSecureSessionAccess,
+                access = access,
                 drainPass = { drainPass() },
                 onFailure = { logger.log(LogStatements.Application.resourceCleanupFailed(it)) },
             )
