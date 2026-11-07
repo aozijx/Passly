@@ -254,6 +254,8 @@ class CopyEntryFieldUseCaseTest {
             beforeRead()
             return entry
         }
+
+        override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
     }
 
     private object UsernameReader : EntryFieldReader {

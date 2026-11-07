@@ -34,6 +34,30 @@ class DetailRelatedEntryIdsTest {
     }
 
     @Test
+    fun `login resolves saved related passwords alongside account members`() {
+        assertEquals(
+            linkedSetOf(EntryId("account"), EntryId("otp"), EntryId("related")),
+            resolveRelatedEntryIds(
+                entryId = EntryId("login"),
+                entryType = EntryType.LOGIN,
+                links = links() + link("related", "login", "related", EntryRelationType.RELATED_TO),
+            ),
+        )
+    }
+
+    @Test
+    fun `standalone login resolves direct related password`() {
+        assertEquals(
+            setOf(EntryId("related")),
+            resolveRelatedEntryIds(
+                entryId = EntryId("login"),
+                entryType = EntryType.LOGIN,
+                links = listOf(link("related", "login", "related", EntryRelationType.RELATED_TO)),
+            ),
+        )
+    }
+
+    @Test
     fun `unlinked entry has no related entries`() {
         assertEquals(
             emptySet<EntryId>(),

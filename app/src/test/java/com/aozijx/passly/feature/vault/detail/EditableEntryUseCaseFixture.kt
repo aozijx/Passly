@@ -84,6 +84,8 @@ internal class EditableEntryUseCaseFixture(
         var current: Entry?,
     ) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId) = current
+
+        override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
     }
 
     private class TestAuthorization : AuthorizationGate {

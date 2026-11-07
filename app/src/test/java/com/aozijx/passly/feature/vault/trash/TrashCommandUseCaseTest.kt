@@ -253,5 +253,7 @@ class TrashCommandUseCaseTest {
         var reads = 0
 
         override suspend fun getById(entryId: EntryId): Entry? = entry.also { reads++ }
+
+        override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
     }
 }

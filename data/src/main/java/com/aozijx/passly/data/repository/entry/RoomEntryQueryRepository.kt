@@ -34,6 +34,24 @@ internal class RoomEntryQueryRepository
             }
         }
 
+        override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> {
+            if (entryIds.isEmpty()) return emptyList()
+            return databaseSession.queryFullVault(
+                onDenied = { emptyList() },
+            ) {
+                val requestedIds = entryIds.distinct()
+                val entriesById =
+                    entryQueryDao().getByIds(requestedIds.map(EntryId::value))
+                        .associateBy { it.entryId }
+                requestedIds.mapNotNull { id ->
+                    val metaEntity = entriesById[id.value] ?: return@mapNotNull null
+                    val summary = EntryProfileMapper.fromEntity(metaEntity)
+                    val secret = secretFieldStore.readBundle(this, id.value, metaEntity.entryType)
+                    EntryAssembler.assembleFromDatabase(metaEntity, summary, secret)
+                }
+            }
+        }
+
         override suspend fun findAllTags(): Set<String> {
             return databaseSession.queryFullVault(
                 onDenied = { emptySet() },

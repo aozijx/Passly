@@ -245,6 +245,8 @@ class VaultViewModelClipboardOwnerTest {
     private class TestEntries : EntryQueryRepository, EntryCommandRepository {
         override suspend fun getById(entryId: EntryId): Entry? = entry.takeIf { it.id == entryId }
 
+        override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entry.takeIf { it.id in entryIds }?.let(::listOf).orEmpty()
+
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> = AppResult.Success(entry.id)
 
         override suspend fun updateEntry(

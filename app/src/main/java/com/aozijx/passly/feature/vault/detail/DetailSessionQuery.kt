@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
@@ -34,12 +35,17 @@ internal class DetailSessionQuery
             val entry = entryQueryRepository.getById(entryId) ?: return null
             return coroutineScope {
                 val detail = async { snapshot(entry) }
-                val relatedEntries = async { relatedEntries(entry) }
+                val relatedEntries = async { loadRelatedEntries(entry) }
                 DetailSessionData(
                     detail = detail.await(),
                     relatedEntries = relatedEntries.await(),
                 )
             }
+        }
+
+        suspend fun reloadRelatedEntries(entryId: EntryId): List<Entry>? {
+            val entry = entryQueryRepository.getById(entryId) ?: return null
+            return loadRelatedEntries(entry)
         }
 
         suspend fun snapshot(entry: Entry): DetailEntryData =
@@ -48,18 +54,14 @@ internal class DetailSessionQuery
                 sensitiveFieldKeys = sensitiveFieldRepository.getPresence(entry.id).keys,
             )
 
-        private suspend fun relatedEntries(entry: Entry): List<Entry> {
+        private suspend fun loadRelatedEntries(entry: Entry): List<Entry> {
             val relatedIds =
                 resolveRelatedEntryIds(
                     entryId = entry.id,
                     entryType = entry.type,
                     links = entryLinkRepository.getAll(),
                 )
-            return buildList {
-                relatedIds.forEach { relatedId ->
-                    entryQueryRepository.getById(relatedId)?.let(::add)
-                }
-            }
+            return entryQueryRepository.getByIds(relatedIds.toList())
         }
     }
 
@@ -68,17 +70,30 @@ internal fun resolveRelatedEntryIds(
     entryType: EntryType,
     links: List<EntryLink>,
 ): Set<EntryId> {
+    val directRelatedIds =
+        links.asSequence()
+            .filter { it.relationType == EntryRelationType.RELATED_TO }
+            .mapNotNull { link ->
+                when (entryId) {
+                    link.sourceEntryId -> link.targetEntryId
+                    link.targetEntryId -> link.sourceEntryId
+                    else -> null
+                }
+            }.toSet()
     val graph = EntryAccountGraph(links)
     val accountId =
         if (entryType == EntryType.ACCOUNT) {
             entryId
         } else {
             graph.accountFor(entryId)
-        } ?: return emptySet()
+        }
 
     return buildSet {
-        add(accountId)
-        addAll(graph.membersOf(accountId))
+        if (accountId != null) {
+            add(accountId)
+            addAll(graph.membersOf(accountId))
+        }
+        addAll(directRelatedIds)
         remove(entryId)
     }
 }

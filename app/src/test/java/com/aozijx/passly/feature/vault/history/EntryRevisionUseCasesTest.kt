@@ -257,6 +257,8 @@ class EntryRevisionUseCasesTest {
         private val entry: Entry,
     ) : EntryQueryRepository {
         override suspend fun getById(entryId: EntryId) = entry
+
+        override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
     }
 
     private class FakeSensitiveRepository(

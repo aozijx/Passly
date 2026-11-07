@@ -685,6 +685,8 @@ class DetailViewModelTest {
                                 }
                                 return entries.getById(entryId)
                             }
+
+                            override suspend fun getByIds(entryIds: List<EntryId>) = entries.getByIds(entryIds)
                         }
                     },
                 )
@@ -719,6 +721,7 @@ class DetailViewModelTest {
                     entryQueryRepository = {
                         object : EntryQueryRepository {
                             override suspend fun getById(entryId: EntryId): Entry? = null
+                            override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
                         }
                     },
                 )
@@ -800,6 +803,7 @@ class DetailViewModelTest {
                     entryQueryRepository = {
                         object : EntryQueryRepository {
                             override suspend fun getById(entryId: EntryId): Entry? = awaitCancellation()
+                            override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
                         }
                     },
                 )
@@ -829,6 +833,7 @@ class DetailViewModelTest {
                             entryQueryRepository = {
                                 object : EntryQueryRepository {
                                     override suspend fun getById(entryId: EntryId): Entry? = throw fatal
+                                    override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
                                 }
                             },
                         )
@@ -863,6 +868,8 @@ class DetailViewModelTest {
                                 }
                                 return entries.getById(entryId)
                             }
+
+                            override suspend fun getByIds(entryIds: List<EntryId>) = entries.getByIds(entryIds)
                         }
                     },
                 )
@@ -905,6 +912,8 @@ class DetailViewModelTest {
                                 }
                                 return entries.getById(entryId)
                             }
+
+                            override suspend fun getByIds(entryIds: List<EntryId>) = entries.getByIds(entryIds)
                         }
                     },
                 )
@@ -1175,6 +1184,8 @@ class DetailViewModelTest {
         }
 
         override suspend fun getById(entryId: EntryId): Entry? = values[entryId]
+
+        override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entryIds.mapNotNull(values::get)
 
         override suspend fun createEntry(entry: Entry): AppResult<EntryId> = AppResult.Success(entry.id)
 

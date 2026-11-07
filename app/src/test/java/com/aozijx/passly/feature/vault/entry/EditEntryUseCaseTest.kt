@@ -412,6 +412,8 @@ class EditEntryUseCaseTest {
         var current: Entry? = initial
 
         override suspend fun getById(entryId: EntryId): Entry? = current
+
+        override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
     }
 
     private class FakeCommandRepository(
