@@ -311,11 +311,15 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 34：收窄未消费的 Activity 查询流
 
-- [ ] 从 `ActivityQueryRepository` 移除没有生产消费者的 `observeAll()` 与 `observeByType(activityType)`。对 `EntryActivityQueryDao` 逐方法收敛：目前仅 `observeByEntryId()` 有生产消费者；`observeAll()` 只被 Room session 集成测试使用；`getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()` 由 revision restore 集成测试验证；其余 `observeUsage*`/`observeMutation*`、所有 `paging*`、`getById()`、`exists()`、`count()` 与 usage/mutation counts 在仓库范围内仅有声明。移除闲置方法时保留/改写锁切换、revision restore 的行为测试，不删掉这些真实验证。
-- [ ] 核对并移除没有任何调用者的 `EntryActivityAnalyticsDao`、`AppDatabase.entryActivityAnalyticsDao()` accessor 及局部 DTO：当前列表 usage stats 由 `EntryPagingQueryFactory` 的实际 Paging 查询计算。`RoomObservationSessionTest` 直接调用 Activity/Link DAO 的 `observeAll()` 以测试通用 gate；迁移为按条目观察测试或证明此专用查询仍有不可替代验证价值，不能为了 test-only API 永久保留生产 DAO 方法。
+- [x] 从 `ActivityQueryRepository` 移除没有生产消费者的 `observeAll()` 与 `observeByType(activityType)`，并同步删除 `RoomActivityQueryRepository` 实现和 Detail 测试替身中的空实现。`EntryActivityQueryDao` 逐方法收敛仍待后续批次。
+- [x] 删除无调用者的 `EntryActivityAnalyticsDao`、`AppDatabase.entryActivityAnalyticsDao()` accessor 和其局部 DTO。引用闭包只到 DAO 声明及 accessor；列表 usage stats 由 `EntryPagingQueryFactory` 的 Paging SQL 提供。保留 `RoomObservationSessionTest` 使用的 Activity/Link `observeAll()` session gate 查询；这次不扩展到其余 Activity DAO 方法。
 - [ ] 清理测试替身与文档；先确认无反射、Hilt 多绑定或构建生成消费者。保留/改写针对 Detail 按条目读取、数据库锁切换取消/重建的行为覆盖，不为删掉未消费方法制造只断言符号不存在的测试。运行 Activity/Detail 定向测试、`verifyArchitecture` 与 `git diff --check`。
 
 **证据：** `ActivityQueryRepository.observeByEntryId()` 唯一生产调用位于 `DetailViewModel`，支持详情活动记录；`observeAll()` 与 `observeByType()` 没有生产 consumer。全仓搜索 `EntryActivityQueryDao` 的方法后，确认 usage/mutation 四类观察、四个 paging、`getById()`、`exists()`、`count()` 和两个 usage/mutation counts 只在 DAO 声明。`observeAll()` 由 `RoomObservationSessionTest` 用作 session gate 集成测试入口；`getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()` 在 `EntryRevisionRestoreTransactionTest` 中验证恢复行为，需要保留覆盖。`EntryActivityAnalyticsDao` 的四个聚合查询只在 DAO 声明及 `AppDatabase` accessor 出现，没有生产调用者；列表 usageCount/lastUsedAt 实际由 `EntryPagingQueryFactory` 内联 SQL 生成。现有 `DetailViewModelTest` fake 实现全量/类型方法仅为满足接口，没有行为断言；未发现正式文档声明这些额外 API 合同。
+
+**2026-11-08 批次：** 删除 `ActivityQueryRepository.observeAll()` / `observeByType()`、Room adapter 对应实现及 DetailViewModelTest 的空 fake 方法。当前生产消费者只调用 `observeByEntryId()`；全仓引用扫描确认剩余接口引用仅为其生产注入与测试 fixture。未删除 `EntryActivityQueryDao.observeAll()`，因为 Room session gate 仪器测试直接覆盖该查询；其余 DAO 收敛留待下一批。此批次尚未运行编译或测试。
+
+**2026-11-08 批次：** 删除未被引用的 `EntryActivityAnalyticsDao`、`AppDatabase` accessor 和聚合结果 DTO；精确符号扫描只找到 DAO 声明及 accessor，未发现 Kotlin/Java consumer。`EntryPagingQueryFactory` 已承担列表 usageCount/lastUsedAt 查询。未改数据库实体或 schema；未运行测试。
 
 <a id="task-36"></a>
 
