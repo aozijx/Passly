@@ -75,8 +75,9 @@
 - Modify `app/src/main/res/values/strings.xml` and `values-en/strings.xml`
 
 - [x] Add a Detail action visible only for active saved LOGIN entries and picker states for loading, candidates, saving, empty, and retryable failure.
-- [ ] Test page-owner replacement, session revocation, picker dismissal, bind success/failure/cancellation, duplicate prevention, and source/target changes while work is suspended.
+- [x] Test candidate results after same-entry page replacement, session revocation, and picker dismissal; stale requests do not publish candidates.
+- [ ] Test bind success/failure/cancellation, duplicate prevention, and source/target changes while binding is suspended.
 - [x] Add a searchable lazy candidate sheet that shows title/username summaries, never credential fields, with localized labels and explicit bind affordance.
 - [x] On success, refresh only the current Detail relationship projection; ordinary failures are logged and shown without closing the retry path.
-- [x] Run the focused Detail tests through the full `:app:testDebugUnitTest` suite, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`; App passed 1035 tests and Data passed 168 tests, with no failures.
+- [x] Run the focused Detail tests through the full `:app:testDebugUnitTest` suite, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`; App passed 1036 tests and Data passed 168 tests, with no failures.
 - [x] Commit `feat(vault): bind saved passwords from detail`.
