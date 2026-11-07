@@ -102,8 +102,7 @@ AAD 是 encoded `magic || version || key_id || draft_id || created_at_ms` 再拼
 source（固定 wire key：Legacy=1、Credential Manager=2）、captured time、package/domain/page title/username/password。
 `AutofillInboxRecordCodec.encodePayload(draftId, source, capturedAtMs, draft)` 将 `source.wireKey` 写成 u8；
 `decodePayload(plaintext)` 用 `readUnsignedByte()` 读出 `sourceKey`，调用 `AutofillInboxSource.fromWireKey(sourceKey)`，未知值抛
-`IllegalArgumentException` 并进入记录级隔离路径。该反向解析当前以 `entries.firstOrNull` 按 `wireKey` 查找；稳定值及
-未知来源拒绝行为见[维护 TODO Task 85](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
+`IllegalArgumentException` 并进入记录级隔离路径。稳定来源键与未知值拒绝是存储合同，不依赖枚举名称或序号。
 字符串使用 UTF-8 与 big-endian signed i32 长度，nullable 字段用 -1 表示缺失；拒绝未知 source、非法 UTF-8、尾随字节与超限字段。
 各 UTF-8 字段上限分别为 package 512、domain 4096、page title 8192、username 8192、password 32768 bytes，整条 record 上限 64 KiB。
 Entry ID 由导入事务根据 draft ID 确定，不在 pending payload 预造 Entry ID。解密后两个 draft ID 必须一致。

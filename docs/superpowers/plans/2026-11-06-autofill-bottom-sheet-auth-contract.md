@@ -1,36 +1,15 @@
-# Autofill BottomSheet Authentication Contract Implementation Plan
+# Autofill BottomSheet 认证合同实施记录
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+**状态：协议切换已实现；不是待执行计划。** 真实字段填值及宿主行为统一由[Autofill 后续 Task 21](2026-11-07-passly-autofill-followups.md#task-21)验收，不在本页复制任务。
 
-**Goal:** Make selecting a credential in the authenticated Autofill BottomSheet fill the target fields directly, while preserving response authentication for system/inline presentation and preventing Bundle-incompatible lazy keys.
+## 当前结果合同
 
-**Architecture:** Keep Android protocol construction in `LegacyResponseFactory` and the existing pending-intent boundary. Select the result target from the presentation contract: dataset authentication for BottomSheet, response authentication for system/inline. Keep domain `EntryId` for selection while the lazy-list boundary accepts only a stable `String` key.
+- 锁定 BottomSheet 使用 dataset authentication；认证并选择条目后直接返回 Dataset。
+- 锁定系统/Inline 使用 response authentication；认证后交还 FillResponse，保留平台候选选择语义。
+- Legacy 结果目标使用显式稳定键；缺失/未知目标拒绝，不读取旧布尔标志作 fallback。
+- 候选 lazy-list key 是稳定 String，点击回调仍保留 EntryId。
+- framework 结果由 Feature entry 交付，App Activity 执行 setResult/finish；result.delivered 只表示平台回调已返回，不证明目标控件填值。
 
-**Tech Stack:** Kotlin, Android Autofill Framework, Jetpack Compose, Android instrumented tests, Gradle.
+响应工厂和结果 claim/lease 测试各有自己的覆盖范围；历史占位 Dataset 或设备 locked 提示不算最终填值验收。本次不运行设备测试，不再沿用固定 AVD、示例条目或重新初始化 Vault 的操作步骤。
 
-## Global Constraints
-
-- Preserve system/inline response-level authentication and BottomSheet dataset-level authentication.
-- Authentication result targets are explicit; do not add legacy fallback or infer a missing value.
-- Do not log credentials or claim field-fill success from result delivery alone.
-- Keep Room, internal protocol, and persistence format versions unchanged.
-- Preserve unrelated worktree changes; do not stage or commit local files.
-
-## Review Focus
-
-- Locked BottomSheet request returns a dataset-authenticated placeholder and selection directly fills all recognized role IDs.
-- Locked system/inline requests still return response-level authentication and preserve inline presentation behavior.
-- Missing or unknown result target remains rejected by `AutofillFillRequestParser`.
-- Candidate lazy keys are stable strings while click callbacks preserve `EntryId`.
-- Runtime logs distinguish result delivery from confirmed UI state; Android provides no general callback proving target fields accepted the values.
-
----
-
-### Remaining device acceptance
-
-**Files:**
-- Modify: `docs/features/autofill/legacy-service.md`
-- Verify: the existing `com.example.androidproject` AVD flow on `emulator-5554`.
-
-- [ ] Install the built debug APK, trigger Autofill in Android_Project, authenticate, select `ExampleLogin`, and verify its username/password become visible in the fields without a second system selection. Latest attempt confirmed the locked BottomSheet placeholder Dataset (`NUM_DATASETS=1`) on API 36, but did not reach a visible candidate selection or filled fields; do not count this as device acceptance.
-- [ ] Capture Passly diagnostics and Android fill state; confirm no new fatal exception and describe `result.delivered` only as platform result submission.
+当前协议与验证范围见[Legacy 流程](../../features/autofill/legacy-service.md)和[验证矩阵](../../features/autofill/verification.md)。

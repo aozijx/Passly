@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.settings.presentation.ui.autofill
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -33,9 +32,6 @@ class AutofillSettingsSectionTest {
                 supportsCredentialManager = false,
                 requireAuthentication = true,
                 strictDomainMatching = true,
-                canEditPreferences = true,
-                preferencesRefreshing = false,
-                preferencesFailed = false,
                 systemService = AutofillSourceState.Ready(true),
             )
         composeRule.setContent {
@@ -88,37 +84,6 @@ class AutofillSettingsSectionTest {
     }
 
     @Test
-    fun failedPreferencesRemainVisibleButReadOnlyUntilRetry() {
-        val actions = mutableListOf<AutofillSettingsAction>()
-        composeRule.setContent {
-            MaterialTheme {
-                AutofillSettingsSection(
-                    settings =
-                        settings().copy(
-                            canEditPreferences = false,
-                            preferencesFailed = true,
-                        ),
-                    onAction = actions::add,
-                )
-            }
-        }
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-        composeRule
-            .onNodeWithText(context.getString(R.string.settings_autofill_enabled))
-            .assertIsNotEnabled()
-        composeRule
-            .onNodeWithText(context.getString(R.string.settings_autofill_preferences_load_failed))
-            .assertIsDisplayed()
-        composeRule.onNodeWithText(context.getString(R.string.retry)).performClick()
-
-        assertEquals(
-            listOf(AutofillSettingsAction.RetryPreferences),
-            actions,
-        )
-    }
-
-    @Test
     fun strictDomainMatchingToggleEmitsItsDedicatedAction() {
         val actions = mutableListOf<AutofillSettingsAction>()
         composeRule.setContent {
@@ -149,9 +114,6 @@ class AutofillSettingsSectionTest {
             supportsCredentialManager = false,
             requireAuthentication = true,
             strictDomainMatching = true,
-            canEditPreferences = true,
-            preferencesRefreshing = false,
-            preferencesFailed = false,
             systemService = AutofillSourceState.Ready(true),
         )
 }

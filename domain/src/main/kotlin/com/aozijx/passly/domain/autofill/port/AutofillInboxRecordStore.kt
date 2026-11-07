@@ -1,4 +1,4 @@
-package com.aozijx.passly.domain.access.port
+package com.aozijx.passly.domain.autofill.port
 
 import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.model.AutofillInboxStoredRecord

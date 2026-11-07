@@ -1,10 +1,10 @@
 # Autofill 验证矩阵
 
-状态：当前与已批准目标的验收合同。
+状态：当前实现的验证范围；剩余自动化/设备验收由[Autofill 后续清单](../../superpowers/plans/2026-11-07-passly-autofill-followups.md)统一维护，不在迁移记录重复建项。
 
 ## 当前流程
 
-- Legacy：锁定发现、认证、同 interaction 选择、结果先交付后关闭；SaveInfo 角色和当前认证式 save。
+- Legacy：锁定发现、认证、同 interaction 选择、结果先交付后关闭；SaveInfo 角色、完整会话直接保存与锁定 Inbox 入队。
 - Legacy 三种展示：悬浮菜单、遵守键盘容量/规格的 Inline、认证后 BottomSheet；无 Inline 请求时菜单可用。
 - 无障碍手动回退：服务启用后点击浮动按钮才扫描；认证后仅填原窗口/包名的可编辑节点；目标变化或超时拒绝。
 - 日志记录展示模式和 Inline 能力、手动请求/不可用/交付/异常；只允许脱敏包名，不含节点文字或凭据。
@@ -39,16 +39,43 @@ offer a preference-only retry. A failed Android status read is displayed as unav
 “not enabled”; retry recreates only that status collector. If no previous preference value exists,
 the page keeps its Autofill identity visible and offers a retry instead of rendering empty content.
 
-The Android source registers its `ContentObserver` before taking the registered snapshot. Registration
-or read exceptions from the initial read, registered snapshot, or observer callback fail that source;
-a registered observer is removed when collection fails or is cancelled. A null secure setting remains
-a valid “not enabled” value. The existing outer initial read and its ordering are unchanged; removal
-of that duplicate read remains Task 33.
+The App source registers its `ContentObserver` before taking the initial snapshot. The observer flow
+emits one registered snapshot, republishes after changes, and removes the observer when collection
+fails or is cancelled. Registration exceptions and ordinary `Exception` failures from the initial
+read or observer callback fail that source; fatal `Error` values remain fatal, including during
+cleanup. A null secure setting remains a valid “not enabled” value. `AutofillServiceStatusObservationTest`
+covers this flow contract, while `AutofillSettingsViewModelTest` covers replacing a failed system
+source and cancelling its previous collector.
 
 `AutofillSettingsViewModelTest` covers independent errors, last-known values, source-only retries,
 recovery, write blocking while preferences are unavailable, and cancellation after the state
 subscriber leaves. `AutofillSettingsSectionTest` covers the unknown status and read-only preferences;
-these Android tests were compiled but not run because no device was attached during this change.
+it compiled but was not part of the device test run in this change.
+
+## AVD field-fill acceptance
+
+On 2026-11-07, the current Debug build was installed on `Pixel_8_Pro` (API 36).
+The temporary system Autofill service was set to the Debug package's
+`LegacyAutofillService`, and a fictional credential associated with
+`com.example.androidproject` was used. Tapping the focused username field caused
+Android to receive a Legacy response with authentication and no datasets while
+the Vault was locked. Selecting the system's “Passly is locked” row opened the
+single `AutofillAuthActivity`; after App Password authentication, the candidate
+“Synthetic test” appeared. Selecting it returned to the target form, whose
+username field contained `autofilltest` and whose password field was populated.
+Android logged `AutofillManager.autofill()` for both target IDs and successful
+`notifyValueChanged` callbacks (12-character username and 16-character password),
+and Passly logged `autofill.result.delivered`. No app fatal exception appeared in
+the captured interval. The temporary `secure/autofill_service` setting was
+restored to its original `null` value and the temporary Debug Vault data was
+cleared after capture.
+
+This confirms one end-to-end Legacy field-fill path with `SYSTEM_INLINE` selected.
+The request did not provide InlinePresentation support, so Android displayed its
+system dropdown; Inline-specific presentation is still unverified. This run also
+does not verify BottomSheet direct fill, configuration recreation, callback
+failure/retry, or Accessibility/Credential Manager host teardown; those remain in
+the Autofill follow-up plan.
 
 ## 代码位置
 
@@ -56,4 +83,4 @@ these Android tests were compiled but not run because no device was attached dur
 | --- | --- | --- |
 | Autofill 设置源状态、隔离重试和写入门禁 | `AutofillSettingsViewModel.observeSource()` | [`AutofillSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt) |
 | Autofill 设置失败和重试 UI | `AutofillRoute`、`AutofillSettingsSection` | [`AutofillRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/autofill/AutofillRoute.kt)、[`AutofillSettingsSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/autofill/AutofillSettingsSection.kt) |
-| Android 系统服务状态观察和 observer 清理 | `AndroidAutofillServiceStatusSource.observeServiceEnabled()` | [`AndroidAutofillServiceStatusSource.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillServiceStatusSource.kt) |
+| Android 系统服务状态观察和 observer 清理 | `AndroidAutofillServiceStatusSource.observeServiceEnabled()`、`observeBooleanStatus()` | [`AndroidAutofillServiceStatusSource.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AndroidAutofillServiceStatusSource.kt)、[`AutofillServiceStatusObservation.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/AutofillServiceStatusObservation.kt)、[`AutofillServiceStatusObservationTest.kt`](../../../app/src/test/java/com/aozijx/passly/app/autofill/AutofillServiceStatusObservationTest.kt) |

@@ -274,6 +274,7 @@ class CredentialManagerFlowTest {
                             credentialFieldMatchStrategy = matcher,
                             startInteraction = start,
                             interactionStore = store,
+                            secureSessionAccessState = vault,
                             finishInteraction = finish,
                             logger = testLogger(),
                         ),
@@ -285,7 +286,7 @@ class CredentialManagerFlowTest {
                             store,
                             lease,
                         ),
-                    resolveSelection = ResolveAutofillSelection(store, resolver),
+                    resolveSelection = ResolveAutofillSelection(store, resolver, authentication, vault),
                     saveCredential = saveCredential,
                     secureSessionAccessState = vault,
                     inboxQueue =

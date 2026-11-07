@@ -7,10 +7,10 @@ import com.aozijx.passly.data.mapper.entry.EntryProfileMapper
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.AutofillDomainNormalization
 import com.aozijx.passly.domain.autofill.AutofillScope
+import com.aozijx.passly.domain.autofill.model.AUTOFILL_CANDIDATE_LIMIT
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.port.AutofillCandidateRepository
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import javax.inject.Inject
@@ -53,25 +53,7 @@ internal class RoomAutofillCandidateRepository
                         domain,
                         query.strictDomainMatching,
                     )
-                val candidates =
-                    when {
-                        matchingCandidates.isNotEmpty() -> {
-                            matchingCandidates
-                        }
-
-                        query.allowUnmatched -> {
-                            entryQueryDao()
-                                .getActiveByType(EntryType.LOGIN)
-                                .take(boundedLimit)
-                                .map { it.toAutofillCandidateSummary(CredentialMatch(MatchType.UNKNOWN)) }
-                        }
-
-                        else -> {
-                            emptyList()
-                        }
-                    }
-
-                candidates
+                matchingCandidates
                     .asSequence()
                     .sortedWith(
                         compareByDescending<AutofillCandidateSummary> { it.match.score }
@@ -83,7 +65,7 @@ internal class RoomAutofillCandidateRepository
         }
 
         private companion object {
-            const val MAX_CANDIDATES = 10
+            const val MAX_CANDIDATES = AUTOFILL_CANDIDATE_LIMIT
         }
     }
 

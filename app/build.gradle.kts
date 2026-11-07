@@ -192,9 +192,6 @@ dependencies {
     // Security & Biometric
     implementation(libs.androidx.biometric)
 
-    // Android Autofill platform types used by the Activity result adapter
-    implementation(libs.androidx.autofill)
-
     // Data-facing UI adapters
     implementation(libs.androidx.paging.compose)
     implementation(libs.uuid.creator)

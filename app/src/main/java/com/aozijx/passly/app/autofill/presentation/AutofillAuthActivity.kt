@@ -15,15 +15,14 @@ import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.theme.PersistedAppTheme
+import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
 import com.aozijx.passly.feature.autofill.presentation.AutofillFeatureEntry
 import com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion
-import com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation
-import com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation
 import com.aozijx.passly.security.authentication.host.AuthenticationHost
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-/** App-owned theme and authentication host around the Autofill Feature entry point. */
+/** App-owned platform host that composes Security authentication and the Autofill Feature entry. */
 @AndroidEntryPoint
 class AutofillAuthActivity : AppCompatActivity() {
     @Inject lateinit var activeTaskClearRequests: ActiveTaskClearRequests
@@ -32,8 +31,7 @@ class AutofillAuthActivity : AppCompatActivity() {
     private lateinit var taskClearActivityOwner: TaskClearActivityOwner
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val presentation = autofillHostPresentation(intent.action)
-        setTheme(themeFor(presentation))
+        setTheme(themeFor(intent.action == AutofillHostLaunchContract.ACTION_LEGACY_FILL))
         super.onCreate(savedInstanceState)
         taskClearActivityOwner =
             TaskClearActivityOwner(
@@ -43,7 +41,7 @@ class AutofillAuthActivity : AppCompatActivity() {
                 closeTask = ::finishAndRemoveTask,
             )
         excludeFromAutofill()
-        if (presentation == AutofillHostPresentation.ACCESSIBILITY_FILL) {
+        if (intent.action == AutofillHostLaunchContract.ACTION_ACCESSIBILITY_FILL) {
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
 
@@ -59,8 +57,8 @@ class AutofillAuthActivity : AppCompatActivity() {
         }
     }
 
-    private fun themeFor(presentation: AutofillHostPresentation): Int =
-        if (presentation == AutofillHostPresentation.LEGACY_FILL) {
+    private fun themeFor(isLegacyFill: Boolean): Int =
+        if (isLegacyFill) {
             R.style.Theme_Passly_AutofillFill
         } else {
             R.style.Theme_Passly_TransparentAuth

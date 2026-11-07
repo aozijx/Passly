@@ -11,7 +11,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity
 import com.aozijx.passly.feature.autofill.platform.AutofillHostLaunchContract
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -83,6 +86,51 @@ class AndroidAutofillLaunchTargetTest {
         assertTrue(keys.any { it.toString().contains(ACCESSIBILITY_VIEW_MODEL) })
         assertFalse(keys.any { it.toString().contains(LEGACY_VIEW_MODEL) })
         assertFalse(keys.any { it.toString().contains(CREDENTIAL_VIEW_MODEL) })
+    }
+
+    @Test
+    fun accessibilityHostFinishesWhenNoCaptureIsAvailable() {
+        val intent =
+            Intent(context, AutofillAuthActivity::class.java)
+                .setAction(AutofillHostLaunchContract.ACTION_ACCESSIBILITY_FILL)
+        val destroyedCount = AtomicInteger()
+        val destroyed = CountDownLatch(1)
+        val callbacks =
+            object : Application.ActivityLifecycleCallbacks {
+                override fun onActivityDestroyed(activity: Activity) {
+                    if (activity is AutofillAuthActivity) {
+                        destroyedCount.incrementAndGet()
+                        destroyed.countDown()
+                    }
+                }
+
+                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+
+                override fun onActivityStarted(activity: Activity) = Unit
+
+                override fun onActivityResumed(activity: Activity) = Unit
+
+                override fun onActivityPaused(activity: Activity) = Unit
+
+                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+
+                override fun onActivityStopped(activity: Activity) = Unit
+            }
+
+        val application = context.applicationContext as Application
+        application.registerActivityLifecycleCallbacks(callbacks)
+        try {
+            ActivityScenario.launch<AutofillAuthActivity>(intent).use {
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+                assertTrue(
+                    "AutofillAuthActivity did not finish after the Feature completed",
+                    destroyed.await(5, TimeUnit.SECONDS),
+                )
+                assertEquals(1, destroyedCount.get())
+            }
+        } finally {
+            application.unregisterActivityLifecycleCallbacks(callbacks)
+        }
     }
 
     private companion object {

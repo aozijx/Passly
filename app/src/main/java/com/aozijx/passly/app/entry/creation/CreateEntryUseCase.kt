@@ -32,7 +32,7 @@ class CreateEntryUseCase internal constructor(
     private val entryCommandRepository: EntryCommandRepository,
     private val secureSessionAccessState: SecureSessionAccessState,
     private val materializer: EntryDraftMaterializer,
-    private val autofillEntryWriter: AutofillEntryWriter = UnavailableAutofillEntryWriter,
+    private val autofillEntryWriter: AutofillEntryWriter,
     private val idFactory: () -> EntryId,
     private val clock: () -> Long,
     private val logger: Logger,
@@ -50,22 +50,6 @@ class CreateEntryUseCase internal constructor(
         secureSessionAccessState = secureSessionAccessState,
         materializer = materializer,
         autofillEntryWriter = autofillEntryWriter,
-        idFactory = { EntryId(UuidCreator.getTimeOrderedEpoch().toString()) },
-        clock = System::currentTimeMillis,
-        logger = logger,
-        monotonicClock = ::monotonicTimeMs,
-    )
-
-    internal constructor(
-        entryCommandRepository: EntryCommandRepository,
-        secureSessionAccessState: SecureSessionAccessState,
-        materializer: EntryDraftMaterializer,
-        logger: Logger,
-    ) : this(
-        entryCommandRepository = entryCommandRepository,
-        secureSessionAccessState = secureSessionAccessState,
-        materializer = materializer,
-        autofillEntryWriter = UnavailableAutofillEntryWriter,
         idFactory = { EntryId(UuidCreator.getTimeOrderedEpoch().toString()) },
         clock = System::currentTimeMillis,
         logger = logger,
@@ -185,9 +169,3 @@ private fun stableInboxEntryId(draftId: AutofillInboxDraftId): EntryId =
     )
 
 private enum class EntryCreateTrigger { USER, AUTOFILL }
-
-private object UnavailableAutofillEntryWriter : AutofillEntryWriter {
-    override suspend fun create(entry: Entry): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
-
-    override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> = AppResult.Failure(SessionModeRestricted())
-}

@@ -19,7 +19,6 @@ import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
-import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
 import com.aozijx.passly.domain.autofill.model.AutofillInboxPendingDraft
@@ -28,6 +27,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInboxStoredRecord
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.port.AutofillInboxDraftImporter
 import com.aozijx.passly.domain.autofill.port.AutofillInboxImportOutcome
+import com.aozijx.passly.domain.autofill.port.AutofillInboxRecordStore
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.CancellationException

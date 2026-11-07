@@ -19,14 +19,12 @@ class AutofillSettingsUiMapperTest {
         val model =
             autofill.toAutofillSettingsUiModel(
                 supportsCredentialManager = false,
-                canEditPreferences = true,
-                preferencesRefreshing = false,
-                preferencesFailed = false,
                 systemService = AutofillSourceState.Ready(true),
             )
 
         assertFalse(model.enabled)
-        assertEquals(true, model.canEditPreferences)
+        assertEquals(true, model.credentialManagerEnabled)
+        assertEquals(true, model.requireAuthentication)
         assertEquals(AutofillSourceState.Ready(true), model.systemService)
         assertFalse(model.supportsCredentialManager)
         assertFalse(model.strictDomainMatching)

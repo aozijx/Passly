@@ -80,7 +80,6 @@ internal fun readInteraction(p: InteractionPreferences): InteractionSettings =
         isPullToSearchEnabled = p.pullToSearchEnabled,
         swipeLeftAction = p.swipeLeftAction.toDomain(),
         swipeRightAction = p.swipeRightAction.toDomain(),
-        autofill = readAutofill(p.autofill),
     )
 
 internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
@@ -89,13 +88,5 @@ internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
         presentation = p.presentation.toDomain(),
         credentialManagerEnabled = p.credentialManagerEnabled,
         requireAuthentication = p.requireAuthentication,
-        includeOtp = p.includeOtp,
-        savePromptsEnabled = p.savePromptsEnabled,
-        allowUnmatchedSuggestions = p.allowUnmatchedSuggestions,
         strictDomainMatching = p.strictDomainMatching,
-        maxSuggestions =
-            p.maxSuggestions.coerceIn(
-                AutofillSettings.MIN_SUGGESTIONS,
-                AutofillSettings.MAX_SUGGESTIONS,
-            ),
     )

@@ -77,10 +77,8 @@ message AutofillPreferences {
     optional AutofillPresentationPreference presentation = 2 [default = AUTOFILL_PRESENTATION_SYSTEM_INLINE];
     optional bool credential_manager_enabled = 3 [default = true];
     optional bool require_authentication = 4 [default = true];
-    optional bool include_otp = 5 [default = true];
-    optional bool save_prompts_enabled = 6 [default = true];
-    optional bool allow_unmatched_suggestions = 7 [default = false];
-    optional int32 max_suggestions = 8 [default = 5];
+    reserved 5 to 8;
+    reserved "include_otp", "save_prompts_enabled", "allow_unmatched_suggestions", "max_suggestions";
     optional bool strict_domain_matching = 9 [default = true];
 }
 

@@ -24,6 +24,7 @@ internal data class EditableFieldInfo(
 internal data class ParsedStructure(
     val packageName: String? = null,
     val webDomain: String? = null,
+    val ambiguousWebOrigin: Boolean = false,
     /** All editable input fields on the page. */
     val editableFields: List<EditableFieldInfo> = emptyList(),
     val traversal: Traversal = Traversal(),
@@ -51,6 +52,7 @@ internal object AutofillStructureParser {
             webDomain =
                 parser.webDomain
                     ?.takeUnless { it == "127.0.0.1" || it == "localhost" },
+            ambiguousWebOrigin = parser.ambiguousWebOrigin,
             editableFields = parser.editableFields,
             traversal = parser.traversal,
         )
@@ -61,6 +63,8 @@ internal object AutofillStructureParser {
     ) {
         var packageName: String? = structure.activityComponent?.packageName
         var webDomain: String? = null
+        var ambiguousWebOrigin: Boolean = false
+        private val webDomainClaims = mutableListOf<String>()
         val editableFields = mutableListOf<EditableFieldInfo>()
         val traversal: ParsedStructure.Traversal
 
@@ -79,6 +83,9 @@ internal object AutofillStructureParser {
                     children = ::childrenOf,
                     visit = ::parseNode,
                 )
+            val origin = AutofillWebOriginResolver.resolve(webDomainClaims, structureTruncated = traversal.truncated)
+            webDomain = origin.domain
+            ambiguousWebOrigin = origin.ambiguous
             this.traversal =
                 ParsedStructure.Traversal(
                     windowCount = structure.windowNodeCount,
@@ -93,10 +100,7 @@ internal object AutofillStructureParser {
                 if (!idPkg.isNullOrBlank()) packageName = idPkg
             }
 
-            if (webDomain == null) {
-                val nodeDomain = node.webDomain
-                if (!nodeDomain.isNullOrBlank()) webDomain = nodeDomain
-            }
+            node.webDomain?.takeIf(String::isNotBlank)?.let(webDomainClaims::add)
 
             val inputType = node.inputType
             val className = node.className?.lowercase() ?: ""

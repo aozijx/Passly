@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet
+import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillWebConfirmationDialog
 
 @Composable
 internal fun AutofillFillRoute(
@@ -25,6 +26,8 @@ internal fun AutofillFillRoute(
         onCandidateSelected = { entryId ->
             viewModel.onAction(AutofillFillUiAction.CandidateSelected(entryId))
         },
+        onConfirmWebRecipient = { viewModel.onAction(AutofillFillUiAction.ConfirmWebRecipient) },
+        onConfirmWebEntry = { viewModel.onAction(AutofillFillUiAction.ConfirmWebEntry) },
         onCancel = { viewModel.onAction(AutofillFillUiAction.Cancel) },
     )
 }
@@ -43,6 +46,8 @@ private fun AutofillCompletionEffect(
             AutofillFillUiState.Initial,
             AutofillFillUiState.Loading,
             is AutofillFillUiState.ShowCandidates,
+            is AutofillFillUiState.ConfirmWebRecipient,
+            is AutofillFillUiState.ConfirmWebEntry,
             -> Unit
         }
     }
@@ -53,6 +58,8 @@ private fun AutofillFillContent(
     displayState: AutofillFillDisplayState,
     targetAppPackageName: String,
     onCandidateSelected: (EntryId) -> Unit,
+    onConfirmWebRecipient: () -> Unit,
+    onConfirmWebEntry: () -> Unit,
     onCancel: () -> Unit,
 ) {
     when (displayState) {
@@ -65,6 +72,25 @@ private fun AutofillFillContent(
                 candidates = displayState.candidates,
                 targetAppPackageName = targetAppPackageName,
                 onCandidateSelected = onCandidateSelected,
+                onCancel = onCancel,
+            )
+        }
+
+        is AutofillFillDisplayState.ConfirmWebRecipient -> {
+            AutofillWebConfirmationDialog(
+                packageName = displayState.packageName,
+                webDomain = displayState.webDomain,
+                onConfirm = onConfirmWebRecipient,
+                onCancel = onCancel,
+            )
+        }
+
+        is AutofillFillDisplayState.ConfirmWebEntry -> {
+            AutofillWebConfirmationDialog(
+                packageName = displayState.packageName,
+                webDomain = displayState.webDomain,
+                candidate = displayState.candidate,
+                onConfirm = onConfirmWebEntry,
                 onCancel = onCancel,
             )
         }

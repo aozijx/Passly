@@ -9,12 +9,14 @@ import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
+import com.aozijx.passly.feature.autofill.core.ConfirmLegacyWebAutofill
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
@@ -35,6 +37,7 @@ internal class AutofillFillViewModel
     @Inject
     internal constructor(
         private val authorizeInteraction: AuthorizeAutofillInteraction,
+        private val confirmWebAutofill: ConfirmLegacyWebAutofill,
         private val discoverCandidates: DiscoverAutofillCandidates,
         private val resolveSelection: ResolveAutofillSelection,
         private val finishInteraction: FinishAutofillInteraction,
@@ -62,13 +65,22 @@ internal class AutofillFillViewModel
             when (action) {
                 is AutofillFillUiAction.Initialize -> initialize(action.request)
                 is AutofillFillUiAction.CandidateSelected -> selectCandidate(action.entryId)
+                AutofillFillUiAction.ConfirmWebRecipient -> confirmWebRecipient()
+                AutofillFillUiAction.ConfirmWebEntry -> confirmWebEntry()
                 AutofillFillUiAction.Cancel -> cancel()
             }
         }
 
         /** Abandon an open picker when its host leaves the foreground without a selection. */
         fun cancelIfWaitingForSelection() {
-            if (mutableUiState.value is AutofillFillUiState.ShowCandidates) cancel()
+            when (mutableUiState.value) {
+                is AutofillFillUiState.ShowCandidates,
+                is AutofillFillUiState.ConfirmWebRecipient,
+                is AutofillFillUiState.ConfirmWebEntry,
+                -> cancel()
+
+                else -> Unit
+            }
         }
 
         private fun initialize(request: AutofillFillRequest) {
@@ -133,6 +145,15 @@ internal class AutofillFillViewModel
                     val directEntryId = request.directEntryId
                     val includeOtp = request.otpIds.isNotEmpty()
                     when {
+                        directEntryId != null && request.webDomain != null -> {
+                            val candidate = discovery.candidates.firstOrNull { it.entry.id == directEntryId }
+                            if (candidate == null) {
+                                fail(request, "legacy.selection_unavailable")
+                            } else {
+                                showWebEntryConfirmation(request, candidate)
+                            }
+                        }
+
                         directEntryId != null -> {
                             resolve(request, directEntryId, includeOtp)
                         }
@@ -163,6 +184,10 @@ internal class AutofillFillViewModel
                     )
                 }
 
+                is AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation -> {
+                    showWebRecipientConfirmation(request)
+                }
+
                 AutofillDiscoveryOutcome.Disabled,
                 AutofillDiscoveryOutcome.UnsupportedFields,
                 is AutofillDiscoveryOutcome.RequiresUnlock,
@@ -188,8 +213,91 @@ internal class AutofillFillViewModel
             mutate(AutofillFillMutation.Completed(AutofillFillResult.Discovery(outcome)))
         }
 
+        private suspend fun showWebRecipientConfirmation(request: AutofillFillRequest) {
+            val domain = AutofillGrantContext(request.packageName, request.webDomain).normalized()?.webDomain
+            if (domain == null) {
+                fail(request, "legacy.discovery_unavailable")
+                return
+            }
+            traceContinuations.capture(request.interactionId.value)
+            mutate(AutofillFillMutation.WebRecipientConfirmationRequired(request.packageName, domain))
+        }
+
+        private suspend fun showWebEntryConfirmation(
+            request: AutofillFillRequest,
+            candidate: AutofillCandidateSummary,
+        ) {
+            val domain = AutofillGrantContext(request.packageName, request.webDomain).normalized()?.webDomain
+            if (domain == null) {
+                fail(request, "legacy.selection_unavailable")
+                return
+            }
+            traceContinuations.capture(request.interactionId.value)
+            mutate(
+                AutofillFillMutation.WebEntryConfirmationRequired(
+                    packageName = request.packageName,
+                    webDomain = domain,
+                    candidate = candidate,
+                ),
+            )
+        }
+
+        private fun confirmWebRecipient() {
+            val request = currentRequest ?: return
+            viewModelScope.launch {
+                continueTrace(request) {
+                    mutate(AutofillFillMutation.Loading)
+                    try {
+                        val scope = AutofillGrantContext(request.packageName, request.webDomain)
+                        if (!confirmWebAutofill.confirmRecipient(request.interactionId, scope)) {
+                            fail(request, "legacy.web_recipient_confirmation_rejected")
+                        } else {
+                            continueAuthorized(request)
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        fail(request, "legacy.web_recipient_confirmation_failed", error)
+                    }
+                }
+            }
+        }
+
+        private fun confirmWebEntry() {
+            val request = currentRequest ?: return
+            val confirmation = mutableUiState.value as? AutofillFillUiState.ConfirmWebEntry ?: return
+            viewModelScope.launch {
+                continueTrace(request) {
+                    mutate(AutofillFillMutation.Loading)
+                    try {
+                        val scope = AutofillGrantContext(request.packageName, request.webDomain)
+                        val entryId = confirmation.candidate.entry.id
+                        if (!confirmWebAutofill.confirmEntry(request.interactionId, scope, entryId)) {
+                            fail(request, "legacy.web_entry_confirmation_rejected")
+                        } else {
+                            resolve(request, entryId, request.otpIds.isNotEmpty())
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        fail(request, "legacy.web_entry_confirmation_failed", error)
+                    }
+                }
+            }
+        }
+
         private fun selectCandidate(entryId: EntryId) {
             val request = currentRequest ?: return
+            val candidates = (mutableUiState.value as? AutofillFillUiState.ShowCandidates)?.candidates ?: return
+            val candidate = candidates.firstOrNull { it.entry.id == entryId } ?: return
+            if (request.webDomain != null) {
+                viewModelScope.launch {
+                    continueTrace(request) {
+                        showWebEntryConfirmation(request, candidate)
+                    }
+                }
+                return
+            }
             viewModelScope.launch {
                 continueTrace(request) {
                     mutate(AutofillFillMutation.Loading)
@@ -226,11 +334,13 @@ internal class AutofillFillViewModel
                 AutofillSelectionOutcome.ScopeMismatch,
                 is AutofillSelectionOutcome.Rejected,
                 is AutofillSelectionOutcome.Failed,
-                -> fail(
-                    request,
-                    "legacy.selection_unavailable",
-                    failureKind = outcome.failureKind(),
-                )
+                -> {
+                    fail(
+                        request,
+                        "legacy.selection_unavailable",
+                        failureKind = outcome.failureKind(),
+                    )
+                }
             }
         }
 
@@ -238,7 +348,13 @@ internal class AutofillFillViewModel
             request: AutofillFillRequest,
             outcome: AutofillSelectionOutcome.Filled,
         ) {
-            val receipt = AutofillSelectionReceipt(request.interactionId, outcome.payload.entryId)
+            val normalizedScope = AutofillGrantContext(request.packageName, request.webDomain).normalized()
+            val receipt =
+                AutofillSelectionReceipt(
+                    interactionId = request.interactionId,
+                    entryId = outcome.payload.entryId,
+                    webScope = normalizedScope?.takeIf { it.webDomain != null },
+                )
             traceContinuations.capture(request.interactionId.value)
             val result =
                 AutofillFillResult.SelectedCredential(

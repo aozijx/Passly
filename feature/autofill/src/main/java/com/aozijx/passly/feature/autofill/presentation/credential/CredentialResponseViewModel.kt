@@ -359,6 +359,5 @@ internal class CredentialResponseViewModel
 
         override fun onCleared() {
             resultEvents.close()
-            super.onCleared()
         }
     }

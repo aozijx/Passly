@@ -47,6 +47,7 @@ data class AutofillRequest(
     val domain: String?,
     val fields: List<AutofillField>,
     val source: AutofillSource,
+    val ambiguousWebOrigin: Boolean = false,
 )
 
 /**

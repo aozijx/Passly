@@ -1,10 +1,10 @@
 package com.aozijx.passly.feature.autofill.core
 
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
-import com.aozijx.passly.domain.access.model.AuthenticationFailure
-import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionRejection
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
+import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionTimeout
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,7 +33,21 @@ internal class AuthorizeAutofillInteraction
         private val vaultAccessState: SecureSessionAccessState,
         private val store: AutofillInteractionStore,
         private val unlockLease: AutofillUnlockLease,
+        private val interactionTimeout: AutofillInteractionTimeout,
     ) {
+        internal constructor(
+            authenticationRequester: AuthenticationRequester,
+            vaultAccessState: SecureSessionAccessState,
+            store: AutofillInteractionStore,
+            unlockLease: AutofillUnlockLease,
+        ) : this(
+            authenticationRequester,
+            vaultAccessState,
+            store,
+            unlockLease,
+            AutofillInteractionTimeout.disabled(store, unlockLease),
+        )
+
         private data class Attempt(
             val result: CompletableDeferred<AutofillAuthorizationOutcome>,
             val owner: Boolean,
@@ -145,6 +160,9 @@ internal class AuthorizeAutofillInteraction
         ): AutofillAuthorizationOutcome {
             val acquiredUnlock =
                 !hadUserOwnedVaultSession && vaultAccessState.hasAutofillSessionAccess()
+            // Authentication may take most of the current idle window; start a fresh
+            // selection window before leaving the protected Authenticating state.
+            interactionTimeout.schedule(id)
             val update = store.markAuthorized(id)
             val snapshot = (update as? AutofillInteractionUpdate.Updated)?.snapshot
             if (snapshot == null) {
@@ -187,21 +205,35 @@ internal class AuthorizeAutofillInteraction
             attempt: Attempt,
             failure: Throwable,
         ) {
+            var fatalFailure = failure as? Error
+
+            fun recordCleanupFailure(cleanupFailure: Throwable) {
+                if (cleanupFailure === failure) return
+                val fatal = fatalFailure
+                if (cleanupFailure is Error && fatal == null) {
+                    cleanupFailure.addSuppressed(failure)
+                    fatalFailure = cleanupFailure
+                } else {
+                    (fatal ?: failure).addSuppressed(cleanupFailure)
+                }
+            }
+
             try {
                 store.fail(
                     id,
                     AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
                 )
             } catch (cleanupFailure: Throwable) {
-                failure.addSuppressed(cleanupFailure)
+                recordCleanupFailure(cleanupFailure)
             }
             try {
                 releaseAttemptLease(id, attempt)
             } catch (cleanupFailure: Throwable) {
-                failure.addSuppressed(cleanupFailure)
+                recordCleanupFailure(cleanupFailure)
             } finally {
-                discardAttempt(id, attempt, failure)
+                discardAttempt(id, attempt, fatalFailure ?: failure)
             }
+            fatalFailure?.let { throw it }
         }
 
         private suspend fun releaseAttemptLease(

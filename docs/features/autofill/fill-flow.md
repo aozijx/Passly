@@ -84,7 +84,7 @@ Autofill lease 仍持有本轮临时会话时，interaction 才可从创建时�
 由 DEK 派生，SEALED 锁定会在数据库 session 排干后清除 DEK 和派生 field key。这里没有“提前解密、等认证完成再填充”的
 缓存路径。单元回归测试覆盖新鲜认证未完成时 resolver 调用次数为零。
 
-正常返回的取消、失败与拒绝由各平台流程映射为取消或不可用状态。认证调用本身抛异常的 cleanup 缺口及并发 waiter 所有权见[维护 TODO Task 81](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-81保证-autofill-授权异常结束共享-attempt-并释放等待者)。
+正常返回的取消、失败与拒绝由各平台流程映射为取消或不可用状态。认证调用异常、共享 waiter 终结与 lease 清理由[Autofill 后续 Task 81](../../superpowers/plans/2026-11-07-passly-autofill-followups.md#task-81)记录为已完成合同。
 
 Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInteraction(request.interactionId)`；授权成功后，`continueAuthorized(request)` 调用 `discover(request)`，再把 `request.toDomainRequest()`、同一个 `request.interactionId`、`request.roleMap()` 和 `request.directEntryId` 分别传给 `DiscoverAutofillCandidates.invoke(request, interactionId, classifiedRoles, directEntryId)`。已分类 role map 因而不会在 Domain use case 中被第二次启发式解析。发现结果若为 `Candidates` 且请求含 `directEntryId`，ViewModel 直接以该 ID 进入选择解析；底部候选模式则先保存 trace continuation，再发布候选 UI；系统菜单/Inline 模式直接构造 discovery response。
 
@@ -98,7 +98,7 @@ Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInter
 本身不重读设置。它验证 interaction 存在、scope 相同且已授权，再通过状态机确认 Entry ID 确实展示过。
 Credential Manager 的 `allowedUserIds` 在 `CredentialManagerFlow.selectPassword()` 收到解析结果后独立校验，Legacy 不使用该限制。
 `AutofillCredentialResolver` 只读取选中条目的密码；请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
-已展示候选对应的设置若在交付前关闭，最终选择是否仍有效目前没有重读设置或撤销 interaction 的步骤；合同待裁定，见[维护 TODO Task 82](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-82定义-autofill-设置变更后已展示凭据的有效期)。
+已展示候选对应的设置若在交付前关闭，最终选择是否仍有效目前没有重读设置或撤销 interaction 的步骤；合同待裁定，见[Autofill 后续 Task 82](../../superpowers/plans/2026-11-07-passly-autofill-followups.md#task-82)。
 Base32 secret 的字符、补位和尾部位由 Domain 的 `OtpSecretCodec` 统一校验；`OtpGenerator` 遇到损坏密钥时
 返回 `InvalidSecret`，不生成或填充 OTP 码。
 
@@ -108,9 +108,14 @@ Legacy 选择时，`AutofillFillViewModel` 将 `request.interactionId`、新建�
 参数。只有当前请求实际包含识别出的验证码字段时，resolver 才读取 OTP secret；设置页没有独立开关。
 Credential Manager 则由 `CredentialManagerFlow.selectPassword()` 传入平台解析后的 interaction、scope、EntryId
 和 `allowedUserIds`，并固定 `includeOtp = false`。use case 在解析前再次规范化并比较 scope，再由
-`interactionStore.beginSelection(interactionId, entryId)` 原子检查展示资格，最后将
+`interactionStore.beginSelection(interactionId, entryId, sessionAtMs)` 原子检查展示资格，最后将
 `AutofillCredentialSelection(entryId, includeOtp)` 交给 resolver；平台解析的用户限制由 Credential Manager
 flow 在拿到结果后额外校验 username，Legacy 不使用该参数。
+
+Legacy 网页请求的 `webDomain` 在当前版本未经过 DAL 或应用签名验证，故先返回不含候选账户信息的通用确认操作。
+用户确认应用标签/包名与规范网页 host 后才查询并展示候选；选中条目后，还要在 secret resolver 读取前确认条目标题和账号。
+接收方与条目确认存于 process-local interaction，并绑定精确 scope、当前认证 session generation 和已展示 `EntryId`；锁定或
+换 session 后旧确认失效。不同网页 host、无效 claim 混合或带网页 claim 的截断结构在候选查询前拒绝。
 
 ## 结果与关闭顺序
 
@@ -131,15 +136,22 @@ Activity 在候选列表仍待选择时离开前台，也会取消并释放本�
 被拒绝时记录结构化诊断并取消结果；服务入口异常走 `FillCallback.onFailure()`，Android 是否显示提示由系统 Autofill UI
 决定。
 
-平台 Activity 在 `AutofillResultDelivery.commitResult` 的提交回调内连续执行 `setResult` 和 `finish`；仅调用
-`setResult` 只是保存待返回值，不表示 Android 已收到结果。提交开始即关闭本轮 lease 的借用窗口，平台 callback
-成功返回后才异步调用 `CompleteAutofillSelection` 并释放 lease。首次终态转换记录使用活动；重复的交付完成仍幂等。
+平台 Activity 在 `AutofillResultDelivery.commitResult(receipt, commitToPlatform)` 的回调内连续执行 `setResult`
+和 `finish`；仅调用 `setResult` 只是保存待返回值，不表示 Android 已收到结果。Legacy 的 receipt 由
+`AutofillFillViewModel.returnDataset(request, outcome)` 以 `request.interactionId` 和 `outcome.payload.entryId`
+创建，平台结果按 `request.resultTarget` 选 `Dataset` 或 `FillResponse`，再通过 `onComplete(RESULT_OK, resultIntent)`
+交付；Credential Manager 的 receipt 使用当前 `interactionId` 与 `payload.entryId`，`resultIntent` 经相同提交回调
+交付。提交开始即关闭本轮 lease 的借用窗口；callback 返回后，delivery 才标记平台已提交，并异步调用
+`CompleteAutofillSelection(interactionId, entryId)`。该用例在 `NonCancellable` 中调用
+`finishInteraction.complete(id) { activityRecorder.recordUsage(entryId.value, ActivityType.AUTOFILL) }`，随后处理遗弃
+interaction 并释放 lease。首次终态转换记录使用活动；重复的交付完成仍幂等。
 
 Credential Manager Route 只在 Activity 处于 `STARTED` 时消费进程内缓冲的单次结果事件；结果 Intent 不保存在 UI
 StateFlow 或 SavedState。Credential 与 Legacy Activity 均用 `AutofillActivityResultClaim` 约束实例内重复提交。平台 callback
 失败会释放 claim：Credential Manager 取消 interaction 并返回 `RESULT_CANCELED`，Legacy Autofill 取消 ViewModel
-工作流并返回取消结果，`onDestroy()` 不会因残留的防重标志跳过清理。callback 已成功后，日志/trace 失败不会触发
-第二次平台提交或把成功结果覆盖为取消；结果已交给 Android 后继续完成 interaction 与 lease 收尾。
+工作流并返回取消结果，`onDestroy()` 不会因残留的防重标志跳过清理。callback 已成功后，日志/trace 的普通
+`Exception` 不会触发第二次平台提交或把成功结果覆盖为取消；结果已交给 Android 后继续完成 interaction 与 lease
+收尾。fatal `Error` 不在这些恢复分支内，行为与待验证路径见并发 TODO。
 
 最后一个已提交结果完成后，仍未向 Android 提交结果的列表、认证和选择 interaction 全部过期，再立即回收临时会话。
 关闭期间的新请求等待该会话完成锁定后再创建 interaction，不能落入“旧数据库仍开着但已禁止借用”的中间态。
@@ -178,5 +190,5 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 | 向平台提交 Autofill 结果 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
 | 维护交互授权、候选与结束状态 | `AutofillInteractionStore.create()`、`beginAuthorization()`、`recordCandidates()`、`finish()` | [`AutofillInteractionStore.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt) |
 | 保留、重试临时 Autofill session 锁责任 | `AutofillUnlockLease.release()`、`awaitReadyForInteraction()` | [`AutofillUnlockLease.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt) |
-| Feature 入口观察宿主生命周期并清理无障碍选择流程 | `AutofillFeatureEntry` 的 `ON_DESTROY` observer、`AccessibilityFillViewModel.cancel()` | [`AutofillFeatureEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/AutofillFeatureEntry.kt)、[`AccessibilityFillViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillViewModel.kt) |
+| Accessibility 模式宿主观察 Activity 销毁并清理选择流程 | `AccessibilityAutofillEntry` 的 `ON_DESTROY` observer、`AccessibilityFillViewModel.cancel()` | [`AccessibilityAutofillEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityAutofillEntry.kt)、[`AccessibilityFillViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillViewModel.kt) |
 | 无障碍填充事件与服务清理 | `ManualAccessibilityFillService.onAccessibilityEvent()`、`onDestroy()` | [`ManualAccessibilityFillService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt) |

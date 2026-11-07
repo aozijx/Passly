@@ -5,9 +5,12 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.core.CompleteAutofillSelection
+import com.aozijx.passly.feature.autofill.core.autofillSessionGeneration
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -20,6 +23,7 @@ import kotlinx.coroutines.runBlocking
 internal data class AutofillSelectionReceipt(
     val interactionId: AutofillInteractionId,
     val entryId: EntryId,
+    val webScope: AutofillGrantContext? = null,
 )
 
 /** Closes a temporary Autofill unlock only after Android has received its result. */
@@ -27,6 +31,8 @@ internal data class AutofillSelectionReceipt(
 internal class AutofillResultDelivery internal constructor(
     private val completeSelection: CompleteAutofillSelection,
     private val unlockLease: AutofillUnlockLease,
+    private val interactionStore: AutofillInteractionStore,
+    private val secureSessionAccessState: SecureSessionAccessState? = null,
     private val scope: CoroutineScope,
     private val logger: Logger,
     private val continuations: TraceContinuationStore,
@@ -35,11 +41,15 @@ internal class AutofillResultDelivery internal constructor(
     internal constructor(
         completeSelection: CompleteAutofillSelection,
         unlockLease: AutofillUnlockLease,
+        interactionStore: AutofillInteractionStore,
+        secureSessionAccessState: SecureSessionAccessState,
         logger: Logger,
         continuations: TraceContinuationStore,
     ) : this(
         completeSelection = completeSelection,
         unlockLease = unlockLease,
+        interactionStore = interactionStore,
+        secureSessionAccessState = secureSessionAccessState,
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
         logger = logger,
         continuations = continuations,
@@ -50,11 +60,44 @@ internal class AutofillResultDelivery internal constructor(
         receipt: AutofillSelectionReceipt,
         commitToPlatform: () -> Unit,
     ) {
-        unlockLease.beginResultCompletion(receipt.interactionId)
+        val webScope = receipt.webScope?.normalized()
+        var webDeliverySessionAtMs: Long? = null
+        val webDeliveryClaimed =
+            if (webScope != null) {
+                val sessionAtMs =
+                    secureSessionAccessState
+                        ?.autofillSessionGeneration()
+                        ?: error("Legacy web Autofill session is no longer authorized")
+                webDeliverySessionAtMs = sessionAtMs
+                val interaction = runBlocking { interactionStore.snapshot(receipt.interactionId) }
+                check(interaction?.scope == webScope && interaction.webConsentSessionAtMs == sessionAtMs) {
+                    "Legacy web Autofill interaction scope changed before delivery"
+                }
+                check(
+                    runBlocking {
+                        interactionStore.claimWebResultDelivery(
+                            receipt.interactionId,
+                            webScope,
+                            receipt.entryId,
+                            sessionAtMs,
+                        )
+                    },
+                ) {
+                    "Legacy web Autofill result is not confirmed for delivery"
+                }
+                true
+            } else {
+                false
+            }
         var committed = false
         var platformCommitted = false
+        var completionStarted = false
+        var deliveryFailure: Throwable? = null
+        var failureAfterPlatformCommit: Throwable? = null
         try {
             try {
+                unlockLease.beginResultCompletion(receipt.interactionId)
+                completionStarted = true
                 runBlocking {
                     continuations.continueOrRoot(
                         receipt.interactionId.value,
@@ -92,16 +135,66 @@ internal class AutofillResultDelivery internal constructor(
                         }
                     }
                 }
-            } catch (error: Exception) {
-                if (!platformCommitted) throw error
+                committed = true
+            } catch (error: Throwable) {
+                if (platformCommitted) {
+                    committed = true
+                    if (error !is Exception) failureAfterPlatformCommit = error
+                } else {
+                    deliveryFailure = error
+                }
             }
-            committed = true
         } finally {
             if (!committed) {
-                runBlocking { unlockLease.endResultCompletion {} }
+                if (webDeliveryClaimed && !platformCommitted) {
+                    try {
+                        runBlocking {
+                            interactionStore.releaseWebResultDeliveryClaim(
+                                receipt.interactionId,
+                                requireNotNull(webScope),
+                                receipt.entryId,
+                                requireNotNull(webDeliverySessionAtMs),
+                            )
+                        }
+                    } catch (cleanupFailure: Throwable) {
+                        deliveryFailure = mergeFailure(deliveryFailure, cleanupFailure)
+                    }
+                }
+                if (completionStarted) {
+                    try {
+                        runBlocking { unlockLease.endResultCompletion {} }
+                    } catch (cleanupFailure: Throwable) {
+                        deliveryFailure = mergeFailure(deliveryFailure, cleanupFailure)
+                    }
+                }
             }
         }
-        completeDeliveredSelection(receipt)
+        if (committed) {
+            try {
+                completeDeliveredSelection(receipt)
+            } catch (completionFailure: Throwable) {
+                val primaryFailure = failureAfterPlatformCommit
+                if (primaryFailure == null) throw completionFailure
+                if (completionFailure !== primaryFailure) primaryFailure.addSuppressed(completionFailure)
+            }
+            failureAfterPlatformCommit?.let { throw it }
+        } else {
+            throw requireNotNull(deliveryFailure)
+        }
+    }
+
+    private fun mergeFailure(
+        primary: Throwable?,
+        cleanupFailure: Throwable,
+    ): Throwable {
+        if (primary == null) return cleanupFailure
+        if (primary === cleanupFailure) return primary
+        if (cleanupFailure is Error && primary !is Error) {
+            cleanupFailure.addSuppressed(primary)
+            return cleanupFailure
+        }
+        primary.addSuppressed(cleanupFailure)
+        return primary
     }
 
     private fun completeDeliveredSelection(receipt: AutofillSelectionReceipt) {

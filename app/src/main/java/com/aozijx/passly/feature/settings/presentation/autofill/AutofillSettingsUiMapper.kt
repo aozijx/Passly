@@ -5,9 +5,6 @@ import com.aozijx.passly.feature.settings.presentation.ui.autofill.model.Autofil
 
 fun AutofillSettings.toAutofillSettingsUiModel(
     supportsCredentialManager: Boolean,
-    canEditPreferences: Boolean,
-    preferencesRefreshing: Boolean,
-    preferencesFailed: Boolean,
     systemService: AutofillSourceState<Boolean>,
 ): AutofillSettingsUiModel =
     AutofillSettingsUiModel(
@@ -16,15 +13,6 @@ fun AutofillSettings.toAutofillSettingsUiModel(
         credentialManagerEnabled = credentialManagerEnabled,
         supportsCredentialManager = supportsCredentialManager,
         requireAuthentication = requireAuthentication,
-        includeOtp = includeOtp,
-        savePromptsEnabled = savePromptsEnabled,
-        allowUnmatchedSuggestions = allowUnmatchedSuggestions,
         strictDomainMatching = strictDomainMatching,
-        maxSuggestions = normalizedMaxSuggestions,
-        minSuggestions = AutofillSettings.MIN_SUGGESTIONS,
-        maxSuggestionsLimit = AutofillSettings.MAX_SUGGESTIONS,
-        canEditPreferences = canEditPreferences,
-        preferencesRefreshing = preferencesRefreshing,
-        preferencesFailed = preferencesFailed,
         systemService = systemService,
     )

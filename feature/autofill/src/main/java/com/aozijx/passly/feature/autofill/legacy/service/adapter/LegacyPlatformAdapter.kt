@@ -42,6 +42,7 @@ internal class LegacyPlatformAdapter
                 domain = parsed.webDomain,
                 fields = fields,
                 source = AutofillSource.AUTOFILL_SERVICE,
+                ambiguousWebOrigin = parsed.ambiguousWebOrigin,
             )
         }
 

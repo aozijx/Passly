@@ -134,6 +134,11 @@ internal class CredentialBeginGetHandler
                     }
                 }
 
+                is AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation -> {
+                    flow.cancel(discovery.snapshot.id)
+                    BeginGetCredentialResponse()
+                }
+
                 is AutofillDiscoveryOutcome.Candidates -> {
                     val entries = mutableListOf<CredentialEntry>()
                     for (option in passwordOptions) {

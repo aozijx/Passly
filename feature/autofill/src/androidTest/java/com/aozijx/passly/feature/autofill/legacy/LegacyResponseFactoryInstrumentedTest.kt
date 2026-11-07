@@ -15,7 +15,6 @@ import androidx.autofill.inline.v1.InlineSuggestionUi
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
-import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
@@ -27,6 +26,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.feature.autofill.legacy.service.builder.AutofillRemoteItem
 import com.aozijx.passly.feature.autofill.legacy.service.builder.AutofillRemoteViewFactory
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyDiscoveryObservation
@@ -230,6 +230,35 @@ class LegacyResponseFactoryInstrumentedTest {
     }
 
     @Test
+    fun unconfirmedWebRecipientReceivesOnlyGenericConfirmationAction() {
+        val passwordId = View(context).autofillId
+        val interaction =
+            AutofillInteractionSnapshot(
+                id = AutofillInteractionId("web-confirmation"),
+                source = AutofillInteractionSource.LEGACY,
+                scope = AutofillGrantContext("com.example.browser", "example.com"),
+                state = AutofillInteractionState.Authorized,
+            )
+        val result =
+            factory.buildResult(
+                context,
+                AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation(
+                    interaction,
+                    discoveryContext(mapOf(passwordId.toString() to FieldRole.PASSWORD)),
+                ),
+                ParsedStructure(
+                    packageName = "com.example.browser",
+                    webDomain = "example.com",
+                    editableFields = listOf(EditableFieldInfo(passwordId)),
+                ),
+            )
+
+        assertEquals(0, result.summary.datasetCount)
+        assertEquals(LegacyDiscoveryObservation.Completed(interaction.id), result.observation)
+        assertNotNull(result.response)
+    }
+
+    @Test
     fun passwordFormWithoutCandidatesStillReturnsSaveInfoResponse() {
         val passwordId = View(context).autofillId
         val parsed =
@@ -265,14 +294,15 @@ class LegacyResponseFactoryInstrumentedTest {
             )
 
         val response =
-            factory.buildResult(
-                context,
-                AutofillDiscoveryOutcome.NoCandidates(
-                    snapshot(),
-                    discoveryContext(mapOf(usernameId.toString() to FieldRole.USERNAME)),
-                ),
-                parsed,
-            ).response
+            factory
+                .buildResult(
+                    context,
+                    AutofillDiscoveryOutcome.NoCandidates(
+                        snapshot(),
+                        discoveryContext(mapOf(usernameId.toString() to FieldRole.USERNAME)),
+                    ),
+                    parsed,
+                ).response
 
         assertNull(response)
     }
@@ -281,16 +311,21 @@ class LegacyResponseFactoryInstrumentedTest {
     fun disabledUnsupportedAndFailedOutcomesAdvertiseNothing() {
         val parsed = ParsedStructure()
 
-        assertNull(factory.buildResult(context, AutofillDiscoveryOutcome.Disabled, parsed).response)
+        assertNull(
+            factory
+                .buildResult(context, AutofillDiscoveryOutcome.Disabled, parsed)
+                .response,
+        )
         assertNull(
             factory.buildResult(context, AutofillDiscoveryOutcome.UnsupportedFields, parsed).response,
         )
         assertNull(
-            factory.buildResult(
-                context,
-                AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED),
-                parsed,
-            ).response,
+            factory
+                .buildResult(
+                    context,
+                    AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED),
+                    parsed,
+                ).response,
         )
     }
 
@@ -366,10 +401,8 @@ private class TestLaunchTarget : AutofillLaunchTarget {
 
     override fun accessibilityFillIntent(context: Context): Intent = testIntent(context, "accessibility")
 
-    private fun testIntent(context: Context, action: String) =
-        Intent()
-            .setClassName(context.packageName, AUTOFILL_AUTH_ACTIVITY_CLASS)
-            .setAction(action)
+    private fun testIntent(
+        context: Context,
+        action: String,
+    ): Intent = Intent(context, TestLaunchTarget::class.java).setAction(action)
 }
-
-private const val AUTOFILL_AUTH_ACTIVITY_CLASS = "com.aozijx.passly.app.autofill.presentation.AutofillAuthActivity"

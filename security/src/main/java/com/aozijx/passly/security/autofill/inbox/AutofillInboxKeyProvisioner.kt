@@ -5,9 +5,9 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
-import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.autofill.port.AutofillInboxDraftImporter
 import com.aozijx.passly.domain.autofill.port.AutofillInboxImportOutcome
+import com.aozijx.passly.domain.autofill.port.AutofillInboxRecordStore
 import com.aozijx.passly.security.dek.DekManager
 import javax.inject.Inject
 import javax.inject.Provider

@@ -52,6 +52,7 @@ internal class LegacySaveFlow internal constructor(
 
     suspend fun prepare(request: AutofillRequest): LegacySavePreparation {
         if (!legacySaveEnabled()) return LegacySavePreparation.Disabled
+        if (request.ambiguousWebOrigin) return LegacySavePreparation.InvalidDraft
         val draft =
             when (val extraction = extractDraft(request)) {
                 is AutofillSaveDraftExtraction.Ready -> extraction.draft

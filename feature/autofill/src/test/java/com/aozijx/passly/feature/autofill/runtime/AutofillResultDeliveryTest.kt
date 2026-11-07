@@ -32,10 +32,52 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutofillResultDeliveryTest {
+    @Test
+    fun `terminal web interaction cannot deliver a previously resolved credential`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(RecordingLockController())
+            val scope = AutofillGrantContext("com.example.browser", "example.com")
+            val entryId = EntryId("entry-1")
+            val interaction = store.create(AutofillInteractionSource.LEGACY, scope, AutofillInteractionState.Authorized)
+            store.confirmWebRecipient(interaction.id, scope, 1L)
+            store.recordCandidates(interaction.id, setOf(entryId), sessionAtMs = 1L)
+            store.confirmWebEntry(interaction.id, scope, entryId, 1L)
+            store.beginSelection(interaction.id, entryId, 1L)
+            store.finish(interaction.id, AutofillInteractionState.Cancelled)
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    interactionStore = store,
+                    secureSessionAccessState = AutofillOnlyAccessState(),
+                    scope = this,
+                    logger = testLogger(),
+                    continuations = TraceContinuationStore(testLogger()),
+                )
+            var platformDeliveries = 0
+
+            try {
+                delivery.commitResult(
+                    AutofillSelectionReceipt(interaction.id, entryId, webScope = scope),
+                ) { platformDeliveries++ }
+                throw AssertionError("expected stale web delivery to be rejected")
+            } catch (expected: IllegalStateException) {
+                assertEquals("Legacy web Autofill result is not confirmed for delivery", expected.message)
+            }
+
+            assertEquals(0, platformDeliveries)
+        }
+
     @Test
     fun `trace capture failure after platform delivery still completes selection and releases lease`() =
         runTest {
@@ -58,6 +100,7 @@ class AutofillResultDeliveryTest {
                             FinishAutofillInteraction(store, lease),
                         ),
                     unlockLease = lease,
+                    interactionStore = store,
                     scope = this,
                     logger = logger,
                     continuations = TraceContinuationStore(logger),
@@ -77,6 +120,55 @@ class AutofillResultDeliveryTest {
             assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
         }
 
+    @Test
+    fun `fatal trace capture failure after platform delivery still completes selection and releases lease`() =
+        runTest {
+            val store = AutofillInteractionStore()
+            val lockController = RecordingLockController()
+            val lease = AutofillUnlockLease(lockController)
+            val interaction =
+                store.create(
+                    source = AutofillInteractionSource.LEGACY,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            val logger = TraceFailingLogger(testLogger())
+            val delivery =
+                AutofillResultDelivery(
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    interactionStore = store,
+                    scope = this,
+                    logger = logger,
+                    continuations = TraceContinuationStore(logger),
+                )
+            val fatal = AssertionError("trace capture failed fatally")
+            var platformDeliveries = 0
+
+            val thrown =
+                try {
+                    delivery.commitResult(
+                        receipt = AutofillSelectionReceipt(interaction.id, EntryId("entry-1")),
+                    ) {
+                        platformDeliveries++
+                        logger.fatalCaptureFailure = fatal
+                    }
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
+            runCurrent()
+
+            assertSame(fatal, thrown)
+            assertEquals(1, platformDeliveries)
+            assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
+        }
     @Test
     fun `platform callback failure releases completion barrier and permits one successful retry`() =
         runTest {
@@ -99,6 +191,7 @@ class AutofillResultDeliveryTest {
                             FinishAutofillInteraction(store, lease),
                         ),
                     unlockLease = lease,
+                    interactionStore = store,
                     scope = this,
                     logger = logger,
                     continuations = TraceContinuationStore(logger),
@@ -148,6 +241,7 @@ class AutofillResultDeliveryTest {
                             FinishAutofillInteraction(store, lease),
                         ),
                     unlockLease = lease,
+                    interactionStore = store,
                     scope = this,
                     logger = logger,
                     continuations = TraceContinuationStore(logger),
@@ -193,6 +287,7 @@ class AutofillResultDeliveryTest {
                             FinishAutofillInteraction(store, lease),
                         ),
                     unlockLease = lease,
+                    interactionStore = store,
                     scope = this,
                     logger = logger,
                     continuations = TraceContinuationStore(logger),
@@ -241,6 +336,7 @@ class AutofillResultDeliveryTest {
                             FinishAutofillInteraction(store, lease),
                         ),
                     unlockLease = lease,
+                    interactionStore = store,
                     scope = this,
                     logger = logger,
                     continuations = TraceContinuationStore(logger),
@@ -314,6 +410,7 @@ class AutofillResultDeliveryTest {
     private class TraceFailingLogger(
         private val delegate: Logger,
     ) : Logger by delegate {
+        var fatalCaptureFailure: Throwable? = null
         var failTraces: Boolean = false
 
         override suspend fun <T> withRootTrace(
@@ -325,6 +422,8 @@ class AutofillResultDeliveryTest {
         }
 
         override fun captureTraceToken(singleUse: Boolean): TraceToken {
+
+            fatalCaptureFailure?.let { throw it }
             if (failTraces) throw IllegalStateException("trace unavailable")
             return delegate.captureTraceToken(singleUse)
         }

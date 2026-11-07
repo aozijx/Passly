@@ -2,6 +2,8 @@ package com.aozijx.passly.data.repository.settings
 
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
+import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
+import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
@@ -78,4 +80,12 @@ internal abstract class SettingsPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindInteractionSettingsSource(impl: ProtoAppPreferencesStore): InteractionSettingsSource
+
+    @Binds
+    @Singleton
+    abstract fun bindAutofillSettingsRepository(impl: ProtoAppPreferencesStore): AutofillSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAutofillSettingsSource(impl: ProtoAppPreferencesStore): AutofillSettingsSource
 }

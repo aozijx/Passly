@@ -9,6 +9,8 @@ import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.model.AutofillInboxDraftId
+import com.aozijx.passly.domain.autofill.port.AutofillEntryWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
@@ -22,6 +24,7 @@ import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.testing.RecordingTestLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -32,6 +35,80 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CreateEntryUseCaseTest {
+    @Test
+    fun autofillCreationUsesStableInboxIdentityAndInboxWriterForRetries() =
+        runBlocking {
+            val fixture = fixture(AuthenticationState.AutofillAuthenticated(1L))
+            val inboxDraftId = AutofillInboxDraftId("00112233445566778899aabbccddeeff")
+
+            val first = fixture.useCase.createFromAutofill(validLoginDraft(), inboxDraftId)
+            val retry = fixture.useCase.createFromAutofill(validLoginDraft(), inboxDraftId)
+
+            val expectedId = EntryId("43cde717-19de-3aaf-9d28-7b0e0ee89505")
+            assertEquals(AppResult.Success(expectedId), first)
+            assertEquals(AppResult.Success(expectedId), retry)
+            assertEquals(listOf(expectedId, expectedId), fixture.autofillWriter.inboxEntryIds)
+            assertEquals(2, fixture.autofillWriter.createFromInboxCalls)
+            assertEquals(0, fixture.autofillWriter.createCalls)
+            assertEquals(0, fixture.idCalls)
+        }
+
+    @Test
+    fun autofillCreationWithoutInboxIdUsesOrdinaryAutofillWriter() =
+        runBlocking {
+            val fixture = fixture(AuthenticationState.Authenticated(1L))
+
+            val result = fixture.useCase.createFromAutofill(validLoginDraft())
+
+            assertEquals(AppResult.Success(EntryId("generated-id")), result)
+            assertEquals(1, fixture.autofillWriter.createCalls)
+            assertEquals(0, fixture.autofillWriter.createFromInboxCalls)
+            assertEquals(EntryId("generated-id"), fixture.autofillWriter.createdEntryIds.single())
+            assertEquals(0, fixture.repository.createCalls)
+        }
+
+    @Test
+    fun lockedAndRecoverySessionsCannotCreateAutofillEntries() =
+        runBlocking {
+            for (state in listOf(AuthenticationState.Locked, AuthenticationState.RecoveryMode(1L))) {
+                val fixture = fixture(state)
+
+                val result = fixture.useCase.createFromAutofill(validLoginDraft())
+
+                assertTrue((result as AppResult.Failure).error is SessionModeRestricted)
+                assertEquals(0, fixture.idCalls)
+                assertEquals(0, fixture.autofillWriter.createCalls)
+                assertEquals(0, fixture.autofillWriter.createFromInboxCalls)
+                assertEquals(0, fixture.repository.createCalls)
+            }
+        }
+
+    @Test
+    fun autofillWriterCancellationPropagates() {
+        val failure = CancellationException("cancel")
+        val fixture = fixture(AuthenticationState.AutofillAuthenticated(1L), autofillWriterFailure = failure)
+
+        val thrown =
+            assertThrows(CancellationException::class.java) {
+                runBlocking { fixture.useCase.createFromAutofill(validLoginDraft()) }
+            }
+
+        assertSame(failure, thrown)
+    }
+
+    @Test
+    fun autofillWriterFatalErrorPropagates() {
+        val failure = AssertionError("fatal")
+        val fixture = fixture(AuthenticationState.AutofillAuthenticated(1L), autofillWriterFailure = failure)
+
+        val thrown =
+            assertThrows(AssertionError::class.java) {
+                runBlocking { fixture.useCase.createFromAutofill(validLoginDraft()) }
+            }
+
+        assertSame(failure, thrown)
+    }
+
     @Test
     fun malformedCardNumbersAreRejectedBeforeRepositoryAccess() =
         runBlocking {
@@ -333,8 +410,10 @@ class CreateEntryUseCaseTest {
         state: AuthenticationState,
         repositoryResult: AppResult<EntryId> = AppResult.Success(EntryId("generated-id")),
         repositoryException: RuntimeException? = null,
+        autofillWriterFailure: Throwable? = null,
     ): Fixture {
         val repository = RecordingEntryCommandRepository(repositoryResult, repositoryException)
+        val autofillWriter = RecordingAutofillEntryWriter(autofillWriterFailure)
         val logger = RecordingTestLogger()
         var idCalls = 0
         var clockCalls = 0
@@ -343,6 +422,7 @@ class CreateEntryUseCaseTest {
                 entryCommandRepository = repository,
                 secureSessionAccessState = FixedSecureSessionAccessState(state),
                 materializer = EntryDraftMaterializer(),
+                autofillEntryWriter = autofillWriter,
                 idFactory = {
                     idCalls++
                     EntryId("generated-id")
@@ -354,12 +434,13 @@ class CreateEntryUseCaseTest {
                 logger = logger,
                 monotonicClock = { 10L },
             )
-        return Fixture(useCase, repository, logger, { idCalls }, { clockCalls })
+        return Fixture(useCase, repository, autofillWriter, logger, { idCalls }, { clockCalls })
     }
 
     private class Fixture(
         val useCase: CreateEntryUseCase,
         val repository: RecordingEntryCommandRepository,
+        val autofillWriter: RecordingAutofillEntryWriter,
         val logger: RecordingTestLogger,
         private val idCallCount: () -> Int,
         private val clockCallCount: () -> Int,
@@ -375,7 +456,31 @@ class CreateEntryUseCaseTest {
 
         override fun isUnlocked(): Boolean =
             authenticationState.value is AuthenticationState.Authenticated ||
+                authenticationState.value is AuthenticationState.AutofillAuthenticated ||
                 authenticationState.value is AuthenticationState.RecoveryMode
+    }
+
+    private class RecordingAutofillEntryWriter(
+        private val failure: Throwable?,
+    ) : AutofillEntryWriter {
+        var createCalls = 0
+        var createFromInboxCalls = 0
+        val createdEntryIds = mutableListOf<EntryId>()
+        val inboxEntryIds = mutableListOf<EntryId>()
+
+        override suspend fun create(entry: Entry): AppResult<EntryId> {
+            createCalls++
+            createdEntryIds += entry.id
+            failure?.let { throw it }
+            return AppResult.Success(entry.id)
+        }
+
+        override suspend fun createFromInbox(entry: Entry): AppResult<EntryId> {
+            createFromInboxCalls++
+            inboxEntryIds += entry.id
+            failure?.let { throw it }
+            return AppResult.Success(entry.id)
+        }
     }
 
     private class RecordingEntryCommandRepository(

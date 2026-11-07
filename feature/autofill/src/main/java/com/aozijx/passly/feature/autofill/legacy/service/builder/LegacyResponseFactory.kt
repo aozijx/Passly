@@ -5,7 +5,6 @@ import android.service.autofill.Dataset
 import android.service.autofill.FillResponse
 import android.view.autofill.AutofillId
 import android.view.inputmethod.InlineSuggestionsRequest
-import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
@@ -15,8 +14,9 @@ import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.FieldRole
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
+import com.aozijx.passly.feature.autofill.R
 import com.aozijx.passly.feature.autofill.legacy.AutofillPendingIntentFactory
+import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.legacy.service.parser.ParsedStructure
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,12 +51,27 @@ internal class LegacyResponseFactory
                     completed(
                         interactionId = outcome.snapshot.id,
                         built =
-                            buildUnlockResponse(
+                            buildAuthenticationPromptResponse(
                                 context,
                                 outcome.snapshot.id,
                                 outcome.context,
                                 parsed,
                                 inlineRequest,
+                            ),
+                    )
+                }
+
+                is AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation -> {
+                    completed(
+                        interactionId = outcome.snapshot.id,
+                        built =
+                            buildAuthenticationPromptResponse(
+                                context,
+                                outcome.snapshot.id,
+                                outcome.context,
+                                parsed,
+                                inlineRequest,
+                                promptTitle = R.string.autofill_review_web_request,
                             ),
                     )
                 }
@@ -118,12 +133,13 @@ internal class LegacyResponseFactory
                 totpCode = payload.otpCode,
             )
 
-        private fun buildUnlockResponse(
+        private fun buildAuthenticationPromptResponse(
             context: Context,
             interactionId: AutofillInteractionId,
             discoveryContext: AutofillDiscoveryContext,
             parsed: ParsedStructure,
             inlineRequest: InlineSuggestionsRequest?,
+            promptTitle: Int = R.string.vault_locked_title,
         ): BuiltResponse {
             if (parsed.allIds.isEmpty()) return BuiltResponse(response = null)
             val builder = FillResponse.Builder()
@@ -148,7 +164,7 @@ internal class LegacyResponseFactory
             val lockedPresentation =
                 AutofillRemoteViewFactory.render(
                     context,
-                    AutofillRemoteItem.SingleLine(context.getString(R.string.vault_locked_title)),
+                    AutofillRemoteItem.SingleLine(context.getString(promptTitle)),
                 )
             when (resultTarget) {
                 LegacyAutofillResultTarget.DATASET -> {

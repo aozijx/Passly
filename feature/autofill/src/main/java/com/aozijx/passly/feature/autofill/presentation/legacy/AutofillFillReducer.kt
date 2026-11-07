@@ -9,6 +9,17 @@ internal sealed interface AutofillFillMutation {
         val candidates: List<AutofillCandidateSummary>,
     ) : AutofillFillMutation
 
+    data class WebRecipientConfirmationRequired(
+        val packageName: String,
+        val webDomain: String,
+    ) : AutofillFillMutation
+
+    data class WebEntryConfirmationRequired(
+        val packageName: String,
+        val webDomain: String,
+        val candidate: AutofillCandidateSummary,
+    ) : AutofillFillMutation
+
     data class Completed(
         val result: AutofillFillResult,
     ) : AutofillFillMutation
@@ -34,6 +45,14 @@ internal object AutofillFillReducer {
                 AutofillFillUiState.ShowCandidates(mutation.candidates)
             }
 
+            is AutofillFillMutation.WebRecipientConfirmationRequired -> {
+                AutofillFillUiState.ConfirmWebRecipient(mutation.packageName, mutation.webDomain)
+            }
+
+            is AutofillFillMutation.WebEntryConfirmationRequired -> {
+                AutofillFillUiState.ConfirmWebEntry(mutation.packageName, mutation.webDomain, mutation.candidate)
+            }
+
             is AutofillFillMutation.Completed -> {
                 AutofillFillUiState.Result(mutation.result)
             }
@@ -51,6 +70,8 @@ internal object AutofillFillReducer {
                     AutofillFillUiState.Initial,
                     AutofillFillUiState.Loading,
                     is AutofillFillUiState.ShowCandidates,
+                    is AutofillFillUiState.ConfirmWebRecipient,
+                    is AutofillFillUiState.ConfirmWebEntry,
                     -> state
                 }
             }

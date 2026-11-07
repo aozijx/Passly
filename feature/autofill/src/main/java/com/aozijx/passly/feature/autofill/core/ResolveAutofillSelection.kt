@@ -1,5 +1,11 @@
 package com.aozijx.passly.feature.autofill.core
 
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequest
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
+import com.aozijx.passly.domain.access.port.AuthenticationRequester
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialSelection
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -22,6 +28,8 @@ internal class ResolveAutofillSelection
     constructor(
         private val interactionStore: AutofillInteractionStore,
         private val credentialResolver: AutofillCredentialResolver,
+        private val authenticationRequester: AuthenticationRequester,
+        private val secureSessionAccessState: SecureSessionAccessState,
     ) {
         suspend operator fun invoke(
             interactionId: AutofillInteractionId,
@@ -45,36 +53,117 @@ internal class ResolveAutofillSelection
                 else -> Unit
             }
 
-            return when (val selection = interactionStore.beginSelection(interactionId, entryId)) {
+            val sessionGeneration = secureSessionAccessState.autofillSessionGeneration()
+            if (snapshot.source == com.aozijx.passly.domain.autofill.model.AutofillInteractionSource.LEGACY &&
+                snapshot.scope.webDomain != null
+            ) {
+                if (!snapshot.webRecipientConfirmed || snapshot.webConsentSessionAtMs != sessionGeneration) {
+                    return AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.WEB_CONFIRMATION_EXPIRED)
+                }
+                if (snapshot.confirmedWebEntryId != entryId) {
+                    return AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.WEB_ENTRY_NOT_CONFIRMED)
+                }
+            }
+            return when (val selection = interactionStore.beginSelection(interactionId, entryId, sessionGeneration)) {
                 is AutofillInteractionUpdate.Rejected -> AutofillSelectionOutcome.Rejected(selection.reason)
-                is AutofillInteractionUpdate.Updated -> resolve(entryId, includeOtp)
+                is AutofillInteractionUpdate.Updated -> resolve(interactionId, scope, entryId, includeOtp)
             }
         }
 
         private suspend fun resolve(
+            interactionId: AutofillInteractionId,
+            scope: AutofillGrantContext,
             entryId: EntryId,
             includeOtp: Boolean,
         ): AutofillSelectionOutcome =
             try {
-                when (
-                    val resolution =
-                        credentialResolver.resolve(
-                            AutofillCredentialSelection(entryId, includeOtp),
-                        )
+                resolveCredential(entryId, includeOtp)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: FreshAuthenticationRequiredException) {
+                val snapshot = interactionStore.snapshot(interactionId)
+                if (snapshot?.source == com.aozijx.passly.domain.autofill.model.AutofillInteractionSource.LEGACY &&
+                    snapshot.scope.webDomain != null
                 ) {
-                    is AutofillCredentialResolution.Resolved -> {
-                        AutofillSelectionOutcome.Filled(resolution.payload)
+                    interactionStore.finish(interactionId, AutofillInteractionState.Cancelled)
+                    return AutofillSelectionOutcome.Unauthorized
+                }
+                reauthenticateAndResolve(interactionId, scope, entryId, includeOtp)
+            } catch (_: Exception) {
+                AutofillSelectionOutcome.Failed(AutofillOperationFailure.CREDENTIAL_RESOLUTION_FAILED)
+            }
+
+        private suspend fun reauthenticateAndResolve(
+            interactionId: AutofillInteractionId,
+            scope: AutofillGrantContext,
+            entryId: EntryId,
+            includeOtp: Boolean,
+        ): AutofillSelectionOutcome =
+            try {
+                when (authenticationRequester.authenticate(AuthenticationRequest(AuthenticationPurpose.AUTOFILL))) {
+                    is AuthenticationResult.Success -> {
+                        validateActiveSelection(interactionId, scope, entryId)
+                            ?: resolveCredential(entryId, includeOtp)
                     }
 
-                    AutofillCredentialResolution.NotFound,
-                    AutofillCredentialResolution.NotFillable,
-                    -> {
-                        AutofillSelectionOutcome.CandidateUnavailable
+                    is AuthenticationResult.Cancelled -> {
+                        AutofillSelectionOutcome.Cancelled
+                    }
+
+                    is AuthenticationResult.Failure -> {
+                        AutofillSelectionOutcome.Unauthorized
                     }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
                 AutofillSelectionOutcome.Failed(AutofillOperationFailure.CREDENTIAL_RESOLUTION_FAILED)
+            }
+
+        private suspend fun validateActiveSelection(
+            interactionId: AutofillInteractionId,
+            scope: AutofillGrantContext,
+            entryId: EntryId,
+        ): AutofillSelectionOutcome? {
+            val snapshot =
+                interactionStore.snapshot(interactionId)
+                    ?: return AutofillSelectionOutcome.Rejected(
+                        AutofillInteractionRejection.INTERACTION_NOT_FOUND,
+                    )
+            if (snapshot.scope != scope.normalized()) return AutofillSelectionOutcome.ScopeMismatch
+            return when (val state = snapshot.state) {
+                AutofillInteractionState.Cancelled -> {
+                    AutofillSelectionOutcome.Cancelled
+                }
+
+                is AutofillInteractionState.ResolvingSelection -> {
+                    if (state.entryId == entryId) {
+                        null
+                    } else {
+                        AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.INVALID_STATE)
+                    }
+                }
+
+                else -> {
+                    AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.INVALID_STATE)
+                }
+            }
+        }
+
+        private suspend fun resolveCredential(
+            entryId: EntryId,
+            includeOtp: Boolean,
+        ): AutofillSelectionOutcome =
+            when (
+                val resolution =
+                    credentialResolver.resolve(
+                        AutofillCredentialSelection(entryId, includeOtp),
+                    )
+            ) {
+                is AutofillCredentialResolution.Resolved -> AutofillSelectionOutcome.Filled(resolution.payload)
+
+                AutofillCredentialResolution.NotFound,
+                AutofillCredentialResolution.NotFillable,
+                -> AutofillSelectionOutcome.CandidateUnavailable
             }
     }

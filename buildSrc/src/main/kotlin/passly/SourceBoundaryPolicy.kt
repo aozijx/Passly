@@ -272,8 +272,6 @@ internal object SourceBoundaryPolicy {
                             "com.aozijx.passly.feature.autofill.platform.AutofillLaunchTarget",
                             "com.aozijx.passly.feature.autofill.presentation.AutofillFeatureEntry",
                             "com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion",
-                            "com.aozijx.passly.feature.autofill.presentation.AutofillHostPresentation",
-                            "com.aozijx.passly.feature.autofill.presentation.autofillHostPresentation",
                         ),
                     message = "App may only import the reviewed Autofill module API",
                 ),

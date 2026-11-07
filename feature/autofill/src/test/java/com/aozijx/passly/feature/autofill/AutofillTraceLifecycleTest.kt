@@ -75,6 +75,7 @@ class AutofillTraceLifecycleTest {
                             FinishAutofillInteraction(store, lease),
                         ),
                     unlockLease = lease,
+                    interactionStore = store,
                     scope = this,
                     logger = logger,
                     continuations = continuations,
@@ -125,14 +126,17 @@ class AutofillTraceLifecycleTest {
             }
             val delivery =
                 AutofillResultDelivery(
-                    CompleteAutofillSelection(
-                        NoOpActivityRecorder,
-                        FinishAutofillInteraction(store, lease),
-                    ),
-                    lease,
-                    this,
-                    logger,
-                    continuations,
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    interactionStore = store,
+                    secureSessionAccessState = null,
+                    scope = this,
+                    logger = logger,
+                    continuations = continuations,
                 )
 
             assertThrows(IllegalStateException::class.java) {
@@ -176,14 +180,17 @@ class AutofillTraceLifecycleTest {
             lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
             val delivery =
                 AutofillResultDelivery(
-                    CompleteAutofillSelection(
-                        NoOpActivityRecorder,
-                        FinishAutofillInteraction(store, lease),
-                    ),
-                    lease,
-                    this,
-                    logger,
-                    continuations,
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    interactionStore = store,
+                    secureSessionAccessState = null,
+                    scope = this,
+                    logger = logger,
+                    continuations = continuations,
                 )
 
             delivery.commitResult(AutofillSelectionReceipt(interaction.id, EntryId("entry-1"))) {}
@@ -216,14 +223,17 @@ class AutofillTraceLifecycleTest {
                 )
             val delivery =
                 AutofillResultDelivery(
-                    CompleteAutofillSelection(
-                        NoOpActivityRecorder,
-                        FinishAutofillInteraction(store, lease),
-                    ),
-                    lease,
-                    this,
-                    logger,
-                    continuations,
+                    completeSelection =
+                        CompleteAutofillSelection(
+                            NoOpActivityRecorder,
+                            FinishAutofillInteraction(store, lease),
+                        ),
+                    unlockLease = lease,
+                    interactionStore = store,
+                    secureSessionAccessState = null,
+                    scope = this,
+                    logger = logger,
+                    continuations = continuations,
                 )
             val callbacks = mutableListOf<String>()
 

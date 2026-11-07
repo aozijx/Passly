@@ -12,12 +12,12 @@ import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.domain.access.model.AutofillInboxKeyMaterial
 import com.aozijx.passly.domain.access.port.AutofillInboxBootstrapStore
-import com.aozijx.passly.domain.access.port.AutofillInboxRecordStore
 import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInboxPendingDraft
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillInboxStoredRecord
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
+import com.aozijx.passly.domain.autofill.port.AutofillInboxRecordStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals

@@ -7,6 +7,16 @@
   <string name="autofill_prompt_title">Autofill with %1$s</string>
   <string name="autofill_select_account_hint">Tap an account to fill. Close this sheet to cancel.</string>
   <string name="autofill_cancel">Cancel</string>
+  <string name="autofill_review_web_request">Review website autofill request</string>
+  <string name="autofill_web_confirmation_title">Confirm website request</string>
+  <string name="autofill_web_entry_confirmation_title">Confirm account to fill</string>
+  <string name="autofill_web_app_label">Requesting app: %1$s</string>
+  <string name="autofill_web_package_label">App package: %1$s</string>
+  <string name="autofill_web_domain_label">Requested domain: %1$s</string>
+  <string name="autofill_web_entry_label">Account: %1$s (%2$s)</string>
+  <string name="autofill_web_origin_risk">Passly cannot verify that this app owns this website. Continuing may disclose credentials to the requesting app. Continue only when both the app and domain are expected.</string>
+  <string name="autofill_web_entry_risk">This account is about to be filled into the domain requested by the app above. Check that the app, domain, and account are correct.</string>
+  <string name="autofill_web_confirm">Confirm and continue</string>
   <string name="credential_create_password_description">Save the password securely in Passly</string>
   <string name="vault_locked_title">Passly is locked</string>
   <plurals name="autofill_entry_compact_summary">

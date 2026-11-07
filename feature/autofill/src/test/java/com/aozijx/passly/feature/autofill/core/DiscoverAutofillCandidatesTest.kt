@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillField
+import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
 import com.aozijx.passly.domain.autofill.model.AutofillSource
@@ -48,7 +49,7 @@ class DiscoverAutofillCandidatesTest {
         runBlocking {
             val fixture = fixture(settings = AutofillSettings(enabled = false))
 
-            val outcome = fixture.operation(request())
+            val outcome = fixture.discoverAfterWebConfirmation(request())
 
             assertEquals(AutofillDiscoveryOutcome.Disabled, outcome)
             assertEquals(0, fixture.repository.searchCalls)
@@ -81,7 +82,7 @@ class DiscoverAutofillCandidatesTest {
         runBlocking {
             val fixture = fixture(candidates = emptyList())
 
-            val outcome = fixture.operation(request())
+            val outcome = fixture.discoverAfterWebConfirmation(request())
 
             assertTrue(outcome is AutofillDiscoveryOutcome.NoCandidates)
             assertEquals(1, fixture.repository.searchCalls)
@@ -90,12 +91,27 @@ class DiscoverAutofillCandidatesTest {
     @Test
     fun websiteCandidateSearchUsesDomainWithoutBrowserPackageAssociation() =
         runBlocking {
-            val fixture = fixture()
+            val siteCandidate = candidate("site-entry")
+            val request = request().copy(packageName = "com.attacker.unassociated")
+            val fixture = fixture(candidates = listOf(siteCandidate))
 
-            fixture.operation(request())
+            val outcome = fixture.operation(request)
+
+            assertTrue(outcome is AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation)
+            assertEquals(0, fixture.repository.searchCalls)
+
+            outcome as AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation
+            fixture.store.confirmWebRecipient(
+                outcome.snapshot.id,
+                AutofillGrantContext(request.packageName, "example.com"),
+                1L,
+            )
+            val confirmed = fixture.operation(request, interactionId = outcome.snapshot.id)
 
             assertEquals("example.com", fixture.repository.lastQuery?.webDomain)
             assertEquals(null, fixture.repository.lastQuery?.packageName)
+            assertTrue(confirmed is AutofillDiscoveryOutcome.Candidates)
+            assertEquals(siteCandidate, (confirmed as AutofillDiscoveryOutcome.Candidates).candidates.single())
         }
 
     @Test
@@ -103,7 +119,10 @@ class DiscoverAutofillCandidatesTest {
         runBlocking {
             val fixture = fixture(settings = AutofillSettings(requireAuthentication = false, strictDomainMatching = false))
 
-            val outcome = fixture.operation(request().copy(domain = "login.example.com"))
+            val outcome =
+                fixture.discoverAfterWebConfirmation(
+                    request().copy(domain = "login.example.com"),
+                )
 
             assertEquals(false, fixture.repository.lastQuery?.strictDomainMatching)
             assertEquals("login.example.com", fixture.repository.lastQuery?.webDomain)
@@ -115,7 +134,10 @@ class DiscoverAutofillCandidatesTest {
     fun relaxedCandidatePolicyDoesNotResumeAnInteractionOnAnotherHost() =
         runBlocking {
             val fixture = fixture(settings = AutofillSettings(requireAuthentication = false, strictDomainMatching = false))
-            val first = fixture.operation(request().copy(domain = "login.example.com")) as AutofillDiscoveryOutcome.NoCandidates
+            val first =
+                fixture.discoverAfterWebConfirmation(
+                    request().copy(domain = "login.example.com"),
+                ) as AutofillDiscoveryOutcome.NoCandidates
 
             val resumed = fixture.operation(request().copy(domain = "shop.example.com"), interactionId = first.snapshot.id)
 
@@ -149,6 +171,20 @@ class DiscoverAutofillCandidatesTest {
         }
 
     @Test
+    fun ambiguousWebOriginFailsBeforeStartingAnInteractionOrQuery() =
+        runBlocking {
+            val fixture = fixture()
+
+            val outcome = fixture.operation(request().copy(ambiguousWebOrigin = true))
+
+            assertEquals(
+                AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.AMBIGUOUS_WEB_ORIGIN),
+                outcome,
+            )
+            assertEquals(0, fixture.repository.searchCalls)
+        }
+
+    @Test
     fun blankApplicationIdFailsBeforeStartingAnInteractionOrQuery() =
         runBlocking {
             val fixture = fixture()
@@ -165,7 +201,7 @@ class DiscoverAutofillCandidatesTest {
             val candidate = candidate("entry-1")
             val fixture = fixture(candidates = listOf(candidate))
 
-            val outcome = fixture.operation(request())
+            val outcome = fixture.discoverAfterWebConfirmation(request())
 
             assertTrue(outcome is AutofillDiscoveryOutcome.Candidates)
             outcome as AutofillDiscoveryOutcome.Candidates
@@ -174,11 +210,11 @@ class DiscoverAutofillCandidatesTest {
         }
 
     @Test
-    fun directSelectionResumesExistingCandidatesWithoutSearchingAgain() =
+    fun directWebSelectionRediscoversMetadataAfterRecipientConfirmation() =
         runBlocking {
             val candidate = candidate("entry-1")
             val fixture = fixture(candidates = listOf(candidate))
-            val first = fixture.operation(request()) as AutofillDiscoveryOutcome.Candidates
+            val first = fixture.discoverAfterWebConfirmation(request()) as AutofillDiscoveryOutcome.Candidates
 
             val resumed =
                 fixture.operation(
@@ -187,11 +223,11 @@ class DiscoverAutofillCandidatesTest {
                     directEntryId = candidate.entry.id,
                 )
 
-            assertTrue(resumed is AutofillDiscoveryOutcome.ResumeSelection)
-            resumed as AutofillDiscoveryOutcome.ResumeSelection
+            assertTrue(resumed is AutofillDiscoveryOutcome.Candidates)
+            resumed as AutofillDiscoveryOutcome.Candidates
             assertEquals(first.snapshot.id, resumed.snapshot.id)
-            assertEquals(candidate.entry.id, resumed.entryId)
-            assertEquals(1, fixture.repository.searchCalls)
+            assertEquals(candidate, resumed.candidates.single())
+            assertEquals(2, fixture.repository.searchCalls)
         }
 
     private fun fixture(
@@ -222,11 +258,24 @@ class DiscoverAutofillCandidatesTest {
                     credentialFieldMatchStrategy = fieldMatchStrategy,
                     startInteraction = StartAutofillInteraction(store, lease, vault),
                     interactionStore = store,
+                    secureSessionAccessState = vault,
                     finishInteraction = FinishAutofillInteraction(store, lease),
                     logger = testLogger(),
                 ),
             repository = repository,
+            store = store,
         )
+    }
+
+    private suspend fun Fixture.discoverAfterWebConfirmation(request: AutofillRequest): AutofillDiscoveryOutcome {
+        val confirmation = operation(request)
+        if (confirmation !is AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation) return confirmation
+        store.confirmWebRecipient(
+            confirmation.snapshot.id,
+            AutofillGrantContext(request.packageName, request.domain),
+            1L,
+        )
+        return operation(request, interactionId = confirmation.snapshot.id)
     }
 
     private fun request() =
@@ -263,6 +312,7 @@ class DiscoverAutofillCandidatesTest {
     private data class Fixture(
         val operation: DiscoverAutofillCandidates,
         val repository: RecordingCandidateRepository,
+        val store: AutofillInteractionStore,
     )
 
     private class FixedSettingsSource(

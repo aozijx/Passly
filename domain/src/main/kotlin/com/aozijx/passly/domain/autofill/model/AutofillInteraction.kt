@@ -55,12 +55,24 @@ data class AutofillInteractionSnapshot(
     val scope: AutofillGrantContext,
     val state: AutofillInteractionState,
     val presentedCandidateIds: Set<EntryId> = emptySet(),
+    /** Process-local consent before publishing web candidates to the Android Autofill UI. */
+    val webRecipientConfirmed: Boolean = false,
+    /** Authentication session in which the recipient was explicitly confirmed. */
+    val webConsentSessionAtMs: Long? = null,
+    /** Process-local consent for the one web credential whose secret may be resolved. */
+    val confirmedWebEntryId: EntryId? = null,
+    /** Prevents cancellation or expiry from replacing an in-flight web result callback. */
+    val webResultDeliveryClaimed: Boolean = false,
 )
 
 enum class AutofillInteractionRejection {
     INTERACTION_NOT_FOUND,
     INVALID_STATE,
+    SCOPE_MISMATCH,
     CANDIDATE_NOT_PRESENTED,
+    WEB_ORIGIN_NOT_CONFIRMED,
+    WEB_CONFIRMATION_EXPIRED,
+    WEB_ENTRY_NOT_CONFIRMED,
     TERMINAL,
 }
 

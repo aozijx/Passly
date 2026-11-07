@@ -8,6 +8,16 @@
   <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
   <string name="autofill_select_account_hint">点按账号以填充。关闭此页将取消。</string>
   <string name="autofill_cancel">取消</string>
+  <string name="autofill_review_web_request">核对网页填充请求</string>
+  <string name="autofill_web_confirmation_title">确认网页请求来源</string>
+  <string name="autofill_web_entry_confirmation_title">确认要填入的账号</string>
+  <string name="autofill_web_app_label">请求应用：%1$s</string>
+  <string name="autofill_web_package_label">应用包名：%1$s</string>
+  <string name="autofill_web_domain_label">请求域名：%1$s</string>
+  <string name="autofill_web_entry_label">账号：%1$s（%2$s）</string>
+  <string name="autofill_web_origin_risk">Passly 无法验证此应用是否拥有该网站。继续可能会把凭据交给请求应用。只有在应用和域名都符合预期时才继续。</string>
+  <string name="autofill_web_entry_risk">即将把此账号填入上方应用请求的域名。请确认应用、域名和账号都正确。</string>
+  <string name="autofill_web_confirm">确认并继续</string>
   <string name="credential_create_password_description">将密码安全地保存到 Passly</string>
   <string name="vault_locked_title">Passly 已锁定</string>
   <plurals name="autofill_entry_compact_summary">

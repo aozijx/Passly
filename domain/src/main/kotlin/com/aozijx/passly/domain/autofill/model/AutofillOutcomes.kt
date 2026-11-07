@@ -7,12 +7,11 @@ data class AutofillDiscoveryContext(
     val roleMap: Map<String, FieldRole>,
     val presentation: AutofillPresentation,
     val requireAuthentication: Boolean,
-    val includeOtp: Boolean,
-    val savePromptsEnabled: Boolean,
 )
 
 enum class AutofillOperationFailure {
     INVALID_SCOPE,
+    AMBIGUOUS_WEB_ORIGIN,
     INTERACTION_NOT_FOUND,
     INVALID_INTERACTION_STATE,
     SCOPE_MISMATCH,
@@ -26,6 +25,7 @@ sealed interface AutofillDiscoveryOutcome {
         get() =
             when (this) {
                 is RequiresUnlock -> context.presentation
+                is RequiresWebRecipientConfirmation -> context.presentation
                 is NoCandidates -> context.presentation
                 is Candidates -> context.presentation
                 Disabled,
@@ -40,6 +40,11 @@ sealed interface AutofillDiscoveryOutcome {
     data object UnsupportedFields : AutofillDiscoveryOutcome
 
     data class RequiresUnlock(
+        val snapshot: AutofillInteractionSnapshot,
+        val context: AutofillDiscoveryContext,
+    ) : AutofillDiscoveryOutcome
+
+    data class RequiresWebRecipientConfirmation(
         val snapshot: AutofillInteractionSnapshot,
         val context: AutofillDiscoveryContext,
     ) : AutofillDiscoveryOutcome

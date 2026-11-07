@@ -34,6 +34,17 @@ internal sealed class AutofillFillUiState {
         val candidates: List<AutofillCandidateSummary>,
     ) : AutofillFillUiState()
 
+    data class ConfirmWebRecipient(
+        val packageName: String,
+        val webDomain: String,
+    ) : AutofillFillUiState()
+
+    data class ConfirmWebEntry(
+        val packageName: String,
+        val webDomain: String,
+        val candidate: AutofillCandidateSummary,
+    ) : AutofillFillUiState()
+
     data class Result(
         val result: AutofillFillResult,
     ) : AutofillFillUiState()
@@ -49,11 +60,28 @@ internal sealed interface AutofillFillDisplayState {
     data class Candidates(
         val candidates: List<AutofillCandidateSummary>,
     ) : AutofillFillDisplayState
+
+    data class ConfirmWebRecipient(
+        val packageName: String,
+        val webDomain: String,
+    ) : AutofillFillDisplayState
+
+    data class ConfirmWebEntry(
+        val packageName: String,
+        val webDomain: String,
+        val candidate: AutofillCandidateSummary,
+    ) : AutofillFillDisplayState
 }
 
 internal fun AutofillFillUiState.toDisplayState(): AutofillFillDisplayState =
     when (this) {
         is AutofillFillUiState.ShowCandidates -> AutofillFillDisplayState.Candidates(candidates)
+
+        is AutofillFillUiState.ConfirmWebRecipient ->
+            AutofillFillDisplayState.ConfirmWebRecipient(packageName, webDomain)
+
+        is AutofillFillUiState.ConfirmWebEntry ->
+            AutofillFillDisplayState.ConfirmWebEntry(packageName, webDomain, candidate)
 
         AutofillFillUiState.Initial,
         AutofillFillUiState.Loading,

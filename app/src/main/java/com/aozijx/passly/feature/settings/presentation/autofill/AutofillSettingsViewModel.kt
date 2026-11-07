@@ -6,8 +6,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.AutofillSettings
-import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
-import com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource
+import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
+import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,10 +27,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class AutofillSettingsViewModel
+internal class AutofillSettingsViewModel
     @Inject
     constructor(
-        private val settingsRepository: InteractionSettingsRepository,
+        private val settingsRepository: AutofillSettingsRepository,
         private val autofillServiceStatusSource: AutofillServiceStatusSource,
     ) : ViewModel() {
         private val pageEffects = PageEffects<AutofillSettingsEffect>()
@@ -41,7 +41,7 @@ class AutofillSettingsViewModel
 
         private val preferencesRead =
             RecoverableRead(
-                source = settingsRepository.interaction.map { it.autofill },
+                source = settingsRepository.autofillSettings,
                 scope = viewModelScope,
             )
         private val preferences =
@@ -97,33 +97,9 @@ class AutofillSettingsViewModel
                     }
                 }
 
-                is AutofillSettingsAction.SetOtpEnabled -> {
-                    saveSetting {
-                        settingsRepository.setAutofillOtpEnabled(action.enabled)
-                    }
-                }
-
-                is AutofillSettingsAction.SetSavePromptsEnabled -> {
-                    saveSetting {
-                        settingsRepository.setAutofillSavePromptsEnabled(action.enabled)
-                    }
-                }
-
-                is AutofillSettingsAction.SetUnmatchedSuggestionsEnabled -> {
-                    saveSetting {
-                        settingsRepository.setUnmatchedAutofillSuggestionsEnabled(action.enabled)
-                    }
-                }
-
                 is AutofillSettingsAction.SetStrictDomainMatching -> {
                     saveSetting {
                         settingsRepository.setAutofillStrictDomainMatching(action.enabled)
-                    }
-                }
-
-                is AutofillSettingsAction.SetMaxSuggestions -> {
-                    saveSetting {
-                        settingsRepository.setAutofillMaxSuggestions(action.count)
                     }
                 }
 

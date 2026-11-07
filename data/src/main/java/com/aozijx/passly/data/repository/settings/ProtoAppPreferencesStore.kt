@@ -16,7 +16,6 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
-import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.MessageLevel
@@ -25,6 +24,7 @@ import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
@@ -43,6 +43,7 @@ internal class ProtoAppPreferencesStore
         @ApplicationContext context: Context,
     ) : AppearanceSettingsRepository,
         BackupDirectorySettingsRepository,
+        AutofillSettingsRepository,
         InterfaceSettingsRepository,
         InteractionSettingsRepository,
         LibraryViewSettingsRepository,
@@ -55,6 +56,7 @@ internal class ProtoAppPreferencesStore
         override val backupDirectoryUri = preferences.map { it.backup.directoryTreeUri.ifEmpty { null } }
         override val interfaceSettings = preferences.map { readInterface(it.interfacePrefs) }
         override val interaction = preferences.map { readInteraction(it.interaction) }
+        override val autofillSettings = preferences.map { readAutofill(it.interaction.autofill) }
         override val libraryViewSettings = preferences.map { readVault(it.vaultView) }
         override val messages = preferences.map { decodeMessageSettings(it.message) }
         override val diagnosticsLogRecordingMode =
@@ -167,26 +169,9 @@ internal class ProtoAppPreferencesStore
                 requireAuthentication = required
             }
 
-        override suspend fun setAutofillOtpEnabled(enabled: Boolean) = updateAutofill { includeOtp = enabled }
-
-        override suspend fun setAutofillSavePromptsEnabled(enabled: Boolean) =
-            updateAutofill {
-                savePromptsEnabled = enabled
-            }
-
-        override suspend fun setUnmatchedAutofillSuggestionsEnabled(enabled: Boolean) =
-            updateAutofill {
-                allowUnmatchedSuggestions = enabled
-            }
-
         override suspend fun setAutofillStrictDomainMatching(enabled: Boolean) =
             updateAutofill {
                 strictDomainMatching = enabled
-            }
-
-        override suspend fun setAutofillMaxSuggestions(count: Int) =
-            updateAutofill {
-                maxSuggestions = count.coerceIn(AutofillSettings.MIN_SUGGESTIONS, AutofillSettings.MAX_SUGGESTIONS)
             }
 
         private suspend fun updateAppearance(block: AppearancePreferences.Builder.() -> Unit) =

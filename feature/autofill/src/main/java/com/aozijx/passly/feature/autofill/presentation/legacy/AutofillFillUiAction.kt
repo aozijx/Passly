@@ -11,5 +11,9 @@ internal sealed interface AutofillFillUiAction {
         val entryId: EntryId,
     ) : AutofillFillUiAction
 
+    data object ConfirmWebRecipient : AutofillFillUiAction
+
+    data object ConfirmWebEntry : AutofillFillUiAction
+
     data object Cancel : AutofillFillUiAction
 }

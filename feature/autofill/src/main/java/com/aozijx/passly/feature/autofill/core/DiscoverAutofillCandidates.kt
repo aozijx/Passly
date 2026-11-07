@@ -3,8 +3,9 @@ package com.aozijx.passly.feature.autofill.core
 import com.aozijx.passly.core.observability.AutofillLogSnapshot
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AUTOFILL_CANDIDATE_LIMIT
+import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -41,6 +42,7 @@ internal class DiscoverAutofillCandidates
         @param:Strict private val credentialFieldMatchStrategy: FieldMatchStrategy,
         private val startInteraction: StartAutofillInteraction,
         private val interactionStore: AutofillInteractionStore,
+        private val secureSessionAccessState: SecureSessionAccessState,
         private val finishInteraction: FinishAutofillInteraction,
         private val logger: Logger,
     ) {
@@ -53,6 +55,9 @@ internal class DiscoverAutofillCandidates
             val policy = settingsSource.autofillSettings.first()
             if (!policy.enabled || !policy.supports(request.source)) {
                 return AutofillDiscoveryOutcome.Disabled
+            }
+            if (request.source == AutofillSource.AUTOFILL_SERVICE && request.ambiguousWebOrigin) {
+                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.AMBIGUOUS_WEB_ORIGIN)
             }
 
             val match =
@@ -92,10 +97,6 @@ internal class DiscoverAutofillCandidates
             if (snapshot.scope != scope) {
                 return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.SCOPE_MISMATCH)
             }
-            if (directEntryId != null && snapshot.state == AutofillInteractionState.CandidatesReady) {
-                return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId)
-            }
-
             val context =
                 AutofillDiscoveryContext(
                     roleMap = match.roleMap,
@@ -109,6 +110,26 @@ internal class DiscoverAutofillCandidates
                 snapshot.state != AutofillInteractionState.CandidatesReady
             ) {
                 return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
+            }
+            if (request.source == AutofillSource.AUTOFILL_SERVICE &&
+                scope.webDomain != null &&
+                !snapshot.webRecipientConfirmed
+            ) {
+                return AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation(snapshot, context)
+            }
+            val sessionGeneration = secureSessionAccessState.autofillSessionGeneration()
+            if (request.source == AutofillSource.AUTOFILL_SERVICE &&
+                scope.webDomain != null &&
+                snapshot.webConsentSessionAtMs != sessionGeneration
+            ) {
+                finishInteraction.cancel(snapshot.id)
+                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
+            }
+            if (directEntryId != null &&
+                snapshot.state == AutofillInteractionState.CandidatesReady &&
+                scope.webDomain == null
+            ) {
+                return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId)
             }
 
             val candidates =
@@ -129,10 +150,17 @@ internal class DiscoverAutofillCandidates
                     return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED)
                 }
 
+            val activeSessionGeneration = secureSessionAccessState.autofillSessionGeneration()
+            if (scope.webDomain != null && activeSessionGeneration != sessionGeneration) {
+                finishInteraction.cancel(snapshot.id)
+                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
+            }
+
             val recorded =
                 interactionStore.recordCandidates(
                     snapshot.id,
                     candidates.mapTo(linkedSetOf()) { it.entry.id },
+                    sessionAtMs = activeSessionGeneration,
                 )
             val recordedSnapshot =
                 when (recorded) {

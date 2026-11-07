@@ -107,9 +107,6 @@ internal fun AutofillRoute(onBack: (() -> Unit)?) {
                         preferences.toAutofillSettingsUiModel(
                             supportsCredentialManager =
                                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                            canEditPreferences = preferenceState is AutofillSourceState.Ready,
-                            preferencesRefreshing = preferenceState is AutofillSourceState.Loading,
-                            preferencesFailed = preferenceState is AutofillSourceState.Failed,
                             systemService = state.systemService,
                         ),
                     onAction = viewModel::onAction,

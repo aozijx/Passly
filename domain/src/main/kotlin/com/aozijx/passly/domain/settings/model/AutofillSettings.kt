@@ -1,31 +1,23 @@
 package com.aozijx.passly.domain.settings.model
 
 /**
- * Traditional AutofillService and Credential Manager share this policy.
+ * Autofill entry points share discovery policy where their platform contracts allow it.
  *
- * System registration is still controlled by Android. [enabled] and
- * [credentialManagerEnabled] only control whether Passly returns suggestions.
+ * System registration is still controlled by Android. [enabled] is the global
+ * Passly Autofill gate; [credentialManagerEnabled] adds a Credential Manager
+ * specific gate.
+ * [presentation] applies to the traditional AutofillService; Credential Manager
+ * and Accessibility use their platform-specific presentation flows. OTP is
+ * included only when the current request exposes an OTP field; Credential
+ * Manager password requests do not support OTP credentials.
  */
 data class AutofillSettings(
     val enabled: Boolean = true,
     val presentation: AutofillPresentation = AutofillPresentation.SYSTEM_INLINE,
     val credentialManagerEnabled: Boolean = true,
     val requireAuthentication: Boolean = true,
-    val includeOtp: Boolean = true,
-    val savePromptsEnabled: Boolean = true,
-    val allowUnmatchedSuggestions: Boolean = false,
-    val maxSuggestions: Int = DEFAULT_MAX_SUGGESTIONS,
     val strictDomainMatching: Boolean = true,
-) {
-    val normalizedMaxSuggestions: Int
-        get() = maxSuggestions.coerceIn(MIN_SUGGESTIONS, MAX_SUGGESTIONS)
-
-    companion object {
-        const val DEFAULT_MAX_SUGGESTIONS = 5
-        const val MIN_SUGGESTIONS = 1
-        const val MAX_SUGGESTIONS = 10
-    }
-}
+)
 
 enum class AutofillPresentation(
     val wireKey: String,

@@ -48,24 +48,8 @@ sealed interface AutofillSettingsAction {
         val required: Boolean,
     ) : AutofillSettingsAction
 
-    data class SetOtpEnabled(
-        val enabled: Boolean,
-    ) : AutofillSettingsAction
-
-    data class SetSavePromptsEnabled(
-        val enabled: Boolean,
-    ) : AutofillSettingsAction
-
-    data class SetUnmatchedSuggestionsEnabled(
-        val enabled: Boolean,
-    ) : AutofillSettingsAction
-
     data class SetStrictDomainMatching(
         val enabled: Boolean,
-    ) : AutofillSettingsAction
-
-    data class SetMaxSuggestions(
-        val count: Int,
     ) : AutofillSettingsAction
 
     data object RetryPreferences : AutofillSettingsAction

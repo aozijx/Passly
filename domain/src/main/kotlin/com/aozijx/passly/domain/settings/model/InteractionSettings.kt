@@ -5,5 +5,4 @@ data class InteractionSettings(
     val isPullToSearchEnabled: Boolean = false,
     val swipeLeftAction: SwipeActionType = SwipeActionType.COPY_PASSWORD,
     val swipeRightAction: SwipeActionType = SwipeActionType.DELETE,
-    val autofill: AutofillSettings = AutofillSettings(),
 )

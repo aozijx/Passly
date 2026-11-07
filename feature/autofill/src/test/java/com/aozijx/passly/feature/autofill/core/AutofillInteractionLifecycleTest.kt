@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.autofill.core
 
 import com.aozijx.passly.domain.access.model.AuthInput
-import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -24,8 +24,8 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionTimeout
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -158,6 +158,39 @@ class AutofillInteractionLifecycleTest {
             assertTrue(authorization.await() is AutofillAuthorizationOutcome.Authorized)
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun interactionTimeoutRestartsAfterAuthenticationCompletes() =
+        runTest {
+            val vault = FakeVault(AuthenticationState.Locked)
+            val authentication = DeferredAuthenticationController(vault)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(authentication)
+            val timeout = AutofillInteractionTimeout(store, lease, backgroundScope, 60_000L)
+            val start = StartAutofillInteraction(store, lease, vault, timeout)
+            val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease, timeout)
+            val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+            val authorization = async { authorize(interaction.id) }
+            authentication.started.await()
+
+            advanceTimeBy(50_000L)
+            authentication.result.complete(
+                AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD),
+            )
+            assertTrue(authorization.await() is AutofillAuthorizationOutcome.Authorized)
+
+            advanceTimeBy(10_000L)
+            runCurrent()
+
+            assertEquals(AutofillInteractionState.Authorized, store.snapshot(interaction.id)?.state)
+
+            advanceTimeBy(50_000L)
+            runCurrent()
+
+            assertNull(store.snapshot(interaction.id))
+            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, authentication.lastLockReason)
+        }
+
     @Test
     fun lockedInteractionAuthenticatesOnceAndReusesAuthorizationForSelection() =
         runBlocking {
@@ -243,6 +276,42 @@ class AutofillInteractionLifecycleTest {
 
             assertTrue(owner.await().exceptionOrNull() is AssertionError)
             assertTrue(waiter.await().exceptionOrNull() is AssertionError)
+            assertEquals(
+                AutofillInteractionState.Failed(
+                    AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
+                ),
+                store.snapshot(interaction.id)?.state,
+            )
+            assertEquals(AuthenticationState.Locked, vault.authenticationState.value)
+            assertEquals(1, authentication.lockCount)
+        }
+
+    @Test
+    fun fatalLeaseCleanupFailurePropagatesAndCompletesSharedWaiter() =
+        runTest {
+            val vault = FakeVault(AuthenticationState.Locked)
+            val cleanupFailure = AssertionError("lease cleanup failed")
+            val authentication = ThrowOnceAuthenticationController(vault, cleanupFailure)
+            val store = AutofillInteractionStore()
+            val lease = AutofillUnlockLease(authentication)
+            val start = StartAutofillInteraction(store, lease, vault)
+            val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
+            val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
+
+            val owner = async { runCatching { authorize(interaction.id) } }
+            authentication.firstAttemptStarted.await()
+            val waiter = async { runCatching { authorize(interaction.id) } }
+            runCurrent()
+
+            val authenticationFailure = IllegalStateException("authentication host failed")
+            authentication.failFirstAttempt.complete(authenticationFailure)
+
+            val ownerFailure = owner.await().exceptionOrNull()
+            val waiterFailure = waiter.await().exceptionOrNull()
+            assertTrue(ownerFailure is AssertionError)
+            assertTrue(waiterFailure is AssertionError)
+            assertEquals(cleanupFailure.message, ownerFailure?.message)
+            assertEquals(cleanupFailure.message, waiterFailure?.message)
             assertEquals(
                 AutofillInteractionState.Failed(
                     AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
@@ -479,7 +548,7 @@ class AutofillInteractionLifecycleTest {
         )
     }
 
-    private fun scope(packageName: String = "com.example.target") = AutofillGrantContext(packageName, "https://example.com/login")
+    private fun scope(packageName: String = "com.example.target") = AutofillGrantContext(packageName)
 
     private data class Fixture(
         val store: AutofillInteractionStore,
@@ -568,6 +637,7 @@ class AutofillInteractionLifecycleTest {
 
     private class ThrowOnceAuthenticationController(
         private val vault: FakeVault,
+        private val lockFailure: Throwable? = null,
     ) : AuthenticationRequester,
         SessionLockController {
         val firstAttemptStarted = CompletableDeferred<Unit>()
@@ -592,6 +662,7 @@ class AutofillInteractionLifecycleTest {
         override suspend fun lock(request: SessionLockRequest) {
             lockCount++
             vault.lock()
+            lockFailure?.let { throw it }
         }
     }
 }
