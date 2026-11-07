@@ -295,13 +295,15 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 35：按真实消费收窄 EntryLinkRepository 与详情关系查询
 
-- [ ] 将 `EntryLinkRepository` 按生产调用闭包收窄：目前唯一业务 consumer 是 `DetailSessionQuery` 的 `getAll()`；核实并删除未消费的 `observeAll()`、`observeLinks()`、`getLinks()`、`upsert()` 与 `delete()` 接口/实现及只服务于它们的查询 DAO 方法。若将来没有正式关系编辑功能合同，不保留完整 CRUD 作为预留 API。
-- [ ] `RoomEntryLinkRepository.upsert/delete` 内含 endpoint 授权/类型校验、修订快照、事务和附件 GC；删除前核对提交后图标资源回收路径，只从该待办移除确实随死 API 删除的调用路径。`EntryLinkCommandDao` 仍被 `EntryRevisionRestoreTransaction.restore(...)` 与 Data `RoomVaultBackupStore.restore(snapshot, mode)` 用于历史/备份恢复，必须保留这些 Data 命令和 Room 存储格式。2026-11-07 复核：旧 App `RoomBackupSnapshotRestorer` 已由 Data port 迁移替代；DAO 的备份消费者现在位于 Data `RoomVaultBackupStore`。
+- [ ] 按 [Detail 密码绑定设计](../specs/2026-11-07-related-password-binding-design.md) 实现已保存 LOGIN 条目之间的 `RELATED_TO` 绑定。已明确 `EntryLinkRepository` 的读取/写入 API 是此用户功能的持久化基础，保留业务需要的 CRUD，不因当前生产调用数量少而删除。
+- [ ] 让候选只通过非敏感 `EntryListItem` 查询活动 LOGIN 条目；绑定时重验两端已保存/未删除/类型，维持事务端点校验、修订快照、GC 与对称唯一关系。仅移除经实现闭包证明完全无用的查询方法，不删泛用关系能力或备份/修订 Data 命令。
 - [ ] 评估 `DetailSessionQuery.relatedEntries()` 对 `getAll()` 的全表读取：基于 `EntryAccountGraph.accountFor()/membersOf()` 所需的 MEMBER_OF_ACCOUNT、OTP_FOR、RECOVERY_FOR 关系闭包设计范围查询，并证明 account、login、OTP、recovery 详情结果等价；不得只按 entryId 查询导致遗漏同账户其他成员或 OTP。若没有可证明更窄且合理的方案，可保留 `getAll()` 作为唯一读取 API，并在文档说明其数据量与生命周期边界。
 - [ ] 收敛关联条目加载的 N+1 查询：`DetailSessionQuery.relatedEntries()` 在关系图得到 N 个关联 ID 后逐一调用 `EntryQueryRepository.getById()`，每项各自获取一次数据库会话。为 Domain query port/Room adapter 提供批量读取并复用 `EntryQueryDao.getByIds()`，在一次可读 session/query 内装配条目与 secret bundle；恢复原关系 ID 顺序、跳过并发删除后不存在的条目，保持当前详情展示集合语义。验证空集合不执行数据库查询，并测定批量路径调用次数与单项路径等价。
 - [ ] 清理对应 Hilt bind、Room query 方法与测试替身，保留 Domain link model/policy、历史快照、Backup 稳定关系键和 `EntryLinkCommandDao` 的真实读写消费者；Room schema/internal format 维持版本 1。运行 EntryLink/revision/backup/Detail 定向测试、`verifyArchitecture` 与 `git diff --check`。
 
 **证据：** 全仓生产调用中 `EntryLinkRepository` 只有 `DetailSessionQuery` 调用 `getAll()`；`observeAll()`、`observeLinks()`、`getLinks()`、`upsert()`、`delete()` 没有业务调用者，也没有 `RoomEntryLinkRepository` 专用行为测试。`DetailViewModelTest`/`DetailPresentationLoaderTest` 的 fake 使用 `observeAll()` 仅为满足接口，没有调用行为。`RoomObservationSessionTest` 直接用 `EntryLinkQueryDao.observeAll()` 作为通用 session gate 测试入口，是唯一测试 consumer，删除 DAO 方法前要改为仍活跃的 query 并保留 gate 覆盖。当前 `getAll()` 将全库 links 装入 `EntryAccountGraph` 以计算 ACCOUNT 分组内关联条目；局部闭包不宜简单替换为单条 `getByEntryId()`，因为 OTP_FOR 需要经过 login 到 account，并需列出 account 下其他 login/recovery/OTP 成员。图构建后，`DetailSessionQuery.relatedEntries()` 对 `relatedIds.forEach` 逐条调用 `EntryQueryRepository.getById()`；这会把 `getByIds()` DAO 能力闲置在更低层，并为 N 个关联分别进入 `AppDatabaseSession.query`、重复获取 lease 且允许读取快照跨多个数据库时点。批量端口应重用现有 DAO query，避免再复制 query 或把 DAO 暴露至 App。死 CRUD 方法构造了 Repository 对 `DatabaseTransactionRunner`、`EntryRevisionWriter`、`SecretFieldStore`、`DatabaseClock`、`AttachmentResourceGarbageCollector` 的依赖；而 DAO 命令仍被修订恢复及 Backup 恢复直接使用，所以只能裁掉 Repository 的无消费者表面，不能删除持久化写能力或关系数据合同。
+
+**2026-11-07 范围裁定：** 用户确认 EntryLink 是后续已选定的“详情页绑定已保存密码项”功能基础；因此不把 Repository CRUD 判为过时。按上述设计落地后再依据真实消费闭包收敛方法，并完成关联条目批量读取优化。
 
 <a id="task-34"></a>
 
