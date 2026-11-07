@@ -27,7 +27,7 @@ class KeyedEntryArchiveRoundTripTest {
     private val mapper = KeyedEntryArchiveMapper
 
     @Test
-    fun bankCardRoundTripPreservesEveryBusinessField() {
+    fun bankCardRoundTripPreservesBusinessFieldsAndStableWireKeys() {
         val entry =
             Entry(
                 identity =
@@ -71,57 +71,12 @@ class KeyedEntryArchiveRoundTripTest {
                     ),
             )
 
-        assertEquals(entry, mapper.toEntry(mapper.toRecord(entry)))
-    }
-
-    @Test
-    fun serializedBankCardUsesStableKeyedFieldsAndRoundTrips() {
-        val entry =
-            Entry(
-                identity =
-                    EntryIdentity(
-                        id = EntryId("card-keyed"),
-                        type = EntryType.BANK_CARD,
-                        version = EntryVersion(7),
-                        timestamps = EntryTimestamps(10L, 20L),
-                    ),
-                profile =
-                    EntryProfile(
-                        title = "Travel card",
-                        username = "Ada",
-                        favorite = true,
-                        tags = linkedSetOf("travel", "finance"),
-                        expiresAtMs = 99L,
-                    ),
-                secret =
-                    EntrySecret(
-                        credential =
-                            CardCredential(
-                                cardType = "credit",
-                                cardNumber = "4111111111111111",
-                                cardExpiry = "12/30",
-                                cardCvv = "123",
-                                cardHolder = "Ada",
-                                paymentPin = "9876",
-                                paymentPlatform = "visa",
-                                billingAddress = "1 Example Road",
-                                issuingBank = "Example Bank",
-                                bankBranch = "Central Branch",
-                                cardProduct = "Travel Platinum",
-                                currency = "CNY / USD",
-                                bankPhone = "+86 123456",
-                            ),
-                        notes = "travel",
-                        customFields = listOf(CustomField("support", "secret", CustomFieldKind.HIDDEN)),
-                    ),
-            )
-
         val record = mapper.toRecord(entry)
         val serialized = BackupJson.encodeToString(record)
         val decoded = BackupJson.decodeFromString<BackupEntryRecord>(serialized)
 
         assertEquals("bank_card", record.type)
-        assertEquals(7, record.revision)
+        assertEquals(4, record.revision)
         assertEquals(
             "4111111111111111",
             record.fields

@@ -1,6 +1,6 @@
 # Backup 验证要求
 
-状态：当前实现合同（代码核对：2026-11-06）。
+状态：当前实现合同（代码核对：2026-11-07）。
 
 协议或流程变化至少验证：
 
@@ -15,7 +15,8 @@
 - TXT 不可导入且不包含 favorite 字段；
 - 新增 Domain 类型/字段前，archive registry 和 round-trip 测试已覆盖。
 
-Wire model 不导入 Room DTO；Adapter 不访问数据库或 Android URI；Restorer 不解析 JSON。Room Schema、文档
+归档格式 Adapter 不导入 Room DTO，也不执行 Room/DAO 访问；App `AppBackupSnapshotGateway` 只消费 Domain
+`VaultBackupStore`；Data `RoomVaultBackupStore` 拥有 Room 与资源持久化，不解析归档 JSON。Room Schema、文档
 version 和 container version 的测试必须分开。
 
 ## 现有测试入口与覆盖范围
@@ -24,13 +25,16 @@ version 和 container version 的测试必须分开。
 
 | 行为 | 当前测试入口 | 主要证明 |
 | --- | --- | --- |
-| 归档字段映射 | [`KeyedEntryArchiveRoundTripTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveRoundTripTest.kt) | `KeyedEntryArchiveMapper.toArchiveRecord()` / `toDomainEntry()` 的银行卡、OTP 和稳定键往返；对应断言包括 `serializedBankCardUsesStableKeyedFieldsAndRoundTrips`、`otpRoundTripPreservesEveryTypeAlgorithmAndEncoding`。 |
+| 归档字段映射 | [`KeyedEntryArchiveRoundTripTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/mapper/KeyedEntryArchiveRoundTripTest.kt) | `KeyedEntryArchiveMapper.toRecord(entry, attachmentIds)` / `toEntry(record)` 的银行卡、OTP 和稳定键往返；对应断言包括 `bankCardRoundTripPreservesBusinessFieldsAndStableWireKeys`、`otpRoundTripPreservesEveryTypeAlgorithmAndEncoding`。 |
 | Canonical 文档和容器 | [`BackupCodecTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupCodecTest.kt) | JSON、ZIP、Argon2id/AES-GCM 容器的往返、认证头、篡改、错误密码、危险 KDF 参数和输入上限拒绝。 |
 | 严格/兼容规划 | [`BackupImportPlannerTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlannerTest.kt) | 未知字段在兼容策略中忽略、未知/结构无效 Entry 在兼容模式跳过而严格模式拒绝、兼容验证只将 `IllegalArgumentException` 计作条目无效并传播 fatal `Error`、重复顶层 Link ID 两种策略都拒绝。 |
 | Service 编排 | [`BackupArchiveServiceImplTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImplTest.kt) | 导出选项按请求与 Adapter 能力裁剪、导入格式与 payload/密码/策略路由、恢复模式与结果摘要合并、密码必填校验；覆盖成功/普通失败/取消后的字节清理与错误报告。 |
-| wire 值完整性 | [`BackupArchiveKeyRegistryTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistryTest.kt)、[`KeyedBackupWireModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/KeyedBackupWireModelTest.kt) | Registry 覆盖领域类型与稳定键、模型不依赖数据库 payload 类型。 |
-| 上层操作与部分文件清理 | [`DefaultBackupOperationGatewayTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGatewayTest.kt)、`BackupCreatedDocumentCleanupTest`、`BackupWriteTestCleanupTest` | 目标 URI 的授权范围、取消传播、部分导出文件删除和清理错误优先级；这不直接证明 archive service 内部的 Adapter 参数传递。 |
-| 恢复文件 journal | [`RestoreFileJournalTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/RestoreFileJournalTest.kt)、`RoomBackupFaviconResourceTest` | Room 恢复时附件/图标文件变更的 journal 补偿和资源引用保护。 |
+| wire 值完整性 | [`BackupArchiveKeyRegistryTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveKeyRegistryTest.kt)、[`BackupCodecTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupCodecTest.kt) | Registry 覆盖领域类型与稳定键；`fieldArchiveV1_wireFieldNamesAreStableAndIndependentFromDatabasePayloads` 覆盖文档版本、字段值编码和稳定 wire keys。 |
+| 上层操作与部分文件清理 | [`DefaultBackupOperationGatewayTest`](../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGatewayTest.kt)、`BackupCreatedDocumentCleanupTest`、`BackupWriteTestCleanupTest` | 目标 URI 的授权范围、取消传播、部分导出文件删除和清理错误优先级；Service 返回导出失败后清理返回 false/抛普通异常时保留主错误并发出目标可能残留的提示；这不直接证明 archive service 内部的 Adapter 参数传递。 |
+| Room 快照与资源写入 | [`RoomVaultBackupStoreTest`](../../../data/src/androidTest/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStoreTest.kt)、[`VaultRestoreFileJournalTest`](../../../data/src/test/java/com/aozijx/passly/data/repository/backup/VaultRestoreFileJournalTest.kt)、[`RestoredAttachmentFileTest`](../../../data/src/test/java/com/aozijx/passly/data/repository/backup/RestoredAttachmentFileTest.kt) | Domain 快照筛选与资源读写、追加/覆盖、同一 Room 会话事务和资源文件变更补偿；迁移计划记录 Room instrumentation 在 Pixel_8_Pro AVD 上 6/6 通过。 |
+| 导出资源累计预算与缓冲所有权 | [`VaultBackupResourceAccumulatorTest`](../../../data/src/test/java/com/aozijx/passly/data/repository/backup/VaultBackupResourceAccumulatorTest.kt)、[`BackupSnapshotArchiveMapperTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/BackupSnapshotArchiveMapperTest.kt) | Data 逐资源及累计限额拒绝、拒绝/异常路径擦除缓冲及完整快照所有权移交；App 映射或 bundle 校验失败时擦除 Domain snapshot 内容。 |
+| 提交后最佳努力日志 | [`BestEffortBackupCleanupLoggingTest`](../../../data/src/test/java/com/aozijx/passly/data/repository/backup/BestEffortBackupCleanupLoggingTest.kt) | Room 已提交后，普通 Logger 异常不改变恢复成功结果；取消和 fatal `Error` 仍传播。 |
+| App Gateway Domain/archive 边界 | [`AppBackupSnapshotGatewayTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGatewayTest.kt)、[`BackupSnapshotArchiveMapperTest`](../../../app/src/test/java/com/aozijx/passly/app/database/backup/BackupSnapshotArchiveMapperTest.kt) | 稳定图标键、archive→Domain 资源 ID/字节所有权、兼容过滤后覆盖保护，以及映射失败时清除快照资源缓冲。 |
 
 `BackupArchiveServiceImplTest` 直接断言 `BackupExportRequest.options` 到 `BackupSnapshotReadOptions` 的能力裁剪、
 URI/格式/密码/策略/导入模式的流向、结果摘要合并，以及 service 所拥有的 encoded payload 和 bundle 资源字节

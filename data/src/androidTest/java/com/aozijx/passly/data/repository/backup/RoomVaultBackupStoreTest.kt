@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
 import com.aozijx.passly.core.crypto.FieldEncryptor
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
+import com.aozijx.passly.data.testing.TestSensitiveFieldCryptor
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.LogFields
@@ -31,7 +33,6 @@ import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCol
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.backup.model.VaultBackupReadOptions
 import com.aozijx.passly.domain.backup.model.VaultBackupResource
 import com.aozijx.passly.domain.backup.model.VaultBackupResourceKind
@@ -46,16 +47,9 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.runtime.session.SessionKeySource
-import com.aozijx.passly.security.dek.DekManager
-import com.aozijx.passly.security.dek.FieldKeyManager
-import com.aozijx.passly.security.dek.SensitiveDataKeyManager
-import com.aozijx.passly.security.dek.SensitiveFieldEncryptor
 import java.io.File
 import java.security.MessageDigest
-import java.security.SecureRandom
 import javax.inject.Provider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -73,7 +67,7 @@ class RoomVaultBackupStoreTest {
     private lateinit var context: Context
     private lateinit var session: AppDatabaseSession
     private lateinit var access: SecureSessionAccessState
-    private lateinit var fieldKeyManager: FieldKeyManager
+    private lateinit var fieldKeyProvider: TestFieldKeyProvider
     private lateinit var store: RoomVaultBackupStore
 
     @Before
@@ -91,19 +85,11 @@ class RoomVaultBackupStoreTest {
                 accessState = Provider { access },
             )
         assertEquals(null, runBlocking { session.unlock() })
-        fieldKeyManager = FieldKeyManager().apply { deriveAndSet(DATABASE_KEY) }
-        val bootstrapStore = unusedPort<VaultBootstrapStore>()
-        val sensitiveKeys =
-            SensitiveDataKeyManager(
-                bootstrapStore,
-                DekManager(bootstrapStore, fieldKeyManager, logger),
-                CoroutineScope(Dispatchers.Unconfined),
-                SecureRandom(),
-            )
+        fieldKeyProvider = TestFieldKeyProvider(DATABASE_KEY)
         val secretStore =
             SecretFieldStore(
-                SecretFieldCodec(SensitiveFieldEncryptor(sensitiveKeys)),
-                SecretBundleCodec(FieldEncryptor(fieldKeyManager, AesGcmCryptoEngine())),
+                SecretFieldCodec(TestSensitiveFieldCryptor),
+                SecretBundleCodec(FieldEncryptor(fieldKeyProvider, AesGcmCryptoEngine())),
                 DatabaseClock(),
             )
         val attachmentGc = AttachmentResourceGarbageCollector(context, session, access, logger)
@@ -121,7 +107,7 @@ class RoomVaultBackupStoreTest {
     @After
     fun tearDown() {
         runBlocking { session.seal() }
-        fieldKeyManager.clear()
+        fieldKeyProvider.clear()
         VaultResourcePaths.resourceDirectories(context).forEach { it.deleteRecursively() }
         context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
     }
@@ -141,6 +127,7 @@ class RoomVaultBackupStoreTest {
                         includeIcons = false,
                         includeAttachments = false,
                         maxResourceBytes = 1024L,
+                        maxTotalResourceBytes = 4096L,
                     ),
                 )
 
@@ -208,6 +195,7 @@ class RoomVaultBackupStoreTest {
                         includeIcons = false,
                         includeAttachments = true,
                         maxResourceBytes = 1024L,
+                        maxTotalResourceBytes = 4096L,
                     ),
                 ).resources.single()
             assertEquals(source.id, restored.id)
@@ -250,6 +238,7 @@ class RoomVaultBackupStoreTest {
                         includeIcons = true,
                         includeAttachments = false,
                         maxResourceBytes = 1024L,
+                        maxTotalResourceBytes = 4096L,
                     ),
                 ).resources.single()
             assertEquals(VaultBackupResourceKind.ICON, restored.kind)

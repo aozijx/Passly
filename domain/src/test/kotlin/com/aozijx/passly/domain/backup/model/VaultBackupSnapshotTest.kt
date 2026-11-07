@@ -55,6 +55,7 @@ class VaultBackupSnapshotTest {
                 includeIcons = false,
                 includeAttachments = false,
                 maxResourceBytes = 1024L,
+                maxTotalResourceBytes = 4096L,
             )
 
         assertEquals(true, options.includeDeleted)
@@ -62,6 +63,21 @@ class VaultBackupSnapshotTest {
         assertEquals(false, options.includeIcons)
         assertEquals(false, options.includeAttachments)
         assertEquals(1024L, options.maxResourceBytes)
+        assertEquals(4096L, options.maxTotalResourceBytes)
+    }
+
+    @Test
+    fun readOptionsRejectNonPositiveTotalResourceLimit() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VaultBackupReadOptions(
+                includeDeleted = true,
+                includedEntryTypes = setOf(EntryType.LOGIN),
+                includeIcons = true,
+                includeAttachments = true,
+                maxResourceBytes = 1024L,
+                maxTotalResourceBytes = 0L,
+            )
+        }
     }
 
     @Test

@@ -8,17 +8,13 @@ import org.junit.Test
 
 class BackupWriteTestCleanupTest {
     @Test
-    fun `delete false fails a successful write check`() {
+    fun `false or failed delete makes a successful write check fail`() {
         assertThrows(IllegalStateException::class.java) {
             enforceWriteTestCleanup(
                 primaryFailure = null,
                 cleanupResult = Result.success(false),
             )
         }
-    }
-
-    @Test
-    fun `delete exception fails a successful write check`() {
         val cleanupFailure = SecurityException("delete denied")
 
         val thrown =
@@ -29,7 +25,7 @@ class BackupWriteTestCleanupTest {
                 )
             }
 
-        assertEquals(cleanupFailure, thrown)
+        assertSame(cleanupFailure, thrown)
     }
 
     @Test

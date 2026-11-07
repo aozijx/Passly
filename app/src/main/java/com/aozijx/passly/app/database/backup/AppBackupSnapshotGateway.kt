@@ -8,16 +8,14 @@ import com.aozijx.passly.domain.backup.model.VaultBackupRestoreMode
 import com.aozijx.passly.domain.backup.model.VaultBackupSnapshot
 import com.aozijx.passly.domain.backup.port.VaultBackupStore
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
 import com.aozijx.passly.feature.backup.internal.archive.mapper.KeyedEntryArchiveMapper
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceRecord
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupRestoreResult
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotGateway
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
@@ -27,7 +25,7 @@ import javax.inject.Singleton
 
 /** Bridges the App-owned archive contract to the persistence-neutral Domain snapshot port. */
 @Singleton
-internal class RoomBackupSnapshotGateway
+internal class AppBackupSnapshotGateway
     @Inject
     constructor(
         private val vaultBackupStore: VaultBackupStore,
@@ -42,59 +40,19 @@ internal class RoomBackupSnapshotGateway
                         includeIcons = options.includeIcons,
                         includeAttachments = options.includeAttachments,
                         maxResourceBytes = BackupBundleValidator.MAX_RESOURCE_BYTES.toLong(),
+                        maxTotalResourceBytes = BackupBundleValidator.MAX_TOTAL_RESOURCE_BYTES.toLong(),
                     ),
                 )
-            val attachmentIdsByEntry =
-                snapshot.resources
-                    .filter { it.kind == VaultBackupResourceKind.ATTACHMENT }
-                    .groupBy { it.entryId.value }
-                    .mapValues { (_, resources) -> resources.map(VaultBackupResource::id) }
-            val records =
-                snapshot.entries.map { entry ->
-                    KeyedEntryArchiveMapper.toRecord(
-                        entry = entry,
-                        attachmentIds = attachmentIdsByEntry[entry.id.value].orEmpty(),
-                    )
-                }
-            val resources = snapshot.resources.map(VaultBackupResource::toArchiveRecord)
-            val resourceData =
-                snapshot.resources.associate { resource ->
-                    resource.toArchiveRecordId() to resource.content
-                }
-            val exportedIds = snapshot.entries.mapTo(hashSetOf()) { it.id }
-            val links =
-                snapshot.links
-                    .filter { it.sourceEntryId in exportedIds && it.targetEntryId in exportedIds }
-                    .map { link ->
-                        BackupLinkRecord(
-                            id = link.id.value,
-                            sourceEntryId = link.sourceEntryId.value,
-                            targetEntryId = link.targetEntryId.value,
-                            relationType = BackupArchiveKeyRegistry.relationTypeKey(link.relationType),
-                            createdAt = link.createdAt,
-                            updatedAt = link.updatedAt,
-                        )
-                    }
-            val document =
-                BackupDocument(
-                    format = BackupDocument.FORMAT,
-                    version = BackupDocument.CURRENT_VERSION,
-                    exportedAt = System.currentTimeMillis(),
-                    appVersion =
-                        context.packageManager
-                            .getPackageInfo(context.packageName, 0)
-                            .versionName
-                            .orEmpty(),
-                    entries = records,
-                    links = links,
-                    resources = resources,
-                )
-            return BackupBundle(
-                document = document,
-                resourceData = resourceData,
-            ).also { bundle ->
-                BackupBundleValidator.validate(bundle, requireResourceData = resources.isNotEmpty())
-            }
+            return BackupSnapshotArchiveMapper.toBundle(
+                snapshot = snapshot,
+                appVersion = {
+                    context.packageManager
+                        .getPackageInfo(context.packageName, 0)
+                        .versionName
+                        .orEmpty()
+                },
+                exportedAt = System.currentTimeMillis(),
+            )
         }
 
         override suspend fun restore(bundle: BackupBundle, mode: ImportMode): BackupRestoreResult {
@@ -152,26 +110,4 @@ internal class RoomBackupSnapshotGateway
                 )
             return BackupRestoreResult(result.importedEntryCount, result.existingEntryCount)
         }
-    }
-
-private fun VaultBackupResource.toArchiveRecord() =
-    BackupResourceRecord(
-        id = toArchiveRecordId(),
-        entryId = entryId.value,
-        kind =
-            when (kind) {
-                VaultBackupResourceKind.ICON -> BackupResourceKind.ICON
-                VaultBackupResourceKind.ATTACHMENT -> BackupResourceKind.ATTACHMENT
-            },
-        fileName = fileName,
-        mimeType = mimeType,
-        size = content.size.toLong(),
-        sha256 = BackupBundleValidator.sha256Hex(content),
-        createdAt = createdAt,
-    )
-
-private fun VaultBackupResource.toArchiveRecordId(): String =
-    when (kind) {
-        VaultBackupResourceKind.ICON -> "icon_${entryId.value}"
-        VaultBackupResourceKind.ATTACHMENT -> id
     }

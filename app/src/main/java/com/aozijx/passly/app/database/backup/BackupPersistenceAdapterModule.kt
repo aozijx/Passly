@@ -12,5 +12,5 @@ import javax.inject.Singleton
 internal abstract class BackupPersistenceAdapterModule {
     @Binds
     @Singleton
-    abstract fun bindBackupSnapshotGateway(implementation: RoomBackupSnapshotGateway): BackupSnapshotGateway
+    abstract fun bindBackupSnapshotGateway(implementation: AppBackupSnapshotGateway): BackupSnapshotGateway
 }

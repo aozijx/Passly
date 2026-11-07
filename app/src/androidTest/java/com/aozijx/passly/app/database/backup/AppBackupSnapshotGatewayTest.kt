@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class RoomBackupSnapshotGatewayTest {
+class AppBackupSnapshotGatewayTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
@@ -60,7 +60,7 @@ class RoomBackupSnapshotGatewayTest {
                         ),
                 )
             val store = RecordingVaultBackupStore(snapshot)
-            val gateway = RoomBackupSnapshotGateway(store, context)
+            val gateway = AppBackupSnapshotGateway(store, context)
 
             val bundle =
                 gateway.read(

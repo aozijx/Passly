@@ -55,98 +55,109 @@ internal class RoomVaultBackupStore
         private val attachmentGarbageCollector: AttachmentResourceGarbageCollector,
         private val logger: Logger,
     ) : VaultBackupStore {
-        override suspend fun read(options: VaultBackupReadOptions): VaultBackupSnapshot =
-            databaseSession.queryFullVault(
-                onDenied = { throw SessionModeRestricted() },
-            ) {
-                val selectedEntities =
-                    entryQueryDao()
-                        .getAll()
-                        .asSequence()
-                        .filter { options.includeDeleted || it.deletedAt == null }
-                        .filter { it.entryType in options.includedEntryTypes }
-                        .toList()
-                val entries =
-                    selectedEntities.map { entity ->
-                        EntryAssembler.assembleFromDatabase(
-                            entity,
-                            EntryProfileMapper.fromEntity(entity),
-                            secretFieldStore.readAll(this, entity.entryId, entity.entryType),
-                        )
-                    }
-                val entryIds = entries.mapTo(hashSetOf()) { it.id.value }
-                val resources = mutableListOf<VaultBackupResource>()
-
-                if (options.includeIcons) {
-                    val iconRoot = VaultResourcePaths.vaultImagesDir(context).canonicalFile
-                    entries.forEach { entry ->
-                        entry.icon.customReference?.let { iconPath ->
-                            readIcon(
-                                entryId = entry.id,
-                                path = iconPath,
-                                root = iconRoot,
-                                maxBytes = options.maxResourceBytes,
-                            )?.let(resources::add)
-                        }
-                    }
-                }
-
-                if (options.includeAttachments && entryIds.isNotEmpty()) {
-                    attachmentRefQueryDao().getByEntryIds(entryIds.toList()).forEach { reference ->
-                        val resource =
-                            requireNotNull(attachmentResourceDao().getById(reference.resourceId)) {
-                                "附件资源缺失: ${reference.attachmentId}"
+        override suspend fun read(options: VaultBackupReadOptions): VaultBackupSnapshot {
+            val resourceAccumulator = VaultBackupResourceAccumulator(options)
+            return try {
+                val (entries, links) =
+                    databaseSession.queryFullVault(
+                        onDenied = { throw SessionModeRestricted() },
+                    ) {
+                        val selectedEntities =
+                            entryQueryDao()
+                                .getAll()
+                                .asSequence()
+                                .filter { options.includeDeleted || it.deletedAt == null }
+                                .filter { it.entryType in options.includedEntryTypes }
+                                .toList()
+                        val entries =
+                            selectedEntities.map { entity ->
+                                EntryAssembler.assembleFromDatabase(
+                                    entity,
+                                    EntryProfileMapper.fromEntity(entity),
+                                    secretFieldStore.readAll(this, entity.entryId, entity.entryType),
+                                )
                             }
-                        val encryptedFile = attachmentGarbageCollector.resourceFile(resource.resourceId)
-                        require(encryptedFile.isFile) { "附件文件缺失: ${reference.attachmentId}" }
-                        require(encryptedFile.length() <= options.maxResourceBytes * 2L) {
-                            "附件密文过大: ${reference.attachmentId}"
-                        }
-                        val encrypted = encryptedFile.readBytes()
-                        val content =
-                            try {
-                                attachmentContentProtector.decrypt(encrypted, resource.resourceId)
-                            } finally {
-                                encrypted.fill(0)
-                            }
-                        if (content.size.toLong() > options.maxResourceBytes) {
-                            content.fill(0)
-                            throw IllegalArgumentException("附件过大: ${reference.attachmentId}")
-                        }
-                        if (!attachmentContentProtector.verifyContentId(content, resource.resourceId)) {
-                            content.fill(0)
-                            throw IllegalArgumentException("附件校验失败: ${reference.attachmentId}")
-                        }
-                        resources +=
-                            VaultBackupResource(
-                                id = reference.attachmentId,
-                                entryId = EntryId(requireNotNull(reference.entryId)),
-                                kind = VaultBackupResourceKind.ATTACHMENT,
-                                fileName = reference.fileName,
-                                mimeType = reference.mimeType,
-                                createdAt = reference.createdAt,
-                                content = content,
-                            )
-                    }
-                }
+                        val entryIds = entries.mapTo(hashSetOf()) { it.id.value }
 
-                val links =
-                    entryLinkQueryDao()
-                        .getAll()
-                        .asSequence()
-                        .filter { it.sourceEntryId in entryIds && it.targetEntryId in entryIds }
-                        .map { link ->
-                            EntryLink.create(
-                                id = EntryLinkId(link.linkId),
-                                sourceEntryId = EntryId(link.sourceEntryId),
-                                targetEntryId = EntryId(link.targetEntryId),
-                                relationType = link.relationType,
-                                createdAt = link.createdAt,
-                                updatedAt = link.updatedAt,
-                            )
-                        }.toList()
-                VaultBackupSnapshot(entries = entries, links = links, resources = resources)
+                        if (options.includeIcons) {
+                            val iconRoot = VaultResourcePaths.vaultImagesDir(context).canonicalFile
+                            entries.forEach { entry ->
+                                entry.icon.customReference?.let { iconPath ->
+                                    readIcon(
+                                        entryId = entry.id,
+                                        path = iconPath,
+                                        root = iconRoot,
+                                        maxBytes = options.maxResourceBytes,
+                                    )?.let(resourceAccumulator::add)
+                                }
+                            }
+                        }
+
+                        if (options.includeAttachments && entryIds.isNotEmpty()) {
+                            attachmentRefQueryDao().getByEntryIds(entryIds.toList()).forEach { reference ->
+                                val resource =
+                                    requireNotNull(attachmentResourceDao().getById(reference.resourceId)) {
+                                        "附件资源缺失: ${reference.attachmentId}"
+                                    }
+                                val encryptedFile = attachmentGarbageCollector.resourceFile(resource.resourceId)
+                                require(encryptedFile.isFile) { "附件文件缺失: ${reference.attachmentId}" }
+                                require(encryptedFile.length() <= options.maxResourceBytes * 2L) {
+                                    "附件密文过大: ${reference.attachmentId}"
+                                }
+                                val encrypted = encryptedFile.readBytes()
+                                val content =
+                                    try {
+                                        attachmentContentProtector.decrypt(encrypted, resource.resourceId)
+                                    } finally {
+                                        encrypted.fill(0)
+                                    }
+                                try {
+                                    if (content.size.toLong() > options.maxResourceBytes) {
+                                        throw IllegalArgumentException("附件过大: ${reference.attachmentId}")
+                                    }
+                                    if (!attachmentContentProtector.verifyContentId(content, resource.resourceId)) {
+                                        throw IllegalArgumentException("附件校验失败: ${reference.attachmentId}")
+                                    }
+                                    resourceAccumulator.add(
+                                        VaultBackupResource(
+                                            id = reference.attachmentId,
+                                            entryId = EntryId(requireNotNull(reference.entryId)),
+                                            kind = VaultBackupResourceKind.ATTACHMENT,
+                                            fileName = reference.fileName,
+                                            mimeType = reference.mimeType,
+                                            createdAt = reference.createdAt,
+                                            content = content,
+                                        ),
+                                    )
+                                } catch (failure: Throwable) {
+                                    content.fill(0)
+                                    throw failure
+                                }
+                            }
+                        }
+
+                        val links =
+                            entryLinkQueryDao()
+                                .getAll()
+                                .asSequence()
+                                .filter { it.sourceEntryId in entryIds && it.targetEntryId in entryIds }
+                                .map { link ->
+                                    EntryLink.create(
+                                        id = EntryLinkId(link.linkId),
+                                        sourceEntryId = EntryId(link.sourceEntryId),
+                                        targetEntryId = EntryId(link.targetEntryId),
+                                        relationType = link.relationType,
+                                        createdAt = link.createdAt,
+                                        updatedAt = link.updatedAt,
+                                    )
+                                }.toList()
+                        entries to links
+                    }
+                resourceAccumulator.toSnapshot(entries, links)
+            } catch (failure: Throwable) {
+                resourceAccumulator.fail(failure)
             }
+        }
 
         override suspend fun restore(
             snapshot: VaultBackupSnapshot,
@@ -278,7 +289,9 @@ internal class RoomVaultBackupStore
                     } catch (error: Error) {
                         throw error
                     } catch (error: Exception) {
-                        logger.log(LogStatements.Backup.resourceCleanupFailed(error))
+                        reportBestEffortBackupCleanupFailure {
+                            logger.log(LogStatements.Backup.resourceCleanupFailed(error))
+                        }
                     }
                     if (mode == VaultBackupRestoreMode.OVERWRITE) {
                         try {
@@ -288,7 +301,9 @@ internal class RoomVaultBackupStore
                         } catch (error: Error) {
                             throw error
                         } catch (error: Exception) {
-                            logger.log(LogStatements.Backup.resourceCleanupFailed(error))
+                            reportBestEffortBackupCleanupFailure {
+                                logger.log(LogStatements.Backup.resourceCleanupFailed(error))
+                            }
                         }
                     }
                     VaultBackupRestoreResult(importedEntryCount, existingEntryCount)
@@ -310,15 +325,21 @@ internal class RoomVaultBackupStore
                 "图标不是 WebP 格式: ${entryId.value}"
             }
             require(iconFile.length() <= maxBytes) { "图标文件过大: ${entryId.value}" }
-            return VaultBackupResource(
-                id = entryId.value,
-                entryId = entryId,
-                kind = VaultBackupResourceKind.ICON,
-                fileName = iconFile.name,
-                mimeType = WEBP_MIME_TYPE,
-                createdAt = null,
-                content = iconFile.readBytes(),
-            )
+            val content = iconFile.readBytes()
+            return try {
+                VaultBackupResource(
+                    id = entryId.value,
+                    entryId = entryId,
+                    kind = VaultBackupResourceKind.ICON,
+                    fileName = iconFile.name,
+                    mimeType = WEBP_MIME_TYPE,
+                    createdAt = null,
+                    content = content,
+                )
+            } catch (failure: Throwable) {
+                content.fill(0)
+                throw failure
+            }
         }
 
         private suspend fun restoreAttachment(
@@ -396,11 +417,13 @@ internal class RoomVaultBackupStore
                         if (candidate == root) return@candidateLoop
                         if (candidate.isFile && candidate.canonicalPath !in retainedCanonicalPaths) {
                             if (!candidate.delete()) {
-                                logger.log(
-                                    LogStatements.Backup.resourceCleanupFailed(
-                                        IOException("Vault resource deletion failed"),
-                                    ),
-                                )
+                                reportBestEffortBackupCleanupFailure {
+                                    logger.log(
+                                        LogStatements.Backup.resourceCleanupFailed(
+                                            IOException("Vault resource deletion failed"),
+                                        ),
+                                    )
+                                }
                             }
                         } else if (candidate.isDirectory) {
                             candidate.delete()
@@ -415,25 +438,5 @@ private fun sha256Hex(value: String): String =
         .getInstance("SHA-256")
         .digest(value.toByteArray())
         .joinToString("") { byte -> "%02x".format(byte) }
-
-private fun preferRestoreFailure(
-    first: Throwable,
-    second: Throwable,
-): Throwable {
-    if (first === second) return first
-    if (second.restoreFailurePriority() > first.restoreFailurePriority()) {
-        second.addSuppressed(first)
-        return second
-    }
-    first.addSuppressed(second)
-    return first
-}
-
-private fun Throwable.restoreFailurePriority(): Int =
-    when (this) {
-        is Error -> 2
-        is CancellationException -> 1
-        else -> 0
-    }
 
 private const val MAX_ICON_BYTES = 16L * 1024L * 1024L
