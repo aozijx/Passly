@@ -61,7 +61,7 @@
 
 - [x] Add tests for mixed ACCOUNT and RELATED_TO resolution, batch invocation and stable order; Room query implementation handles empty input and missing rows without opening extra sessions.
 - [x] The existing related-ID focused test passed during implementation.
-- [ ] Run the new mixed session test after App test compilation is unblocked; this checkout currently fails first in unrelated dirty Settings permission resources.
+- [x] Run the mixed session test in the detached verification worktree at `a1e20e5f6`; it passed as part of the full App suite (1035 tests, 0 failures).
 - [x] Load related entries through one batch query; merge ACCOUNT group members and direct RELATED_TO neighbors in stable order without duplicates.
 - [x] Run Data unit tests, production App compilation, `verifyArchitecture`, and `git diff --check`.
 - [x] Commit `refactor(vault): batch related entry loading` (`d73fba54b`).
@@ -78,5 +78,5 @@
 - [ ] Test page-owner replacement, session revocation, picker dismissal, bind success/failure/cancellation, duplicate prevention, and source/target changes while work is suspended.
 - [x] Add a searchable lazy candidate sheet that shows title/username summaries, never credential fields, with localized labels and explicit bind affordance.
 - [x] On success, refresh only the current Detail relationship projection; ordinary failures are logged and shown without closing the retry path.
-- [ ] Run the focused Detail UI/ViewModel tests, full `:app:testDebugUnitTest`, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`.
+- [x] Run the focused Detail tests through the full `:app:testDebugUnitTest` suite, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`; App passed 1035 tests and Data passed 168 tests, with no failures.
 - [x] Commit `feat(vault): bind saved passwords from detail`.
