@@ -499,10 +499,6 @@ class DetailViewModelTest {
                                     }
                                     emit(emptyList())
                                 }
-
-                            override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
-
-                            override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
                         },
                 )
             val model = fixture.viewModel
@@ -570,10 +566,6 @@ class DetailViewModelTest {
                         object : ActivityQueryRepository {
                             override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
                                 flow { throw SessionLockedException() }
-
-                            override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
-
-                            override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
                         },
                 )
             val model = fixture.viewModel
@@ -606,10 +598,6 @@ class DetailViewModelTest {
                                     }
                                     emit(emptyList())
                                 }
-
-                            override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
-
-                            override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
                         },
                 )
             val model = fixture.viewModel
@@ -1413,10 +1401,6 @@ class DetailViewModelTest {
 
     private object EmptyActivityQueryRepository : ActivityQueryRepository {
         override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> = flowOf(emptyList())
-
-        override fun observeAll(): Flow<List<EntryActivity>> = flowOf(emptyList())
-
-        override fun observeByType(activityType: ActivityType): Flow<List<EntryActivity>> = flowOf(emptyList())
     }
 
     private object NoOpActivityRecorder : ActivityRecorder {
