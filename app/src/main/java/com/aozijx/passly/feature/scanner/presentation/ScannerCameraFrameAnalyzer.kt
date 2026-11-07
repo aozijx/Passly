@@ -12,7 +12,6 @@ import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 
-@OptIn(ExperimentalGetImage::class)
 internal fun createScannerImageAnalysis(
     executor: Executor,
     scanner: BarcodeScanner,
@@ -39,6 +38,7 @@ internal fun createScannerImageAnalysis(
             }
         }
 
+@OptIn(ExperimentalGetImage::class)
 private fun analyzeScannerFrame(
     imageProxy: ImageProxy,
     scanner: BarcodeScanner,

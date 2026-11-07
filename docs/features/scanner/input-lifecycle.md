@@ -1,14 +1,14 @@
 # 扫描输入与生命周期
 
-状态：已实现（2026-11-06）。
+状态：相机/图片主链路已实现；输入恢复与关闭竞态仍待修正和验证。
 
-相机帧和相册图片都产生原始扫码文本，但输入资源及取消合同不同。`ScannerCameraHost` 持有 CameraX/ML Kit 与 `ImageProxy`；`ScannerViewModel` 持有扫描任务 owner、原始结果状态、剪贴板写入和语义 effect；`ScannerRoute` 持有相册选择、生命周期 effect 与原始字符串回调。扫码层不解析内容类型，调用方在自己的业务入口转换。
+相机帧和相册图片都产生原始扫码文本，但输入资源及取消合同不同。`ScannerCameraHost` 持有 CameraX/ML Kit 与 `ImageProxy`；`ScannerViewModel` 持有扫描任务 owner、原始结果状态、剪贴板写入和语义 effect；`ScannerRoute` 持有相册选择、生命周期 effect 与 owner 提供的结果计划。扫码层不解析内容类型，调用方在自己的业务入口转换。
 
 ## 相机输入
 
 相机授权由 `ScannerCameraHost` 请求；它只管理权限、Compose 生命周期和共享资源。`bindScannerCamera()` 创建 Preview 与 ImageAnalysis，`ScannerCameraSession.bind()` 等待 `previewView.viewPort`、布局尺寸和未销毁状态就绪后，再将 use case 放入同一 `UseCaseGroup`。`createScannerImageAnalysis()` 专管帧处理：用当前 `ImageProxy.cropRect`、旋转角度、预览尺寸和共享取景框创建 `ScannerRecognitionRegion`；坐标暂不可用时关闭并跳过该帧，不启动 ML Kit。有效时才构造 `InputImage`；回调先筛选有 `rawValue` 且实际 `cornerPoints` 四角都位于区域内的候选，无 corner points 时才检查 `boundingBox` 四角。`addOnCompleteListener` 关闭当前 `ImageProxy`。退出 effect 时设置原子 `disposed` 标志并由 Session 停止相机；组件释放时也关闭 executor 和 ML Kit scanner。
 
-`ScannerRoute` 从 `BoxWithConstraints` 读取可用尺寸，`ScannerViewfinderFrame.fitContainer()` 统一计算视框尺寸并一次性将 dp 几何转换为像素矩形；纯 `ScannerScreen` 只接收 `ScannerScreenModel`、这份几何和用户动作回调，`ScannerViewfinder` 绘制它，Route 同时把同一份几何交给 `ScannerCameraHost`。`ScannerScreenAction` 只表示屏幕上的用户操作；相机权限、识别结果和相机错误由 Host 回调直接进入 Route/ViewModel，不混入 UI 事件类型。`ScannerRecognitionRegion.create()` 每帧只构建一次 crop/rotation 矩阵并反向映射视框；候选的实际四角必须全部落在映射后的区域内，防止只因中心进入框内就接收实际越界的码。
+`ScannerRoute` 从 `BoxWithConstraints` 读取可用尺寸，`ScannerViewfinderFrame.fitContainer()` 统一计算视框尺寸并一次性将 dp 几何转换为像素矩形；纯 `ScannerScreen` 只接收 `ScannerScreenModel`、这份几何和用户动作回调，`ScannerViewfinder` 绘制它，Route 同时把同一份几何交给 `ScannerCameraHost`。`ScannerScreenAction` 只表示屏幕上的用户操作；相机权限、识别结果和相机错误由 Host 回调直接进入 Route/ViewModel，不混入 UI 事件类型。`ScannerResultSession` 由 Route 生命周期持有，不随扫码 UI 状态重建；确认或关闭期间锁住结果操作，退出动画中的相册按钮保持禁用，避免页面退出时误触失效动作。`ScannerRecognitionRegion.create()` 每帧只构建一次 crop/rotation 矩阵并反向映射视框；候选的实际四角必须全部落在映射后的区域内，防止只因中心进入框内就接收实际越界的码。
 
 只有区域有效且条码四角完整位于取景区域内的候选才会触发扫描完成；没有 `rawValue` 的候选会在映射之前排除，避免挡住后续有效候选。
 
@@ -26,7 +26,9 @@
 
 ## 生命周期与敏感状态
 
-`collectScannerRouteEffects()` 在宿主 `STARTED` 时派发 `HostStarted` 并消费 effect，离开该状态派发 `HostStopped`。`ScannerViewModel.pauseForHost()` 轮换 owner：显示结果可保留，纯扫描和图片处理中状态转 `Stopped`；恢复后重新开始扫描。`StopScanning` 和 `onCleared()` 清除结果并取消 owner。复制文本同样在当前 owner scope 中运行，传给 `SensitiveClipboardWriter.writeSensitiveIf(text) { work === owner }` 的资格闭包会在平台写入前再次核对 owner。
+`collectScannerRouteEffects()` 在宿主 `STARTED` 时派发 `HostStarted` 并消费 effect，离开该状态派发 `HostStopped`。`ScannerViewModel.pauseForHost()` 轮换 owner：显示结果可保留，纯扫描和图片处理中状态转 `Stopped` 并记录为 `Work.HostPaused`；宿主恢复后重新开始扫描。若相册结果在宿主仍暂停时到达，`DecodeImage` 可以从 `Work.HostPaused` 接管为新 owner。显式 `StopScanning` 则记录为 `Work.Stopped`，迟到的照片结果和 `HostStarted` 都不能重建 owner；`onCleared()` 设为 `Work.Destroyed`，拒绝所有后续输入。
+
+`ScannerViewModelTest` 分别覆盖显式停止、销毁后的迟到输入拒绝，以及宿主暂停期间 picker 结果接管 owner；HostStarted 只恢复 `Work.HostPaused`。这些回归断言和实现已更新，但本轮尚未运行测试。复制文本同样在当前 owner scope 中运行，传给 `SensitiveClipboardWriter.writeSensitiveIf(text) { work === owner }` 的资格闭包会在平台写入前再次核对 owner。
 
 一次性复制、图片提示和震动由 Route 消费；用户可见提示只传 effect 类型，异常文本不进入 Toast。相册选择返回后生命周期 collector 先恢复扫描，随后图片回调派发解码 action。CameraHost 内的原始回调不直接写库或持久化扫描内容。
 
