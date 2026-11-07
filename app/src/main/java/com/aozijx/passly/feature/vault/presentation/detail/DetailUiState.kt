@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 
 data class DetailUiState(
     val snapshotState: DetailSnapshotState = DetailSnapshotState.Loading,
@@ -19,6 +20,7 @@ data class DetailUiState(
     val history: List<EntryActivity> = emptyList(),
     val activityHistory: DetailActivityHistoryState = DetailActivityHistoryState.Loading,
     val relatedEntries: List<Entry> = emptyList(),
+    val passwordBinding: RelatedPasswordBindingUiState = RelatedPasswordBindingUiState.Closed,
     val associatedApps: List<DetailInstalledApp> = emptyList(),
     val packagePickerApps: List<DetailInstalledApp> = emptyList(),
     val packagePickerAppsLoaded: Boolean = false,

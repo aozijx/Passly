@@ -39,6 +39,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.Metadata
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.NotesSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.PasskeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedEntriesSection
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedPasswordPickerSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
@@ -198,10 +199,12 @@ fun DetailBody(
                     }
                 }
             }
-            if (model.relatedEntries.isNotEmpty()) {
+            if (model.relatedEntries.isNotEmpty() || model.canBindPasswords) {
                 item {
                     RelatedEntriesSection(
                         entries = model.relatedEntries,
+                        canBindPasswords = model.canBindPasswords,
+                        onAction = onAction,
                         onOpenEntry = onOpenRelatedEntry,
                     )
                 }
@@ -267,4 +270,9 @@ fun DetailBody(
             onDismiss = { showPackagePicker = false },
         )
     }
+
+    RelatedPasswordPickerSheet(
+        state = model.passwordBinding,
+        onAction = onAction,
+    )
 }

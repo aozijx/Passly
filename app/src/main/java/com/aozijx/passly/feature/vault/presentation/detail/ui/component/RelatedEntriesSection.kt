@@ -10,6 +10,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,14 +18,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 fun RelatedEntriesSection(
     entries: List<RelatedEntryUiModel>,
+    canBindPasswords: Boolean,
+    onAction: (DetailUiAction) -> Unit,
     onOpenEntry: (String) -> Unit,
 ) {
-    if (entries.isEmpty()) return
+    if (entries.isEmpty() && !canBindPasswords) return
     InfoGroupCard(title = stringResource(R.string.related_entries)) {
         Column(modifier = Modifier.fillMaxWidth()) {
             entries.forEachIndexed { index, entry ->
@@ -45,6 +49,14 @@ fun RelatedEntriesSection(
                     content = { Text(entry.title) },
                 )
                 if (index < entries.lastIndex) HorizontalDivider()
+            }
+            if (canBindPasswords) {
+                OutlinedButton(
+                    onClick = { onAction(DetailUiAction.OpenPasswordBinding) },
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                ) {
+                    Text(stringResource(R.string.vault_detail_bind_password))
+                }
             }
         }
     }

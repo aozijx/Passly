@@ -175,6 +175,16 @@ sealed interface DetailUiAction {
     data object ConfirmRevisionRestore : DetailRevisionAction
 
     data object RetryActivityHistory : DetailEntryAction
+
+    data object OpenPasswordBinding : DetailEntryAction
+
+    data object RetryPasswordBinding : DetailEntryAction
+
+    data object DismissPasswordBinding : DetailEntryAction
+
+    data class BindPassword(
+        val targetEntryId: String,
+    ) : DetailEntryAction
 }
 
 sealed interface DetailEntryAction : DetailUiAction

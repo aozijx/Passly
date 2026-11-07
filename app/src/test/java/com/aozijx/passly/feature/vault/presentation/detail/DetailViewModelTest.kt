@@ -42,6 +42,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -54,6 +55,8 @@ import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
@@ -64,6 +67,7 @@ import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordBinding
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -77,6 +81,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisio
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.runtime.session.SessionStateProvider
@@ -89,6 +94,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -107,6 +113,37 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
+    @Test
+    fun `saved login can bind another saved login from its detail page`() =
+        runTest {
+            val links = MutableEntryLinks()
+            val fixture = Fixture(
+                entryLinkRepository = links,
+                passwordItems = listOf(
+                    passwordItem(ENTRY_ID, "Current title"),
+                    passwordItem(OTHER_ENTRY_ID, "Other title"),
+                ),
+            )
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                fixture.viewModel.onAction(DetailUiAction.OpenPasswordBinding)
+                runCurrent()
+
+                val picker = fixture.viewModel.uiState.value.passwordBinding as RelatedPasswordBindingUiState.Ready
+                assertEquals(listOf(OTHER_ENTRY_ID.value), picker.candidates.map { it.id })
+                fixture.viewModel.onAction(DetailUiAction.BindPassword(OTHER_ENTRY_ID.value))
+                runCurrent()
+
+                assertEquals(EntryRelationType.RELATED_TO, links.saved.single().relationType)
+                assertEquals(listOf(OTHER_ENTRY_ID), fixture.viewModel.uiState.value.relatedEntries.map { it.id })
+                assertEquals(RelatedPasswordBindingUiState.Closed, fixture.viewModel.uiState.value.passwordBinding)
+            } finally {
+                store.clear()
+            }
+        }
+
     @Test
     fun `edit preparation failure is reported and can be retried`() =
         runTest {
@@ -1122,6 +1159,7 @@ class DetailViewModelTest {
         entryQueryRepository: (MutableEntries) -> EntryQueryRepository = { it },
         sensitiveFieldRepository: SensitiveFieldRepository = EmptySensitiveFieldRepository(),
         entryLinkRepository: EntryLinkRepository = EmptyEntryLinkRepository,
+        passwordItems: List<EntryListItem> = emptyList(),
         initialEntry: Entry = currentEntry(),
         otpConfigRepository: OtpConfigRepository = NoOtpConfigRepository,
         revisionSnapshot: RedactedEntryRevision = restoredSnapshot(),
@@ -1169,6 +1207,7 @@ class DetailViewModelTest {
                 compareEntryRevision = CompareEntryRevisionUseCase(revisions),
                 revealRevisionFields = RevealRevisionFieldsUseCase(revisions, authGate),
                 restoreEntryRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
+                relatedPasswordBinding = RelatedPasswordBinding(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
                 otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),
             )
     }
@@ -1233,6 +1272,33 @@ class DetailViewModelTest {
                     secret = snapshot.secret,
                 )
         }
+    }
+
+    private class TestPasswordListQueryRepository(
+        private val items: List<EntryListItem>,
+    ) : EntryListQueryRepository {
+        override val availableCategories: Flow<List<String>> = emptyFlow()
+        override val deletedEntries: Flow<List<EntryListItem>> = emptyFlow()
+
+        override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> = items.filter { it.entryType == entryType }
+    }
+
+    private class MutableEntryLinks : EntryLinkRepository {
+        val saved = mutableListOf<EntryLink>()
+
+        override fun observeAll(): Flow<List<EntryLink>> = flowOf(saved)
+        override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = flowOf(saved.filter {
+            it.sourceEntryId == entryId || it.targetEntryId == entryId
+        })
+        override suspend fun getAll(): List<EntryLink> = saved.toList()
+        override suspend fun getLinks(entryId: EntryId): List<EntryLink> = saved.filter {
+            it.sourceEntryId == entryId || it.targetEntryId == entryId
+        }
+        override suspend fun upsert(link: EntryLink): AppResult<Unit> {
+            saved += link
+            return AppResult.Success(Unit)
+        }
+        override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> = AppResult.Success(Unit)
     }
 
     private class BlockingRevisionRepository(
@@ -1468,6 +1534,11 @@ class DetailViewModelTest {
             identity = EntryIdentity(id, EntryType.LOGIN, EntryVersion(2), EntryTimestamps(1L)),
             profile = EntryProfile(title),
             secret = EntrySecret(LoginCredential()),
+        )
+
+        fun passwordItem(id: EntryId, title: String) = EntryListItem(
+            identity = EntryIdentity(id, EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
+            profile = EntryProfile(title),
         )
 
         fun otpEntry() =

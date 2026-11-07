@@ -65,7 +65,7 @@ internal class RelatedPasswordBinding
                 if (alreadyRelated) return@withLoggedFailure AppResult.Success(Unit)
 
                 val now = System.currentTimeMillis()
-                entryLinkRepository.upsert(
+                val result = entryLinkRepository.upsert(
                     EntryLink.create(
                         id = EntryLinkId(UUID.randomUUID().toString()),
                         sourceEntryId = sourceEntryId,
@@ -74,6 +74,8 @@ internal class RelatedPasswordBinding
                         createdAt = now,
                     ),
                 )
+                if (result is AppResult.Failure) logFailure(result.error)
+                result
             }
 
         private suspend fun activePasswords(): List<EntryListItem> =
@@ -87,12 +89,16 @@ internal class RelatedPasswordBinding
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                logger.error(
-                    Events.Vault.Error,
-                    ErrorCodes.Security.VaultOperationFailed,
-                    Reasons.UnknownFailure,
-                    failure,
-                )
+                logFailure(failure)
                 throw failure
             }
+
+        private fun logFailure(failure: Throwable) {
+            logger.error(
+                Events.Vault.Error,
+                ErrorCodes.Security.VaultOperationFailed,
+                Reasons.UnknownFailure,
+                failure,
+            )
+        }
     }

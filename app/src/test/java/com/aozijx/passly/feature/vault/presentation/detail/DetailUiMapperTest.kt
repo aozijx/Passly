@@ -105,6 +105,25 @@ class DetailUiMapperTest {
     }
 
     @Test
+    fun `only active saved login entries expose password binding`() {
+        val login =
+            noteEntry().copy(
+                identity = noteEntry().identity.copy(type = EntryType.LOGIN),
+                secret = EntrySecret(credential = LoginCredential()),
+            )
+        val deletedLogin =
+            login.copy(
+                identity = login.identity.copy(
+                    timestamps = login.timestamps.copy(deletedAtMs = 5L),
+                ),
+            )
+
+        assertTrue(requireNotNull(toDetailPresentationModel(DetailUiState(entry = login), null)).content.canBindPasswords)
+        assertFalse(requireNotNull(toDetailPresentationModel(DetailUiState(entry = noteEntry()), null)).content.canBindPasswords)
+        assertFalse(requireNotNull(toDetailPresentationModel(DetailUiState(entry = deletedLogin), null)).content.canBindPasswords)
+    }
+
+    @Test
     fun snapshotRefreshStateReachesDetailContent() {
         val state =
             DetailUiState(

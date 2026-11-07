@@ -26,6 +26,8 @@ data class DetailBodyUiModel(
     val seedPhrase: DetailSeedPhraseUiModel?,
     val passkey: DetailPasskeyUiModel?,
     val relatedEntries: List<RelatedEntryUiModel>,
+    val canBindPasswords: Boolean,
+    val passwordBinding: RelatedPasswordBindingUiState,
     val tags: Set<String>,
     val associations: DetailAssociatedInfoUiModel,
     val associatedApps: List<AppPackagePickerItemUiModel>,
@@ -36,6 +38,26 @@ data class DetailBodyUiModel(
     val activities: List<DetailActivityUiModel>,
     val activityHistory: DetailActivityHistoryState,
     val snapshotState: DetailSnapshotState,
+)
+
+sealed interface RelatedPasswordBindingUiState {
+    data object Closed : RelatedPasswordBindingUiState
+
+    data object Loading : RelatedPasswordBindingUiState
+
+    data object LoadFailed : RelatedPasswordBindingUiState
+
+    data class Ready(
+        val candidates: List<RelatedPasswordCandidateUiModel>,
+        val savingEntryId: String? = null,
+        val bindFailed: Boolean = false,
+    ) : RelatedPasswordBindingUiState
+}
+
+data class RelatedPasswordCandidateUiModel(
+    val id: String,
+    val title: String,
+    val username: String,
 )
 
 data class DetailSeedPhraseUiModel(

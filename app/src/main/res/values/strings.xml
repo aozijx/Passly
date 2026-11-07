@@ -187,6 +187,14 @@
   <string name="notice_database_operation_failed">数据库操作失败</string>
   <!-- 身份认证与关联信息 -->
   <string name="related_entries">关联条目</string>
+  <string name="vault_detail_bind_password">绑定密码</string>
+  <string name="vault_detail_bind_password_title">选择要关联的密码</string>
+  <string name="vault_detail_bind_password_search">搜索标题或用户名</string>
+  <string name="vault_detail_bind_password_empty">没有可绑定的已保存密码</string>
+  <string name="vault_detail_bind_password_no_matches">没有匹配的密码</string>
+  <string name="vault_detail_bind_password_action">绑定</string>
+  <string name="vault_detail_bind_password_load_failed">密码列表加载失败，请重试。</string>
+  <string name="vault_detail_bind_password_failed">绑定失败，请重试。</string>
   <string name="app_package_picker_title">选择关联应用</string>
   <string name="app_package_picker_search">搜索应用或包名</string>
   <string name="app_package_picker_load_failed">应用列表暂时无法加载，请重试。</string>

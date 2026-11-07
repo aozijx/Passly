@@ -1,11 +1,13 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 
 internal sealed interface DetailTagEditorMutation : DetailMutation
 
@@ -83,6 +85,15 @@ internal sealed interface DetailMutation {
 
     data class PackagePickerAppsFailed(
         val entryId: EntryId,
+    ) : DetailMutation
+
+    data class PasswordBindingStateChanged(
+        val state: RelatedPasswordBindingUiState,
+    ) : DetailMutation
+
+    data class RelatedEntriesChanged(
+        val entryId: EntryId,
+        val relatedEntries: List<Entry>,
     ) : DetailMutation
 
     data class SaveStarted(
@@ -181,6 +192,11 @@ internal object DetailReducer {
             is DetailMutation.AccessHistoryChanged -> {
                 state.copy(isAccessHistoryEnabled = mutation.enabled)
             }
+
+            is DetailMutation.PasswordBindingStateChanged -> state.copy(passwordBinding = mutation.state)
+
+            is DetailMutation.RelatedEntriesChanged ->
+                if (state.entry?.id == mutation.entryId) state.copy(relatedEntries = mutation.relatedEntries) else state
 
             is DetailMutation.SessionOpened -> {
                 mutation.snapshot.let { snapshot ->

@@ -27,6 +27,7 @@ import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordBinding
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -86,6 +87,7 @@ class DetailViewModel
         private val compareEntryRevision: CompareEntryRevisionUseCase,
         private val revealRevisionFields: RevealRevisionFieldsUseCase,
         private val restoreEntryRevision: RestoreEntryRevisionUseCase,
+        private val relatedPasswordBinding: RelatedPasswordBinding,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
     ) : ViewModel() {
         private sealed interface SnapshotRead {
@@ -129,6 +131,17 @@ class DetailViewModel
                 present = presentationLoader::present,
                 onMutation = ::mutate,
                 onReveal = ::setRevealedField,
+            )
+        private val passwordBindingWorkflow =
+            DetailPasswordBindingWorkflow(
+                scope = viewModelScope,
+                binding = relatedPasswordBinding,
+                access = secureSessionAccessState,
+                workSession = workSession,
+                currentEntry = { _uiState.value.entry },
+                currentBindingState = { _uiState.value.passwordBinding },
+                presentationLoader = presentationLoader,
+                publish = ::mutate,
             )
         val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
         private val _effects = Channel<DetailEffect>(Channel.BUFFERED)
@@ -588,8 +601,20 @@ class DetailViewModel
                 DetailUiAction.RetryActivityHistory -> {
                     retryActivityHistory()
                 }
+
+                DetailUiAction.OpenPasswordBinding,
+                DetailUiAction.RetryPasswordBinding,
+                -> openPasswordBinding()
+
+                DetailUiAction.DismissPasswordBinding -> {
+                    passwordBindingWorkflow.dismiss()
+                }
+
+                is DetailUiAction.BindPassword -> passwordBindingWorkflow.bind(EntryId(event.targetEntryId))
             }
         }
+
+        private fun openPasswordBinding() = passwordBindingWorkflow.open()
 
         private fun copyField(fieldKey: FieldKey) {
             val entry = _uiState.value.entry ?: return
@@ -661,6 +686,7 @@ class DetailViewModel
             snapshotRefreshJob?.cancel()
             historyJob?.cancel()
             packagePickerLoadJob?.cancel()
+            passwordBindingWorkflow.close()
             revisionObservationJob?.cancel()
             revisionOperationJob?.cancel()
             otpRuntime.clearAllSensitiveState()
@@ -849,6 +875,7 @@ class DetailViewModel
             snapshotRefreshJob?.cancel()
             historyJob?.cancel()
             packagePickerLoadJob?.cancel()
+            passwordBindingWorkflow.close()
             qrSession.close()
             revealStore.clear()
             revisionObservationJob?.cancel()

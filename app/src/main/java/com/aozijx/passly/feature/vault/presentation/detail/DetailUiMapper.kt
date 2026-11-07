@@ -25,6 +25,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresen
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
@@ -164,6 +165,8 @@ internal fun toDetailPresentationModel(
                         null
                     },
                 relatedEntries = shared.relatedEntries,
+                canBindPasswords = entry.type == EntryType.LOGIN && entry.deletedAt == null,
+                passwordBinding = state.passwordBinding,
                 tags = entry.tags,
                 associations =
                     DetailAssociatedInfoUiModel(
