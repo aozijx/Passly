@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -85,12 +86,37 @@ class DetailPasswordBindingWorkflowTest {
             assertEquals(RelatedPasswordBindingUiState.Closed, fixture.bindingState)
         }
 
+    @Test
+    fun replacingPageCancelsSuspendedBindBeforeItWritesTheRelation() =
+        runTest {
+            val candidates = CompletableDeferred(listOf(listItem("source"), listItem("target")))
+            val linkWriteGate = CompletableDeferred<Unit>()
+            val fixture = Fixture(backgroundScope, candidates, linkWriteGate)
+            fixture.workflow.open()
+            runCurrent()
+            fixture.workflow.bind(EntryId("target"))
+            runCurrent()
+            assertEquals(1, fixture.links.upsertAttempts)
+
+            fixture.currentEntry = entry("replacement")
+            fixture.workSession.open(fixture.currentEntry.id)
+            fixture.workflow.close()
+            linkWriteGate.complete(Unit)
+            advanceUntilIdle()
+
+            assertTrue(fixture.links.upserts.isEmpty())
+            assertEquals(0, fixture.relatedEntriesUpdates)
+        }
+
     private class Fixture(
         scope: kotlinx.coroutines.CoroutineScope,
         candidateGate: CompletableDeferred<List<EntryListItem>>,
+        linkWriteGate: CompletableDeferred<Unit>? = null,
     ) {
         val access = TestAccess()
         var currentEntry = entry("source")
+        val links = TestLinks(linkWriteGate)
+        var relatedEntriesUpdates = 0
         val workSession =
             DetailWorkSession(
                 hasAccess = { access.hasFullSecureSessionAccess() },
@@ -104,14 +130,18 @@ class DetailPasswordBindingWorkflowTest {
         val workflow =
             DetailPasswordBindingWorkflow(
                 scope = scope,
-                binding = RelatedPasswordBinding(TestEntries(candidateGate), TestLinks(), testLogger()),
+                binding = RelatedPasswordBinding(TestEntries(candidateGate), links, testLogger()),
                 access = access,
                 workSession = workSession,
                 currentEntry = { currentEntry },
                 currentBindingState = { bindingState },
                 presentationLoader = presentationLoader(),
                 publish = { mutation ->
-                    if (mutation is DetailMutation.PasswordBindingStateChanged) bindingState = mutation.state
+                    when (mutation) {
+                        is DetailMutation.PasswordBindingStateChanged -> bindingState = mutation.state
+                        is DetailMutation.RelatedEntriesChanged -> relatedEntriesUpdates++
+                        else -> Unit
+                    }
                 },
             )
 
@@ -135,7 +165,12 @@ class DetailPasswordBindingWorkflowTest {
         override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> = gate.await()
     }
 
-    private class TestLinks : EntryLinkRepository {
+    private class TestLinks(
+        private val writeGate: CompletableDeferred<Unit>? = null,
+    ) : EntryLinkRepository {
+        val upserts = mutableListOf<EntryLink>()
+        var upsertAttempts = 0
+
         override fun observeAll(): Flow<List<EntryLink>> = emptyFlow()
 
         override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = emptyFlow()
@@ -144,7 +179,12 @@ class DetailPasswordBindingWorkflowTest {
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> = emptyList()
 
-        override suspend fun upsert(link: EntryLink): AppResult<Unit> = AppResult.Success(Unit)
+        override suspend fun upsert(link: EntryLink): AppResult<Unit> {
+            upsertAttempts++
+            writeGate?.await()
+            upserts += link
+            return AppResult.Success(Unit)
+        }
 
         override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> = AppResult.Success(Unit)
     }

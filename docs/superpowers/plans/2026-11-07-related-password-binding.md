@@ -76,8 +76,10 @@
 
 - [x] Add a Detail action visible only for active saved LOGIN entries and picker states for loading, candidates, saving, empty, and retryable failure.
 - [x] Test candidate results after same-entry page replacement, session revocation, and picker dismissal; stale requests do not publish candidates.
-- [ ] Test bind success/failure/cancellation, duplicate prevention, and source/target changes while binding is suspended.
+- [x] Test binding write cancellation when replacing the Detail page; the in-flight link write is cancelled before persistence.
+- [x] `RelatedPasswordBindingTest` covers valid saved endpoints, rejects an unsaved endpoint, and makes an existing relation idempotent.
+- [ ] Test the workflow's bind-failure retry and success refresh states, in-flight duplicate taps, and endpoint deletion during the Room write transaction.
 - [x] Add a searchable lazy candidate sheet that shows title/username summaries, never credential fields, with localized labels and explicit bind affordance.
 - [x] On success, refresh only the current Detail relationship projection; ordinary failures are logged and shown without closing the retry path.
-- [x] Run the focused Detail tests through the full `:app:testDebugUnitTest` suite, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`; App passed 1036 tests and Data passed 168 tests, with no failures.
+- [x] Run the focused Detail tests through the full `:app:testDebugUnitTest` suite, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`; App passed 1037 tests and Data passed 168 tests, with no failures. Data was up-to-date in the latest run; its test report is from the preceding full execution.
 - [x] Commit `feat(vault): bind saved passwords from detail`.
