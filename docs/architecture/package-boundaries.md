@@ -7,21 +7,26 @@
 | `core`     | Android 平台适配、权限、共享 Compose UI、密码学与遥测能力          | DAO、Repository 实现、业务页面                |
 | `domain`   | 领域模型、端口、策略、验证及设置契约                    | `android.*`、资源 ID、Entity、Feature UI 状态 |
 | `data`     | Room、Proto DataStore、Mapper、Repository 实现 | Compose 页面、业务流程、备份协议与格式              |
-| `core.crypto` | 无状态密码学原语、算法实现、加密格式                    | 认证流程、持久化、Android Keystore          |
-| `security` | Android Keystore、认证方式、授权与安全会话编排                 | Room Entity、DataStore 具体实现、Feature UI |
-| `feature/<name>` | app 内的业务流程、平台入口、能力合同与应用策略 | Data 实现；非 UI 代码不依赖 presentation |
-| `app` 适配器 | Android Application、DI 与跨模块实现连接；Backup 快照可读取 Data | 页面状态、领域规则真相源 |
-| `feature/<name>/presentation` | 对应业务的 Route、ViewModel、UI state/effect、Compose UI | DAO、Entity、Data Repository 实现 |
+| `core.crypto` | 无状态密码学原语、算法实现及 Data 使用的加密能力合同 | 密钥生命周期、认证流程、Android Keystore |
+| `security` | Vault/DEK/字段/附件密钥生命周期、Android Keystore、认证、授权、锁定与会话编排 | Room Entity、DataStore 具体实现、Feature UI |
+| `app/feature/<name>` | 多数 App 内业务流程、平台入口、能力合同与应用策略 | Data 实现；非 UI 代码不依赖 presentation |
+| `:feature:autofill` | Autofill/Accessibility/Credential 服务、候选编排、结果交付与页面；Gradle 仅依赖 `:core`、`:domain`、`:runtime:session` | App、Data、Security 实现；App 只依赖其稳定宿主/启动合同 |
+| `app` 适配器 | Android Application、DI 与跨模块实现连接；Backup 协议到 Domain 快照映射 | 页面状态、领域规则真相源、Room/文件持久化实现 |
+| `app/feature/<name>/presentation` / Autofill Feature `presentation` | 对应业务的 Route、ViewModel、UI state/effect、Compose UI | DAO、Entity、Data Repository 实现 |
 | `presentation/shared` 等 | 跨业务的纯展示组件与映射；共享 `EntryType` 展示直接使用 Domain 类型 | 具体业务流程与数据实现；其他 Domain 模型 |
 | `service`  | Android Service 入口与系统生命周期桥接；与单一业务流程紧耦合的实现可放在对应 `feature/<name>` 下 | 独立业务真相源 |
 
 真实模块还要求源码命名空间与职责一致：`:data` 只包含 `com.aozijx.passly.data.*`。`:core:common` 保持为
-Domain 可依赖的纯 Kotlin 错误与通用能力；密码学、遥测、共享 Android 与 Compose 能力合并在 `:core`。
-DEK、字段派生密钥和信封原语当前位于 `:core` 的 `security.dek/security.envelope` 包；Android Keystore、
-锁状态和认证编排归独立的 `:security`。应用消息调度与全局框架桥归 `:app`。
+Domain 可依赖的纯 Kotlin 错误与通用能力；通用密码学、遥测、共享 Android 与 Compose 能力合并在 `:core`。
+`SensitiveFieldCryptor` 与 `AttachmentContentProtector` 是供 Data 消费的 Core 能力合同；实现和所有受 Vault 会话控制的密钥
+（DEK、字段密钥、附件密钥及 Envelope/VerificationTag）归 `:security`。Security 内部按
+`authentication.flow`、`authentication.method.*`、`authentication.host`、`session`、`authorization`、`lock`、`dek` 和
+`envelope` 分包；`:core` 不放 `com.aozijx.passly.security.*` 实现。日志加密和遥测散列的 Keystore key 仍由各自的 Data/App owner 管理。
+应用消息调度与全局框架桥归 `:app`。
 
-每个业务只有一个 `feature/<name>` 入口；页面统一放在其 `presentation` 子包，包括 Recovery 和
-Database Reset。根 `presentation` 仅保留应用组合入口及其 Activity 宿主、跨业务展示组件和展示映射。`core` 的共享指
+每个业务只有一个 Feature owner；多数 App 内业务以 `app/feature/<name>` 为入口，Autofill 由独立
+`:feature:autofill` 模块拥有。页面放在对应 Feature 的 `presentation` 子包，包括 Recovery 和 Database Reset。
+根 `presentation` 仅保留应用组合入口及其 Activity 宿主、跨业务展示组件和展示映射。`core` 的共享指
 跨业务使用的技术能力；包含业务语义的纯规则优先进入 Domain，不因被多个页面引用就放进 Core。
 
 根 `PasslyApp`/`PasslyAppNavigation` 组合入口负责注册 Vault 与 Settings 图，并持有 Activity 作用域的 OTP 导入
@@ -39,20 +44,40 @@ security-X-> data implementation
 app feature -X-> 任意散落的 data implementation import
 ```
 
+## 官方架构建议与 Passly 适配
+
+[Android Domain layer 指南](https://developer.android.com/topic/architecture/domain-layer)中的 Domain layer 是可选的 UI 与 Data 之间层，
+用于复杂业务逻辑或被多个 ViewModel 复用的逻辑；该指南也提醒，不同架构中的 “domain layer” 含义可能不同。
+Passly 的纯 Kotlin `:domain` 则是依赖倒置后的领域模型、规则与能力合同模块，不按 Android 指南的 UseCase 层定义。
+仅在完整业务动作有复杂编排、策略或真实复用时建立 UseCase/应用服务，简单 Repository 调用不机械包装。
+
+[Android 架构建议](https://developer.android.com/topic/architecture/recommendations)将建议标为指导而非强制要求，
+应按应用需要调整；其中 UseCase 的推荐场景是跨多个 ViewModel 复用业务逻辑或简化复杂页面逻辑。
+[Android 模块化模式](https://developer.android.com/topic/modularization/patterns)没有唯一模块方案，
+建议追求高内聚、低耦合、明确职责和最小公开 API，并在有理由时分离抽象与实现。
+Passly 据此先审查 Domain 包的合同 owner 和真实消费者；只有所有权、变更隔离或构建收益足以覆盖配置与依赖成本时，
+才把包提升为独立 Gradle module。包级 verifier 可限制同一模块内的源码依赖，但不提供编译隔离。
+
 `:security` 可以依赖 Domain 的认证/会话端口、`:core` 的密码学能力和 `:runtime:session` 的资源无关状态机，
 但不能依赖 Room、Data Repository 实现、Compose 页面或 Feature 状态。Feature 只能通过 Domain 端口请求认证、
 授权和锁定，不直接导入 `security.authentication`、Keystore 或密钥实现。
+App 内的业务 Feature 同样只通过 Domain 端口使用认证、凭据配置、授权和会话能力；App 作为 Hilt 组合根在 Gradle 图中引入 Security 实现。源码层只允许 `PasslyApp` 和 `AutofillAuthActivity` 组合公开的 `AuthenticationHost` 平台宿主，其他 App 主源码禁止导入 Security。该宿主承载 Activity/Compose/BiometricPrompt 生命周期，不属于纯 Kotlin Domain 合同。
+`:runtime:session` 只拥有资源无关的状态机、lease 与生命周期合同，不依赖 Domain。`:data` 和 `:security`
+各自显式依赖 Domain 与 Runtime Session，Domain 合同不会通过会话模块传递给下游。
+Core 保留通用 `PasswordStrengthIndicator`。App 的 `presentation.mapping` 将 Domain 强度结果映射为
+`PasswordStrengthUiState`；共享 `PasswordFields` 接收该 UI 状态，不直接依赖 Domain。
 
-App 通过 Gradle 依赖 `:data` 让 Hilt 聚合实现。Backup 的 `BackupSnapshotGateway` 是能力侧合同；
-`app/database/backup` 的 Room Reader、Restorer、恢复文件事务、Gateway 实现和 Hilt binding 负责与 Data 集成。
-恢复器写入 Room 附件状态时复用 Data 的显式存储键映射，不从 Domain enum 名称推断持久化值。
-稳定键映射器位于 `feature/backup/internal/archive/mapper`，只依赖 Domain 与归档模型。
-`SourceBoundaryPolicy` 对全部 `feature` 禁止 Data 实现 import，不为 Backup 另开例外。
+App 通过 Gradle 依赖 `:data` 让 Hilt 聚合实现。Backup 的 `BackupSnapshotGateway` 保留归档与兼容合同，
+由 App `AppBackupSnapshotGateway` 映射 App 归档模型和 Domain `VaultBackupStore`。Domain 只定义持久化中立的
+Entry/关系/图标与附件快照、读取筛选、恢复模式和结果；Data 负责 Room 映射、密钥字段、Vault 资源文件、
+文件 journal 及同一数据库事务。App Backup 不直接导入 Data 实体、Mapper、Session、GC 或 Repository。
+稳定键映射器位于 `feature/backup/internal/archive/mapper`，只依赖 Domain 与归档模型；协议键和兼容过滤仍归 App。
+`SourceBoundaryPolicy` 精确禁止 Backup Gateway 导入 Data 实现，不为 Backup 留数据库适配例外。
 Autofill 等 Android Service 需要打开页面时，由 Feature 中的启动契约与 `app` 适配器衔接，Feature 不引用 Activity 类。
 
 分页应通过纯 Kotlin 契约传递；Android Paging 可留在 Data/UI 适配边界。Feature 需要条目数据时依赖
 Entry Domain 端口，不直接构造 Entity 或具体 Repository。Autofill 服务、候选编排和候选 UI 归属
-`:feature:autofill`；App 仅拥有共享认证 Activity 宿主、结果交付集成及平台适配器。候选 UI 使用
+`:feature:autofill`；App 仅拥有 Autofill Android 平台宿主 Activity、结果回调集成及平台适配器。认证 UI 与宿主注册由 `:security` 拥有，App Activity 只组合 Security 的认证宿主。候选 UI 使用
 metadata-only 的 `AutofillCandidateSummary`，不依赖 App 的 Vault 图标组件，取不到目标应用图标时不展示图标。
 Autofill 策略通过专属 `AutofillSettingsSource` / `AutofillSettingsRepository` Domain 端口读取与更新；
 通用 `InteractionSettings` 仅描述滑动与下拉搜索，避免 Autofill 与 Vault 手势共用无关设置快照。
@@ -66,9 +91,11 @@ Autofill 策略通过专属 `AutofillSettingsSource` / `AutofillSettingsReposito
 `CUSTOM_FIELDS` 是带名称和类型的集合，不隐式拼成单个字符串，仍由专属流程处理。
 
 `EntryDraftMaterializer` 位于同一 Domain 策略包，只将草稿和给定身份转换为条目；不生成 ID、不读取会话、
-不记录日志或写入仓库。Domain 的 `EntryCreation` 是 Vault、扫码和 Autofill 共用的能力端口；App 根组合中的
-`CreateEntryUseCase` 实现校验、会话检查、身份生成与持久化，App DI 将实现绑定到端口。
-新增凭据字段时在 Domain 测试其转换，不能把持卡人等凭据值借用为 Profile 用户名。
+不记录日志或写入仓库。`domain.entry.port.EntryCreation` 只表达 Vault 与扫码共用的普通条目创建能力；
+Autofill 依赖 `domain.autofill.port.AutofillEntryCreation`，因为它需要 Autofill 会话授权和可选 Inbox 重试身份。
+`domain.autofill.port.AutofillInboxRecordStore` 与 Autofill Inbox 模型共同归属 `domain.autofill`。
+App 根组合中的 `CreateEntryUseCase` 可实现两项能力并复用纯创建规则，但分别执行相应会话门禁和持久化端口；
+App DI 将实现绑定到两项能力合同。新增凭据字段时在 Domain 测试其转换，不能把持卡人等凭据值借用为 Profile 用户名。
 `EntryDraft.invalidProvidedFields` 校验所有已提供字段的归属、值类型和空数字；创建用例与物化器共用该检查，
 不能假定所有草稿都经由 `withValue` 构造。必填检查与完整凭据校验分别处理缺失字段和具体业务规则。
 
@@ -134,6 +161,7 @@ Feature 的详情编辑用例负责会话、互斥、重试、日志和 Reposito
 
 ## 模型归属
 
+- 条目标签拆分、去重、稳定排序和数量/长度约束由 domain/entry/policy/EntryTagPolicy 持有；详情编辑器消费校验结果并维护输入、建议和页面错误状态。图标分类与详情分区解析只影响展示，留在 Presentation，不因其包含纯 Kotlin 规则就提升为业务 Domain。
 - Entity：数据库结构，只在 Data 层。
 - Domain model：业务语义与跨层契约。
 - UI model/state：展示派生状态，只在 Feature presentation/UI。
@@ -187,9 +215,9 @@ security -> *.data.repository / *.data.local
 | 依赖边 | 允许内容 | Owner / 边界 |
 | --- | --- | --- |
 | Vault → Scanner | OTP/Wi-Fi 编辑器和 Vault Route 的 Scanner UI 合同 | 对应 Vault Route 持有页面与扫描结果生命周期 |
+| Settings → Vault | `CardStyleRegistry`，仅限 `InterfaceScreen.kt` | 设置页组合已注册的 Vault 样式预览，并持久化稳定 presentation key；其他 Vault API 仍禁止 |
 | Settings → Backup | `BackupOperationRoute` | Settings 持有页面和 SAF Activity Result launcher；Backup 内部存储实现不可导入 |
 | Settings → Database | `DatabaseResetRoute` | Settings 持有 Data Management 宿主；Sheet owner 出入时清理终态，但不取消 Resetting 中的确认操作 |
-| Settings → Autofill | `AutofillServiceStatusSource` | 仅观察服务启用状态的能力合同，Android 实现由 App 提供 |
 
 每一条登记都只允许指定源码文件中的指定包前缀；新增业务实现依赖或未经登记的页面集成会使 `verifyArchitecture` 失败。App composition root 连接 Feature 不算 Feature 之间的依赖。
 
@@ -197,7 +225,7 @@ security -> *.data.repository / *.data.local
 
 `AppTheme`、`PersistedAppTheme`、`LocalAppearanceSettings` 及主题设置状态 owner 由 `app.theme` 拥有；App 主入口和 Autofill 系统 Activity 使用同一主题组合，Settings 读取中立的当前外观 CompositionLocal。Shell 不再拥有跨应用使用的主题实现。
 
-Autofill 的 Android service、服务 Manifest 声明、领域编排适配、平台协议、收件箱导入和 Presentation 实现在 `:feature:autofill`；Feature manifest 提供三个服务组件与其权限、metadata、配置资源。App 仍是最终 Manifest 合并/Hilt root，并保留 `app.autofill.presentation.AutofillAuthActivity` Activity 与需要 App 能力的 Android adapter。Activity 源码与包名均归属 App，避免把组合根伪装成 Feature 实现，也让 import 边界规则能完整审查它。最终 APK 合并 Manifest 中包含 Feature 的服务和 App 的唯一认证 Activity。Activity 负责 App 主题、窗口和平台结果回调；Security 提供统一的 `AuthenticationHost` 并在自身模块内解析认证宿主依赖；Feature 的 `AutofillFeatureEntry` 解析 launch action、持有 Autofill ViewModel/Route、构造响应并完成结果交付。App Activity 只通过稳定 Feature 宿主 API 进入 Autofill，不直接依赖实现类型。`AutofillServiceStatusSource` 等窄平台能力由 App adapter 实现；Autofill inbox importer 由 Feature 自己绑定到 Domain 端口，禁止反向依赖 `:app`。
+Autofill 的 Android service、服务 Manifest 声明、领域编排适配、平台协议、收件箱导入和主要 Presentation 实现在 `:feature:autofill`；Feature manifest 提供三个服务组件与其权限、metadata、配置资源。App 仍是最终 Manifest 合并/Hilt root，并保留 `app.autofill.presentation.AutofillAuthActivity` 平台宿主与需要 App 能力的 Android 适配器。Activity 源码与包名均归属 App，避免把组合根伪装成 Feature 实现，也让 import 边界规则能完整审查它。最终 APK 合并 Manifest 中包含 Feature 的服务和 App 的唯一 Autofill 平台宿主 Activity。Activity 负责 App 主题、窗口、应用任务生命周期和最终 Android 结果回调；Security 提供统一的 `AuthenticationHost` 并在自身模块内解析认证宿主依赖，认证 UI/流程归 Security 所有；Feature 的 `AutofillFeatureEntry` 只解析 launch 并分派到 Legacy、Accessibility、Credential 专属 entry，各模式 entry 分别拥有自己的 ViewModel、生命周期取消与平台结果交付。App Activity 只通过稳定 Feature 宿主 API 进入 Autofill，不直接依赖实现类型。系统服务启用状态只供 App 的 Settings 页面展示，因此其观察接口和 Android 实现均留在 App Autofill 适配器；设置偏好通过 Domain 端口读取，Autofill inbox importer 由 Feature 自己绑定到 Domain 端口，禁止反向依赖 `:app`。
 
 ## 代码位置
 

@@ -7,8 +7,9 @@
 页面 Screen 可连接 ViewModel、导航和 effect；纯 Content 只接收状态和事件；可复用组件不读取 ViewModel。
 `modifier` 是第一个可选参数，回调命名为 `onXxx`。业务对象、数据库、加密和认证任务不能在 Composable 中创建。
 
-`remember` 保存 UI 瞬时状态；页面可恢复业务状态由 ViewModel/持久化源拥有。`LaunchedEffect` 只负责 effect 收集、
-一次启动和 UI 副作用。Flow 使用 lifecycle-aware collection。
+`remember` 保存 UI 瞬时状态；页面可恢复业务状态由 ViewModel/持久化源拥有。`LaunchedEffect` 的协程跟随 Composition
+进入和退出，不代表 Activity 生命周期已暂停或恢复；Flow 使用 Android 推荐的 lifecycle-aware collection（例如
+`collectAsStateWithLifecycle()`）。需要在 `STARTED`/`RESUMED` 开关资源时使用对应生命周期 effect，页面一次性系统命令还须定义暂停期间缓冲、恢复后是否仍有效及 owner 退出时的丢弃规则（见[Android 生命周期文档](https://developer.android.com/topic/libraries/architecture/lifecycle)）。
 
 页面一次性 effect 使用 `collectPageEffects()` 在宿主处于 `STARTED` 时消费。同一次页面访问在暂停期间产生的
 effect 可在恢复后消费一次；页面 owner 退出后旧 effect 丢弃。提示类 effect 队列满时允许丢弃，不能用挂起发送阻塞

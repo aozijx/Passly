@@ -16,7 +16,7 @@ sequenceDiagram
     Auth->>DEK: 解封并验证 DEK
     Auth->>DB: 允许新的数据库 lease
     DEK-->>UI: Authenticated
-    Note over DEK,DB: 锁定时先关闭数据库，再擦除 DEK 与派生会话密钥
+    Note over DEK,DB: SOFT_LOCKED 排空 lease 并清除字段密钥，保留 DB 与 DEK；SEALED 排空 lease、关闭 DB、清除字段密钥并擦除 DEK
 ```
 
 `VaultBootstrapStore` 位于数据库之外，使应用在 SQLCipher 尚未打开时也能取得信封。当前实现由 Proto DataStore
@@ -79,7 +79,7 @@ flowchart LR
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 认证请求编排与 Vault 会话转换 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
-| DEK 生命周期与派生会话密钥 | `DekManager` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt) |
+| 认证请求编排与 Vault 会话转换 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/flow/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt) |
+| DEK 生命周期与派生会话密钥 | `DekManager` | [`DekManager.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt) |
 | Runtime session 解锁、句柄清理与状态门控 | `RuntimeSessionManager.unlock()`、`SessionLeaseGate.open()` | [`RuntimeSessionManager.kt`](../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/RuntimeSessionManager.kt)、[`SessionLeaseGate.kt`](../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/SessionLeaseGate.kt) |
 | 通知路由与派发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |

@@ -8,18 +8,18 @@ Passly 按稳定、可复用的技术边界拆分 Gradle 模块。多数业务 f
 
 - `:domain`：纯领域模型、端口与规则；当前包含 `access`、`entry`、`autofill`、`settings` 及共享敏感值语义；
 - `:core:common`：Domain 可依赖的纯 Kotlin 错误与通用能力；
-- `:core`：统一的 Android Core library，包含遥测、平台能力、共享 Compose UI 及密码学安全编排；因
+- `:core`：统一的 Android Core library，包含遥测、平台能力、共享 Compose UI 及通用密码学能力；因
   Argon2 为 AAR，此模块是 Android library，但源码不反向依赖 Data 或 App。包内用 `core.crypto` 承载
-  无状态 AES/KDF/字段加密，用 `security.dek`、`security.envelope`、`security.search` 承载密钥生命周期与
-  加密搜索；
-- `:runtime:session`：资源无关的安全会话状态机与租约管理；
-- `:security`：认证方式执行、授权、Android Keystore 适配与安全会话编排；只依赖稳定的 Domain/Core/Runtime
+  无状态 AES/KDF/字段加密及 Data 使用的加密能力合同，不承载 `security.*` 实现；
+- `:runtime:session`：资源无关的安全会话状态机与租约管理，不依赖 Domain；
+- `:security`：DEK/字段/附件密钥生命周期、认证方式执行、授权、Android Keystore 适配与安全会话编排；只依赖稳定的 Domain/Core/Runtime
   契约，不依赖 Data 实现或 Feature UI；
 - `:feature:autofill`：Autofill、Accessibility 与 Credential Manager 服务、候选/填充流程、结果交付和对应页面；
   只依赖 `:core`、`:domain`、`:runtime:session`，不依赖 App、Data 或 Security；
 - `:data`：Room、Proto DataStore、Repository、Mapper 与加密诊断存储实现；
-- `:app`：应用壳、导航、平台入口、Notice 运行时和全部业务 feature。Backup 的协议、格式与稳定键映射
-  位于 `feature/backup/internal/archive`；直接访问 Room 的快照适配位于 `app/database/backup`。
+- `:app`：应用壳、全局导航、平台组合根、Notice 运行时、其他业务 feature 与跨模块适配。Backup 的协议、格式、稳定键映射
+  与 `BackupSnapshotGateway` 归 App；`AppBackupSnapshotGateway` 只桥接归档模型和 Domain snapshot port，不直接访问 Room；Autofill 的认证 Activity
+  宿主和窄 Android 平台适配仍由 App 提供。
 
 ## 依赖方向
 
@@ -42,7 +42,6 @@ flowchart LR
     DATA --> D
     CORE --> D
     CORE --> COMMON
-    SESSION --> D
     D --> COMMON[":core:common"]
 ```
 
@@ -68,12 +67,14 @@ Gradle 模块。
 
 ```text
 core.crypto/       无状态密码学原语、AES-GCM 实现、字段加密、KDF
-security.dek/      DEK 与派生密钥的生命周期（位于 :core）
-security.envelope/ 密钥信封的创建、解封和验证（位于 :core）
-security.search/   Blind Index 与分词（位于 :core）
-security.keystore/ Android Keystore 适配
+security.dek/      DEK、敏感字段与附件密钥生命周期（位于 :security）
+security.envelope/ 密钥信封的创建、解封和验证（位于 :security）
+security.authentication.flow/ 认证请求、方式选择与结果处理
+security.authentication.method.* 生物识别、凭据执行与配置
+security.authentication.host/ 平台认证 UI 宿主
+security.session/ 认证、锁定与数据库会话协调
+security.authorization/ 授权签发、验证与撤销
 security.lock/     应用锁强度状态
-security.authentication/ 认证方式和流程编排
 ```
 
 认证回答“谁可以解锁、使用哪种凭据”；加密回答“数据和密钥如何保密”。认证可以调用加密与信封能力，但密码学
@@ -135,5 +136,5 @@ ViewModel 可直接执行简单的单一 Repository 读取或写入。UseCase/�
 | --- | --- | --- |
 | Domain 创建规则与身份物化 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
 | Data 数据库会话边界 | `AppDatabaseSession` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
-| Security 认证与会话编排 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
+| Security 认证与会话编排 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/flow/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt) |
 | App 导航宿主 | `PasslyNavHost()` | [`PasslyNavHost.kt`](../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/navigation/PasslyNavHost.kt) |

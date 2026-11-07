@@ -73,7 +73,8 @@ class EditorSourceBoundaryVerifierTest {
                 ),
             )
 
-        assertEquals(6, violations.size)
+        assertEquals(7, violations.size)
+        assertTrue(violations.any { "security implementation" in it })
     }
 
     @Test

@@ -43,12 +43,31 @@ Data 内部的 `SecretFieldStore.readAll()`，把 bundle 与各高敏字段合�
 `getPresence(entryId)` 只读取非 `STRUCT_BUNDLE` 的存储键并通过 `sensitiveFieldKeyFromStorageKey()` 映射，
 不解密值；无完整会话时返回空键集，因此调用方也须先区分访问受限与“确实没有高敏字段”。
 
-Backup 的完整快照由 `RoomBackupSnapshotReader` 在其已有数据库接收者内调用
-`secretFieldStore.readAll(db, metaEntity.entryId, metaEntity.entryType)`。该方法读取同一条目的全部密文行，
-以 `SecretBundleCodec.decrypt(cipher, entryId, entryType)` 解码 bundle，再按每行稳定 `fieldKey` 经
+Backup 的完整快照由 Data 的 `RoomVaultBackupStore.read(options)` 在
+`databaseSession.queryFullVault(onDenied = { throw SessionModeRestricted() }) { ... }` 中读取。
+每个筛选后的 `EntryEntity` 以 `EntryProfileMapper.fromEntity(entity)` 映射 Profile，并通过同一数据库接收者调用
+`secretFieldStore.readAll(db, entity.entryId, entity.entryType)`；该方法读取同一条目的全部密文行，以
+`SecretBundleCodec.decrypt(cipher, entryId, entryType)` 解码 bundle，再按稳定 `fieldKey` 经
 `sensitiveFieldKeyFromStorageKey()` 和 `SecretFieldCodec.decrypt(entryId, key, cipher)` 解密字段，最后
-`bundle.mergeSensitiveFields(fields)` 形成快照输入。该完整读取能力留在受控备份适配器，不改变
-`EntryQueryRepository.getById()` 的普通详情边界。
+`bundle.mergeSensitiveFields(fields)` 形成完整 `EntrySecret`；Data 再由
+`EntryAssembler.assembleFromDatabase(entity, EntryProfileMapper.fromEntity(entity), secretFieldStore.readAll(db, entryId, entryType))`
+组装 Domain `Entry`。App 的 `AppBackupSnapshotGateway.read(options)` 把导出筛选、
+`BackupBundleValidator.MAX_RESOURCE_BYTES.toLong()` 和 `MAX_TOTAL_RESOURCE_BYTES.toLong()` 传给
+`VaultBackupReadOptions`，再将 Domain snapshot 映射为带稳定键的 archive bundle；完整读取能力仍不进入普通
+`EntryQueryRepository.getById()`。
+
+当 `includeIcons` 为 true，`read(options)` 对每个 `entry.icon.customReference` 调用
+`readIcon(entryId, path, root, maxBytes = options.maxResourceBytes)`。附件读取在 `includeAttachments` 为 true 时调用
+`attachmentRefQueryDao().getByEntryIds(entryIds)`，以每个引用的 `resourceId` 调用
+`attachmentResourceDao().getById(resourceId)`，再由 `attachmentGarbageCollector.resourceFile(resourceId)` 取得密文文件；
+密文大小先限制为 `2 * maxResourceBytes`，`attachmentContentProtector.decrypt(encrypted, resourceId)` 后立即清零密文数组，
+再校验明文大小与 `verifyContentId(content, resourceId)`。验证通过后构造 `VaultBackupResource` 并交给 accumulator。
+
+`VaultBackupResourceAccumulator.add(resource)` 同时执行 `maxResourceBytes` 与 `maxTotalResourceBytes` 限额；超限时擦除
+被拒资源，`RoomVaultBackupStore.read(options)` 的后续文件读取、解密或校验失败则经 `fail(failure)` 清空之前累计及
+当前资源的明文缓冲并重抛原异常。App `BackupSnapshotArchiveMapper.toBundle(snapshot, appVersion, exportedAt)` 在
+archive 映射、版本读取或 `BackupBundleValidator.validate(...)` 失败时清空 Domain snapshot 资源；校验通过后才把数组所有权
+转交给 bundle。快照映射与 Data 读取边界见[Backup 快照流程](../features/backup/storage-and-permissions.md)，整体步骤见[Backup 工作流总览](../features/backup/backup-workflows.md)。
 
 写入时，Profile 直接映射到 `EntryEntity`；Secret 由 `SensitiveFieldSetMapper` 拆成 bundle 与逐字段值，
 再由各自 Codec 加密。Revision 另有独立的 `EntryContentSnapshotCodec` 和
@@ -111,7 +130,7 @@ Runtime lease drain 等待其提交或回滚；锁定后的新命令不会进入
 继续传播。取消可能发生在事务提交之后，此时事务不会回滚，调用方应重新读取 Repository/Room 真相后决定下一步，
 不把取消本身解释为写入失败。图标文件扫描覆盖普通 `favicon_*.webp` 与备份恢复的 `favicon_restored_*.webp`，
 也兼容旧 `restored_*.webp` 名称；删除前仍由事务查询当前及历史引用。数据库失败不能退化为直接删除文件。
-Room schema 仍为 1，不迁移旧开发数据库，也不在结构不匹配时静默删库。
+当前 Room schema 为 1，旧开发数据库不迁移，也不在结构不匹配时静默删库。后续 schema 结构变化须递增版本，并说明受支持数据的迁移路径或仅限可丢弃开发数据的显式重置边界。
 
 ## 已存储条目的能力标记
 
@@ -137,15 +156,15 @@ Wi-Fi 密码保存在加密 bundle 中，没有独立密码行；其密码能力
 
 - Mapper 不访问 DAO、不开事务、不执行加密，也不依赖 Android UI。
 - Codec 不实现业务规则，只维护稳定序列化格式、版本和记录级 AAD。
-- Entity 不泄漏到一般 Feature。备份快照适配器是受测试约束的明确例外，但备份文件仍使用自己的 DTO。
+- Entity 不泄漏到 App Backup。App 仅依赖 Domain `VaultBackupStore` 快照合同；Room Entity、Data Mapper、Session、GC 与 SecretFieldStore 均留在 Data。备份 archive 仍使用自己的 DTO。
 - 附件引用映射只表达现存 Entry 与资源的关系；附件编辑暂存需要由具体工作流定义 owner 以及提交、取消和清理边界，再决定持久化方式。
 - 需要查询、排序、索引或约束的非敏感 Profile 数据使用结构化列；不能为了省字段把它重新塞回不透明
   Blob。
 - 高敏字段保持逐字段密文，不进入 Profile、日志、普通详情 bundle 或查询索引。
 - 持久化枚举使用显式稳定键；不使用 ordinal，也不在未知值上静默回退。
 
-备份协议与流程归 `app/feature/backup`。它可以通过受控快照边界读取完整数据，但不属于 `:data` 的
-通用映射职责。
+备份协议、兼容策略与稳定键归 `app/feature/backup`；Domain 只声明持久化中立的 `VaultBackupStore` snapshot/restore
+合同，Data 实现 Room 与资源文件事务。这是专用 Data Repository 能力，不将 archive DTO 或协议策略移入 Data。
 
 
 ## 代码位置

@@ -1,6 +1,6 @@
 # 诊断导出格式
 
-状态：当前实现（schema 2，代码核对：2026-11-06）。
+状态：当前实现（schema 2，代码核对：2026-11-07）。
 
 一次导出只读取、排序并生成一次 manifest。`JSONL` 是 canonical 事件表示，`TSV` 是其固定的人类可读投影，
 `ZIP` 打包两种表示与一个 manifest。查看筛选和搜索不改变导出内容。
@@ -61,9 +61,9 @@ ZIP 恰好包含 `manifest.json`、`logs.jsonl`、`logs.tsv`、`README.txt`。ZI
 | TSV | `text/tab-separated-values` | `passly_logs.tsv` |
 | ZIP | `application/zip` | `passly_logs.zip` |
 
-分享缓存使用 `passly_logs_<time>.<ext>`。schema 2 将单字符串应用栈字段替换为 `stack_frames` 数组，并将外部帧计数
-更名为 `external_frame_count`，不再输出旧字段别名。格式变化必须先定义 schema 演进和解析行为，不能用文件名中的
-v1/v2 代替协议字段。
+分享缓存使用 `passly_logs_<time>.<ext>`。schema 2 使用 `stack_frames` 数组记录清洗后的应用栈帧，并用
+`external_frame_count` 记录外部帧数量，不输出旧字段别名。格式变化必须先定义 schema 演进和解析行为，不能用文件名中的
+版本标记代替协议字段。
 
 ## 代码位置
 

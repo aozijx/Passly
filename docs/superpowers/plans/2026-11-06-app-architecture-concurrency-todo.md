@@ -103,7 +103,7 @@
 - `docs/architecture/overview.md`：模块、依赖、数据流与 UseCase 可选条件。
 - `docs/architecture/viewmodel-ownership.md`、`docs/development/maintenance-boundaries.md`：ViewModel 所有权、任务生命周期、取消与拆分合同。
 - `runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/SessionLeaseGate.kt`、`RuntimeSessionManager.kt`：会话状态、lease 与资源退出并发。
-- `security/src/main/java/com/aozijx/passly/security/authentication/SingleThreadKdfRunner.kt`：KDF 单线程执行、取消和 worker secret 清理。
+- `security/src/main/java/com/aozijx/passly/security/authentication/method/credential/SingleThreadKdfRunner.kt`：KDF 单线程执行、取消和 worker secret 清理。
 - `data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt`、`app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt`：有界日志队列、flush 与生命周期/崩溃桥接。
 - `feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/FinishAutofillInteraction.kt`、`feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt`：系统 callback、逐 interaction 终结与 lease 释放调用链。
 - `app/src/main/AndroidManifest.xml`、`data/src/main/java/com/aozijx/passly/data/local/datastore/AppPreferencesDataStore.kt`、`SecurityPreferencesDataStore.kt`、`data/src/main/java/com/aozijx/passly/data/local/database/DatabaseProvider.kt`：组件进程声明与当前 DataStore/Room 创建方式。
@@ -123,6 +123,6 @@
 | 模块与业务流程边界 | [`docs/architecture/overview.md`](../../architecture/overview.md) |
 | ViewModel/Route owner | [`docs/architecture/viewmodel-ownership.md`](../../architecture/viewmodel-ownership.md) |
 | Runtime Session lease 状态机 | [`SessionLeaseGate.kt`](../../../runtime/session/src/main/kotlin/com/aozijx/passly/runtime/session/SessionLeaseGate.kt) |
-| KDF 串行执行器 | [`SingleThreadKdfRunner.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/SingleThreadKdfRunner.kt) |
+| KDF 串行执行器 | [`SingleThreadKdfRunner.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/SingleThreadKdfRunner.kt) |
 | 加密日志有界写队列 | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt) |
 | 平台结果与 lease 交付 | [`AutofillResultDelivery.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |

@@ -6,11 +6,12 @@ internal object SourceBoundaryPolicy {
     val featureIntegrationAllowances =
         listOf(
             FeatureIntegrationAllowance(
-                sourcePathContains = "/feature/settings/presentation/autofill/AutofillSettingsViewModel.kt",
-                targetFeature = "autofill",
-                allowedImportPrefixes = setOf("com.aozijx.passly.feature.autofill.platform.AutofillServiceStatusSource"),
-                owner = "Autofill service status capability",
-                rationale = "Settings consumes a single-method observation port implemented by the app platform layer.",
+                sourcePathContains = "/feature/settings/presentation/ui/appearance/InterfaceScreen.kt",
+                targetFeature = "vault",
+                allowedImportPrefixes =
+                    setOf("com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry"),
+                owner = "Interface card-style selector",
+                rationale = "Settings composes the registered Vault style previews and persists only their stable presentation keys.",
             ),
             FeatureIntegrationAllowance(
                 sourcePathContains = "/feature/settings/presentation/main/navigation/data/BackupRoute.kt",
@@ -158,6 +159,20 @@ internal object SourceBoundaryPolicy {
                         "com.aozijx.passly.security.",
                     ),
                 message = "imports a forbidden namespace",
+            ),
+            SourceBoundaryRule(
+                id = "DOMAIN_ENTRY_NO_AUTOFILL",
+                owner = "domain.entry",
+                sourcePathContains = "/domain/src/main/kotlin/com/aozijx/passly/domain/entry/",
+                forbiddenImportPrefixes = setOf("com.aozijx.passly.domain.autofill."),
+                message = "Entry contracts must not depend on Autofill-owned contracts",
+            ),
+            SourceBoundaryRule(
+                id = "DOMAIN_ACCESS_NO_AUTOFILL",
+                owner = "domain.access",
+                sourcePathContains = "/domain/src/main/kotlin/com/aozijx/passly/domain/access/",
+                forbiddenImportPrefixes = setOf("com.aozijx.passly.domain.autofill."),
+                message = "Access contracts must not depend on Autofill-owned contracts",
             ),
             SourceBoundaryRule(
                 id = "LAYER_DATA",
@@ -408,30 +423,27 @@ internal object SourceBoundaryPolicy {
                     message = "application lifecycle imports the full authentication manager",
                 ),
                 SourceBoundaryRule(
-                    id = "APPLICATION_SECURITY_IMPLEMENTATION_IMPORT",
-                    sourcePathContains = "/app/PasslyApplication.kt",
-                    forbiddenImportPrefixes = setOf("com.aozijx.passly.security."),
-                    message = "application imports a security implementation",
-                ),
-                SourceBoundaryRule(
                     id = "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
-                    sourcePathContains = "/com/aozijx/passly/app/",
+                    sourcePathContains = "/app/src/main/",
                     allowedSourcePathContains =
                         setOf(
-                            "/app/PasslyApplication.kt",
+                            "/presentation/PasslyApp.kt",
                             "/app/autofill/presentation/AutofillAuthActivity.kt",
                         ),
                     forbiddenImportPrefixes = setOf("com.aozijx.passly.security."),
+                    allowedImportPrefixes = setOf("com.aozijx.passly.security.authentication.host."),
                     message = "app adapter imports a security implementation instead of a capability port",
                 ),
                 SourceBoundaryRule(
-                    id = "PRESENTATION_SESSION_CONTROLLER_IMPORT",
-                    sourcePathContains = "/presentation/",
+                    id = "APP_BACKUP_DATA_IMPLEMENTATION_IMPORT",
+                    sourcePathContains = "/app/database/backup/",
                     forbiddenImportPrefixes =
                         setOf(
-                            "com.aozijx.passly.security.authentication.VaultSessionController",
+                            "com.aozijx.passly.data.local.database.",
+                            "com.aozijx.passly.data.mapper.",
+                            "com.aozijx.passly.data.repository.",
                         ),
-                    message = "presentation imports the concrete session controller",
+                    message = "App Backup gateway imports Data persistence implementation instead of the Domain snapshot port",
                 ),
                 SourceBoundaryRule(
                     id = "VAULT_UI_PAGING_FACTORY",
@@ -456,7 +468,7 @@ internal object SourceBoundaryPolicy {
                 ),
                 SourceBoundaryRule(
                     id = "SETTINGS_DUPLICATE_NAVIGATION_STATE",
-                    sourcePathContains = "/SettingsNavGraph.kt",
+                    sourcePathContains = "/feature/settings/presentation/main/navigation/SettingsRoute.kt",
                     forbiddenContentMarkers =
                         setOf(
                             "mutableStateOf(navigator.currentDestination?.contentKey)",
@@ -478,12 +490,6 @@ internal object SourceBoundaryPolicy {
                     sourcePathContains = "/feature/backup/presentation/",
                     forbiddenImportPrefixes = setOf("com.aozijx.passly.feature.backup.internal."),
                     message = "backup presentation imports an internal protocol or execution implementation",
-                ),
-                SourceBoundaryRule(
-                    id = "UNLOCK_FEATURE_PASSIVE_CONTENT",
-                    sourcePathContains = "/feature/unlock/presentation/AuthenticationScreen.kt",
-                    forbiddenContentMarkers = setOf("InputActionButton("),
-                    message = "unlock feature host renders passive credential input content",
                 ),
                 SourceBoundaryRule(
                     id = "PASSWORD_EDITOR_ROUTE_PASSIVE_UI",
@@ -508,17 +514,6 @@ internal object SourceBoundaryPolicy {
                     sourcePathContains = "/feature/settings/presentation/ui/",
                     forbiddenImportPrefixes = setOf("com.aozijx.passly.presentation.ui.vault.list.model."),
                     message = "settings UI imports a Vault-owned list model",
-                ),
-                SourceBoundaryRule(
-                    id = "APP_GLOBAL_SETTINGS_BUS",
-                    sourcePathContains = "/feature/settings/presentation/main/SettingsViewModel.kt",
-                    forbiddenImportPrefixes =
-                        setOf(
-                            "com.aozijx.passly.domain.settings.port.AppSettingsRepository",
-                            "com.aozijx.passly.domain.settings.model.AppSettingsSnapshot",
-                            "com.aozijx.passly.domain.settings.model.SettingsCommand",
-                        ),
-                    message = "settings composition root depends on the global settings snapshot or command bus",
                 ),
                 SourceBoundaryRule(
                     id = "APP_GLOBAL_SETTINGS_BUS",
@@ -710,6 +705,24 @@ internal object SourceBoundaryPolicy {
                             "com.aozijx.passly.core.telemetry.",
                         ),
                     message = "Data imports a Core package outside its reviewed persistence allowlist",
+                ),
+                SourceBoundaryRule(
+                    id = "DATA_NO_SECURITY_IMPLEMENTATION",
+                    sourcePathContains = "/data/src/main/",
+                    forbiddenImportPrefixes = setOf("com.aozijx.passly.security."),
+                    message = "Data production code uses a Security implementation instead of a Core capability contract",
+                ),
+                SourceBoundaryRule(
+                    id = "CORE_NO_SECURITY_IMPLEMENTATION",
+                    sourcePathContains = "/core/src/main/",
+                    forbiddenContentMarkers = setOf("package com.aozijx.passly.security."),
+                    message = "Core cannot own Security implementation packages",
+                ),
+                SourceBoundaryRule(
+                    id = "CORE_NO_DOMAIN_ENTRY_POLICY",
+                    sourcePathContains = "/core/src/",
+                    forbiddenImportPrefixes = setOf("com.aozijx.passly.domain.entry."),
+                    message = "Core cannot own Entry domain policy or its presentation mapping",
                 ),
                 SourceBoundaryRule(
                     id = "SHELL_NAV_HOST_FEATURE_REGISTRATION",

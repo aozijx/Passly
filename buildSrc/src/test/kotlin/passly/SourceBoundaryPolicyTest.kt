@@ -527,6 +527,27 @@ class SourceBoundaryPolicyTest {
                 ).single { it.ruleId == "FEATURE_CROSS_FEATURE" }
                 .ruleId,
         )
+
+        val cardStyleSettingsIntegration =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/feature/settings/presentation/ui/appearance/InterfaceScreen.kt",
+                content = "import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry",
+            )
+        assertEquals(
+            emptyList(),
+            SourceBoundaryVerifier.verify(listOf(cardStyleSettingsIntegration), SourceBoundaryPolicy.generalRules),
+        )
+        val unrelatedVaultDependency =
+            cardStyleSettingsIntegration.copy(
+                content = "import com.aozijx.passly.feature.vault.presentation.detail.DetailRoute",
+            )
+        assertEquals(
+            "FEATURE_CROSS_FEATURE",
+            SourceBoundaryVerifier
+                .verify(listOf(unrelatedVaultDependency), SourceBoundaryPolicy.generalRules)
+                .single()
+                .ruleId,
+        )
     }
 
     @Test
@@ -748,16 +769,16 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun presentationCannotImportConcreteSessionController() {
+    fun appPresentationCannotImportSecurityImplementation() {
         val source =
             EditorSource(
                 path = "app/src/main/java/com/aozijx/passly/feature/shell/presentation/AppShellViewModel.kt",
                 content =
-                    "import com.aozijx.passly.security.authentication.VaultSessionController",
+                    "import com.aozijx.passly.security.session.VaultSessionController",
             )
 
         assertEquals(
-            "PRESENTATION_SESSION_CONTROLLER_IMPORT",
+            "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
             SourceBoundaryVerifier
                 .verify(
                     listOf(source),
@@ -1473,7 +1494,7 @@ class SourceBoundaryPolicyTest {
                 "com.aozijx.passly.core.observability.Logger",
                 "com.aozijx.passly.core.platform.VaultResourcePaths",
                 "com.aozijx.passly.core.telemetry.TelemetryReporter",
-                "com.aozijx.passly.security.dek.FieldKeyManager",
+                "com.aozijx.passly.core.crypto.SensitiveFieldCryptor",
             )
         val forbiddenImports =
             listOf(
@@ -1512,6 +1533,57 @@ class SourceBoundaryPolicyTest {
                     .ruleId,
             )
         }
+    }
+
+    @Test
+    fun coreCannotOwnEntryDomainPolicy() {
+        val source =
+            EditorSource(
+                path = "core/src/main/kotlin/com/aozijx/passly/core/ui/components/settings/PasswordStrengthUiState.kt",
+                content = "import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator",
+            )
+
+        assertEquals(
+            "CORE_NO_DOMAIN_ENTRY_POLICY",
+            SourceBoundaryVerifier
+                .verify(listOf(source), SourceBoundaryPolicy.generalRules)
+                .single()
+                .ruleId,
+        )
+    }
+
+    @Test
+    fun coreCannotDeclareSecurityImplementationPackages() {
+        val source =
+            EditorSource(
+                path = "core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt",
+                content = "package com.aozijx.passly.security.dek",
+            )
+
+        assertEquals(
+            "CORE_NO_SECURITY_IMPLEMENTATION",
+            SourceBoundaryVerifier
+                .verify(listOf(source), SourceBoundaryPolicy.generalRules)
+                .single()
+                .ruleId,
+        )
+    }
+
+    @Test
+    fun dataCannotImportSecurityImplementations() {
+        val source =
+            EditorSource(
+                path = "data/src/main/java/com/aozijx/passly/data/codec/entry/SecretFieldCodec.kt",
+                content = "import com.aozijx.passly.security.dek.SensitiveFieldEncryptor",
+            )
+
+        assertEquals(
+            "DATA_NO_SECURITY_IMPLEMENTATION",
+            SourceBoundaryVerifier
+                .verify(listOf(source), SourceBoundaryPolicy.generalRules)
+                .single()
+                .ruleId,
+        )
     }
 
     @Test
@@ -1613,22 +1685,44 @@ class SourceBoundaryPolicyTest {
     }
 
     @Test
-    fun applicationCannotImportSecurityImplementation() {
+    fun appBusinessFeatureCannotImportSecurityImplementation() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/app/PasslyApplication.kt",
+                path = "app/src/main/java/com/aozijx/passly/feature/unlock/presentation/UnlockViewModel.kt",
                 content =
                     "import com.aozijx.passly.security.authentication.BiometricRotationReconciler",
             )
 
         assertEquals(
-            "APPLICATION_SECURITY_IMPLEMENTATION_IMPORT",
+            "APP_ADAPTER_SECURITY_IMPLEMENTATION_IMPORT",
             SourceBoundaryVerifier
                 .verify(
                     listOf(source),
                     SourceBoundaryPolicy.generalRules,
                 ).single()
                 .ruleId,
+        )
+    }
+
+    @Test
+    fun appPlatformAdaptersMayUseOnlyTheAuthenticationHostContract() {
+        val sources =
+            listOf(
+                EditorSource(
+                    path = "app/src/main/java/com/aozijx/passly/presentation/PasslyApp.kt",
+                    content = "import com.aozijx.passly.security.authentication.host.AuthenticationHost",
+                ),
+                EditorSource(
+                    path = "app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt",
+                    content = "import com.aozijx.passly.security.authentication.host.AuthenticationHost",
+                ),
+            )
+
+        assertEquals(
+            emptyList<String>(),
+            SourceBoundaryVerifier
+                .verify(sources, SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId },
         )
     }
 
@@ -1655,6 +1749,34 @@ class SourceBoundaryPolicyTest {
                 .verify(sources, SourceBoundaryPolicy.generalRules)
                 .map { it.ruleId },
         )
+    }
+
+    @Test
+    fun appBackupGatewayCannotImportDataImplementation() {
+        val source =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGateway.kt",
+                content = "import com.aozijx.passly.data.repository.entry.SecretFieldStore",
+            )
+
+        assertEquals(
+            "APP_BACKUP_DATA_IMPLEMENTATION_IMPORT",
+            SourceBoundaryVerifier
+                .verify(listOf(source), SourceBoundaryPolicy.generalRules)
+                .single()
+                .ruleId,
+        )
+    }
+
+    @Test
+    fun appBackupGatewayMayImportDomainSnapshotPort() {
+        val source =
+            EditorSource(
+                path = "app/src/main/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGateway.kt",
+                content = "import com.aozijx.passly.domain.backup.port.VaultBackupStore",
+            )
+
+        assertTrue(SourceBoundaryVerifier.verify(listOf(source), SourceBoundaryPolicy.generalRules).isEmpty())
     }
 
     @Test

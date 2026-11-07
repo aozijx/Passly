@@ -1,7 +1,7 @@
 # 数据库
 
-状态：当前实现（Room Schema v1）。本文描述当前代码与全新安装，不承诺旧开发 Schema 的迁移。
-Room Schema 保持版本 1，当前没有旧开发库迁移；使用旧结构的本地开发数据库前，需清除应用数据或重新安装，再验证当前 Schema。
+状态：当前实现（Room Schema v1）。本文描述当前代码；旧本地开发 Schema 当前不提供迁移。
+Room schema 结构发生变化时递增版本，并按数据合同选择显式 migration，或明确限定版本范围的开发数据重置流程。Room 提供自动与手动增量迁移；无可用 migration 且未配置 destructive fallback 时，打开数据库会失败；destructive fallback 会删除表数据，不能作为静默恢复策略（见[Room 迁移文档](https://developer.android.com/training/data-storage/room/migrating-db-versions)）。当前旧开发库不迁移，使用旧结构的本地开发数据库前需清除应用数据或重新安装，再验证当前 Schema。初始化异常路径不得静默删除数据库。
 
 ## 所有权与访问边界
 
@@ -40,7 +40,8 @@ Room 实例或越过锁定边界持有 DAO。
 `queryForMaintenance/transactionForMaintenance` 是显式的内部维护入口，仍受 Runtime lease 与数据库锁状态保护；当前
 `DatabaseCleaner` 使用此入口。附件 GC 仍在文件副作用前检查完整会话，并通过 Full Vault transaction/query API 访问数据库。
 Room 观察 Flow 由 `AppDatabaseSession.observeFullVaultWhenReadable()` 从 Security access-state provider 读取认证 Flow，
-再组合 Runtime lock/generation gate。Reset 与锁定、恢复模式、Autofill 释放之间尚未完成的跨层终态验收见[维护 TODO Task 37](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)。
+再组合 Runtime lock/generation gate。Reset 与锁定、恢复模式、
+Autofill 释放之间尚未完成的跨层终态验收见[维护 TODO Task 37](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-37为认证撤权与数据库操作定义同一线性化边界)。
 
 备份协议与交互属于 `app/feature/backup`；Feature 只能通过明确的快照适配边界接触数据库数据，不能把
 Room Entity 当作可移植协议。
@@ -91,7 +92,7 @@ CVV、支付 PIN、身份号码、助记词、恢复码、SSH 私钥/口令、Pa
 
 - 普通详情读取 `entries` Profile 与 `STRUCT_BUNDLE`，不物化高敏字段；
 - 单字段 reveal 只查询并解密对应 `fieldKey`；
-- 完整凭据快照仅由 Backup 的 `RoomBackupSnapshotReader` 经 Data 内部 `SecretFieldStore.readAll()` 合并全部字段；
+- 完整凭据快照仅由 Data 的 `RoomVaultBackupStore.read(options)` 在 `AppDatabaseSession.queryFullVault(onDenied = { throw SessionModeRestricted() }) { db -> ... }` 内经 `SecretFieldStore.readAll(db, entryId, entryType)` 合并全部字段；App 只通过 Domain `VaultBackupStore` 请求快照，不导入 Data Reader/Mapper；
 - 普通更新用 `Preserve / Clear / Replace` 区分未加载、主动清空和替换，避免为了写低敏结构而解密全部
   高敏字段。
 
@@ -136,10 +137,10 @@ stateDiagram-v2
 - `RuntimeSessionManager` 使用单一 lifecycle mutex 串行化完整 unlock（含 key source 与资源 open）、soft-lock/resume 和 seal/close；Security 的 Vault session mutex 继续作为外层 owner，reset 也通过同一互斥。`seal(timeout = 5.seconds)` 排空超时时发出 `DRAIN_TIMEOUT` 并取消登记的 lease owner Job；这只是取消请求，不证明 Room transaction/read 或 native 操作已经退出。Runtime 在不可取消区继续等到 active lease 归零后才调用资源 `close()`；调用方取消不会遗弃已发布 `SEALED` 的 handle。没有资源 abort 合同，因此不会强制关闭仍在使用的句柄；soft-lock 也会在发布 `SOFT_LOCKED` 后等待既有 lease，5 秒超时或调用方取消时请求 owner 取消并等待实际排空，不关闭 handle。Security 清除敏感会话 key 的先后顺序仍见[维护 TODO Task 26](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-26明确-runtime-session-生命周期转换的并发所有者)。
 - `SOFT_LOCKED` 拒绝新 lease。既有操作正常完成时 soft-lock 等待其结束；5 秒排空超时或调用方取消会请求取消 owner，Runtime 仍等到实际退出后才返回，数据库 handle 保持打开。`VaultSessionController` 等待 Runtime soft-lock 排空后再擦除敏感会话 key；Data 命令在 lease 内、DAO block 前再次检查授权。真实 Security/Data 并发终态仍由维护 TODO Task 37 追踪。
 - 覆盖导入、Revision 恢复和多表写入必须在事务中完成，失败整体回滚。
-- 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；备份协议版本独立。
+- 当前 Room Schema、Secret Payload 和 Revision 格式均为版本 `1`；Room Schema 版本随结构迁移递增，Secret Payload、Revision 与备份协议各自遵守其格式合同。
 关闭失败时保持 `SEALED` 并保留失败句柄；没有确认关闭成功前，不删除数据库文件或建立第二个 session。失败结果、撤权和重置边界见本页的会话关闭与重置合同。
 
-Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 SQLCipher Entry。Room Schema 保持版本 1；
+Sealed Autofill Inbox 使用独立耐久文件队列，完整解锁后才写入 SQLCipher Entry。它当前不改变 Room Schema；
 队列清理与幂等导入边界见 [Sealed Inbox](../features/autofill/sealed-inbox.md)。
 
 ## 初始化失败与数据重置

@@ -11,9 +11,9 @@
 
 ## 命名
 
-- 类型使用 PascalCase；函数和属性使用 camelCase；真正编译期常量使用 UPPER_SNAKE_CASE。
-- 固定常量放在 Kotlin 文件顶部的声明区，即 imports 之后、主要类型/函数之前；文件私有实现常量用 `private const val`，避免藏在文件尾部的 `companion object`、函数内部或使用点旁。
-- 被多个源文件共享的常量集中到所属层/Feature 的专用配置或常量文件（如同一协议的 `XxxConstants.kt` / `XxxConfig.kt`），保持最小可见性；不创建跨功能、无明确 owner 的全局 `Constants.kt` 大杂烩。单文件常量保持在该文件，不为一处使用额外造转发对象。
+- 按 [Kotlin 官方编码约定](https://kotlinlang.org/docs/coding-conventions.html)，类型和对象使用 PascalCase，函数、普通属性与局部变量使用 camelCase；`const` 属性及无自定义 getter、持有深度不可变数据的顶层或 `object` 属性使用 UPPER_SNAKE_CASE。单类型文件使用对应类型名，多声明文件用描述内容的 UpperCamelCase 文件名。
+- **Passly 本地规则：** 常量放在最窄的语义 owner：文件级合同值可放 imports 后的文件声明区；类型专属值可放在类型或 companion 内；只服务于一次计算的派生值放在使用附近。不要为遵守“全在文件顶部”而移动值或创建转发声明。
+- 被多个源文件共享的常量集中到所属层/Feature 的专用配置或常量文件（如同一协议的 `XxxConstants.kt` / `XxxConfig.kt`），保持最小可见性；不创建跨功能、无明确 owner 的全局 `Constants.kt` 大杂烩。单文件常量保持在其 owner，不为一处使用额外造转发对象。
 - 算法、持久化 key、wire tag、格式版本和输入上限属于具体协议/组件 owner；可集中在该 owner 的文件头部或专用合同文件，但不可按相同数字或相同字面量跨不相关模块合并。面向用户的文本、Android 资源、构建值与运行期配置继续由资源、Gradle 或配置数据源拥有，不复制成 Kotlin 常量。
 - 抽取或移动常量只改变其归属与位置，不隐式改变值、默认行为、持久化兼容性或外部协议。
 - Boolean 表达明确判断：`isEnabled`、`hasFullAccess`、`canSubmit`。
@@ -47,7 +47,7 @@
 
 ## 自动格式检查
 
-仓库通过 KtLint Gradle 插件 `14.2.0` 固定调用 KtLint `1.8.0`。根目录 `.editorconfig` 统一规定四空格缩进、
+**Passly 本地格式门禁：** 仓库通过 KtLint Gradle 插件 `14.2.0` 固定调用 KtLint `1.8.0`。根目录 `.editorconfig` 统一规定四空格缩进、
 尾逗号、import 排序、文件名与包名规则；`ktlintCheckAll` 覆盖各 Gradle 模块、Gradle Kotlin 脚本和 `buildSrc`。
 `check` 只运行只读检查，格式化必须显式调用 `ktlintFormatAll`。格式修正独立于行为改动；例外仅在具体
 Kotlin 声明上用窄范围 `@Suppress("ktlint:standard:<rule>")`，并在代码附近说明保留理由，不创建全仓 baseline。

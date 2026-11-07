@@ -5,6 +5,33 @@
 `LegacyAutofillService` 解析 `AssistStructure`、处理取消信号并构造 Legacy `FillResponse`/`Dataset`。它不构造
 Credential Manager response。
 
+## 首次 FillRequest 的参数流
+
+```text
+LegacyAutofillService.onFillRequest(request, cancellationSignal, callback)
+  -> serviceScope.launch(Dispatchers.IO)
+  -> AutofillStructureParser.parse(request.fillContexts)
+  -> adapter.buildRequest(parsed)
+       packageName = parsed.packageName ?: ""
+       domain = parsed.webDomain
+       fields = parsed.editableFields.map(AutofillField(...))
+       source = AUTOFILL_SERVICE
+       ambiguousWebOrigin = parsed.ambiguousWebOrigin
+  -> discoverCandidates(internalRequest)
+       interactionId = null, classifiedRoles = null, directEntryId = null
+  -> adapter.buildResponseResult(
+       outcome = outcome,
+       parsed = parsed,
+       context = this@LegacyAutofillService,
+       inlineRequest = request.inlineSuggestionsRequest,
+     )
+  -> traceContinuations.capture(interactionId) / discoveryLog.completed(...)
+     或 discoveryLog.unavailable(reason)
+  -> callback.onSuccess(result.response)
+```
+
+首次请求不给 Domain use case 预分类字段或已存在的 interaction，因此 `DiscoverAutofillCandidates.invoke()` 使用请求来源对应的 matcher，并创建新 interaction；认证后续接由 `AutofillFillViewModel` 另行传入 `interactionId`、`request.roleMap()` 和 `request.directEntryId`，详见[共享填充流程](fill-flow.md)。`cancellationSignal.setOnCancelListener { job.cancel() }` 取消这次服务协程；`CancellationException` 原样传播，普通 `Exception` 经诊断后以 `callback.onFailure("Fill request failed")` 返回，fatal `Error` 不由该普通失败分支吸收。
+
 ## Fill 和 SaveInfo
 
 `LegacyResponseFactory` 从已分类角色创建 `SaveInfo`：密码 IDs 为 required，用户名 IDs 为 optional；没有密码
@@ -125,7 +152,7 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 处理旧版 Autofill 填充与保存请求 | `LegacyAutofillService.onFillRequest()`、`onSaveRequest()` | [`LegacyAutofillService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt) |
+| 处理旧版 Autofill 填充与保存请求 | `onFillRequest(request, cancellationSignal, callback)`、`onSaveRequest(request, callback)` | [`LegacyAutofillService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt) |
 | 将 Android 请求与解析结果转换为隐私安全的 Autofill 诊断事件 | `LegacyAutofillDiagnostics` | [`LegacyAutofillDiagnostics.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillDiagnostics.kt) |
 | 记录认证后发现/选中失败的安全枚举诊断 | `AutofillFillViewModel` | [`AutofillFillViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt) |
 | 解析候选凭据并报告脱敏异常快照 | `RoomAutofillCredentialResolver.resolve()` | [`RoomAutofillCredentialResolver.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/autofill/RoomAutofillCredentialResolver.kt) |
@@ -135,6 +162,7 @@ Android 的该 flag 表示所有 required views 不可见时可触发保存，�
 | 写入入口专属认证目标及候选身份 | `createUnlockIntent(...)`、`createPickerIntent(...)`、`createCandidateIntent(..., entryId, ...)`、`putCommonExtras(..., resultTarget, ...)` | [`AutofillPendingIntentFactory.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/AutofillPendingIntentFactory.kt) |
 | 验证必需 extras 并解析结果目标、ID 和展示模式 | `Intent.toAutofillFillRequest()`、`LegacyAutofillResultTarget.fromWireValue(value)` | [`AutofillFillRequestParser.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillRequestParser.kt)、[`LegacyAutofillResultTarget.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacyAutofillResultTarget.kt) |
 | Feature 入口解析 Legacy action 并分派；Legacy 宿主持有该模式 ViewModel、生命周期和 DATASET / RESPONSE 交付 | `parseLaunch(source)`、`LegacyAutofillEntry`、`deliverLegacyResult(request, result)`、`LegacyResponseFactory.buildDataset(payload, usernameIds, passwordIds, otpIds)`、`AutofillResultDelivery.commitResult(receipt) { ... }` | [`AutofillFeatureEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/AutofillFeatureEntry.kt)、[`LegacyAutofillEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/LegacyAutofillEntry.kt)、[`LegacyResponseFactory.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/builder/LegacyResponseFactory.kt) |
+| App Activity 最终应用 Android Activity result 并结束统一宿主 | `AutofillFeatureEntry(sourceIntent = intent, onComplete = ::completeAutofill)` -> `completeAutofill(completion)` -> `setResult(completion.resultCode, completion.data)`（若有 resultCode）/可选 `hideIme()`/`finish()` | [`AutofillAuthActivity.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt)、[`AutofillFeatureEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/AutofillFeatureEntry.kt) |
 | 用条目稳定键渲染候选并以 `EntryId` 传递选择 | `LazyColumn.items(..., key = { candidate.entry.id.value })`、`onCandidateSelected(candidate.entry.id)`、`CandidateSelected(entryId)` | [`AutofillCandidateBottomSheet.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/ui/AutofillCandidateBottomSheet.kt)、[`AutofillFillRoute.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillRoute.kt)、[`AutofillFillViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillViewModel.kt) |
 | 以目标应用包名读取候选选择器图标，缺失时隐藏 | `AutofillCandidateBottomSheet(..., targetAppPackageName, ...)`、`rememberTargetApplicationIcon(targetAppPackageName)` | [`AutofillCandidateBottomSheet.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/ui/AutofillCandidateBottomSheet.kt)、[`AutofillFillRoute.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/legacy/AutofillFillRoute.kt)、[`AccessibilityFillRoute.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillRoute.kt) |
 | 密封收件箱的模型与处理流程 | [密封收件箱文档](sealed-inbox.md) | [sealed-inbox.md](sealed-inbox.md) |
