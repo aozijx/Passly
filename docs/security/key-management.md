@@ -30,7 +30,7 @@ Room schema 当前没有认证 Envelope 真相源；不得重新把认证材料�
 2. 解锁时读取指定 Envelope，解封并验证 DEK。
 3. `DekManager` 保存 DEK 的内存副本并派生会话密钥。
 4. 添加认证方式只新增或替换 Envelope。
-5. 锁定由 `VaultSessionController` 协调数据库封存，再由 `DekManager` 覆盖内存 DEK 与字段密钥。
+5. 锁定强度由 `VaultSessionController.lock(request)` 按 `request.reason` 映射。`USER` / `IDLE_TIMEOUT` 为 `SOFT_LOCKED`：撤销授权、调用数据库会话 `softLock()` 排空 lease，保持数据库打开和 DEK 缓存，只清除字段会话密钥；后续认证可复用 DEK 并重新打开会话。`AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 为 `SEALED`：撤销授权，调用 `sessionManager.seal()` 等待 lease 实际退出并关闭数据库，清除字段会话密钥后才调用 `DekManager.lock()` 覆盖 DEK。非合作 lease 不会因 `Job.cancel()` 或等待超时就被当作已退出；资源保持打开，锁定继续等待，细节见[安全审查 Task 2](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-2避免活动会话-lease-未退出时关闭数据库)。
 
 当前应用没有删除完整 Vault 的操作。设置中的“永久重置”只删除 SQLCipher 数据库及托管附件/图片，随后用现有
 Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物识别绑定和 Autofill Inbox 的密钥材料及队列
@@ -49,9 +49,10 @@ Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物�
 
 进一步的设备资源与故障注入验证见[安全跟踪 Task 9](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-9首次创建并固定设备-argon2id-参数)。
 
-2026-11-06 源码复核发现 `DekManager.lock()` 先将持有数组的 `Unlocked` 替换为 `Locking`，再调用只处理 `Unlocked` 的擦除函数，
-导致原缓存 DEK 未被显式覆盖。上文生命周期中的擦除是应满足的合同，当前实现尚有这一缺口；状态变为 Locked 不能作为缓冲已归零的证据。
-整改与行为测试见[安全跟踪 Task 8](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-8在状态替换前覆盖原缓存-dek)。
+2026-11-07 已修复原缓存 DEK 在状态替换时失去引用的问题：`DekManager.lock()` 先保存 `previousState`，再发布
+`DekState.Locking`，随后在 `NonCancellable` 区覆盖 `previousState.dek`、清除字段 key 并发布 `DekState.Locked`。
+锁定期间日志/清理异常仍完成收尾并传播；回归测试持有原数组引用验证其内容归零，并覆盖取消与 fatal `Error`。
+历史证据与限制见[安全跟踪 Task 8](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-8在状态替换前覆盖原缓存-dek)。
 
 ## 代码位置
 
@@ -59,8 +60,8 @@ Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物�
 | --- | --- | --- |
 | 定义 bootstrap 数据边界 | `VaultBootstrapStore`、`ProtoVaultBootstrapStore` | [`VaultBootstrapStore.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/access/port/VaultBootstrapStore.kt)、[`ProtoVaultBootstrapStore.kt`](../../data/src/main/java/com/aozijx/passly/data/local/datastore/ProtoVaultBootstrapStore.kt) |
 | 定义并持久化认证 KDF 参数 | `AuthenticationKdfParameters`、`AuthenticationKdfConfigurationStore.load()`、`initializeIfAbsent(parameters)`、`ProtoVaultBootstrapStore.toProto()` / `toDomain()` | [`AuthenticationKdfParameters.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/access/model/AuthenticationKdfParameters.kt)、[`AuthenticationKdfConfigurationStore.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/access/port/AuthenticationKdfConfigurationStore.kt)、[`ProtoVaultBootstrapStore.kt`](../../data/src/main/java/com/aozijx/passly/data/local/datastore/ProtoVaultBootstrapStore.kt)、[`bootstrap.proto`](../../data/src/main/proto/bootstrap.proto) |
-| 校准设备、选择并读取已持久化参数 | `DeviceKdfConfiguration.selected()`、`calibrate()`、`DeviceKdfPolicy.select(heapMiB, processors, baselineMillis)` | [`DeviceKdfConfiguration.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DeviceKdfConfiguration.kt) |
-| 创建与验证应用密码/恢复码时将参数传入 KDF | `DefaultAuthenticationMethodProvisioner.setAppPassword()` / `checkRecoveryCode()`、`DefaultRecoveryCodeDraftFactory.generate()`、`CredentialMethodExecutor.execute()` | [`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt)、[`DefaultRecoveryCodeDraftFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultRecoveryCodeDraftFactory.kt)、[`CredentialMethodExecutor.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/CredentialMethodExecutor.kt) |
-| 管理 DEK 与派生字段密钥 | `DekManager`、`SensitiveFieldEncryptor` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt)、[`SensitiveFieldEncryptor.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/SensitiveFieldEncryptor.kt) |
-| 封装并恢复 DEK envelope | `EnvelopeManager` | [`EnvelopeManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/envelope/EnvelopeManager.kt) |
-| 协调认证时的数据库会话开关 | `VaultSessionController` | [`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
+| 校准设备、选择并读取已持久化参数 | `DeviceKdfConfiguration.selected()`、`calibrate()`、`DeviceKdfPolicy.select(heapMiB, processors, baselineMillis)` | [`DeviceKdfConfiguration.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DeviceKdfConfiguration.kt) |
+| 创建与验证应用密码/恢复码时将参数传入 KDF | `DefaultAuthenticationMethodProvisioner.setAppPassword()` / `checkRecoveryCode()`、`DefaultRecoveryCodeDraftFactory.generate()`、`CredentialMethodExecutor.execute()` | [`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultAuthenticationMethodProvisioner.kt)、[`DefaultRecoveryCodeDraftFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultRecoveryCodeDraftFactory.kt)、[`CredentialMethodExecutor.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/CredentialMethodExecutor.kt) |
+| 管理 DEK 与派生字段密钥 | `DekManager`、`SecuritySensitiveFieldCryptor` | [`DekManager.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt)、[`SecuritySensitiveFieldCryptor.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/SecuritySensitiveFieldCryptor.kt) |
+| 封装并恢复 DEK envelope | `EnvelopeManager` | [`EnvelopeManager.kt`](../../security/src/main/java/com/aozijx/passly/security/envelope/EnvelopeManager.kt) |
+| 按锁定原因选择软锁/封存并收尾密钥 | `VaultSessionController.lock(request)`、`LockReason.toLockLevel()`、`sealDatabaseForLock(...)`、`clearSensitiveDataKeys()`、`DekManager.lock()` | [`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt)、[`DekManager.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt) |

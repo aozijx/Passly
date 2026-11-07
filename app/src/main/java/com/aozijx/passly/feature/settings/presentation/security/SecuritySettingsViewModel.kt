@@ -134,10 +134,16 @@ class SecuritySettingsViewModel
                     currentCoroutineContext().ensureActive()
                     when (result) {
                         is AuthenticationResult.Success -> {
-                            if (result.pendingMaintenance == AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP) {
+                            if (AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP in result.pendingMaintenance) {
                                 pageEffects.tryEmit(
                                     owner,
                                     SecuritySettingsEffect.Notice(SecuritySettingsNotice.BiometricRotationCleanupPending),
+                                )
+                            }
+                            if (AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH in result.pendingMaintenance) {
+                                pageEffects.tryEmit(
+                                    owner,
+                                    SecuritySettingsEffect.Notice(SecuritySettingsNotice.AuthenticationAvailabilityRefreshPending),
                                 )
                             }
                         }

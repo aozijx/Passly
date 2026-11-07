@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.settings.presentation.security
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
@@ -26,6 +27,47 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppPasswordSettingsViewModelTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
+
+    @Test
+    fun `committed password with pending maintenance emits completion and maintenance feedback`() =
+        runTest {
+            val pending =
+                setOf(AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH)
+            val provisioner =
+                Provisioner(
+                    setPassword = {
+                        AuthenticationResult.Success(
+                            method = AuthenticationMethod.APP_PASSWORD,
+                            pendingMaintenance = pending,
+                        )
+                    },
+                )
+            val viewModel = viewModel(provisioner)
+            viewModel.onPageEntered()
+            val effects = mutableListOf<AppPasswordSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.toList(effects) }
+            runCurrent()
+
+            viewModel.onAction(
+                AppPasswordSettingsAction.SubmitChange(
+                    AppPasswordChangeRequest.Set(
+                        "long-enough-password".toCharArray(),
+                        "long-enough-password".toCharArray(),
+                    ),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    AppPasswordSettingsEffect.AppPasswordSet,
+                    AppPasswordSettingsEffect.MaintenancePending(
+                        AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH,
+                    ),
+                ),
+                effects,
+            )
+        }
 
     @Test
     fun `submit received after page exit wipes request without starting provisioner`() =

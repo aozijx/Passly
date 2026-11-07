@@ -17,7 +17,8 @@ flowchart TB
 - 多个 Envelope 包装同一份随机 Vault DEK；认证方式可变化而不重加密全部数据。
 - SQLCipher 保护数据库整体，敏感负载另做字段级认证加密。
 - 非敏感 Profile 元数据使用结构化列支持本地查询；密码、密钥、OTP Secret 等高敏字段不进入查询索引。
-- 锁定时先关闭数据库，再擦除 DEK 与派生会话密钥。
+- `USER` / `IDLE_TIMEOUT` 触发 `SOFT_LOCKED`：阻止新租约并排空现有 lease，数据库保持打开、DEK 保留，字段会话密钥清除；重新认证可恢复会话。
+- `AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 触发 `SEALED`：撤销授权后等待数据库 lease 实际退出，再封存/关闭数据库、清除字段会话密钥并擦除 DEK。忽略取消的 lease 仍存活时不会强制关闭其资源；锁定保持等待。lease drain 合同见[安全审查 Task 2](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-2避免活动会话-lease-未退出时关闭数据库)。
 
 ## 信任边界
 
@@ -44,6 +45,6 @@ flowchart TB
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 认证、授权和会话生命周期 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
-| DEK 与字段密钥管理 | `DekManager`、`SensitiveFieldEncryptor` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt)、[`SensitiveFieldEncryptor.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/SensitiveFieldEncryptor.kt) |
+| 认证、授权和会话生命周期 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/flow/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt) |
+| DEK 与字段密钥管理 | `DekManager`、`SecuritySensitiveFieldCryptor` | [`DekManager.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt)、[`SecuritySensitiveFieldCryptor.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/SecuritySensitiveFieldCryptor.kt) |
 | 加密数据库会话访问 | `AppDatabaseSession` | [`AppDatabaseSession.kt`](../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |

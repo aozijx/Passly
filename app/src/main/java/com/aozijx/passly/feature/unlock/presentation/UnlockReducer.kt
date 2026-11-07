@@ -164,20 +164,32 @@ internal object UnlockReducer {
             }
 
             UnlockMutation.PasswordSetupOpened -> {
+                if ((state.passwordSetup as? UnlockPasswordSetup.Editing)?.phase == UnlockPasswordSetupPhase.Saving) {
+                    return state
+                }
                 state.copy(
                     passwordSetup = UnlockPasswordSetup.Editing(),
                 )
             }
 
-            UnlockMutation.PasswordSetupClosed,
-            UnlockMutation.PasswordSetupCompleted,
-            -> {
+            UnlockMutation.PasswordSetupClosed -> {
+                if ((state.passwordSetup as? UnlockPasswordSetup.Editing)?.phase == UnlockPasswordSetupPhase.Saving) {
+                    return state
+                }
+                state.copy(passwordSetup = UnlockPasswordSetup.Closed)
+            }
+
+            UnlockMutation.PasswordSetupCompleted -> {
                 state.copy(
                     passwordSetup = UnlockPasswordSetup.Closed,
                 )
             }
 
             is UnlockMutation.NewAppPasswordChanged -> {
+                if ((state.passwordSetup as? UnlockPasswordSetup.Editing)?.phase == UnlockPasswordSetupPhase.Saving) {
+                    mutation.value.wipe()
+                    return state
+                }
                 state.updatePasswordSetup {
                     copy(
                         newPassword = mutation.value,
@@ -187,6 +199,10 @@ internal object UnlockReducer {
             }
 
             is UnlockMutation.ConfirmAppPasswordChanged -> {
+                if ((state.passwordSetup as? UnlockPasswordSetup.Editing)?.phase == UnlockPasswordSetupPhase.Saving) {
+                    mutation.value.wipe()
+                    return state
+                }
                 state.updatePasswordSetup {
                     copy(
                         confirmPassword = mutation.value,

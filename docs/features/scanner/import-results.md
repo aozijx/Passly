@@ -8,6 +8,41 @@ Scanner 不解析 OTP、Wi-Fi、链接等业务类型。`ScannerResult` 只保�
 - OTP 编辑器只解析 OTP URI，再调用 `AddOtpViewModel.tryApplyScannedConfig(config)`；Wi-Fi 编辑器只解析 Wi-Fi 载荷，再调用 `AddWifiViewModel.tryApplyScannedWifi(payload)`。有效值使用“填入”操作。解析失败或当前表单拒绝应用时，结果卡保留，表单不被覆盖。
 - owner 在 `resolveResult` 中解析一次，并把解析值捕获在 `ScannerResultPlan.confirm` 闭包中；点击确认不重新解析。Scanner 不新增内容类型子类、purpose 映射或按类型分发的 UI 分支。
 
+各入口的参数传递如下：
+
+```text
+VaultRoute -> ScannerRoute(resolveResult = { rawValue -> ... })
+  -> OtpAuthUriCodec.parse(rawValue) -> Parsed.config
+  -> ScannerResultPlan(presentation = Save/no-copy, confirm = {
+       scannedOtpImportViewModel.importScannedOtp(config)
+     })
+  -> ScannedOtpImportViewModel.importScannedOtp(config)
+  -> ImportScannedOtpUseCase.invoke(config)
+  -> config.toNewEntryDraft() -> EntryCreation(draft)
+
+VaultRoute -> WifiQrPayloadParser.parse(rawValue) -> Parsed.payload
+  -> ScannerResultPlan(confirm = {
+       navigation.navigate(VaultDestinationRequest.EditScannedWifi(payload))
+     })
+  -> VaultNavigation.navigate(request)
+  -> seedStager.stage(EntryEditorSeed.Wifi(request.payload))
+  -> navigateToSingleTopRoute(AppRoute.AddWifiFromSeed.createRoute(staged.token.value))
+
+AddOtpEditorRoute -> ScannerRoute(resolveResult = { rawValue -> ... })
+  -> OtpAuthUriCodec.parse(rawValue) -> Parsed.config
+  -> ScannerResultPlan(presentation = Use/no-copy, confirm = {
+       viewModel.tryApplyScannedConfig(config)
+     })
+
+AddWifiEditorRoute -> ScannerRoute(resolveResult = { rawValue -> ... })
+  -> WifiQrPayloadParser.parse(rawValue) -> Parsed.payload
+  -> ScannerResultPlan(presentation = Use, confirm = {
+       viewModel.tryApplyScannedWifi(payload)
+     })
+```
+
+所有确认均由 `ScannerRoute.handleScreenAction(ConfirmResult)` 启动 `scope.launch { resultSession.confirm { plan.confirm() } }`。`Handled` 关闭 Scanner，`Rejected` 保留卡片。该 coroutine 当前没有 catch：OTP 导入用例将创建阶段普通异常转成 `false`，OTP/Wi-Fi 表单应用通过布尔结果拒绝；Wi-Fi 导航的 seed stage 或导航 callback 抛错则会从 coroutine 逸出，失败反馈和 seed 补偿仍见 Task 3。
+
 ## 内容与生命周期边界
 
 OTP 首页的调用链为 `VaultRoute` → `ScannedOtpImportViewModel.importScannedOtp(config)` → `ImportScannedOtpUseCase.invoke(config)` → `EntryCreation(draft)`。保存前校验完整访问和认证会话身份；Activity ViewModel 用 `Mutex.tryLock()` 拒绝并行导入，已确认任务由 Activity ViewModel scope 持有。Use case 取消会传播，普通失败返回拒绝结果。
@@ -27,3 +62,5 @@ Wi-Fi 首页导航只携带一次性随机 token。`EntryEditorSeedCoordinator` 
 | Vault / OTP / Wi-Fi owner 转换 | `VaultRoute`、`AddOtpEditorRoute`、`AddWifiEditorRoute` | [`VaultRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultRoute.kt)、[`AddOtpEditorRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt)、[`AddWifiEditorRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/wifi/AddWifiEditorRoute.kt) |
 | Domain 格式解析 | `OtpAuthUriCodec.parse(rawValue)`、`WifiQrPayloadParser.parse(rawValue)` | [`OtpAuthUriCodec.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpAuthUriCodec.kt)、[`WifiQrPayloadParser.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/WifiQrPayloadParser.kt) |
 | 认证绑定的 Wi-Fi seed | `EntryEditorSeedCoordinator`、`EntryEditorSeedStore.consume(token)` | [`EntryEditorSeedCoordinator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/EntryEditorSeedCoordinator.kt)、[`EntryEditorSeedStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EntryEditorSeedStore.kt) |
+| OTP 导入的认证、单飞与创建边界 | `importScannedOtp(config)` 检查 `AuthenticationState.Authenticated`，`Mutex.tryLock()` 后由 ViewModel scope 执行 use case；`invoke(config)` 校验 Full Vault，再 `config.toNewEntryDraft()` 并调用 `createEntry(draft)` | [`ScannedOtpImportViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/ScannedOtpImportViewModel.kt)、[`ImportScannedOtpUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/ImportScannedOtpUseCase.kt) |
+| Wi-Fi seed 路由 | `navigate(VaultDestinationRequest.EditScannedWifi(payload))` -> `stage(EntryEditorSeed.Wifi(request.payload))` -> `navigateToSingleTopRoute(createRoute(staged.token.value))` | [`VaultNavigation.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultNavigation.kt) |

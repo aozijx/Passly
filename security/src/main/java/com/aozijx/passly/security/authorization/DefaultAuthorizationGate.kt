@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DefaultAuthorizationGate
+internal class DefaultAuthorizationGate
     @Inject
     constructor(
         private val authenticationManager: AuthenticationManager,

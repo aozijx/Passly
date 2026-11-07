@@ -51,7 +51,7 @@ class AppPasswordSettingsViewModel
             val job =
                 viewModelScope.launch(start = CoroutineStart.LAZY) {
                     when (val result = appPasswordSettings.execute(request)) {
-                        AppPasswordChangeResult.Completed -> {
+                        is AppPasswordChangeResult.Completed -> {
                             emitEffect(
                                 owner,
                                 when (request) {
@@ -60,6 +60,9 @@ class AppPasswordSettingsViewModel
                                     AppPasswordChangeRequest.Disable -> AppPasswordSettingsEffect.AppPasswordDisabled
                                 },
                             )
+                            result.pendingMaintenance.forEach { maintenance ->
+                                emitEffect(owner, AppPasswordSettingsEffect.MaintenancePending(maintenance))
+                            }
                         }
 
                         is AppPasswordChangeResult.InvalidInput -> {

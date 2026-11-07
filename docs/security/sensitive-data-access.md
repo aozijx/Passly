@@ -23,8 +23,10 @@ secret 数据位于 `entry_secret_fields`：敏感字段（`PASSWORD`、银行�
 
 字段级密文行的 AAD 绑定 `entryId + fieldKey`，因此解密 `PASSWORD` 不会加载同条目其他字段的密文；
 `readField`/`reveal` 只解密请求的字段，不存在"解一个字段带出整条 secret"的捆绑暴露。完整凭据
-快照不通过 `SensitiveFieldRepository` 暴露。`RoomBackupSnapshotReader` 在 Backup 授权与快照边界内，
-通过 Data 内部的 `SecretFieldStore.readAll()` 组装完整凭据；Revision 使用自己的 permit-gated restore
+快照不通过 `SensitiveFieldRepository` 暴露。Backup 经 App `AppBackupSnapshotGateway.read(options)` 请求
+Domain `VaultBackupStore.read(options)`；Data `RoomVaultBackupStore.read(options)` 以
+`databaseSession.queryFullVault(onDenied = { throw SessionModeRestricted() }) { ... }` 拒绝不允许完整读取的会话，并调用
+`SecretFieldStore.readAll(db, entryId, entryType)` 组装完整凭据。Revision 使用自己的 permit-gated restore
 流程，字段 reveal、复制与 QR 则按字段授权读取，不借用完整快照接口。
 
 字段级高敏键包括 `PASSWORD`、银行卡号、CVV、支付 PIN、身份证号、助记词、恢复码、SSH 私钥/口令、

@@ -169,7 +169,7 @@ class SecuritySettingsViewModelTest {
                 Fixture {
                     AuthenticationResult.Success(
                         method = AuthenticationMethod.BIOMETRIC,
-                        pendingMaintenance = AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP,
+                        pendingMaintenance = setOf(AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP),
                     )
                 }
             val model = fixture.model()
@@ -182,6 +182,39 @@ class SecuritySettingsViewModelTest {
             runCurrent()
 
             assertEquals(listOf(SecuritySettingsNotice.BiometricRotationCleanupPending), notices)
+            assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
+        }
+
+    @Test
+    fun `committed biometric rotation reports deferred availability refresh as a notice`() =
+        runTest {
+            val fixture =
+                Fixture {
+                    AuthenticationResult.Success(
+                        method = AuthenticationMethod.BIOMETRIC,
+                        pendingMaintenance =
+                            setOf(
+                                AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP,
+                                AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH,
+                            ),
+                    )
+                }
+            val model = fixture.model()
+            val notices = mutableListOf<SecuritySettingsNotice>()
+            backgroundScope.launch { model.notices.toList(notices) }
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+
+            model.onAction(SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(false))
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    SecuritySettingsNotice.BiometricRotationCleanupPending,
+                    SecuritySettingsNotice.AuthenticationAvailabilityRefreshPending,
+                ),
+                notices,
+            )
             assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
         }
 

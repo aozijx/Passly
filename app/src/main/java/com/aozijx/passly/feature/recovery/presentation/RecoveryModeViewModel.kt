@@ -18,6 +18,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -32,6 +33,7 @@ class RecoveryModeViewModel
 
         private val pageEffects = PageEffects<RecoveryModeEffect>()
         val effect = pageEffects.effects
+        private var passwordProvisioning = false
 
         fun onAction(action: RecoveryModeUiAction) {
             when (action) {
@@ -45,23 +47,28 @@ class RecoveryModeViewModel
         }
 
         private fun showSetPasswordDialog() {
+            if (passwordProvisioning) return
             if (!ensureRecoveryMode()) return
+            wipePasswords()
             mutate(RecoveryModeMutation.PasswordDialogOpened)
         }
 
         private fun updateNewPassword(value: String) {
             val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
+            if (passwordProvisioning || setup.phase == RecoveryPasswordSetupPhase.Saving) return
             setup.newPassword.wipe()
             mutate(RecoveryModeMutation.NewPasswordChanged(OwnedChars.fromString(value)))
         }
 
         private fun updateConfirmPassword(value: String) {
             val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
+            if (passwordProvisioning || setup.phase == RecoveryPasswordSetupPhase.Saving) return
             setup.confirmPassword.wipe()
             mutate(RecoveryModeMutation.ConfirmPasswordChanged(OwnedChars.fromString(value)))
         }
 
         private fun submitNewPassword() {
+            if (passwordProvisioning) return
             val state = _uiState.value
             if (!ensureRecoveryMode()) return
             val owner = pageEffects.currentOwner ?: return
@@ -81,6 +88,7 @@ class RecoveryModeViewModel
                 return
             }
 
+            passwordProvisioning = true
             mutate(RecoveryModeMutation.PasswordSetupStarted)
             viewModelScope.launch {
                 try {
@@ -105,9 +113,22 @@ class RecoveryModeViewModel
                             )
                         }
                     }
+                } catch (cancelled: CancellationException) {
+                    if (pageEffects.isActive(owner)) mutate(RecoveryModeMutation.PasswordSetupStopped)
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (pageEffects.isActive(owner)) {
+                        mutate(
+                            RecoveryModeMutation.PasswordSetupFailed(
+                                RecoveryPasswordSetupFailure.SetupFailed,
+                            ),
+                        )
+                    }
                 } finally {
                     MemoryCleaner.wipeCharArray(password)
                     MemoryCleaner.wipeCharArray(confirm)
+                    if (pageEffects.isActive(owner)) mutate(RecoveryModeMutation.PasswordSetupStopped)
+                    passwordProvisioning = false
                 }
             }
         }
@@ -124,7 +145,8 @@ class RecoveryModeViewModel
         fun onPageExited(owner: Any) {
             if (!pageEffects.isActive(owner)) return
             pageEffects.exit(owner)
-            dismissPasswordDialog()
+            wipePasswords()
+            mutate(RecoveryModeMutation.PasswordDialogDiscarded)
         }
 
         private fun emitEffect(
@@ -135,6 +157,7 @@ class RecoveryModeViewModel
         }
 
         private fun dismissPasswordDialog() {
+            if (passwordProvisioning) return
             wipePasswords()
             mutate(RecoveryModeMutation.PasswordDialogDismissed)
         }

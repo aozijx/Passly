@@ -3,9 +3,9 @@ package com.aozijx.passly.security.authentication.host
 import androidx.biometric.BiometricPrompt
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
-import com.aozijx.passly.security.authentication.SecretChars
+import com.aozijx.passly.security.authentication.method.credential.SecretChars
 
-data class AuthHostSnapshot(
+internal data class AuthHostSnapshot(
     val resumed: Boolean,
     val finishing: Boolean,
     val destroyed: Boolean,
@@ -13,12 +13,12 @@ data class AuthHostSnapshot(
     val usable: Boolean get() = resumed && !finishing && !destroyed
 }
 
-data class BiometricPromptSpec(
+internal data class BiometricPromptSpec(
     val purpose: AuthenticationPurpose,
     val allowDeviceCredential: Boolean = false,
 )
 
-sealed interface BiometricHostResult {
+internal sealed interface BiometricHostResult {
     data class Success(
         val result: BiometricPrompt.AuthenticationResult,
     ) : BiometricHostResult
@@ -35,14 +35,14 @@ sealed interface BiometricHostResult {
     data object HostUnavailable : BiometricHostResult
 }
 
-enum class BiometricHostFailure {
+internal enum class BiometricHostFailure {
     METHOD_UNAVAILABLE,
     RATE_LIMITED,
     CRYPTO_OBJECT_INVALID,
     AUTHENTICATION_FAILED,
 }
 
-sealed interface SecretHostResult {
+internal sealed interface SecretHostResult {
     data class Submitted(
         val secret: SecretChars,
     ) : SecretHostResult
@@ -54,7 +54,7 @@ sealed interface SecretHostResult {
     data object HostUnavailable : SecretHostResult
 }
 
-interface AuthUiHost {
+internal interface AuthUiHost {
     val ownerId: String
 
     fun snapshot(): AuthHostSnapshot

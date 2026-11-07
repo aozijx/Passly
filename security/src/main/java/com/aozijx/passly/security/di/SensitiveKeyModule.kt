@@ -1,12 +1,16 @@
 package com.aozijx.passly.security.di
 
+import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.core.crypto.FieldKeyProvider
+import com.aozijx.passly.core.crypto.SensitiveFieldCryptor
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.runtime.session.SessionKeySource
 import com.aozijx.passly.security.dek.FieldKeyLifecycle
 import com.aozijx.passly.security.dek.FieldKeyManager
+import com.aozijx.passly.security.dek.AttachmentContentCrypto
 import com.aozijx.passly.security.dek.SensitiveDataKeyClearer
 import com.aozijx.passly.security.dek.SensitiveDataKeyManager
+import com.aozijx.passly.security.dek.SecuritySensitiveFieldCryptor
 import com.aozijx.passly.security.dek.SensitiveKeyScope
 import com.aozijx.passly.security.session.SecureSessionKeySource
 import dagger.Binds
@@ -23,6 +27,14 @@ import kotlinx.coroutines.SupervisorJob
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class SensitiveKeyModule {
+    @Binds
+    @Singleton
+    abstract fun bindSensitiveFieldCryptor(implementation: SecuritySensitiveFieldCryptor): SensitiveFieldCryptor
+
+    @Binds
+    @Singleton
+    abstract fun bindAttachmentContentProtector(implementation: AttachmentContentCrypto): AttachmentContentProtector
+
     @Binds
     @Singleton
     abstract fun bindSessionKeySource(implementation: SecureSessionKeySource): SessionKeySource

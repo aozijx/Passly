@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.security
 
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
@@ -24,7 +25,9 @@ sealed interface AppPasswordManagementAccess {
 }
 
 sealed interface AppPasswordChangeResult {
-    data object Completed : AppPasswordChangeResult
+    data class Completed(
+        val pendingMaintenance: Set<AuthenticationPendingMaintenance> = emptySet(),
+    ) : AppPasswordChangeResult
 
     data object Cancelled : AppPasswordChangeResult
 
@@ -165,7 +168,7 @@ internal fun AppPasswordChangeRequest.clearSensitiveInput() {
 
 private fun AuthenticationResult.toChangeResult(): AppPasswordChangeResult =
     when (this) {
-        is AuthenticationResult.Success -> AppPasswordChangeResult.Completed
+        is AuthenticationResult.Success -> AppPasswordChangeResult.Completed(pendingMaintenance)
         is AuthenticationResult.Cancelled -> AppPasswordChangeResult.Cancelled
         is AuthenticationResult.Failure -> AppPasswordChangeResult.Failed(failure)
     }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogEvent
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogState
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogsModel
+import com.aozijx.passly.presentation.mapping.rememberPasswordStrength
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
 
 @Composable
@@ -29,6 +30,7 @@ internal fun AppPasswordDialogs(
             AppPasswordSetDialog(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
+                strengthUiState = rememberPasswordStrength(state.appPasswordNew),
                 confirmEnabled = state.isSetPasswordConfirmEnabled,
                 isBusy = state.isBusy,
                 onNewPasswordChange = { onEvent(AppPasswordDialogEvent.NewChanged(it)) },

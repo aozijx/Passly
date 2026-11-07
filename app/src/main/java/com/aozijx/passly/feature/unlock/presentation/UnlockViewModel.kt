@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
@@ -38,6 +40,7 @@ class UnlockViewModel
         val uiState: StateFlow<UnlockUiState> = _uiState.asStateFlow()
 
         private var recoveryRevealTapCount = 0
+        private var passwordProvisioning = false
 
         init {
             viewModelScope.launch {
@@ -95,7 +98,7 @@ class UnlockViewModel
                 }
 
                 UnlockUiAction.SetPasswordClicked -> {
-                    mutate(UnlockMutation.PasswordSetupOpened)
+                    openSetPasswordDialog()
                 }
 
                 is UnlockUiAction.NewAppPasswordChanged -> {
@@ -118,22 +121,32 @@ class UnlockViewModel
 
         private fun updateNewAppPassword(value: String) {
             val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
+            if (passwordProvisioning || setup.phase == UnlockPasswordSetupPhase.Saving) return
             setup.newPassword.wipe()
             mutate(UnlockMutation.NewAppPasswordChanged(OwnedChars.fromString(value)))
         }
 
         private fun updateConfirmAppPassword(value: String) {
             val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
+            if (passwordProvisioning || setup.phase == UnlockPasswordSetupPhase.Saving) return
             setup.confirmPassword.wipe()
             mutate(UnlockMutation.ConfirmAppPasswordChanged(OwnedChars.fromString(value)))
         }
 
         private fun dismissSetPasswordDialog() {
+            if (passwordProvisioning) return
             wipeSetupPasswords()
             mutate(UnlockMutation.PasswordSetupClosed)
         }
 
+        private fun openSetPasswordDialog() {
+            if (passwordProvisioning) return
+            wipeSetupPasswords()
+            mutate(UnlockMutation.PasswordSetupOpened)
+        }
+
         private fun setAppPassword() {
+            if (passwordProvisioning) return
             val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
             val password = setup.newPassword.toCharArray()
             val confirm = setup.confirmPassword.toCharArray()
@@ -142,6 +155,7 @@ class UnlockViewModel
                 MemoryCleaner.wipeCharArray(confirm)
                 return
             }
+            passwordProvisioning = true
             mutate(UnlockMutation.PasswordSetupStarted)
             viewModelScope.launch {
                 try {
@@ -159,10 +173,19 @@ class UnlockViewModel
                             mutate(UnlockMutation.PasswordSetupFailed(result.failure))
                         }
                     }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    mutate(
+                        UnlockMutation.PasswordSetupFailed(
+                            AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
+                        ),
+                    )
                 } finally {
                     MemoryCleaner.wipeCharArray(password)
                     MemoryCleaner.wipeCharArray(confirm)
                     mutate(UnlockMutation.PasswordSetupFinished)
+                    passwordProvisioning = false
                 }
             }
         }

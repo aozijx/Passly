@@ -81,7 +81,7 @@ moduleBoundaries {
         ":runtime:session",
     )
     module(":domain", ":core:common")
-    module(":runtime:session", ":domain")
+    module(":runtime:session")
     module(":security", ":core", ":core:common", ":domain", ":runtime:session")
     module(":feature:autofill", ":core", ":domain", ":runtime:session")
     requireDirectDependency(":app", ":feature:autofill")

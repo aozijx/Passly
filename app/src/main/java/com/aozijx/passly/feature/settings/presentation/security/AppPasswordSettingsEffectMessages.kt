@@ -4,6 +4,7 @@ import android.content.Context
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.feature.settings.security.AppPasswordInputError
 
 internal fun AppPasswordSettingsEffect.toAppPasswordMessage(context: Context): String? =
@@ -18,6 +19,18 @@ internal fun AppPasswordSettingsEffect.toAppPasswordMessage(context: Context): S
 
         is AppPasswordSettingsEffect.AppPasswordDisabled -> {
             context.getString(R.string.settings_auth_password_disabled)
+        }
+
+        is AppPasswordSettingsEffect.MaintenancePending -> {
+            when (maintenance) {
+                AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP -> {
+                    context.getString(R.string.settings_biometric_cleanup_pending)
+                }
+
+                AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH -> {
+                    context.getString(R.string.settings_biometric_availability_refresh_pending)
+                }
+            }
         }
 
         is AppPasswordSettingsEffect.AppPasswordInputInvalid -> {

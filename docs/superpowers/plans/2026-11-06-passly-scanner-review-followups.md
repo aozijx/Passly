@@ -4,6 +4,8 @@
 
 **2026-11-07 顺序：** Task 4 owner 状态边界已修正、待运行验证；Route/Activity Result 关闭竞态仍待覆盖 → Task 1 取消/client 关闭与 Task 3 确认异常/seed 补偿 → Task 2 候选/几何验收。共享 seed 的详细清理由主待办 Task 42 持有，不复制第二套导航状态。
 
+**前序扫描发现归集：** 此前发现的全帧识别未受视觉遮罩约束、确认异常逸出 Route coroutine、Wi-Fi 导航失败遗留已暂存 payload、图片解码把取消转为普通失败、首个无效条码遮挡后续有效候选，以及显式关闭后旧输入可能重建 owner，已分别归入 Task 2、3、1、2、4；全帧识别已改为按视框几何裁定候选，剩余验收列在对应任务中。Task 3 的 seed 释放合同与[主维护 TODO Task 42](2026-10-30-passly-maintainability-todo.md)共用，不重复开项。
+
 
 <a id="task-4"></a>
 

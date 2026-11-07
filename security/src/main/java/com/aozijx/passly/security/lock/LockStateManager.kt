@@ -6,7 +6,7 @@ import javax.inject.Singleton
 
 /** Owns only the in-memory lock strength; lock side effects remain in the session controller. */
 @Singleton
-class LockStateManager
+internal class LockStateManager
     @Inject
     constructor() {
         @Volatile

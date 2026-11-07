@@ -11,12 +11,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeoutOrNull
 
-class HostRegistrationToken internal constructor(
+internal class HostRegistrationToken internal constructor(
     val ownerId: String,
     val value: String,
 )
 
-class HostLease internal constructor(
+internal class HostLease internal constructor(
     val ownerId: String,
     val token: HostRegistrationToken,
     host: AuthUiHost,
@@ -38,7 +38,7 @@ class HostLease internal constructor(
 }
 
 @Singleton
-class AuthenticationHostRegistry
+internal class AuthenticationHostRegistry
     @Inject
     constructor() {
         private data class Registration(

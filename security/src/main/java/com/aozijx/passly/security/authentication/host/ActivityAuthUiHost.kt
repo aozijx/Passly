@@ -12,7 +12,7 @@ import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.security.R
-import com.aozijx.passly.security.authentication.SecretChars
+import com.aozijx.passly.security.authentication.method.credential.SecretChars
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,7 +68,7 @@ internal fun submitSecretInput(
     )
 }
 
-class ActivityAuthUiHost(
+internal class ActivityAuthUiHost(
     private val activity: FragmentActivity,
     override val ownerId: String,
     private val logger: Logger,

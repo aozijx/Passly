@@ -41,6 +41,8 @@ sealed interface SecuritySettingsAction {
 
 sealed interface SecuritySettingsNotice {
     data object BiometricRotationCleanupPending : SecuritySettingsNotice
+
+    data object AuthenticationAvailabilityRefreshPending : SecuritySettingsNotice
 }
 
 sealed interface SecuritySettingsEffect {

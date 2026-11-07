@@ -32,6 +32,10 @@ import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 @Composable
 internal fun SecurityRoute(onBack: (() -> Unit)?) {
     val context = LocalContext.current
+    val biometricCleanupPendingMessage =
+        stringResource(com.aozijx.passly.R.string.settings_biometric_cleanup_pending)
+    val authenticationAvailabilityRefreshPendingMessage =
+        stringResource(com.aozijx.passly.R.string.settings_biometric_availability_refresh_pending)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val securityViewModel: SecuritySettingsViewModel = hiltViewModel()
     val appPasswordViewModel: AppPasswordSettingsViewModel = hiltViewModel()
@@ -46,12 +50,16 @@ internal fun SecurityRoute(onBack: (() -> Unit)?) {
         }
     }
     ObserveSettingsWriteErrors(securityViewModel.errors)
-    LaunchedEffect(securityViewModel, lifecycle, context) {
+    LaunchedEffect(securityViewModel, lifecycle, context, biometricCleanupPendingMessage, authenticationAvailabilityRefreshPendingMessage) {
         collectPageEffects(lifecycle, securityViewModel.notices) { notice ->
             val message =
                 when (notice) {
                     SecuritySettingsNotice.BiometricRotationCleanupPending -> {
-                        context.getString(com.aozijx.passly.R.string.settings_biometric_cleanup_pending)
+                        biometricCleanupPendingMessage
+                    }
+
+                    SecuritySettingsNotice.AuthenticationAvailabilityRefreshPending -> {
+                        authenticationAvailabilityRefreshPendingMessage
                     }
                 }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()

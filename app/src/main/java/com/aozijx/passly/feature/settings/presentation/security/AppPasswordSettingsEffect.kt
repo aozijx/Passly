@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.feature.settings.security.AppPasswordInputError
 
 sealed interface AppPasswordSettingsEffect {
@@ -9,6 +10,10 @@ sealed interface AppPasswordSettingsEffect {
     data object AppPasswordChanged : AppPasswordSettingsEffect
 
     data object AppPasswordDisabled : AppPasswordSettingsEffect
+
+    data class MaintenancePending(
+        val maintenance: AuthenticationPendingMaintenance,
+    ) : AppPasswordSettingsEffect
 
     data class AppPasswordInputInvalid(
         val reason: AppPasswordInputError,

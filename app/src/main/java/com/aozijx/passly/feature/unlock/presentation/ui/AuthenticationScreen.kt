@@ -46,6 +46,7 @@ import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
 import com.aozijx.passly.feature.unlock.presentation.UnlockVerificationPhase
 import com.aozijx.passly.feature.unlock.presentation.canSubmit
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
+import com.aozijx.passly.presentation.mapping.rememberPasswordStrength
 
 @Composable
 fun AuthenticationScreen(
@@ -270,6 +271,7 @@ fun AuthenticationScreen(
         AppPasswordSetDialog(
             newPassword = passwordSetup.newPassword.toUiString(),
             confirmPassword = passwordSetup.confirmPassword.toUiString(),
+            strengthUiState = rememberPasswordStrength(passwordSetup.newPassword.toUiString()),
             confirmEnabled = passwordSetup.canSubmit() && state.kdfParameters != null,
             kdfHint =
                 when {

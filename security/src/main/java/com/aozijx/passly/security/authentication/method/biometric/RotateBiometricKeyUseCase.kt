@@ -1,0 +1,150 @@
+package com.aozijx.passly.security.authentication.method.biometric
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
+import com.aozijx.passly.domain.access.model.AuthenticationPurpose
+import com.aozijx.passly.domain.access.model.AuthenticationRequestId
+import com.aozijx.passly.domain.access.model.AuthenticationResult
+import com.aozijx.passly.domain.access.model.BiometricBinding
+import com.aozijx.passly.domain.access.model.BiometricRotationJournal
+import com.aozijx.passly.domain.access.model.BiometricRotationPhase
+import com.aozijx.passly.domain.access.model.CancellationReason
+import com.aozijx.passly.domain.access.model.EnvelopeType
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
+import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenanceResult
+import com.aozijx.passly.domain.access.port.VaultBootstrapStore
+import com.aozijx.passly.security.authentication.host.AuthUiHost
+import com.aozijx.passly.security.authentication.host.BiometricHostFailure
+import com.aozijx.passly.security.authentication.host.BiometricHostResult
+import com.aozijx.passly.security.authentication.host.BiometricPromptSpec
+import com.aozijx.passly.security.dek.DekManager
+import com.aozijx.passly.security.envelope.EnvelopeManager
+import com.github.f4b6a3.uuid.UuidCreator
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+
+@Singleton
+internal class RotateBiometricKeyUseCase
+    @Inject
+    constructor(
+        private val vaultBootstrapStore: VaultBootstrapStore,
+        private val cryptoFactory: BiometricCryptoFactory,
+        private val dekManager: DekManager,
+        private val runtimeMaintenance: AuthenticationRuntimeMaintenance,
+    ) {
+        private val rotationMutex = Mutex()
+
+        suspend fun rotate(
+            host: AuthUiHost,
+            invalidateOnEnrollment: Boolean,
+            correlationId: String,
+        ): AuthenticationResult =
+            rotationMutex.withLock {
+                rotateExclusively(host, invalidateOnEnrollment, correlationId)
+            }
+
+        private suspend fun rotateExclusively(
+            host: AuthUiHost,
+            invalidateOnEnrollment: Boolean,
+            correlationId: String,
+        ): AuthenticationResult {
+            if (!dekManager.isUnlocked.value) {
+                return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
+            }
+            if (runtimeMaintenance.reconcileStartupState() == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED) {
+                return fail(AuthenticationFailureCode.SESSION_TRANSITION_FAILED, correlationId)
+            }
+            val oldAlias = vaultBootstrapStore.loadBiometricState().binding?.activeAlias
+            val candidateAlias =
+                "${cryptoFactory.baseAlias()}.candidate.${UuidCreator.getTimeOrderedEpoch()}"
+            return withBiometricRotationCandidate(vaultBootstrapStore, candidateAlias, cryptoFactory::deleteAlias) {
+                vaultBootstrapStore.prepareBiometricRotation(
+                    BiometricRotationJournal(
+                        phase = BiometricRotationPhase.PREPARED,
+                        oldAlias = oldAlias,
+                        candidateAlias = candidateAlias,
+                    ),
+                )
+                val preparation = cryptoFactory.createEncrypt(candidateAlias, invalidateOnEnrollment)
+                val cipher =
+                    (preparation as? BiometricCryptoPreparation.Ready)?.cipher
+                        ?: return@withBiometricRotationCandidate fail(preparation.failureCode(), correlationId)
+                when (
+                    val prompt =
+                        host.authenticateBiometric(
+                            BiometricPromptSpec(AuthenticationPurpose.CHANGE_BIOMETRIC_POLICY),
+                            androidx.biometric.BiometricPrompt.CryptoObject(cipher),
+                        )
+                ) {
+                    is BiometricHostResult.Success -> {
+                        val envelope =
+                            dekManager.withDek { dek ->
+                                EnvelopeManager.wrapWithCipher(EnvelopeType.BIOMETRIC, dek, cipher)
+                            }
+                        vaultBootstrapStore.commitBiometricRotation(
+                            envelope = envelope,
+                            binding = BiometricBinding(candidateAlias, invalidateOnEnrollment),
+                            obsoleteAlias = oldAlias?.takeIf { it != candidateAlias },
+                        )
+                        val cleanup = withContext(NonCancellable) { runtimeMaintenance.reconcileStartupState() }
+                        AuthenticationResult.Success(
+                            method = AuthenticationMethod.BIOMETRIC,
+                            pendingMaintenance =
+                                setOfNotNull(
+                                    AuthenticationPendingMaintenance.BIOMETRIC_ROTATION_CLEANUP.takeIf {
+                                        cleanup == AuthenticationRuntimeMaintenanceResult.RETRY_REQUIRED
+                                    },
+                                ),
+                        )
+                    }
+
+                    is BiometricHostResult.Cancelled -> {
+                        AuthenticationResult.Cancelled(
+                            if (prompt.byUser) CancellationReason.USER else CancellationReason.CALLER,
+                        )
+                    }
+
+                    is BiometricHostResult.Failure -> {
+                        fail(prompt.reason.failureCode(), correlationId)
+                    }
+
+                    BiometricHostResult.HostUnavailable -> {
+                        fail(AuthenticationFailureCode.HOST_UNAVAILABLE, correlationId)
+                    }
+                }
+            }
+        }
+
+        private fun BiometricCryptoPreparation.failureCode(): AuthenticationFailureCode =
+            when (this) {
+                BiometricCryptoPreparation.KeyMissing -> AuthenticationFailureCode.KEY_MISSING
+                BiometricCryptoPreparation.KeyInvalidated -> AuthenticationFailureCode.KEY_INVALIDATED
+                else -> AuthenticationFailureCode.CRYPTO_OBJECT_INVALID
+            }
+
+        private fun BiometricHostFailure.failureCode(): AuthenticationFailureCode =
+            when (this) {
+                BiometricHostFailure.METHOD_UNAVAILABLE -> AuthenticationFailureCode.METHOD_UNAVAILABLE
+
+                BiometricHostFailure.RATE_LIMITED -> AuthenticationFailureCode.RATE_LIMITED
+
+                BiometricHostFailure.CRYPTO_OBJECT_INVALID,
+                BiometricHostFailure.AUTHENTICATION_FAILED,
+                -> AuthenticationFailureCode.CRYPTO_OBJECT_INVALID
+            }
+
+        private fun fail(
+            code: AuthenticationFailureCode,
+            correlationId: String,
+        ) = AuthenticationResult.Failure(
+            AuthenticationFailure(
+                code,
+                AuthenticationRequestId(correlationId),
+            ),
+        )
+    }

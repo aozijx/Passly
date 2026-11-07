@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AuthorizationPermitRegistry
+internal class AuthorizationPermitRegistry
     @Inject
     constructor(
         private val clock: MonotonicClock,

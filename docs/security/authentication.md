@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-11-06。
+代码核对日期：2026-11-07。
 
 ## 契约与状态机
 
@@ -49,7 +49,7 @@ stateDiagram-v2
 `requestSlot.withSlot(onBusy = ..., block = ...)` →
 `authenticateWithSlot(request, credential, traceScope)`。`request.id` 用于状态与失败关联，`request.purpose` 同时决定是否打开会话、认证策略和 trace 类型；`request.allowedMethods` 只与目的允许集合及当前 `authenticationMethods.value` 求交。`credential` 只传给 `CredentialMethodExecutor.execute(request, method, host, credential)`，生物识别则调用 `BiometricMethodExecutor.execute(request, host)`。忙请求在拿到 slot 前返回 `BUSY`，但已消费的凭据仍由最外层 `finally` 清零。
 
-需要打开会话的目的会依次发布 `AwaitingHost(request.id)` 和 `Authenticating(request.id, method)`；取消/失败时由 `restoreState(previousState)` 根据先前的 `Authenticated`、`AutofillAuthenticated`、`RecoveryMode` 或锁定状态调用对应恢复入口。成功结果若是恢复码会先调用 `authenticationMethods.onRecoveryCodeConsumed()`；目的要求解锁敏感数据密钥时再调用 `sensitiveDataKeyManager.unlockAfterFreshAuthentication()`；不打开会话的成功认证调用 `session.onUserInteraction()`。公共 `lock(request)` 则原样转发到 `VaultSessionController.lock(request)`，其 `SessionLockRequest.reason` 决定软锁或封存级别，`trigger` 进入遥测上下文，不由页面重算策略。Controller 以 `traceLock(request = request, timeoutMs = ...)` 包住 `mutex.withLock`；这里的 `timeoutMs` 是 trace 字段，不是互斥等待或数据库封存的硬超时。等待 mutex 时取消会阻止锁定开始；取得 mutex 后，撤销授权、锁级别转换、封存和密钥清理在 `NonCancellable` 中收尾。Activity teardown 对该等待的影响及未完成的宿主级验证见[维护 TODO Task 9](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-9保证-autofill-最后一个租约取消后仍能完成锁定)。
+需要打开会话的目的会依次发布 `AwaitingHost(request.id)` 和 `Authenticating(request.id, method)`；取消/失败时由 `restoreState(previousState)` 根据先前的 `Authenticated`、`AutofillAuthenticated`、`RecoveryMode` 或锁定状态调用对应恢复入口。成功结果若是恢复码会先调用 `authenticationMethods.onRecoveryCodeConsumed()`；目的要求解锁敏感数据密钥时再调用 `sensitiveDataKeyManager.unlockAfterFreshAuthentication()`；不打开会话的成功认证调用 `session.onUserInteraction()`。公共 `lock(request)` 则原样转发到 `VaultSessionController.lock(request)`，其 `SessionLockRequest.reason` 决定软锁或封存级别，`trigger` 进入遥测上下文，不由页面重算策略。Controller 以 `traceLock(request = request, timeoutMs = ...)` 包住 `mutex.withLock`；这里的 `timeoutMs` 是 trace 字段，不是互斥等待或数据库封存的硬超时。等待 mutex 时取消会阻止锁定开始；取得 mutex 后，撤销授权、锁级别转换、封存和密钥清理在 `NonCancellable` 中收尾。Activity teardown 对该等待的影响及未完成的宿主级验证见[Autofill 宿主验收 Task 21](../superpowers/plans/2026-11-07-passly-autofill-followups.md#task-21)。
 
 前台用户交互会重新开始空闲计时。进程进入后台后停止前台空闲计时；启用“后台自动锁定”时，从进入后台开始按同一个
 自动锁定时间倒计时，倒计时内返回前台会取消后台封存。倒计时已经到期并开始封存后，返回前台不得取消正在进行的
@@ -63,6 +63,8 @@ stateDiagram-v2
 认证方式可用性从 `VaultBootstrapStore` 一次读取 `AuthenticationCredentialSnapshot`。DataStore adapter 在同一份 Bootstrap
 值中投影 biometric envelope/binding、应用密码与恢复码是否配置；BiometricManager 的硬件能力在该持久快照之外单独判断。
 `AuthenticationMethodsState` 为每次可用性刷新分配 generation 并串行执行解析；较新的刷新会使较旧的在途结果失效，之后重新读取持久状态。恢复码提交消费也会使旧快照失效，不能重新发布已消费的方式。Manager 的长期 scope 托管刷新 job：调用方取消会立即收到取消，但不会取消已发起的最新状态同步；Mutex 释放后队列中的刷新继续执行。后台解析失败在独立 trace span 中使用结构化 `VaultOperationFailed` 日志记录；可恢复异常记为 WARN 降级，fatal `Error` 记为 ERROR。普通观察器异常作为 suppressed 信息保留，观察器抛取消或 fatal Error 时优先传播该异常，并将原解析错误保留为 suppressed。
+
+可用认证方式是持久凭据快照的派生状态。`AuthenticationManager.refreshAvailability()` 立即尝试刷新；普通 `Exception` 会安排 Manager 所有的指数退避重试（首次等待 1 秒，最长间隔 60 秒），同时仍向当前调用方传播。取消继续传播，fatal `Error` 不降级。启动刷新失败由同一重试 owner 接管。凭据持久化已经提交后，设置流程不会把后续可用性刷新失败伪装成未提交：Domain 的 `AuthenticationResult.Success.pendingMaintenance` 可同时携带 `AUTHENTICATION_AVAILABILITY_REFRESH` 与其他维护项，安全设置按该领域语义提示用户操作已保存、可用性刷新正在重试。UI 只依赖 Domain 结果，不依赖 Security 重试实现。
 
 MainActivity 与统一的 `AutofillAuthActivity` 都在根 Compose 安装 `AuthenticationHost`；Autofill 各入口复用同一个宿主。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
@@ -88,11 +90,28 @@ DEK，并按数据库会话实际状态恢复锁级别。恢复模式解锁取�
 
 设置应用密码以持久化的新 Envelope 为提交点。若后续可用性刷新或会话发布抛普通异常，provisioner 会在
 `NonCancellable` 中读取持久 envelope，并用本次随机 salt 确认写入；已提交时结果仍表示应用密码已设置，避免引导用户
-重复提交。未发现本次 envelope 时才返回设置失败；取消继续传播，fatal `Error` 不映射成业务失败。密码、salt、派生 key
+重复提交。可用性刷新普通失败会作为 Domain `pendingMaintenance` 返回，并由认证 Manager 重试；安全设置先反馈提交成功，再提示维护状态。未发现本次 envelope 时才返回设置失败；取消继续传播，fatal `Error` 不映射成业务失败。密码、salt、派生 key
 分别由 `SecretChars`、`finally` 和 `OwnedBytes.use` 清理。恢复码草稿在 `VaultBootstrapStore.save()` 成功后即已提交；若
 store 在写入后抛错，会读回并比较完整 envelope。`RecoveryCredentialDraft.isCommitted` 供页面在提交取消或抛错后读取该
 提交事实：已提交则更新可用状态并移除 disclosure，未提交且取消则恢复可重试 disclosure。生成和 commit 只将普通
 `Exception` 映射为业务失败；取消仍传播，fatal `Error` 在草稿密钥与明文清理后传播。
+
+调用顺序从 `setAppPassword(password)` 开始：检查长度后将数组交给 `SecretChars.take(password)`，生成 `salt`，读取
+`kdfConfiguration.selected()`，再以 `store = vaultBootstrapStore`、`salt`、`requestId = correlationId` 和两个回调调用
+`runAppPasswordProvisioning(...)`。`persist` 回调把 `secret` 交给 `kdfRunner.execute(secret)`，以回调收到的 `chars`、同一 `salt`
+和 `parameters.toCore()` 派生 Argon2id key；随后按 `dekManager.isUnlocked.value` 选择
+`rekeyWithKey(EnvelopeType.APP_PASSWORD, key, salt, KdfAlgorithm.ARGON2ID, parameters)` 或
+`initializeWithKey(EnvelopeType.APP_PASSWORD, key, salt, KdfAlgorithm.ARGON2ID, parameters)`。提交后 `reconcileSession` 在普通模式先调用
+`refreshAvailabilityAfterCommit()` 再 `session.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT)`；若 `wasRecoveryMode`，则以
+`seal = { session.lock(SessionLockRequest(LockReason.RECOVERY_EXIT, LockTrigger.RECOVERY_EXIT)) }`
+和 `refreshAvailability = authenticationManager::refreshAvailability` 调用
+`finishRecoveryPasswordProvisioning(...)`。
+
+应用密码设置的取消路径与普通异常不同：`runAppPasswordProvisioning()` 在 `persist()` 后执行 `reconcileSession()`；如果此时收到
+`CancellationException`，它会直接重抛，不调用用于普通异常的 `hasCommittedAppPasswordEnvelope(store, salt)`。因此写入可能已持久化，
+但 `AppPasswordSettingsInteractor.execute(request)` 只在 `finally` 清理请求缓冲；`AppPasswordSettingsViewModel.runChange()` 不会进入
+`Completed` 分支发出成功效果。`isEnabled` 的独立 Flow 可能随后反映存储快照，但提交后取消时页面结果与可用性投影的一致性仍待
+owner 级验收，见[维护 TODO Task 59](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-59)。
 
 安全设置中的应用密码设置、修改和禁用共享一个进行中操作状态。提交后确认、取消和输入控件禁用，ViewModel 同步拒绝重复请求；
 请求字符数组由 Interactor 的 `finally` 清理，若页面 owner 已退出、请求被拒绝或 ViewModel 在协程启动前销毁，ViewModel 也会清理。
@@ -173,7 +192,7 @@ Route 在 STARTED 生命周期消费错误并按当前语言解析，不展示�
 
 Bootstrap 先写 PREPARED journal，再创建 candidate key/Envelope；单次更新切换 active binding 并登记旧 alias
 待清理，该原子更新是 durable commit point。之后旧 alias 删除或 journal 清理失败不会回滚新 binding；调用结果仍为
-BIOMETRIC `Success`，并带 `BIOMETRIC_ROTATION_CLEANUP` pending-maintenance 标记。安全设置提示用户新策略已生效、旧密钥清理将重试，认证可用性按成功结果刷新。
+BIOMETRIC `Success`，并带 `BIOMETRIC_ROTATION_CLEANUP` pending-maintenance 标记。安全设置提示用户新策略已生效、旧密钥清理将重试；若后续认证可用性刷新失败，成功结果会再携带 `AUTHENTICATION_AVAILABILITY_REFRESH`，由 Manager 后台重试并由页面提示设置已保存。
 提交后的可恢复 cleanup 在 `NonCancellable` 中尝试；取消和 fatal `Error` 仍传播。
 
 同一 `RotateBiometricKeyUseCase` 串行执行轮换，避免共享 journal 被并发候选覆盖。
@@ -210,11 +229,11 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 协调认证请求和认证方式 | `DefaultAuthenticationManager` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationManager.kt) |
+| 协调认证请求和认证方式 | `DefaultAuthenticationManager` | [`DefaultAuthenticationManager.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/flow/DefaultAuthenticationManager.kt) |
 | 管理应用密码设置请求与页面结果归属 | `AppPasswordSettingsViewModel.runChange()`、`AppPasswordSettingsInteractor.execute()` | [`AppPasswordSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/AppPasswordSettingsViewModel.kt)、[`AppPasswordSettingsInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/AppPasswordSettingsInteractor.kt) |
 | 决定翻转锁定后的 task-clear 条件、请求所有者和一次性消费 | `DeviceLockHandler`、`ActiveTaskClearRequests`、`TaskClearActivityOwner` | [`DeviceLockController.kt`](../../app/src/main/java/com/aozijx/passly/app/DeviceLockController.kt)、[`ActiveTaskClearRequests.kt`](../../app/src/main/java/com/aozijx/passly/app/ActiveTaskClearRequests.kt)、[`TaskClearActivityOwner.kt`](../../app/src/main/java/com/aozijx/passly/app/TaskClearActivityOwner.kt) |
 | 提供 Activity 认证宿主和生命周期租约 | `AuthenticationHost`、`AuthenticationHostRegistry` | [`AuthenticationHost.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHost.kt)、[`AuthenticationHostRegistry.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHostRegistry.kt) |
-| 派生和封存 Vault 会话密钥 | `DekManager`、`VaultSessionController` | [`DekManager.kt`](../../core/src/main/kotlin/com/aozijx/passly/security/dek/DekManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/VaultSessionController.kt) |
-| 区分应用密码 Envelope 提交与会话协调结果 | `runAppPasswordProvisioning()`、`DefaultAuthenticationMethodProvisioner.setAppPassword()` | [`AppPasswordProvisioningCommit.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/AppPasswordProvisioningCommit.kt)、[`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultAuthenticationMethodProvisioner.kt) |
-| 生成并提交 Recovery Code 草稿 | `DefaultRecoveryCredentialGenerator`、`SecureRecoveryCodeDraft`、`RecoveryCodeDraftInteractor`、`RecoveryCodeSettingsViewModel` | [`DefaultRecoveryCodeDraftFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/DefaultRecoveryCodeDraftFactory.kt)、[`RecoveryCodeDraftInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt)、[`RecoveryCodeSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt) |
-| 执行生物识别密钥轮换 | `RotateBiometricKeyUseCase`、`BiometricCryptoFactory` | [`RotateBiometricKeyUseCase.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/RotateBiometricKeyUseCase.kt)、[`BiometricCryptoFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/BiometricCryptoFactory.kt) |
+| 派生和封存 Vault 会话密钥 | `DekManager`、`VaultSessionController` | [`DekManager.kt`](../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt)、[`VaultSessionController.kt`](../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt) |
+| 区分应用密码 Envelope 提交与会话协调结果 | `runAppPasswordProvisioning()`、`DefaultAuthenticationMethodProvisioner.setAppPassword()` | [`AppPasswordProvisioningCommit.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/AppPasswordProvisioningCommit.kt)、[`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultAuthenticationMethodProvisioner.kt) |
+| 生成并提交 Recovery Code 草稿 | `DefaultRecoveryCredentialGenerator`、`SecureRecoveryCodeDraft`、`RecoveryCodeDraftInteractor`、`RecoveryCodeSettingsViewModel` | [`DefaultRecoveryCodeDraftFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultRecoveryCodeDraftFactory.kt)、[`RecoveryCodeDraftInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt)、[`RecoveryCodeSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt) |
+| 执行生物识别密钥轮换 | `RotateBiometricKeyUseCase`、`BiometricCryptoFactory` | [`RotateBiometricKeyUseCase.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/RotateBiometricKeyUseCase.kt)、[`BiometricCryptoFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/BiometricCryptoFactory.kt) |

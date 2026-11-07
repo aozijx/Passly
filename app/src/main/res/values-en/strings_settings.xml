@@ -376,4 +376,5 @@
     <string name="database_reset_error_authorization_denied">Authentication failed. Passly data was not cleared</string>
     <string name="settings_recovery_code_draft_expired">The recovery code draft expired. Authenticate again to generate a new one.</string>
     <string name="settings_recovery_code_operation_failed">The recovery code operation failed. Try again.</string>
+  <string name="settings_biometric_availability_refresh_pending">Credential settings were saved; authentication availability is being refreshed again.</string>
 </resources>

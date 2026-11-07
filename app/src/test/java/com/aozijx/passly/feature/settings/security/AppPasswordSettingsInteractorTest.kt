@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.access.model.AuthenticationPendingMaintenance
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.CancellationReason
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
@@ -81,7 +82,7 @@ class AppPasswordSettingsInteractorTest {
             val interactor = interactor(provisioner = provisioner)
 
             assertEquals(
-                AppPasswordChangeResult.Completed,
+                AppPasswordChangeResult.Completed(),
                 interactor.execute(
                     AppPasswordChangeRequest.Set(
                         "long-enough-password".toCharArray(),
@@ -103,6 +104,34 @@ class AppPasswordSettingsInteractorTest {
                 AppPasswordChangeResult.Cancelled,
                 interactor.execute(AppPasswordChangeRequest.Disable),
             )
+        }
+
+    @Test
+    fun `committed password change preserves pending domain maintenance`() =
+        runTest {
+            val pending =
+                setOf(AuthenticationPendingMaintenance.AUTHENTICATION_AVAILABILITY_REFRESH)
+            val interactor =
+                interactor(
+                    provisioner =
+                        FakeProvisioner(
+                            setResult =
+                                AuthenticationResult.Success(
+                                    method = AuthenticationMethod.APP_PASSWORD,
+                                    pendingMaintenance = pending,
+                                ),
+                        ),
+                )
+
+            val result =
+                interactor.execute(
+                    AppPasswordChangeRequest.Set(
+                        "long-enough-password".toCharArray(),
+                        "long-enough-password".toCharArray(),
+                    ),
+                )
+
+            assertEquals(AppPasswordChangeResult.Completed(pending), result)
         }
 
     @Test
@@ -129,7 +158,7 @@ class AppPasswordSettingsInteractorTest {
             val password = "long-enough-password".toCharArray()
             val confirmation = "long-enough-password".toCharArray()
             assertEquals(
-                AppPasswordChangeResult.Completed,
+                AppPasswordChangeResult.Completed(),
                 interactor.execute(AppPasswordChangeRequest.Set(password, confirmation)),
             )
             assertEquals(1, provisioner.setCalls)

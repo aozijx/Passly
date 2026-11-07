@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
+import com.aozijx.passly.presentation.mapping.rememberPasswordStrength
 
 data class AppPasswordChangeDialogState(
     val currentPassword: String,
@@ -107,6 +108,7 @@ fun AppPasswordChangeDialog(
                         onEvent(AppPasswordChangeDialogEvent.ConfirmPasswordChanged(it))
                     },
                     onDone = submit,
+                    strengthUiState = rememberPasswordStrength(state.newPassword),
                     enabled = !state.isBusy,
                 )
             }

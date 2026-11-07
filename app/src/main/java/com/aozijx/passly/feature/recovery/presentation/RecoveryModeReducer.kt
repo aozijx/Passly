@@ -29,6 +29,8 @@ internal sealed interface RecoveryModeMutation {
 
     data object PasswordDialogDismissed : RecoveryModeMutation
 
+    data object PasswordDialogDiscarded : RecoveryModeMutation
+
     data object RecoveryModeRejected : RecoveryModeMutation
 }
 
@@ -39,12 +41,19 @@ internal object RecoveryModeReducer {
     ): RecoveryModeUiState =
         when (mutation) {
             RecoveryModeMutation.PasswordDialogOpened -> {
+                if ((state.passwordSetup as? RecoveryPasswordSetup.Editing)?.phase == RecoveryPasswordSetupPhase.Saving) {
+                    return state
+                }
                 state.copy(
                     passwordSetup = RecoveryPasswordSetup.Editing(),
                 )
             }
 
             is RecoveryModeMutation.NewPasswordChanged -> {
+                if ((state.passwordSetup as? RecoveryPasswordSetup.Editing)?.phase == RecoveryPasswordSetupPhase.Saving) {
+                    mutation.value.wipe()
+                    return state
+                }
                 state.updatePasswordSetup {
                     copy(
                         newPassword = mutation.value,
@@ -54,6 +63,10 @@ internal object RecoveryModeReducer {
             }
 
             is RecoveryModeMutation.ConfirmPasswordChanged -> {
+                if ((state.passwordSetup as? RecoveryPasswordSetup.Editing)?.phase == RecoveryPasswordSetupPhase.Saving) {
+                    mutation.value.wipe()
+                    return state
+                }
                 state.updatePasswordSetup {
                     copy(
                         confirmPassword = mutation.value,
@@ -82,17 +95,28 @@ internal object RecoveryModeReducer {
 
             RecoveryModeMutation.PasswordSetupStopped -> {
                 state.updatePasswordSetup {
-                    copy(phase = RecoveryPasswordSetupPhase.Idle)
+                    if (phase == RecoveryPasswordSetupPhase.Saving) {
+                        copy(phase = RecoveryPasswordSetupPhase.Idle)
+                    } else {
+                        this
+                    }
                 }
             }
 
             RecoveryModeMutation.PasswordSetupCompleted,
-            RecoveryModeMutation.PasswordDialogDismissed,
             RecoveryModeMutation.RecoveryModeRejected,
+            RecoveryModeMutation.PasswordDialogDiscarded,
             -> {
                 state.copy(
                     passwordSetup = RecoveryPasswordSetup.Closed,
                 )
+            }
+
+            RecoveryModeMutation.PasswordDialogDismissed -> {
+                if ((state.passwordSetup as? RecoveryPasswordSetup.Editing)?.phase == RecoveryPasswordSetupPhase.Saving) {
+                    return state
+                }
+                state.copy(passwordSetup = RecoveryPasswordSetup.Closed)
             }
         }
 }
