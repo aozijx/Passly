@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
-import com.aozijx.passly.core.ui.components.settings.rememberPasswordStrength
+import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 
 @Composable
 fun PasswordFields(
@@ -41,12 +41,12 @@ fun PasswordFields(
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
     onDone: () -> Unit,
+    strengthUiState: PasswordStrengthUiState,
     enabled: Boolean = true,
 ) {
     var newPasswordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
-    val strengthUiState = rememberPasswordStrength(newPassword)
     val focusManager = LocalFocusManager.current
 
     OutlinedTextField(

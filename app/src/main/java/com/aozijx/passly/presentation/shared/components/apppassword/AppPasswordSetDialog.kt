@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 
 @Composable
 fun AppPasswordSetDialog(
@@ -26,6 +27,7 @@ fun AppPasswordSetDialog(
     onConfirmPasswordChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    strengthUiState: PasswordStrengthUiState,
     confirmEnabled: Boolean,
     isBusy: Boolean = false,
     errorMessage: String? = null,
@@ -84,6 +86,7 @@ fun AppPasswordSetDialog(
                     onNewPasswordChange = onNewPasswordChange,
                     onConfirmPasswordChange = onConfirmPasswordChange,
                     onDone = submit,
+                    strengthUiState = strengthUiState,
                     enabled = !isBusy,
                 )
                 if (errorMessage != null) {

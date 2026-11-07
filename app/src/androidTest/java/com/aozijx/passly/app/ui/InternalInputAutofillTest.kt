@@ -11,6 +11,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.autofill.ContentDataType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -30,6 +31,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordF
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.password.AddPasswordEditorScreen
 import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
+import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -47,7 +49,16 @@ class InternalInputAutofillTest {
             MaterialTheme {
                 when (surface.value) {
                     InternalInputSurface.APPLICATION_PASSWORD -> {
-                        Column { PasswordFields("", "", {}, {}, {}) }
+                        Column {
+                            PasswordFields(
+                                newPassword = "",
+                                confirmPassword = "",
+                                onNewPasswordChange = {},
+                                onConfirmPasswordChange = {},
+                                onDone = {},
+                                strengthUiState = PasswordStrengthUiState(0f, Color.Unspecified, 0),
+                            )
+                        }
                     }
 
                     InternalInputSurface.CREDENTIAL_EDITOR -> {
