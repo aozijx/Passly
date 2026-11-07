@@ -213,7 +213,11 @@ internal object UnlockReducer {
 
             UnlockMutation.PasswordSetupStarted -> {
                 state.updatePasswordSetup {
-                    copy(phase = UnlockPasswordSetupPhase.Saving)
+                    copy(
+                        newPassword = EmptySensitiveValue,
+                        confirmPassword = EmptySensitiveValue,
+                        phase = UnlockPasswordSetupPhase.Saving,
+                    )
                 }
             }
 

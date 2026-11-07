@@ -52,6 +52,7 @@ fun AuthenticationHost(
                     Lifecycle.Event.ON_PAUSE -> {
                         registration?.let(registry::unregister)
                         registration = null
+                        host.cancelPendingDialogRequest()
                     }
 
                     Lifecycle.Event.ON_DESTROY -> {

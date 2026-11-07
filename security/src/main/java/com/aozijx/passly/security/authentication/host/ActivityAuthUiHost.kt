@@ -293,6 +293,16 @@ internal class ActivityAuthUiHost(
         }
         if (request != null) dialogState.compareAndSet(request, null)
     }
+
+    fun cancelPendingDialogRequest() {
+        val request = dialogState.value ?: return
+        if (dialogState.compareAndSet(request, null)) {
+            when (request) {
+                is AuthenticationDialogRequest.ChooseMethod -> request.continuation.cancel()
+                is AuthenticationDialogRequest.Secret -> request.continuation.cancel()
+            }
+        }
+    }
 }
 
 internal object BiometricPromptSpecFactory {

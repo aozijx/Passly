@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.recovery.presentation
 
+import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
 internal sealed interface RecoveryModeMutation {
@@ -83,7 +84,11 @@ internal object RecoveryModeReducer {
 
             RecoveryModeMutation.PasswordSetupStarted -> {
                 state.updatePasswordSetup {
-                    copy(phase = RecoveryPasswordSetupPhase.Saving)
+                    copy(
+                        newPassword = EmptySensitiveValue,
+                        confirmPassword = EmptySensitiveValue,
+                        phase = RecoveryPasswordSetupPhase.Saving,
+                    )
                 }
             }
 

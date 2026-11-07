@@ -89,6 +89,7 @@ class RecoveryModeViewModel
             }
 
             passwordProvisioning = true
+            wipePasswords()
             mutate(RecoveryModeMutation.PasswordSetupStarted)
             viewModelScope.launch {
                 try {

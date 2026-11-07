@@ -301,9 +301,9 @@ class RecoveryCodeSettingsViewModel
         }
 
         private fun verify() {
-            val current = _uiState.value.verification
+            val current = _uiState.value.verification as? RecoveryCodeVerificationUiState.Editing ?: return
             val owner = pageEffects.currentOwner ?: return
-            if (current is RecoveryCodeVerificationUiState.Verifying || current.input.isEmpty) return
+            if (current.input.isEmpty) return
             val input = current.input
             val code = input.toCharArray()
             val request = Any()
@@ -316,20 +316,22 @@ class RecoveryCodeSettingsViewModel
                         if (pageEffects.isActive(owner) && verificationRequest === request) {
                             replaceVerification(
                                 if (valid) {
-                                    RecoveryCodeVerificationUiState.Accepted(input)
+                                    RecoveryCodeVerificationUiState.Accepted
                                 } else {
-                                    RecoveryCodeVerificationUiState.Rejected(input)
+                                    RecoveryCodeVerificationUiState.Rejected
                                 },
                             )
                         }
                     } catch (cancelled: CancellationException) {
                         if (pageEffects.isActive(owner) && verificationRequest === request) {
-                            replaceVerification(RecoveryCodeVerificationUiState.Editing(input))
+                            replaceVerification(
+                                RecoveryCodeVerificationUiState.Editing(OwnedChars.EMPTY),
+                            )
                         }
                         throw cancelled
                     } catch (_: Exception) {
                         if (pageEffects.isActive(owner) && verificationRequest === request) {
-                            replaceVerification(RecoveryCodeVerificationUiState.Failed(input))
+                            replaceVerification(RecoveryCodeVerificationUiState.Failed)
                         }
                     } finally {
                         code.fill('\u0000')
@@ -348,7 +350,7 @@ class RecoveryCodeSettingsViewModel
             ) {
                 return
             }
-            replaceVerification(RecoveryCodeVerificationUiState.Editing(current.input))
+            replaceVerification(RecoveryCodeVerificationUiState.Editing(OwnedChars.EMPTY))
         }
 
         private fun replaceVerification(verification: RecoveryCodeVerificationUiState) {

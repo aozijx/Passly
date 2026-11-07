@@ -156,6 +156,7 @@ class UnlockViewModel
                 return
             }
             passwordProvisioning = true
+            wipeSetupPasswords()
             mutate(UnlockMutation.PasswordSetupStarted)
             viewModelScope.launch {
                 try {
@@ -312,6 +313,7 @@ class UnlockViewModel
                     }
                 } finally {
                     credential?.let(MemoryCleaner::wipeCharArray)
+                    clearCredential(method)
                     mutate(UnlockMutation.AuthenticationFinished)
                 }
             }

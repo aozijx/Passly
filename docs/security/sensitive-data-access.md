@@ -45,6 +45,30 @@ UI 类型实际支持的字段放入 `DetailUiState.revealedFields`。新增 Ent
 不可变 String 的副本由运行时回收。锁定和页面关闭会尽快释放这些可控引用，但不声称覆盖所有 JVM 副本；降低敏感值在
 字符串模型中的驻留范围是开放的内存所有权评估，见[维护 TODO Task 42](../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
 
+## 敏感输入生命周期
+
+密码、恢复码和其他用于认证或验证的输入只能由当前操作的状态所有者持有。输入回调产生的 `String` 无法可靠擦除；应尽量
+缩短它在 UI 与状态中的引用时间，并用可清零的 `SensitiveValue`/`OwnedChars` 保存由应用拥有的副本。派生的 `CharArray` 必须
+在 `finally` 中清零；替换、提交、取消、页面退出和拥有者销毁时，也必须清零旧的可变缓冲并从状态中移除引用。
+
+认证/验证进入终态后，UI 状态只保留结果、错误类型或重试提示，不得继续携带刚提交的凭据。此规则适用于成功、拒绝、普通
+异常和取消；如果重试需要凭据，要求用户重新输入。结果提示的延迟消失只控制反馈显示时间，不能延迟敏感值清理。Activity
+暂停、对话框取消或宿主失效时，待处理的认证输入也必须被取消并释放。
+
+仍处于活动编辑中的设置草稿可为便于修正而暂存，但不得混入终态认证结果；草稿在提交后应立即从编辑状态移除，并在关闭、
+取消、页面离开或 ViewModel/Composable 所有者销毁时清理。禁止把凭据写入 `SavedStateHandle`、持久化 UI 状态、日志或诊断事件。
+这些清理只能缩短可控引用和可变缓冲的寿命，不代表 JVM 中不可变 `String` 或运行时副本可被确定擦除。
+
+当前落实位置：设置页恢复码验证终态不再持有输入，见
+[`RecoveryCodeSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt)；
+解锁页认证在所有终态清理密码/恢复码，见
+[`UnlockViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/unlock/presentation/UnlockViewModel.kt)；
+Activity 暂停时取消认证弹窗请求，见
+[`AuthenticationHost.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/host/AuthenticationHost.kt)。
+新密码设置在提交后清空编辑态输入，见
+[`UnlockViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/unlock/presentation/UnlockViewModel.kt) 与
+[`RecoveryModeViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/recovery/presentation/RecoveryModeViewModel.kt)。
+
 ## 剪贴板
 
 Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或详情页关闭时，只清除仍由 Passly 写入的剪贴板；

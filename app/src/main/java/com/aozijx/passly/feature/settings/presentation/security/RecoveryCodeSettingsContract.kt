@@ -34,17 +34,17 @@ sealed interface RecoveryCodeVerificationUiState {
         override val input: SensitiveValue,
     ) : RecoveryCodeVerificationUiState
 
-    data class Accepted(
-        override val input: SensitiveValue,
-    ) : RecoveryCodeVerificationUiState
+    data object Accepted : RecoveryCodeVerificationUiState {
+        override val input: SensitiveValue = EmptySensitiveValue
+    }
 
-    data class Rejected(
-        override val input: SensitiveValue,
-    ) : RecoveryCodeVerificationUiState
+    data object Rejected : RecoveryCodeVerificationUiState {
+        override val input: SensitiveValue = EmptySensitiveValue
+    }
 
-    data class Failed(
-        override val input: SensitiveValue,
-    ) : RecoveryCodeVerificationUiState
+    data object Failed : RecoveryCodeVerificationUiState {
+        override val input: SensitiveValue = EmptySensitiveValue
+    }
 }
 
 data class RecoveryCodeSettingsUiState(
