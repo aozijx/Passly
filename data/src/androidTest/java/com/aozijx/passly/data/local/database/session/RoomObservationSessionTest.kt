@@ -669,7 +669,7 @@ class RoomObservationSessionTest {
     private fun activityObservations(
         session: AppDatabaseSession,
         probe: ObservationProbe<EntryActivityEntity>,
-    ) = gatedObservations(session, probe) { entryActivityQueryDao().observeAll() }
+    ) = gatedObservations(session, probe) { entryActivityQueryDao().observeByEntryId("entry-a") }
 
     private fun linkObservations(
         session: AppDatabaseSession,

@@ -311,15 +311,18 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 34：收窄未消费的 Activity 查询流
 
-- [x] 从 `ActivityQueryRepository` 移除没有生产消费者的 `observeAll()` 与 `observeByType(activityType)`，并同步删除 `RoomActivityQueryRepository` 实现和 Detail 测试替身中的空实现。`EntryActivityQueryDao` 逐方法收敛仍待后续批次。
+- [x] 从 `ActivityQueryRepository` 移除没有生产消费者的 `observeAll()` 与 `observeByType(activityType)`，并同步删除 `RoomActivityQueryRepository` 实现和 Detail 测试替身中的空实现；`EntryActivityQueryDao` 继续只保留真实消费路径。
 - [x] 删除无调用者的 `EntryActivityAnalyticsDao`、`AppDatabase.entryActivityAnalyticsDao()` accessor 和其局部 DTO。引用闭包只到 DAO 声明及 accessor；列表 usage stats 由 `EntryPagingQueryFactory` 的 Paging SQL 提供。保留 `RoomObservationSessionTest` 使用的 Activity/Link `observeAll()` session gate 查询；这次不扩展到其余 Activity DAO 方法。
-- [ ] 清理测试替身与文档；先确认无反射、Hilt 多绑定或构建生成消费者。保留/改写针对 Detail 按条目读取、数据库锁切换取消/重建的行为覆盖，不为删掉未消费方法制造只断言符号不存在的测试。运行 Activity/Detail 定向测试、`verifyArchitecture` 与 `git diff --check`。
+- [x] 清理未消费的 Activity DAO 查询。符号闭包确认无反射、Hilt 多绑定或生成消费者；将 Room session gate 集成用例从全表观察迁移到生产用的按条目观察。保留修订恢复对 `getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()` 的行为断言，不制造符号不存在测试。
+- [ ] 在可用设备上运行 `RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest`；当前未连接 Android 设备，instrumentation runtime 尚未验证。
 
 **证据：** `ActivityQueryRepository.observeByEntryId()` 唯一生产调用位于 `DetailViewModel`，支持详情活动记录；`observeAll()` 与 `observeByType()` 没有生产 consumer。全仓搜索 `EntryActivityQueryDao` 的方法后，确认 usage/mutation 四类观察、四个 paging、`getById()`、`exists()`、`count()` 和两个 usage/mutation counts 只在 DAO 声明。`observeAll()` 由 `RoomObservationSessionTest` 用作 session gate 集成测试入口；`getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()` 在 `EntryRevisionRestoreTransactionTest` 中验证恢复行为，需要保留覆盖。`EntryActivityAnalyticsDao` 的四个聚合查询只在 DAO 声明及 `AppDatabase` accessor 出现，没有生产调用者；列表 usageCount/lastUsedAt 实际由 `EntryPagingQueryFactory` 内联 SQL 生成。现有 `DetailViewModelTest` fake 实现全量/类型方法仅为满足接口，没有行为断言；未发现正式文档声明这些额外 API 合同。
 
 **2026-11-08 批次：** 删除 `ActivityQueryRepository.observeAll()` / `observeByType()`、Room adapter 对应实现及 DetailViewModelTest 的空 fake 方法。当前生产消费者只调用 `observeByEntryId()`；全仓引用扫描确认剩余接口引用仅为其生产注入与测试 fixture。未删除 `EntryActivityQueryDao.observeAll()`，因为 Room session gate 仪器测试直接覆盖该查询；其余 DAO 收敛留待下一批。此批次尚未运行编译或测试。
 
 **2026-11-08 批次：** 删除未被引用的 `EntryActivityAnalyticsDao`、`AppDatabase` accessor 和聚合结果 DTO；精确符号扫描只找到 DAO 声明及 accessor，未发现 Kotlin/Java consumer。`EntryPagingQueryFactory` 已承担列表 usageCount/lastUsedAt 查询。未改数据库实体或 schema；未运行测试。
+
+**2026-11-08 批次：** 从 `EntryActivityQueryDao` 删除全表/按类型与 usage/mutation 观察、全部 paging、单项 ID、exists、总数及分类 count 等无消费者方法；保留生产详情流和 revision restore 仪器测试消费的三个精确查询。session gate 用例改用 `observeByEntryId("entry-a")`，保留锁定/解锁订阅行为。`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`（61 项任务执行）、`verifyArchitecture`、目标文件 `git diff --check` 通过；全仓扫描未找到被删方法调用。`adb devices` 无设备，未运行 instrumentation tests。
 
 <a id="task-36"></a>
 
