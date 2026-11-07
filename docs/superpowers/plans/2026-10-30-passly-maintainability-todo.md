@@ -8,7 +8,7 @@
 
 | 顺序 | 执行入口 | 依赖与原因 |
 | --- | --- | --- |
-| 1 / P1 | [安全 Tasks 6、2](2026-11-06-passly-security-scan-followups.md)，本页 26、37、43、59 | 接收方身份、lease 关闭、撤权与提交事实；26/37 先统一生命周期/线性化定义；安全 Task 8 已完成 |
+| 1 / P1 | [安全 Tasks 6、2](2026-11-06-passly-security-scan-followups.md)，本页 37→26、59 | 接收方身份、lease 关闭、撤权与提交事实；先完成 Data admission 与撤权线性化，再闭合 Runtime/reset 跨层终态；Task 43 已完成，安全 Task 8 已完成 |
 | 2 / P1 | 本页 38、42、40、41、32；[Backup Tasks 1、5](2026-11-06-passly-backup-review-followups.md)；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | 保存期输入、seed/流资源、操作终态、分类查询、flush；先固定失败结果再改 owner |
 | 3 / P2 | 本页 46、51；[安全 Tasks 3、4、7、9](2026-11-06-passly-security-scan-followups.md)、Backup Tasks 2、3、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；资源预算先于最低设备验收；Autofill 设置策略待办由专题清单维护 |
 | 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
@@ -55,6 +55,25 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ## P1：敏感数据、并发与用户流程缺口
 
+<a id="task-37"></a>
+
+### Task 37：为认证撤权与数据库操作定义同一线性化边界
+
+- [x] 明确锁定从请求发起到 Data 禁止新命令进入 DAO 的线性化点。`VaultSessionController.lock()` 先发布 `AuthenticationState.Locking`；`AppDatabaseSession` 直接查询 Security-owned `SecureSessionAccessState`，在 Runtime lease 内、DAO block 前重新核验授权。lock 请求前通过 admission 的操作持有 lease，由 Runtime drain 等待真实退出。
+- [x] 审计并收口数据库命令入口。`DatabaseTransactionRunner`、Entry/Link/Sensitive/OTP Repository、Autofill Candidate/Credential Resolver、Backup Store、Activity Recorder 与附件 GC 均迁移到 Full Vault 或 Autofill 专用 session API；删除 Repository/runner 自己的授权检查与重复注入。GC 仍在文件副作用前核验 Full Vault。数据库清理使用单独命名的 maintenance API，仍受 Runtime lease/lock gate 保护。没有无授权的通用 `query/transaction` 重载。
+- [x] 统一 `DatabaseTransactionRunner.read()`、`write()` 与 `writeForAutofill()` 的 lease 内授权复核；直接 Full Vault 与 Autofill 命令使用同一个 `AppDatabaseSession` admission 边界。新增边界回归分别让 read/write 的授权第一次为真、lease 内复核时为假，并断言 DAO block 不运行。
+- [ ] 增加可控挂起的跨层终态回归：在 Security lock 等待数据库 lease/resource 与敏感 key 清理时，从 runner、直接 Full Vault Repository 与 Autofill Repository 发起读写，验证线性化点之后新命令不触达 DAO；已进入事务准确报告提交/回滚/取消结果，敏感 permit、会话、DEK、key 与 lock state 一致。边界与真实 Repository 集成测试证明调用闭包后，不需为每个薄适配器复制同一测试。
+- [ ] 核对锁定、恢复模式切换、Autofill 会话结束、idle timeout 和 reset 是否共享该次序；更新定向测试并运行 Security、Runtime Session、Data 事务/会话、`verifyArchitecture` 与 `git diff --check`。本批次的 Android instrumentation 是否可运行待确认。
+
+**审查证据：** 原调用闭包中 Runner 与多个 Repository 各自只在获取 lease 前检查授权。当前 `AppDatabaseSession` 通过 Hilt `Provider<SecureSessionAccessState>` 获取当前 Security owner，并按 Full Vault/Autofill 语义提供 protected query/transaction；旧的无授权通用 command API 与逐调用谓词均已删除。普通命令入口均已迁移；maintenance API 只给数据库清理与测试 fixture 使用，GC 不使用旁路。Room observations 也由 `AppDatabaseSession.observeFullVaultWhenReadable()` 内部读取授权 Flow，再组合 Runtime lock/generation 重新订阅，Repository 不再注入或传递授权状态。当前边界测试用可控 access-state 验证第二次授权拒绝时 read/write DAO block 不运行；它还未验证真实锁定与 Repository/Autofill 并发入口的提交/取消终态，因此 Task 37 仍未完成。
+
+**2026-11-07 Security 锁定顺序批次：** `VaultSessionController.lock()` 在进入可挂起清理前发布 `AuthenticationState.Locking`，保留变更前状态以判断 RecoveryMode；随后撤销 permit、调用 Runtime soft-lock/seal 排空 lease，再清敏感会话 key，sealed/fatal 路径在 key 清理后锁 DEK。可控 soft-lock 与 key-clear 屏障验证 Locking 已使 full access 失效，且 key clear 要等 Runtime soft-lock 返回；Security 150 项与 `verifyArchitecture` 通过。此批只记录撤权与 key 清理顺序；后续 Task 37 已另行收口 Data admission 与授权复核。
+
+**2026-11-07 Data admission 批次：** `AppDatabaseSession` 通过惰性 Security provider 直接读取认证权限，并在 lease 内再次核验；Repository 与 Runner 不再传递授权谓词或持有重复访问状态，Room observation 也由 session 集中读取认证 Flow。Full Vault、Autofill 与 maintenance 入口语义显式区分。新增 Room observation instrumentation 回归，分别验证 read/write 在第二次授权核验拒绝且 DAO block 不执行；`:app:kspDebugKotlin`、Data 主代码与 AndroidTest 源集编译通过。`:security:testDebugUnitTest` 与 `:runtime:session:test` 强制重跑通过；`adb devices` 无可用设备，instrumentation 未运行。同步修正数据库映射和认证文档。Task 37 仍待真实 Security/Data 并发终态、Autofill/Recovery/idle/reset 次序验收和定向验证。
+
+**2026-11-07 GC 授权回调收敛：** `AttachmentGarbageCollectionWorker` 不再接收 `hasFullAccess` 函数参数，改为在每个分页、条目与退避检查点直接查询 `SecureSessionAccessState`；生产调用点不再转发谓词，测试通过可变认证状态覆盖撤权边界。早期定向构建曾被旧 Core→Security 实现依赖阻断；该依赖已通过 Security 边界迁移移除。后续记录的 `:core:testDebugUnitTest`、`:security:testDebugUnitTest`、Data unit/AndroidTest 源码编译与 `verifyArchitecture` 均通过，Task 43 也记录 `AttachmentGarbageCollectionWorker` 7/7 通过。因此旧 KSP 阻断不再是当前待办；Task 37 仍待更广的授权线性化、事务终态、Autofill/Recovery/reset 交错行为验收。
+
+**2026-11-07 生命周期顺序审查：** idle/background 与 Autofill 结果完成后的释放都调用 `VaultSessionController.lock()`；RecoveryMode 锁定升级为 SEALED。Autofill 最后一个 borrower 释放受结果完成屏障保护。Reset 则由 `ResetDatabaseUseCase` 通过 Full Vault 状态与 `AuthorizationGate` 后调用 Data `DatabaseSessionLifecycle.seal()/unlock()`，未经过同一 Security lock owner；它与并发 lock 的交错尚无终态测试，因此保留 Task 37 未完成。
 <a id="task-26"></a>
 
 ### Task 26：明确 Runtime Session 生命周期转换的并发所有者
@@ -69,25 +88,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 soft-lock 排空批次：** Runtime 在 `softLock()` 发布 `SOFT_LOCKED` 后等待活动 lease；5 秒超时或调用方取消会请求登记 owner 取消，再在不可取消清理区等待实际退出，保留已打开的 handle。新增两项屏障回归，分别验证超时取消与调用方取消后仍等待、不关闭资源，且新 lease 被拒绝。Runtime 用例通过。Security 当前已先发布认证撤权、等待 Runtime soft-lock/seal 排空，再清敏感会话 key；Task 26 仅保留与 Task 37 共用的 Reset/跨层终态验收。
 
-<a id="task-37"></a>
-
-### Task 37：为认证撤权与数据库操作定义同一线性化边界
-
-- [x] 明确锁定从请求发起到 Data 禁止新命令进入 DAO 的线性化点。`VaultSessionController.lock()` 先发布 `AuthenticationState.Locking`；`AppDatabaseSession` 直接查询 Security-owned `SecureSessionAccessState`，在 Runtime lease 内、DAO block 前重新核验授权。lock 请求前通过 admission 的操作持有 lease，由 Runtime drain 等待真实退出。
-- [x] 审计并收口数据库命令入口。`DatabaseTransactionRunner`、Entry/Link/Sensitive/OTP Repository、Autofill Candidate/Credential Resolver、Backup Store、Activity Recorder 与附件 GC 均迁移到 Full Vault 或 Autofill 专用 session API；删除 Repository/runner 自己的授权检查与重复注入。GC 仍在文件副作用前核验 Full Vault。数据库清理使用单独命名的 maintenance API，仍受 Runtime lease/lock gate 保护。没有无授权的通用 `query/transaction` 重载。
-- [x] 统一 `DatabaseTransactionRunner.read()`、`write()` 与 `writeForAutofill()` 的 lease 内授权复核；直接 Full Vault 与 Autofill 命令使用同一个 `AppDatabaseSession` admission 边界。新增边界回归分别让 read/write 的授权第一次为真、lease 内复核时为假，并断言 DAO block 不运行。
-- [ ] 增加可控挂起的跨层终态回归：在 Security lock 等待数据库 lease/resource 与敏感 key 清理时，从 runner、直接 Full Vault Repository 与 Autofill Repository 发起读写，验证线性化点之后新命令不触达 DAO；已进入事务准确报告提交/回滚/取消结果，敏感 permit、会话、DEK、key 与 lock state 一致。边界与真实 Repository 集成测试证明调用闭包后，不需为每个薄适配器复制同一测试。
-- [ ] 核对锁定、恢复模式切换、Autofill 会话结束、idle timeout 和 reset 是否共享该次序；更新定向测试并运行 Security、Runtime Session、Data 事务/会话、`verifyArchitecture` 与 `git diff --check`。本批次的 Android instrumentation 是否可运行待确认。
-
-**审查证据：** 原调用闭包中 Runner 与多个 Repository 各自只在获取 lease 前检查授权。当前 `AppDatabaseSession` 通过 Hilt `Provider<SecureSessionAccessState>` 获取当前 Security owner，并按 Full Vault/Autofill 语义提供 protected query/transaction；旧的无授权通用 command API 与逐调用谓词均已删除。普通命令入口均已迁移；maintenance API 只给数据库清理与测试 fixture 使用，GC 不使用旁路。Room observations 也由 `AppDatabaseSession.observeFullVaultWhenReadable()` 内部读取授权 Flow，再组合 Runtime lock/generation 重新订阅，Repository 不再注入或传递授权状态。当前边界测试用可控 access-state 验证第二次授权拒绝时 read/write DAO block 不运行；它还未验证真实锁定与 Repository/Autofill 并发入口的提交/取消终态，因此 Task 37 仍未完成。
-
-**2026-11-07 Security 锁定顺序批次：** `VaultSessionController.lock()` 现在在进入可挂起清理前发布 `AuthenticationState.Locking`，保留变更前状态以判断 RecoveryMode；随后撤销 permit、调用 Runtime soft-lock/seal 排空 lease，再清敏感会话 key，sealed/fatal 路径在 key 清理后锁 DEK。新增可控 soft-lock 与 key-clear 屏障，验证 Locking 已使 full access 失效，且 key clear 要等 Runtime soft-lock 返回；Security 150 项与 `verifyArchitecture` 通过。Task 37 仍未完成：AppDatabaseSession/Runner/直接 Repository 的 lease 后授权复核、Autofill 与内部维护入口分类、已进入事务的提交/取消结果，以及 reset/恢复模式的同序测试仍待单独批次。
-
-**2026-11-07 Data admission 批次：** `AppDatabaseSession` 通过惰性 Security provider 直接读取认证权限，并在 lease 内再次核验；Repository 与 Runner 不再传递授权谓词或持有重复访问状态，Room observation 也由 session 集中读取认证 Flow。Full Vault、Autofill 与 maintenance 入口语义显式区分。新增 Room observation instrumentation 回归，分别验证 read/write 在第二次授权核验拒绝且 DAO block 不执行；`:app:kspDebugKotlin`、Data 主代码与 AndroidTest 源集编译通过。`:security:testDebugUnitTest` 与 `:runtime:session:test` 强制重跑通过；`adb devices` 无可用设备，instrumentation 未运行。同步修正数据库映射和认证文档。Task 37 仍待真实 Security/Data 并发终态、Autofill/Recovery/idle/reset 次序验收和定向验证。
-
-**2026-11-07 GC 授权回调收敛：** `AttachmentGarbageCollectionWorker` 不再接收 `hasFullAccess` 函数参数，改为在每个分页、条目与退避检查点直接查询 `SecureSessionAccessState`；生产调用点不再转发谓词，测试通过可变认证状态覆盖撤权边界。定向单测尝试运行但在 `:core:kspDebugKotlin` 被现有依赖图错误阻断：KSP 无法解析 `SensitiveDataKeyManager`（依赖追踪来自 `SensitiveFieldEncryptor`）；GC 测试尚未实际执行。`git diff --check` 无空白错误；Task 37 的整体跨层验证仍待完成。
-
-**2026-11-07 生命周期顺序审查：** idle/background 与 Autofill 结果完成后的释放都调用 `VaultSessionController.lock()`；RecoveryMode 锁定升级为 SEALED。Autofill 最后一个 borrower 释放受结果完成屏障保护。Reset 则由 `ResetDatabaseUseCase` 通过 Full Vault 状态与 `AuthorizationGate` 后调用 Data `DatabaseSessionLifecycle.seal()/unlock()`，未经过同一 Security lock owner；它与并发 lock 的交错尚无终态测试，因此保留 Task 37 未完成。
 <a id="task-43"></a>
 
 ### Task 43：保证条目与修订敏感揭示异常时擦除部分结果
