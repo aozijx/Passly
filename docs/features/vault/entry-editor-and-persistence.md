@@ -4,13 +4,15 @@
 
 ## 创建与详情编辑
 
+详情标签提交使用 Domain 的 EntryTagPolicy 执行拆分、去重、排序与数量/长度校验；输入建议及可编辑草稿状态属于 Presentation。
+
 当前独立创建页支持 Login、OTP、Bank Card、Wi-Fi。详情页为这四种类型提供完整表单编辑，并继续为其余类型
 提供按一个逻辑字段提交的编辑方式。完整表单复用创建表单及类型验证；更新只替换表单拥有的字段，保留身份、
 Profile/Secret 中其余数据和未揭示字段。完整编辑不覆盖用户自定义字段。
 
 | 层 | 当前职责 | 主要入口 |
 | --- | --- | --- |
-| Domain | 字段定义、草稿类型、纯校验、物化、单字段及完整表单应用 | `EntryTypeDefinitions`、`EntryDraftMaterializer`、`EntryFieldEditor`、`EntryFormEditor`、`EntryEdit` |
+| Domain | 字段定义、草稿类型、标签及凭据校验、物化、单字段及完整表单应用 | `EntryTypeDefinitions`、`EntryTagPolicy`、`EntryDraftMaterializer`、`EntryFieldEditor`、`EntryFormEditor`、`EntryEdit` |
 | App integration | 跨功能创建能力、会话检查、日志和 Repository 编排；编辑读取/更新用例 | `CreateEntryUseCase`、`LoadEditableEntryUseCase`、`EditDetailEntryUseCase` |
 | App presentation | 类型专属表单、敏感内容回填、状态、Action、ViewModel、Route 和 Compose 内容 | `feature/vault/presentation/editor/<类型>`、`presentation/detail` |
 | Data | 事务、乐观锁、高敏字段保留/替换/清除、加密、修订和活动写入 | `UpdateEntryExecutor`、`SecretFieldStore`、`EntryRevisionWriter` |
@@ -26,11 +28,19 @@ Presentation 经用例或 Domain 端口访问数据，不直接使用 DAO。完�
   -> EntryCommandRepository.createEntry -> Data 事务
 ```
 
-Domain 的 [`EntryCreation`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt)
-是 Vault、扫码 OTP 和 Autofill 共用的创建能力合同；App 根组合中的
+Domain 将创建权限拆成两个合同：[`EntryCreation`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt)
+只暴露 `invoke(draft: EntryDraft)`，供 Vault 表单和扫码 OTP 导入使用；[`AutofillEntryCreation`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillEntryCreation.kt)
+暴露 `createFromAutofill(draft: EntryDraft, inboxDraftId: AutofillInboxDraftId?)`，由 Autofill 流程使用。App 根组合中的
 [`CreateEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/CreateEntryUseCase.kt)
-实现该合同。它接收只含 `type` 和类型化字段值的创建草稿，先检查当前权限，再检查必填字段和 `invalidProvidedFields`，
-生成身份后物化、执行完整领域校验并写入 Repository。Autofill 创建复用同一纯规则，但使用自己的会话访问检查和写入端口。
+同时实现两者，并由 [`EntryCreationModule`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/EntryCreationModule.kt)
+分别绑定到对应 port。
+
+普通 `invoke(draft)` 将 `secureSessionAccessState::hasFullSecureSessionAccess` 和 `entryCommandRepository::createEntry`
+传给共同的 `observeCreate(...)`；`createFromAutofill(draft, inboxDraftId)` 则传 `hasAutofillSessionAccess`，并按
+`inboxDraftId == null` 选择 `autofillEntryWriter.create(entry)` 或 `createFromInbox(entry)`。Inbox draft ID 会先映射成稳定条目 ID，
+让 Inbox 重试具有幂等身份。共同的 `create(...)` 在生成 ID/时间前检查 required 与 `invalidProvidedFields`，随后物化并调用
+`EntryValidation.validate(entry)`；预期字段错误返回 `ValidationError`，通过后才调用对应 `persist(entry)`。因此两类入口共享纯校验与物化，
+但保留不同的 session access、ID 策略和写入端口。
 
 [`EntryDraftMaterializer`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt)
 位于 Domain，目前显式转换四种创建类型。它再次检查草稿字段及身份类型；不能假定草稿一定经 `withValue()` 构造。
@@ -142,8 +152,10 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 创建能力合同 | `EntryCreation.invoke()`、`createFromAutofill()` | [`EntryCreation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt) |
-| 创建普通条目及 Autofill 条目 | `CreateEntryUseCase.invoke()`、`createFromAutofill()` | [`CreateEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/CreateEntryUseCase.kt) |
+| Vault/扫码 OTP 创建能力合同 | `EntryCreation.invoke(draft: EntryDraft)` | [`EntryCreation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryCreation.kt) |
+| Autofill 创建能力合同 | `AutofillEntryCreation.createFromAutofill(draft, inboxDraftId)` | [`AutofillEntryCreation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillEntryCreation.kt) |
+| 分别绑定两个创建 port | `bindEntryCreation(implementation)`、`bindAutofillEntryCreation(implementation)` | [`EntryCreationModule.kt`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/EntryCreationModule.kt) |
+| 创建普通条目及 Autofill 条目 | `invoke(draft)`、`createFromAutofill(draft, inboxDraftId)` -> `observeCreate(draft, trigger, hasAccess, persist, forcedId)` | [`CreateEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/app/entry/creation/CreateEntryUseCase.kt) |
 | 将新建草稿转换为可持久化条目 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
 | 登记所有条目的字段定义并检查目录覆盖 | `EntryTypeDefinitions`、`buildEntryTypeDefinitionIndex()` | [`EntryTypeDefinitions.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitions.kt)、[`EntryTypeDefinitionRegistry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitionRegistry.kt) |
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |

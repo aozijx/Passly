@@ -35,6 +35,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 - 扫描开始时清点 8 个 Gradle 业务/能力模块及 buildSrc：生产 main 1,072 个 Kotlin 文件（含 buildSrc 13 个），测试源 377 个。尺寸只用于筛查，不按行数拆分。39 个既有主任务逐项复核，新增验证基线 Task 86。
 - 修正已迁移的 Autofill、Room 观察、认证输入、通知快照、GC 和正式 UDF 规范等过时描述；补分类查询恢复、导出流所有权及 Scanner 输入资格，保留各专题 owner，不复制第二份修复清单。
+- **2026-11-07 文档/调用合同续扫：** removed：Vault 创建页曾把 Autofill 专用 `createFromAutofill(draft, inboxDraftId)` 误记为通用 `EntryCreation`，现按 `EntryCreation.invoke(draft)`、`AutofillEntryCreation.createFromAutofill(...)`、App 双绑定与 `observeCreate(...)` 的实参更新权威功能页；Domain 端口迁移及保留边证据见[迁移审查记录](../../reviews/2026-11-07-domain-cohesion-migration.md)。deferred：Create/Update/Revision Restore 的事务后 GC 取消会传播到写入调用者，是否令已提交结果表现为未完成及可重试尚缺 owner 级行为证据，详见 Task 64；不复制第二份详细待办。
 - 串行运行 `gradlew.bat -p buildSrc test --no-parallel --max-workers=2`：通过，实际执行 121 项；随后 `verifyArchitecture`：通过，含 module/error-code 门禁。
 - 运行 `gradlew.bat :app:testDebugUnitTest :feature:autofill:testDebugUnitTest --continue --no-parallel --max-workers=2`：首轮 App 主/测试源码编译通过，987 项中 9 失败；Autofill test 任务 UP-TO-DATE。详见 Task 86。
 - 收尾运行 `gradlew.bat :app:testDebugUnitTest :feature:autofill:testDebugUnitTest :app:lintDebug :feature:autofill:lintDebug --continue --no-parallel --max-workers=2 --quiet`：App **984 项/9 失败**，仍为诊断 8 项与 Scanner 1 项；Lint 为 app **2 errors/27 warnings**、Autofill **5 errors/1 warning**，构建退出 1。Autofill 单测 XML 131/0，任务复用缓存。
@@ -469,6 +470,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 ### Task 64：让附件 GC 解锁后完整排空并在失败后恢复
 
 - [ ] 在真实 SQLCipher/文件系统执行 AttachmentResourceGarbageCollectorTest 多批排空、失败文件重试、worker 重建唤醒，验证撤权、当前/历史引用保护及最终回收。
+- [ ] 验证条目写事务已提交后，调用方取消是否会把成功写入呈现为未完成并允许重复提交：`CreateEntryExecutor.execute()`、`UpdateEntryExecutor.execute()`、`RestoreEntryRevisionExecutor.execute()` 在数据库写入返回后调用 `PostCommitCleanup.afterCommit(...)`；其 `run()` 将普通清理异常记录后吞掉，却继续传播 `CancellationException`，而 `AttachmentResourceGarbageCollector.drain()` 也传播取消。追踪 Vault `EditorWriteSession`、Detail revision owner 与 Autofill/Inbox 调用者的结果映射和重试入口，按每个 durable commit point 定义取消语义；覆盖事务已提交但 GC 被取消、普通清理异常、fatal `Error`、调用方离页/认证撤权和重试，特别确认普通创建的随机 EntryId 不会因“结果未知”被再次创建。静态链路已确认，尚无 owner 级行为证据，不先把它描述成已复现缺陷。
 
 **2026-11-07：deferred，实现/测试已接入待仪器执行。** worker 已跨页、越过失败行并有界退避；单测有跨批/锁定/退避/fatal/取消，仪器源码有跨批/文件重试/重建唤醒。移除旧“仅一批、无重试 owner”实现待办。
 
