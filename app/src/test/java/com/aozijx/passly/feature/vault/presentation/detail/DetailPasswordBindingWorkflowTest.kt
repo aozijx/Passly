@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -32,7 +33,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -51,7 +51,7 @@ class DetailPasswordBindingWorkflowTest {
 
             fixture.workSession.open(fixture.currentEntry.id)
             gate.complete(listOf(listItem("source"), listItem("target")))
-            advanceUntilIdle()
+            runCurrent()
 
             assertEquals(RelatedPasswordBindingUiState.Loading, fixture.bindingState)
         }
@@ -66,7 +66,7 @@ class DetailPasswordBindingWorkflowTest {
 
             fixture.access.authenticationState.value = AuthenticationState.Locked
             gate.complete(listOf(listItem("source"), listItem("target")))
-            advanceUntilIdle()
+            runCurrent()
 
             assertEquals(RelatedPasswordBindingUiState.Loading, fixture.bindingState)
         }
@@ -81,7 +81,7 @@ class DetailPasswordBindingWorkflowTest {
 
             fixture.workflow.dismiss()
             gate.complete(listOf(listItem("source"), listItem("target")))
-            advanceUntilIdle()
+            runCurrent()
 
             assertEquals(RelatedPasswordBindingUiState.Closed, fixture.bindingState)
         }
@@ -102,21 +102,90 @@ class DetailPasswordBindingWorkflowTest {
             fixture.workSession.open(fixture.currentEntry.id)
             fixture.workflow.close()
             linkWriteGate.complete(Unit)
-            advanceUntilIdle()
+            runCurrent()
 
             assertTrue(fixture.links.upserts.isEmpty())
             assertEquals(0, fixture.relatedEntriesUpdates)
+        }
+
+    @Test
+    fun successfulBindRefreshesTheCurrentRelatedEntryProjection() =
+        runTest {
+            val fixture = Fixture(backgroundScope, completedCandidates())
+            fixture.workflow.open()
+            runCurrent()
+
+            fixture.workflow.bind(EntryId("target"))
+            runCurrent()
+
+            assertEquals(RelatedPasswordBindingUiState.Closed, fixture.bindingState)
+            assertEquals(1, fixture.relatedEntriesUpdates)
+            assertEquals(listOf(EntryId("target")), fixture.refreshedRelatedIds)
+        }
+
+    @Test
+    fun failedBindLeavesPickerOpenWithRetryState() =
+        runTest {
+            val fixture = Fixture(backgroundScope, completedCandidates(), failLinkWrite = true)
+            fixture.workflow.open()
+            runCurrent()
+
+            fixture.workflow.bind(EntryId("target"))
+            runCurrent()
+
+            val ready = fixture.bindingState as RelatedPasswordBindingUiState.Ready
+            assertEquals(true, ready.bindFailed)
+            assertEquals(null, ready.savingEntryId)
+            assertEquals(0, fixture.relatedEntriesUpdates)
+        }
+
+    @Test
+    fun duplicateBindTapDoesNotStartAnotherLinkWrite() =
+        runTest {
+            val writeGate = CompletableDeferred<Unit>()
+            val fixture = Fixture(backgroundScope, completedCandidates(), writeGate)
+            fixture.workflow.open()
+            runCurrent()
+
+            fixture.workflow.bind(EntryId("target"))
+            runCurrent()
+            fixture.workflow.bind(EntryId("target"))
+            runCurrent()
+
+            assertEquals(1, fixture.links.upsertAttempts)
+            writeGate.complete(Unit)
+            runCurrent()
+            assertEquals(1, fixture.links.upserts.size)
+        }
+
+    @Test
+    fun targetRemovedAfterCandidateLoadIsRejectedBeforeLinkWrite() =
+        runTest {
+            val fixture = Fixture(backgroundScope, completedCandidates())
+            fixture.workflow.open()
+            runCurrent()
+            fixture.entries.activeItems = listOf(listItem("source"))
+
+            fixture.workflow.bind(EntryId("target"))
+            runCurrent()
+
+            val ready = fixture.bindingState as RelatedPasswordBindingUiState.Ready
+            assertEquals(true, ready.bindFailed)
+            assertEquals(0, fixture.links.upsertAttempts)
         }
 
     private class Fixture(
         scope: kotlinx.coroutines.CoroutineScope,
         candidateGate: CompletableDeferred<List<EntryListItem>>,
         linkWriteGate: CompletableDeferred<Unit>? = null,
+        failLinkWrite: Boolean = false,
     ) {
         val access = TestAccess()
         var currentEntry = entry("source")
-        val links = TestLinks(linkWriteGate)
+        val links = TestLinks(linkWriteGate, failLinkWrite)
+        val entries = TestEntries(candidateGate)
         var relatedEntriesUpdates = 0
+        var refreshedRelatedIds: List<EntryId> = emptyList()
         val workSession =
             DetailWorkSession(
                 hasAccess = { access.hasFullSecureSessionAccess() },
@@ -130,12 +199,12 @@ class DetailPasswordBindingWorkflowTest {
         val workflow =
             DetailPasswordBindingWorkflow(
                 scope = scope,
-                binding = RelatedPasswordBinding(TestEntries(candidateGate), links, testLogger()),
+                binding = RelatedPasswordBinding(entries, links, testLogger()),
                 access = access,
                 workSession = workSession,
                 currentEntry = { currentEntry },
                 currentBindingState = { bindingState },
-                presentationLoader = presentationLoader(),
+                presentationLoader = presentationLoader(links) { refreshedRelatedIds = it },
                 publish = { mutation ->
                     when (mutation) {
                         is DetailMutation.PasswordBindingStateChanged -> bindingState = mutation.state
@@ -159,14 +228,17 @@ class DetailPasswordBindingWorkflowTest {
     private class TestEntries(
         private val gate: CompletableDeferred<List<EntryListItem>>,
     ) : EntryListQueryRepository {
+        var activeItems: List<EntryListItem>? = null
         override val availableCategories: Flow<List<String>> = emptyFlow()
         override val deletedEntries: Flow<List<EntryListItem>> = emptyFlow()
 
-        override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> = gate.await()
+        override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> =
+            (activeItems ?: gate.await()).filter { it.entryType == entryType && it.deletedAt == null }
     }
 
     private class TestLinks(
         private val writeGate: CompletableDeferred<Unit>? = null,
+        private val failWrite: Boolean = false,
     ) : EntryLinkRepository {
         val upserts = mutableListOf<EntryLink>()
         var upsertAttempts = 0
@@ -175,13 +247,15 @@ class DetailPasswordBindingWorkflowTest {
 
         override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = emptyFlow()
 
-        override suspend fun getAll(): List<EntryLink> = emptyList()
+        override suspend fun getAll(): List<EntryLink> = upserts.toList()
 
-        override suspend fun getLinks(entryId: EntryId): List<EntryLink> = emptyList()
+        override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
+            upserts.filter { it.sourceEntryId == entryId || it.targetEntryId == entryId }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {
             upsertAttempts++
             writeGate?.await()
+            if (failWrite) return AppResult.Failure(ValidationError())
             upserts += link
             return AppResult.Success(Unit)
         }
@@ -190,15 +264,32 @@ class DetailPasswordBindingWorkflowTest {
     }
 
     private companion object {
-        fun presentationLoader(): DetailPresentationLoader =
+        fun presentationLoader(
+            links: TestLinks,
+            onRelatedEntriesLoaded: (List<EntryId>) -> Unit,
+        ): DetailPresentationLoader =
             DetailPresentationLoader(
                 sessionQuery =
                     DetailSessionQuery(
                         entryQueryRepository =
                             object : EntryQueryRepository {
-                                override suspend fun getById(entryId: EntryId): Entry? = null
+                                override suspend fun getById(entryId: EntryId): Entry? =
+                                    when (entryId) {
+                                        EntryId("source") -> entry("source")
+                                        EntryId("target") -> entry("target")
+                                        else -> null
+                                    }
 
-                                override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = emptyList()
+                                override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> {
+                                    onRelatedEntriesLoaded(entryIds)
+                                    return entryIds.mapNotNull { id ->
+                                        when (id) {
+                                            EntryId("source") -> entry("source")
+                                            EntryId("target") -> entry("target")
+                                            else -> null
+                                        }
+                                    }
+                                }
                             },
                         sensitiveFieldRepository =
                             object : SensitiveFieldRepository {
@@ -220,7 +311,7 @@ class DetailPasswordBindingWorkflowTest {
 
                                 override suspend fun readBundle(entryId: EntryId): EntrySecret = EntrySecret()
                             },
-                        entryLinkRepository = TestLinks(),
+                        entryLinkRepository = links,
                     ),
                 installedAppDirectory =
                     object : InstalledAppDirectory {
@@ -243,5 +334,7 @@ class DetailPasswordBindingWorkflowTest {
                 profile = EntryProfile(title = id),
                 secret = EntrySecret(credential = LoginCredential()),
             )
+
+        fun completedCandidates() = CompletableDeferred(listOf(listItem("source"), listItem("target")))
     }
 }
