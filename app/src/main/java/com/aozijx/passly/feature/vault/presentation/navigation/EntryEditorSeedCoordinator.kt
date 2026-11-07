@@ -2,6 +2,13 @@ package com.aozijx.passly.feature.vault.presentation.navigation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.observability.ErrorCodes
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.LogFieldKeys
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.OperationCode
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.entry.EditorSeedToken
@@ -10,19 +17,20 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-sealed interface EntryEditorSeedStageResult {
-    data class Staged(
-        val token: EditorSeedToken,
-    ) : EntryEditorSeedStageResult
+sealed interface EntryEditorSeedNavigationResult {
+    data object Navigated : EntryEditorSeedNavigationResult
 
-    data object AccessDenied : EntryEditorSeedStageResult
-}
+    data object AccessDenied : EntryEditorSeedNavigationResult
 
-internal fun interface EntryEditorSeedStager {
-    fun stage(seed: EntryEditorSeed): EntryEditorSeedStageResult
+    data object UnsupportedDestination : EntryEditorSeedNavigationResult
+
+    data class NavigationFailed(
+        val failure: Exception,
+    ) : EntryEditorSeedNavigationResult
 }
 
 @HiltViewModel
@@ -31,8 +39,8 @@ internal class EntryEditorSeedCoordinator
     constructor(
         private val sessionAccess: SecureSessionAccessState,
         private val store: EntryEditorSeedStore,
-    ) : ViewModel(),
-        EntryEditorSeedStager {
+        private val logger: Logger,
+    ) : ViewModel() {
         private sealed interface Ownership {
             data object Empty : Ownership
 
@@ -61,20 +69,49 @@ internal class EntryEditorSeedCoordinator
             }
         }
 
-        override fun stage(seed: EntryEditorSeed): EntryEditorSeedStageResult =
-            when (val access = currentAccess()) {
-                Access.Denied -> {
-                    EntryEditorSeedStageResult.AccessDenied
+        fun navigateWithSeed(
+            seed: EntryEditorSeed,
+            routeForToken: (EditorSeedToken) -> String?,
+            navigate: (String) -> Unit,
+        ): EntryEditorSeedNavigationResult {
+            val authentication =
+                when (val access = currentAccess()) {
+                    Access.Denied -> return EntryEditorSeedNavigationResult.AccessDenied
+                    is Access.Granted -> access.authentication
                 }
-
-                is Access.Granted -> {
-                    if (seed is EntryEditorSeed.Editable && seed.authentication !== access.authentication) {
-                        return EntryEditorSeedStageResult.AccessDenied
-                    }
-                    ownership = Ownership.Staged(access.authentication)
-                    EntryEditorSeedStageResult.Staged(store.stage(seed))
-                }
+            if (seed is EntryEditorSeed.Editable && seed.authentication !== authentication) {
+                return EntryEditorSeedNavigationResult.AccessDenied
             }
+
+            ownership = Ownership.Staged(authentication)
+            val token = store.stage(seed)
+            try {
+                val route = routeForToken(token) ?: run {
+                    discard(token)
+                    return EntryEditorSeedNavigationResult.UnsupportedDestination
+                }
+                navigate(route)
+                return EntryEditorSeedNavigationResult.Navigated
+            } catch (cancelled: CancellationException) {
+                discardAfterFailure(token, cancelled)
+                throw cancelled
+            } catch (fatal: Error) {
+                discardAfterFailure(token, fatal)
+                throw fatal
+            } catch (failure: Exception) {
+                discardAfterFailure(token, failure)
+                logger.error(
+                    Events.Vault.Error,
+                    ErrorCodes.Security.VaultOperationFailed,
+                    Reasons.UnknownFailure,
+                    failure,
+                    fields {
+                        operation(LogFieldKeys.Operation, OperationCode("vault_seed_navigation"))
+                    },
+                )
+                return EntryEditorSeedNavigationResult.NavigationFailed(failure)
+            }
+        }
 
         fun consume(token: EditorSeedToken): EntryEditorSeedConsumeResult =
             when (currentAccess()) {
@@ -84,6 +121,21 @@ internal class EntryEditorSeedCoordinator
 
         fun discard(token: EditorSeedToken) {
             if (store.discard(token) && ownership is Ownership.Staged) ownership = Ownership.Empty
+        }
+
+        private fun discardAfterFailure(
+            token: EditorSeedToken,
+            primaryFailure: Throwable,
+        ) {
+            try {
+                discard(token)
+            } catch (cleanupFailure: Throwable) {
+                if (cleanupFailure is Error && primaryFailure !is Error) {
+                    if (cleanupFailure !== primaryFailure) cleanupFailure.addSuppressed(primaryFailure)
+                    throw cleanupFailure
+                }
+                if (cleanupFailure !== primaryFailure) primaryFailure.addSuppressed(cleanupFailure)
+            }
         }
 
         private fun currentAccess(): Access {

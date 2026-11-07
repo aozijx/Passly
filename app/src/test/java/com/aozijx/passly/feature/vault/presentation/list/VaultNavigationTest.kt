@@ -1,15 +1,18 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
 import com.aozijx.passly.app.navigation.AppRoute
+import com.aozijx.passly.domain.access.model.AuthenticationState
+import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
-import com.aozijx.passly.feature.vault.entry.EditorSeedToken
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeedStore
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
-import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedStageResult
-import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedStager
+import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedCoordinator
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationRequest
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationResult
+import com.aozijx.passly.testing.RecordingTestLogger
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -99,9 +102,18 @@ class VaultNavigationTest {
     ) = VaultNavigation(
         navigateToRoute = routes::add,
         navigateToSingleTopRoute = singleTopRoutes::add,
-        seedStager =
-            EntryEditorSeedStager {
-                EntryEditorSeedStageResult.Staged(EditorSeedToken("token-1"))
-            },
+        seedCoordinator =
+            EntryEditorSeedCoordinator(
+                sessionAccess = AuthenticatedSession(),
+                store = EntryEditorSeedStore(),
+                logger = RecordingTestLogger(),
+            ),
     )
+
+    private class AuthenticatedSession : SecureSessionAccessState {
+        override val authenticationState =
+            MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
+
+        override fun isUnlocked(): Boolean = true
+    }
 }

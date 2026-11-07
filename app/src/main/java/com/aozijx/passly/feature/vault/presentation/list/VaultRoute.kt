@@ -286,6 +286,7 @@ internal fun VaultRoute(
                                 VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
                                 VaultNavigationResult.UnsupportedDestination,
                                 VaultNavigationResult.AccessDenied,
+                                is VaultNavigationResult.NavigationFailed,
                                 -> ScannerResultHandling.Rejected
                             }
                         },

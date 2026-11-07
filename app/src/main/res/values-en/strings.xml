@@ -205,6 +205,7 @@
   <string name="vault_detail_history_load_failed">Activity history could not be loaded.</string>
   <string name="vault_detail_history_retry">Retry</string>
   <string name="vault_detail_load_failed">This entry could not be loaded. Try again.</string>
+  <string name="vault_editor_open_failed">Could not open the editor. Please try again.</string>
   <string name="vault_detail_entry_not_found">This entry no longer exists.</string>
   <string name="vault_detail_refreshing_after_restore">Restore saved. Refreshing the entry…</string>
   <string name="vault_detail_refresh_failed_after_restore">Restore saved, but the entry could not be refreshed.</string>

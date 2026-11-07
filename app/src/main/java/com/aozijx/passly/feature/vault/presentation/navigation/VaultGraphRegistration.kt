@@ -217,24 +217,16 @@ internal fun NavGraphBuilder.registerVaultGraph(
                 context.navigateToRoute(AppRoute.Detail.createRoute(it))
             },
             onEditFullForm = { editableEntry ->
-                when (val staged = seedCoordinator.stage(editableEntry)) {
-                    is EntryEditorSeedStageResult.Staged -> {
-                        val route =
-                            VaultEditorDestinationRegistry.editRouteFor(
-                                editableEntry.entry.type,
-                                staged.token.value,
-                            )
-                        if (route == null) {
-                            seedCoordinator.discard(staged.token)
-                        } else {
-                            context.navigateToRoute(route)
-                        }
-                    }
-
-                    EntryEditorSeedStageResult.AccessDenied -> {
-                        Unit
-                    }
-                }
+                seedCoordinator.navigateWithSeed(
+                    seed = editableEntry,
+                    routeForToken = { token ->
+                        VaultEditorDestinationRegistry.editRouteFor(
+                            editableEntry.entry.type,
+                            token.value,
+                        )
+                    },
+                    navigate = { route -> context.navigateToRoute(route) },
+                )
             },
         )
     }
@@ -298,5 +290,5 @@ private fun ShellNavigationContext.toVaultNavigation(seedCoordinator: EntryEdito
     VaultNavigation(
         navigateToRoute = navigateToRoute,
         navigateToSingleTopRoute = navigateToSingleTopRoute,
-        seedStager = seedCoordinator,
+        seedCoordinator = seedCoordinator,
     )

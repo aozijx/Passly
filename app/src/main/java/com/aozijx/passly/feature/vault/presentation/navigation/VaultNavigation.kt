@@ -27,12 +27,16 @@ internal sealed interface VaultNavigationResult {
     data object UnsupportedDestination : VaultNavigationResult
 
     data object AccessDenied : VaultNavigationResult
+
+    data class NavigationFailed(
+        val failure: Exception,
+    ) : VaultNavigationResult
 }
 
 internal class VaultNavigation(
     private val navigateToRoute: (String) -> Unit,
     private val navigateToSingleTopRoute: (String) -> Unit,
-    private val seedStager: EntryEditorSeedStager,
+    private val seedCoordinator: EntryEditorSeedCoordinator,
 ) {
     fun navigate(request: VaultDestinationRequest): VaultNavigationResult {
         when (request) {
@@ -52,18 +56,19 @@ internal class VaultNavigation(
             }
 
             is VaultDestinationRequest.EditScannedWifi -> {
-                when (
-                    val staged = seedStager.stage(EntryEditorSeed.Wifi(request.payload))
-                ) {
-                    is EntryEditorSeedStageResult.Staged -> {
-                        navigateToSingleTopRoute(
-                            AppRoute.AddWifiFromSeed.createRoute(staged.token.value),
+                return when (
+                    val result =
+                        seedCoordinator.navigateWithSeed(
+                            seed = EntryEditorSeed.Wifi(request.payload),
+                            routeForToken = { token -> AppRoute.AddWifiFromSeed.createRoute(token.value) },
+                            navigate = navigateToSingleTopRoute,
                         )
-                    }
-
-                    EntryEditorSeedStageResult.AccessDenied -> {
-                        return VaultNavigationResult.AccessDenied
-                    }
+                ) {
+                    EntryEditorSeedNavigationResult.Navigated -> VaultNavigationResult.Navigated
+                    EntryEditorSeedNavigationResult.AccessDenied -> VaultNavigationResult.AccessDenied
+                    EntryEditorSeedNavigationResult.UnsupportedDestination -> VaultNavigationResult.UnsupportedDestination
+                    is EntryEditorSeedNavigationResult.NavigationFailed ->
+                        VaultNavigationResult.NavigationFailed(result.failure)
                 }
             }
         }

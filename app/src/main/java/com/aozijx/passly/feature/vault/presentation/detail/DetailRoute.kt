@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedNavigationResult
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailScreen
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
@@ -43,7 +44,7 @@ fun DetailRoute(
     entryId: String,
     onBack: () -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
-    onEditFullForm: (EntryEditorSeed.Editable) -> Unit,
+    onEditFullForm: (EntryEditorSeed.Editable) -> EntryEditorSeedNavigationResult,
     launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
 ) {
     val viewModel = hiltViewModel<DetailViewModel>()
@@ -146,7 +147,19 @@ fun DetailRoute(
                     editScope.launch {
                         val editable = viewModel.prepareEntryForEdit() ?: return@launch
                         currentCoroutineContext().ensureActive()
-                        onEditFullForm(editable)
+                        when (onEditFullForm(editable)) {
+                            EntryEditorSeedNavigationResult.Navigated,
+                            EntryEditorSeedNavigationResult.AccessDenied,
+                            -> Unit
+
+                            EntryEditorSeedNavigationResult.UnsupportedDestination,
+                            is EntryEditorSeedNavigationResult.NavigationFailed,
+                            -> Toast.makeText(
+                                context,
+                                R.string.vault_editor_open_failed,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
                     }
             }
         },
