@@ -9,7 +9,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.port.EntryCreation
-import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
@@ -32,7 +32,7 @@ class AddPasswordViewModel
         createEntryUseCase: EntryCreation,
         private val secureSessionAccessState: SecureSessionAccessState,
         private val installedAppDirectory: InstalledAppDirectory,
-        private val editDetailEntry: EditDetailEntryUseCase,
+        private val editEntry: EditEntryUseCase,
     ) : ViewModel() {
         private var associatedAppsLoadJob: Job? = null
         private var editingEntryId: EntryId? = null
@@ -47,7 +47,7 @@ class AddPasswordViewModel
                     if (entryId == null) {
                         createEntryUseCase(draft)
                     } else {
-                        editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
+                        editEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
                     }
                 },
                 onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddPasswordSavePhase.Saving) },

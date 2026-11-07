@@ -28,6 +28,7 @@ import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.testing.RecordingTestLogger
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
@@ -40,7 +41,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class EditDetailEntryUseCaseTest {
+class EditEntryUseCaseTest {
     @Test
     fun fullFormEditReappliesToLatestEntryAfterVersionConflict() =
         runTest {
@@ -58,7 +59,7 @@ class EditDetailEntryUseCaseTest {
                 ).fold(EntryDraft(EntryType.LOGIN)) { current, (key, value) ->
                     current.withValue(EntryTypeDefinitions[EntryType.LOGIN], key, value)
                 }
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.ReplaceForm(draft))
 
@@ -80,7 +81,7 @@ class EditDetailEntryUseCaseTest {
                 val original = entry(version = 1)
                 val query = FakeQueryRepository(original)
                 val command = FakeCommandRepository(query)
-                val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+                val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
                 val result = useCase.edit(ENTRY_ID, edit)
 
@@ -102,7 +103,7 @@ class EditDetailEntryUseCaseTest {
                 }
             val query = FakeQueryRepository(original)
             val command = FakeCommandRepository(query)
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "4111111111111112"))
 
@@ -123,7 +124,7 @@ class EditDetailEntryUseCaseTest {
                 }
             val query = FakeQueryRepository(original)
             val command = FakeCommandRepository(query)
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_HOLDER, "After"))
 
@@ -147,7 +148,7 @@ class EditDetailEntryUseCaseTest {
         runTest {
             val query = FakeQueryRepository(entry(version = 1))
             val command = FakeCommandRepository(query)
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.CARD_NUMBER, "5555555555554444"))
 
@@ -160,7 +161,7 @@ class EditDetailEntryUseCaseTest {
         runTest {
             val query = FakeQueryRepository(entry(version = 1))
             val command = FakeCommandRepository(query)
-            val useCase = EditDetailEntryUseCase(query, command, RestrictedSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, RestrictedSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
 
@@ -178,7 +179,7 @@ class EditDetailEntryUseCaseTest {
                     ),
                 )
             val command = FakeCommandRepository(query)
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetTags(emptySet()))
 
@@ -199,7 +200,7 @@ class EditDetailEntryUseCaseTest {
             val query = FakeQueryRepository(entry(version = 7, notes = "latest notes"))
             val command = FakeCommandRepository(query)
             val logger = RecordingTestLogger()
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, logger)
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
@@ -232,7 +233,7 @@ class EditDetailEntryUseCaseTest {
                         query.current = entry(version = 4, notes = "concurrent notes")
                     }
                 }
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
@@ -253,7 +254,7 @@ class EditDetailEntryUseCaseTest {
                     failures += Conflict(errorId = "second-conflict")
                 }
             val logger = RecordingTestLogger()
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, logger)
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, logger)
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
@@ -271,7 +272,7 @@ class EditDetailEntryUseCaseTest {
                 FakeCommandRepository(query).apply {
                     failures += ValidationError(errorId = "validation")
                 }
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.SetTitle("Renamed"))
 
@@ -284,7 +285,7 @@ class EditDetailEntryUseCaseTest {
         runTest {
             val query = FakeQueryRepository(null)
             val useCase =
-                EditDetailEntryUseCase(
+                EditEntryUseCase(
                     query,
                     FakeCommandRepository(query),
                     FullSessionAccessState,
@@ -310,7 +311,7 @@ class EditDetailEntryUseCaseTest {
                         releaseFirst.await()
                     }
                 }
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val first = async { useCase.edit(ENTRY_ID, EntryEdit.SetTitle("First")) }
             firstStarted.await()
@@ -340,7 +341,7 @@ class EditDetailEntryUseCaseTest {
                     ),
                 )
             val useCase =
-                EditDetailEntryUseCase(
+                EditEntryUseCase(
                     query,
                     FakeCommandRepository(query),
                     FullSessionAccessState,
@@ -370,7 +371,7 @@ class EditDetailEntryUseCaseTest {
                     ),
                 )
             val useCase =
-                EditDetailEntryUseCase(
+                EditEntryUseCase(
                     query,
                     FakeCommandRepository(query),
                     FullSessionAccessState,
@@ -397,7 +398,7 @@ class EditDetailEntryUseCaseTest {
                     failures += Conflict(errorId = "first-conflict")
                     onFailure = { query.current = entry(version = 4, favorite = false) }
                 }
-            val useCase = EditDetailEntryUseCase(query, command, FullSessionAccessState, testLogger())
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
 
             val result = useCase.edit(ENTRY_ID, EntryEdit.ToggleFavorite)
 

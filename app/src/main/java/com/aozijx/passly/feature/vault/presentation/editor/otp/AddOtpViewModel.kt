@@ -15,7 +15,7 @@ import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
 import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.port.EntryCreation
-import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
@@ -38,7 +38,7 @@ class AddOtpViewModel
     internal constructor(
         createEntryUseCase: EntryCreation,
         private val secureSessionAccessState: SecureSessionAccessState,
-        private val editDetailEntry: EditDetailEntryUseCase,
+        private val editEntry: EditEntryUseCase,
     ) : ViewModel() {
         private sealed interface FeedbackScope {
             data object Closed : FeedbackScope
@@ -77,7 +77,7 @@ class AddOtpViewModel
                     if (entryId == null) {
                         createEntryUseCase(draft)
                     } else {
-                        editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
+                        editEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
                     }
                 },
                 onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddOtpSavePhase.Saving) },

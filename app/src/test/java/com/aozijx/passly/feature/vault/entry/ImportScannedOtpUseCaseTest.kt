@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.entry
 
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.NoOpAutofillEntryWriter
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -108,7 +109,7 @@ class ImportScannedOtpUseCaseTest {
                 override fun isUnlocked() = authentication is AuthenticationState.Authenticated
             }
         return ImportScannedOtpUseCase(
-            CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
+            CreateEntryUseCase(repository, session, EntryDraftMaterializer(), NoOpAutofillEntryWriter, testLogger()),
             session,
             testLogger(),
         )

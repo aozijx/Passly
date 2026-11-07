@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.port.EntryCreation
-import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
@@ -26,7 +26,7 @@ class AddBankCardViewModel
     internal constructor(
         createEntryUseCase: EntryCreation,
         private val secureSessionAccessState: SecureSessionAccessState,
-        private val editDetailEntry: EditDetailEntryUseCase,
+        private val editEntry: EditEntryUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(AddBankCardUiState())
         private var editingEntryId: EntryId? = null
@@ -40,7 +40,7 @@ class AddBankCardViewModel
                     if (entryId == null) {
                         createEntryUseCase(draft)
                     } else {
-                        editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
+                        editEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
                     }
                 },
                 onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddBankCardSavePhase.Saving) },

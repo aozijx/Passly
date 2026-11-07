@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.password
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.NoOpAutofillEntryWriter
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
@@ -65,7 +66,7 @@ class AddPasswordViewModelTest {
                     createEntryUseCase(fixture.access),
                     fixture.access,
                     installedAppDirectory = directory { emptyList() },
-                    editDetailEntry = fixture.editor,
+                    editEntry = fixture.editor,
                 )
 
             model.loadExistingEntry(fixture.editableSeed(entry.id))
@@ -311,6 +312,7 @@ class AddPasswordViewModelTest {
             entryCommandRepository = NoOpEntryCommandRepository,
             secureSessionAccessState = session,
             materializer = EntryDraftMaterializer(),
+            autofillEntryWriter = NoOpAutofillEntryWriter,
             logger = testLogger(),
         )
 
@@ -324,7 +326,7 @@ class AddPasswordViewModelTest {
             createEntryUseCase = createEntryUseCase(session),
             secureSessionAccessState = session,
             installedAppDirectory = directory,
-            editDetailEntry = editFixture.editor,
+            editEntry = editFixture.editor,
         )
     }
 

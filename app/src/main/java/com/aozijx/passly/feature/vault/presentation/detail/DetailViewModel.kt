@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
+import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -15,11 +16,13 @@ import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
+import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
@@ -74,7 +77,7 @@ class DetailViewModel
         private val secureSessionAccessState: SecureSessionAccessState,
         private val revealEntryFields: RevealEntryFieldsUseCase,
         private val loadEditableEntry: LoadEditableEntryUseCase,
-        private val editDetailEntry: EditDetailEntryUseCase,
+        private val editEntry: EditEntryUseCase,
         private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
         private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
         private val faviconImageProcessor: FaviconImageProcessor,
@@ -122,7 +125,7 @@ class DetailViewModel
         private val workSession =
             DetailWorkSession(
                 hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
-                editEntry = editDetailEntry::edit,
+                editEntry = editEntry::edit,
                 present = presentationLoader::present,
                 onMutation = ::mutate,
                 onReveal = ::setRevealedField,
@@ -134,7 +137,18 @@ class DetailViewModel
         suspend fun prepareEntryForEdit(): EntryEditorSeed.Editable? {
             val sourceEntry = _uiState.value.entry ?: return null
             if (!secureSessionAccessState.hasFullSecureSessionAccess()) return null
-            val result = loadEditableEntry(sourceEntry.id)
+            val authentication = secureSessionAccessState.authenticationState.value
+            val result =
+                try {
+                    loadEditableEntry(sourceEntry.id)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (isCurrentEditPreparation(sourceEntry.id, authentication)) {
+                        _effects.send(DetailEffect.EditPreparationFailed(sourceEntry.id))
+                    }
+                    return null
+                }
             if (result !is EditableEntryLoadResult.Loaded) return null
             if (result.entry.id != sourceEntry.id || result.entry.type != sourceEntry.type ||
                 secureSessionAccessState.authenticationState.value !== result.authentication ||
@@ -145,6 +159,14 @@ class DetailViewModel
             }
             return EntryEditorSeed.Editable(result.entry, result.authentication)
         }
+
+        private fun isCurrentEditPreparation(
+            entryId: EntryId,
+            authentication: AuthenticationState,
+        ): Boolean =
+            _uiState.value.entry?.id == entryId &&
+                secureSessionAccessState.authenticationState.value === authentication &&
+                secureSessionAccessState.hasFullSecureSessionAccess()
 
         private val _otpState = MutableStateFlow<OtpCodeState?>(null)
         val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
@@ -372,11 +394,11 @@ class DetailViewModel
                     val editor = _uiState.value.tagEditor as? DetailTagEditorState.Open ?: return
                     when (
                         val normalized =
-                            DetailTagNormalizer.normalize(
+                            EntryTagPolicy.normalize(
                                 editor.draftTags + editor.input,
                             )
                     ) {
-                        is TagNormalizationResult.Valid -> {
+                        is EntryTagNormalizationResult.Valid -> {
                             viewModelScope.launch {
                                 persistEntryEdit(
                                     edit = EntryEdit.SetTags(normalized.tags),

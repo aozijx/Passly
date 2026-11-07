@@ -27,6 +27,7 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.testing.testLogger
@@ -45,7 +46,7 @@ internal class EditableEntryUseCaseFixture(
     private val activity = TestActivity()
 
     val loader = LoadEditableEntryUseCase(query, sensitiveFields, authorization, access, activity)
-    val editor = EditDetailEntryUseCase(query, command, access, testLogger())
+    val editor = EditEntryUseCase(query, command, access, testLogger())
 
     suspend fun editableSeed(entryId: EntryId): EntryEditorSeedConsumeResult =
         when (val result = loader(entryId)) {

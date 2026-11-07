@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation
 
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.NoOpAutofillEntryWriter
 import com.aozijx.passly.core.error.model.ValidationError
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -206,7 +207,7 @@ class ScannedOtpImportViewModelTest {
             repository: EntryCommandRepository,
             access: MutableAccess,
         ) = com.aozijx.passly.feature.vault.entry.ImportScannedOtpUseCase(
-            CreateEntryUseCase(repository, access, EntryDraftMaterializer(), testLogger()),
+            CreateEntryUseCase(repository, access, EntryDraftMaterializer(), NoOpAutofillEntryWriter, testLogger()),
             access,
             testLogger(),
         )

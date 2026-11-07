@@ -60,10 +60,11 @@ import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
-import com.aozijx.passly.feature.vault.detail.EditDetailEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
@@ -88,6 +89,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -105,6 +107,88 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
+    @Test
+    fun `edit preparation failure is reported and can be retried`() =
+        runTest {
+            var failure: Throwable? = null
+            val fixture =
+                Fixture(
+                    sensitiveFieldRepository = sensitiveFieldsThatFailWhenRequested { failure },
+                )
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                failure = IllegalStateException("temporary read failure")
+
+                assertEquals(null, fixture.viewModel.prepareEntryForEdit())
+                assertEquals(DetailEffect.EditPreparationFailed(ENTRY_ID), fixture.viewModel.effects.first())
+
+                failure = null
+                assertTrue(fixture.viewModel.prepareEntryForEdit() is EntryEditorSeed.Editable)
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
+    fun `edit preparation propagates cancellation`() =
+        runTest {
+            val cancelled = CancellationException("cancelled read")
+            var failure: Throwable? = null
+            val fixture =
+                Fixture(
+                    sensitiveFieldRepository = sensitiveFieldsThatFailWhenRequested { failure },
+                )
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                failure = cancelled
+
+                val thrown =
+                    try {
+                        fixture.viewModel.prepareEntryForEdit()
+                        null
+                    } catch (failure: CancellationException) {
+                        failure
+                    }
+
+                assertSame(cancelled, thrown)
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
+    fun `edit preparation propagates fatal errors`() =
+        runTest {
+            val fatal = LinkageError("fatal read failure")
+            var failure: Throwable? = null
+            val fixture =
+                Fixture(
+                    sensitiveFieldRepository = sensitiveFieldsThatFailWhenRequested { failure },
+                )
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                failure = fatal
+
+                val thrown =
+                    try {
+                        fixture.viewModel.prepareEntryForEdit()
+                        null
+                    } catch (failure: LinkageError) {
+                        failure
+                    }
+
+                assertSame(fatal, thrown)
+            } finally {
+                store.clear()
+            }
+        }
+
     @Test
     fun `returning to OTP detail clears old code while reloading current config`() =
         runTest {
@@ -1055,7 +1139,7 @@ class DetailViewModelTest {
                 secureSessionAccessState = access,
                 revealEntryFields = RevealEntryFieldsUseCase(authGate, fieldReader, sensitive, activity),
                 loadEditableEntry = LoadEditableEntryUseCase(entries, sensitive, authGate, access, activity),
-                editDetailEntry = EditDetailEntryUseCase(entries, entries, access, testLogger()),
+                editEntry = EditEntryUseCase(entries, entries, access, testLogger()),
                 copyEntryFieldUseCase =
                     CopyEntryFieldUseCase(
                         authGate,
@@ -1224,6 +1308,12 @@ class DetailViewModelTest {
             ): List<RevealedSensitiveField> = error("Not used")
 
             override suspend fun readBundle(entryId: EntryId): EntrySecret = error("Not used")
+        }
+
+    private fun sensitiveFieldsThatFailWhenRequested(failure: () -> Throwable?): SensitiveFieldRepository =
+        sensitiveFields { entryId ->
+            failure()?.let { throw it }
+            SensitiveFieldPresence(entryId, emptySet())
         }
 
     private object EmptyEntryLinkRepository : EntryLinkRepository {

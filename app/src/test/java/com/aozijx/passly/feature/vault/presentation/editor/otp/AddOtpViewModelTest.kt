@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.NoOpAutofillEntryWriter
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
@@ -211,7 +212,7 @@ class AddOtpViewModelTest {
                 AddOtpViewModel(
                     createEntryUseCase(session = fixture.access),
                     fixture.access,
-                    editDetailEntry = fixture.editor,
+                    editEntry = fixture.editor,
                 )
 
             model.loadExistingEntry(fixture.editableSeed(entry.id))
@@ -417,6 +418,7 @@ class AddOtpViewModelTest {
         entryCommandRepository = repository,
         secureSessionAccessState = session,
         materializer = EntryDraftMaterializer(),
+        autofillEntryWriter = NoOpAutofillEntryWriter,
         logger = testLogger(),
     )
 

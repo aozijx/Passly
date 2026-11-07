@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.entry.creation.CreateEntryUseCase
+import com.aozijx.passly.app.entry.creation.NoOpAutofillEntryWriter
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -63,9 +64,9 @@ class AddWifiViewModelTest {
             val fixture = EditableEntryUseCaseFixture(entry)
             val model =
                 AddWifiViewModel(
-                    CreateEntryUseCase(RecordingRepository(), fixture.access, EntryDraftMaterializer(), testLogger()),
+                    CreateEntryUseCase(RecordingRepository(), fixture.access, EntryDraftMaterializer(), NoOpAutofillEntryWriter, testLogger()),
                     fixture.access,
-                    editDetailEntry = fixture.editor,
+                    editEntry = fixture.editor,
                 )
 
             model.loadExistingEntry(fixture.editableSeed(entry.id))
@@ -485,9 +486,9 @@ class AddWifiViewModelTest {
     ): AddWifiViewModel {
         val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
         return AddWifiViewModel(
-            createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer(), testLogger()),
+            createEntryUseCase = CreateEntryUseCase(repository, session, EntryDraftMaterializer(), NoOpAutofillEntryWriter, testLogger()),
             secureSessionAccessState = session,
-            editDetailEntry = editFixture.editor,
+            editEntry = editFixture.editor,
         )
     }
 

@@ -65,14 +65,20 @@ fun DetailRoute(
     LaunchedEffect(entryId, viewModel) {
         viewModel.load(entryId, launchMode)
     }
-    LaunchedEffect(viewModel, lifecycle, context, resources, copiedMessageFormat, otpLabel) {
+    LaunchedEffect(viewModel, lifecycle, context, resources, copiedMessageFormat, otpLabel, entryId) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
-            val label =
+            val message =
                 when (effect) {
-                    is DetailEffect.ContentCopied -> resources.getString(effect.fieldKey.copyLabelRes())
-                    DetailEffect.OtpCopied -> otpLabel
-                }
-            Toast.makeText(context, copiedMessageFormat.format(label), Toast.LENGTH_SHORT).show()
+                    is DetailEffect.ContentCopied ->
+                        copiedMessageFormat.format(resources.getString(effect.fieldKey.copyLabelRes()))
+                    DetailEffect.OtpCopied -> copiedMessageFormat.format(otpLabel)
+                    is DetailEffect.EditPreparationFailed ->
+                        resources.getString(R.string.vault_detail_load_failed)
+                            .takeIf { effect.entryId.value == entryId }
+                    }
+            if (message != null) {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
     DisposableEffect(viewModel, entryId) {

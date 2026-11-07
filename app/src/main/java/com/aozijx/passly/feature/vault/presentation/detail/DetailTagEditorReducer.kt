@@ -1,5 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
+import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
+
 internal object DetailTagEditorReducer {
     fun reduce(
         state: DetailTagEditorState,
@@ -8,8 +11,8 @@ internal object DetailTagEditorReducer {
         when (mutation) {
             is DetailMutation.TagEditorOpened -> {
                 val tags =
-                    when (val normalized = DetailTagNormalizer.normalize(mutation.currentTags)) {
-                        is TagNormalizationResult.Valid -> normalized.tags
+                    when (val normalized = EntryTagPolicy.normalize(mutation.currentTags)) {
+                        is EntryTagNormalizationResult.Valid -> normalized.tags
                         else -> mutation.currentTags
                     }
                 DetailTagEditorState.Open(
@@ -39,7 +42,7 @@ internal object DetailTagEditorReducer {
                 state.copy(
                     input = mutation.value,
                     suggestions =
-                        DetailTagNormalizer.suggestions(
+                        DetailTagSuggestions.forInput(
                             existingTags = state.availableTags,
                             prefix = mutation.value.substringAfterLast(',').substringAfterLast('\n'),
                             selectedTags = state.draftTags,
@@ -51,9 +54,9 @@ internal object DetailTagEditorReducer {
 
             is DetailMutation.TagSubmitted -> {
                 when (
-                    val normalized = DetailTagNormalizer.normalize(state.draftTags + mutation.value)
+                    val normalized = EntryTagPolicy.normalize(state.draftTags + mutation.value)
                 ) {
-                    is TagNormalizationResult.Valid -> {
+                    is EntryTagNormalizationResult.Valid -> {
                         state.copy(
                             draftTags = normalized.tags,
                             input = "",
@@ -62,13 +65,13 @@ internal object DetailTagEditorReducer {
                         )
                     }
 
-                    is TagNormalizationResult.TooMany -> {
+                    is EntryTagNormalizationResult.TooMany -> {
                         state.copy(
                             validationError = DetailTagValidationError.TOO_MANY_TAGS,
                         )
                     }
 
-                    is TagNormalizationResult.TooLong -> {
+                    is EntryTagNormalizationResult.TooLong -> {
                         state.copy(
                             validationError = DetailTagValidationError.TAG_TOO_LONG,
                         )

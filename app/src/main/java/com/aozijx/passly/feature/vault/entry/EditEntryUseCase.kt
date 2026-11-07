@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.detail
+package com.aozijx.passly.feature.vault.entry
 
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
@@ -23,7 +23,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-internal class EditDetailEntryUseCase
+internal class EditEntryUseCase
     @Inject
     constructor(
         private val entryQueryRepository: EntryQueryRepository,
@@ -114,7 +114,7 @@ internal class EditDetailEntryUseCase
                     }
                 }
             }
-            error("Unreachable detail entry edit state")
+            error("Unreachable entry edit state")
         }
     }
 

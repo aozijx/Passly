@@ -13,7 +13,7 @@ Profile/Secret 中其余数据和未揭示字段。完整编辑不覆盖用户�
 | 层 | 当前职责 | 主要入口 |
 | --- | --- | --- |
 | Domain | 字段定义、草稿类型、标签及凭据校验、物化、单字段及完整表单应用 | `EntryTypeDefinitions`、`EntryTagPolicy`、`EntryDraftMaterializer`、`EntryFieldEditor`、`EntryFormEditor`、`EntryEdit` |
-| App integration | 跨功能创建能力、会话检查、日志和 Repository 编排；编辑读取/更新用例 | `CreateEntryUseCase`、`LoadEditableEntryUseCase`、`EditDetailEntryUseCase` |
+| App integration | 跨功能创建能力、会话检查、日志和 Repository 编排；编辑读取/更新用例 | `CreateEntryUseCase`、`LoadEditableEntryUseCase`、`EditEntryUseCase` |
 | App presentation | 类型专属表单、敏感内容回填、状态、Action、ViewModel、Route 和 Compose 内容 | `feature/vault/presentation/editor/<类型>`、`presentation/detail` |
 | Data | 事务、乐观锁、高敏字段保留/替换/清除、加密、修订和活动写入 | `UpdateEntryExecutor`、`SecretFieldStore`、`EntryRevisionWriter` |
 
@@ -97,7 +97,7 @@ Login 的应用列表加载先经过编辑会话守卫，并在查询前后核�
 
 ## 已有条目的逐项编辑
 
-[`EditDetailEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/EditDetailEntryUseCase.kt)
+[`EditEntryUseCase`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EditEntryUseCase.kt)
 在互斥区内读取最新条目，经 Domain `EntryEdit.applyTo()` 得到类型化结果，再提交 `EntryUpdate` 和预期版本。
 无变化不写入；版本冲突最多重新读取并重试一次。失败返回明确错误，不把缺失字段补成默认凭据。
 
@@ -140,7 +140,7 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 - 集中式物化器目前只有四个创建分支；需要扩展类型时按实际语义调整，不把每个分支强制包装成空转发类。
 - 完整表单编辑目前只覆盖上述四种既有创建类型；其余 EntryType 仍由详情逐项编辑，不存在通用表单或类型插件注册系统。
 
-验证以现有测试为准：`LoadEditableEntryUseCaseTest`、`EditDetailEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖完整编辑；Domain 的
+验证以现有测试为准：`LoadEditableEntryUseCaseTest`、`EditEntryUseCaseTest`、四类表单映射及 ViewModel 测试覆盖完整编辑；Domain 的
 `EntryDraftMaterializerTest`、`EntryEditTest`、`EntryFormEditorTest`、`EntryFieldEditorTest` 覆盖纯规则；详情状态测试覆盖逐项更新与发布边界。
 这些测试不证明未支持类型的完整编辑或真实设备交互已经完成。
 `EditorWriteSessionTest` 覆盖保存去重、锁定与重新认证、迟到结果、缓冲效果淘汰、取消和销毁边界；Wi-Fi 创建测试通过实际用例复现锁定期间的保存窗口。
@@ -159,7 +159,7 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 | 将新建草稿转换为可持久化条目 | `EntryDraftMaterializer.materialize()` | [`EntryDraftMaterializer.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryDraftMaterializer.kt) |
 | 登记所有条目的字段定义并检查目录覆盖 | `EntryTypeDefinitions`、`buildEntryTypeDefinitionIndex()` | [`EntryTypeDefinitions.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitions.kt)、[`EntryTypeDefinitionRegistry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitionRegistry.kt) |
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |
-| 编辑详情条目 | `EditDetailEntryUseCase.edit()` | [`EditDetailEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/EditDetailEntryUseCase.kt) |
+| 编辑详情条目与完整表单 | `EditEntryUseCase.edit(entryId, edit)` | [`EditEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EditEntryUseCase.kt) |
 | 获授权读取完整编辑表单 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
 | 编辑认证后的一次性表单交接 | `EntryEditorSeedStore`、`EntryEditorSeedCoordinator` | [`EntryEditorSeedStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EntryEditorSeedStore.kt) |
 | 按条目类型选择创建/完整编辑目标 | `VaultEditorDestinationRegistry.routeFor()`、`editRouteFor()` | [`VaultEditorDestinationRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt) |
