@@ -95,16 +95,18 @@
 
 ## Task 6：验证 Legacy Autofill 的网页接收方身份
 
-**状态：deferred；已确认安全问题，中严重度，CWE-346。**
+**状态：in progress；已确认安全问题，中严重度，CWE-346。**
 
-**证据：** `AutofillStructureParser.kt:96-99` 采用首个 `node.webDomain`；`LegacyPlatformAdapter.kt:40-45` 转发；`DiscoverAutofillCandidates.kt:119-124` 在有域名时去掉 package 查询约束。以上 feature 实现现位于 `:feature:autofill`；后续 scope/candidate 检查只保持该初始声明的一致性，最终由 `ResolveAutofillSelection` 读取凭据、`LegacyDatasetFactory` 写入请求的 AutofillIds，再由 Feature `AutofillFeatureEntry.deliverLegacyResult()` 构造并交付 completion，App `AutofillAuthActivity.completeAutofill()` 执行最终系统回调。当前未找到 DAL、应用签名/可信浏览器认证或未验证目标的泄露风险确认。
+**当前调用链证据：** `AutofillStructureParser` 汇总整棵 `AssistStructure` 中全部非空 `node.webDomain`，按规范 host 比较；多 host、有效与无效 claim 混合，或含可见网页 claim 的有界遍历被截断都会标记为歧义并在候选查询前失败。当前实现不验证 DAL、应用签名或可信浏览器签名，所以网页 claim 仍属于未验证输入。`DiscoverAutofillCandidates` 在公开任何候选 metadata 前先返回通用确认操作；用户查看应用标签/包名和域名并确认后，才按域名查询候选。选中后再展示条目和账号并要求二次确认；interaction 中的确认绑定规范 scope、条目 ID 和当前认证 session generation。`ResolveAutofillSelection` 在 resolver 读取 secret 前再次验证确认及 session generation；Fresh Authentication 失效会取消该 Legacy web interaction。平台交付前再次校验 session、scope、entry 并原子 claim，回调失败时释放 claim。`LegacyAutofillEntry.deliverLegacyResult()` 构造平台返回值，App `AutofillAuthActivity` 执行最终 `setResult`/`finish`。
 
 **攻击前提：** 普通恶意应用已安装、用户启用 Passly Autofill、库中有其冒充站点的条目，并主动选择/完成所需认证。高影响但有这些前提，故定为中严重度；不是无需交互的静默提取。系统 BIND 权限、严格域名匹配和普通解锁认证均不能证明目标应用拥有自报域名。Credential Manager 目前拒绝 populated origin，本问题限 Legacy 网页路径。
 
-- [ ] 在候选与明文交付边界引入明确的 origin 信任结论；验证 DAL 与安装包签名，或验证可信浏览器签名，不能仅按包名 allowlist。
-- [ ] 对明确支持的未验证目标，展示真实应用/包和请求域名，解释跨应用泄露风险并单独确认；普通解锁成功不能替代该确认。确认绑定 interaction、调用方身份、域名和选中条目，替换、锁定和重建后不得复用过期确认。
+- [x] 对当前不支持 DAL/签名证明的 Legacy 网页 claim 明确按未验证接收方处理，不按包名或普通解锁推断域名所有权；未验证路径只能进入显式双重确认。
+- [x] 在候选 metadata 与 secret 读取前，分别展示应用标签/包名+请求域名，以及选中的条目+账号；普通解锁不能替代两次确认。确认绑定 process-local interaction、规范 scope、条目 ID 和 session generation；锁定/重新认证后失效。
 - [ ] 使用无关联测试 App 的自定义 ViewStructure 冒充已有站点，证明正常选择/认证不能越过 origin 控制。覆盖合法签名浏览器、关联 App、确认/取消、scope 替换和 API 31/当前 API。
-- [ ] 同步 Autofill 安全文档和中英文风险文案；不把未实现的验证写成已有能力。
+- [x] 同步 Autofill 安全文档和中英文风险文案；未声称 DAL 或签名验证已经实现。
+
+**2026-11-07 实现进度：** `AutofillWebOriginResolverTest` 覆盖同 host 规范化、不同 host 歧义、无效 claim，以及截断结构中有/无可见网页 claim 的处理；独立候选复核确认该规则不会拒绝无 claim 的原生请求，并保持可见网页 claim 的截断结构 fail-closed。`DiscoverAutofillCandidatesTest.websiteCandidateSearchUsesDomainWithoutBrowserPackageAssociation` 使用无关联攻击包名和可命中网站候选，验证确认前零查询、确认后只按域名查询并返回候选；`ResolveAutofillSelectionTest` 覆盖未确认条目和跨 session generation 的 secret 读取拒绝；`AutofillWebConfirmationTest` 覆盖 entry membership、scope、单次交付 claim 与终态；`LegacyResponseFactoryInstrumentedTest` 覆盖首屏 response 只含通用确认操作，不含候选标题。当前 main-source 快照 `:feature:autofill:testDebugUnitTest` 152 项通过；`:feature:autofill:compileDebugAndroidTestKotlin` 与 `verifyArchitecture` 也在该快照通过。Pixel_8_Pro API 36 上的 12 项 `:feature:autofill:connectedDebugAndroidTest` 是此前设备验收记录，未在本次 152 项复跑时重跑。无关联应用的真实 AutofillService/ViewStructure 攻击测试及 API 31/当前 API 设备验收尚未完成，故 Task 6 保持打开。
 
 <a id="task-7"></a>
 
