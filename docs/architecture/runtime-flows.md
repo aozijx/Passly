@@ -28,9 +28,9 @@ sequenceDiagram
 会在不可取消清理区撤销已发布句柄、尝试关闭新句柄并恢复 SEALED。清理期间的 fatal `Error` 会覆盖普通失败并保留原始失败为
 suppressed；主失败本身为 fatal 时保持主错误并附加清理错误。key buffer 在 `unlock()` 的 `finally` 中归零。
 
-调用顺序为 `RuntimeSessionManager.unlock()` → 检查 `leaseGate.closeFailure()` → 尝试
+`RuntimeSessionManager.lifecycleMutex` 串行化完整的 `unlock()`，顺序为检查 `leaseGate.closeFailure()` → 尝试
 `leaseGate.resumeIfOpen()` → 在 `withContext(ioDispatcher)` 中调用 `keySource.copyKey()` →
-`leaseGate.open(key)`。key source 的普通异常映射为 `KeyUnavailable(cause)`，资源打开普通异常映射为
+`leaseGate.open(key)`；因此两个首次解锁不会并行派生 key 或打开两个 handle。`softLock()` 与 `seal()` 使用同一 owner，不能在资源打开、恢复或封存排空中途发布相反状态。key source 的普通异常映射为 `KeyUnavailable(cause)`，资源打开普通异常映射为
 `OpenFailed(cause)`；取消直接传播。fatal `Error` 先记录为待传播错误，使 dispatcher 区域执行 key buffer 的
 `finally` 擦除，再从 `unlock()` 重抛同一 Error。`SessionLeaseGate.open(key)` 调用 `resource.open(key)` 后依次记录新
 handle、发布 handle、更新 `UNLOCKED`，再调用
@@ -50,7 +50,7 @@ session transition event 由 `SessionEventSink` best-effort 记录，普通遥�
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 
 Activity 只通过 `AuthenticationHost` 提供 UI 能力；认证请求本身不携带 Activity、Launcher、Cipher 或
-PendingIntent。锁定由 `VaultSessionController` 撤权并发布 `Locking`，Runtime 随即拒绝新 lease。普通 drain 超时后只向活动 lease owner 发出取消请求；若操作忽略取消，锁定继续等待且 Room 保持打开，直到该 lease 实际退出，再在 IO dispatcher 关闭 Room、擦除会话密钥与 DEK。不会因固定宽限期结束就关闭仍在使用的句柄。
+PendingIntent。`VaultSessionController` 的 session mutex 是锁定、解锁和 reset 的外层 owner；`SecureDatabaseResetCoordinator` 使用同一个 session mutex。其内的 `RuntimeSessionManager.lifecycleMutex` 串行化 Runtime unlock/soft-lock/seal 生命周期转换。锁定撤权并发布 `Locking` 后，Runtime 随即拒绝新 lease。普通 drain 超时后只向活动 lease owner 发出取消请求；若操作忽略取消，锁定继续等待且 Room 保持打开，直到该 lease 实际退出，再在 IO dispatcher 关闭 Room、擦除会话密钥与 DEK。seal 调用方取消也不会遗弃已封存句柄；清理完毕后才传播取消。不会因固定宽限期结束就关闭仍在使用的句柄。
 
 ## 一次性消息
 

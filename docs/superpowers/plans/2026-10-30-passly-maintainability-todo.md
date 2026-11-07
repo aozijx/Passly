@@ -59,13 +59,13 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 26：明确 Runtime Session 生命周期转换的并发所有者
 
-- [ ] 定义 open/resume/soft-lock/seal/close 的统一生命周期 owner：Runtime 串行化转换，或把外部互斥前提限制到唯一可见入口并证明调用闭包；保留 VaultSessionController 会话级串行化，明确各锁顺序。
-- [ ] 屏障测试覆盖两个首次 unlock 并发 open、open 与 seal、seal 已发布 SEALED 后 resume 又发布 UNLOCKED、soft-lock/resume；不得覆盖未关闭句柄，终态与最后获准转换一致。
-- [ ] 定义 seal 等待 drain 时取消的清理 owner、结果与恢复，不能留下无人回收的 SEALED handle。
-- [ ] 非合作 lease 超时关闭的详细清单由[安全 Task 2](2026-11-06-passly-security-scan-followups.md#task-2)持有；本项设计/验证包括该合同，不复制第二份步骤。
+- [x] 定义 open/resume/soft-lock/seal/close 的统一生命周期 owner：RuntimeSessionManager 串行化转换；保留 VaultSessionController 会话级串行化并明确锁顺序。
+- [x] 屏障测试覆盖两个首次 unlock 并发 open、open 与 seal、seal drain 中 unlock 不能提前 resume、soft-lock/resume；不得覆盖未关闭句柄，终态与生命周期 Mutex 顺序一致。
+- [x] 定义 seal 等待 drain 时取消的清理 owner、结果与恢复：一旦发布 SEALED，Runtime 捕获调用方取消、请求 lease 取消并等待实际 drain/close，再传播取消，不留下无人回收的句柄。
+- [x] 非合作 lease 超时关闭的详细清单由[安全 Task 2](2026-11-06-passly-security-scan-followups.md#task-2)持有；Task 2 已实现实际 drain 后关闭。
 - [ ] 与 Task 37 定义 soft-lock 对既有 lease 读写/观察的完成语义，覆盖排空/取消、授权撤销及迟到结果；仅拒绝新 lease 不等于操作结束。运行 Runtime、Security Session、Data Reset 定向测试。
 
-**2026-11-07 部分更新：** `resumeIfOpen` 已在 `resourceMutex` 内检查 handle 并发布 `UNLOCKED`，移除旧“释放锁后、seal 完整返回、迟到 resume 才发布”的时序；安全 Task 2 现要求超时后请求取消 lease，并在实际 drain 前保持资源打开，已增加非合作 lease 回归测试。Task 26 仍未完成：`SessionLeaseGate.open` 在 `resource.open` 时没有统一转换互斥，seal 状态发布、drain、close 仍分阶段执行；open/resume/seal/soft-lock 的整体并发 owner 与屏障测试继续待办。
+**2026-11-07 Runtime lifecycle 串行化：** `RuntimeSessionManager.lifecycleMutex` 保护完整 `unlock`（close-failure 检查、resume、key copy、resource open）、`softLock` 与 `seal`；`VaultSessionController` 的会话互斥继续作为外层 owner，`SecureDatabaseResetCoordinator` 也使用该外层互斥。锁顺序为 Security/reset session mutex → Runtime lifecycle mutex → SessionLeaseGate 的 resource/lease mutex；请求 lease 与执行资源操作分阶段取 gate 锁，`resumeIfOpen` 唯一的嵌套顺序为 resource mutex → lease mutex。五项屏障用例先在旧实现失败，再在新 owner 下通过，覆盖两个首次 unlock、open/seal、seal drain/unlock、soft-lock/resume 和 seal 调用方取消。Task 26 剩余与 Task 37 共管的 soft-lock 对既有操作语义，仍需 Data/Security 跨层验收。
 
 <a id="task-37"></a>
 

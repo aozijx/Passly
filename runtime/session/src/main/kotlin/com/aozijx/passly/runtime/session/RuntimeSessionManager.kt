@@ -6,6 +6,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -18,6 +20,7 @@ class RuntimeSessionManager<Handle : Any>(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : SessionStateProvider {
     private val leaseGate = SessionLeaseGate(resource, eventSink, ioDispatcher)
+    private val lifecycleMutex = Mutex()
 
     override val lockState: SecureSessionState
         get() = leaseGate.lockState.value
@@ -32,41 +35,42 @@ class RuntimeSessionManager<Handle : Any>(
 
     fun <T> observe(block: suspend Handle.() -> Flow<T>): Flow<T> = leaseGate.observe(block)
 
-    suspend fun unlock(): SessionUnlockResult {
-        leaseGate.closeFailure()?.let { return SessionUnlockResult.OpenFailed(it) }
-        if (leaseGate.resumeIfOpen()) return SessionUnlockResult.Success
+    suspend fun unlock(): SessionUnlockResult =
+        lifecycleMutex.withLock {
+            leaseGate.closeFailure()?.let { return@withLock SessionUnlockResult.OpenFailed(it) }
+            if (leaseGate.resumeIfOpen()) return@withLock SessionUnlockResult.Success
 
-        var fatalError: Error? = null
-        val result =
-            withContext(ioDispatcher) {
-                var key: ByteArray? = null
-                try {
-                    key =
+            var fatalError: Error? = null
+            val result =
+                withContext(ioDispatcher) {
+                    var key: ByteArray? = null
+                    try {
+                        key =
+                            try {
+                                keySource.copyKey()
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Error) {
+                                fatalError = error
+                                return@withContext SessionUnlockResult.OpenFailed(error)
+                            } catch (error: Exception) {
+                                return@withContext SessionUnlockResult.KeyUnavailable(error)
+                            }
                         try {
-                            keySource.copyKey()
-                        } catch (cancelled: CancellationException) {
-                            throw cancelled
+                            leaseGate.open(requireNotNull(key))
                         } catch (error: Error) {
                             fatalError = error
-                            return@withContext SessionUnlockResult.OpenFailed(error)
-                        } catch (error: Exception) {
-                            return@withContext SessionUnlockResult.KeyUnavailable(error)
+                            SessionUnlockResult.OpenFailed(error)
                         }
-                    try {
-                        leaseGate.open(requireNotNull(key))
-                    } catch (error: Error) {
-                        fatalError = error
-                        SessionUnlockResult.OpenFailed(error)
+                    } finally {
+                        key?.fill(0)
                     }
-                } finally {
-                    key?.fill(0)
                 }
-            }
-        fatalError?.let { throw it }
-        return result
-    }
+            fatalError?.let { throw it }
+            result
+        }
 
-    suspend fun softLock() = leaseGate.softLock()
+    suspend fun softLock() = lifecycleMutex.withLock { leaseGate.softLock() }
 
-    suspend fun seal(timeout: Duration = 5.seconds): Result<Unit> = leaseGate.seal(timeout)
+    suspend fun seal(timeout: Duration = 5.seconds): Result<Unit> = lifecycleMutex.withLock { leaseGate.seal(timeout) }
 }

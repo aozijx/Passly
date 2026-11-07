@@ -209,16 +209,55 @@ internal class SessionLeaseGate<Handle : Any>(
         val fromState = mutableLockState.value
         leaseMutex.withLock { publishLockState(SecureSessionState.SEALED) }
 
+        var callerCancellation: CancellationException? = null
         val drained =
-            withTimeoutOrNull(timeout) {
-                while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+            try {
+                withTimeoutOrNull(timeout) {
+                    while (activeLeases.get() > 0) delay(DRAIN_POLL_MS)
+                }
+            } catch (cancelled: CancellationException) {
+                callerCancellation = cancelled
+                null
             }
+
+        var cleanupResult: Pair<Result<Unit>, Throwable?>? = null
+        var cleanupFailure: Throwable? = null
+        withContext(NonCancellable) {
+            try {
+                cleanupResult =
+                    if (drained == null) {
+                        closeAfterDrainTimeout(startedAt, fromState, timeout)
+                    } else {
+                        close() to null
+                    }
+            } catch (failure: Throwable) {
+                cleanupFailure = failure
+            }
+        }
+        if (cleanupFailure is Error) throw cleanupFailure
+        if (cleanupFailure is CancellationException) {
+            callerCancellation = callerCancellation ?: cleanupFailure
+        }
+
         val (closeResult, transitionFailure) =
-            if (drained == null) {
-                closeAfterDrainTimeout(startedAt, fromState, timeout)
-            } else {
-                close() to null
+            cleanupResult
+                ?: run {
+                    val failure = requireNotNull(cleanupFailure)
+                    callerCancellation?.let {
+                        addSuppressed(it, failure)
+                        throw it
+                    }
+                    throw failure
+                }
+        if (transitionFailure is Error) throw transitionFailure
+        if (callerCancellation != null) {
+            transitionFailure?.let { addSuppressed(requireNotNull(callerCancellation), it) }
+            closeResult.exceptionOrNull()?.let { failure ->
+                if (failure is Error) throw failure
+                addSuppressed(requireNotNull(callerCancellation), failure)
             }
+            throw requireNotNull(callerCancellation)
+        }
         transitionFailure?.let { throw it }
         try {
             emitTransition(
