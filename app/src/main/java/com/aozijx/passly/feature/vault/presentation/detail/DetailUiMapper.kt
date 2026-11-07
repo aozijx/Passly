@@ -38,7 +38,7 @@ internal fun detailHeaderUiModel(
     favorite = entry.favorite,
     editedTitle = state.editedTitle,
     isEditingTitle = state.isEditingTitle,
-    canEditFullForm = VaultEditorDestinationRegistry.editRouteFor(entry.type, entry.id.value) != null,
+    canEditFullForm = VaultEditorDestinationRegistry.supportsFullFormEdit(entry.type),
     entryType = entry.type,
 )
 

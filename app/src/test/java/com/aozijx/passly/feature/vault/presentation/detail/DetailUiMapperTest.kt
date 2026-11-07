@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -88,6 +89,19 @@ class DetailUiMapperTest {
         assertTrue(ui.favorite)
         assertEquals("Edited", ui.editedTitle)
         assertTrue(ui.isEditingTitle)
+    }
+
+    @Test
+    fun headerMapperUsesRegisteredFullFormEditCapability() {
+        val note = noteEntry()
+        val login =
+            note.copy(
+                identity = note.identity.copy(id = EntryId("login"), type = EntryType.LOGIN),
+                secret = EntrySecret(credential = LoginCredential()),
+            )
+
+        assertFalse(detailHeaderUiModel(note, DetailUiState(entry = note)).canEditFullForm)
+        assertTrue(detailHeaderUiModel(login, DetailUiState(entry = login)).canEditFullForm)
     }
 
     @Test

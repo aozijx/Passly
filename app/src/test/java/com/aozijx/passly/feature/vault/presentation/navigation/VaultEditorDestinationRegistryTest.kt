@@ -29,4 +29,13 @@ class VaultEditorDestinationRegistryTest {
             .filterNot { it in setOf(EntryType.LOGIN, EntryType.OTP, EntryType.BANK_CARD, EntryType.WIFI) }
             .forEach { assertNull(VaultEditorDestinationRegistry.editRouteFor(it, "id")) }
     }
+
+    @Test
+    fun fullFormEditCapabilityMatchesTheRouteRegistryForEveryEntryType() {
+        EntryType.entries.forEach { type ->
+            val hasRoute = VaultEditorDestinationRegistry.editRouteFor(type, "seed-token") != null
+
+            assertEquals(hasRoute, VaultEditorDestinationRegistry.supportsFullFormEdit(type))
+        }
+    }
 }
