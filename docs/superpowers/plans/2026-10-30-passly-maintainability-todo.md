@@ -168,12 +168,12 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 40：让备份目录设置命令失败可见并保留授权状态
 
-- [ ] 在 `DataManagementSettingsViewModel` 为目录选择与清除命令建立完整失败反馈：协程取消继续传播；DataStore 读取/写入和目录授权操作的普通异常转为页面 owner 所有的失败 Effect，不得从 `viewModelScope.launch` 无处理逸出，也不得把未完成操作呈现为成功。
-- [ ] 收窄 `BackupDirectorySettingsInteractor` 的 `Throwable`/`runCatching` 补偿边界：`persistGrantedDirectory()` 在 `setBackupDirectoryUri()` 抛 fatal `Error` 后会读取持久 URI；若 URI 已提交则继续返回 Saved，若未提交则可能清理 grant 后返回 Unavailable。补偿读取与 NonCancellable grant release 的 `runCatching` 也会吞掉 fatal cleanup 错误。普通可恢复异常可按持久事实补偿/映射；完成必要 grant 清理后，fatal Error 必须传播且不能伪装成 Saved/Unavailable。
-- [ ] 目录清除失败时保留持久 URI 与仍被配置引用的 Android grant，向用户呈现明确失败；目录选择失败时按 interactor 已有补偿合同释放新 grant，仅当设置没有提交引用该 URI 时释放。`BackupRoute` 现在在确认回调中启动异步清除后立即关闭确认对话框，需让成功/失败结果拥有清晰的 UI 反馈，不要求重新选择仍有效的目录。
-- [ ] 增加 ViewModel/Route/Interactor 行为覆盖：验证 `clear()` 失败且设置仍指向旧 URI 时不释放 grant、页面报告清除失败；选择前读取失败或 grant/持久化异常时不崩溃、不误报 Saved；再分别注入普通 Exception、CancellationException 与 fatal Error 到写入、补偿读取和 grant release，断言持久事实、异常优先级与 grant 状态；页面退出后迟到结果不能投递给新 owner。保留“先持久化新 URI、再释放旧 URI”顺序；运行备份目录 interactor/VM/Route 定向测试、`verifyArchitecture` 和 `git diff --check`。
+- [x] 在 `DataManagementSettingsViewModel` 为目录选择与清除命令建立完整失败反馈：协程取消继续传播；普通异常记录 Backup 错误日志并转为当前页面 owner 的失败 Effect，不得从 `viewModelScope.launch` 无处理逸出，也不得把未完成操作呈现为成功。
+- [x] 收窄 `BackupDirectorySettingsInteractor` 的补偿异常边界：补偿读取与 NonCancellable grant release 不再吞 fatal `Error`；普通异常依持久状态补偿，已提交设置下旧 grant 清理失败保留 Saved，并记录资源清理告警。
+- [x] 目录清除失败时保留持久 URI 与仍被配置引用的 Android grant，向用户呈现明确失败；目录选择失败时只在设置确定没有引用新 URI 后释放新 grant。`BackupRoute` 仅在清除成功后关闭确认框，失败时保留重试入口并防止重复提交。
+- [ ] 已增加 ViewModel/Interactor 单测与清除对话框仪器测试，覆盖异常、取消、fatal Error、授权保留/释放顺序及页面 owner；保留“先持久化新 URI、再释放旧 URI”顺序。完整 App 单测、AndroidTest Kotlin 编译、`verifyArchitecture`、`git diff --check` 已通过；需在连接设备后执行 `BackupDirectoryClearDialogTest` 再关闭本项。
 
-**证据：** `BackupDirectorySettingsInteractorTest.failed clear keeps grant when settings still reference it` 已证明 `clear()` 在持久化清除失败且 URI 仍被引用时抛出异常并保留 grant；相邻用例证明新目录持久化后才释放旧授权。生产 `DataManagementSettingsViewModel.onAction()` 在 `viewModelScope.launch` 内直接调用 `directorySettings.clear()`，无 try/catch；`handleSelection()` 也直接调用可抛异常的 `select()`，仅对正常枚举结果发 Effect。`BackupRoute` 的 `BackupDirectoryClearDialog.onConfirm` 先启动清除 action 再立即将 dialog state 设为 false，当前 Effect 枚举只有取消、拒绝、Unavailable，没有清除失败反馈。故储存层已有保留授权的正确补偿，但 Presentation 命令边界未传递失败结果；这会让清除失败对用户不可见，异常也可能由 ViewModel 协程传播至未处理异常处理器。尚未运行 ViewModel/Route 行为测试。
+**2026-11-08 失败反馈与日志批次：** `BackupDirectorySettingsInteractor` 将普通操作异常与取消/fatal Error 分开处理，补偿读取或授权释放中的 fatal 错误继续传播；提交后旧目录 grant 清理失败记录 `Backup.ResourceCleanupFailed`，不反转已提交结果。`DataManagementSettingsViewModel` 对选择/清除普通异常记录 `Backup.Error` 并发当前页失败 Effect，CancellationException 继续传播；页面退出后 selection 迟到结果仍被 owner gate 丢弃。清除 UI 等待成功后关闭，失败保留对话框重试；测试覆盖忙碌态按钮不可重复提交。定向 `BackupDirectorySettingsInteractorTest` 16/16、`DataManagementSettingsViewModelTest` 5/5 通过；完整 App 单测 XML 汇总 191 份、1064 项、0 failures/errors；`:app:compileDebugAndroidTestKotlin`、`verifyArchitecture`、`git diff --check` 通过。`adb devices` 无设备，仪器测试尚未运行，故 Task 40 保持未完成。
 
 <a id="task-41"></a>
 

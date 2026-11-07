@@ -69,6 +69,7 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
             is DataManagementSettingsUiState.Ready -> current
         }
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
+    var isClearingDirectory by rememberSaveable { mutableStateOf(false) }
     val notSetText = stringResource(R.string.not_set)
     val selectionCancelledMessage =
         stringResource(
@@ -82,6 +83,7 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         stringResource(
             R.string.settings_backup_directory_unavailable,
         )
+    val operationFailedMessage = stringResource(R.string.settings_backup_directory_operation_failed)
     val pathLabel =
         remember(readyState.directoryUri) {
             UriDisplayNameFormatter.format(readyState.directoryUri) ?: notSetText
@@ -111,23 +113,37 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         selectionCancelledMessage,
         permissionDeniedMessage,
         unavailableMessage,
+        operationFailedMessage,
     ) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
-            val message =
-                when (effect) {
-                    DataManagementSettingsEffect.BackupDirectorySelectionCancelled -> {
-                        selectionCancelledMessage
-                    }
-
-                    DataManagementSettingsEffect.BackupDirectoryPermissionDenied -> {
-                        permissionDeniedMessage
-                    }
-
-                    DataManagementSettingsEffect.BackupDirectoryUnavailable -> {
-                        unavailableMessage
-                    }
+            when (effect) {
+                DataManagementSettingsEffect.BackupDirectoryCleared -> {
+                    isClearingDirectory = false
+                    showClearDirectoryDialog = false
                 }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+                DataManagementSettingsEffect.BackupDirectoryOperationFailed -> {
+                    isClearingDirectory = false
+                    Toast.makeText(context, operationFailedMessage, Toast.LENGTH_SHORT).show()
+                }
+
+                else -> {
+                    val message =
+                        when (effect) {
+                            DataManagementSettingsEffect.BackupDirectorySelectionCancelled ->
+                                selectionCancelledMessage
+
+                            DataManagementSettingsEffect.BackupDirectoryPermissionDenied ->
+                                permissionDeniedMessage
+
+                            DataManagementSettingsEffect.BackupDirectoryUnavailable -> unavailableMessage
+                            DataManagementSettingsEffect.BackupDirectoryCleared,
+                            DataManagementSettingsEffect.BackupDirectoryOperationFailed,
+                            -> null
+                        }
+                    message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                }
+            }
         }
     }
 
@@ -165,11 +181,16 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
 
     if (showClearDirectoryDialog) {
         BackupDirectoryClearDialog(
+            isClearing = isClearingDirectory,
             onConfirm = {
-                viewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
-                showClearDirectoryDialog = false
+                if (!isClearingDirectory) {
+                    isClearingDirectory = true
+                    viewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
+                }
             },
-            onDismiss = { showClearDirectoryDialog = false },
+            onDismiss = {
+                if (!isClearingDirectory) showClearDirectoryDialog = false
+            },
         )
     }
 }

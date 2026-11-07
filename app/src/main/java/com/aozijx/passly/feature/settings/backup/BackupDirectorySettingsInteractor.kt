@@ -1,6 +1,8 @@
 package com.aozijx.passly.feature.settings.backup
 
 import com.aozijx.passly.core.platform.storage.PersistedDirectoryAccessStatus
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -44,6 +46,7 @@ class BackupDirectorySettingsInteractor
     constructor(
         private val settingsRepository: BackupDirectorySettingsRepository,
         private val directoryAccess: BackupDirectoryAccess,
+        private val logger: Logger,
     ) {
         private val operationMutex = Mutex()
 
@@ -73,16 +76,11 @@ class BackupDirectorySettingsInteractor
             try {
                 settingsRepository.setBackupDirectoryUri(grantedTreeUri)
             } catch (error: Throwable) {
-                val persistedUri =
-                    withContext(NonCancellable) {
-                        runCatching { settingsRepository.backupDirectoryUri.first() }
-                    }
+                val persistedUri = readPersistedAfterFailure(error)
                 if (persistedUri.isSuccess && persistedUri.getOrNull() != grantedTreeUri) {
-                    withContext(NonCancellable) {
-                        runCatching { directoryAccess.release(grantedTreeUri) }
-                    }
+                    releaseAfterFailure(grantedTreeUri, error)
                 }
-                if (error is CancellationException) throw error
+                if (error is CancellationException || error !is Exception) throw error
                 if (persistedUri.getOrNull() != grantedTreeUri) {
                     return BackupDirectorySelectionResult.Unavailable
                 }
@@ -93,9 +91,7 @@ class BackupDirectorySettingsInteractor
                 ?.let { previous ->
                     // The new URI is already authoritative. Failure to release the old OS grant
                     // must not roll back by revoking the grant now referenced by preferences.
-                    withContext(NonCancellable) {
-                        runCatching { directoryAccess.release(previous) }
-                    }
+                    releaseAfterCommit(previous)
                 }
             currentCoroutineContext().ensureActive()
             return BackupDirectorySelectionResult.Saved
@@ -115,23 +111,77 @@ class BackupDirectorySettingsInteractor
                     if (clearFailure == null) {
                         null
                     } else {
-                        val persistedUri =
-                            withContext(NonCancellable) {
-                                runCatching { settingsRepository.backupDirectoryUri.first() }
-                            }
-                        persistedUri
+                        readPersistedAfterFailure(clearFailure)
                     }
                 val shouldRelease =
                     clearFailure == null ||
                         (persistedUri?.isSuccess == true && persistedUri.getOrNull() != previousTreeUri)
                 if (shouldRelease) {
                     previousTreeUri?.takeIf(String::isNotBlank)?.let { uri ->
-                        withContext(NonCancellable) {
-                            runCatching { directoryAccess.release(uri) }
+                        if (clearFailure == null) {
+                            releaseAfterCommit(uri)
+                        } else {
+                            releaseAfterFailure(uri, clearFailure)
                         }
                     }
                 }
-                clearFailure?.let { throw it }
+                clearFailure?.let { failure ->
+                    if (failure is CancellationException || failure !is Exception) throw failure
+                    if (persistedUri?.isSuccess != true || persistedUri.getOrNull() != null) throw failure
+                }
                 currentCoroutineContext().ensureActive()
             }
+
+        private suspend fun readPersistedAfterFailure(primaryFailure: Throwable): Result<String?> =
+            withContext(NonCancellable) {
+                try {
+                    Result.success(settingsRepository.backupDirectoryUri.first())
+                } catch (failure: Throwable) {
+                    when {
+                        failure is CancellationException || failure !is Exception -> {
+                            if (failure !== primaryFailure) failure.addSuppressed(primaryFailure)
+                            throw failure
+                        }
+
+                        else -> {
+                            if (failure !== primaryFailure) primaryFailure.addSuppressed(failure)
+                            Result.failure(failure)
+                        }
+                    }
+                }
+            }
+
+        private suspend fun releaseAfterFailure(
+            treeUri: String,
+            primaryFailure: Throwable,
+        ) {
+            withContext(NonCancellable) {
+                try {
+                    directoryAccess.release(treeUri)
+                } catch (failure: Throwable) {
+                    when {
+                        failure is CancellationException || failure !is Exception -> {
+                            if (failure !== primaryFailure) failure.addSuppressed(primaryFailure)
+                            throw failure
+                        }
+
+                        else -> if (failure !== primaryFailure) primaryFailure.addSuppressed(failure)
+                    }
+                }
+            }
+        }
+
+        private suspend fun releaseAfterCommit(treeUri: String) {
+            withContext(NonCancellable) {
+                try {
+                    directoryAccess.release(treeUri)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    // The persisted URI is already authoritative; an ordinary cleanup failure
+                    // must not report the settings write as uncommitted.
+                    logger.log(LogStatements.Backup.directoryGrantReleaseFailed(failure))
+                }
+            }
+        }
     }

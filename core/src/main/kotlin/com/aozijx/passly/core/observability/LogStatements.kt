@@ -754,6 +754,24 @@ object LogStatements {
     }
 
     object Backup {
+        fun directorySettingsOperationFailed(throwable: Throwable): LogStatement =
+            ErrorStatement(
+                Events.Backup.Error,
+                ErrorCodes.Application.ApplicationUnhandledException,
+                Reasons.StorageFailure,
+                throwable,
+                LogFields.Empty,
+            )
+
+        fun directoryGrantReleaseFailed(throwable: Throwable): LogStatement =
+            WarningStatement(
+                Events.Backup.ResourceCleanupFailed,
+                ErrorCodes.Application.ResourceCleanupFailed,
+                Reasons.StorageFailure,
+                throwable,
+                LogFields.Empty,
+            )
+
         fun exportStarted(): LogStatement = InfoStatement(Events.Backup.ExportStarted, LogFields.Empty)
 
         fun exportCompleted(elapsedMs: Long): LogStatement =

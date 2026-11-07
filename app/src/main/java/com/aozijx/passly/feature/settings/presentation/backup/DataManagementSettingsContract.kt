@@ -30,4 +30,6 @@ enum class DataManagementSettingsEffect {
     BackupDirectorySelectionCancelled,
     BackupDirectoryPermissionDenied,
     BackupDirectoryUnavailable,
+    BackupDirectoryCleared,
+    BackupDirectoryOperationFailed,
 }

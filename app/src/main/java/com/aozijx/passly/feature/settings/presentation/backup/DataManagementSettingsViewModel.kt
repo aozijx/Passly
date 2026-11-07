@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
@@ -11,6 +13,7 @@ import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +25,7 @@ class DataManagementSettingsViewModel
     constructor(
         private val directorySource: BackupDirectorySettingsSource,
         private val directorySettings: BackupDirectorySettingsInteractor,
+        private val logger: Logger,
     ) : ViewModel() {
         private val pageEffects = PageEffects<DataManagementSettingsEffect>()
 
@@ -32,6 +36,7 @@ class DataManagementSettingsViewModel
         val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
         val effects = pageEffects.effects
         private var pendingDirectorySelection: PendingDirectorySelection? = null
+        private var clearInFlight = false
         private val directoryRead = RecoverableRead(directorySource.backupDirectoryUri, viewModelScope)
 
         init {
@@ -48,6 +53,12 @@ class DataManagementSettingsViewModel
         }
 
         fun onAction(action: DataManagementSettingsUiAction) {
+            val clearOwner =
+                if (action == DataManagementSettingsUiAction.ClearBackupDirectory) {
+                    pageEffects.currentOwner
+                } else {
+                    null
+                }
             viewModelScope.launch {
                 when (action) {
                     DataManagementSettingsUiAction.RetryRead -> {
@@ -64,10 +75,24 @@ class DataManagementSettingsViewModel
                     }
 
                     DataManagementSettingsUiAction.ClearBackupDirectory -> {
-                        when (_uiState.value) {
-                            DataManagementSettingsUiState.Loading -> Unit
-                            is DataManagementSettingsUiState.Failed -> Unit
-                            is DataManagementSettingsUiState.Ready -> directorySettings.clear()
+                        if (clearOwner != null && pageEffects.isActive(clearOwner) && !clearInFlight &&
+                            _uiState.value is DataManagementSettingsUiState.Ready
+                        ) {
+                            clearInFlight = true
+                            try {
+                                directorySettings.clear()
+                                pageEffects.tryEmit(clearOwner, DataManagementSettingsEffect.BackupDirectoryCleared)
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                logger.log(LogStatements.Backup.directorySettingsOperationFailed(failure))
+                                pageEffects.tryEmit(
+                                    clearOwner,
+                                    DataManagementSettingsEffect.BackupDirectoryOperationFailed,
+                                )
+                            } finally {
+                                clearInFlight = false
+                            }
                         }
                     }
                 }
@@ -78,31 +103,36 @@ class DataManagementSettingsViewModel
             uri: String?,
             owner: Any,
         ) {
-            when (directorySettings.select(uri)) {
-                BackupDirectorySelectionResult.Saved -> {
-                    Unit
-                }
+            try {
+                when (directorySettings.select(uri)) {
+                    BackupDirectorySelectionResult.Saved -> Unit
 
-                BackupDirectorySelectionResult.Cancelled -> {
-                    pageEffects.tryEmit(
-                        owner,
-                        DataManagementSettingsEffect.BackupDirectorySelectionCancelled,
-                    )
-                }
+                    BackupDirectorySelectionResult.Cancelled -> {
+                        pageEffects.tryEmit(
+                            owner,
+                            DataManagementSettingsEffect.BackupDirectorySelectionCancelled,
+                        )
+                    }
 
-                BackupDirectorySelectionResult.PermissionDenied -> {
-                    pageEffects.tryEmit(
-                        owner,
-                        DataManagementSettingsEffect.BackupDirectoryPermissionDenied,
-                    )
-                }
+                    BackupDirectorySelectionResult.PermissionDenied -> {
+                        pageEffects.tryEmit(
+                            owner,
+                            DataManagementSettingsEffect.BackupDirectoryPermissionDenied,
+                        )
+                    }
 
-                BackupDirectorySelectionResult.Unavailable -> {
-                    pageEffects.tryEmit(
-                        owner,
-                        DataManagementSettingsEffect.BackupDirectoryUnavailable,
-                    )
+                    BackupDirectorySelectionResult.Unavailable -> {
+                        pageEffects.tryEmit(
+                            owner,
+                            DataManagementSettingsEffect.BackupDirectoryUnavailable,
+                        )
+                    }
                 }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                logger.log(LogStatements.Backup.directorySettingsOperationFailed(failure))
+                pageEffects.tryEmit(owner, DataManagementSettingsEffect.BackupDirectoryOperationFailed)
             }
         }
 

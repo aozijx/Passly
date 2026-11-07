@@ -1,15 +1,19 @@
 package com.aozijx.passly.feature.settings.presentation.backup
 
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryAccess
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryGrantResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.RecordingTestLogger
 import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -23,6 +27,11 @@ import org.junit.Test
 class DataManagementSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    private fun createInteractor(
+        repository: BackupDirectorySettingsRepository,
+        access: BackupDirectoryAccess,
+    ) = BackupDirectorySettingsInteractor(repository, access, RecordingTestLogger())
 
     @Test
     fun `directory read failure is visible and retry re-subscribes`() =
@@ -45,7 +54,8 @@ class DataManagementSettingsViewModelTest {
             val viewModel =
                 DataManagementSettingsViewModel(
                     directorySource = repository,
-                    directorySettings = BackupDirectorySettingsInteractor(repository, NoOpAccess),
+                    directorySettings = createInteractor(repository, NoOpAccess),
+                    logger = RecordingTestLogger(),
                 )
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
@@ -64,7 +74,8 @@ class DataManagementSettingsViewModelTest {
             val viewModel =
                 DataManagementSettingsViewModel(
                     directorySource = EmptyRepository,
-                    directorySettings = BackupDirectorySettingsInteractor(EmptyRepository, NoOpAccess),
+                    directorySettings = createInteractor(EmptyRepository, NoOpAccess),
+                    logger = RecordingTestLogger(),
                 )
 
             assertEquals(DataManagementSettingsUiState.Loading, viewModel.uiState.value)
@@ -78,7 +89,8 @@ class DataManagementSettingsViewModelTest {
             val viewModel =
                 DataManagementSettingsViewModel(
                     directorySource = repository,
-                    directorySettings = BackupDirectorySettingsInteractor(repository, access),
+                    directorySettings = createInteractor(repository, access),
+                    logger = RecordingTestLogger(),
                 )
             val oldOwner = viewModel.onPageEntered()
             runCurrent()
@@ -98,6 +110,96 @@ class DataManagementSettingsViewModelTest {
 
             assertEquals(0, access.acquired)
             assertEquals(null, repository.savedUri)
+        }
+
+    @Test
+    fun `selection exception becomes a page failure effect and retains current uri`() =
+        runTest {
+            var subscriptions = 0
+            val repository =
+                object : BackupDirectorySettingsRepository {
+                    override val backupDirectoryUri: Flow<String?> =
+                        flow {
+                            subscriptions++
+                            if (subscriptions == 2) throw IOException("settings read failed")
+                            emit("content://tree/current")
+                            awaitCancellation()
+                        }
+
+                    override suspend fun setBackupDirectoryUri(uri: String) = Unit
+
+                    override suspend fun clearBackupDirectoryUri() = Unit
+                }
+            val access = RecordingAccess()
+            val logger = RecordingTestLogger()
+            val viewModel =
+                DataManagementSettingsViewModel(
+                    directorySource = repository,
+                    directorySettings = createInteractor(repository, access),
+                    logger = logger,
+                )
+            val owner = viewModel.onPageEntered()
+            val effects = mutableListOf<DataManagementSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.collect(effects::add) }
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+            assertEquals(DataManagementSettingsUiState.Ready("content://tree/current"), viewModel.uiState.value)
+
+            val requestId = viewModel.beginDirectorySelection(owner)
+            viewModel.onAction(
+                DataManagementSettingsUiAction.BackupDirectoryPicked(
+                    uri = "content://tree/new",
+                    pageOwner = owner,
+                    requestId = requireNotNull(requestId),
+                ),
+            )
+            runCurrent()
+
+            assertEquals(listOf(DataManagementSettingsEffect.BackupDirectoryOperationFailed), effects)
+            assertEquals(DataManagementSettingsUiState.Ready("content://tree/current"), viewModel.uiState.value)
+            assertEquals(0, access.acquired)
+            assertEquals(1, logger.events.size)
+            assertEquals(Events.Backup.Error, logger.events.single().event)
+            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(IOException::class.java, logger.events.single().throwable?.javaClass)
+        }
+
+    @Test
+    fun `clear exception becomes a page failure effect and retains current uri`() =
+        runTest {
+            val uri = MutableStateFlow<String?>("content://tree/current")
+            val repository =
+                object : BackupDirectorySettingsRepository {
+                    override val backupDirectoryUri: Flow<String?> = uri
+
+                    override suspend fun setBackupDirectoryUri(uri: String) = Unit
+
+                    override suspend fun clearBackupDirectoryUri() {
+                        throw IOException("settings clear failed")
+                    }
+                }
+            val logger = RecordingTestLogger()
+            val viewModel =
+                DataManagementSettingsViewModel(
+                    directorySource = repository,
+                    directorySettings = createInteractor(repository, NoOpAccess),
+                    logger = logger,
+                )
+            viewModel.onPageEntered()
+            val effects = mutableListOf<DataManagementSettingsEffect>()
+            backgroundScope.launch { viewModel.effects.collect(effects::add) }
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            viewModel.onAction(DataManagementSettingsUiAction.ClearBackupDirectory)
+            runCurrent()
+
+            assertEquals(listOf(DataManagementSettingsEffect.BackupDirectoryOperationFailed), effects)
+            assertEquals(DataManagementSettingsUiState.Ready("content://tree/current"), viewModel.uiState.value)
+            assertEquals(1, logger.events.size)
+            assertEquals(Events.Backup.Error, logger.events.single().event)
+            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(IOException::class.java, logger.events.single().throwable?.javaClass)
         }
 
     private object EmptyRepository : BackupDirectorySettingsRepository {

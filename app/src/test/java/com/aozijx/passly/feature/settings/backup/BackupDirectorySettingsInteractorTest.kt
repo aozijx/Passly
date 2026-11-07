@@ -1,11 +1,16 @@
 package com.aozijx.passly.feature.settings.backup
 
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.testing.RecordingTestLogger
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -14,6 +19,11 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class BackupDirectorySettingsInteractorTest {
+    private fun createInteractor(
+        repository: BackupDirectorySettingsRepository,
+        access: BackupDirectoryAccess,
+    ) = BackupDirectorySettingsInteractor(repository, access, RecordingTestLogger())
+
     @Test
     fun `overlapping selections serialize grant ownership`() =
         runTest {
@@ -24,7 +34,7 @@ class BackupDirectorySettingsInteractorTest {
                     operations = operations,
                     pausedUri = "content://tree/first",
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             val first = async { interactor.select("content://tree/first") }
             runCurrent()
@@ -61,7 +71,7 @@ class BackupDirectorySettingsInteractorTest {
                     operations = operations,
                     pausedUri = "content://tree/new",
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             val selection = async { interactor.select("content://tree/new") }
             runCurrent()
@@ -95,7 +105,7 @@ class BackupDirectorySettingsInteractorTest {
                 FakeAccess(
                     acquireResult = BackupDirectoryGrantResult.Granted("content://tree/original"),
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             assertEquals(
                 BackupDirectorySelectionResult.Saved,
@@ -110,7 +120,7 @@ class BackupDirectorySettingsInteractorTest {
         runTest {
             val repository = FakeRepository()
             val access = FakeAccess(BackupDirectoryGrantResult.PermissionDenied)
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             assertEquals(BackupDirectorySelectionResult.Cancelled, interactor.select(null))
             assertEquals(
@@ -134,7 +144,7 @@ class BackupDirectorySettingsInteractorTest {
                     acquireResult = BackupDirectoryGrantResult.Unavailable,
                     operations = operations,
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             interactor.clear()
 
@@ -159,7 +169,8 @@ class BackupDirectorySettingsInteractorTest {
                     operations = operations,
                     failOnReleaseUri = "content://tree/original",
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val logger = RecordingTestLogger()
+            val interactor = BackupDirectorySettingsInteractor(repository, access, logger)
 
             interactor.clear()
 
@@ -168,6 +179,10 @@ class BackupDirectorySettingsInteractorTest {
                 listOf("clear", "release:content://tree/original"),
                 operations,
             )
+            assertEquals(1, logger.events.size)
+            assertEquals(Events.Backup.ResourceCleanupFailed, logger.events.single().event)
+            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
+            assertEquals(IllegalStateException::class.java, logger.events.single().throwable?.javaClass)
         }
 
     @Test
@@ -185,7 +200,7 @@ class BackupDirectorySettingsInteractorTest {
                     acquireResult = BackupDirectoryGrantResult.Unavailable,
                     operations = operations,
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             val cancellation =
                 try {
@@ -218,7 +233,7 @@ class BackupDirectorySettingsInteractorTest {
                     acquireResult = BackupDirectoryGrantResult.Unavailable,
                     operations = operations,
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             val failure =
                 try {
@@ -247,7 +262,7 @@ class BackupDirectorySettingsInteractorTest {
                     acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
                     operations = operations,
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             assertEquals(
                 BackupDirectorySelectionResult.Saved,
@@ -279,7 +294,7 @@ class BackupDirectorySettingsInteractorTest {
                     acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
                     operations = operations,
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             assertEquals(
                 BackupDirectorySelectionResult.Unavailable,
@@ -311,7 +326,7 @@ class BackupDirectorySettingsInteractorTest {
                     acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
                     operations = operations,
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val interactor = createInteractor(repository, access)
 
             val cancellation =
                 try {
@@ -344,7 +359,8 @@ class BackupDirectorySettingsInteractorTest {
                     operations = operations,
                     failOnReleaseUri = "content://tree/previous",
                 )
-            val interactor = BackupDirectorySettingsInteractor(repository, access)
+            val logger = RecordingTestLogger()
+            val interactor = BackupDirectorySettingsInteractor(repository, access, logger)
 
             assertEquals(
                 BackupDirectorySelectionResult.Saved,
@@ -352,6 +368,9 @@ class BackupDirectorySettingsInteractorTest {
             )
 
             assertEquals("content://tree/new", repository.savedUri)
+            assertEquals(1, logger.events.size)
+            assertEquals(Events.Backup.ResourceCleanupFailed, logger.events.single().event)
+            assertEquals(Reasons.StorageFailure, logger.events.single().reason)
             assertEquals(
                 listOf(
                     "acquire:content://tree/new",
@@ -362,13 +381,145 @@ class BackupDirectorySettingsInteractorTest {
             )
         }
 
+    @Test
+    fun `fatal settings write failure releases unreferenced grant and propagates`() =
+        runTest {
+            val operations = mutableListOf<String>()
+            val fatal = LinkageError("fatal settings write")
+            val repository =
+                FakeRepository(
+                    initialUri = "content://tree/previous",
+                    operations = operations,
+                    fatalOnSave = fatal,
+                )
+            val access =
+                FakeAccess(
+                    acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
+                    operations = operations,
+                )
+            val interactor = createInteractor(repository, access)
+
+            val observed =
+                try {
+                    interactor.select("content://tree/new")
+                    null
+                } catch (failure: Throwable) {
+                    failure
+                }
+
+            assertEquals(LinkageError::class.java, observed?.javaClass)
+            assertEquals("fatal settings write", observed?.message)
+            assertEquals("content://tree/previous", repository.savedUri)
+            assertEquals(
+                listOf("acquire:content://tree/new", "save:content://tree/new", "release:content://tree/new"),
+                operations,
+            )
+        }
+
+    @Test
+    fun `fatal compensation read failure propagates and keeps acquired grant`() =
+        runTest {
+            val fatal = LinkageError("fatal settings read")
+            var subscriptions = 0
+            val repository =
+                object : BackupDirectorySettingsRepository {
+                    override val backupDirectoryUri: Flow<String?> =
+                        flow {
+                            subscriptions++
+                            if (subscriptions == 2) throw fatal
+                            emit("content://tree/previous")
+                        }
+
+                    override suspend fun setBackupDirectoryUri(uri: String) {
+                        throw IOException("settings write failed")
+                    }
+
+                    override suspend fun clearBackupDirectoryUri() = Unit
+                }
+            val access = FakeAccess(BackupDirectoryGrantResult.Granted("content://tree/new"))
+            val interactor = createInteractor(repository, access)
+
+            val observed =
+                try {
+                    interactor.select("content://tree/new")
+                    null
+                } catch (failure: Throwable) {
+                    failure
+                }
+
+            assertEquals(LinkageError::class.java, observed?.javaClass)
+            assertEquals("fatal settings read", observed?.message)
+            assertEquals("content://tree/new", access.acquiredUris.single())
+        }
+
+    @Test
+    fun `fatal grant release failure propagates with write failure retained`() =
+        runTest {
+            val fatal = LinkageError("fatal grant release")
+            val operations = mutableListOf<String>()
+            val repository =
+                FakeRepository(
+                    initialUri = "content://tree/previous",
+                    operations = operations,
+                    failOnSave = true,
+                )
+            val access =
+                FakeAccess(
+                    acquireResult = BackupDirectoryGrantResult.Granted("content://tree/new"),
+                    operations = operations,
+                    failOnReleaseUri = "content://tree/new",
+                    fatalOnRelease = fatal,
+                )
+            val interactor = createInteractor(repository, access)
+
+            val observed =
+                try {
+                    interactor.select("content://tree/new")
+                    null
+                } catch (failure: Throwable) {
+                    failure
+                }
+
+            assertEquals(LinkageError::class.java, observed?.javaClass)
+            assertEquals("fatal grant release", observed?.message)
+            assertEquals(
+                listOf("acquire:content://tree/new", "save:content://tree/new", "release:content://tree/new"),
+                operations,
+            )
+        }
+
+    @Test
+    fun `ordinary clear failure after durable clear reports committed success`() =
+        runTest {
+            val operations = mutableListOf<String>()
+            val repository =
+                FakeRepository(
+                    initialUri = "content://tree/original",
+                    operations = operations,
+                    failAfterClear = true,
+                )
+            val access =
+                FakeAccess(
+                    acquireResult = BackupDirectoryGrantResult.Unavailable,
+                    operations = operations,
+                )
+            val interactor = createInteractor(repository, access)
+
+            interactor.clear()
+
+            assertNull(repository.savedUri)
+            assertEquals(listOf("clear", "release:content://tree/original"), operations)
+        }
+
     private class FakeRepository(
         initialUri: String? = null,
         private val operations: MutableList<String> = mutableListOf(),
         private val failOnSave: Boolean = false,
+        private val fatalOnSave: Throwable? = null,
         private val cancelAfterSave: Boolean = false,
         private val cancelAfterClear: Boolean = false,
         private val failOnClear: Boolean = false,
+        private val failAfterClear: Boolean = false,
     ) : BackupDirectorySettingsRepository {
         private val state = MutableStateFlow(initialUri)
         override val backupDirectoryUri: Flow<String?> = state
@@ -377,6 +528,7 @@ class BackupDirectorySettingsInteractorTest {
 
         override suspend fun setBackupDirectoryUri(uri: String) {
             operations += "save:$uri"
+            fatalOnSave?.let { throw it }
             if (failOnSave) error("settings write failed")
             savedUri = uri
             state.value = uri
@@ -388,6 +540,7 @@ class BackupDirectorySettingsInteractorTest {
             if (failOnClear) error("settings clear failed")
             savedUri = null
             state.value = null
+            if (failAfterClear) throw IOException("settings clear failed after commit")
             if (cancelAfterClear) throw CancellationException("settings cleared before cancellation")
         }
     }
@@ -396,6 +549,7 @@ class BackupDirectorySettingsInteractorTest {
         private val acquireResult: BackupDirectoryGrantResult,
         private val operations: MutableList<String> = mutableListOf(),
         private val failOnReleaseUri: String? = null,
+        private val fatalOnRelease: Throwable? = null,
     ) : BackupDirectoryAccess {
         val acquiredUris = mutableListOf<String>()
 
@@ -407,6 +561,7 @@ class BackupDirectorySettingsInteractorTest {
 
         override suspend fun release(treeUri: String) {
             operations += "release:$treeUri"
+            if (treeUri == failOnReleaseUri) fatalOnRelease?.let { throw it }
             if (treeUri == failOnReleaseUri) error("grant release failed")
         }
     }
