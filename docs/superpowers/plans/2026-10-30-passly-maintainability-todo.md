@@ -83,7 +83,9 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 Security 锁定顺序批次：** `VaultSessionController.lock()` 现在在进入可挂起清理前发布 `AuthenticationState.Locking`，保留变更前状态以判断 RecoveryMode；随后撤销 permit、调用 Runtime soft-lock/seal 排空 lease，再清敏感会话 key，sealed/fatal 路径在 key 清理后锁 DEK。新增可控 soft-lock 与 key-clear 屏障，验证 Locking 已使 full access 失效，且 key clear 要等 Runtime soft-lock 返回；Security 150 项与 `verifyArchitecture` 通过。Task 37 仍未完成：AppDatabaseSession/Runner/直接 Repository 的 lease 后授权复核、Autofill 与内部维护入口分类、已进入事务的提交/取消结果，以及 reset/恢复模式的同序测试仍待单独批次。
 
-**2026-11-07 Data admission 批次：** `AppDatabaseSession` 通过惰性 Security provider 直接读取认证权限，并在 lease 内再次核验；Repository 与 Runner 不再传递授权谓词或持有重复访问状态，Room observation 也由 session 集中读取认证 Flow。Full Vault、Autofill 与 maintenance 入口语义显式区分。新增 Room observation instrumentation 回归，分别验证 read/write 在第二次授权核验拒绝且 DAO block 不执行；AndroidTest 源集已编译，instrumentation 未运行。同步修正数据库映射和认证文档。Task 37 仍待真实 Security/Data 并发终态、Autofill/Recovery/idle/reset 次序验收和定向验证。
+**2026-11-07 Data admission 批次：** `AppDatabaseSession` 通过惰性 Security provider 直接读取认证权限，并在 lease 内再次核验；Repository 与 Runner 不再传递授权谓词或持有重复访问状态，Room observation 也由 session 集中读取认证 Flow。Full Vault、Autofill 与 maintenance 入口语义显式区分。新增 Room observation instrumentation 回归，分别验证 read/write 在第二次授权核验拒绝且 DAO block 不执行；`:app:kspDebugKotlin`、Data 主代码与 AndroidTest 源集编译通过。`:security:testDebugUnitTest` 与 `:runtime:session:test` 强制重跑通过；`adb devices` 无可用设备，instrumentation 未运行。同步修正数据库映射和认证文档。Task 37 仍待真实 Security/Data 并发终态、Autofill/Recovery/idle/reset 次序验收和定向验证。
+
+**2026-11-07 生命周期顺序审查：** idle/background 与 Autofill 结果完成后的释放都调用 `VaultSessionController.lock()`；RecoveryMode 锁定升级为 SEALED。Autofill 最后一个 borrower 释放受结果完成屏障保护。Reset 则由 `ResetDatabaseUseCase` 通过 Full Vault 状态与 `AuthorizationGate` 后调用 Data `DatabaseSessionLifecycle.seal()/unlock()`，未经过同一 Security lock owner；它与并发 lock 的交错尚无终态测试，因此保留 Task 37 未完成。
 <a id="task-43"></a>
 
 ### Task 43：保证条目与修订敏感揭示异常时擦除部分结果
