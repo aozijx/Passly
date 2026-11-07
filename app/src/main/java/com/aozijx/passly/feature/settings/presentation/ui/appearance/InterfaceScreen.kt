@@ -1,28 +1,56 @@
 package com.aozijx.passly.feature.settings.presentation.ui.appearance
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.SpaceDashboard
 import androidx.compose.material.icons.filled.ViewDay
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
+import com.aozijx.passly.presentation.shared.entry.labelRes
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
+import com.aozijx.passly.presentation.shared.components.group.settingsGroupItem
+import com.aozijx.passly.presentation.shared.components.group.settingsSegmentedColors
+import com.aozijx.passly.presentation.shared.components.group.model.SegmentedSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
@@ -73,6 +101,50 @@ internal fun InterfaceDetail(
                             onAction(InterfaceSettingsAction.SetQuickFilterBarCollapsible(enabled))
                         },
                     ),
+                ),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        var cardStylesExpanded by rememberSaveable { mutableStateOf(false) }
+        SegmentedSettingsGroup(
+            items =
+                listOf(
+                    settingsGroupItem(
+                        key = "interface.card_style.header",
+                        title = stringResource(R.string.settings_interface_card_style_section),
+                        onClick = { cardStylesExpanded = !cardStylesExpanded },
+                        trailing = {
+                            Icon(
+                                imageVector = if (cardStylesExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = stringResource(R.string.settings_interface_card_style_section_toggle),
+                            )
+                        },
+                    ),
+                    SegmentedSettingsItem(
+                        key = "interface.card_style.options",
+                        visible = cardStylesExpanded,
+                    ) { shapes ->
+                        SegmentedListItem(
+                            shapes = shapes,
+                            colors = settingsSegmentedColors(),
+                            contentPadding = PaddingValues(12.dp),
+                            content = {
+                                Column {
+                                    CardStyleRegistry.configurableEntryTypes.forEachIndexed { index, entryType ->
+                                        if (index > 0) Spacer(modifier = Modifier.height(12.dp))
+                                        CardStyleChoices(
+                                            entryType = entryType,
+                                            presentations = state.entryCardPresentations,
+                                            onSelect = { presentation ->
+                                                onAction(InterfaceSettingsAction.SetEntryCardPresentation(presentation))
+                                            },
+                                        )
+                                    }
+                                }
+                            },
+                        )
+                    },
                 ),
         )
 
@@ -144,6 +216,111 @@ internal fun InterfaceDetail(
         )
     }
 }
+
+@Composable
+private fun CardStyleChoices(
+    entryType: EntryType,
+    presentations: List<EntryCardPresentation>,
+    onSelect: (EntryCardPresentation) -> Unit,
+) {
+    val typeKey = CardStyleRegistry.entryTypeKey(entryType)
+    var expanded by rememberSaveable(typeKey) { mutableStateOf(false) }
+    val entryTypeLabel = stringResource(entryType.labelRes)
+    val stored = presentations.firstOrNull { it.entryTypeKey == typeKey }
+    val styles = CardStyleRegistry.stylesFor(entryType)
+    val selectedStyleKey =
+        styles.firstOrNull { it.key == stored?.variantKey }?.key ?: styles.first().key
+
+    SegmentedSettingsGroup(
+        items =
+            listOf(
+                settingsGroupItem(
+                    key = "interface.card_style.$typeKey.header",
+                    title = entryTypeLabel,
+                    onClick = { expanded = !expanded },
+                    trailing = {
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription =
+                                stringResource(
+                                    R.string.settings_interface_card_style_toggle,
+                                    entryTypeLabel,
+                                ),
+                        )
+                    },
+                ),
+                SegmentedSettingsItem(
+                    key = "interface.card_style.$typeKey.options",
+                    visible = expanded,
+                ) { shapes ->
+                    SegmentedListItem(
+                        shapes = shapes,
+                        colors = settingsSegmentedColors(),
+                        contentPadding = PaddingValues(12.dp),
+                        content = {
+                            Row(
+                                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            ) {
+                                styles.forEach { style ->
+                                    val selected = style.key == selectedStyleKey
+                                    val selectStyle = {
+                                        onSelect(
+                                            (stored ?: EntryCardPresentation(entryTypeKey = typeKey))
+                                                .copy(variantKey = style.key),
+                                        )
+                                    }
+                                    Card(
+                                        onClick = selectStyle,
+                                        modifier =
+                                            Modifier
+                                                .width(280.dp)
+                                                .testTag("card-style-option-$typeKey-${style.key}"),
+                                        colors =
+                                            CardDefaults.cardColors(
+                                                containerColor =
+                                                    if (selected) {
+                                                        MaterialTheme.colorScheme.secondaryContainer
+                                                    } else {
+                                                        MaterialTheme.colorScheme.surfaceVariant
+                                                    },
+                                            ),
+                                    ) {
+                                        Column(modifier = Modifier.padding(12.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                RadioButton(
+                                                    selected = selected,
+                                                    onClick = selectStyle,
+                                                )
+                                                Text(
+                                                    text = stringResource(style.titleRes),
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                )
+                                            }
+                                            Box(
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .height(cardStylePreviewHeight)
+                                                        .testTag("card-style-preview-$typeKey-${style.key}"),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                Box(Modifier.fillMaxWidth()) {
+                                                    style.Preview(entryType, onClick = selectStyle)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                }
+                            }
+                        },
+                    )
+                },
+            ),
+    )
+}
+
+private val cardStylePreviewHeight = 112.dp
 
 private fun EntryHierarchyDisplayMode.labelResource(): Int =
     when (this) {

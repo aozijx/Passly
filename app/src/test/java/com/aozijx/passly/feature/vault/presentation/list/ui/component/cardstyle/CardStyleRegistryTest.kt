@@ -25,6 +25,13 @@ class CardStyleRegistryTest {
         assertSame(PasswordVaultCardStyle, style)
     }
 
+    @Test fun `login cannot select otp style even when entry has an otp field`() {
+        assertSame(
+            DefaultVaultCardStyle,
+            CardStyleRegistry.resolveStyle(entry(hasOtp = true), listOf(presentation("login", "totp"))),
+        )
+    }
+
     @Test fun `capability mismatches and unknown keys fall back to default`() {
         assertSame(DefaultVaultCardStyle, CardStyleRegistry.resolveStyle(entry(hasPassword = true), listOf(presentation("login", "totp"))))
         assertSame(DefaultVaultCardStyle, CardStyleRegistry.resolveStyle(entry(hasOtp = true), listOf(presentation("login", "password"))))
@@ -36,6 +43,33 @@ class CardStyleRegistryTest {
 
     @Test fun `all style components are discoverable through the registry`() {
         assertEquals(listOf("default", "password", "totp"), CardStyleRegistry.styles.map(VaultCardStyleComponent::key))
+    }
+
+    @Test
+    fun `style preference keys are stable and independent of enum names`() {
+        assertEquals("login", CardStyleRegistry.entryTypeKey(EntryType.LOGIN))
+        assertEquals("bank_card", CardStyleRegistry.entryTypeKey(EntryType.BANK_CARD))
+        assertEquals("otp", CardStyleRegistry.entryTypeKey(EntryType.OTP))
+    }
+
+    @Test
+    fun `configurable types expose only compatible registered styles`() {
+        assertEquals(
+            listOf(EntryType.LOGIN, EntryType.OTP),
+            CardStyleRegistry.configurableEntryTypes,
+        )
+        assertEquals(
+            listOf("default", "password"),
+            CardStyleRegistry.stylesFor(EntryType.LOGIN).map(VaultCardStyleComponent::key),
+        )
+        assertEquals(
+            listOf("default", "totp"),
+            CardStyleRegistry.stylesFor(EntryType.OTP).map(VaultCardStyleComponent::key),
+        )
+        assertEquals(
+            listOf("default"),
+            CardStyleRegistry.stylesFor(EntryType.ACCOUNT).map(VaultCardStyleComponent::key),
+        )
     }
 
     private fun entry(

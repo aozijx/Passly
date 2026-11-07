@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
+import com.aozijx.passly.domain.entry.model.EntryType
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.aozijx.passly.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -206,6 +208,10 @@ fun TotpStyleVaultItem(
 
 internal object TotpVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "totp"
+    override val titleRes: Int = R.string.settings_interface_card_style_totp
+
+    override fun supportsEntryType(entryType: EntryType): Boolean =
+        entryType == EntryType.OTP
 
     override fun supports(entry: VaultListItemUiModel): Boolean = entry.hasOtp
 
@@ -225,9 +231,9 @@ internal object TotpVaultCardStyle : VaultCardStyleComponent {
     }
 
     @Composable
-    override fun Preview(onClick: () -> Unit) {
+    override fun Preview(entryType: EntryType, onClick: () -> Unit) {
         TotpStyleVaultItem(
-            entry = CardStylePreviewFixtures.totpEntry,
+            entry = CardStylePreviewFixtures.totpEntry(entryType),
             totpState = null,
             showCode = true,
             previewCode = "123 456",

@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
@@ -173,6 +175,7 @@ fun DefaultOtpItem(
 
 internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "default"
+    override val titleRes: Int = R.string.settings_interface_card_style_default
 
     @Composable
     override fun Render(
@@ -198,10 +201,19 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     }
 
     @Composable
-    override fun Preview(onClick: () -> Unit) {
-        DefaultItem(
-            entry = CardStylePreviewFixtures.defaultEntry,
-            onClick = onClick,
-        )
+    override fun Preview(entryType: EntryType, onClick: () -> Unit) {
+        val entry = CardStylePreviewFixtures.defaultEntry(entryType)
+        if (entryType == EntryType.OTP) {
+            DefaultOtpItem(
+                entry = entry,
+                totpState = null,
+                showCode = true,
+                previewCode = "123 456",
+                previewProgress = 0.4f,
+                onClick = onClick,
+            )
+        } else {
+            DefaultItem(entry = entry, onClick = onClick)
+        }
     }
 }

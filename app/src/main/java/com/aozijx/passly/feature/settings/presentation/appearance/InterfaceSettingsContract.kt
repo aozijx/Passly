@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.appearance
 
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 
 sealed interface InterfaceSettingsUiState {
     data object Loading : InterfaceSettingsUiState
@@ -16,6 +17,7 @@ sealed interface InterfaceSettingsUiState {
         val collapseQuickFilterBarOnScroll: Boolean,
         val appCornerRadiusDp: Float,
         val entryHierarchyDisplayMode: EntryHierarchyDisplayMode,
+        val entryCardPresentations: List<EntryCardPresentation>,
     ) : InterfaceSettingsUiState
 }
 
@@ -40,5 +42,9 @@ sealed interface InterfaceSettingsAction {
 
     data class SetEntryHierarchyDisplayMode(
         val mode: EntryHierarchyDisplayMode,
+    ) : InterfaceSettingsAction
+
+    data class SetEntryCardPresentation(
+        val presentation: EntryCardPresentation,
     ) : InterfaceSettingsAction
 }

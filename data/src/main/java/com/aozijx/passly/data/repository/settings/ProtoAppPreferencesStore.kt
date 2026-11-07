@@ -8,6 +8,7 @@ import com.aozijx.passly.data.preferences.proto.AppearancePreferences
 import com.aozijx.passly.data.preferences.proto.AutofillPreferences
 import com.aozijx.passly.data.preferences.proto.BackupPreferences
 import com.aozijx.passly.data.preferences.proto.DiagnosticsPreferences
+import com.aozijx.passly.data.preferences.proto.EntryCardPresentationPreference
 import com.aozijx.passly.data.preferences.proto.InteractionPreferences
 import com.aozijx.passly.data.preferences.proto.InterfacePreferences
 import com.aozijx.passly.data.preferences.proto.VaultViewPreferences
@@ -17,6 +18,7 @@ import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
@@ -99,6 +101,16 @@ internal class ProtoAppPreferencesStore
 
         override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) =
             updateVaultView { hierarchyDisplayMode = mode.toProto() }
+
+        override suspend fun setEntryCardPresentation(presentation: EntryCardPresentation) =
+            updateVaultView {
+                val updated =
+                    entryCardPresentationsList
+                        .map(EntryCardPresentationPreference::toDomain)
+                        .upsert(presentation)
+                clearEntryCardPresentations()
+                addAllEntryCardPresentations(updated.map(EntryCardPresentation::toProto))
+            }
 
         override suspend fun setSort(sort: EntrySort) = updateVaultView { this.sort = sort.toProtoSort() }
 

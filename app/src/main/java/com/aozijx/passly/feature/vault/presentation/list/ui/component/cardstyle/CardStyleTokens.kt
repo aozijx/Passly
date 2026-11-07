@@ -17,8 +17,6 @@ object CardStyleTokens {
         val maxWidth = 480.dp
 
         const val IMAGE_OVERLAY_ALPHA = 0.22f
-        const val CHIP_BG_ALPHA = 0.82f
-        const val CHIP_FALLBACK_BG_ALPHA = 0.92f
 
         const val NO_IMAGE_TOP_OVERLAY_ALPHA = 0.20f
         const val WITH_IMAGE_TOP_OVERLAY_ALPHA = 0.30f
@@ -27,11 +25,6 @@ object CardStyleTokens {
 
         const val TERTIARY_TEXT_ALPHA = 0.78f
 
-        val chipCorner = 999.dp
-        val chipHorizontalPadding = 9.dp
-        val chipVerticalPadding = 4.dp
-        val chipIconSize = 12.dp
-        val chipIconTextSpacing = 4.dp
     }
 
     object Totp {

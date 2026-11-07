@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
 import androidx.compose.runtime.Composable
+import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
@@ -16,6 +17,12 @@ interface VaultCardStyleComponent {
     /** Stable value persisted in EntryCardPresentation.variantKey. */
     val key: String
 
+    @get:StringRes
+    val titleRes: Int
+
+    /** Whether this style is a meaningful settings choice for [entryType]. */
+    fun supportsEntryType(entryType: EntryType): Boolean = true
+
     /** Whether this appearance can render the capabilities of [entry]. */
     fun supports(entry: VaultListItemUiModel): Boolean = true
 
@@ -28,20 +35,24 @@ interface VaultCardStyleComponent {
     )
 
     @Composable
-    fun Preview(onClick: () -> Unit)
+    fun Preview(entryType: EntryType, onClick: () -> Unit)
 }
 
 internal object CardStylePreviewFixtures {
-    val defaultEntry =
+    fun defaultEntry(entryType: EntryType) =
         previewEntry(
+            entryType = entryType,
             id = "-100",
             title = "示例账号",
             username = "demo_user",
             associatedDomain = "example.com",
+            hasOtp = entryType == EntryType.OTP,
+            otpKind = VaultOtpKindUiModel.STANDARD.takeIf { entryType == EntryType.OTP },
         )
 
-    val passwordEntry =
+    fun passwordEntry(entryType: EntryType) =
         previewEntry(
+            entryType = entryType,
             id = "-101",
             title = "我的邮箱",
             username = "me@example.com",
@@ -49,8 +60,9 @@ internal object CardStylePreviewFixtures {
             hasPassword = true,
         )
 
-    val totpEntry =
+    fun totpEntry(entryType: EntryType) =
         previewEntry(
+            entryType = entryType,
             id = "-102",
             title = "示例二步验证",
             username = "totp_user",
@@ -59,6 +71,7 @@ internal object CardStylePreviewFixtures {
         )
 
     private fun previewEntry(
+        entryType: EntryType,
         id: String,
         title: String,
         username: String,
@@ -68,7 +81,7 @@ internal object CardStylePreviewFixtures {
         otpKind: VaultOtpKindUiModel? = null,
     ) = VaultListItemUiModel(
         id = id,
-        entryType = EntryType.LOGIN,
+        entryType = entryType,
         title = title,
         username = username,
         category = null,

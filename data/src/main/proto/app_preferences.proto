@@ -93,6 +93,17 @@ message VaultViewPreferences {
     optional VaultSortPreference sort = 1;
     optional EntryHierarchyDisplayModePreference hierarchy_display_mode = 2
         [default = ENTRY_HIERARCHY_DISPLAY_MODE_COLLAPSED];
+    repeated EntryCardPresentationPreference entry_card_presentations = 3;
+}
+
+message EntryCardPresentationPreference {
+    optional string entry_type_key = 1;
+    optional string variant_key = 2;
+    optional string density_key = 3 [default = "standard"];
+    optional bool show_icon = 4 [default = true];
+    optional bool show_favorite = 5 [default = true];
+    optional bool show_secondary_text = 6 [default = true];
+    optional bool show_quick_action = 7 [default = true];
 }
 
 message VaultSortPreference {

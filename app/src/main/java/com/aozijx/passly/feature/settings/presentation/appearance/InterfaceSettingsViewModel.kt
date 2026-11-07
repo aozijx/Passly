@@ -43,6 +43,7 @@ class InterfaceSettingsViewModel
                             collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
                             appCornerRadiusDp = prefs.appCornerRadiusDp,
                             entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode,
+                            entryCardPresentations = librarySettings.entryCardPresentations,
                         )
                     },
                 scope = viewModelScope,
@@ -95,6 +96,12 @@ class InterfaceSettingsViewModel
                 is InterfaceSettingsAction.SetEntryHierarchyDisplayMode -> {
                     saveSetting {
                         librarySettingsRepository.setEntryHierarchyDisplayMode(action.mode)
+                    }
+                }
+
+                is InterfaceSettingsAction.SetEntryCardPresentation -> {
+                    saveSetting {
+                        librarySettingsRepository.setEntryCardPresentation(action.presentation)
                     }
                 }
             }

@@ -98,6 +98,12 @@
     <string name="settings_interface_entry_hierarchy_collapsed">折叠</string>
     <string name="settings_interface_entry_hierarchy_expanded">展开</string>
     <string name="settings_interface_entry_hierarchy_separate">分开</string>
+    <string name="settings_interface_card_style_section">保险库卡片样式</string>
+    <string name="settings_interface_card_style_default">标准</string>
+    <string name="settings_interface_card_style_password">密码卡片</string>
+    <string name="settings_interface_card_style_totp">动态验证码</string>
+    <string name="settings_interface_card_style_toggle">展开或收起%1$s样式</string>
+    <string name="settings_interface_card_style_section_toggle">展开或收起保险库卡片样式</string>
 
     <!-- Security and recovery -->
     <string name="settings_app_password_change_action">修改密码</string>

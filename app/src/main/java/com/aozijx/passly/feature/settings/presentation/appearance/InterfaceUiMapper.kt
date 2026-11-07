@@ -12,4 +12,5 @@ fun InterfaceSettingsUiState.Ready.toInterfaceUiModel(): InterfaceUiModel =
         appCornerRadiusRange =
             AppCornerRadiusConstraints.MIN_DP..AppCornerRadiusConstraints.MAX_DP,
         entryHierarchyDisplayMode = entryHierarchyDisplayMode,
+        entryCardPresentations = entryCardPresentations,
     )

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.appearance
 
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -15,6 +16,7 @@ class InterfaceUiMapperTest {
                     collapseQuickFilterBarOnScroll = true,
                     appCornerRadiusDp = 24f,
                     entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+                    entryCardPresentations = listOf(EntryCardPresentation("login", "password")),
                 ).toInterfaceUiModel()
 
         assertEquals(true, model.hideSystemBars)
@@ -26,5 +28,6 @@ class InterfaceUiMapperTest {
             model.entryHierarchyDisplayMode,
         )
         assertEquals(0f..48f, model.appCornerRadiusRange)
+        assertEquals(listOf(EntryCardPresentation("login", "password")), model.entryCardPresentations)
     }
 }

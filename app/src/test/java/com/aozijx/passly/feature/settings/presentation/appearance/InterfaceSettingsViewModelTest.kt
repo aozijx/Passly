@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
@@ -80,6 +81,7 @@ class InterfaceSettingsViewModelTest {
                     InterfaceSettingsAction.SetQuickFilterBarCollapsible(true),
                     InterfaceSettingsAction.SetAppCornerRadius(24f),
                     InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED),
+                    InterfaceSettingsAction.SetEntryCardPresentation(EntryCardPresentation("login", "password")),
                 )
             actions.forEach(model::onAction)
             runCurrent()
@@ -118,6 +120,29 @@ class InterfaceSettingsViewModelTest {
         }
 
     @Test
+    fun `card style selection is saved and follows repository state`() =
+        runTest {
+            val repository = Repository(save = {})
+            val model = InterfaceSettingsViewModel(repository, repository)
+            model.onPageEntered()
+            backgroundScope.launch { model.uiState.collect {} }
+            runCurrent()
+            val presentation = EntryCardPresentation("login", "password")
+
+            model.onAction(InterfaceSettingsAction.SetEntryCardPresentation(presentation))
+            runCurrent()
+
+            assertEquals(listOf(presentation), repository.savedCardPresentations)
+            repository.libraryViewSettings.value =
+                repository.libraryViewSettings.value.copy(entryCardPresentations = listOf(presentation))
+            runCurrent()
+            assertEquals(
+                listOf(presentation),
+                (model.uiState.value as InterfaceSettingsUiState.Ready).entryCardPresentations,
+            )
+        }
+
+    @Test
     fun `destroyed page rejects late write failure`() =
         runTest {
             val release = CompletableDeferred<Unit>()
@@ -146,6 +171,8 @@ class InterfaceSettingsViewModelTest {
         private val save: suspend () -> Unit,
     ) : InterfaceSettingsRepository,
         LibraryViewSettingsRepository {
+        val savedCardPresentations = mutableListOf<EntryCardPresentation>()
+
         override val libraryViewSettings =
             MutableStateFlow(
                 LibraryViewSettings(EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)),
@@ -162,5 +189,10 @@ class InterfaceSettingsViewModelTest {
         override suspend fun setSort(sort: EntrySort) = Unit
 
         override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) = save()
+
+        override suspend fun setEntryCardPresentation(presentation: EntryCardPresentation) {
+            savedCardPresentations += presentation
+            save()
+        }
     }
 }

@@ -98,6 +98,12 @@
     <string name="settings_interface_entry_hierarchy_collapsed">Collapsed</string>
     <string name="settings_interface_entry_hierarchy_expanded">Expanded</string>
     <string name="settings_interface_entry_hierarchy_separate">Separate</string>
+    <string name="settings_interface_card_style_section">Vault card style</string>
+    <string name="settings_interface_card_style_default">Standard</string>
+    <string name="settings_interface_card_style_password">Password card</string>
+    <string name="settings_interface_card_style_totp">One-time code</string>
+    <string name="settings_interface_card_style_toggle">Toggle %1$s styles</string>
+    <string name="settings_interface_card_style_section_toggle">Toggle vault card styles</string>
 
     <!-- Security and recovery -->
     <string name="settings_app_password_change_action">Change password</string>
