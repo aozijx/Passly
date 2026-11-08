@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import kotlin.math.max
 
 internal data class FaviconCropGeometry(
@@ -22,9 +23,6 @@ internal data class FaviconCropSelection(
 )
 
 internal object FaviconCropTransform {
-    private const val MIN_ZOOM = 1f
-    private const val MAX_ZOOM = 6f
-
     fun applyGesture(
         state: FaviconCropGestureState,
         geometry: FaviconCropGeometry,
@@ -32,7 +30,7 @@ internal object FaviconCropTransform {
         panY: Float,
         zoomChange: Float,
     ): FaviconCropGestureState {
-        val zoom = (state.zoom * zoomChange).coerceIn(MIN_ZOOM, MAX_ZOOM)
+        val zoom = (state.zoom * zoomChange).coerceIn(FaviconCropRequest.MIN_ZOOM, FaviconCropRequest.MAX_ZOOM)
         return clamp(
             state.copy(
                 zoom = zoom,

@@ -74,7 +74,7 @@ class FaviconBitmapTransformer
 
         private fun Bitmap.squareCrop(request: FaviconCropRequest): Bitmap {
             val baseSide = min(width, height).toFloat()
-            val zoom = request.zoom.coerceIn(1f, MAX_ZOOM)
+            val zoom = request.zoom.coerceIn(FaviconCropRequest.MIN_ZOOM, FaviconCropRequest.MAX_ZOOM)
             val sourceSide = (baseSide / zoom).toInt().coerceAtLeast(1)
             val availableX = (width - sourceSide).coerceAtLeast(0)
             val availableY = (height - sourceSide).coerceAtLeast(0)
@@ -97,6 +97,5 @@ class FaviconBitmapTransformer
             const val MAX_SOURCE_EDGE = 4096
             const val NO_CROP_MAX_EDGE = 1024
             const val CROP_SIZE = 512
-            const val MAX_ZOOM = 6f
         }
     }

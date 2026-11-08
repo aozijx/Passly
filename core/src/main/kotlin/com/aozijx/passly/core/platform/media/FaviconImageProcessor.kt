@@ -3,10 +3,15 @@ package com.aozijx.passly.core.platform.media
 import android.net.Uri
 
 data class FaviconCropRequest(
-    val zoom: Float = 1f,
+    val zoom: Float = MIN_ZOOM,
     val offsetX: Float = 0f,
     val offsetY: Float = 0f,
-)
+) {
+    companion object {
+        const val MIN_ZOOM = 1f
+        const val MAX_ZOOM = 6f
+    }
+}
 
 enum class FaviconProcessingFailure {
     INVALID_URL,
