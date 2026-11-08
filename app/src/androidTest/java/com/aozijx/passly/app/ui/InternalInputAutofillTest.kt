@@ -11,7 +11,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.autofill.ContentDataType
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -32,6 +31,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordU
 import com.aozijx.passly.feature.vault.presentation.editor.ui.password.AddPasswordEditorScreen
 import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
+import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -56,7 +56,8 @@ class InternalInputAutofillTest {
                                 onNewPasswordChange = {},
                                 onConfirmPasswordChange = {},
                                 onDone = {},
-                                strengthUiState = PasswordStrengthUiState(0f, Color.Unspecified, 0),
+                                strengthUiState = PasswordStrengthUiState.Hidden,
+                                confirmationState = PasswordConfirmationUiState.Hidden,
                             )
                         }
                     }

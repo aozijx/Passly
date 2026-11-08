@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.recovery.presentation
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -17,9 +18,10 @@ class RecoveryModeReducerTest {
                     RecoveryModeUiState(
                         passwordSetup =
                             RecoveryPasswordSetup.Editing(
-                                newPassword = password,
-                                confirmPassword = confirm,
-                                phase = RecoveryPasswordSetupPhase.Saving,
+                                PasswordSetupDraft(
+                                    newPassword = password,
+                                    confirmPassword = confirm,
+                                ),
                             ),
                     ),
                     RecoveryModeMutation.PasswordSetupCompleted,
@@ -38,9 +40,7 @@ class RecoveryModeReducerTest {
             RecoveryModeReducer.reduce(
                 RecoveryModeUiState(
                     passwordSetup =
-                        RecoveryPasswordSetup.Editing(
-                            phase = RecoveryPasswordSetupPhase.Saving,
-                        ),
+                        RecoveryPasswordSetup.Saving(PasswordSetupDraft()),
                 ),
                 RecoveryModeMutation.RecoveryModeRejected,
             )
@@ -57,8 +57,7 @@ class RecoveryModeReducerTest {
             )
 
         val setup = result.passwordSetup as RecoveryPasswordSetup.Editing
-        assertSame(EmptySensitiveValue, setup.newPassword)
-        assertSame(EmptySensitiveValue, setup.confirmPassword)
-        assertSame(RecoveryPasswordSetupPhase.Idle, setup.phase)
+        assertSame(EmptySensitiveValue, setup.draft.newPassword)
+        assertSame(EmptySensitiveValue, setup.draft.confirmPassword)
     }
 }

@@ -36,15 +36,15 @@ class EntryValidationTest {
                 ),
             )
         }
-        assertTrue(
-            EntryValidation
-                .validate(
-                    entry(
-                        EntryType.BANK_CARD,
-                        EntryProfile(title = "Card"),
-                        EntrySecret(CardCredential(cardNumber = "4111 1111-1111 1111")),
-                    ),
-                ).isEmpty(),
+        assertEquals(
+            emptySet<EntryViolation>(),
+            EntryValidation.validate(
+                entry(
+                    EntryType.BANK_CARD,
+                    EntryProfile(title = "Card"),
+                    EntrySecret(CardCredential(cardNumber = "4111 1111-1111 1111")),
+                ),
+            ),
         )
     }
 
@@ -175,9 +175,14 @@ class EntryValidationTest {
                 ),
             )
 
-        assertTrue(EntryViolation(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_LENGTH) in violations)
-        assertTrue(EntryViolation(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT) in violations)
-        assertTrue(EntryViolation(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT) in violations)
+        assertEquals(
+            setOf(
+                EntryViolation(FieldKey.CARD_NUMBER, EntryViolationCode.INVALID_LENGTH),
+                EntryViolation(FieldKey.CARD_EXPIRATION, EntryViolationCode.INVALID_FORMAT),
+                EntryViolation(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT),
+            ),
+            violations,
+        )
     }
 
     @Test

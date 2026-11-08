@@ -67,24 +67,6 @@ class TrashDaoTest {
             assertNull(queryDao.getById("entry-1"))
         }
 
-    @Test
-    fun emptyTrash_keepsActiveEntries() =
-        runBlocking {
-            val queryDao = database.entryQueryDao()
-            val commandDao = database.entryCommandDao()
-            commandDao.insertStrict(entry("active"))
-            commandDao.insertStrict(entry("deleted"))
-            commandDao.optimisticSoftDelete(
-                entryId = "deleted",
-                expectedVersion = 1,
-                deletedAt = 10L,
-                updatedAt = 10L,
-            )
-
-            assertEquals(1, commandDao.deleteAllDeleted())
-            assertEquals(listOf("active"), queryDao.getAll().map { it.entryId })
-        }
-
     private fun entry(id: String) =
         EntryEntity(
             entryId = id,

@@ -27,44 +27,38 @@ class EntryLinkPolicyTest {
 
     @Test
     fun `typed authentication factors must be relation sources`() {
-        assertTrue(
-            EntryLinkPolicy.isAllowed(
-                EntryRelationType.OTP_FOR,
-                EntryType.OTP,
-                EntryType.LOGIN,
-            ),
-        )
-        assertTrue(
-            EntryLinkPolicy.isAllowed(
-                EntryRelationType.RECOVERY_FOR,
-                EntryType.RECOVERY_CODE,
-                EntryType.LOGIN,
-            ),
-        )
+        listOf(
+            EntryRelationType.OTP_FOR to EntryType.OTP,
+            EntryRelationType.RECOVERY_FOR to EntryType.RECOVERY_CODE,
+        ).forEach { (relation, factorType) ->
+            assertTrue(
+                EntryLinkPolicy.isAllowed(relation, factorType, EntryType.LOGIN),
+            )
+            listOf(EntryType.ACCOUNT, EntryType.OTP, EntryType.RECOVERY_CODE).forEach { targetType ->
+                assertFalse(
+                    "$relation -> $targetType",
+                    EntryLinkPolicy.isAllowed(relation, factorType, targetType),
+                )
+            }
+        }
         assertFalse(
             EntryLinkPolicy.isAllowed(
                 EntryRelationType.OTP_FOR,
                 EntryType.LOGIN,
                 EntryType.OTP,
-            ),
-        )
-        assertFalse(
-            EntryLinkPolicy.isAllowed(
-                EntryRelationType.RECOVERY_FOR,
-                EntryType.RECOVERY_CODE,
-                EntryType.ACCOUNT,
             ),
         )
     }
 
     @Test
-    fun `related links accept any distinct endpoint types`() {
-        assertTrue(
-            EntryLinkPolicy.isAllowed(
-                EntryRelationType.RELATED_TO,
-                EntryType.ACCOUNT,
-                EntryType.OTP,
-            ),
-        )
+    fun `related links accept every endpoint type pair`() {
+        EntryType.values().forEach { source ->
+            EntryType.values().forEach { target ->
+                assertTrue(
+                    "$source -> $target",
+                    EntryLinkPolicy.isAllowed(EntryRelationType.RELATED_TO, source, target),
+                )
+            }
+        }
     }
 }

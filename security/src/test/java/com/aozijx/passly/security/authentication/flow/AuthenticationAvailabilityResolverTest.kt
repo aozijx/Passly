@@ -31,5 +31,9 @@ class AuthenticationAvailabilityResolverTest {
             ),
             credentials.toAuthenticationMethods(biometricAvailable = true),
         )
+        assertEquals(
+            AuthenticationMethods(),
+            AuthenticationCredentialSnapshot().toAuthenticationMethods(biometricAvailable = true),
+        )
     }
 }

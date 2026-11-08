@@ -25,19 +25,48 @@ import com.aozijx.passly.core.observability.TraceId
 import com.aozijx.passly.core.observability.TraceSnapshot
 import java.nio.charset.CharacterCodingException
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class LogRecordCodecTest {
     @Test
     fun `persisted enum wire ids are explicit stable protocol values`() {
-        assertEquals(0, LogLevel.DEBUG.wireId)
-        assertEquals(4, LogLevel.FATAL.wireId)
-        assertEquals(0, LogCategory.APPLICATION.wireId)
-        assertEquals(5, LogCategory.VAULT.wireId)
-        assertEquals(0, ExceptionKind.DATABASE_IO.wireId)
-        assertEquals(6, ExceptionKind.UNKNOWN.wireId)
+        assertEquals(
+            mapOf(
+                LogLevel.DEBUG to 0,
+                LogLevel.INFO to 1,
+                LogLevel.WARN to 2,
+                LogLevel.ERROR to 3,
+                LogLevel.FATAL to 4,
+            ),
+            LogLevel.entries.associateWith(LogLevel::wireId),
+        )
+        assertEquals(
+            mapOf(
+                LogCategory.APPLICATION to 0,
+                LogCategory.DATABASE to 1,
+                LogCategory.SECURITY to 2,
+                LogCategory.AUTOFILL to 3,
+                LogCategory.BACKUP to 4,
+                LogCategory.VAULT to 5,
+            ),
+            LogCategory.entries.associateWith(LogCategory::wireId),
+        )
+        assertEquals(
+            mapOf(
+                ExceptionKind.DATABASE_IO to 0,
+                ExceptionKind.CRYPTO to 1,
+                ExceptionKind.AUTHENTICATION to 2,
+                ExceptionKind.PLATFORM to 3,
+                ExceptionKind.LIFECYCLE to 4,
+                ExceptionKind.IO to 5,
+                ExceptionKind.UNKNOWN to 6,
+            ),
+            ExceptionKind.entries.associateWith(ExceptionKind::wireId),
+        )
+        LogLevel.entries.forEach { assertEquals(it, LogLevel.fromWireId(it.wireId)) }
+        LogCategory.entries.forEach { assertEquals(it, LogCategory.fromWireId(it.wireId)) }
+        ExceptionKind.entries.forEach { assertEquals(it, ExceptionKind.fromWireId(it.wireId)) }
     }
 
     @Test
@@ -46,7 +75,6 @@ class LogRecordCodecTest {
         val encoded = LogRecordCodec.encode(record)
 
         assertEquals(record, LogRecordCodec.decode(encoded))
-        assertFalse(encoded.decodeToString().contains("DGN-"))
     }
 
     @Test
@@ -68,21 +96,6 @@ class LogRecordCodecTest {
         val malformed = encoded.copyOf().also { it[eventOffset] = 0xC3.toByte() }
         assertThrows(CharacterCodingException::class.java) {
             LogRecordCodec.decode(malformed)
-        }
-    }
-
-    @Test
-    fun `sanitized record boundary refuses pending unhashed identifiers`() {
-        assertThrows(IllegalArgumentException::class.java) {
-            LogFields.fromSanitized(
-                mapOf(
-                    LogFieldKey("target_package") to
-                        LogValue.HashedIdentifierInput(
-                            com.aozijx.passly.core.observability.IdentifierNamespace.TARGET_PACKAGE,
-                            "com.example.secret",
-                        ),
-                ),
-            )
         }
     }
 

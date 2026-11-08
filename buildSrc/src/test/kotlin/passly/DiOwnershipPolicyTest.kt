@@ -2,7 +2,6 @@ package passly
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class DiOwnershipPolicyTest {
     @Test
@@ -30,7 +29,7 @@ class DiOwnershipPolicyTest {
     }
 
     @Test
-    fun presentationCannotBindADataImplementation() {
+    fun featurePresentationCannotBindADataImplementation() {
         val source =
             EditorSource(
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/VaultBindingModule.kt",
@@ -46,12 +45,12 @@ class DiOwnershipPolicyTest {
                     """.trimIndent(),
             )
 
-        assertTrue(
+        assertEquals(
+            setOf("LAYER_FEATURE_PRESENTATION", "PRESENTATION_DI_MODULE"),
             SourceBoundaryVerifier
-                .verify(
-                    listOf(source),
-                    SourceBoundaryPolicy.generalRules,
-                ).any { it.ruleId == "PRESENTATION_DI_MODULE" },
+                .verify(listOf(source), SourceBoundaryPolicy.generalRules)
+                .map { it.ruleId }
+                .toSet(),
         )
     }
 

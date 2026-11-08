@@ -21,16 +21,28 @@ class EventAggregatorTest {
     }
 
     @Test
-    fun `lru eviction and window flush emit bounded snapshots`() {
+    fun `least recently used and expired buckets emit bounded snapshots`() {
         val aggregator = EventAggregator(capacity = 2, windowMs = 5, debugSamplePercent = 100)
-        aggregator.record(record(event = EventKey("application.metric_a"), timestamp = 0))
-        aggregator.record(record(event = EventKey("application.metric_b"), timestamp = 1))
-        aggregator.record(record(event = EventKey("application.metric_c"), timestamp = 2))
-        assertEquals(EventKey("application.metric_a"), aggregator.snapshots().single().event)
+        val eventA = EventKey("application.metric_a")
+        val eventB = EventKey("application.metric_b")
+        val eventC = EventKey("application.metric_c")
+        val eventD = EventKey("application.metric_d")
+        aggregator.record(record(event = eventA, timestamp = 0))
+        aggregator.record(record(event = eventB, timestamp = 1))
+        aggregator.record(record(event = eventA, timestamp = 2))
+        aggregator.record(record(event = eventC, timestamp = 3))
 
-        aggregator.record(record(event = EventKey("application.metric_b"), timestamp = 8))
-        assertTrue(aggregator.snapshots().any { it.event == EventKey("application.metric_b") })
-        assertTrue(aggregator.snapshots().size <= 2)
+        val eviction = aggregator.snapshots().single()
+        assertEquals(eventB, eviction.event)
+        assertEquals(1L, eviction.count)
+
+        aggregator.record(record(event = eventD, timestamp = 8))
+
+        val snapshots = aggregator.snapshots()
+        assertEquals(listOf(eventA, eventC), snapshots.map { it.event })
+        assertEquals(listOf(2L, 1L), snapshots.map { it.count })
+        assertEquals(2, snapshots.size)
+        assertEquals(1, aggregator.activeBucketCount)
     }
 
     @Test

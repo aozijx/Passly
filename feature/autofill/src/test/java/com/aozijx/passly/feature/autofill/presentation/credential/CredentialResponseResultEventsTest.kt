@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.autofill.presentation.credential
 
 import android.content.Intent
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -12,26 +13,26 @@ import org.junit.Test
 
 class CredentialResponseResultEventsTest {
     @Test
-    fun `completion produced during route recreation is delivered once without replay`() =
+    fun `completion survives route collector gaps and is delivered once without replay`() =
         runTest {
-            val events = CredentialResponseResultEvents()
-            val completion = CredentialResponseCompletion.Immediate(Intent())
+            val recreatedRouteEvents = CredentialResponseResultEvents()
+            val bufferedCompletion = CredentialResponseCompletion.Immediate(Intent())
 
-            assertTrue(events.publish(completion))
-            assertSame(completion, events.completions.first())
-            assertNull(withTimeoutOrNull(1) { events.completions.first() })
-        }
+            assertTrue(recreatedRouteEvents.publish(bufferedCompletion))
+            assertSame(bufferedCompletion, recreatedRouteEvents.completions.first())
+            assertNull(withTimeoutOrNull(1) { recreatedRouteEvents.completions.first() })
 
-    @Test
-    fun `cancelled route collector does not consume a completion emitted later`() =
-        runTest {
-            val events = CredentialResponseResultEvents()
-            val abandonedCollector = async { events.completions.first() }
+            val cancelledRouteEvents = CredentialResponseResultEvents()
+            val abandonedCollector =
+                async(start = CoroutineStart.UNDISPATCHED) {
+                    cancelledRouteEvents.completions.first()
+                }
+            assertTrue(abandonedCollector.isActive)
             abandonedCollector.cancel()
-            val completion = CredentialResponseCompletion.Immediate(Intent())
+            val laterCompletion = CredentialResponseCompletion.Immediate(Intent())
 
-            assertTrue(events.publish(completion))
-            assertSame(completion, events.completions.first())
-            assertNull(withTimeoutOrNull(1) { events.completions.first() })
+            assertTrue(cancelledRouteEvents.publish(laterCompletion))
+            assertSame(laterCompletion, cancelledRouteEvents.completions.first())
+            assertNull(withTimeoutOrNull(1) { cancelledRouteEvents.completions.first() })
         }
 }

@@ -12,7 +12,7 @@ class RecoveryModeBoundaryTest {
     @Test
     fun `recovery mode hasFullSecureSessionAccess returns false`() {
         val state = RecoverySecureSessionAccessState()
-        assertEquals(true, state.isDatabaseOpen())
+        assertEquals(true, state.isUnlocked())
         assertEquals(false, state.hasFullSecureSessionAccess())
         assertEquals(true, state.isRecoveryMode())
     }
@@ -20,7 +20,7 @@ class RecoveryModeBoundaryTest {
     @Test
     fun `authenticated mode hasFullSecureSessionAccess returns true`() {
         val state = AuthenticatedSecureSessionAccessState()
-        assertEquals(true, state.isDatabaseOpen())
+        assertEquals(true, state.isUnlocked())
         assertEquals(true, state.hasFullSecureSessionAccess())
         assertEquals(true, state.hasAutofillSessionAccess())
         assertEquals(false, state.isRecoveryMode())
@@ -29,7 +29,7 @@ class RecoveryModeBoundaryTest {
     @Test
     fun `autofill session opens storage without granting full app access`() {
         val state = AutofillSecureSessionAccessState()
-        assertEquals(true, state.isDatabaseOpen())
+        assertEquals(true, state.isUnlocked())
         assertEquals(false, state.hasFullSecureSessionAccess())
         assertEquals(true, state.hasAutofillSessionAccess())
     }
@@ -37,7 +37,7 @@ class RecoveryModeBoundaryTest {
     @Test
     fun `locked mode hasFullSecureSessionAccess returns false`() {
         val state = LockedSecureSessionAccessState()
-        assertEquals(false, state.isDatabaseOpen())
+        assertEquals(false, state.isUnlocked())
         assertEquals(false, state.hasFullSecureSessionAccess())
         assertEquals(false, state.isRecoveryMode())
     }
@@ -45,7 +45,7 @@ class RecoveryModeBoundaryTest {
     @Test
     fun `locking storage is not exposed as full session access`() {
         val state = LockingSecureSessionAccessState()
-        assertEquals(true, state.isDatabaseOpen())
+        assertEquals(true, state.isUnlocked())
         assertEquals(false, state.hasFullSecureSessionAccess())
     }
 

@@ -7,7 +7,7 @@ import org.junit.Test
 
 class SensitiveFieldPresenceTest {
     @Test
-    fun `presence exposes only keys and not values`() {
+    fun `presence distinguishes declared from undeclared sensitive keys`() {
         val presence =
             SensitiveFieldPresence(
                 entryId = EntryId("card"),

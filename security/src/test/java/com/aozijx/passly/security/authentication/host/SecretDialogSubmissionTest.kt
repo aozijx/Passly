@@ -13,22 +13,18 @@ import org.junit.Test
 
 class SecretDialogSubmissionTest {
     @Test
-    fun lateSecretInputIsClearedWhenThereIsNoSecretRequest() {
-        val chars = charArrayOf('s', 'e', 'c', 'r', 'e', 't')
-
-        submitSecretInput(
-            request = null,
-            expectedIdentity = AuthUiRequestId(),
-            chars = chars,
-        )
-
-        assertArrayEquals(CharArray(6), chars)
-    }
-
-    @Test
-    fun secretInputIsClearedWhenDialogHasChooseMethodRequest() =
+    fun lateSecretInputIsClearedWhenThereIsNoSecretRequest() =
         runBlocking {
-            val chars = charArrayOf('s', 'e', 'c', 'r', 'e', 't')
+            val noRequestChars = charArrayOf('s', 'e', 'c', 'r', 'e', 't')
+
+            submitSecretInput(
+                request = null,
+                expectedIdentity = AuthUiRequestId(),
+                chars = noRequestChars,
+            )
+            assertArrayEquals(CharArray(6), noRequestChars)
+
+            val chooseMethodChars = charArrayOf('s', 'e', 'c', 'r', 'e', 't')
             val identity = AuthUiRequestId()
             val pendingRequest =
                 launch(start = CoroutineStart.UNDISPATCHED) {
@@ -42,12 +38,13 @@ class SecretDialogSubmissionTest {
                                     identity = identity,
                                 ),
                             expectedIdentity = identity,
-                            chars = chars,
+                            chars = chooseMethodChars,
                         )
                     }
                 }
 
-            assertArrayEquals(CharArray(6), chars)
+            assertArrayEquals(CharArray(6), chooseMethodChars)
+            assertFalse(pendingRequest.isCompleted)
             pendingRequest.cancel()
         }
 

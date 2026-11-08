@@ -47,11 +47,16 @@ class AutofillOriginAttackInstrumentedTest {
             assertTrue("the custom structure must contain both editable test fields", preferences.getInt(CAPTURE_FIELD_COUNT, 0) >= 2)
         } finally {
             testContext.sendBroadcast(Intent(FINISH_ATTACK_ACTIVITY).setPackage(testContext.packageName))
-            if (previousAutofillService.isBlank() || previousAutofillService == "null") {
+            if (previousAutofillService == "null") {
                 shell("settings delete secure autofill_service")
             } else {
-                shell("settings put secure autofill_service $previousAutofillService")
+                shell("settings put secure autofill_service \"$previousAutofillService\"")
             }
+            assertEquals(
+                "secure autofill_service setting was not restored",
+                previousAutofillService,
+                shell("settings get secure autofill_service"),
+            )
         }
     }
 

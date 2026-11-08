@@ -28,13 +28,13 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionComparisonUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionValueUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionSheetUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionItemUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionListUiState
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionSheetUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -65,7 +65,7 @@ class RevisionHistorySheetTest {
         model.value =
             DetailRevisionSheetUiModel.ComparisonPage(
                 "revision-1",
-                DetailRevisionComparisonUiState.Ready(emptyList(), DetailRevisionRestoreUiState.Idle),
+                DetailRevisionComparisonUiState.Ready(emptyList(), DetailRevisionRestorePhase.Idle),
             )
         compose.waitForIdle()
         compose
@@ -108,7 +108,7 @@ class RevisionHistorySheetTest {
                                     action.revisionId,
                                     DetailRevisionComparisonUiState.Ready(
                                         differences,
-                                        DetailRevisionRestoreUiState.Idle,
+                                        DetailRevisionRestorePhase.Idle,
                                     ),
                                 )
                         }
@@ -182,7 +182,7 @@ class RevisionHistorySheetTest {
                         "revision-1",
                         DetailRevisionComparisonUiState.Ready(
                             emptyList(),
-                            DetailRevisionRestoreUiState.Restoring,
+                            DetailRevisionRestorePhase.Restoring,
                         ),
                     ),
                     onAction = actions::add,

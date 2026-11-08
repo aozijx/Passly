@@ -40,7 +40,7 @@ import org.junit.Test
 class DiagnosticsExportEncodersTest {
     private val manifest =
         ExportManifest(
-            schemaVersion = 2,
+            schemaVersion = 1,
             generatedAtMs = 1_700_000_000_999,
             recordCount = 2,
             appName = "Passly",
@@ -72,6 +72,7 @@ class DiagnosticsExportEncodersTest {
                 .getValue("type")
                 .jsonPrimitive.content,
         )
+        assertEquals(1, objects.first().getValue("schema_version").jsonPrimitive.content.toInt())
         assertEquals(listOf("event_00000001", "event_00000002"), objects.drop(1).map { it.getValue("event_id").jsonPrimitive.content })
         val firstEvent = objects[1]
         assertEquals("ERROR", firstEvent.getValue("level").jsonPrimitive.content)
@@ -104,7 +105,7 @@ class DiagnosticsExportEncodersTest {
     fun `standalone tsv has manifest header and fixed time first eight columns`() {
         val lines = encode(LogFormat.TSV, listOf(record("event_00000001", 100, 11))).lines()
 
-        assertTrue(lines[0].startsWith("# schema_version=2"))
+        assertTrue(lines[0].startsWith("# schema_version=1"))
         assertEquals("time\tlevel\tevent\toutcome\tdetails\texception\ttrace\tsession", lines[1])
         assertEquals(8, lines[2].split('\t').size)
         assertTrue(lines[2].startsWith("1970-01-01T00:00:00.100Z\tERROR\t"))

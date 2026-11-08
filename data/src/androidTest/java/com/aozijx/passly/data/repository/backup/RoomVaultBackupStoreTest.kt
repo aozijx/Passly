@@ -204,8 +204,11 @@ class RoomVaultBackupStoreTest {
                     ),
                 ).resources.single()
             assertEquals(source.id, restored.id)
+            assertEquals(source.entryId, restored.entryId)
+            assertEquals(source.kind, restored.kind)
             assertEquals(source.fileName, restored.fileName)
             assertEquals(source.mimeType, restored.mimeType)
+            assertEquals(source.createdAt, restored.createdAt)
             assertArrayEquals(content, restored.content)
         }
 

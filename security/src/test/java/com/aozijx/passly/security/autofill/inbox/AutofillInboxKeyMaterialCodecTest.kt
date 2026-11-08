@@ -10,6 +10,7 @@ import javax.crypto.AEADBadTagException
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
+import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
@@ -20,17 +21,23 @@ class AutofillInboxKeyMaterialCodecTest {
     private val codec = AutofillInboxKeyMaterialCodec()
     private val dek = ByteArray(32) { it.toByte() }
 
+    @After
+    fun wipeDekFixture() {
+        dek.fill(0)
+    }
+
     @Test
     fun generatedKeyMaterialRoundTripsAndEncryptsWithThePublishedKey() {
         val material = codec.generateAndWrap(dek)
+        val publicKey = codec.validatedPublicKey(material)
 
         assertEquals(AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT, material.formatVersion)
         assertEquals(KEY_ID_BYTES, material.keyId.size)
         assertEquals(FINGERPRINT_BYTES, material.publicKeySha256.size)
-        assertEquals(RSA_BITS, (codec.decodePublicKey(material.publicKey) as RSAPublicKey).modulus.bitLength())
+        assertEquals(RSA_BITS, publicKey.modulus.bitLength())
 
         val plaintext = byteArrayOf(7, 8, 9)
-        val cipher = rsaCipher(Cipher.ENCRYPT_MODE, codec.decodePublicKey(material.publicKey))
+        val cipher = rsaCipher(Cipher.ENCRYPT_MODE, publicKey)
         val ciphertext = cipher.doFinal(plaintext)
         val decrypted =
             codec.withPrivateKey(material, dek) { privateKey ->

@@ -21,7 +21,9 @@ class OtpSecretCodecTest {
             val bytes = plain.toByteArray(Charsets.US_ASCII)
             assertEquals(encoded, OtpSecretCodec.encodeBase32(bytes))
             assertArrayEquals(bytes, OtpSecretCodec.decode(encoded, OtpSecretEncoding.BASE32))
+            assertEquals(encoded, OtpSecretCodec.canonicalBase32(encoded, OtpSecretEncoding.BASE32))
         }
+        assertEquals("MZXW6", OtpSecretCodec.canonicalBase32("Zm9v", OtpSecretEncoding.BASE64))
     }
 
     @Test
@@ -30,7 +32,7 @@ class OtpSecretCodecTest {
             assertEquals(
                 OtpGenerationError.InvalidSecret,
                 assertThrows(OtpGenerationError::class.java) {
-                    OtpSecretCodec.decode(value, OtpSecretEncoding.BASE32)
+                    OtpSecretCodec.canonicalBase32(value, OtpSecretEncoding.BASE32)
                 },
             )
         }
@@ -38,7 +40,7 @@ class OtpSecretCodecTest {
             assertEquals(
                 OtpGenerationError.InvalidSecret,
                 assertThrows(OtpGenerationError::class.java) {
-                    OtpSecretCodec.decode(value, OtpSecretEncoding.BASE64)
+                    OtpSecretCodec.canonicalBase32(value, OtpSecretEncoding.BASE64)
                 },
             )
         }

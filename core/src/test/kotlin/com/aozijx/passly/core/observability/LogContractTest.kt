@@ -53,6 +53,21 @@ class LogContractTest {
     }
 
     @Test
+    fun `sanitized fields reject pending unhashed identifiers`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            LogFields.fromSanitized(
+                mapOf(
+                    LogFieldKey("target_package") to
+                        LogValue.HashedIdentifierInput(
+                            IdentifierNamespace.TARGET_PACKAGE,
+                            "com.example.secret",
+                        ),
+                ),
+            )
+        }
+    }
+
+    @Test
     fun `warn and error require code reason and throwable at the API boundary`() {
         val warnContract:
             Logger.(EventKey, ErrorCode, ReasonCode, Throwable, LogFields) -> Unit =

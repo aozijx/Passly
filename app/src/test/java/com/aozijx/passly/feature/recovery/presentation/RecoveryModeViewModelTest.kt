@@ -40,12 +40,12 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(PASSWORD))
             val submittedPassword =
-                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).newPassword as OwnedChars
+                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).draft.newPassword as OwnedChars
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
 
-            val submittedSetup = viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing
-            assertTrue(submittedSetup.newPassword.isEmpty)
+            val submittedSetup = viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Saving
+            assertTrue(submittedSetup.draft.newPassword.isEmpty)
 
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged("another-long-password"))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged("another-long-password"))
@@ -56,8 +56,8 @@ class RecoveryModeViewModelTest {
 
             assertEquals(1, provisioner.calls)
             assertEquals(
-                RecoveryPasswordSetupPhase.Saving,
-                (viewModel.uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing)?.phase,
+                RecoveryPasswordSetup.Saving::class,
+                viewModel.uiState.value.passwordSetup::class,
             )
 
             gate.complete(AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD))
@@ -83,7 +83,7 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(PASSWORD))
             val submittedPassword =
-                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).newPassword as OwnedChars
+                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).draft.newPassword as OwnedChars
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
 
@@ -122,11 +122,8 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
 
-            val setup = viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing
-            assertEquals(
-                RecoveryPasswordSetupPhase.Failed(RecoveryPasswordSetupFailure.SetupFailed),
-                setup.phase,
-            )
+            val setup = viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Failed
+            assertEquals(RecoveryPasswordSetupFailure.SetupFailed, setup.reason)
             assertTrue(provisioner.submitted.single().all { it == '\u0000' })
         }
 
@@ -152,8 +149,8 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
             assertEquals(
-                RecoveryPasswordSetupPhase.Idle,
-                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).phase,
+                RecoveryPasswordSetup.Editing::class,
+                viewModel.uiState.value.passwordSetup::class,
             )
 
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
@@ -163,8 +160,8 @@ class RecoveryModeViewModelTest {
 
             assertEquals(2, provisioner.calls)
             assertEquals(
-                RecoveryPasswordSetupPhase.Failed(RecoveryPasswordSetupFailure.SetupFailed),
-                (viewModel.uiState.value.passwordSetup as RecoveryPasswordSetup.Editing).phase,
+                RecoveryPasswordSetup.Failed::class,
+                viewModel.uiState.value.passwordSetup::class,
             )
         }
 

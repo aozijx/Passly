@@ -1,6 +1,6 @@
-package com.aozijx.passly.domain.authentication
+package com.aozijx.passly.domain.access.policy
 
-import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,5 +16,16 @@ class AppPasswordPolicyTest {
     fun acceptsPasswordsAtOrAboveMinimumLength() {
         assertTrue(AppPasswordPolicy.DEFAULT.acceptsLength(AppPasswordPolicy.DEFAULT.minimumLength))
         assertTrue(AppPasswordPolicy.DEFAULT.acceptsLength(128))
+    }
+
+    @Test
+    fun `validation reports every violated rule`() {
+        assertEquals(
+            setOf(
+                AppPasswordViolation.TOO_SHORT,
+                AppPasswordViolation.INSUFFICIENT_CHARACTER_VARIETY,
+            ),
+            AppPasswordPolicy.DEFAULT.validate("111".toCharArray()),
+        )
     }
 }

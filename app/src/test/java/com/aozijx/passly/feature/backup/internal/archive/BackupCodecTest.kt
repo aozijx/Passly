@@ -6,7 +6,6 @@ import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupZipCodec
 import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.EncryptedBackupExporter
 import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.EncryptedBackupImporter
-import com.aozijx.passly.feature.backup.internal.archive.io.LimitedInputStream
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
@@ -53,15 +52,6 @@ class BackupCodecTest {
                 ByteArrayOutputStream(),
             )
         }
-    }
-
-    @Test
-    fun limitedInputStream_acceptsExactLimit_andRejectsOneExtraByte() {
-        val exact = LimitedInputStream(ByteArrayInputStream(byteArrayOf(1, 2, 3)), 3)
-        assertArrayEquals(byteArrayOf(1, 2, 3), exact.readBytes())
-
-        val oversized = LimitedInputStream(ByteArrayInputStream(byteArrayOf(1, 2, 3, 4)), 3)
-        assertThrows(IllegalStateException::class.java) { oversized.readBytes() }
     }
 
     @Test

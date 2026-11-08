@@ -5,64 +5,21 @@ import kotlin.test.assertEquals
 
 class PresentationUiApiVerifierTest {
     @Test
-    fun reportsVerticalFeatureUiComposableWhenBusinessParametersExceedThreshold() {
-        val path = "app/src/main/java/com/example/feature/recovery/presentation/ui/RecoveryScreen.kt"
+    fun reportsLongComposablesAcrossPresentationUiAreas() {
+        val settingsPath = "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt"
         val signals =
             PresentationUiApiVerifier.inspect(
                 listOf(
-                    EditorSource(
-                        path = path,
-                        content =
-                            """
-                            @Composable
-                            internal fun RecoveryScreen(
-                                one: String, two: String, three: String, four: String, five: String,
-                                six: String, seven: String, eight: String, nine: String,
-                            ) = Unit
-                            """.trimIndent(),
+                    longComposable(
+                        path = "app/src/main/java/com/example/feature/recovery/presentation/ui/RecoveryScreen.kt",
+                        functionName = "RecoveryScreen",
                     ),
-                ),
-            )
-
-        assertEquals(
-            listOf("$path: RecoveryScreen has 9 business parameters (threshold 8)"),
-            signals,
-        )
-    }
-
-    @Test
-    fun reportsSharedPresentationComposableWhenBusinessParametersExceedThreshold() {
-        val path = "app/src/main/java/com/example/presentation/shared/component/SharedCard.kt"
-        val signals =
-            PresentationUiApiVerifier.inspect(
-                listOf(
-                    EditorSource(
-                        path = path,
-                        content =
-                            """
-                            @Composable
-                            internal fun SharedCard(
-                                one: String, two: String, three: String, four: String, five: String,
-                                six: String, seven: String, eight: String, nine: String,
-                            ) = Unit
-                            """.trimIndent(),
+                    longComposable(
+                        path = "app/src/main/java/com/example/presentation/shared/component/SharedCard.kt",
+                        functionName = "SharedCard",
                     ),
-                ),
-            )
-
-        assertEquals(
-            listOf("$path: SharedCard has 9 business parameters (threshold 8)"),
-            signals,
-        )
-    }
-
-    @Test
-    fun reportsNamedPresentationUiComposableWhenBusinessParametersExceedThreshold() {
-        val signals =
-            PresentationUiApiVerifier.inspect(
-                listOf(
                     EditorSource(
-                        path = "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt",
+                        path = settingsPath,
                         content =
                             """
                             @Composable
@@ -86,8 +43,12 @@ class PresentationUiApiVerifierTest {
 
         assertEquals(
             listOf(
+                "app/src/main/java/com/example/feature/recovery/presentation/ui/RecoveryScreen.kt: " +
+                    "RecoveryScreen has 9 business parameters (threshold 8)",
                 "app/src/main/java/com/example/feature/settings/presentation/ui/SettingsContent.kt: " +
                     "SettingsContent has 9 business parameters (threshold 8)",
+                "app/src/main/java/com/example/presentation/shared/component/SharedCard.kt: " +
+                    "SharedCard has 9 business parameters (threshold 8)",
             ),
             signals,
         )
@@ -144,4 +105,20 @@ class PresentationUiApiVerifierTest {
 
         assertEquals(emptyList(), signals)
     }
+
+    private fun longComposable(
+        path: String,
+        functionName: String,
+    ) =
+        EditorSource(
+            path = path,
+            content =
+                """
+                @Composable
+                internal fun $functionName(
+                    one: String, two: String, three: String, four: String, five: String,
+                    six: String, seven: String, eight: String, nine: String,
+                ) = Unit
+                """.trimIndent(),
+        )
 }

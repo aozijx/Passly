@@ -1,7 +1,10 @@
 package com.aozijx.passly.feature.vault.history
 
 import com.aozijx.passly.core.error.model.Conflict
+import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
@@ -21,6 +24,9 @@ import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
 import com.aozijx.passly.domain.entry.model.history.RedactedEntryRevision
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -30,7 +36,7 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.CancellationException
 import org.junit.Assert.assertEquals
@@ -64,7 +70,7 @@ class EntryRevisionUseCasesTest {
         }
 
     @Test
-    fun `reveal cancellation is not reported as an error`() =
+    fun `reveal cancellation and denial return without reading revision secrets`() =
         runBlocking {
             val repository = RecordingRevisionRepository()
             val useCase =
@@ -82,6 +88,24 @@ class EntryRevisionUseCasesTest {
 
             assertSame(RevisionOperationResult.Cancelled, result)
             assertEquals(null, repository.revealedKeys)
+
+            val failure = AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE)
+            val deniedRepository = RecordingRevisionRepository()
+            val deniedUseCase =
+                RevealRevisionFieldsUseCase(
+                    deniedRepository,
+                    RecordingAuthorizationGate(AuthorizationResult.Denied(failure)),
+                )
+
+            assertEquals(
+                RevisionOperationResult.AuthenticationDenied(failure),
+                deniedUseCase(
+                    EntryId("entry"),
+                    EntryRevisionId("revision"),
+                    setOf(SensitiveFieldKey.PASSWORD),
+                ),
+            )
+            assertEquals(null, deniedRepository.revealedKeys)
         }
 
     @Test
@@ -129,6 +153,80 @@ class EntryRevisionUseCasesTest {
             assertTrue(result is RevisionOperationResult.Succeeded)
             assertSame(value, (result as RevisionOperationResult.Succeeded).value.single().value)
             assertFalse(value.isWiped)
+        }
+
+    @Test
+    fun `comparison selects newest revision and maps each load failure`() =
+        runBlocking {
+            val older = revisionMetadata("older", version = 4)
+            val selected = older.id
+            val newest = revisionMetadata("newest", version = 9)
+            val metadata = listOf(newest, older)
+            val historical = snapshot(emptySet()).copy(metadata = older)
+            val current =
+                snapshot(emptySet()).copy(
+                    metadata = newest,
+                    profile = EntryProfile("Current"),
+                )
+            val successRepository =
+                RecordingRevisionRepository(
+                    metadata = metadata,
+                    redactedResults =
+                        mapOf(
+                            selected to AppResult.success(historical),
+                            newest.id to AppResult.success(current),
+                        ),
+                )
+
+            val comparison =
+                CompareEntryRevisionUseCase(successRepository)(EntryId("entry"), selected)
+
+            assertTrue(comparison is RevisionOperationResult.Succeeded)
+            assertEquals(listOf(selected, newest.id), successRepository.loadedRevisionIds)
+            val titleDifference =
+                (comparison as RevisionOperationResult.Succeeded)
+                    .value
+                    .single { it.field == RevisionFieldId.Title }
+            assertEquals(RevisionDifferenceKind.CHANGED, titleDifference.kind)
+            assertEquals(RevisionFieldValue.Text("Historical"), titleDifference.before)
+            assertEquals(RevisionFieldValue.Text("Current"), titleDifference.after)
+
+            val historicalFailureRepository =
+                RecordingRevisionRepository(
+                    metadata = metadata,
+                    redactedResults = mapOf(selected to AppResult.failure(Conflict())),
+                )
+            val historicalFailure =
+                CompareEntryRevisionUseCase(historicalFailureRepository)(
+                    EntryId("entry"),
+                    selected,
+                )
+            assertSame(RevisionOperationResult.Stale, historicalFailure)
+            assertEquals(listOf(selected), historicalFailureRepository.loadedRevisionIds)
+
+            val currentFailureRepository =
+                RecordingRevisionRepository(
+                    metadata = metadata,
+                    redactedResults =
+                        mapOf(
+                            selected to AppResult.success(historical),
+                            newest.id to AppResult.failure(NotFound()),
+                        ),
+                )
+            val currentFailure =
+                CompareEntryRevisionUseCase(currentFailureRepository)(
+                    EntryId("entry"),
+                    selected,
+                )
+            assertSame(RevisionOperationResult.Missing, currentFailure)
+            assertEquals(listOf(selected, newest.id), currentFailureRepository.loadedRevisionIds)
+
+            val noMetadataRepository = RecordingRevisionRepository()
+            assertSame(
+                RevisionOperationResult.Missing,
+                CompareEntryRevisionUseCase(noMetadataRepository)(EntryId("entry"), selected),
+            )
+            assertTrue(noMetadataRepository.loadedRevisionIds.isEmpty())
         }
 
     @Test
@@ -210,21 +308,26 @@ class EntryRevisionUseCasesTest {
         private val snapshot: RedactedEntryRevision? = null,
         private val restoreResult: AppResult<EntryVersion> = AppResult.success(EntryVersion(8)),
         private val revealedValues: List<OwnedChars> = emptyList(),
+        private val metadata: List<EntryRevisionMetadata> = emptyList(),
+        private val redactedResults: Map<EntryRevisionId, AppResult<RedactedEntryRevision>> = emptyMap(),
     ) : EntryRevisionRepository {
         var revealedKeys: Set<SensitiveFieldKey>? = null
+        val loadedRevisionIds = mutableListOf<EntryRevisionId>()
         var restoredVersion: EntryVersion? = null
         var restorePermit: AuthorizationPermit? = null
         var restoreCalls: Int = 0
 
         override suspend fun initializeHistory(): AppResult<Unit> = AppResult.success(Unit)
 
-        override fun observeMetadata(entryId: EntryId): Flow<List<com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata>> =
-            emptyFlow()
+        override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> = flowOf(metadata)
 
         override suspend fun loadRedacted(
             entryId: EntryId,
             revisionId: EntryRevisionId,
-        ) = snapshot?.let { AppResult.success(it) } ?: error("unused")
+        ): AppResult<RedactedEntryRevision> {
+            loadedRevisionIds += revisionId
+            return redactedResults[revisionId] ?: snapshot?.let { AppResult.success(it) } ?: error("unused")
+        }
 
         override suspend fun reveal(
             entryId: EntryId,
@@ -320,5 +423,17 @@ class EntryRevisionUseCasesTest {
                             .LoginCredential(),
                 ),
             sensitiveFieldKeys = keys,
+        )
+
+    private fun revisionMetadata(
+        id: String,
+        version: Int,
+    ) =
+        EntryRevisionMetadata(
+            id = EntryRevisionId(id),
+            entryId = EntryId("entry"),
+            version = EntryVersion(version),
+            createdAtMs = version.toLong(),
+            change = RevisionChange.VALUE_CHANGED,
         )
 }

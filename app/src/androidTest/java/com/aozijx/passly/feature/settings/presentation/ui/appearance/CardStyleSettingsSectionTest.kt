@@ -82,6 +82,7 @@ class CardStyleSettingsSectionTest {
         val defaultSize = composeRule.onNodeWithTag(loginDefault).fetchSemanticsNode().size
         listOf(loginPassword, otpDefault, otpTotp).forEach { tag ->
             val size = composeRule.onNodeWithTag(tag).fetchSemanticsNode().size
+            assertEquals(defaultSize.width, size.width)
             assertEquals(defaultSize.height, size.height)
         }
 

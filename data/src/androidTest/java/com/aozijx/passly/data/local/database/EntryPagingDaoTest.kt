@@ -59,13 +59,15 @@ class EntryPagingDaoTest {
                     capabilityFlags = databaseFlag(EntryCapability.PASSWORD),
                 ),
             )
-            database.entryActivityCommandDao().insertAllIdempotent(
+            val activities =
                 listOf(
                     activity("view", "mail", ActivityType.VIEW, 100L),
                     activity("copy", "mail", ActivityType.COPY_PASSWORD, 200L),
                     activity("update", "mail", ActivityType.UPDATE, 300L),
-                ),
-            )
+                )
+            for (activity in activities) {
+                database.entryActivityCommandDao().insertIdempotent(activity)
+            }
             database.entryLinkCommandDao().upsert(
                 EntryLinkEntity(
                     linkId = "member",
@@ -122,17 +124,195 @@ class EntryPagingDaoTest {
         }
 
     @Test
+    fun pagingQuery_searchesEveryStructuredEntryField() =
+        runBlocking {
+            val cases =
+                listOf(
+                    "title" to entry("title", EntryType.LOGIN, "TITLE-MATCH"),
+                    "username" to
+                        entry("username", EntryType.LOGIN, "Neutral", username = "USER-MATCH"),
+                    "url" to
+                        entry("url", EntryType.LOGIN, "Neutral", primaryUrl = "https://URL-MATCH.example"),
+                    "tag" to entry("tag", EntryType.LOGIN, "Neutral", tags = setOf("TAG-MATCH")),
+                    "domain" to
+                        entry("domain", EntryType.LOGIN, "Neutral", domains = setOf("DOMAIN-MATCH.example")),
+                    "application" to
+                        entry("application", EntryType.LOGIN, "Neutral", applicationIds = setOf("APP-MATCH.ID")),
+                )
+            cases.forEach { (_, entry) -> insert(entry) }
+
+            cases.forEach { (search, expectedEntry) ->
+                val rows = load(EntryListQuery(searchText = search.uppercase()))
+
+                assertEquals(listOf(expectedEntry.entryId), rows.map { it.entry.entryId })
+            }
+        }
+
+    @Test
+    fun pagingQuery_resolvesOtpAndRecoveryGroupingFromProtectedEntry() =
+        runBlocking {
+            insert(entry("account", EntryType.ACCOUNT, "Account"))
+            insert(entry("login", EntryType.LOGIN, "Login"))
+            insert(entry("otp", EntryType.OTP, "OTP"))
+            insert(entry("recovery", EntryType.RECOVERY_CODE, "Recovery"))
+            database.entryLinkCommandDao().upsert(
+                EntryLinkEntity(
+                    linkId = "login-account",
+                    sourceEntryId = "login",
+                    targetEntryId = "account",
+                    relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
+                    createdAt = 1L,
+                    updatedAt = 1L,
+                ),
+            )
+            database.entryLinkCommandDao().upsert(
+                EntryLinkEntity(
+                    linkId = "otp-login",
+                    sourceEntryId = "otp",
+                    targetEntryId = "login",
+                    relationType = EntryRelationType.OTP_FOR,
+                    createdAt = 2L,
+                    updatedAt = 2L,
+                ),
+            )
+            database.entryLinkCommandDao().upsert(
+                EntryLinkEntity(
+                    linkId = "recovery-login",
+                    sourceEntryId = "recovery",
+                    targetEntryId = "login",
+                    relationType = EntryRelationType.RECOVERY_FOR,
+                    createdAt = 3L,
+                    updatedAt = 3L,
+                ),
+            )
+
+            val rows =
+                load(
+                    EntryListQuery(
+                        sort =
+                            EntrySort(
+                                EntrySortField.ID,
+                                SortDirection.ASC,
+                                pinFavorites = false,
+                                tieBreaker = EntrySortField.CREATED_AT,
+                            ),
+                    ),
+                )
+
+            assertEquals(
+                mapOf("account" to null, "login" to "account", "otp" to "account", "recovery" to "login"),
+                rows.associate { it.entry.entryId to it.accountId },
+            )
+        }
+
+    @Test
+    fun pagingQuery_treatsLikeMetacharactersAsLiteralSearchText() =
+        runBlocking {
+            insert(entry("percent-literal", EntryType.LOGIN, "literal%needle"))
+            insert(entry("percent-wildcard", EntryType.LOGIN, "literalXneedle"))
+            insert(entry("underscore-literal", EntryType.LOGIN, "under_score"))
+            insert(entry("underscore-wildcard", EntryType.LOGIN, "underXscore"))
+            insert(entry("backslash-literal", EntryType.LOGIN, "back\\slash"))
+            insert(entry("backslash-absent", EntryType.LOGIN, "backslash"))
+
+            assertEquals(
+                listOf("percent-literal"),
+                load(EntryListQuery(searchText = "literal%needle")).map { it.entry.entryId },
+            )
+            assertEquals(
+                listOf("underscore-literal"),
+                load(EntryListQuery(searchText = "under_score")).map { it.entry.entryId },
+            )
+            assertEquals(
+                listOf("backslash-literal"),
+                load(EntryListQuery(searchText = "back\\slash")).map { it.entry.entryId },
+            )
+        }
+
+    @Test
+    fun pagingQuery_sortsByTimestampsAndUsageAndPinsFavorites() =
+        runBlocking {
+            insert(entry("a", EntryType.LOGIN, "A", createdAt = 10L, updatedAt = 30L))
+            insert(entry("b", EntryType.LOGIN, "B", createdAt = 20L, updatedAt = 10L))
+            insert(entry("c", EntryType.LOGIN, "C", createdAt = 5L, updatedAt = 20L, favorite = true))
+            listOf(
+                activity("a-view", "a", ActivityType.VIEW, 100L),
+                activity("a-update-1", "a", ActivityType.UPDATE, 200L),
+                activity("a-update-2", "a", ActivityType.UPDATE, 300L),
+                activity("a-update-3", "a", ActivityType.UPDATE, 400L),
+                activity("b-view-1", "b", ActivityType.VIEW, 500L),
+                activity("b-view-2", "b", ActivityType.COPY_PASSWORD, 600L),
+            ).forEach { activity -> database.entryActivityCommandDao().insertIdempotent(activity) }
+
+            suspend fun ids(
+                field: EntrySortField,
+                direction: SortDirection,
+                pinFavorites: Boolean = false,
+            ) =
+                load(
+                    EntryListQuery(
+                        sort =
+                            EntrySort(
+                                field,
+                                direction,
+                                pinFavorites = pinFavorites,
+                                tieBreaker =
+                                    if (field == EntrySortField.ID) {
+                                        EntrySortField.CREATED_AT
+                                    } else {
+                                        EntrySortField.ID
+                                    },
+                            ),
+                    ),
+                ).map { it.entry.entryId }
+
+            assertEquals(listOf("a", "b", "c"), ids(EntrySortField.TITLE, SortDirection.ASC))
+            assertEquals(listOf("c", "b", "a"), ids(EntrySortField.TITLE, SortDirection.DESC))
+            assertEquals(listOf("c", "a", "b"), ids(EntrySortField.CREATED_AT, SortDirection.ASC))
+            assertEquals(listOf("b", "a", "c"), ids(EntrySortField.CREATED_AT, SortDirection.DESC))
+            assertEquals(listOf("b", "c", "a"), ids(EntrySortField.UPDATED_AT, SortDirection.ASC))
+            assertEquals(listOf("a", "c", "b"), ids(EntrySortField.UPDATED_AT, SortDirection.DESC))
+            assertEquals(listOf("c", "a", "b"), ids(EntrySortField.USAGE_FREQUENCY, SortDirection.ASC))
+            assertEquals(listOf("b", "a", "c"), ids(EntrySortField.USAGE_FREQUENCY, SortDirection.DESC))
+            assertEquals(listOf("c", "a", "b"), ids(EntrySortField.ID, SortDirection.ASC, pinFavorites = true))
+        }
+
+    @Test
+    fun pagingQuery_usesStableDirectionForTieBreaker() =
+        runBlocking {
+            insert(entry("a-newer", EntryType.LOGIN, "Same", createdAt = 2L))
+            insert(entry("z-older", EntryType.LOGIN, "Same", createdAt = 1L))
+
+            val rows =
+                load(
+                    EntryListQuery(
+                        sort =
+                            EntrySort(
+                                EntrySortField.TITLE,
+                                SortDirection.ASC,
+                                pinFavorites = false,
+                                tieBreaker = EntrySortField.CREATED_AT,
+                            ),
+                    ),
+                )
+
+            assertEquals(listOf("a-newer", "z-older"), rows.map { it.entry.entryId })
+        }
+
+    @Test
     fun pagingQuery_keepsNullLastUsedLastInBothDirections() =
         runBlocking {
             insert(entry("unused", EntryType.LOGIN, "Unused"))
             insert(entry("older", EntryType.LOGIN, "Older"))
             insert(entry("newer", EntryType.LOGIN, "Newer"))
-            database.entryActivityCommandDao().insertAllIdempotent(
+            val activities =
                 listOf(
                     activity("older-view", "older", ActivityType.VIEW, 100L),
                     activity("newer-view", "newer", ActivityType.VIEW, 200L),
-                ),
-            )
+                )
+            for (activity in activities) {
+                database.entryActivityCommandDao().insertIdempotent(activity)
+            }
 
             fun query(direction: SortDirection) =
                 EntryListQuery(
@@ -176,6 +356,19 @@ class EntryPagingDaoTest {
             assertEquals(
                 listOf("account", "login", "note"),
                 rows.map { it.entry.entryId },
+            )
+            assertEquals(
+                listOf("note", "login", "account"),
+                load(
+                    EntryListQuery(
+                        sort =
+                            EntrySort(
+                                EntrySortField.ENTRY_TYPE,
+                                SortDirection.DESC,
+                                pinFavorites = false,
+                            ),
+                    ),
+                ).map { it.entry.entryId },
             )
         }
 
@@ -282,18 +475,28 @@ class EntryPagingDaoTest {
         id: String,
         type: EntryType,
         title: String,
+        username: String = "",
+        primaryUrl: String? = null,
         tags: Set<String> = emptySet(),
         domains: Set<String> = emptySet(),
+        applicationIds: Set<String> = emptySet(),
+        favorite: Boolean = false,
         capabilityFlags: Int = 0,
+        createdAt: Long = 1L,
+        updatedAt: Long = 1L,
     ) = EntryEntity(
         entryId = id,
         entryType = type,
         title = title,
+        username = username,
+        primaryUrl = primaryUrl,
         tags = tags,
         domains = domains,
+        applicationIds = applicationIds,
+        favorite = favorite,
         capabilityFlags = capabilityFlags,
-        createdAt = 1L,
-        updatedAt = 1L,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
     )
 
     private fun activity(

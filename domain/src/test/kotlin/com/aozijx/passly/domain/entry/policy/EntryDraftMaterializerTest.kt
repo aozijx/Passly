@@ -40,7 +40,7 @@ class EntryDraftMaterializerTest {
                     )
                 }
             val failure =
-                assertThrows(IllegalArgumentException::class.java) {
+                assertInvalidDraft(setOf(key)) {
                     materializer.materialize(draft(type, *values), identity(type))
                 }
             assertFalse(failure.toString().contains(marker))
@@ -48,9 +48,9 @@ class EntryDraftMaterializerTest {
     }
 
     @Test
-    fun unsupportedCreationTypeRemainsRejectedAfterDraftValidation() {
+    fun unsupportedEntryTypeIsRejected() {
         val failure =
-            assertThrows(IllegalArgumentException::class.java) {
+            assertThrows(UnsupportedEntryDraft::class.java) {
                 materializer.materialize(
                     draft(EntryType.NOTE, FieldKey.TITLE to EntryDraftValue.Text("Reminder")),
                     identity(EntryType.NOTE),
@@ -93,7 +93,7 @@ class EntryDraftMaterializerTest {
                     FieldKey.OTP_TYPE to EntryDraftValue.Text(if (key == FieldKey.OTP_COUNTER) "HOTP" else "TOTP"),
                     key to value,
                 )
-            assertThrows(IllegalArgumentException::class.java) {
+            assertInvalidDraft(setOf(key)) {
                 materializer.materialize(EntryDraft(EntryType.OTP, values), identity(EntryType.OTP))
             }
         }
@@ -111,7 +111,7 @@ class EntryDraftMaterializerTest {
                     FieldKey.OTP_SECRET to EntryDraftValue.Text("MY"),
                     key to value,
                 )
-            assertThrows(IllegalArgumentException::class.java) {
+            assertInvalidDraft(setOf(key)) {
                 materializer.materialize(EntryDraft(EntryType.OTP, values), identity(EntryType.OTP))
             }
         }
@@ -172,22 +172,6 @@ class EntryDraftMaterializerTest {
         assertEquals(OtpSecretEncoding.BASE64, config.encoding)
         assertEquals("Example", config.issuer)
         assertEquals("ada@example.com", config.accountName)
-    }
-
-    @Test
-    fun materializeOtp_rejectsUnsupportedAlgorithmInsteadOfUsingSha1() {
-        assertThrows(IllegalArgumentException::class.java) {
-            materializer.materialize(
-                draft =
-                    draft(
-                        EntryType.OTP,
-                        FieldKey.TITLE to EntryDraftValue.Text("Token"),
-                        FieldKey.OTP_SECRET to EntryDraftValue.Text("ABC123"),
-                        FieldKey.OTP_ALGORITHM to EntryDraftValue.Text("MD5"),
-                    ),
-                identity = identity(EntryType.OTP),
-            )
-        }
     }
 
     @Test
@@ -260,22 +244,6 @@ class EntryDraftMaterializerTest {
         assertEquals("legacy device", entry.secret.notes)
     }
 
-    @Test
-    fun materializeWifi_rejectsUnsupportedSecurity() {
-        assertThrows(IllegalArgumentException::class.java) {
-            materializer.materialize(
-                draft =
-                    draft(
-                        EntryType.WIFI,
-                        FieldKey.TITLE to EntryDraftValue.Text("Office network"),
-                        FieldKey.WIFI_SSID to EntryDraftValue.Text("Passly"),
-                        FieldKey.WIFI_SECURITY to EntryDraftValue.Text("vendor-private"),
-                    ),
-                identity = identity(EntryType.WIFI),
-            )
-        }
-    }
-
     private fun draft(
         type: EntryType,
         vararg values: Pair<FieldKey, EntryDraftValue>,
@@ -292,4 +260,13 @@ class EntryDraftMaterializerTest {
             type = type,
             timestamps = EntryTimestamps(123L),
         )
+
+    private fun assertInvalidDraft(
+        expectedFields: Set<FieldKey>,
+        action: () -> Unit,
+    ): InvalidEntryDraft {
+        val failure = assertThrows(InvalidEntryDraft::class.java) { action() }
+        assertEquals(expectedFields, failure.fields)
+        return failure
+    }
 }

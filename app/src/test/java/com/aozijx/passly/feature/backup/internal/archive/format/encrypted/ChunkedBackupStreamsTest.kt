@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.backup.internal.archive.format.encrypted
 import com.aozijx.passly.core.crypto.KeyDerivation
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import javax.crypto.AEADBadTagException
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -31,7 +32,7 @@ class ChunkedBackupStreamsTest {
         val position = BackupContainerV1Spec.HEADER_LENGTH + BackupContainerV1Spec.RECORD_HEADER_LENGTH + 1
         val tampered = encoded.toByteArray().also { it[position] = (it[position].toInt() xor 1).toByte() }
 
-        assertThrows(Exception::class.java) {
+        assertThrows(AEADBadTagException::class.java) {
             ChunkedBackupInputStream(ByteArrayInputStream(tampered), password, ::deriveKey).use { it.readBytes() }
         }
     }

@@ -16,11 +16,17 @@ class AutofillInputTypeClassifierTest {
     }
 
     @Test
-    fun textPasswordKeepsTextVariation() {
-        val inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+    fun textPasswordVariationsKeepTheirNamesAndArePasswords() {
+        listOf(
+            InputType.TYPE_TEXT_VARIATION_PASSWORD to "TEXT_VARIATION_PASSWORD",
+            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD to "TEXT_VARIATION_VISIBLE_PASSWORD",
+            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD to "TEXT_VARIATION_WEB_PASSWORD",
+        ).forEach { (variation, expectedName) ->
+            val inputType = InputType.TYPE_CLASS_TEXT or variation
 
-        assertTrue(AutofillInputTypeClassifier.describe(inputType).contains("TEXT_VARIATION_PASSWORD"))
-        assertTrue(AutofillInputTypeClassifier.isPassword(inputType))
+            assertTrue(AutofillInputTypeClassifier.describe(inputType).contains(expectedName))
+            assertTrue(AutofillInputTypeClassifier.isPassword(inputType))
+        }
     }
 
     @Test

@@ -25,13 +25,15 @@ import org.junit.Test
 class EntryEditTest {
     @Test
     fun invalidMetadataReturnsFieldViolationsInsteadOfThrowing() {
-        for ((edit, field) in listOf(
-            EntryEdit.SetTitle(" ") to FieldKey.TITLE,
-            EntryEdit.SetTags(setOf("valid", " ")) to FieldKey.TAGS,
-            EntryEdit.SetApplicationIds(setOf(" ")) to FieldKey.APPLICATION_IDS,
+        for ((edit, violation) in listOf(
+            EntryEdit.SetTitle(" ") to EntryViolation(FieldKey.TITLE, EntryViolationCode.REQUIRED),
+            EntryEdit.SetTags(setOf("valid", " ")) to
+                EntryViolation(FieldKey.TAGS, EntryViolationCode.INVALID_FORMAT),
+            EntryEdit.SetApplicationIds(setOf(" ")) to
+                EntryViolation(FieldKey.APPLICATION_IDS, EntryViolationCode.INVALID_FORMAT),
         )) {
             val actual = edit.applyTo(loginEntry()) as EntryEditResult.Invalid
-            assertEquals(setOf(field), actual.violations.mapTo(linkedSetOf()) { it.field })
+            assertEquals(setOf(violation), actual.violations)
         }
         val blankNetwork = EntryEdit.SetWifiNetworkName(" ").applyTo(wifiEntry()) as EntryEditResult.Invalid
         assertEquals(setOf(EntryViolation(FieldKey.WIFI_SSID, EntryViolationCode.REQUIRED)), blankNetwork.violations)

@@ -17,7 +17,9 @@ class AndroidTraceSinkTest {
         val sink = AndroidTraceSink(gateway)
         val trace = TraceSnapshot(TraceId("trace_123"), SpanId("span_1234"), null)
 
-        sink.onSpanStarted(SpanStarted(Operations.AutofillResultDelivery, trace, 10))
+        val started = SpanStarted(Operations.AutofillResultDelivery, trace, 10)
+        sink.onSpanStarted(started)
+        sink.onSpanStarted(started)
         sink.onSpanCompleted(SpanCompleted(Operations.AutofillResultDelivery, trace, 20, SpanResult.SUCCESS))
         sink.onSpanCompleted(SpanCompleted(Operations.AutofillResultDelivery, trace, 20, SpanResult.SUCCESS))
 
@@ -47,7 +49,7 @@ class AndroidTraceSinkTest {
     }
 
     @Test
-    fun `trace failure is swallowed without suppressing caller`() {
+    fun `begin trace failure does not escape sink callbacks`() {
         val sink =
             AndroidTraceSink(
                 object : AndroidTraceGateway {
@@ -68,9 +70,36 @@ class AndroidTraceSinkTest {
 
         sink.onSpanStarted(SpanStarted(Operations.ApplicationStartup, trace, 10))
         sink.onSpanCompleted(SpanCompleted(Operations.ApplicationStartup, trace, 20, SpanResult.FAILURE))
-        val businessResult = 42
+    }
 
-        assertEquals(42, businessResult)
+    @Test
+    fun `end trace failure does not escape sink callback`() {
+        var endAttempts = 0
+        val sink =
+            AndroidTraceSink(
+                object : AndroidTraceGateway {
+                    override fun isEnabled(): Boolean = true
+
+                    override fun beginAsyncSection(
+                        name: String,
+                        cookie: Int,
+                    ) = Unit
+
+                    override fun endAsyncSection(
+                        name: String,
+                        cookie: Int,
+                    ) {
+                        endAttempts++
+                        error("platform unavailable")
+                    }
+                },
+            )
+        val trace = TraceSnapshot(TraceId("trace_123"), SpanId("span_1234"), null)
+
+        sink.onSpanStarted(SpanStarted(Operations.ApplicationStartup, trace, 10))
+        sink.onSpanCompleted(SpanCompleted(Operations.ApplicationStartup, trace, 20, SpanResult.FAILURE))
+
+        assertEquals(1, endAttempts)
     }
 
     private class RecordingTraceGateway : AndroidTraceGateway {

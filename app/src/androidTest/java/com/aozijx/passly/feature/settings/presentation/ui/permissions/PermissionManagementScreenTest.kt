@@ -1,12 +1,14 @@
 package com.aozijx.passly.feature.settings.presentation.ui.permissions
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.permission.catalog.ManifestCapability
 import com.aozijx.passly.core.permission.model.RuntimePermission
@@ -29,13 +31,24 @@ class PermissionManagementScreenTest {
     fun screenEmitsActionsAndKeepsCapabilityRowsInformational() {
         val actions = mutableListOf<PermissionManagementScreenAction>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        setContent(
-            actions = actions,
-            directory =
-                BackupDirectoryUiModel(
-                    status = PersistedDirectoryAccessStatus.GRANTED,
+        val uiState =
+            mutableStateOf(
+                buildState(
+                    backupDirectory =
+                        BackupDirectoryUiModel(
+                            status = PersistedDirectoryAccessStatus.GRANTED,
+                        ),
                 ),
-        )
+            )
+        composeRule.setContent {
+            MaterialTheme {
+                PermissionManagementScreen(
+                    state = uiState.value,
+                    onAction = actions::add,
+                    onBack = {},
+                )
+            }
+        }
 
         composeRule
             .onNodeWithText(context.getString(R.string.settings_permissions_camera))
@@ -62,41 +75,42 @@ class PermissionManagementScreenTest {
             .onNodeWithText(
                 context.getString(R.string.settings_permissions_capability_network),
             ).assertHasNoClickAction()
+
+        actions.clear()
+        composeRule.runOnIdle {
+            uiState.value =
+                buildState(
+                    backupDirectoryReadState = RecoverableReadState.Failed(ReadFailure.IO),
+                )
+        }
+        composeRule.onNodeWithText(context.getString(R.string.retry)).performClick()
+        assertEquals(listOf(PermissionManagementScreenAction.RetryBackupDirectoryRead), actions)
     }
 
-    private fun setContent(
-        actions: MutableList<PermissionManagementScreenAction>,
-        directory: BackupDirectoryUiModel =
+    private fun buildState(
+        backupDirectory: BackupDirectoryUiModel =
             BackupDirectoryUiModel(
                 status = PersistedDirectoryAccessStatus.NOT_CONFIGURED,
             ),
-    ) {
-        composeRule.setContent {
-            MaterialTheme {
-                PermissionManagementScreen(
-                    state =
-                        PermissionManagementUiState(
-                            runtimePermissions =
-                                listOf(
-                                    RuntimePermissionUiModel(
-                                        permission = RuntimePermission.CAMERA,
-                                        access = RuntimePermissionAccess.REQUESTABLE,
-                                    ),
-                                ),
-                            backupDirectory = directory,
-                            backupDirectoryReadState = RecoverableReadState.Ready("content://backup"),
-                            manifestCapabilities =
-                                listOf(
-                                    ManifestCapabilityUiModel(
-                                        capability = ManifestCapability.INTERNET,
-                                        interactive = false,
-                                    ),
-                                ),
-                        ),
-                    onAction = actions::add,
-                    onBack = {},
-                )
-            }
-        }
-    }
+        backupDirectoryReadState: RecoverableReadState<String?> =
+            RecoverableReadState.Ready("content://backup"),
+    ) =
+        PermissionManagementUiState(
+            runtimePermissions =
+                listOf(
+                    RuntimePermissionUiModel(
+                        permission = RuntimePermission.CAMERA,
+                        access = RuntimePermissionAccess.REQUESTABLE,
+                    ),
+                ),
+            backupDirectory = backupDirectory,
+            backupDirectoryReadState = backupDirectoryReadState,
+            manifestCapabilities =
+                listOf(
+                    ManifestCapabilityUiModel(
+                        capability = ManifestCapability.INTERNET,
+                        interactive = false,
+                    ),
+                ),
+        )
 }

@@ -32,7 +32,7 @@ class DiagnosticsReducerTest {
             )
 
         assertEquals(setOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR), state.selectedLevels)
-        assertEquals(listOf(info, warn, error, fatal), state.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(info, warn, error, fatal)), state.visibleLines)
         assertTrue(state.loadState is DiagnosticsLoadState.Ready)
     }
 
@@ -50,7 +50,7 @@ class DiagnosticsReducerTest {
                 DiagnosticsMutation.LevelToggled(LogLevel.INFO),
             )
 
-        assertEquals(listOf(warn, error), state.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(warn, error)), state.visibleLines)
         assertEquals(DiagnosticsExportState.SelectingFormat(ExportAction.SHARE), state.exportState)
     }
 
@@ -68,11 +68,11 @@ class DiagnosticsReducerTest {
         val byClass = DiagnosticsReducer.reduce(initial, DiagnosticsMutation.SearchChanged("sqlite"))
         val cleared = DiagnosticsReducer.reduce(byTrace, DiagnosticsMutation.SearchChanged(""))
 
-        assertEquals(listOf(warn, error), byTrace.visibleLines)
-        assertEquals(listOf(error), byEvent.visibleLines)
-        assertEquals(listOf(error), byCode.visibleLines)
-        assertEquals(listOf(error), byClass.visibleLines)
-        assertEquals(listOf(info, warn, error), cleared.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(warn, error)), byTrace.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(error)), byEvent.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(error)), byCode.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(error)), byClass.visibleLines)
+        assertEquals(DiagnosticsVisibleLines.Items(listOf(info, warn, error)), cleared.visibleLines)
     }
 
     @Test
@@ -92,7 +92,7 @@ class DiagnosticsReducerTest {
 
             assertTrue(state.loadState is DiagnosticsLoadState.Ready)
             assertTrue(state.retainedLines.isEmpty())
-            assertTrue(state.visibleLines.isEmpty())
+            assertEquals(DiagnosticsVisibleLines.Empty, state.visibleLines)
             assertEquals(DiagnosticsClearState.Idle, state.clearState)
         }
     }

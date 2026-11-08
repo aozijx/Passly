@@ -7,14 +7,16 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.MatchType
+import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillCandidateMappingTest {
     @Test
-    fun `late related candidate survives many nonmatching prefilter rows`() {
+    fun `mapping filters unrelated candidates from many rows`() {
         val unrelated =
             List(50) { index ->
                 EntryEntity(
@@ -95,17 +97,30 @@ class AutofillCandidateMappingTest {
         assertEquals("person@example.com", candidate.entry.username)
         assertEquals(MatchType.APPLICATION_ID, candidate.match.type)
         assertTrue(EntryCapability.PASSWORD in candidate.entry.capabilities)
+        assertNull(candidate.entry.otpPreview)
     }
 
     @Test
     fun candidateContractHasNoSecretOrPlaintextPasswordProperty() {
-        val fieldNames =
-            AutofillCandidateSummary::class.java.declaredFields
-                .mapTo(mutableSetOf()) { it.name }
+        val fieldNames = metadataFieldNames(AutofillCandidateSummary::class.java)
 
-        assertFalse("secret" in fieldNames)
-        assertFalse("password" in fieldNames)
-        assertFalse("otpCode" in fieldNames)
+        assertFalse(fieldNames.any { it.contains("secret", ignoreCase = true) })
+        assertFalse(fieldNames.any { it.contains("password", ignoreCase = true) })
+        assertFalse(fieldNames.any { it.contains("otpCode", ignoreCase = true) })
+    }
+
+    private fun metadataFieldNames(
+        type: Class<*>,
+        visited: MutableSet<Class<*>> = mutableSetOf(),
+    ): Set<String> {
+        if (!type.name.startsWith("com.aozijx.passly.domain.") || !visited.add(type)) return emptySet()
+
+        return type.declaredFields
+            .asSequence()
+            .filterNot { Modifier.isStatic(it.modifiers) || it.isSynthetic }
+            .flatMap { field ->
+                sequenceOf(field.name) + metadataFieldNames(field.type, visited).asSequence()
+            }.toSet()
     }
 
     @Test

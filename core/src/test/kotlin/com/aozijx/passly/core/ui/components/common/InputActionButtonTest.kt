@@ -12,7 +12,7 @@ class InputActionButtonTest {
         performInputActionSubmit(
             enabled = true,
             phase = ActionButtonPhase.Idle,
-            hasInput = true,
+            canSubmit = true,
             onAction = { submittedInput = input },
             dismissInput = { input = "" },
         )
@@ -28,7 +28,7 @@ class InputActionButtonTest {
         performInputActionSubmit(
             enabled = true,
             phase = ActionButtonPhase.Succeeded,
-            hasInput = true,
+            canSubmit = true,
             onAction = { submissions++ },
             dismissInput = {},
         )

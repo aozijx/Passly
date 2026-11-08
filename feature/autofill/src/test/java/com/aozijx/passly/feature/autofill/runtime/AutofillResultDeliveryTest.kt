@@ -271,18 +271,31 @@ class AutofillResultDeliveryTest {
         }
 
     @Test
-    fun `temporary unlock closes only after the platform result is delivered`() =
+    fun `successful fill expires abandoned interactions and closes temporary unlock after delivery`() =
         runTest {
             val store = AutofillInteractionStore()
-            val lockController = RecordingLockController()
-            val lease = AutofillUnlockLease(lockController)
             val interaction =
                 store.create(
                     source = AutofillInteractionSource.LEGACY,
                     scope = AutofillGrantContext("com.example.app"),
                     initialState = AutofillInteractionState.Authorized,
                 )
+            val abandoned =
+                store.create(
+                    source = AutofillInteractionSource.CREDENTIAL_MANAGER,
+                    scope = AutofillGrantContext("com.example.app"),
+                    initialState = AutofillInteractionState.Authorized,
+                )
+            val lockController =
+                RecordingLockController(
+                    onLock = {
+                        assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+                        assertEquals(AutofillInteractionState.Expired, store.snapshot(abandoned.id)?.state)
+                    },
+                )
+            val lease = AutofillUnlockLease(lockController)
             lease.acquireOrBorrow(interaction.id, acquiredUnlock = true)
+            lease.acquireOrBorrow(abandoned.id, acquiredUnlock = false)
             val logger = testLogger()
             val delivery =
                 AutofillResultDelivery(
@@ -309,60 +322,19 @@ class AutofillResultDeliveryTest {
             runCurrent()
 
             assertEquals(AutofillInteractionState.Completed, store.snapshot(interaction.id)?.state)
+            assertEquals(AutofillInteractionState.Expired, store.snapshot(abandoned.id)?.state)
             assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
             assertEquals(LockTrigger.AUTOFILL_COMPLETION, lockController.trigger)
         }
 
-    @Test
-    fun `successful fill expires abandoned interactions before closing temporary unlock`() =
-        runTest {
-            val store = AutofillInteractionStore()
-            val lockController = RecordingLockController()
-            val lease = AutofillUnlockLease(lockController)
-            val selected =
-                store.create(
-                    source = AutofillInteractionSource.LEGACY,
-                    scope = AutofillGrantContext("com.example.app"),
-                    initialState = AutofillInteractionState.Authorized,
-                )
-            val abandoned =
-                store.create(
-                    source = AutofillInteractionSource.CREDENTIAL_MANAGER,
-                    scope = AutofillGrantContext("com.example.app"),
-                    initialState = AutofillInteractionState.Authorized,
-                )
-            lease.acquireOrBorrow(selected.id, acquiredUnlock = true)
-            lease.acquireOrBorrow(abandoned.id, acquiredUnlock = false)
-            val logger = testLogger()
-            val delivery =
-                AutofillResultDelivery(
-                    completeSelection =
-                        CompleteAutofillSelection(
-                            NoOpActivityRecorder,
-                            FinishAutofillInteraction(store, lease),
-                        ),
-                    unlockLease = lease,
-                    interactionStore = store,
-                    scope = this,
-                    logger = logger,
-                    continuations = TraceContinuationStore(logger),
-                )
-
-            delivery.commitResult(
-                receipt = AutofillSelectionReceipt(selected.id, EntryId("entry-1")),
-            ) { markPlatformCommitted -> markPlatformCommitted() }
-            runCurrent()
-
-            assertEquals(AutofillInteractionState.Completed, store.snapshot(selected.id)?.state)
-            assertEquals(AutofillInteractionState.Expired, store.snapshot(abandoned.id)?.state)
-            assertEquals(LockReason.AUTOFILL_REQUEST_FINISHED, lockController.reason)
-        }
-
-    private class RecordingLockController : SessionLockController {
+    private class RecordingLockController(
+        private val onLock: suspend () -> Unit = {},
+    ) : SessionLockController {
         var reason: LockReason? = null
         var trigger: LockTrigger? = null
 
         override suspend fun lock(request: SessionLockRequest) {
+            onLock()
             reason = request.reason
             trigger = request.trigger
         }

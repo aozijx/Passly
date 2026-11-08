@@ -18,17 +18,22 @@ import org.junit.Test
 
 class KeyedEntryArchiveMapperTest {
     @Test
-    fun `wifi export keeps string fields and canonicalizes known security`() {
-        val record =
-            KeyedEntryArchiveMapper.toRecord(
-                wifiEntry(WifiSecurityType.WpaPersonal),
-                attachmentIds = emptyList(),
-            )
+    fun `wifi export preserves security keys and import canonicalizes a known alias`() {
+        WifiSecurityType.entries.forEach { securityType ->
+            val record =
+                KeyedEntryArchiveMapper.toRecord(
+                    wifiEntry(securityType),
+                    attachmentIds = emptyList(),
+                )
 
-        assertEquals("wifi", record.type)
-        assertEquals("Office", record.text("wifi_ssid"))
-        assertEquals("WPA", record.text("wifi_security"))
-        assertEquals("password", record.text("password"))
+            assertEquals("wifi", record.type)
+            assertEquals("Office", record.text("wifi_ssid"))
+            assertEquals(securityType.storedValue, record.text("wifi_security"))
+            assertEquals("password", record.text("password"))
+        }
+
+        val imported = KeyedEntryArchiveMapper.toEntry(wifiRecord(security = "WPA2"))
+        assertEquals(WifiSecurityType.WpaPersonal, imported.secret.wifi?.securityType)
     }
 
     @Test

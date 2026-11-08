@@ -14,11 +14,11 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedEntrySectionUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedPasswordSectionUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedSectionsUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedSectionsUiModel
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.R
 import androidx.test.platform.app.InstrumentationRegistry

@@ -24,7 +24,11 @@ class NotificationSettingsUiMapperTest {
                 ).toUiModel()
 
         assertFalse(result.systemNotificationsEnabled)
+        assertEquals(true, result.optionalMessagesEnabled)
         assertEquals(MessageTopic.entries, result.topics.map { it.topic })
-        assertFalse(result.topics.first { it.topic == MessageTopic.CLIPBOARD }.enabled)
+        assertEquals(
+            MessageTopic.entries.map { it != MessageTopic.CLIPBOARD },
+            result.topics.map { it.enabled },
+        )
     }
 }

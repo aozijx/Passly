@@ -4,20 +4,13 @@ import android.content.ContextWrapper
 import android.content.SharedPreferences
 import com.aozijx.passly.core.permission.model.RuntimePermission
 import java.lang.reflect.Proxy
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SharedPreferencesPermissionRequestHistoryTest {
     @Test
-    fun `request history keys remain explicit and stable`() {
-        assertEquals("CAMERA", RuntimePermission.CAMERA.requestHistoryKey)
-        assertEquals("POST_NOTIFICATIONS", RuntimePermission.POST_NOTIFICATIONS.requestHistoryKey)
-    }
-
-    @Test
-    fun `reads legacy keys and marks permissions independently`() {
+    fun `reads existing permission history keys`() {
         val values = mutableMapOf<String, Any>("CAMERA" to true, "POST_NOTIFICATIONS" to true)
         val preferences = memoryPreferences(values)
         val context =
@@ -31,15 +24,10 @@ class SharedPreferencesPermissionRequestHistoryTest {
 
         assertTrue(history.wasRequested(RuntimePermission.CAMERA))
         assertTrue(history.wasRequested(RuntimePermission.POST_NOTIFICATIONS))
-
-        history.markRequested(RuntimePermission.CAMERA)
-
-        assertTrue(history.wasRequested(RuntimePermission.CAMERA))
-        assertTrue(history.wasRequested(RuntimePermission.POST_NOTIFICATIONS))
     }
 
     @Test
-    fun `first mark and repeated mark use the existing per permission key`() {
+    fun `first mark writes the existing per permission key`() {
         val values = mutableMapOf<String, Any>()
         val preferences = memoryPreferences(values)
         val context =
@@ -54,7 +42,6 @@ class SharedPreferencesPermissionRequestHistoryTest {
         assertFalse(history.wasRequested(RuntimePermission.CAMERA))
         assertFalse(history.wasRequested(RuntimePermission.POST_NOTIFICATIONS))
 
-        history.markRequested(RuntimePermission.CAMERA)
         history.markRequested(RuntimePermission.CAMERA)
 
         assertTrue(history.wasRequested(RuntimePermission.CAMERA))

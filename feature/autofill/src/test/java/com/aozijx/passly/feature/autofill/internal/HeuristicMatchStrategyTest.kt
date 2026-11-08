@@ -126,26 +126,20 @@ class HeuristicMatchStrategyTest {
     }
 
     @Test
-    fun `search field with user-like id is excluded`() {
-        val result =
-            match(
-                fieldDescriptor("id/search_user", resourceId = "@id/search_user", inputType = "TYPE_CLASS_TEXT"),
-            )
-        assertFalse(result.hasCredentials)
-    }
-
-    @Test
-    fun `search resource id without slash is excluded`() {
-        val result =
-            match(
-                fieldDescriptor(
-                    "search_user",
-                    resourceId = "search_user",
-                    inputType = "TYPE_CLASS_TEXT",
-                ),
+    fun `search fields are excluded with or without a resource namespace`() {
+        val cases =
+            listOf(
+                "resource id with namespace" to
+                    fieldDescriptor("id/search_user", resourceId = "@id/search_user", inputType = "TYPE_CLASS_TEXT"),
+                "resource id without namespace" to
+                    fieldDescriptor("search_user", resourceId = "search_user", inputType = "TYPE_CLASS_TEXT"),
             )
 
-        assertFalse(result.hasCredentials)
+        cases.forEach { (name, field) ->
+            val result = match(field)
+            assertFalse(name, result.hasCredentials)
+            assertTrue(name, result.roleMap.isEmpty())
+        }
     }
 
     @Test
@@ -177,23 +171,21 @@ class HeuristicMatchStrategyTest {
     }
 
     @Test
-    fun `otp regex does not match postcode or country code`() {
-        val result =
+    fun `otp matching rejects unrelated numeric fields and accepts verification code`() {
+        val unrelatedNumbers =
             match(
                 fieldDescriptor("id/postcode", resourceId = "@id/postcode", inputType = "TYPE_CLASS_NUMBER"),
                 fieldDescriptor("id/country_code", resourceId = "@id/country_code", inputType = "TYPE_CLASS_NUMBER"),
             )
-        assertFalse(result.hasCredentials)
-    }
+        assertFalse(unrelatedNumbers.hasCredentials)
+        assertTrue(unrelatedNumbers.roleMap.isEmpty())
 
-    @Test
-    fun `otp combined pattern still matches verification code`() {
-        val result =
+        val verificationCode =
             match(
                 fieldDescriptor("id/verify_code", resourceId = "@id/verify_code", inputType = "TYPE_CLASS_NUMBER"),
             )
-        assertTrue(result.hasCredentials)
-        assertEquals(FieldRole.OTP, result.roleMap["id/verify_code"])
+        assertTrue(verificationCode.hasCredentials)
+        assertEquals(FieldRole.OTP, verificationCode.roleMap["id/verify_code"])
     }
 
     @Test

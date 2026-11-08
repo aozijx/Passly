@@ -32,7 +32,7 @@ class AutofillActivityResultClaimTest {
     }
 
     @Test
-    fun `failed platform callback releases claim for cancellation while success remains terminal`() {
+    fun `pre-commit failures release claim for cancellation while success remains terminal`() {
         val claim = AutofillActivityResultClaim()
 
         try {
@@ -41,6 +41,16 @@ class AutofillActivityResultClaimTest {
         } catch (_: IllegalStateException) {
             assertFalse(claim.isClaimed)
         }
+
+        val fatal = AssertionError("platform callback failed before commit")
+        var thrown: AssertionError? = null
+        try {
+            claim.commit { throw fatal }
+        } catch (error: AssertionError) {
+            thrown = error
+        }
+        assertSame(fatal, thrown)
+        assertFalse(claim.isClaimed)
 
         var cancelResultCommits = 0
         assertTrue(

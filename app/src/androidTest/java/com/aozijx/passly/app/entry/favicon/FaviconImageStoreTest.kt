@@ -3,29 +3,31 @@ package com.aozijx.passly.app.entry.favicon
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aozijx.passly.app.testing.IsolatedTestContext
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
-import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class FaviconImageStoreTest {
-    private val context: Context = ApplicationProvider.getApplicationContext()
-    private val store = FaviconImageStore(context)
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
-    @After
-    fun cleanUp() {
-        VaultResourcePaths.vaultImagesDir(context).deleteRecursively()
+    private val context: Context by lazy {
+        IsolatedTestContext(ApplicationProvider.getApplicationContext(), temporaryFolder.root)
     }
+    private val store by lazy { FaviconImageStore(context) }
 
     @Test
     fun stageAndPromote_keepBytesInsideCanonicalPrivateRoots() {
@@ -99,10 +101,7 @@ class FaviconImageStoreTest {
     @Test
     fun startupRecoveryIncludesBackupRestoresAndLegacyRestoredNames() {
         val root =
-            VaultResourcePaths.vaultImagesDir(context).apply {
-                deleteRecursively()
-                mkdirs()
-            }
+            VaultResourcePaths.vaultImagesDir(context).apply { mkdirs() }
         val promoted = File(root, "favicon_orphan.webp").apply { writeText("promoted") }
         val restored = File(root, "favicon_restored_orphan.webp").apply { writeText("restored") }
         val legacyRestored = File(root, "restored_legacy.webp").apply { writeText("legacy") }

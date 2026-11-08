@@ -65,7 +65,10 @@ class DataManagementSettingsViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(DataManagementSettingsUiState.Ready(null), viewModel.uiState.value)
+            assertEquals(
+                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Unconfigured),
+                viewModel.uiState.value,
+            )
         }
 
     @Test
@@ -143,7 +146,10 @@ class DataManagementSettingsViewModelTest {
             backgroundScope.launch { viewModel.effects.collect(effects::add) }
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
-            assertEquals(DataManagementSettingsUiState.Ready("content://tree/current"), viewModel.uiState.value)
+            assertEquals(
+                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
+                viewModel.uiState.value,
+            )
 
             val requestId = viewModel.beginDirectorySelection(owner)
             viewModel.onAction(
@@ -156,7 +162,10 @@ class DataManagementSettingsViewModelTest {
             runCurrent()
 
             assertEquals(listOf(DataManagementSettingsEffect.BackupDirectoryOperationFailed), effects)
-            assertEquals(DataManagementSettingsUiState.Ready("content://tree/current"), viewModel.uiState.value)
+            assertEquals(
+                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
+                viewModel.uiState.value,
+            )
             assertEquals(0, access.acquired)
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.Error, logger.events.single().event)
@@ -195,7 +204,10 @@ class DataManagementSettingsViewModelTest {
             runCurrent()
 
             assertEquals(listOf(DataManagementSettingsEffect.BackupDirectoryOperationFailed), effects)
-            assertEquals(DataManagementSettingsUiState.Ready("content://tree/current"), viewModel.uiState.value)
+            assertEquals(
+                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
+                viewModel.uiState.value,
+            )
             assertEquals(1, logger.events.size)
             assertEquals(Events.Backup.Error, logger.events.single().event)
             assertEquals(Reasons.StorageFailure, logger.events.single().reason)

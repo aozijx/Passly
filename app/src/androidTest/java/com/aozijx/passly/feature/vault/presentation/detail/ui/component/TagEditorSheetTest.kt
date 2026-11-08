@@ -8,9 +8,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorOverlayUiState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

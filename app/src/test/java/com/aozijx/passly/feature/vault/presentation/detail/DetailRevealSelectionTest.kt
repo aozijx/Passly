@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSshUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

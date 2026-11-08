@@ -1,8 +1,10 @@
 package com.aozijx.passly.core.observability.trace
 
 import com.aozijx.passly.core.observability.EventId
+import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ProcessSessionId
+import com.aozijx.passly.core.observability.SanitizedLogRecord
 import com.aozijx.passly.core.observability.SecureSessionId
 import com.aozijx.passly.core.observability.SpanId
 import com.aozijx.passly.core.observability.TraceId
@@ -15,6 +17,7 @@ import com.aozijx.passly.core.observability.internal.SecureSessionProvider
 import com.aozijx.passly.core.observability.privacy.ContractViolationBehavior
 import com.aozijx.passly.core.observability.privacy.IdentifierHasher
 import com.aozijx.passly.core.observability.privacy.PrivacyPolicy
+import com.aozijx.passly.core.observability.sink.LogSink
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -229,7 +232,8 @@ class TracePropagationTest {
     fun `continuation store consumes an opaque callback key without logging it`() =
         runTest {
             val lifecycle = RecordingTraceLifecycleSink()
-            val logger = logger(lifecycleSink = lifecycle)
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(lifecycleSink = lifecycle, sinks = listOf(LogSink(records::add)))
             val continuations = TraceContinuationStore(logger)
             var originalTrace: TraceId? = null
 
@@ -244,10 +248,11 @@ class TracePropagationTest {
                 }
 
             assertEquals(TraceResumeResult.Resumed(originalTrace), resumed)
-            assertEquals(
-                TraceResumeResult.Unavailable,
-                continuations.resume("interaction_1234", Operations.AutofillSessionClose) { traceId },
-            )
+            val rootTrace =
+                continuations.continueOrRoot("interaction_1234", Operations.AutofillSessionClose) { traceId }
+            assertTrue(rootTrace != originalTrace)
+            assertEquals(listOf(Events.Application.TraceResumeUnavailable), records.map { it.event })
+            assertTrue(records.none { "interaction_1234" in it.toString() })
         }
 
     @Test
@@ -269,9 +274,10 @@ class TracePropagationTest {
     private fun logger(
         timeSource: FakeTimeSource = FakeTimeSource(),
         lifecycleSink: TraceLifecycleSink = RecordingTraceLifecycleSink(),
+        sinks: List<LogSink> = emptyList(),
     ) = DefaultLogger(
         sanitizer = PrivacyPolicy(IdentifierHasher { _, _ -> null }, ContractViolationBehavior.REJECT),
-        sinks = emptyList(),
+        sinks = sinks,
         lifecycleSinks = listOf(lifecycleSink),
         idGenerator = SequentialIdGenerator(),
         timeSource = timeSource,

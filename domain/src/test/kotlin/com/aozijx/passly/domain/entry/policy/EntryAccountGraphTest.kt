@@ -9,18 +9,21 @@ import org.junit.Test
 
 class EntryAccountGraphTest {
     @Test
-    fun `otp resolves account through login`() {
+    fun `account graph resolves direct, recovery, and otp members`() {
         val graph =
             EntryAccountGraph(
                 listOf(
                     link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
+                    link("recovery", "recovery", "account", EntryRelationType.RECOVERY_FOR),
                     link("otp", "otp", "login", EntryRelationType.OTP_FOR),
                 ),
             )
 
+        assertEquals(EntryId("account"), graph.accountFor(EntryId("login")))
+        assertEquals(EntryId("account"), graph.accountFor(EntryId("recovery")))
         assertEquals(EntryId("account"), graph.accountFor(EntryId("otp")))
         assertEquals(
-            setOf(EntryId("login"), EntryId("otp")),
+            setOf(EntryId("login"), EntryId("recovery"), EntryId("otp")),
             graph.membersOf(EntryId("account")),
         )
     }

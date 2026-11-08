@@ -57,12 +57,12 @@ class UnlockViewModelTest {
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged(PASSWORD))
             viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged(PASSWORD))
             val submittedPassword =
-                (viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing).newPassword as OwnedChars
+                (viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing).draft.newPassword as OwnedChars
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
 
-            val submittedSetup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing
-            assertTrue(submittedSetup.newPassword.isEmpty)
+            val submittedSetup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Saving
+            assertTrue(submittedSetup.draft.newPassword.isEmpty)
 
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged("another-long-password"))
             viewModel.onAction(UnlockUiAction.ConfirmAppPasswordChanged("another-long-password"))
@@ -73,8 +73,8 @@ class UnlockViewModelTest {
 
             assertEquals(1, provisioner.calls)
             assertEquals(
-                UnlockPasswordSetupPhase.Saving,
-                (viewModel.uiState.value.passwordSetup as? UnlockPasswordSetup.Editing)?.phase,
+                UnlockPasswordSetup.Saving::class,
+                viewModel.uiState.value.passwordSetup::class,
             )
 
             gate.complete(AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD))
@@ -105,11 +105,8 @@ class UnlockViewModelTest {
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
 
-            val setup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing
-            assertEquals(
-                UnlockPasswordSetupPhase.Failed(UnlockFailureMessage.AppPasswordSetupFailed),
-                setup.phase,
-            )
+            val setup = viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Failed
+            assertEquals(UnlockFailureMessage.AppPasswordSetupFailed, setup.message)
             assertTrue(provisioner.submitted.single().all { it == '\u0000' })
         }
 
@@ -143,8 +140,8 @@ class UnlockViewModelTest {
             viewModel.onAction(UnlockUiAction.SetPasswordConfirmed)
             runCurrent()
             assertEquals(
-                UnlockPasswordSetupPhase.Idle,
-                (viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing).phase,
+                UnlockPasswordSetup.Editing::class,
+                viewModel.uiState.value.passwordSetup::class,
             )
 
             viewModel.onAction(UnlockUiAction.NewAppPasswordChanged(PASSWORD))
@@ -154,8 +151,8 @@ class UnlockViewModelTest {
 
             assertEquals(2, provisioner.calls)
             assertEquals(
-                UnlockPasswordSetupPhase.Failed(UnlockFailureMessage.AppPasswordSetupFailed),
-                (viewModel.uiState.value.passwordSetup as UnlockPasswordSetup.Editing).phase,
+                UnlockPasswordSetup.Failed::class,
+                viewModel.uiState.value.passwordSetup::class,
             )
         }
 

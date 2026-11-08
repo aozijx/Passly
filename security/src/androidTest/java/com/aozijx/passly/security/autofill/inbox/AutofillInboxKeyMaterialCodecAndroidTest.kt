@@ -5,28 +5,32 @@ import com.aozijx.passly.domain.access.model.AutofillInboxKeyMaterial
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import java.security.Key
-import java.security.interfaces.RSAPublicKey
 import java.security.spec.MGF1ParameterSpec
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AutofillInboxKeyMaterialCodecAndroidTest {
+    private val dek = ByteArray(32) { it.toByte() }
+
+    @After
+    fun wipeDekFixture() {
+        dek.fill(0)
+    }
+
     @Test
     fun generatesAndRestoresInboxKeyOnAndroidProviders() {
         val codec = AutofillInboxKeyMaterialCodec()
-        val dek = ByteArray(32) { it.toByte() }
         val material = codec.generateAndWrap(dek)
-        val publicKey = codec.decodePublicKey(material.publicKey)
+        val publicKey = codec.validatedPublicKey(material)
 
         assertEquals(AutofillInboxKeyMaterial.FORMAT_VERSION_CURRENT, material.formatVersion)
-        assertTrue(publicKey is RSAPublicKey)
-        assertEquals(3072, (publicKey as RSAPublicKey).modulus.bitLength())
+        assertEquals(3072, publicKey.modulus.bitLength())
 
         val plaintext = byteArrayOf(4, 5, 6)
         val cipherText = rsaCipher(Cipher.ENCRYPT_MODE, publicKey).doFinal(plaintext)

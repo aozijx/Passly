@@ -13,7 +13,6 @@ class LocalAlertPolicyTest {
         val alert = policy.observe(record(2, "trace_cccccccc"))
         assertEquals(TraceId("trace_cccccccc"), alert?.traceId)
         assertNull(policy.observe(record(3, "trace_dddddddd")))
-        assertSame(alert, policy.activeAlert(3))
     }
 
     @Test
@@ -22,8 +21,9 @@ class LocalAlertPolicyTest {
         policy.observe(record(0, "trace_aaaaaaaa"))
         policy.observe(record(1, "trace_bbbbbbbb"))
         policy.observe(record(2, "trace_cccccccc"))
-        assertNull(policy.activeAlert(600_003))
         assertNull(policy.observe(record(600_004, "trace_dddddddd")))
+        assertNull(policy.observe(record(600_005, "trace_eeeeeeee")))
+        assertNotNull(policy.observe(record(600_006, "trace_ffffffff")))
     }
 
     private fun record(

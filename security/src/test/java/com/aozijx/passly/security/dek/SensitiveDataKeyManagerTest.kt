@@ -23,6 +23,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -86,7 +87,8 @@ class SensitiveDataKeyManagerTest {
     @Test
     fun `new key is wiped when nonce generation fails before handoff`() =
         runBlocking {
-            val random = CapturingSecureRandom(failingCall = 2, failure = IllegalStateException("nonce generation failed"))
+            val injectedFailure = IllegalStateException("nonce generation failed")
+            val random = CapturingSecureRandom(failingCall = 2, failure = injectedFailure)
             val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
 
             val failure =
@@ -94,7 +96,7 @@ class SensitiveDataKeyManagerTest {
                     runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
                 }
 
-            assertTrue(failure is IllegalStateException)
+            assertSame(injectedFailure, failure)
             assertEquals(2, random.buffers.size)
             random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
         }
@@ -102,7 +104,8 @@ class SensitiveDataKeyManagerTest {
     @Test
     fun `new key is wiped when random generation fails partway through`() =
         runBlocking {
-            val random = CapturingSecureRandom(failingCall = 1, failure = IllegalStateException("key generation failed"))
+            val injectedFailure = IllegalStateException("key generation failed")
+            val random = CapturingSecureRandom(failingCall = 1, failure = injectedFailure)
             val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
 
             val failure =
@@ -110,7 +113,7 @@ class SensitiveDataKeyManagerTest {
                     runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
                 }
 
-            assertTrue(failure is IllegalStateException)
+            assertSame(injectedFailure, failure)
             assertEquals(1, random.buffers.size)
             assertArrayEquals(ByteArray(random.buffers.first().size), random.buffers.first())
         }
@@ -120,14 +123,15 @@ class SensitiveDataKeyManagerTest {
         runBlocking {
             val random = CapturingSecureRandom()
             val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
-            store.sensitiveKeySaveFailure = IllegalStateException("sensitive envelope save failed")
+            val injectedFailure = IllegalStateException("sensitive envelope save failed")
+            store.sensitiveKeySaveFailure = injectedFailure
 
             val failure =
                 withContext(NonCancellable) {
                     runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
                 }
 
-            assertTrue(failure is IllegalStateException)
+            assertSame(injectedFailure, failure)
             assertEquals(2, random.buffers.size)
             random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
         }
@@ -135,17 +139,17 @@ class SensitiveDataKeyManagerTest {
     @Test
     fun `new key is wiped when envelope persistence is cancelled or fatal`() =
         runBlocking {
-            listOf(CancellationException("save cancelled"), AssertionError("fatal save failure")).forEach { failure ->
+            listOf(CancellationException("save cancelled"), AssertionError("fatal save failure")).forEach { injectedFailure ->
                 val random = CapturingSecureRandom()
                 val candidate = SensitiveDataKeyManager(store, dekManager, scope, random)
-                store.sensitiveKeySaveFailure = failure
+                store.sensitiveKeySaveFailure = injectedFailure
 
                 val observed =
                     withContext(NonCancellable) {
                         runCatching { candidate.withProvisionedKey { Unit } }.exceptionOrNull()
                     }
 
-                assertTrue(observed is CancellationException || observed is AssertionError)
+                assertSame(injectedFailure, observed)
                 assertEquals(2, random.buffers.size)
                 random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
             }
@@ -194,7 +198,7 @@ class SensitiveDataKeyManagerTest {
 
     private suspend fun assertFreshAuthenticationRequired() {
         val failure = runCatching { manager.withUnlockedKey { Unit } }.exceptionOrNull()
-        assertTrue(failure is IllegalStateException)
+        assertEquals(FreshAuthenticationRequiredException::class, failure!!::class)
     }
 
     private fun ByteArray.containsSubsequence(candidate: ByteArray): Boolean {

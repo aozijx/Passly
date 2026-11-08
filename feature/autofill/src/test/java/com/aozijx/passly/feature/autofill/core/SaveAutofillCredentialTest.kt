@@ -18,25 +18,20 @@ import kotlinx.coroutines.runBlocking
 
 class SaveAutofillCredentialTest {
     @Test
-    fun blankPasswordIsRejectedBeforePersistence() =
+    fun invalidDraftsAreRejectedBeforePersistence() =
         runBlocking {
-            val fixture = fixture()
+            val cases =
+                listOf(
+                    "blank password" to draft(password = "  "),
+                    "invalid website domain" to draft(password = "secret", webDomain = "not a valid domain"),
+                )
 
-            val outcome = fixture.operation(draft(password = "  "))
+            cases.forEach { (name, candidate) ->
+                val fixture = fixture()
 
-            assertEquals(AutofillSaveOutcome.InvalidDraft, outcome)
-            assertEquals(0, fixture.entryCreation.createCalls)
-        }
-
-    @Test
-    fun invalidWebsiteDomainIsRejectedBeforePersistence() =
-        runBlocking {
-            val fixture = fixture()
-
-            val outcome = fixture.operation(draft(password = "secret", webDomain = "not a valid domain"))
-
-            assertEquals(AutofillSaveOutcome.InvalidDraft, outcome)
-            assertEquals(0, fixture.entryCreation.createCalls)
+                assertEquals(name, AutofillSaveOutcome.InvalidDraft, fixture.operation(candidate))
+                assertEquals(name, 0, fixture.entryCreation.createCalls)
+            }
         }
 
     @Test

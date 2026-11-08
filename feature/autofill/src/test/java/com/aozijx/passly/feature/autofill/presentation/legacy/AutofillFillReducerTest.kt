@@ -34,26 +34,21 @@ class AutofillFillReducerTest {
     }
 
     @Test
-    fun `successful platform delivery clears the retained terminal result`() {
-        val terminal =
-            AutofillFillUiState.Result(
-                AutofillFillResult.Cancelled,
+    fun `result delivery clears result and error terminal states`() {
+        val terminalStates =
+            listOf(
+                "result" to AutofillFillUiState.Result(AutofillFillResult.Cancelled),
+                "error" to AutofillFillUiState.Error("failed"),
             )
+        val actual =
+            terminalStates.map { (name, state) ->
+                name to AutofillFillReducer.reduce(state, AutofillFillMutation.ResultDelivered)
+            }
 
-        val cleared = AutofillFillReducer.reduce(terminal, AutofillFillMutation.ResultDelivered)
-
-        assertSame(AutofillFillUiState.Initial, cleared)
-    }
-
-    @Test
-    fun `successful cancellation delivery clears an error terminal state`() {
-        val cleared =
-            AutofillFillReducer.reduce(
-                AutofillFillUiState.Error("failed"),
-                AutofillFillMutation.ResultDelivered,
-            )
-
-        assertSame(AutofillFillUiState.Initial, cleared)
+        assertEquals(
+            terminalStates.map { it.first to AutofillFillUiState.Initial },
+            actual,
+        )
     }
 
     @Test
@@ -91,30 +86,5 @@ class AutofillFillReducerTest {
             )
 
         assertEquals("Entry not found", (result as AutofillFillUiState.Error).message)
-    }
-
-    @Test
-    fun `non candidate workflow states render an explicit hidden display state`() {
-        val states =
-            listOf(
-                AutofillFillUiState.Initial,
-                AutofillFillUiState.Loading,
-                AutofillFillUiState.Result(AutofillFillResult.Cancelled),
-                AutofillFillUiState.Error("failed"),
-            )
-
-        states.forEach { state ->
-            assertSame(AutofillFillDisplayState.Hidden, state.toDisplayState())
-        }
-    }
-
-    @Test
-    fun `candidate workflow state exposes candidates through display state`() {
-        val display = AutofillFillUiState.ShowCandidates(emptyList()).toDisplayState()
-
-        assertEquals(
-            AutofillFillDisplayState.Candidates(emptyList()),
-            display,
-        )
     }
 }

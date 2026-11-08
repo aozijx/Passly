@@ -9,24 +9,46 @@ class VerificationTagTest {
     @Test
     fun verify_acceptsCreatingDek() {
         val dek = randomDek()
-        val tag = VerificationTag.create(dek)
+        var tag: ByteArray? = null
+        try {
+            val createdTag = VerificationTag.create(dek)
+            tag = createdTag
 
-        VerificationTag.verify(dek, tag, "test")
+            VerificationTag.verify(dek, createdTag, "test")
+        } finally {
+            dek.fill(0)
+            tag?.fill(0)
+        }
     }
 
     @Test
     fun verify_rejectsDifferentDek() {
-        val tag = VerificationTag.create(randomDek())
+        val correctDek = randomDek()
+        val wrongDek = randomDek()
+        var tag: ByteArray? = null
+        try {
+            val createdTag = VerificationTag.create(correctDek)
+            tag = createdTag
 
-        assertThrows(AEADBadTagException::class.java) {
-            VerificationTag.verify(randomDek(), tag, "test")
+            assertThrows(AEADBadTagException::class.java) {
+                VerificationTag.verify(wrongDek, createdTag, "test")
+            }
+        } finally {
+            correctDek.fill(0)
+            wrongDek.fill(0)
+            tag?.fill(0)
         }
     }
 
     @Test
     fun verify_rejectsTruncatedTag() {
-        assertThrows(IllegalArgumentException::class.java) {
-            VerificationTag.verify(randomDek(), byteArrayOf(1, 2, 3), "test")
+        val dek = randomDek()
+        try {
+            assertThrows(IllegalArgumentException::class.java) {
+                VerificationTag.verify(dek, byteArrayOf(1, 2, 3), "test")
+            }
+        } finally {
+            dek.fill(0)
         }
     }
 

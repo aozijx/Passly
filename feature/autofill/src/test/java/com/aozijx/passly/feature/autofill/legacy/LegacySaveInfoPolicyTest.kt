@@ -35,19 +35,19 @@ class LegacySaveInfoPolicyTest {
     }
 
     @Test
-    fun usernameOnlyFormIsNotEligibleForLoginSave() {
-        assertNull(LegacySaveInfoPolicy.plan(mapOf("username" to FieldRole.USERNAME)))
-    }
+    fun formsWithoutPasswordFieldsAreNotEligibleForLoginSave() {
+        val cases =
+            listOf(
+                "username only" to mapOf("username" to FieldRole.USERNAME),
+                "unknown and OTP only" to
+                    linkedMapOf(
+                        "unknown" to FieldRole.UNKNOWN,
+                        "otp" to FieldRole.OTP,
+                    ),
+            )
 
-    @Test
-    fun unknownAndOtpOnlyFormIsNotEligibleForLoginSave() {
-        assertNull(
-            LegacySaveInfoPolicy.plan(
-                linkedMapOf(
-                    "unknown" to FieldRole.UNKNOWN,
-                    "otp" to FieldRole.OTP,
-                ),
-            ),
-        )
+        cases.forEach { (name, roles) ->
+            assertNull(name, LegacySaveInfoPolicy.plan(roles))
+        }
     }
 }

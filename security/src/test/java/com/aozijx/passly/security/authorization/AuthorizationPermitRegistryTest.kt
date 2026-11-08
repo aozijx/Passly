@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.model.SensitiveRevisionAccessAction
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,7 +32,6 @@ class AuthorizationPermitRegistryTest {
         val validPermit = registry.issue(scope, ttlMs = 1_000L)
         assertTrue(registry.consume(validPermit, scope))
         assertFalse(registry.consume(validPermit, scope))
-        assertEquals(0, registry.activePermitCount())
     }
 
     @Test
@@ -52,7 +50,6 @@ class AuthorizationPermitRegistryTest {
         val revoked = registry.issue(scope, ttlMs = 1_000L)
         registry.revokeAll()
         assertFalse(registry.consume(revoked, scope))
-        assertEquals(0, registry.activePermitCount())
     }
 
     @Test

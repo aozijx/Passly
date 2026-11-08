@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.database.reset
 
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
+import com.aozijx.passly.domain.access.model.AuthenticationFailure
+import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -50,6 +52,19 @@ class ResetDatabaseUseCaseTest {
         }
 
     @Test
+    fun `denied authorization returns denied without resetting database`() =
+        runTest {
+            val gateway = RecordingGateway()
+            val gate = RecordingGate(AuthorizationDecision.DENY)
+            gateway.gate = gate
+            val useCase = ResetDatabaseUseCase(FullAccess, gate, gateway)
+
+            assertEquals(DatabaseResetResult.AuthorizationDenied, useCase())
+            assertTrue(gate.authorizeCalled)
+            assertEquals(0, gateway.resetCount)
+        }
+
+    @Test
     fun `recovery mode rejects database reset before authorization`() =
         runTest {
             val gate = RecordingGate(AuthorizationDecision.ALLOW)
@@ -61,7 +76,7 @@ class ResetDatabaseUseCaseTest {
             assertEquals(0, gateway.resetCount)
         }
 
-    private enum class AuthorizationDecision { ALLOW, CANCEL }
+    private enum class AuthorizationDecision { ALLOW, DENY, CANCEL }
 
     private class RecordingGate(
         private val decision: AuthorizationDecision,
@@ -77,7 +92,16 @@ class ResetDatabaseUseCaseTest {
         ): AuthorizationResult<T> {
             authorizeCalled = true
             this.scope = scope
-            if (decision == AuthorizationDecision.CANCEL) return AuthorizationResult.Cancelled
+            when (decision) {
+                AuthorizationDecision.CANCEL -> return AuthorizationResult.Cancelled
+                AuthorizationDecision.DENY -> {
+                    return AuthorizationResult.Denied(
+                        AuthenticationFailure(AuthenticationFailureCode.CREDENTIAL_INCORRECT),
+                    )
+                }
+
+                AuthorizationDecision.ALLOW -> Unit
+            }
             insideAuthorization = true
             return try {
                 AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))

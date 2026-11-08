@@ -10,33 +10,39 @@ class FieldEncryptorTest {
     @Test
     fun encrypt_usesFreshNonce_andBindsAad() {
         val key = ByteArray(32) { it.toByte() }
-        val encryptor = FieldEncryptor(FieldKeyProvider { key.copyOf() }, AesGcmCryptoEngine())
-        val aad = "entry:attachment:content".toByteArray()
+        try {
+            val encryptor = FieldEncryptor(FieldKeyProvider { key.copyOf() }, AesGcmCryptoEngine())
+            val aad = "entry:attachment:content".toByteArray()
 
-        val first = encryptor.encrypt("attachment", aad)
-        val second = encryptor.encrypt("attachment", aad)
+            val first = encryptor.encrypt("attachment", aad)
+            val second = encryptor.encrypt("attachment", aad)
 
-        assertFalse(first.contentEquals(second))
-        assertFalse(
-            first
-                .copyOfRange(0, CryptoConfig.IV_LENGTH)
-                .contentEquals(second.copyOfRange(0, CryptoConfig.IV_LENGTH)),
-        )
-        assertEquals("attachment", encryptor.decrypt(first, aad))
-        assertThrows(CryptoException.TagVerificationFailed::class.java) {
-            encryptor.decrypt(first, "other-attachment".toByteArray())
+            assertFalse(first.contentEquals(second))
+            assertFalse(
+                first
+                    .copyOfRange(0, CryptoConfig.IV_LENGTH)
+                    .contentEquals(second.copyOfRange(0, CryptoConfig.IV_LENGTH)),
+            )
+            assertEquals("attachment", encryptor.decrypt(first, aad))
+            assertThrows(CryptoException.TagVerificationFailed::class.java) {
+                encryptor.decrypt(first, "other-attachment".toByteArray())
+            }
+        } finally {
+            key.fill(0)
         }
-        key.fill(0)
     }
 
     @Test
     fun decrypt_rejectsPayloadShorterThanNonceAndTag() {
         val key = ByteArray(32) { (it + 1).toByte() }
-        val encryptor = FieldEncryptor(FieldKeyProvider { key.copyOf() }, AesGcmCryptoEngine())
+        try {
+            val encryptor = FieldEncryptor(FieldKeyProvider { key.copyOf() }, AesGcmCryptoEngine())
 
-        assertThrows(IllegalArgumentException::class.java) {
-            encryptor.decrypt(ByteArray(CryptoConfig.IV_LENGTH + 15))
+            assertThrows(IllegalArgumentException::class.java) {
+                encryptor.decrypt(ByteArray(CryptoConfig.IV_LENGTH + 15))
+            }
+        } finally {
+            key.fill(0)
         }
-        key.fill(0)
     }
 }

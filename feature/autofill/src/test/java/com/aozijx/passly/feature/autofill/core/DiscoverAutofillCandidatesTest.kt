@@ -160,39 +160,33 @@ class DiscoverAutofillCandidatesTest {
         }
 
     @Test
-    fun invalidWebDomainFailsBeforeStartingAnInteractionOrQuery() =
+    fun invalidOriginsAndScopesFailBeforeStartingAnInteractionOrQuery() =
         runBlocking {
-            val fixture = fixture()
+            val cases =
+                listOf(
+                    Triple(
+                        "invalid web domain",
+                        request().copy(domain = "not a valid domain"),
+                        AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE),
+                    ),
+                    Triple(
+                        "ambiguous web origin",
+                        request().copy(ambiguousWebOrigin = true),
+                        AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.AMBIGUOUS_WEB_ORIGIN),
+                    ),
+                    Triple(
+                        "blank application id",
+                        request().copy(packageName = "  ", domain = null),
+                        AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE),
+                    ),
+                )
 
-            val outcome = fixture.operation(request().copy(domain = "not a valid domain"))
-
-            assertEquals(AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE), outcome)
-            assertEquals(0, fixture.repository.searchCalls)
-        }
-
-    @Test
-    fun ambiguousWebOriginFailsBeforeStartingAnInteractionOrQuery() =
-        runBlocking {
-            val fixture = fixture()
-
-            val outcome = fixture.operation(request().copy(ambiguousWebOrigin = true))
-
-            assertEquals(
-                AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.AMBIGUOUS_WEB_ORIGIN),
-                outcome,
-            )
-            assertEquals(0, fixture.repository.searchCalls)
-        }
-
-    @Test
-    fun blankApplicationIdFailsBeforeStartingAnInteractionOrQuery() =
-        runBlocking {
-            val fixture = fixture()
-
-            val outcome = fixture.operation(request().copy(packageName = "  ", domain = null))
-
-            assertEquals(AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_SCOPE), outcome)
-            assertEquals(0, fixture.repository.searchCalls)
+            cases.forEach { (name, invalidRequest, expectedOutcome) ->
+                val fixture = fixture()
+                assertEquals(name, expectedOutcome, fixture.operation(invalidRequest))
+                assertEquals(name, 0, fixture.repository.searchCalls)
+                assertTrue(name, fixture.store.activeIds().isEmpty())
+            }
         }
 
     @Test

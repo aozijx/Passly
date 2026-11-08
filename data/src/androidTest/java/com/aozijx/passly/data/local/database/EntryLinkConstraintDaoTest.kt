@@ -41,11 +41,19 @@ class EntryLinkConstraintDaoTest {
             database.entryCommandDao().insertStrict(entry("account", EntryType.ACCOUNT))
             database.entryLinkCommandDao().upsert(link("link-1"))
 
-            val duplicate =
+            val duplicateFailure =
                 runCatching {
                     database.entryLinkCommandDao().upsert(link("link-2"))
-                }
-            assertTrue(duplicate.isFailure)
+                }.exceptionOrNull()
+            assertTrue(
+                "expected the endpoint triple unique index to reject the duplicate, but was $duplicateFailure",
+                generateSequence(duplicateFailure) { it.cause }.any {
+                    it.message?.contains(
+                        "UNIQUE constraint failed: entry_links.sourceEntryId, " +
+                            "entry_links.targetEntryId, entry_links.relationType",
+                    ) == true
+                },
+            )
             assertEquals(
                 "link-1",
                 database

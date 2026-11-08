@@ -1,10 +1,6 @@
 package com.aozijx.passly.security.authentication.flow
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -17,10 +13,9 @@ class AuthenticationAvailabilityRetryTest {
     fun `retries transient refresh failures with bounded backoff until snapshot resolves`() =
         runTest {
             var attempts = 0
-            val managerScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
             val retry =
                 AuthenticationAvailabilityRetry(
-                    scope = managerScope,
+                    scope = backgroundScope,
                     initialDelayMs = 10L,
                     maxDelayMs = 20L,
                 ) {
@@ -44,6 +39,5 @@ class AuthenticationAvailabilityRetryTest {
             advanceTimeBy(20L)
             runCurrent()
             assertEquals(3, attempts)
-            managerScope.cancel()
         }
 }

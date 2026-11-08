@@ -27,15 +27,28 @@ class EntryFieldEditorTest {
 
     @Test
     fun `card number edits reject missing invalid and malformed values`() {
-        for (value in listOf("", "4111111111111112", "4111x111111111111")) {
-            assertFalse(EntryFieldEditor.edit(entry, FieldKey.CARD_NUMBER, value) is EntryEditResult.Updated)
+        val cases =
+            listOf(
+                "" to EntryViolationCode.REQUIRED,
+                "411111111111" to EntryViolationCode.INVALID_LENGTH,
+                "4111111111111112" to EntryViolationCode.INVALID_FORMAT,
+                "4111x111111111111" to EntryViolationCode.INVALID_FORMAT,
+            )
+        for ((value, code) in cases) {
+            assertEquals(
+                EntryEditResult.Invalid(setOf(EntryViolation(FieldKey.CARD_NUMBER, code))),
+                EntryFieldEditor.edit(entry, FieldKey.CARD_NUMBER, value),
+            )
         }
     }
 
     @Test
     fun `optional cvv edits validate only the changed field and allow clearing`() {
         val redacted = entry.copy(secret = entry.secret.copy(credential = card.copy(cardNumber = null, cardCvv = null)))
-        assertFalse(EntryFieldEditor.edit(redacted, FieldKey.CARD_CVV, "12") is EntryEditResult.Updated)
+        assertEquals(
+            EntryEditResult.Invalid(setOf(EntryViolation(FieldKey.CARD_CVV, EntryViolationCode.INVALID_FORMAT))),
+            EntryFieldEditor.edit(redacted, FieldKey.CARD_CVV, "12"),
+        )
         for (value in listOf("123", "")) {
             val updated = EntryFieldEditor.edit(redacted, FieldKey.CARD_CVV, value) as EntryEditResult.Updated
             assertEquals(redacted.secret.card?.copy(cardCvv = value), updated.entry.secret.card)
@@ -46,8 +59,14 @@ class EntryFieldEditorTest {
     fun `password edits follow the corresponding credential rule`() {
         val login = entry.copy(identity = entry.identity.copy(type = EntryType.LOGIN), secret = EntrySecret(LoginCredential()))
         val wifi = entry.copy(identity = entry.identity.copy(type = EntryType.WIFI), secret = EntrySecret(WifiCredential("Network")))
-        assertFalse(EntryFieldEditor.edit(login, FieldKey.PASSWORD, "  ") is EntryEditResult.Updated)
-        assertFalse(EntryFieldEditor.edit(wifi, FieldKey.PASSWORD, "short") is EntryEditResult.Updated)
+        assertEquals(
+            EntryEditResult.Invalid(setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.REQUIRED))),
+            EntryFieldEditor.edit(login, FieldKey.PASSWORD, "  "),
+        )
+        assertEquals(
+            EntryEditResult.Invalid(setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.INVALID_LENGTH))),
+            EntryFieldEditor.edit(wifi, FieldKey.PASSWORD, "short"),
+        )
         assertTrue(EntryFieldEditor.edit(wifi, FieldKey.PASSWORD, "valid-password") is EntryEditResult.Updated)
     }
 

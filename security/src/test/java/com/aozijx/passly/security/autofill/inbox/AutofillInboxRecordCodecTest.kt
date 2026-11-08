@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInboxLimits
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import javax.crypto.AEADBadTagException
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -14,6 +15,11 @@ class AutofillInboxRecordCodecTest {
     private val keyMaterialCodec = AutofillInboxKeyMaterialCodec()
     private val codec = AutofillInboxRecordCodec(keyMaterialCodec)
     private val dek = ByteArray(32) { (it * 3).toByte() }
+
+    @After
+    fun wipeDekFixture() {
+        dek.fill(0)
+    }
 
     @Test
     fun sealedDraftRoundTripsAndRepeatsItsDraftIdInsideAuthenticatedPayload() {

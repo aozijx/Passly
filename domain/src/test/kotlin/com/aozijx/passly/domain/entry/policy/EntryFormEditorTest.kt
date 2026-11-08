@@ -60,9 +60,11 @@ class EntryFormEditorTest {
 
     @Test
     fun appliesOtpCardAndWifiForms() {
+        val originalOtp =
+            entry(EntryType.OTP, OtpCredential(OtpConfig(type = OtpType.TOTP, secret = "JBSWY3DPEHPK3PXP")))
         val otp =
             apply(
-                entry(EntryType.OTP, OtpCredential(OtpConfig(type = OtpType.TOTP, secret = "JBSWY3DPEHPK3PXP"))),
+                originalOtp,
                 draft(
                     EntryType.OTP,
                     FieldKey.TITLE to EntryDraftValue.Text("Authenticator"),
@@ -70,9 +72,11 @@ class EntryFormEditorTest {
                     FieldKey.TAGS to EntryDraftValue.TextList(listOf("otp")),
                 ),
             )
+        val originalCard =
+            entry(EntryType.BANK_CARD, CardCredential(cardNumber = "4111111111111111", cardCvv = "123"))
         val card =
             apply(
-                entry(EntryType.BANK_CARD, CardCredential(cardNumber = "4111111111111111", cardCvv = "123")),
+                originalCard,
                 draft(
                     EntryType.BANK_CARD,
                     FieldKey.TITLE to EntryDraftValue.Text("New Card"),
@@ -80,9 +84,10 @@ class EntryFormEditorTest {
                     FieldKey.CARD_CVV to EntryDraftValue.Text("456"),
                 ),
             )
+        val originalWifi = entry(EntryType.WIFI, WifiCredential("Old Wi-Fi", "old-pass"))
         val wifi =
             apply(
-                entry(EntryType.WIFI, WifiCredential("Old Wi-Fi", "old-pass")),
+                originalWifi,
                 draft(
                     EntryType.WIFI,
                     FieldKey.TITLE to EntryDraftValue.Text("New Wi-Fi"),
@@ -93,6 +98,8 @@ class EntryFormEditorTest {
                 ),
             )
 
+        assertEquals("Authenticator", otp.title)
+        assertEquals(setOf("otp"), otp.tags)
         assertEquals(
             "MFRGGZDFMZTWQ2LK",
             otp.secret.otp
@@ -101,10 +108,19 @@ class EntryFormEditorTest {
         )
         assertEquals("5555555555554444", card.secret.card?.cardNumber)
         assertEquals("456", card.secret.card?.cardCvv)
+        assertEquals("New Card", card.title)
+        assertTrue(card.tags.isEmpty())
+        assertEquals("New Wi-Fi", wifi.title)
         assertEquals("New Wi-Fi", wifi.secret.wifi?.ssid)
         assertEquals("new-pass", wifi.secret.wifi?.password)
         assertTrue(wifi.secret.wifi?.isHidden == true)
-        assertEquals(setOf("kept.example"), otp.associations.domains)
+        assertTrue(wifi.tags.isEmpty())
+        assertPreservedState(originalOtp, otp)
+        assertPreservedState(originalCard, card)
+        assertPreservedState(originalWifi, wifi)
+        assertEquals(originalOtp.associations, otp.associations)
+        assertEquals(originalCard.associations, card.associations)
+        assertEquals(originalWifi.associations, wifi.associations)
     }
 
     @Test
@@ -128,7 +144,10 @@ class EntryFormEditorTest {
                     FieldKey.PASSWORD to EntryDraftValue.Text(""),
                 ),
             ) as EntryEditResult.Invalid
-        assertEquals(setOf(FieldKey.PASSWORD), invalid.violations.mapTo(linkedSetOf()) { it.field })
+        assertEquals(
+            setOf(EntryViolation(FieldKey.PASSWORD, EntryViolationCode.REQUIRED)),
+            invalid.violations,
+        )
     }
 
     private fun apply(

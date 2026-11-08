@@ -93,8 +93,7 @@ class AuthenticationAttemptSupportTest {
                     )
                 }.exceptionOrNull()
 
-            assertTrue(actual is AssertionError)
-            assertEquals(restoreFatal.message, actual?.message)
+            assertSame(restoreFatal, actual)
             assertEquals(1, restoreFatal.suppressed.size)
             assertEquals(failure.message, restoreFatal.suppressed.single().message)
         }

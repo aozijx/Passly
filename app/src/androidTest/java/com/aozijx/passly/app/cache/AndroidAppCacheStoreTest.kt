@@ -3,36 +3,31 @@ package com.aozijx.passly.app.cache
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aozijx.passly.app.testing.IsolatedTestContext
 import com.aozijx.passly.core.platform.VaultResourcePaths
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AndroidAppCacheStoreTest {
-    private val context: Context = ApplicationProvider.getApplicationContext()
-    private val store = AndroidAppCacheStore(context)
-    private val cacheMarker = context.cacheDir.resolve("cache-store-test.tmp")
-    private val vaultImageMarker =
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val context: Context by lazy {
+        IsolatedTestContext(ApplicationProvider.getApplicationContext(), temporaryFolder.root)
+    }
+    private val store by lazy { AndroidAppCacheStore(context) }
+    private val cacheMarker by lazy { context.cacheDir.resolve("cache-store-test.tmp") }
+    private val vaultImageMarker by lazy {
         VaultResourcePaths
             .vaultImagesDir(context)
             .resolve("cache-store-persistent-test.webp")
-
-    @Before
-    fun setUp() =
-        runBlocking {
-            store.clear()
-        }
-
-    @After
-    fun cleanUp() {
-        cacheMarker.delete()
-        vaultImageMarker.delete()
     }
 
     @Test

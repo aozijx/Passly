@@ -46,13 +46,14 @@ class AttachmentReferenceLifecycleDaoTest {
             database.attachmentRefCommandDao().insertStrict(currentRef("attachment-a", "entry-a"))
             database.attachmentRefCommandDao().insertStrict(currentRef("attachment-b", "entry-b"))
 
-            assertTrue(
-                runCatching {
+            assertDatabaseFailureContaining(
+                expectedMessage = "FOREIGN KEY constraint failed",
+                failure = runCatching {
                     database.openHelper.writableDatabase.execSQL(
                         "DELETE FROM attachment_resources WHERE resourceId = ?",
                         arrayOf(RESOURCE_ID),
                     )
-                }.isFailure,
+                }.exceptionOrNull(),
             )
             database.attachmentRefCommandDao().deleteById("attachment-a")
             assertTrue(database.attachmentResourceDao().getUnreferenced().isEmpty())
@@ -103,24 +104,36 @@ class AttachmentReferenceLifecycleDaoTest {
         runBlocking {
             insertEntry("entry-a")
             database.attachmentResourceDao().insertStrict(resource())
-            assertTrue(
-                runCatching {
+            assertDatabaseFailureContaining(
+                expectedMessage = "FOREIGN KEY constraint failed",
+                failure = runCatching {
                     database.attachmentRefCommandDao().insertStrict(currentRef("missing-entry", "missing-entry"))
-                }.isFailure,
+                }.exceptionOrNull(),
             )
 
             val pendingResourceId = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
             database.attachmentResourceDao().insertStrict(
                 resource(resourceId = pendingResourceId, lifecycleState = AttachmentResourceState.PENDING_GC),
             )
-            assertTrue(
-                runCatching {
+            assertDatabaseFailureContaining(
+                expectedMessage = "invalid attachment ref state",
+                failure = runCatching {
                     database.attachmentRefCommandDao().insertStrict(
                         currentRef("inactive-resource", "entry-a").copy(resourceId = pendingResourceId),
                     )
-                }.isFailure,
+                }.exceptionOrNull(),
             )
         }
+
+    private fun assertDatabaseFailureContaining(
+        expectedMessage: String,
+        failure: Throwable?,
+    ) {
+        assertTrue(
+            "expected database failure containing '$expectedMessage', but was $failure",
+            generateSequence(failure) { it.cause }.any { it.message?.contains(expectedMessage) == true },
+        )
+    }
 
     private suspend fun insertEntry(id: String) {
         database.entryCommandDao().insertStrict(

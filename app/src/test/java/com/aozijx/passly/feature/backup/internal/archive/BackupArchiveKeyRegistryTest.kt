@@ -32,20 +32,22 @@ class BackupArchiveKeyRegistryTest {
     }
 
     @Test
-    fun relationAndResourceKeysDoNotUseEnumNames() {
+    fun relationKeysDoNotUseEnumNames() {
         EntryRelationType.entries.forEach { type ->
             assertEquals(
                 type,
                 BackupArchiveKeyRegistry.relationType(BackupArchiveKeyRegistry.relationTypeKey(type)),
             )
         }
-        BackupResourceKind.entries.forEach { kind ->
-            assertEquals(
-                kind,
-                BackupArchiveKeyRegistry.resourceKind(BackupArchiveKeyRegistry.resourceKindKey(kind)),
-            )
-        }
         assertNull(BackupArchiveKeyRegistry.relationType("OTP_FOR"))
-        assertNull(BackupArchiveKeyRegistry.resourceKind("ATTACHMENT"))
+    }
+
+    @Test
+    fun resourceKindsKeepStableSerializedKeys() {
+        assertEquals("\"icon\"", BackupJson.encodeToString(BackupResourceKind.serializer(), BackupResourceKind.ICON))
+        assertEquals(
+            "\"attachment\"",
+            BackupJson.encodeToString(BackupResourceKind.serializer(), BackupResourceKind.ATTACHMENT),
+        )
     }
 }
