@@ -50,7 +50,8 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state is RecoverableReadState.Failed) {
+    val currentReadState = state
+    if (currentReadState is RecoverableReadState.Failed) {
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
             onBack = onBack,
@@ -64,10 +65,10 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         return
     }
     val readyState =
-        when (state) {
+        when (currentReadState) {
             RecoverableReadState.Loading -> return
             is RecoverableReadState.Failed -> return
-            is RecoverableReadState.Ready -> state.value
+            is RecoverableReadState.Ready<BackupDirectoryUiState> -> currentReadState.value
         }
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
     var isClearingDirectory by rememberSaveable { mutableStateOf(false) }
