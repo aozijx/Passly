@@ -451,6 +451,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 **约定完成与扫描证据（2026-11-02）：** `docs/development/kotlin-style.md` 新增“常量与固定值归属”规则，`AGENTS.md` 加入简短入口约束；常量按文件私有实现、跨文件同 owner、协议/算法语义、资源/Gradle/运行期配置分别归属。生产源码静态扫描命中 360 个 `const val` 声明，多个声明位于文件尾部 companion；精确字面量聚合发现一批待语义核验的重复（例：observability page size、应用关闭延迟、Favicon 输入上限、Autofill Inbox RSA/SHA 标识）。该扫描同时发现相同数字在不同文件中表达不同策略，故本任务要求核对消费者和行为合同后再集中；本轮只更新规则与 TODO，未移动常量或更改生产代码。
 
 
+**2026-11-08 Favicon 上限批次：** `DefaultFaviconImageProcessor.stageHttpsUrl()` 先经 `FaviconImageDownloader.download()` 读取受限响应，再把字节交给 `FaviconImageStore.stage()`；用户上传也直接经过同一暂存输入边界。因此下载和暂存对同类 favicon 输入施加同一个 10 MiB 上限，属于同一 Feature 合同。将值集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除 Downloader 与 Store 上的重复类常量；定向下载测试改用独立 10 MiB 期望值，边界行为不变。`:app:testDebugUnitTest --tests "com.aozijx.passly.app.entry.favicon.FaviconImageDownloaderTest"`、`verifyArchitecture` 通过，`git diff --check` 通过；Store 的 Android instrumentation 未运行（当前无连接设备）。Task 75 的其他常量族与 Store 的设备运行验证仍开放。
 <a id="task-77"></a>
 
 ### Task 77：核实诊断日志退出时的持久性与周期写入策略

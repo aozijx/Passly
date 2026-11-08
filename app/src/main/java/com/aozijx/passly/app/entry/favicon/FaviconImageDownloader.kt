@@ -102,7 +102,7 @@ class FaviconImageDownloader internal constructor(
             val count = read(buffer)
             if (count < 0) break
             total += count
-            if (total > MAX_INPUT_BYTES) {
+            if (total > FaviconImageLimits.MAX_INPUT_BYTES) {
                 throw FaviconDownloadException(FaviconDownloadFailure.TOO_LARGE)
             }
             output.write(buffer, 0, count)
@@ -114,7 +114,6 @@ class FaviconImageDownloader internal constructor(
     }
 
     companion object {
-        const val MAX_INPUT_BYTES = 10 * 1024 * 1024
         const val MAX_REDIRECTS = 5
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 15_000

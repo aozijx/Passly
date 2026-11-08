@@ -56,7 +56,7 @@ class FaviconImageStore
                         val count = input.read(buffer)
                         if (count < 0) break
                         total += count
-                        if (total > MAX_INPUT_BYTES) {
+                        if (total > FaviconImageLimits.MAX_INPUT_BYTES) {
                             throw FaviconImageException(FaviconImageFailure.TOO_LARGE)
                         }
                         output.write(buffer, 0, count)
@@ -127,7 +127,6 @@ class FaviconImageStore
         private fun stagingRoot(): File = VaultResourcePaths.vaultImagesStagingDir(context)
 
         companion object {
-            const val MAX_INPUT_BYTES = 10 * 1024 * 1024
             private const val INPUT_EXTENSION = ".input"
             private const val WEBP_EXTENSION = ".webp"
             private val PROMOTED_FILE_PREFIXES = listOf("favicon_", "restored_")

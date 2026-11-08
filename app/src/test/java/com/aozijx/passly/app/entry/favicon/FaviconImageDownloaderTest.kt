@@ -10,6 +10,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val EXPECTED_FAVICON_INPUT_LIMIT_BYTES = 10 * 1024 * 1024
+
 class FaviconImageDownloaderTest {
     @Test
     fun download_followsValidatedRedirectAndReturnsImageBytes() =
@@ -77,7 +79,7 @@ class FaviconImageDownloaderTest {
             val nonImage = QueueTransport(FakeResponse(200, contentType = "text/html", bytes = byteArrayOf(1)))
             val oversized =
                 QueueTransport(
-                    FakeResponse(200, contentType = "image/png", bytes = ByteArray(FaviconImageDownloader.MAX_INPUT_BYTES + 1)),
+                    FakeResponse(200, contentType = "image/png", bytes = ByteArray(EXPECTED_FAVICON_INPUT_LIMIT_BYTES + 1)),
                 )
 
             val typeError =
@@ -98,14 +100,14 @@ class FaviconImageDownloaderTest {
     @Test
     fun download_acceptsBodyAtExactSizeLimit() =
         runTest {
-            val expected = ByteArray(FaviconImageDownloader.MAX_INPUT_BYTES) { 7 }
+            val expected = ByteArray(EXPECTED_FAVICON_INPUT_LIMIT_BYTES) { 7 }
 
             val actual =
                 downloader(
                     QueueTransport(FakeResponse(200, contentType = "image/webp", bytes = expected)),
                 ).download("https://example.com/icon")
 
-            assertEquals(FaviconImageDownloader.MAX_INPUT_BYTES, actual.size)
+            assertEquals(EXPECTED_FAVICON_INPUT_LIMIT_BYTES, actual.size)
         }
 
     @Test
