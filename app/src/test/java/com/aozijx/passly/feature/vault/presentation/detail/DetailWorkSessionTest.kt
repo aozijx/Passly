@@ -306,15 +306,15 @@ class DetailWorkSessionTest {
             fixture.session.persist(token, EntryEdit.SetFieldValue(FieldKey.PASSWORD, "new-password"), completion)
 
             assertEquals(
-                listOf(DetailMutation.SaveFailed(completion, "UNEXPECTED_FAILURE")),
+                listOf(DetailMutation.SaveFailed(completion)),
                 fixture.mutations,
             )
             val reduced =
                 DetailReducer.reduce(
-                    DetailUiState(saveState = DetailSaveState.Saving(completion)),
+                    DetailUiState(saveProgress = DetailSaveProgress(completion)),
                     fixture.mutations.single(),
                 )
-            assertEquals(DetailSaveState.Failed(completion, "UNEXPECTED_FAILURE"), reduced.saveState)
+            assertEquals(null, reduced.saveProgress)
         }
 
     @Test
@@ -327,7 +327,7 @@ class DetailWorkSessionTest {
             fixture.session.persist(token, EntryEdit.SetFieldValue(FieldKey.PASSWORD, "new-password"), completion)
 
             assertEquals(
-                listOf(DetailMutation.SaveFailed(completion, "UNEXPECTED_FAILURE")),
+                listOf(DetailMutation.SaveFailed(completion)),
                 fixture.mutations,
             )
         }

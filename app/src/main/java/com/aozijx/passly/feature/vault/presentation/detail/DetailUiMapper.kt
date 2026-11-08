@@ -255,8 +255,8 @@ internal fun toDetailPresentationModel(
             DetailEditorOverlaysUiModel(
                 tagEditor = state.tagEditor.toTagEditorUiModel(),
                 faviconEditor = state.faviconEditor.toFaviconEditorUiModel(),
-                savingTags = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Tags),
-                savingIcon = state.saveState == DetailSaveState.Saving(DetailEditCompletion.Icon),
+                savingTags = state.saveProgress?.completion == DetailEditCompletion.Tags,
+                savingIcon = state.saveProgress?.completion == DetailEditCompletion.Icon,
                 revisionHistory = state.revisions.toRevisionSheetUiModel(revisionReveals),
             ),
     )

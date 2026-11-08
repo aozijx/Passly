@@ -923,7 +923,7 @@ class DetailViewModel
         }
 
         private fun submitTag(value: String) {
-            if (_uiState.value.saveState is DetailSaveState.Saving || value.isBlank()) return
+            if (_uiState.value.saveProgress != null || value.isBlank()) return
             mutate(DetailMutation.TagSubmitted(value))
         }
 
@@ -932,7 +932,7 @@ class DetailViewModel
             completion: DetailEditCompletion,
         ) {
             val entryId = _uiState.value.entry?.id ?: return
-            if (_uiState.value.saveState is DetailSaveState.Saving) return
+            if (_uiState.value.saveProgress != null) return
             val token = workSession.current(entryId) ?: return
             mutate(DetailMutation.SaveStarted(completion))
             workSession.persist(token, edit, completion)
@@ -946,7 +946,7 @@ class DetailViewModel
             if (
                 editor.work == DetailFaviconWorkState.Processing ||
                 !editor.dirty ||
-                state.saveState is DetailSaveState.Saving ||
+                state.saveProgress != null ||
                 !secureSessionAccessState.hasFullSecureSessionAccess()
             ) {
                 return
@@ -972,7 +972,6 @@ class DetailViewModel
                                     mutate(
                                         DetailMutation.SaveFailed(
                                             DetailEditCompletion.Icon,
-                                            processingError.name,
                                         ),
                                     )
                                     return@launchSave

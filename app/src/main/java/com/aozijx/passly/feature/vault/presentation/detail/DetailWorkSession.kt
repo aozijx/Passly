@@ -116,7 +116,7 @@ internal class DetailWorkSession(
             }
 
             is AppResult.Failure -> {
-                onMutation(DetailMutation.SaveFailed(completion, result.error.code))
+                onMutation(DetailMutation.SaveFailed(completion))
             }
         }
     }
@@ -126,11 +126,7 @@ internal class DetailWorkSession(
         completion: DetailEditCompletion,
     ) {
         if (isCurrent(token) && currentCoroutineContext().isActive) {
-            onMutation(DetailMutation.SaveFailed(completion, UNEXPECTED_FAILURE))
+            onMutation(DetailMutation.SaveFailed(completion))
         }
-    }
-
-    private companion object {
-        const val UNEXPECTED_FAILURE = "UNEXPECTED_FAILURE"
     }
 }
