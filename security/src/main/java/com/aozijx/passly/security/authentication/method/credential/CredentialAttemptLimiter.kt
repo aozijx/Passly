@@ -17,6 +17,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 
+private const val MAX_ATTEMPTS = 5
+private const val LOCKOUT_MS = 30_000L
+
 internal data class CredentialAttemptTime(
     val epochMs: Long,
     val elapsedRealtimeMs: Long,
@@ -219,16 +222,11 @@ internal class CredentialAttemptLimiter internal constructor(
             requestId = request.id,
             method = method,
         )
-
-    companion object {
-        const val MAX_ATTEMPTS = 5
-        const val LOCKOUT_MS = 30_000L
-
-        private fun Context.currentAttemptTime() =
-            CredentialAttemptTime(
-                epochMs = System.currentTimeMillis(),
-                elapsedRealtimeMs = SystemClock.elapsedRealtime(),
-                bootCount = Settings.Global.getInt(contentResolver, Settings.Global.BOOT_COUNT, -1),
-            )
-    }
 }
+
+private fun Context.currentAttemptTime() =
+    CredentialAttemptTime(
+        epochMs = System.currentTimeMillis(),
+        elapsedRealtimeMs = SystemClock.elapsedRealtime(),
+        bootCount = Settings.Global.getInt(contentResolver, Settings.Global.BOOT_COUNT, -1),
+    )

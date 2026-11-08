@@ -22,7 +22,7 @@ class CredentialAttemptLimiterTest {
         val request = request()
         val firstLimiter = CredentialAttemptLimiter(store) { now }
 
-        repeat(CredentialAttemptLimiter.MAX_ATTEMPTS) {
+        repeat(5) {
             assertNull(firstLimiter.reserveAttempt(AuthenticationMethod.APP_PASSWORD, request))
             firstLimiter.recordIncorrect(AuthenticationMethod.APP_PASSWORD, request)
         }
@@ -44,7 +44,7 @@ class CredentialAttemptLimiterTest {
         val request = request()
         val limiter = CredentialAttemptLimiter(store) { now }
 
-        repeat(CredentialAttemptLimiter.MAX_ATTEMPTS) {
+        repeat(5) {
             assertNull(limiter.reserveAttempt(AuthenticationMethod.APP_PASSWORD, request))
         }
 
@@ -64,7 +64,7 @@ class CredentialAttemptLimiterTest {
         val limiter = CredentialAttemptLimiter(store) { now }
         val request = request()
 
-        repeat(CredentialAttemptLimiter.MAX_ATTEMPTS) {
+        repeat(5) {
             limiter.reserveAttempt(AuthenticationMethod.APP_PASSWORD, request)
             limiter.recordIncorrect(AuthenticationMethod.APP_PASSWORD, request)
         }
