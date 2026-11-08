@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

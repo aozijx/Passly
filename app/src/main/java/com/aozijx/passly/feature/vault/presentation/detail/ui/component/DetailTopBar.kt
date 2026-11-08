@@ -27,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailHeaderUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHeaderUiModel
 import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

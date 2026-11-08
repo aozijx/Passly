@@ -92,7 +92,7 @@ internal fun TrashBottomSheet(
 
                 is TrashErrorUiState.OperationFailed -> {
                     TrashError(
-                        message = state.error.message,
+                        message = stringResource(state.error.messageResource),
                         actionLabel = stringResource(R.string.settings_trash_error_dismiss),
                         onAction = onClearError,
                     )
@@ -110,7 +110,7 @@ internal fun TrashBottomSheet(
 
                 is TrashEntryListUiState.LoadFailed -> {
                     TrashError(
-                        message = entries.message,
+                        message = stringResource(entries.messageResource),
                         actionLabel = stringResource(R.string.settings_trash_retry),
                         onAction = onRetryLoad,
                     )

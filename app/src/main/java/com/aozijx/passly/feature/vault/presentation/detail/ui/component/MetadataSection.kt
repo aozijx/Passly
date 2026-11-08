@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailMetadataUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailMetadataUiModel
 import java.text.SimpleDateFormat
 import java.util.Date
 

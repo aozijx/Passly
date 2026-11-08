@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.trash.model
 
+import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
 import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
@@ -22,9 +23,7 @@ internal data class TrashEntryUiModel(
 internal sealed interface TrashErrorUiState {
     data object Hidden : TrashErrorUiState
 
-    data class OperationFailed(
-        val message: String,
-    ) : TrashErrorUiState
+    data class OperationFailed(@field:StringRes val messageResource: Int) : TrashErrorUiState
 }
 
 internal sealed interface TrashEntryListUiState {
@@ -32,7 +31,7 @@ internal sealed interface TrashEntryListUiState {
 
     data object Emptying : TrashEntryListUiState
 
-    data class LoadFailed(val message: String) : TrashEntryListUiState
+    data class LoadFailed(@field:StringRes val messageResource: Int) : TrashEntryListUiState
 
     data object Empty : TrashEntryListUiState
 

@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskedText
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSshUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
 
 @Composable
 fun SshKeySection(

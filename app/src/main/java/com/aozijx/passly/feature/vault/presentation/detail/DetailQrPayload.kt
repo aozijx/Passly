@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
+import com.aozijx.passly.feature.vault.presentation.detail.model.ScopedSensitiveText
 
 /** Owns the payload and cleanup hooks for images derived from it. */
 class DetailQrPayload internal constructor(

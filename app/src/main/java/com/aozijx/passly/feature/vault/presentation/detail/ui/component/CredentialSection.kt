@@ -9,8 +9,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialFieldUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 /**

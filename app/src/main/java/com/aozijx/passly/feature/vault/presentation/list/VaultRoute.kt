@@ -30,10 +30,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableReadState
-import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
-import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
-import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
-import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
 import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
@@ -56,7 +52,6 @@ import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigationRe
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
 import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 import java.net.URI
-import java.net.URISyntaxException
 
 @Composable
 internal fun VaultRoute(
@@ -256,76 +251,62 @@ internal fun VaultRoute(
                 ),
     ) {
         ScannerRoute(
-            resolveResult = resolve@{ rawValue ->
-                val otpConfig = (OtpAuthUriCodec.parse(rawValue) as? OtpUriParseResult.Parsed)?.config
-                if (otpConfig != null) {
-                    return@resolve ScannerResultPlan(
-                        presentation = ScannerResultPresentation(
-                            showCopyAction = false,
-                            primaryActionLabel = ScannerPrimaryActionLabel.Save,
-                        ),
-                        confirm = {
-                            if (scannedOtpImportViewModel.importScannedOtp(otpConfig)) {
-                                ScannerResultHandling.Handled
-                            } else {
-                                ScannerResultHandling.Rejected
-                            }
-                        },
-                    )
-                }
+            resolveResult = { rawValue ->
+                when (val code = resolveVaultScannedCode(rawValue)) {
+                    is VaultScannedCode.Otp ->
+                        ScannerResultPlan(
+                            presentation =
+                                ScannerResultPresentation(
+                                    showCopyAction = false,
+                                    primaryActionLabel = ScannerPrimaryActionLabel.Save,
+                                ),
+                            confirm = {
+                                if (scannedOtpImportViewModel.importScannedOtp(code.config)) {
+                                    ScannerResultHandling.Handled
+                                } else {
+                                    ScannerResultHandling.Rejected
+                                }
+                            },
+                        )
 
-                val wifiPayload =
-                    (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
-                if (wifiPayload != null) {
-                    return@resolve ScannerResultPlan(
-                        presentation = ScannerResultPresentation.DEFAULT,
-                        confirm = {
-                            when (navigation.navigate(VaultDestinationRequest.EditScannedWifi(wifiPayload))) {
-                                VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
-                                VaultNavigationResult.UnsupportedDestination,
-                                VaultNavigationResult.AccessDenied,
-                                is VaultNavigationResult.NavigationFailed,
-                                -> ScannerResultHandling.Rejected
-                            }
-                        },
-                    )
-                }
+                    is VaultScannedCode.Wifi ->
+                        ScannerResultPlan(
+                            presentation = ScannerResultPresentation.DEFAULT,
+                            confirm = {
+                                when (navigation.navigate(VaultDestinationRequest.EditScannedWifi(code.payload))) {
+                                    VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
+                                    VaultNavigationResult.UnsupportedDestination,
+                                    VaultNavigationResult.AccessDenied,
+                                    is VaultNavigationResult.NavigationFailed,
+                                    -> ScannerResultHandling.Rejected
+                                }
+                            },
+                        )
 
-                val webUri =
-                    rawValue.toScannedWebUri()
-                if (webUri != null) {
-                    return@resolve ScannerResultPlan(
-                        presentation = ScannerResultPresentation.DEFAULT,
-                        confirm = {
-                            if (context.openScannedWebLink(webUri)) {
-                                ScannerResultHandling.Handled
-                            } else {
-                                Toast.makeText(context, R.string.scanner_open_link_failed, Toast.LENGTH_SHORT).show()
-                                ScannerResultHandling.Rejected
-                            }
-                        },
-                    )
-                }
+                    is VaultScannedCode.WebLink ->
+                        ScannerResultPlan(
+                            presentation = ScannerResultPresentation.DEFAULT,
+                            confirm = {
+                                if (context.openScannedWebLink(code.uri)) {
+                                    ScannerResultHandling.Handled
+                                } else {
+                                    Toast.makeText(context, R.string.scanner_open_link_failed, Toast.LENGTH_SHORT).show()
+                                    ScannerResultHandling.Rejected
+                                }
+                            },
+                        )
 
-                ScannerResultPlan(
-                    presentation = ScannerResultPresentation.DEFAULT,
-                    confirm = { ScannerResultHandling.Rejected },
-                )
+                    VaultScannedCode.Unsupported ->
+                        ScannerResultPlan(
+                            presentation = ScannerResultPresentation.DEFAULT,
+                            confirm = { ScannerResultHandling.Rejected },
+                        )
+                }
             },
             onDismiss = { overlay = VaultOverlay.None },
         )
     }
 }
-
-private fun String.toScannedWebUri(): URI? =
-    try {
-        URI(this).takeIf { uri ->
-            (uri.scheme.equals("http", ignoreCase = true) || uri.scheme.equals("https", ignoreCase = true)) &&
-                !uri.host.isNullOrBlank()
-        }
-    } catch (_: URISyntaxException) {
-        null
-    }
 
 private fun android.content.Context.openScannedWebLink(uri: URI): Boolean =
     try {

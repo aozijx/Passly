@@ -6,12 +6,12 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailCardTextFieldUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIdentityUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPasskeyUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSeedPhraseUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSshUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailCardTextFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSeedPhraseUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
 
 /**
  * One projection of the storage facts used by every detail section:

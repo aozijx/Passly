@@ -31,8 +31,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityHistoryUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityHistoryUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityUiModel
 import java.text.DateFormat
 import java.util.Date
 

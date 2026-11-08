@@ -33,7 +33,7 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentationModel
 import com.aozijx.passly.runtime.session.SessionLockedException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject

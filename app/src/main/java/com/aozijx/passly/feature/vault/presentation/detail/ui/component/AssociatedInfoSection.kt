@@ -42,8 +42,8 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedInfoUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedAppsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedInfoUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedAppsUiState
 
 @Composable
 fun AssociatedInfoSection(

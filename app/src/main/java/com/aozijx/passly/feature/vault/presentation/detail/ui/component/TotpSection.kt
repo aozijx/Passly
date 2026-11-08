@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiModel
 
 @Composable
 fun TotpSection(

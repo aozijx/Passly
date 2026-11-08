@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.presentation.detail.ui.model
+package com.aozijx.passly.feature.vault.presentation.detail.model
 
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
@@ -6,7 +6,9 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 
@@ -208,16 +210,10 @@ sealed interface DetailRevisionComparisonUiState {
 
     data class Ready(
         val differences: List<DetailRevisionDifferenceUiModel>,
-        val restore: DetailRevisionRestoreUiState,
+        val restore: DetailRevisionRestorePhase,
     ) : DetailRevisionComparisonUiState
 
     data object Failed : DetailRevisionComparisonUiState
-}
-
-enum class DetailRevisionRestoreUiState {
-    Idle,
-    Confirming,
-    Restoring,
 }
 
 enum class DetailSectionUiModel {

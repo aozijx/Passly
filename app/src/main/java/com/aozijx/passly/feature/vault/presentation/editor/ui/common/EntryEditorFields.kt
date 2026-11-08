@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 fun EntryEditorSection(
     title: String,
     modifier: Modifier = Modifier,
-    supportingText: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -32,13 +31,6 @@ fun EntryEditorSection(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-            if (!supportingText.isNullOrBlank()) {
-                Text(
-                    text = supportingText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
         content()
     }

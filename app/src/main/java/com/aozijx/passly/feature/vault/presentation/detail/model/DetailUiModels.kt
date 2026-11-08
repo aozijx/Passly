@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.presentation.detail.ui.model
+package com.aozijx.passly.feature.vault.presentation.detail.model
 
 import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType

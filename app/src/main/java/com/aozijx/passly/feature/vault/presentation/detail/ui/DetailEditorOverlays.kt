@@ -5,10 +5,10 @@ import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconCropScreen
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconEditorSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TagEditorSheet
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailEditorOverlaysUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconWorkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailEditorOverlaysUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
 
 @Composable
 fun DetailEditorOverlays(
@@ -59,7 +59,7 @@ fun DetailEditorOverlays(
             faviconEditor.pendingInputPath?.let { path ->
                 FaviconCropScreen(
                     stagedPath = path,
-                    processing = faviconEditor.work == FaviconWorkUiState.Processing,
+                    processing = faviconEditor.work == DetailFaviconWorkState.Processing,
                     onCrop = { zoom, x, y ->
                         onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
                     },

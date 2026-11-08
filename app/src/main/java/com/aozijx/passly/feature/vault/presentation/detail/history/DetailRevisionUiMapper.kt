@@ -6,13 +6,12 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.asScopedSensitiveText
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionComparisonUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionSheetUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionValueUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionItemUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionListUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionSheetUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
 
 internal fun DetailRevisionState.toRevisionSheetUiModel(reveals: Map<SensitiveFieldKey, SensitiveValue>): DetailRevisionSheetUiModel =
     when (this) {
@@ -90,12 +89,7 @@ private fun DetailRevisionComparisonPhase.toUiModel(reveals: Map<SensitiveFieldK
                                 revealedValue = sensitiveKey?.let(reveals::get)?.asScopedSensitiveText(),
                             )
                         },
-                restore =
-                    when (restore) {
-                        DetailRevisionRestorePhase.Idle -> DetailRevisionRestoreUiState.Idle
-                        DetailRevisionRestorePhase.Confirming -> DetailRevisionRestoreUiState.Confirming
-                        DetailRevisionRestorePhase.Restoring -> DetailRevisionRestoreUiState.Restoring
-                    },
+                restore = restore,
             )
         }
     }

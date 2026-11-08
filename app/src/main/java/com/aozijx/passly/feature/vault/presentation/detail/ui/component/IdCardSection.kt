@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIdentityUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
 
 @Composable
 fun IdCardSection(

@@ -57,13 +57,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconImageUrlDownloadUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconOverlay
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconProcessingError
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconTab
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconOverlayUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconProcessingErrorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconWorkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
 import com.aozijx.passly.presentation.shared.components.VaultIconColorToken
 import com.aozijx.passly.presentation.shared.components.VaultIcons
 import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
@@ -86,7 +85,7 @@ fun FaviconEditorSheet(
     onConfirmDiscard: () -> Unit,
     onKeepEditing: () -> Unit,
 ) {
-    val processing = state.work == FaviconWorkUiState.Processing
+    val processing = state.work == DetailFaviconWorkState.Processing
     val dismissAllowed by rememberUpdatedState(!isSaving && !processing)
     val sheetState =
         rememberBottomSheetState(
@@ -158,7 +157,7 @@ fun FaviconEditorSheet(
                     }
                 }
             }
-            (state.work as? FaviconWorkUiState.Failed)?.error?.let { error ->
+            (state.work as? DetailFaviconWorkState.Failed)?.error?.let { error ->
                 Text(
                     text = stringResource(error.messageRes()),
                     color = MaterialTheme.colorScheme.error,
@@ -193,7 +192,7 @@ fun FaviconEditorSheet(
             }
         }
     }
-    if (state.overlay == FaviconOverlayUiState.ConfirmDiscard) {
+    if (state.overlay == DetailFaviconOverlay.ConfirmDiscard) {
         AlertDialog(
             onDismissRequest = keepEditing,
             title = { Text(stringResource(R.string.vault_detail_favicon_discard_title)) },
@@ -218,7 +217,7 @@ private fun FaviconCustomImage(
     onDownloadRequested: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val processing = state.work == FaviconWorkUiState.Processing
+    val processing = state.work == DetailFaviconWorkState.Processing
     Column(
         modifier =
             modifier
@@ -249,7 +248,7 @@ private fun FaviconCustomImage(
         )
         Button(
             onClick = onDownloadRequested,
-            enabled = state.imageUrlDownloadState == FaviconImageUrlDownloadUiState.Enabled && !processing,
+            enabled = state.canDownloadImageUrl && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (processing) {
@@ -265,15 +264,15 @@ private fun FaviconCustomImage(
     }
 }
 
-private fun FaviconProcessingErrorUiModel.messageRes(): Int =
+private fun DetailFaviconProcessingError.messageRes(): Int =
     when (this) {
-        FaviconProcessingErrorUiModel.INVALID_URL -> R.string.vault_detail_favicon_error_invalid_url
-        FaviconProcessingErrorUiModel.URL_NOT_ALLOWED -> R.string.vault_detail_favicon_error_url_not_allowed
-        FaviconProcessingErrorUiModel.DOWNLOAD_FAILED -> R.string.vault_detail_favicon_error_download_failed
-        FaviconProcessingErrorUiModel.NOT_IMAGE -> R.string.vault_detail_favicon_error_not_image
-        FaviconProcessingErrorUiModel.IMAGE_TOO_LARGE -> R.string.vault_detail_favicon_error_too_large
-        FaviconProcessingErrorUiModel.INVALID_IMAGE -> R.string.vault_detail_favicon_error_invalid_image
-        FaviconProcessingErrorUiModel.SAVE_FAILED -> R.string.vault_detail_favicon_error_save_failed
+        DetailFaviconProcessingError.INVALID_URL -> R.string.vault_detail_favicon_error_invalid_url
+        DetailFaviconProcessingError.URL_NOT_ALLOWED -> R.string.vault_detail_favicon_error_url_not_allowed
+        DetailFaviconProcessingError.DOWNLOAD_FAILED -> R.string.vault_detail_favicon_error_download_failed
+        DetailFaviconProcessingError.NOT_IMAGE -> R.string.vault_detail_favicon_error_not_image
+        DetailFaviconProcessingError.IMAGE_TOO_LARGE -> R.string.vault_detail_favicon_error_too_large
+        DetailFaviconProcessingError.INVALID_IMAGE -> R.string.vault_detail_favicon_error_invalid_image
+        DetailFaviconProcessingError.SAVE_FAILED -> R.string.vault_detail_favicon_error_save_failed
     }
 
 @Composable

@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailNotesUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailNotesUiModel
 
 @Composable
 fun NotesSection(

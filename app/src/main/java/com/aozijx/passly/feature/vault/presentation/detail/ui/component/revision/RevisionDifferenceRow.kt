@@ -17,8 +17,8 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.vault.presentation.common.labelRes
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionValueUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
 import java.text.DateFormat
 import java.util.Date
 

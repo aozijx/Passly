@@ -14,7 +14,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 @Composable

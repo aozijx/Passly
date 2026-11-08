@@ -42,10 +42,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorOverlayUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationErrorUiModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)

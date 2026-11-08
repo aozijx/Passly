@@ -44,9 +44,9 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.Revision
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBodyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSectionUiModel
 
 @Composable
 fun DetailBody(

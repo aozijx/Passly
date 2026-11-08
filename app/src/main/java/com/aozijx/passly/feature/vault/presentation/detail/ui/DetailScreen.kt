@@ -12,7 +12,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailTopBar
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.EntryQrSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentationModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.presentation.detail.ui.model
+package com.aozijx.passly.feature.vault.presentation.detail.model
 
 sealed interface DetailTagEditorUiModel {
     data object Hidden : DetailTagEditorUiModel
