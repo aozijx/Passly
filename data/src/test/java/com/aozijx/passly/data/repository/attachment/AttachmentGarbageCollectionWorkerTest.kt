@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -171,8 +172,7 @@ class AttachmentGarbageCollectionWorkerTest {
                     )
                 }.exceptionOrNull()
 
-            assertTrue(actual is AssertionError)
-            assertEquals(fatal.message, actual?.message)
+            assertSame(fatal, actual)
             assertEquals(1, attempts)
             assertFalse(reported)
         }
@@ -199,8 +199,7 @@ class AttachmentGarbageCollectionWorkerTest {
                     )
                 }.exceptionOrNull()
 
-            assertTrue(actual is CancellationException)
-            assertEquals(cancelled.message, actual?.message)
+            assertSame(cancelled, actual)
             assertEquals(1, attempts)
             assertFalse(reported)
         }
