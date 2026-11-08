@@ -5,50 +5,47 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 
 sealed interface RecoveryModeUiState {
-    val dialogDraft: PasswordSetupDraft?
-    val isSaving: Boolean get() = false
-    val canSubmit: Boolean
-    @get:StringRes val failureMessageRes: Int? get() = null
+    data object Closed : RecoveryModeUiState
 
-    data object Closed : RecoveryModeUiState {
-        override val dialogDraft: PasswordSetupDraft? = null
-        override val canSubmit = false
+    sealed interface PasswordDialog : RecoveryModeUiState {
+        val draft: PasswordSetupDraft
+        val canSubmit: Boolean
+        val isSaving: Boolean get() = false
+        val error: RecoveryPasswordDialogError get() = RecoveryPasswordDialogError.None
     }
 
     data class Editing(
-        val draft: PasswordSetupDraft,
+        override val draft: PasswordSetupDraft,
         override val canSubmit: Boolean = draft.canSubmit(),
-    ) : RecoveryModeUiState {
-        override val dialogDraft: PasswordSetupDraft = draft
-    }
+    ) : PasswordDialog
 
     data class Saving(
-        val draft: PasswordSetupDraft,
+        override val draft: PasswordSetupDraft,
         override val canSubmit: Boolean = false,
-    ) : RecoveryModeUiState {
-        override val dialogDraft: PasswordSetupDraft = draft
+    ) : PasswordDialog {
         override val isSaving = true
     }
 
     data class Failed(
-        val draft: PasswordSetupDraft,
+        override val draft: PasswordSetupDraft,
         val reason: RecoveryPasswordSetupFailure,
         override val canSubmit: Boolean = draft.canSubmit(),
-    ) : RecoveryModeUiState {
-        override val dialogDraft: PasswordSetupDraft = draft
-        @get:StringRes override val failureMessageRes = reason.messageRes
+    ) : PasswordDialog {
+        override val error = RecoveryPasswordDialogError.Message(reason.messageRes)
     }
 }
 
-enum class RecoveryPasswordSetupFailure {
-    PasswordMismatchOrEmpty,
-    SetupFailed,
+sealed interface RecoveryPasswordDialogError {
+    data object None : RecoveryPasswordDialogError
+
+    data class Message(
+        @get:StringRes val messageRes: Int,
+    ) : RecoveryPasswordDialogError
 }
 
-@get:StringRes
-private val RecoveryPasswordSetupFailure.messageRes: Int
-    get() =
-        when (this) {
-            RecoveryPasswordSetupFailure.PasswordMismatchOrEmpty -> R.string.recovery_mode_password_mismatch_or_empty
-            RecoveryPasswordSetupFailure.SetupFailed -> R.string.recovery_mode_password_setup_failed
-        }
+enum class RecoveryPasswordSetupFailure(
+    @get:StringRes val messageRes: Int,
+) {
+    PasswordMismatchOrEmpty(R.string.recovery_mode_password_mismatch_or_empty),
+    SetupFailed(R.string.recovery_mode_password_setup_failed),
+}

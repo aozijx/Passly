@@ -190,7 +190,11 @@ class RecoveryModeViewModel
         }
 
         private fun wipePasswords() {
-            val draft = _uiState.value.dialogDraft ?: return
+            val draft =
+                when (val state = _uiState.value) {
+                    RecoveryModeUiState.Closed -> return
+                    is RecoveryModeUiState.PasswordDialog -> state.draft
+                }
             draft.newPassword.wipe()
             draft.confirmPassword.wipe()
         }

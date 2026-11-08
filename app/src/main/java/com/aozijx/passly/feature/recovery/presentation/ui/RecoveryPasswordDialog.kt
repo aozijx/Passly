@@ -15,17 +15,15 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.dialog.PasslyAlertDialog
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
+import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
+import com.aozijx.passly.feature.recovery.presentation.RecoveryPasswordDialogError
 import com.aozijx.passly.feature.recovery.presentation.toRecoveryPasswordStrengthUiState
-import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 
 @Composable
 fun RecoveryPasswordDialog(
-    draft: PasswordSetupDraft,
-    canSubmit: Boolean,
-    failureMessageRes: Int?,
-    isSaving: Boolean,
+    state: RecoveryModeUiState.PasswordDialog,
     newPasswordVisible: Boolean,
     confirmPasswordVisible: Boolean,
     onNewPasswordChange: (String) -> Unit,
@@ -35,17 +33,17 @@ fun RecoveryPasswordDialog(
     onToggleNewPasswordVisibility: () -> Unit,
     onToggleConfirmPasswordVisibility: () -> Unit,
 ) {
+    val draft = state.draft
     val newPassword = draft.newPassword.toUiString()
     val confirmPassword = draft.confirmPassword.toUiString()
     val strength = draft.passwordStrength.toRecoveryPasswordStrengthUiState(MaterialTheme.colorScheme)
-    val errorMessage = failureMessageRes?.let { stringResource(it) }
     PasslyAlertDialog(
         title = stringResource(R.string.recovery_mode_password_dialog_title),
         confirmText = stringResource(R.string.save),
         dismissText = stringResource(R.string.cancel),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
-        confirmEnabled = canSubmit,
+        confirmEnabled = state.canSubmit,
     ) {
         Column {
             Text(
@@ -54,7 +52,7 @@ fun RecoveryPasswordDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
-            PasswordField(newPassword, onNewPasswordChange, !isSaving, stringResource(R.string.recovery_mode_new_password), newPasswordVisible) {
+            PasswordField(newPassword, onNewPasswordChange, !state.isSaving, stringResource(R.string.recovery_mode_new_password), newPasswordVisible) {
                 onToggleNewPasswordVisibility()
             }
             when (val strengthState = strength) {
@@ -72,11 +70,11 @@ fun RecoveryPasswordDialog(
             PasswordField(
                 confirmPassword,
                 onConfirmPasswordChange,
-                !isSaving,
+                !state.isSaving,
                 stringResource(R.string.recovery_mode_confirm_password),
                 confirmPasswordVisible,
                 ImeAction.Done,
-                errorMessage,
+                state.error,
                 draft.confirmationState,
             ) {
                 onToggleConfirmPasswordVisibility()
@@ -101,7 +99,7 @@ private fun PasswordField(
     label: String,
     visible: Boolean,
     ime: ImeAction = ImeAction.Next,
-    error: String? = null,
+    error: RecoveryPasswordDialogError = RecoveryPasswordDialogError.None,
     confirmationState: PasswordConfirmationUiState = PasswordConfirmationUiState.Hidden,
     toggle: () -> Unit,
 ) {
@@ -124,10 +122,12 @@ private fun PasswordField(
                 )
             }
         },
-        isError = error != null || confirmationState == PasswordConfirmationUiState.Mismatch,
+        isError = error != RecoveryPasswordDialogError.None || confirmationState == PasswordConfirmationUiState.Mismatch,
         supportingText =
             when {
-                error != null -> ({ Text(error) })
+                error is RecoveryPasswordDialogError.Message -> {
+                    { Text(stringResource(error.messageRes)) }
+                }
                 confirmationState == PasswordConfirmationUiState.Mismatch -> {
                     { Text(stringResource(R.string.recovery_mode_password_mismatch_or_empty)) }
                 }

@@ -64,7 +64,7 @@ fun RecoveryModeScreen(
                 stringResource(R.string.recovery_mode_set_password),
                 stringResource(R.string.app_password_unlock_description),
                 onSetPassword,
-                state.isSaving,
+                state is RecoveryModeUiState.Saving,
             )
         }
         Spacer(Modifier.height(16.dp))
@@ -78,21 +78,21 @@ fun RecoveryModeScreen(
             )
         }
     }
-    state.dialogDraft?.let { draft ->
-        RecoveryPasswordDialog(
-            draft,
-            canSubmit = state.canSubmit,
-            isSaving = state.isSaving,
-            failureMessageRes = state.failureMessageRes,
-            newPasswordVisible = newPasswordVisible,
-            confirmPasswordVisible = confirmPasswordVisible,
-            onNewPasswordChange = onNewPasswordChange,
-            onConfirmPasswordChange = onConfirmPasswordChange,
-            onConfirm = onConfirmPassword,
-            onDismiss = onDismissPassword,
-            onToggleNewPasswordVisibility = { newPasswordVisible = !newPasswordVisible },
-            onToggleConfirmPasswordVisibility = { confirmPasswordVisible = !confirmPasswordVisible },
-        )
+    when (state) {
+        RecoveryModeUiState.Closed -> Unit
+        is RecoveryModeUiState.PasswordDialog -> {
+            RecoveryPasswordDialog(
+                state,
+                newPasswordVisible = newPasswordVisible,
+                confirmPasswordVisible = confirmPasswordVisible,
+                onNewPasswordChange = onNewPasswordChange,
+                onConfirmPasswordChange = onConfirmPasswordChange,
+                onConfirm = onConfirmPassword,
+                onDismiss = onDismissPassword,
+                onToggleNewPasswordVisibility = { newPasswordVisible = !newPasswordVisible },
+                onToggleConfirmPasswordVisibility = { confirmPasswordVisible = !confirmPasswordVisible },
+            )
+        }
     }
 }
 

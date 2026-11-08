@@ -6,30 +6,30 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecoveryModeReducerTest {
     @Test
-    fun `recovery states expose dialog presentation without subtype inspection`() {
+    fun `recovery state exposes explicit dialog mode and feedback`() {
         val draft = PasswordSetupDraft()
         val editing = RecoveryModeUiState.Editing(draft, canSubmit = true)
         val saving = RecoveryModeUiState.Saving(draft)
         val failed = RecoveryModeUiState.Failed(draft, RecoveryPasswordSetupFailure.SetupFailed)
 
-        assertNull(RecoveryModeUiState.Closed.dialogDraft)
-        assertFalse(RecoveryModeUiState.Closed.isSaving)
-        assertNull(RecoveryModeUiState.Closed.failureMessageRes)
-        assertSame(draft, editing.dialogDraft)
+        assertSame(RecoveryPasswordDialogError.None, editing.error)
+        assertSame(draft, editing.draft)
         assertTrue(editing.canSubmit)
         assertFalse(editing.isSaving)
-        assertSame(draft, saving.dialogDraft)
+        assertSame(RecoveryPasswordDialogError.None, saving.error)
+        assertSame(draft, saving.draft)
         assertFalse(saving.canSubmit)
         assertTrue(saving.isSaving)
-        assertSame(draft, failed.dialogDraft)
-        assertEquals(R.string.recovery_mode_password_setup_failed, failed.failureMessageRes)
+        assertEquals(
+            RecoveryPasswordDialogError.Message(R.string.recovery_mode_password_setup_failed),
+            failed.error,
+        )
     }
 
     @Test
