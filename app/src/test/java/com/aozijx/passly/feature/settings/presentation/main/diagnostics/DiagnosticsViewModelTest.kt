@@ -93,8 +93,8 @@ class DiagnosticsViewModelTest {
             viewModel.onPageEntered()
             runCurrent()
 
-            assertFalse(viewModel.uiState.value.isLoading)
-            assertTrue(viewModel.uiState.value.isRefreshFailed)
+            assertFalse(viewModel.uiState.value.loadState is DiagnosticsLoadState.Loading)
+            assertTrue(viewModel.uiState.value.loadState is DiagnosticsLoadState.RefreshFailed)
             assertTrue(
                 viewModel.uiState.value.retainedLines
                     .isEmpty(),
@@ -103,8 +103,8 @@ class DiagnosticsViewModelTest {
             viewModel.onAction(DiagnosticsAction.Refresh)
             runCurrent()
 
-            assertFalse(viewModel.uiState.value.isLoading)
-            assertFalse(viewModel.uiState.value.isRefreshFailed)
+            assertFalse(viewModel.uiState.value.loadState is DiagnosticsLoadState.Loading)
+            assertFalse(viewModel.uiState.value.loadState is DiagnosticsLoadState.RefreshFailed)
             assertEquals(lines, viewModel.uiState.value.retainedLines)
         }
 
@@ -120,8 +120,8 @@ class DiagnosticsViewModelTest {
             viewModel.onAction(DiagnosticsAction.Refresh)
             runCurrent()
 
-            assertFalse(viewModel.uiState.value.isLoading)
-            assertTrue(viewModel.uiState.value.isRefreshFailed)
+            assertFalse(viewModel.uiState.value.loadState is DiagnosticsLoadState.Loading)
+            assertTrue(viewModel.uiState.value.loadState is DiagnosticsLoadState.RefreshFailed)
             assertEquals(lines, viewModel.uiState.value.retainedLines)
         }
 
@@ -139,13 +139,13 @@ class DiagnosticsViewModelTest {
                     val cancelledViewModel = viewModel(cancelledStore)
                     cancelledViewModel.onPageEntered()
                     runCurrent()
-                    assertFalse(cancelledViewModel.uiState.value.isRefreshFailed)
+                    assertFalse(cancelledViewModel.uiState.value.loadState is DiagnosticsLoadState.RefreshFailed)
 
                     val fatalViewModel = viewModel(ScriptedReadLogStore(emptyList(), failures = mapOf(1 to fatal)))
                     fatalViewModel.onPageEntered()
                     runCurrent()
 
-                    assertFalse(fatalViewModel.uiState.value.isRefreshFailed)
+                    assertFalse(fatalViewModel.uiState.value.loadState is DiagnosticsLoadState.RefreshFailed)
                 }
             }.exceptionOrNull()
 
@@ -171,7 +171,7 @@ class DiagnosticsViewModelTest {
 
             assertEquals(DiagnosticsEffect.ClearFailed, effect.await())
             assertEquals(lines, viewModel.uiState.value.retainedLines)
-            assertEquals(false, viewModel.uiState.value.isClearConfirmationVisible)
+            assertFalse(viewModel.uiState.value.clearState.isConfirmationVisible)
         }
 
     @Test
@@ -189,11 +189,11 @@ class DiagnosticsViewModelTest {
             store.clearStarted.await()
 
             assertEquals(1, store.clearCount)
-            assertTrue(viewModel.uiState.value.isClearInProgress)
+            assertTrue(viewModel.uiState.value.clearState.isClearing)
 
             store.finishClear.complete(LogClearResult.Cleared)
             runCurrent()
-            assertFalse(viewModel.uiState.value.isClearInProgress)
+            assertFalse(viewModel.uiState.value.clearState.isClearing)
         }
 
     @Test
@@ -218,19 +218,19 @@ class DiagnosticsViewModelTest {
             viewModel.onAction(DiagnosticsAction.ConfirmClear)
             runCurrent()
 
-            assertTrue(viewModel.uiState.value.isClearInProgress)
+            assertTrue(viewModel.uiState.value.clearState.isClearing)
             assertEquals(1, store.clearCount)
             store.finishClear.complete(LogClearResult.Failed)
             runCurrent()
 
             assertEquals(newLines, viewModel.uiState.value.retainedLines)
-            assertTrue(viewModel.uiState.value.isClearConfirmationVisible)
-            assertFalse(viewModel.uiState.value.isClearInProgress)
+            assertTrue(viewModel.uiState.value.clearState.isConfirmationVisible)
+            assertFalse(viewModel.uiState.value.clearState.isClearing)
             assertNull(withTimeoutOrNull(1) { viewModel.effects.first() })
         }
 
     @Test
-    fun `late successful clear cannot erase lines loaded by a reentered page`() =
+    fun `late successful clear empties lines loaded by a reentered page`() =
         runTest {
             val oldLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "old", "trace_old", "application.old"))
             val newLines = listOf(DiagnosticsLogLine(LogLevel.INFO, "new", "trace_new", "application.new"))
@@ -250,7 +250,8 @@ class DiagnosticsViewModelTest {
             store.finishClear.complete(LogClearResult.Cleared)
             runCurrent()
 
-            assertEquals(newLines, viewModel.uiState.value.retainedLines)
+            assertTrue(viewModel.uiState.value.loadState is DiagnosticsLoadState.Ready)
+            assertEquals(emptyList<DiagnosticsLogLine>(), viewModel.uiState.value.retainedLines)
         }
 
     @Test
@@ -376,11 +377,14 @@ class DiagnosticsViewModelTest {
             assertEquals(LogFormat.TSV, request.format)
             assertEquals("text/tab-separated-values", request.mimeType)
             assertEquals("passly_logs.tsv", request.fileName)
-            assertEquals(LogFormat.TSV, viewModel.uiState.value.pendingLocalFormat)
+            assertEquals(
+                DiagnosticsExportState.SelectingLocalDocument(LogFormat.TSV),
+                viewModel.uiState.value.exportState,
+            )
 
             viewModel.onAction(DiagnosticsAction.SaveDocumentCancelled(owner, request.requestId))
 
-            assertEquals(null, viewModel.uiState.value.pendingLocalFormat)
+            assertEquals(DiagnosticsExportState.None, viewModel.uiState.value.exportState)
         }
 
     @Test
@@ -408,7 +412,7 @@ class DiagnosticsViewModelTest {
             runCurrent()
 
             assertNull(gateway.request)
-            assertNull(viewModel.uiState.value.pendingLocalFormat)
+            assertEquals(DiagnosticsExportState.None, viewModel.uiState.value.exportState)
         }
 
     @Test

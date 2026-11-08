@@ -6,17 +6,15 @@ import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 
 data class DiagnosticsUiState(
-    val isLoading: Boolean = true,
-    val isRefreshFailed: Boolean = false,
-    val isSessionRestricted: Boolean = false,
-    val isClearInProgress: Boolean = false,
-    val retainedLines: List<DiagnosticsLogLine> = emptyList(),
+    val loadState: DiagnosticsLoadState = DiagnosticsLoadState.Loading(emptyList()),
+    val clearState: DiagnosticsClearState = DiagnosticsClearState.Idle,
     val selectedLevels: Set<LogLevel> = DEFAULT_VISIBLE_LEVELS,
     val searchQuery: String = "",
-    val pendingExportAction: ExportAction? = null,
-    val pendingLocalFormat: LogFormat? = null,
-    val isClearConfirmationVisible: Boolean = false,
+    val exportState: DiagnosticsExportState = DiagnosticsExportState.None,
 ) {
+    val retainedLines: List<DiagnosticsLogLine>
+        get() = loadState.retainedLines
+
     val visibleLines: List<DiagnosticsLogLine>
         get() {
             val query = searchQuery.trim()
@@ -38,6 +36,42 @@ data class DiagnosticsUiState(
     companion object {
         val DEFAULT_VISIBLE_LEVELS = setOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR)
     }
+}
+
+sealed interface DiagnosticsLoadState {
+    val retainedLines: List<DiagnosticsLogLine>
+
+    data class Loading(override val retainedLines: List<DiagnosticsLogLine>) : DiagnosticsLoadState
+
+    data class Ready(override val retainedLines: List<DiagnosticsLogLine>) : DiagnosticsLoadState
+
+    data class RefreshFailed(override val retainedLines: List<DiagnosticsLogLine>) : DiagnosticsLoadState
+
+    data object SessionRestricted : DiagnosticsLoadState {
+        override val retainedLines: List<DiagnosticsLogLine> = emptyList()
+    }
+}
+
+sealed interface DiagnosticsClearState {
+    data object Idle : DiagnosticsClearState
+
+    data object Confirmation : DiagnosticsClearState
+
+    data class Clearing(val confirmationVisible: Boolean) : DiagnosticsClearState
+}
+
+val DiagnosticsClearState.isConfirmationVisible: Boolean
+    get() = this == DiagnosticsClearState.Confirmation || (this as? DiagnosticsClearState.Clearing)?.confirmationVisible == true
+
+val DiagnosticsClearState.isClearing: Boolean
+    get() = this is DiagnosticsClearState.Clearing
+
+sealed interface DiagnosticsExportState {
+    data object None : DiagnosticsExportState
+
+    data class SelectingFormat(val action: ExportAction) : DiagnosticsExportState
+
+    data class SelectingLocalDocument(val format: LogFormat) : DiagnosticsExportState
 }
 
 sealed interface DiagnosticsAction {

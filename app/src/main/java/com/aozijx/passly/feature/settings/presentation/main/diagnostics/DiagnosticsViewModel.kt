@@ -167,7 +167,8 @@ class DiagnosticsViewModel
 
         private fun selectFormat(format: LogFormat) {
             val pageOwner = pageEffects.currentOwner ?: return
-            when (_uiState.value.pendingExportAction) {
+            when (val export = _uiState.value.exportState) {
+                is DiagnosticsExportState.SelectingFormat -> when (export.action) {
                 ExportAction.SHARE -> {
                     mutate(DiagnosticsMutation.FormatSheetDismissed)
                     authenticateAndExport(DiagnosticsExportRequest(ExportAction.SHARE, format), pageOwner)
@@ -191,10 +192,9 @@ class DiagnosticsViewModel
                         mutate(DiagnosticsMutation.LocalExportConsumed)
                     }
                 }
-
-                null -> {
-                    Unit
                 }
+
+                else -> Unit
             }
         }
 
@@ -206,7 +206,7 @@ class DiagnosticsViewModel
             val request = pendingLocalDocument ?: return
             if (request.pageOwner !== owner || request.requestId != requestId || !pageEffects.isActive(owner)) return
             pendingLocalDocument = null
-            val format = _uiState.value.pendingLocalFormat ?: return
+            val format = (_uiState.value.exportState as? DiagnosticsExportState.SelectingLocalDocument)?.format ?: return
             mutate(DiagnosticsMutation.LocalExportConsumed)
             if (uri != null) {
                 authenticateAndExport(
@@ -247,7 +247,7 @@ class DiagnosticsViewModel
                 pendingLocalDocument = null
                 mutate(DiagnosticsMutation.LocalExportConsumed)
             }
-            if (_uiState.value.isClearConfirmationVisible) {
+            if (_uiState.value.clearState.isConfirmationVisible) {
                 mutate(DiagnosticsMutation.ClearDismissed)
             }
             activeCopyOwner = null
@@ -260,7 +260,7 @@ class DiagnosticsViewModel
 
         private fun clearLogs() {
             val pageOwner = pageEffects.currentOwner ?: return
-            if (_uiState.value.isClearInProgress) return
+            if (_uiState.value.clearState.isClearing) return
             mutate(DiagnosticsMutation.ClearStarted)
             viewModelScope.launch {
                 try {
@@ -281,9 +281,7 @@ class DiagnosticsViewModel
                         }
                     when (result) {
                         LogClearResult.Cleared -> {
-                            if (pageEffects.isActive(pageOwner)) {
-                                mutate(DiagnosticsMutation.LogsCleared)
-                            }
+                            mutate(DiagnosticsMutation.LogsCleared)
                         }
 
                         LogClearResult.Failed -> {

@@ -43,6 +43,10 @@ import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsAction
+import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsExportState
+import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsLoadState
+import com.aozijx.passly.feature.settings.presentation.main.diagnostics.isClearing
+import com.aozijx.passly.feature.settings.presentation.main.diagnostics.isConfirmationVisible
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsUiState
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 
@@ -102,19 +106,21 @@ internal fun DiagnosticsScreen(
         item {
             LevelFilters(state, onAction)
         }
-        when {
-            state.isLoading -> {
+        when (state.loadState) {
+            is DiagnosticsLoadState.Loading -> {
                 item { StatusText(stringResource(R.string.settings_log_loading)) }
             }
 
-            state.isSessionRestricted -> {
+            DiagnosticsLoadState.SessionRestricted -> {
                 item {
                     StatusText(stringResource(R.string.settings_diagnostics_session_restricted))
                 }
             }
 
-            else -> {
-                if (state.isRefreshFailed) {
+            is DiagnosticsLoadState.Ready,
+            is DiagnosticsLoadState.RefreshFailed,
+            -> {
+                if (state.loadState is DiagnosticsLoadState.RefreshFailed) {
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
@@ -131,7 +137,7 @@ internal fun DiagnosticsScreen(
                     }
                 }
                 if (state.visibleLines.isEmpty()) {
-                    if (!state.isRefreshFailed) {
+                    if (state.loadState is DiagnosticsLoadState.Ready) {
                         item { StatusText(stringResource(R.string.settings_log_empty)) }
                     }
                 } else {
@@ -156,16 +162,16 @@ internal fun DiagnosticsScreen(
         }
     }
 
-    state.pendingExportAction?.let { action ->
+    (state.exportState as? DiagnosticsExportState.SelectingFormat)?.let { selection ->
         FormatSheet(
-            action = action,
+            action = selection.action,
             onSelect = { onAction(DiagnosticsAction.SelectFormat(it)) },
             onDismiss = { onAction(DiagnosticsAction.DismissFormatSheet) },
         )
     }
-    if (state.isClearConfirmationVisible) {
+    if (state.clearState.isConfirmationVisible) {
         ConfirmClearDialog(
-            isClearInProgress = state.isClearInProgress,
+            isClearInProgress = state.clearState.isClearing,
             onAction = onAction,
         )
     }

@@ -4,7 +4,6 @@ import com.aozijx.passly.core.observability.LogLevel
 import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
 import com.aozijx.passly.feature.settings.diagnostics.ExportAction
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -34,15 +33,15 @@ class DiagnosticsReducerTest {
 
         assertEquals(setOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR), state.selectedLevels)
         assertEquals(listOf(info, warn, error, fatal), state.visibleLines)
-        assertFalse(state.isLoading)
+        assertTrue(state.loadState is DiagnosticsLoadState.Ready)
     }
 
     @Test
     fun `level toggle changes only visible lines and preserves export selection`() {
         val initial =
             DiagnosticsUiState(
-                retainedLines = listOf(info, warn, error, debug),
-                pendingExportAction = ExportAction.SHARE,
+                loadState = DiagnosticsLoadState.Ready(listOf(info, warn, error, debug)),
+                exportState = DiagnosticsExportState.SelectingFormat(ExportAction.SHARE),
             )
 
         val state =
@@ -52,12 +51,12 @@ class DiagnosticsReducerTest {
             )
 
         assertEquals(listOf(warn, error), state.visibleLines)
-        assertEquals(ExportAction.SHARE, state.pendingExportAction)
+        assertEquals(DiagnosticsExportState.SelectingFormat(ExportAction.SHARE), state.exportState)
     }
 
     @Test
     fun `search matches trace event error code and exception metadata`() {
-        val initial = DiagnosticsUiState(retainedLines = listOf(info, warn, error, debug))
+        val initial = DiagnosticsUiState(loadState = DiagnosticsLoadState.Ready(listOf(info, warn, error, debug)))
 
         val byTrace =
             DiagnosticsReducer.reduce(
@@ -77,35 +76,24 @@ class DiagnosticsReducerTest {
     }
 
     @Test
-    fun `clear completion drops retained and visible diagnostics`() {
-        val state =
-            DiagnosticsReducer.reduce(
-                DiagnosticsUiState(
-                    retainedLines = listOf(error),
-                    isClearConfirmationVisible = true,
-                ),
-                DiagnosticsMutation.LogsCleared,
-            )
+    fun `clear completion empties ready and refresh failed diagnostics`() {
+        listOf(
+            DiagnosticsLoadState.Ready(listOf(error)),
+            DiagnosticsLoadState.RefreshFailed(listOf(error)),
+        ).forEach { initialLoadState ->
+            val state =
+                DiagnosticsReducer.reduce(
+                    DiagnosticsUiState(
+                        loadState = initialLoadState,
+                        clearState = DiagnosticsClearState.Confirmation,
+                    ),
+                    DiagnosticsMutation.LogsCleared,
+                )
 
-        assertTrue(state.retainedLines.isEmpty())
-        assertTrue(state.visibleLines.isEmpty())
-        assertFalse(state.isClearConfirmationVisible)
-    }
-
-    @Test
-    fun `clear completion removes a stale refresh failure`() {
-        val state =
-            DiagnosticsReducer.reduce(
-                DiagnosticsUiState(
-                    isRefreshFailed = true,
-                    retainedLines = listOf(error),
-                    isClearConfirmationVisible = true,
-                ),
-                DiagnosticsMutation.LogsCleared,
-            )
-
-        assertFalse(state.isRefreshFailed)
-        assertTrue(state.retainedLines.isEmpty())
-        assertFalse(state.isClearConfirmationVisible)
+            assertTrue(state.loadState is DiagnosticsLoadState.Ready)
+            assertTrue(state.retainedLines.isEmpty())
+            assertTrue(state.visibleLines.isEmpty())
+            assertEquals(DiagnosticsClearState.Idle, state.clearState)
+        }
     }
 }

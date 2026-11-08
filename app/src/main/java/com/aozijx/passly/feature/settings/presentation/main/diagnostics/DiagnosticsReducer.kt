@@ -54,29 +54,23 @@ internal object DiagnosticsReducer {
     ): DiagnosticsUiState =
         when (mutation) {
             DiagnosticsMutation.Loading -> {
-                state.copy(isLoading = true, isRefreshFailed = false, isSessionRestricted = false)
+                state.copy(loadState = DiagnosticsLoadState.Loading(state.retainedLines))
             }
 
             is DiagnosticsMutation.LinesLoaded -> {
                 state.copy(
-                    isLoading = false,
-                    isRefreshFailed = false,
-                    isSessionRestricted = false,
-                    retainedLines = mutation.lines,
+                    loadState = DiagnosticsLoadState.Ready(mutation.lines),
                 )
             }
 
             DiagnosticsMutation.SessionRestricted -> {
                 state.copy(
-                    isLoading = false,
-                    isRefreshFailed = false,
-                    isSessionRestricted = true,
-                    retainedLines = emptyList(),
+                    loadState = DiagnosticsLoadState.SessionRestricted,
                 )
             }
 
             DiagnosticsMutation.RefreshFailed -> {
-                state.copy(isLoading = false, isRefreshFailed = true)
+                state.copy(loadState = DiagnosticsLoadState.RefreshFailed(state.retainedLines))
             }
 
             is DiagnosticsMutation.LevelToggled -> {
@@ -90,45 +84,70 @@ internal object DiagnosticsReducer {
             }
 
             is DiagnosticsMutation.ExportActionSelected -> {
-                state.copy(pendingExportAction = mutation.action)
+                state.copy(exportState = DiagnosticsExportState.SelectingFormat(mutation.action))
             }
 
             DiagnosticsMutation.FormatSheetDismissed -> {
-                state.copy(pendingExportAction = null)
+                state.copy(exportState = DiagnosticsExportState.None)
             }
 
             is DiagnosticsMutation.LocalFormatSelected -> {
                 state.copy(
-                    pendingExportAction = null,
-                    pendingLocalFormat = mutation.format,
+                    exportState = DiagnosticsExportState.SelectingLocalDocument(mutation.format),
                 )
             }
 
             DiagnosticsMutation.LocalExportConsumed -> {
-                state.copy(pendingLocalFormat = null)
+                state.copy(exportState = DiagnosticsExportState.None)
             }
 
             DiagnosticsMutation.ClearRequested -> {
-                state.copy(isClearConfirmationVisible = true)
+                state.copy(
+                    clearState =
+                        if (state.clearState is DiagnosticsClearState.Clearing) {
+                            DiagnosticsClearState.Clearing(confirmationVisible = true)
+                        } else {
+                            DiagnosticsClearState.Confirmation
+                        },
+                )
             }
 
             DiagnosticsMutation.ClearDismissed -> {
-                state.copy(isClearConfirmationVisible = false)
+                state.copy(
+                    clearState =
+                        when (val clearState = state.clearState) {
+                            is DiagnosticsClearState.Clearing -> clearState.copy(confirmationVisible = false)
+                            else -> DiagnosticsClearState.Idle
+                        },
+                )
             }
 
             DiagnosticsMutation.ClearStarted -> {
-                state.copy(isClearInProgress = true)
+                state.copy(
+                    clearState =
+                        when (val clearState = state.clearState) {
+                            is DiagnosticsClearState.Clearing -> clearState
+                            DiagnosticsClearState.Confirmation -> DiagnosticsClearState.Clearing(true)
+                            DiagnosticsClearState.Idle -> DiagnosticsClearState.Clearing(false)
+                        },
+                )
             }
 
             DiagnosticsMutation.ClearFinished -> {
-                state.copy(isClearInProgress = false)
+                state.copy(
+                    clearState =
+                        when (val clearState = state.clearState) {
+                            is DiagnosticsClearState.Clearing ->
+                                if (clearState.confirmationVisible) DiagnosticsClearState.Confirmation else DiagnosticsClearState.Idle
+                            else -> clearState
+                        },
+                )
             }
 
             DiagnosticsMutation.LogsCleared -> {
                 state.copy(
-                    retainedLines = emptyList(),
-                    isRefreshFailed = false,
-                    isClearConfirmationVisible = false,
+                    loadState = DiagnosticsLoadState.Ready(emptyList()),
+                    clearState = DiagnosticsClearState.Idle,
                 )
             }
         }
