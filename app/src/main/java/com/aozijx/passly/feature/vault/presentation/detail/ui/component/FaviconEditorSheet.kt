@@ -60,7 +60,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconOverlay
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconProcessingError
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconTab
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
@@ -193,7 +192,7 @@ fun FaviconEditorSheet(
             }
         }
     }
-    if (state.overlay == DetailFaviconOverlay.ConfirmDiscard) {
+    if (state.showDiscardConfirmation) {
         AlertDialog(
             onDismissRequest = keepEditing,
             title = { Text(stringResource(R.string.vault_detail_favicon_discard_title)) },

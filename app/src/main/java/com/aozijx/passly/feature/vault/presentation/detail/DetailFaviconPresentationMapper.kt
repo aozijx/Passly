@@ -22,7 +22,7 @@ internal fun DetailFaviconEditorState.toFaviconEditorUiModel(): DetailFaviconEdi
                 work = work,
                 pendingInputPath = pendingInputPath,
                 promotedCandidatePath = promotedCandidatePath,
-                overlay = overlay,
+                showDiscardConfirmation = showDiscardConfirmation,
             )
         }
     }

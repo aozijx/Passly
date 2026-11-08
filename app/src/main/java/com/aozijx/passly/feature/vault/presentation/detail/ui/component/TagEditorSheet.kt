@@ -43,7 +43,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorOverlay
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
 import kotlinx.coroutines.launch
@@ -209,7 +208,7 @@ fun TagEditorSheet(
         }
     }
 
-    if (state.overlay == DetailTagEditorOverlay.ConfirmDiscard && !isSaving) {
+    if (state.showDiscardConfirmation && !isSaving) {
         AlertDialog(
             onDismissRequest = keepEditing,
             title = { Text(stringResource(R.string.vault_detail_tag_discard_title)) },

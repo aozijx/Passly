@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.model
 
 import androidx.annotation.PluralsRes
-import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorOverlay
 
 sealed interface DetailTagEditorUiModel {
     data object Hidden : DetailTagEditorUiModel
@@ -12,7 +11,7 @@ sealed interface DetailTagEditorUiModel {
         val input: String,
         val suggestions: DetailTagChipsUiState,
         val validationMessage: TagEditorValidationMessageUiModel?,
-        val overlay: DetailTagEditorOverlay,
+        val showDiscardConfirmation: Boolean,
         val dirty: Boolean,
     ) : DetailTagEditorUiModel
 }

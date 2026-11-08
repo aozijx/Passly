@@ -12,14 +12,8 @@ sealed interface DetailTagEditorState {
         val input: String = "",
         val suggestions: List<String> = emptyList(),
         val validationError: EntryTagValidationError? = null,
-        val overlay: DetailTagEditorOverlay = DetailTagEditorOverlay.None,
+        val showDiscardConfirmation: Boolean = false,
     ) : DetailTagEditorState {
         val dirty: Boolean get() = draftTags != initialTags || input.isNotBlank()
     }
-}
-
-sealed interface DetailTagEditorOverlay {
-    data object None : DetailTagEditorOverlay
-
-    data object ConfirmDiscard : DetailTagEditorOverlay
 }

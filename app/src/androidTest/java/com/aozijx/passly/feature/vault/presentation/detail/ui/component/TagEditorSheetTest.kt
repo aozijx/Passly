@@ -8,7 +8,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
-import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorOverlay
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
 import org.junit.Assert.assertEquals
@@ -33,7 +32,7 @@ class TagEditorSheetTest {
                             input = "",
                             suggestions = DetailTagChipsUiState.Items(listOf("Finance")),
                             validationMessage = null,
-                            overlay = DetailTagEditorOverlay.None,
+                            showDiscardConfirmation = false,
                             dirty = false,
                         ),
                     isSaving = saving.value,

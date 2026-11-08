@@ -17,7 +17,7 @@ sealed interface DetailFaviconEditorUiModel {
         val work: DetailFaviconWorkState,
         val pendingInputPath: String?,
         val promotedCandidatePath: String?,
-        val overlay: DetailFaviconOverlay,
+        val showDiscardConfirmation: Boolean,
     ) : DetailFaviconEditorUiModel
 }
 

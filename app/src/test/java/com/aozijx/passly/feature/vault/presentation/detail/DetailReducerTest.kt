@@ -381,7 +381,7 @@ class DetailReducerTest {
             )
 
         val failedEditor = failed.faviconEditor as DetailFaviconEditorState.Open
-        assertEquals(DetailFaviconOverlay.ConfirmDiscard, requested.overlay)
+        assertTrue(requested.showDiscardConfirmation)
         assertEquals(editor.source, failedEditor.source)
         assertEquals(
             DetailFaviconWorkState.Failed(DetailFaviconProcessingError.SAVE_FAILED),

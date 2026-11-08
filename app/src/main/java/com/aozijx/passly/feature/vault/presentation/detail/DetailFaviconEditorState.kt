@@ -12,7 +12,6 @@ sealed interface DetailFaviconSource {
         val localPath: String,
     ) : DetailFaviconSource
 }
-
 enum class DetailFaviconTab {
     ICON_LIBRARY,
     CUSTOM_IMAGE,
@@ -40,7 +39,7 @@ sealed interface DetailFaviconEditorState {
         val work: DetailFaviconWorkState = DetailFaviconWorkState.Idle,
         val pendingInputPath: String? = null,
         val promotedCandidatePath: String? = null,
-        val overlay: DetailFaviconOverlay = DetailFaviconOverlay.None,
+        val showDiscardConfirmation: Boolean = false,
     ) : DetailFaviconEditorState {
         val dirty: Boolean get() = source != initialSource || pendingInputPath != null
     }
@@ -54,10 +53,4 @@ sealed interface DetailFaviconWorkState {
     data class Failed(
         val error: DetailFaviconProcessingError,
     ) : DetailFaviconWorkState
-}
-
-sealed interface DetailFaviconOverlay {
-    data object None : DetailFaviconOverlay
-
-    data object ConfirmDiscard : DetailFaviconOverlay
 }

@@ -121,7 +121,7 @@ class DetailFaviconReducerTest {
         val state =
             DetailFaviconEditorState.Open(
                 initialSource = DetailFaviconSource.InferredDefault,
-                overlay = DetailFaviconOverlay.ConfirmDiscard,
+                showDiscardConfirmation = true,
             )
 
         val actual =
@@ -130,7 +130,7 @@ class DetailFaviconReducerTest {
                 DetailMutation.FaviconEditorDiscardCancelled,
             )
 
-        assertEquals(state.copy(overlay = DetailFaviconOverlay.None), actual)
+        assertEquals(state.copy(showDiscardConfirmation = false), actual)
     }
 
     @Test

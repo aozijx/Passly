@@ -322,7 +322,7 @@ internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel =
                 input = input,
                 suggestions = suggestions.toTagChipsUiState(),
                 validationMessage = validationError?.toMessageUiModel(),
-                overlay = overlay,
+                showDiscardConfirmation = showDiscardConfirmation,
                 dirty = dirty,
             )
         }

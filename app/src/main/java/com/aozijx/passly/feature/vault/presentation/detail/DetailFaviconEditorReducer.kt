@@ -48,7 +48,7 @@ internal object DetailFaviconEditorReducer {
                         state.promotedCandidatePath?.takeIf {
                             mutation.source == DetailFaviconSource.PrivateImage(it)
                         },
-                    overlay = DetailFaviconOverlay.None,
+                    showDiscardConfirmation = false,
                 )
             }
 
@@ -85,7 +85,7 @@ internal object DetailFaviconEditorReducer {
                     work = DetailFaviconWorkState.Idle,
                     pendingInputPath = null,
                     promotedCandidatePath = mutation.path,
-                    overlay = DetailFaviconOverlay.None,
+                    showDiscardConfirmation = false,
                 )
             }
 
@@ -101,7 +101,7 @@ internal object DetailFaviconEditorReducer {
 
             DetailMutation.FaviconEditorDismissRequested -> {
                 if (state.dirty) {
-                    state.copy(overlay = DetailFaviconOverlay.ConfirmDiscard)
+                    state.copy(showDiscardConfirmation = true)
                 } else {
                     DetailFaviconEditorState.Closed
                 }
@@ -113,7 +113,7 @@ internal object DetailFaviconEditorReducer {
 
             DetailMutation.FaviconEditorDiscardCancelled -> {
                 state.copy(
-                    overlay = DetailFaviconOverlay.None,
+                    showDiscardConfirmation = false,
                 )
             }
         }

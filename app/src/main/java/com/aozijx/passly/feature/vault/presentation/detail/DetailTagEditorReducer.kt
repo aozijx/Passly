@@ -48,7 +48,7 @@ internal object DetailTagEditorReducer {
                             selectedTags = state.draftTags,
                         ),
                     validationError = null,
-                    overlay = DetailTagEditorOverlay.None,
+                    showDiscardConfirmation = false,
                 )
             }
 
@@ -85,7 +85,7 @@ internal object DetailTagEditorReducer {
 
             DetailMutation.TagEditorDismissRequested -> {
                 if (state.dirty) {
-                    state.copy(overlay = DetailTagEditorOverlay.ConfirmDiscard)
+                    state.copy(showDiscardConfirmation = true)
                 } else {
                     DetailTagEditorState.Closed
                 }
@@ -97,7 +97,7 @@ internal object DetailTagEditorReducer {
 
             DetailMutation.TagEditorDiscardCancelled -> {
                 state.copy(
-                    overlay = DetailTagEditorOverlay.None,
+                    showDiscardConfirmation = false,
                 )
             }
         }

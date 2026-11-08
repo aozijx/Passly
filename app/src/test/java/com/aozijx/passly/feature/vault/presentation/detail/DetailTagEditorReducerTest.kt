@@ -96,7 +96,7 @@ class DetailTagEditorReducerTest {
             ) as DetailTagEditorState.Open
         val discarded = DetailTagEditorReducer.reduce(requested, DetailMutation.TagEditorDiscardConfirmed)
 
-        assertEquals(DetailTagEditorOverlay.ConfirmDiscard, requested.overlay)
+        assertTrue(requested.showDiscardConfirmation)
         assertEquals(DetailTagEditorState.Closed, discarded)
     }
 
