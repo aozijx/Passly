@@ -11,6 +11,7 @@ import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSetti
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.InterfaceDetail
+import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
@@ -23,13 +24,14 @@ internal fun InterfaceRoute(onBack: (() -> Unit)?) {
         onDispose { viewModel.onPageExited(owner) }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentReadState = state
     ObserveSettingsWriteErrors(viewModel.errors)
 
     SettingsSecondaryPage(
         title = stringResource(SettingsGroup.INTERFACE.titleRes),
         onBack = onBack,
     ) {
-        when (state) {
+        when (currentReadState) {
             RecoverableReadState.Loading -> {
                 Unit
             }
@@ -38,10 +40,10 @@ internal fun InterfaceRoute(onBack: (() -> Unit)?) {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InterfaceSettingsAction.RetryRead) }) }
             }
 
-            is RecoverableReadState.Ready -> {
+            is RecoverableReadState.Ready<InterfaceUiModel> -> {
                 item {
                     InterfaceDetail(
-                        state = state.value,
+                        state = currentReadState.value,
                         onAction = viewModel::onAction,
                     )
                 }

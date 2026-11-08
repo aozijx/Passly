@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsViewModel
@@ -43,6 +44,7 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val savedMessage = stringResource(R.string.settings_saved)
     var activeDialog by rememberSaveable { mutableStateOf<SwipeActionDialog?>(null) }
+    val currentReadState = state
 
     LaunchedEffect(viewModel, lifecycle, context, resources, savedMessage) {
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
@@ -59,7 +61,7 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.INTERACTION.titleRes),
         onBack = onBack,
     ) {
-        when (state) {
+        when (currentReadState) {
             RecoverableReadState.Loading -> {
                 Unit
             }
@@ -68,10 +70,10 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InteractionSettingsAction.RetryRead) }) }
             }
 
-            is RecoverableReadState.Ready -> {
+            is RecoverableReadState.Ready<InteractionSettings> -> {
                 item {
                     InteractionDetail(
-                        state = state.value,
+                        state = currentReadState.value,
                         onSwipeEnabledChange = {
                             viewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
                         },
@@ -86,7 +88,7 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
         }
     }
 
-    (state as? RecoverableReadState.Ready)?.value?.let { readyState ->
+    (currentReadState as? RecoverableReadState.Ready<InteractionSettings>)?.value?.let { readyState ->
         when (activeDialog) {
             SwipeActionDialog.Left -> {
                 SwipeActionSelectDialog(
