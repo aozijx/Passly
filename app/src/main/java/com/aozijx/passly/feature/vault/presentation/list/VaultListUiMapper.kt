@@ -33,8 +33,8 @@ import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 
 internal fun EntryListItem.toUiModel(): VaultListItemUiModel {
     val category = tags.firstOrNull(String::isNotBlank)?.trim()
-    val domain = associatedDomain
-    val appPackage = associatedAppPackage
+    val domain = associatedDomain?.takeIf(String::isNotBlank)
+    val appPackage = associatedAppPackage?.takeIf(String::isNotBlank)
     return VaultListItemUiModel(
         id = id.value,
         entryType = entryType,
@@ -65,15 +65,15 @@ internal fun EntryListItem.toUiModel(): VaultListItemUiModel {
         otpPreview = otpPreview,
         passwordCardSecondaryText =
             when {
-                !domain.isNullOrBlank() -> VaultPasswordCardSecondaryTextUiModel.Value(domain)
-                !appPackage.isNullOrBlank() -> VaultPasswordCardSecondaryTextUiModel.Value(appPackage)
+                domain != null -> VaultPasswordCardSecondaryTextUiModel.Value(domain)
+                appPackage != null -> VaultPasswordCardSecondaryTextUiModel.Value(appPackage)
                 category != null -> VaultPasswordCardSecondaryTextUiModel.Value(category)
                 else -> VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(entryType)
             },
         passwordCardSupportingText =
             when {
                 favorite -> VaultPasswordCardSupportingTextUiModel.FAVORITE
-                !domain.isNullOrBlank() || !appPackage.isNullOrBlank() -> VaultPasswordCardSupportingTextUiModel.AUTOFILL
+                domain != null || appPackage != null -> VaultPasswordCardSupportingTextUiModel.AUTOFILL
                 else -> VaultPasswordCardSupportingTextUiModel.PROTECTED
             },
     )

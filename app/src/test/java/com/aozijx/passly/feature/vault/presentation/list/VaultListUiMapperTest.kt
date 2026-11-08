@@ -188,4 +188,32 @@ class VaultListUiMapperTest {
         )
         assertEquals(VaultPasswordCardSupportingTextUiModel.FAVORITE, ui.passwordCardSupportingText)
     }
+
+    @Test
+    fun blankAssociatedDomainIsAbsentAcrossVaultListProjection() {
+        val item =
+            EntryListItem(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("entry-blank-domain"),
+                        type = EntryType.LOGIN,
+                        timestamps = EntryTimestamps(1L),
+                    ),
+                profile =
+                    EntryProfile(
+                        title = "Slack",
+                        associations = EntryAssociations(primaryUrl = " ", applicationIds = setOf("com.slack")),
+                    ),
+            )
+        val withoutDomain = item.copy(profile = item.profile.copy(associations = item.associations.copy(primaryUrl = null)))
+
+        val ui = item.toUiModel()
+        val withoutDomainUi = withoutDomain.toUiModel()
+
+        assertNull(ui.associatedDomain)
+        assertEquals("com.slack", ui.associatedAppPackage)
+        assertEquals(withoutDomainUi.visualCategory, ui.visualCategory)
+        assertEquals(VaultPasswordCardSecondaryTextUiModel.Value("com.slack"), ui.passwordCardSecondaryText)
+        assertEquals(VaultPasswordCardSupportingTextUiModel.AUTOFILL, ui.passwordCardSupportingText)
+    }
 }
