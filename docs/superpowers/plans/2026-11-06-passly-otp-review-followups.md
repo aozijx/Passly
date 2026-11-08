@@ -12,6 +12,6 @@
 
 **已有覆盖：** `OtpCodeRuntimeTest` 覆盖运行时 `codeForCopy` 的 HOTP 计数器消费及旧运行时结果丢弃；`VaultSwipeActionHandlerTest` 只覆盖 OTP 条目选择 `VaultCopyRequest.Otp`，没有验证列表 ViewModel 对 HOTP 的生成/反馈。未运行测试。
 
-**2026-11-07 复核：** 旧记录中“列表未传 `canDeliver`”已过时。当前 `VaultViewModel.copyOtp(entryId)` 捕获 `pageEffects.currentOwner`，并传 `canDeliver = { pageEffects.isActive(owner) }` 与 `codeProvider = { (totp.states.value[entryId] as? OtpCodeState.Ready)?.code }`。`CopyOtpCodeUseCase.invoke(...)` 通过 `deliveryGuard(canDeliver)` 同时检查调用 Job 和页面 owner，在读取验证码、剪贴板写入及活动记录前复核；`VaultViewModelClipboardOwnerTest.routeExitWhileOtpCopyWaitsForAuthorizationPreventsClipboardWrite` 覆盖授权等待期间离页后不写剪贴板。该 owner 缺口已由主维护 TODO Task 27 关闭，本 Task 不重复跟踪。仍未决的是 HOTP 的列表产品行为：普通列表订阅没有 `Ready` 码，provider 返回 `null`，结果为静默 `Unavailable`；本 Task 保留该策略决定及 HOTP 列表 ViewModel/Route 行为覆盖。
+**2026-11-07 复核：** 旧记录中“列表未传 `canDeliver`”已过时。当前 `VaultViewModel.copyOtp(entryId)` 捕获 `pageEffects.currentOwner`，并传 `canDeliver = { pageEffects.isActive(owner) }` 与 `codeProvider = { (totp.states.value[entryId] as? OtpCodeState.Ready)?.code }`。`CopyOtpCodeUseCase.invoke(...)` 通过 `deliveryGuard(canDeliver)` 同时检查调用 Job 和页面 owner，在读取验证码、剪贴板写入及活动记录前复核；`VaultViewModelTest.routeExitWhileOtpCopyWaitsForAuthorizationPreventsClipboardWrite` 覆盖授权等待期间离页后不写剪贴板。该 owner 缺口已由主维护 TODO Task 27 关闭，本 Task 不重复跟踪。仍未决的是 HOTP 的列表产品行为：普通列表订阅没有 `Ready` 码，provider 返回 `null`，结果为静默 `Unavailable`；本 Task 保留该策略决定及 HOTP 列表 ViewModel/Route 行为覆盖。
 
 **相关主题：** [OTP 运行时与复制](../../features/vault/otp-runtime.md)。

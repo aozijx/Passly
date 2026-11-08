@@ -49,6 +49,8 @@ import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
+import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.model.entryTypes
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
@@ -65,6 +67,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -75,7 +78,7 @@ import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class VaultViewModelClipboardOwnerTest {
+class VaultViewModelTest {
     @get:Rule
     val mainDispatcherRule = com.aozijx.passly.testing.MainDispatcherRule()
 
@@ -153,7 +156,7 @@ class VaultViewModelClipboardOwnerTest {
         }
 
     @Test
-    fun categoryQueryDistinguishesEmptyResultsAndRecoversAfterSessionReadabilityReturns() =
+    fun categoryQueryDistinguishesEmptyAndLaterValues() =
         runTest(mainDispatcherRule.testDispatcher) {
             val categories = MutableSharedFlow<List<String>>(replay = 1)
             val viewModel =
@@ -304,19 +307,104 @@ class VaultViewModelClipboardOwnerTest {
             }
         }
 
+    @Test
+    fun settingsSortUpdatesTheViewModelPagingGeneration() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val initialSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)
+            val updatedSort = EntrySort(EntrySortField.TITLE, SortDirection.ASC)
+            val settings =
+                MutableStateFlow(
+                    LibraryViewSettings(sort = initialSort),
+                )
+            val pageQueries = mutableListOf<EntryListQuery>()
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    librarySettings = settings,
+                    onPageQuery = pageQueries::add,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val entriesCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.entries.collect()
+                }
+
+            try {
+                runCurrent()
+                advanceTimeBy(250L)
+                runCurrent()
+
+                assertEquals(listOf(initialSort), pageQueries.map(EntryListQuery::sort))
+
+                settings.value = LibraryViewSettings(sort = updatedSort)
+                runCurrent()
+                advanceTimeBy(250L)
+                runCurrent()
+
+                assertEquals(listOf(initialSort, updatedSort), pageQueries.map(EntryListQuery::sort))
+                assertEquals(updatedSort, viewModel.uiState.value.selectedSort)
+            } finally {
+                entriesCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun searchAndTypeFilterTogetherReachThePagingSource() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val pageQueries = mutableListOf<EntryListQuery>()
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    onPageQuery = pageQueries::add,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val entriesCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.entries.collect()
+                }
+
+            try {
+                runCurrent()
+                advanceTimeBy(250L)
+                runCurrent()
+
+                viewModel.onAction(VaultUiAction.SearchQueryChanged("  mail  "))
+                viewModel.onAction(VaultUiAction.FilterToggled(AddType.PASSWORD))
+                runCurrent()
+                advanceTimeBy(250L)
+                runCurrent()
+
+                val currentQuery = pageQueries.last()
+                assertEquals("mail", currentQuery.searchText)
+                assertEquals(AddType.PASSWORD.entryTypes.toSet(), currentQuery.entryTypes)
+                assertEquals(
+                    EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                    currentQuery.sort,
+                )
+            } finally {
+                entriesCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
     private fun createViewModel(
         gate: AuthorizationGate,
         clipboardValues: MutableList<String>,
         otpConfigRepository: OtpConfigRepository = EmptyOtpConfigRepository,
         onMoveToTrash: (EntryId) -> Unit = {},
         availableCategories: Flow<List<String>> = flowOf(emptyList()),
+        librarySettings: Flow<LibraryViewSettings> = flowOf(defaultLibrarySettings()),
+        onPageQuery: (EntryListQuery) -> Unit = {},
     ): VaultViewModel {
         val access = TestAccessState()
         val entries = TestEntries(onMoveToTrash)
         val clipboard = SensitiveClipboardWriter { clipboardValues += it }
         val activity = TestActivityRecorder
         val sensitiveFields = EmptySensitiveFields
-        val settings = TestSettingsRepository()
+        val settings = TestSettingsRepository(librarySettings)
         val otpFactory =
             OtpCodeRuntimeFactory(
                 otpConfigRepository = otpConfigRepository,
@@ -330,7 +418,10 @@ class VaultViewModelClipboardOwnerTest {
                     override fun pages(
                         query: EntryListQuery,
                         config: PagingConfig,
-                    ) = flowOf(PagingData.empty<EntryListItem>())
+                    ): Flow<PagingData<EntryListItem>> {
+                        onPageQuery(query)
+                        return flowOf(PagingData.empty())
+                    }
                 },
             settingsRepository = settings,
             entryCommandWorkflowFactory =
@@ -425,13 +516,9 @@ class VaultViewModelClipboardOwnerTest {
         override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> = emptyList()
     }
 
-    private class TestSettingsRepository : LibraryViewSettingsRepository {
-        override val libraryViewSettings =
-            flowOf(
-                LibraryViewSettings(
-                    sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
-                ),
-            )
+    private class TestSettingsRepository(
+        override val libraryViewSettings: Flow<LibraryViewSettings>,
+    ) : LibraryViewSettingsRepository {
 
         override suspend fun setSort(sort: EntrySort) = Unit
 
@@ -495,5 +582,10 @@ class VaultViewModelClipboardOwnerTest {
 
     private companion object {
         val ENTRY_ID = EntryId("entry-1")
+
+        fun defaultLibrarySettings() =
+            LibraryViewSettings(
+                sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+            )
     }
 }

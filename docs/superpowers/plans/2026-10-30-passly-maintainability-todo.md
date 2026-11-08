@@ -185,16 +185,17 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 32：明确 Vault 列表 ViewModel 的工作流边界并补宿主行为覆盖
 
-- [ ] 先为当前 `VaultViewModel` 增加 ViewModel 层行为测试，覆盖页面 owner 前后提交 action、Settings Flow 的 sort 更新、`EntryListQueryRepository.availableCategories` 更新、搜索与筛选组合产生的 Paging query generation、删除单飞及迟到完成、字段/OTP copy effect、OTP 订阅与删除失效、离页后 effect 丢弃和 lock/access 撤销。纯 `VaultReducer`/`VaultQueryState` 单测不能代替这些由 ViewModel 负责的协程、依赖编排和 PageEffects 所有权合同。
-- [ ] 基于上述依赖闭包裁定是否拆成“列表查询/筛选状态 owner”与“行操作/一次性 effect owner”：当前查询侧由 `LibraryViewSettingsRepository`、`EntryListQueryRepository`、`VaultEntryPageSource` 和 `buildRecoverableVaultQueryStates()` 组成；行操作侧编排 trash、字段 copy、OTP copy、OTP runtime 与页面 effect。数据库 reset 后的 Paging 重订阅由 `AppDatabaseSession.observeFullVaultWhenReadable()` 管理；分析 ViewModel 所有权时不另造 reload 桥。只有拆后每个 owner 有明确状态、任务取消和 Route 生命周期，并使原 owner 实际减少职责与依赖时才迁移；若仍需同一 `VaultUiState`/page owner 协调，则保留一个 VM 并提取纯 query/state 规则，不添一一转发类。
+- [x] `VaultViewModelTest` 覆盖分类首次/发值后异常与重试、空/非空更新、设置 sort 更新触发 Paging generation、搜索和类型筛选组合进入 Paging query、同条目删除单飞、离页后 field/OTP copy 丢弃以及当前页 copy 成功。
+- [ ] 补齐 Settings 写入失败、删除迟到完成、OTP 可见订阅及删除失效、授权撤销期间操作、其余 page owner 交接与迟到结果行为；纯 `VaultReducer`/`VaultQueryState` 单测仍不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
+- [x] 依实际依赖拆出 `VaultEntryCommandWorkflow`：它持有删除单飞并执行 trash、field/OTP copy 与当前 page effect 检查；列表筛选、Paging 和 OTP 可见订阅仍由单一 `VaultViewModel`/graph owner 管理，避免再拆出共享 `VaultUiState` 的协调 ViewModel。数据库重置后的 Paging 重订阅继续由 `AppDatabaseSession.observeFullVaultWhenReadable()` 管理，不另造 reload 桥或一一转发类。
 - [ ] 让 Route 消费与各 owner 对齐：`VaultRoute` 负责 Compose/导航/system effect，Content 只接收 immutable state/actions；确保图级 `VaultViewModel` 在 Trash/Detail 转场或目的地保留期间不会重复创建 effect collector 或重复订阅 Paging/OTP。给选定的 owners 增加 Route/NavHost 行为回归后同步状态管理文档，运行 Vault Presentation 定向测试、`verifyArchitecture` 和 `git diff --check`。
 
-**当前证据（2026-11-08）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 提供当前待删除项与 reducer mutation，避免另建 page/state 桥。新增的 `VaultViewModelClipboardOwnerTest` 覆盖分类异常重试、空/非空更新、重复删除、离页后字段/OTP 复制取消及当前页复制成功；Reducer、mapper、query state 测试仍覆盖各自纯状态规则。尚缺设置排序写入、搜索/筛选 Paging generation、OTP 可见订阅失效、撤权与 Route/NavHost 转场行为回归；`VaultGraphRegistration.vaultGraphViewModel()` 使用图级 VM owner，Route 的 destination 生命周期与图级 effect collector 仍需宿主验证。
+**当前证据（2026-11-08）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 提供当前待删除项与 reducer mutation。`VaultViewModelTest` 现有 9 项覆盖分类恢复、settings sort 驱动新 Paging generation、搜索与类型筛选组合、删除单飞及离页/current-page copy。仍缺 Settings 写入失败、删除迟到完成、OTP 可见订阅/删除失效、撤权行为和 Route/NavHost 转场覆盖；`VaultGraphRegistration.vaultGraphViewModel()` 使用图级 VM owner，Route 的 destination 生命周期与 effect collector 仍需宿主验证。
 
-**2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；剩余锁定取消与迟到结果测试列在下方。
+**2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；锁定/重开恢复由数据库 observation owner 管理，证据见下方。
 
 - [x] 分类查询由 `RecoverableRead` 持有并映射为 `VaultCategoriesState.Loading/Ready/Failed`，失败可通过 `RetryCategories` 重试；ViewModel 测试覆盖首次及发值后普通异常、重试恢复、空列表与后续分类更新。UI 和 ViewModel 已删除旧 `availableCategories` 列表状态别名，读取明确状态。
-- [ ] 补充锁定取消与迟到结果的 ViewModel 行为覆盖。当前分类状态从 RecoverableRead 订阅；Paging 查询仍由 `RecoverableRead` + `buildRecoverableVaultQueryStates()` 组合，不另造全局刷新桥。
+- [x] 锁定/重开由 Data observation owner 的 `flatMapLatest` 取消旧 Room Flow、锁定期间发占位值并在可读后重订阅；`DatabaseObservationRecoveryTest` 与 `RoomObservationSessionTest` 覆盖锁定竞态和重开，`RecoverableReadTest` 验证取消不会伪装成失败，`VaultViewModelTest` 验证空/非空分类投影。分类 Flow 属于 graph-scoped VM，不是 page 请求；无需再造 page token 或重复的迟到结果桥接层。Paging 查询仍由 `RecoverableRead` + `buildRecoverableVaultQueryStates()` 组合。
 
 
 ## P2：恢复与交付合同
@@ -472,9 +473,9 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [x] 将 Vault 列表 `copyField()` 与 `copyOtp()` 的剪贴板写入绑定到 page owner：退出 Route 后授权恢复不得写入剪贴板或发出旧页面事件；仍有效 owner 可正常复制。
 
 **实现边界：** Detail 与 Vault List 通过独立 Runtime 持有各自 OTP state。OTP 编辑页保存成功返回前台时，Route 刷新本 Runtime 当前仍请求的条目；Detail 的成功历史修订恢复分支也立即刷新当前条目。`entryChanged()` 保留 active/subscription owner，只撤销旧 epoch、schedule 与验证码，再对仍有 owner 的条目异步重载；不会把临时列表订阅提升成永久 active entry。激活读取由 entry epoch 去重，但显式 owner/config 变化可以替换未完成读取的 epoch，旧结果及其认证/锁定异常不能覆盖新配置。Detail ViewModel 现在覆盖前台重载与 restore 成功/失败；未覆盖真实 Route lifecycle、编辑成功返回、锁定或离页期间晚到结果。
-**Vault 列表复制 owner 修复（2026-11-07）：** `VaultViewModel.copyField()` / `copyOtp()` 向 copy use case 传递 `pageEffects.isActive(owner)` 作为 `canDeliver`，并移除两个 use case 的默认 `{ true }`，使调用方必须明确提供交付条件。宿主行为测试覆盖授权等待期间离页后字段与 OTP 都不写剪贴板、活动 owner 字段复制仍成功并发出事件；`VaultViewModelClipboardOwnerTest` 3 项与 `CopyEntryFieldUseCaseTest` 7 项测试通过。唯一详细验收留在本 Task；OTP 产品行为另见[OTP Task 1](2026-11-06-passly-otp-review-followups.md#task-1)。
+**Vault 列表复制 owner 修复（2026-11-07）：** `VaultViewModel.copyField()` / `copyOtp()` 向 copy use case 传递 `pageEffects.isActive(owner)` 作为 `canDeliver`，并移除两个 use case 的默认 `{ true }`，使调用方必须明确提供交付条件。宿主行为测试覆盖授权等待期间离页后字段与 OTP 都不写剪贴板、活动 owner 字段复制仍成功并发出事件；`VaultViewModelTest` 3 项与 `CopyEntryFieldUseCaseTest` 7 项测试通过。唯一详细验收留在本 Task；OTP 产品行为另见[OTP Task 1](2026-11-06-passly-otp-review-followups.md#task-1)。
 
-**2026-11-07 测试订阅修正：** `VaultViewModelClipboardOwnerTest.routeExitWhileOtpCopyWaitsForAuthorizationPreventsClipboardWrite` 原先未收集生产 `WhileSubscribed` 的 `totpStatesFlow`，断言 OTP 永远未进入 Ready。测试现由 `UnconfinedTestDispatcher` collector 启动真实订阅并在 `finally` 取消；修正前全量执行 998 项中该用例失败，修正后强制全量 App 单测通过。
+**2026-11-07 测试订阅修正：** `VaultViewModelTest.routeExitWhileOtpCopyWaitsForAuthorizationPreventsClipboardWrite` 原先未收集生产 `WhileSubscribed` 的 `totpStatesFlow`，断言 OTP 永远未进入 Ready。测试现由 `UnconfinedTestDispatcher` collector 启动真实订阅并在 `finally` 取消；修正前全量执行 998 项中该用例失败，修正后强制全量 App 单测通过。
 **ticker 验证：** `start()` 现使用可替换的毫秒时钟（生产默认 `System.currentTimeMillis`），测试通过受控时钟与 coroutine test scheduler 驱动周期边界。回归验证一个条目普通读取异常清除旧码、其他条目同轮继续刷新、失败条目下一轮恢复；显式 `refreshStates(nowSeconds)` 测试仍保留，用来验证具体移动因子和 copy 状态。
 
 <a id="task-29"></a>
