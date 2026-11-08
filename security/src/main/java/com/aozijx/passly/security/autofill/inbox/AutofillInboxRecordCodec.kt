@@ -107,7 +107,9 @@ internal class AutofillInboxRecordCodec
             require(encoded.size in MIN_RECORD_BYTES..AutofillInboxLimits.MAX_RECORD_BYTES) {
                 "Invalid Inbox record size"
             }
-            require(privateKey.algorithm.equals(RSA_ALGORITHM, ignoreCase = true)) {
+            require(
+                privateKey.algorithm.equals(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM, ignoreCase = true),
+            ) {
                 "Inbox private key is not RSA"
             }
             keyMaterialCodec.validatedPublicKey(material)
@@ -315,7 +317,7 @@ internal class AutofillInboxRecordCodec
                     mode,
                     key,
                     OAEPParameterSpec(
-                        SHA_256,
+                        AutofillInboxCryptoAlgorithms.SHA_256,
                         MGF1,
                         MGF1ParameterSpec.SHA256,
                         PSource.PSpecified.DEFAULT,
@@ -360,9 +362,7 @@ internal class AutofillInboxRecordCodec
             val PAYLOAD_MAGIC = "PASSLYDRAFT".toByteArray(StandardCharsets.US_ASCII)
             const val RECORD_VERSION: Byte = 1
             const val PAYLOAD_VERSION: Byte = 1
-            const val RSA_ALGORITHM = "RSA"
             const val RSA_OAEP_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
-            const val SHA_256 = "SHA-256"
             const val MGF1 = "MGF1"
             const val U16_BYTES = 2
             const val U32_BYTES = 4

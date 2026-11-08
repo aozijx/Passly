@@ -32,13 +32,15 @@ internal class AutofillInboxKeyMaterialCodec
         fun generateAndWrap(dek: ByteArray): AutofillInboxKeyMaterial {
             require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
 
-            val keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM)
+            val keyPairGenerator =
+                KeyPairGenerator.getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
             keyPairGenerator.initialize(RSA_BITS, random)
             val keyPair = keyPairGenerator.generateKeyPair()
             val publicKey = keyPair.public.encoded
             val privateKey = keyPair.private.encoded
             val keyId = ByteArray(KEY_ID_BYTES).also(random::nextBytes)
-            val fingerprint = MessageDigest.getInstance(SHA_256).digest(publicKey)
+            val fingerprint =
+                MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256).digest(publicKey)
             var wrappingKey: ByteArray? = null
             try {
                 wrappingKey = deriveWrappingKey(dek)
@@ -91,7 +93,8 @@ internal class AutofillInboxKeyMaterialCodec
             require(material.publicKeySha256.size == FINGERPRINT_BYTES) { "Invalid Inbox key fingerprint" }
 
             val publicKey = decodeAndValidatePublicKey(material.publicKey) as RSAPublicKey
-            val fingerprint = MessageDigest.getInstance(SHA_256).digest(material.publicKey)
+            val fingerprint =
+                MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256).digest(material.publicKey)
             require(MessageDigest.isEqual(fingerprint, material.publicKeySha256)) {
                 "Inbox public key fingerprint mismatch"
             }
@@ -105,7 +108,8 @@ internal class AutofillInboxKeyMaterialCodec
         ): T {
             require(dek.size == DEK_BYTES) { "Invalid Vault key size" }
             val publicKey = validatedPublicKey(material)
-            val fingerprint = MessageDigest.getInstance(SHA_256).digest(material.publicKey)
+            val fingerprint =
+                MessageDigest.getInstance(AutofillInboxCryptoAlgorithms.SHA_256).digest(material.publicKey)
 
             val envelope = decodeEnvelope(material.privateKeyEnvelope, material.keyId, fingerprint)
             var wrappingKey: ByteArray? = null
@@ -122,7 +126,7 @@ internal class AutofillInboxKeyMaterialCodec
                 encodedPrivateKey = cipher.doFinal(envelope.ciphertextAndTag)
                 val privateKey =
                     KeyFactory
-                        .getInstance(RSA_ALGORITHM)
+                        .getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
                         .generatePrivate(PKCS8EncodedKeySpec(encodedPrivateKey))
                 validateKeyPair(privateKey, publicKey)
                 return block(privateKey)
@@ -138,7 +142,7 @@ internal class AutofillInboxKeyMaterialCodec
             require(encoded.size in 1..MAX_PUBLIC_KEY_BYTES) { "Invalid Inbox public key size" }
             val key =
                 KeyFactory
-                    .getInstance(RSA_ALGORITHM)
+                    .getInstance(AutofillInboxCryptoAlgorithms.RSA_ALGORITHM)
                     .generatePublic(X509EncodedKeySpec(encoded))
             val rsaKey =
                 key as? RSAPublicKey
@@ -212,10 +216,8 @@ internal class AutofillInboxKeyMaterialCodec
         private companion object {
             val MAGIC = "PASSLYINBOXKEY".toByteArray(Charsets.US_ASCII)
             val WRAP_LABEL = "passly-autofill-inbox-private-wrap-v1".toByteArray(Charsets.UTF_8)
-            const val RSA_ALGORITHM = "RSA"
             const val RSA_BITS = 3072
             val RSA_PUBLIC_EXPONENT = BigInteger.valueOf(65537L)
-            const val SHA_256 = "SHA-256"
             const val HMAC_SHA_256 = "HmacSHA256"
             const val DEK_BYTES = 32
             const val KEY_ID_BYTES = 16
