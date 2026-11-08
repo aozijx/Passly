@@ -13,7 +13,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
-import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.ui.BackupRestoreDetail
 import com.aozijx.passly.feature.backup.presentation.ui.BackupRestoreSheet
@@ -88,9 +87,7 @@ fun BackupOperationRoute(
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
             when (effect) {
                 is BackupNoticeEffect -> {
-                    noticePublisher.publish(
-                        newAppNotice(effect.toNoticeCode(), effect.toNoticeArguments()),
-                    )
+                    noticePublisher.publish(effect.toAppNotice())
                 }
 
                 is BackupEffect.SelectImportDocument -> {

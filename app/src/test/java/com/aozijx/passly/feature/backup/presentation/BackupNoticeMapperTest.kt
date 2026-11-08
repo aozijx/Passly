@@ -26,7 +26,7 @@ class BackupNoticeMapperTest {
             )
 
         expected.forEach { (effect, noticeCode) ->
-            assertEquals(noticeCode, effect.toNoticeCode())
+            assertEquals(noticeCode, effect.toAppNotice().code)
         }
     }
 
@@ -35,12 +35,15 @@ class BackupNoticeMapperTest {
         val effect = BackupNoticeEffect.ImportSucceeded(BackupImportResult(4, 1, 2, 3, 5, 6))
 
         assertEquals(
-            ArgumentValue.Count(4),
-            effect.toNoticeArguments()[ArgumentKey.IMPORTED_ITEM_COUNT],
-        )
-        assertEquals(
-            ArgumentValue.Count(6),
-            effect.toNoticeArguments()[ArgumentKey.PRUNED_RESOURCE_COUNT],
+            mapOf(
+                ArgumentKey.IMPORTED_ITEM_COUNT to ArgumentValue.Count(4),
+                ArgumentKey.EXISTING_ITEM_COUNT to ArgumentValue.Count(1),
+                ArgumentKey.SKIPPED_ITEM_COUNT to ArgumentValue.Count(2),
+                ArgumentKey.IGNORED_FIELD_COUNT to ArgumentValue.Count(3),
+                ArgumentKey.PRUNED_LINK_COUNT to ArgumentValue.Count(5),
+                ArgumentKey.PRUNED_RESOURCE_COUNT to ArgumentValue.Count(6),
+            ),
+            effect.toAppNotice().arguments,
         )
     }
 }
