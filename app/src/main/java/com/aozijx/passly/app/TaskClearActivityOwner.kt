@@ -1,8 +1,7 @@
 package com.aozijx.passly.app
 
 import android.view.View
-
-private const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L
+import com.aozijx.passly.app.lifecycle.APP_CLOSE_REMINDER_DELAY_MS
 
 internal interface TaskClearCallbackScheduler {
     fun post(callback: Runnable)
@@ -75,7 +74,7 @@ internal class TaskClearActivityOwner(
                         if (resumed && requests.consume(claim)) closeTask()
                     }
                 delayedCloseCallback = delayedClose
-                scheduler.postDelayed(delayedClose, APP_CLOSE_MESSAGE_DELAY_MS)
+                scheduler.postDelayed(delayedClose, APP_CLOSE_REMINDER_DELAY_MS)
             }
         deliveryCallback = delivery
         scheduler.post(delivery)

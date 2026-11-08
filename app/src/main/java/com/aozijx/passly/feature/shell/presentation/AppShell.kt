@@ -7,6 +7,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
+import com.aozijx.passly.app.lifecycle.APP_CLOSE_REMINDER_DELAY_MS
 import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
@@ -52,7 +53,7 @@ internal fun AppShell(
                     onRetry = { onAction(AppShellUiAction.RetryDatabaseSession) },
                     onCloseApp = {
                         noticePublisher.publish(newAppNotice(NoticeCode.APP_CLOSE_REMINDER))
-                        view.postDelayed(onCloseApp, APP_CLOSE_MESSAGE_DELAY_MS)
+                        view.postDelayed(onCloseApp, APP_CLOSE_REMINDER_DELAY_MS)
                     },
                 )
             }
@@ -73,7 +74,6 @@ internal fun AppShell(
         }
     }
 }
-
 /**
  * Switches authentication domains without retaining outgoing sensitive composition.
  *
@@ -89,5 +89,3 @@ internal fun SecureShellDestination(
         content(destination)
     }
 }
-
-private const val APP_CLOSE_MESSAGE_DELAY_MS = 1_000L

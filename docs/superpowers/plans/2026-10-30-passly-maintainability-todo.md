@@ -448,16 +448,20 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [ ] 把文件私有/单文件常量从类型尾部移到 Kotlin 文件顶部声明区（imports 后、主要类型/函数前），保留 `private` 等最小可见性与原始值；优先复核 `SessionLeaseGate.kt`、`DefaultAuthorizationGate.kt`、`CredentialAttemptLimiter.kt`、`AutofillInboxKeyMaterialCodec.kt`、`AutofillInboxRecordCodec.kt`、`ObservabilityRuntimeController.kt`、`ObservabilityExportService.kt` 等常量集中在类尾部 companion 的文件。仅位置迁移不改算法、超时、上限或协议行为。
 - [x] Favicon 下载与暂存共享 10 MiB 输入上限；已集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除两类重复值。
 - [x] 诊断页 adapter、导出 service 与 `EncryptedLogRecordStore` 对 `LogRecordStore.readPage()` 使用/执行相同的 500 条单页上限；统一到 Core 端口的 `LogRecordStore.MAX_PAGE_RECORDS`。
-- [ ] 核对 `MainActivity` 与 `AppShell` 中 `APP_CLOSE_MESSAGE_DELAY_MS = 1_000L` 是否是同一延迟合同，再决定是否集中。
+- [x] `TaskClearActivityOwner` 与 `AppShell` 都发布 `APP_CLOSE_REMINDER` 并延迟关闭 task 1 秒；时长统一到 App 生命周期策略 `APP_CLOSE_REMINDER_DELAY_MS`，两处 owner 的取消与认证生命周期仍各自管理。
 - [ ] 核对 `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 重复的 RSA 与 SHA-256 算法标识是否属于同一个 Inbox 协议 owner，再决定是否集中。
 - [ ] 继续检查跨文件协议/算法值，例如 `AES/GCM/NoPadding` 在 `CryptoConfig`、`EnvelopeManager`、`VerificationTag` 与日志加密实现中的定义，以及 Favicon 裁剪上下限在 transformer/Compose crop transform 的边界；先判断是否是同一协议合同，再决定复用 core 配置或维持模块私有值，避免为共享字符串引入反向依赖或把不同尺寸/时长误当同一策略。
 - [ ] 验证新增/迁移后的可见范围、所有调用点和单一真相源；持久化 key、wire tag、格式版本不得改变，安全限制不得被放宽。补充/迁移对应常量与协议测试；运行受影响模块单测、`verifyArchitecture`、lint 和 `git diff --check`。同步更新 Kotlin 规范中的位置规则；不要建立无 owner 的全局 `Constants.kt`，也不要把资源文本、Gradle 构建值或运行时可调配置复制成 Kotlin 常量。
 
 **约定完成与扫描证据（2026-11-02）：** `docs/development/kotlin-style.md` 新增“常量与固定值归属”规则，`AGENTS.md` 加入简短入口约束；常量按文件私有实现、跨文件同 owner、协议/算法语义、资源/Gradle/运行期配置分别归属。生产源码静态扫描命中 360 个 `const val` 声明，多个声明位于文件尾部 companion；精确字面量聚合发现一批待语义核验的重复（例：observability page size、应用关闭延迟、Favicon 输入上限、Autofill Inbox RSA/SHA 标识）。该扫描同时发现相同数字在不同文件中表达不同策略，故本任务要求核对消费者和行为合同后再集中；本轮只更新规则与 TODO，未移动常量或更改生产代码。
 
-**2026-11-08 LogRecordStore 分页上限批次：** Task 39 已将诊断读操作迁到 `DiagnosticsLogStoreAdapter`，旧待办中的 `ObservabilityRuntimeController` owner 描述过时。现确认 Viewer adapter、`ObservabilityExportService` 都通过相同的 `LogRecordStore.readPage(cursor, limit)` 读取；Data 的 `EncryptedLogRecordStore` 也把每次 `readPage()` 限制在 1..500，并在 `readBetween()` 里以 500 分段读取。这是端口的真实分页合同，将 `MAX_PAGE_RECORDS` 放进 `LogRecordStore`，三个生产调用点共享它并删除原私有副本。Data 测试先因接口常量缺失而编译失败，迁移后定向 store 测试通过；App adapter/export 测试、`verifyArchitecture` 与 `git diff --check` 通过。Viewer、Export、Observability 架构和错误处理文档已按当前 owner 更新。用户关闭 task 的 1000ms delay 及 Inbox RSA/SHA 标识仍分开待核验。
+**2026-11-08 LogRecordStore 分页上限批次：** Task 39 已将诊断读操作迁到 `DiagnosticsLogStoreAdapter`，旧待办中的 `ObservabilityRuntimeController` owner 描述过时。现确认 Viewer adapter、`ObservabilityExportService` 都通过相同的 `LogRecordStore.readPage(cursor, limit)` 读取；Data 的 `EncryptedLogRecordStore` 也把每次 `readPage()` 限制在 1..500，并在 `readBetween()` 里以 500 分段读取。这是端口的真实分页合同，将 `MAX_PAGE_RECORDS` 放进 `LogRecordStore`，三个生产调用点共享它并删除原私有副本。Data 测试先因接口常量缺失而编译失败，迁移后定向 store 测试通过；App adapter/export 测试、`verifyArchitecture` 与 `git diff --check` 通过。Viewer、Export、Observability 架构和错误处理文档已按当前 owner 更新。关闭 task 的提醒延迟候选已在后续批次归一；Inbox RSA/SHA 标识仍待核验。
 
 **2026-11-08 Favicon 上限批次：** `DefaultFaviconImageProcessor.stageHttpsUrl()` 先经 `FaviconImageDownloader.download()` 读取受限响应，再把字节交给 `FaviconImageStore.stage()`；用户上传也直接经过同一暂存输入边界。因此下载和暂存对同类 favicon 输入施加同一个 10 MiB 上限，属于同一 Feature 合同。将值集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除 Downloader 与 Store 上的重复类常量；定向下载测试改用独立 10 MiB 期望值，边界行为不变。`:app:testDebugUnitTest --tests "com.aozijx.passly.app.entry.favicon.FaviconImageDownloaderTest"`、`verifyArchitecture` 通过，`git diff --check` 通过；Store 的 Android instrumentation 未运行（当前无连接设备）。Task 75 的其他常量族与 Store 的设备运行验证仍开放。
+
+**2026-11-08 App 关闭提醒时长批次：** `TaskClearActivityOwner` 和 `AppShell` 都先发布 `NoticeCode.APP_CLOSE_REMINDER` 再等待 1 秒关闭 task；同一提醒使用同一时长。将重复值放入 `app.lifecycle.APP_CLOSE_REMINDER_DELAY_MS`，保留两处 owner 各自的任务取消、认证撤销和 Compose/Activity 生命周期处理。更新待办 owner 名称以匹配 `TaskClearActivityOwner`。`TaskClearActivityOwnerTest`、App 编译和 `verifyArchitecture` 通过；关闭时序、延迟值不变。
+
+
 <a id="task-77"></a>
 
 ### Task 77：核实诊断日志退出时的持久性与周期写入策略
