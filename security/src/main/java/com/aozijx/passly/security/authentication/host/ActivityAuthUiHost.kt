@@ -324,11 +324,11 @@ internal object BiometricPromptSpecFactory {
         return BiometricPrompt.PromptInfo
             .Builder()
             .setTitle(context.getString(titleResource(spec.purpose)))
-            .setSubtitle(context.getString(R.string.security_auth_biometric_subtitle))
+            .setSubtitle(context.getString(R.string.authentication_host_biometric_subtitle))
             .setAllowedAuthenticators(authenticators)
             .apply {
                 if (!spec.allowDeviceCredential) {
-                    setNegativeButtonText(context.getString(R.string.security_auth_cancel))
+                    setNegativeButtonText(context.getString(android.R.string.cancel))
                 }
             }.build()
     }
@@ -336,35 +336,35 @@ internal object BiometricPromptSpecFactory {
     private fun titleResource(purpose: AuthenticationPurpose): Int =
         when (purpose) {
             AuthenticationPurpose.UNLOCK_VAULT -> {
-                R.string.security_auth_purpose_unlock_vault
+                R.string.authentication_host_purpose_unlock_vault
             }
 
             AuthenticationPurpose.AUTOFILL -> {
-                R.string.security_auth_purpose_autofill
+                R.string.authentication_host_purpose_autofill
             }
 
             AuthenticationPurpose.BACKUP_EXPORT -> {
-                R.string.security_auth_purpose_backup_export
+                R.string.authentication_host_purpose_backup_export
             }
 
             AuthenticationPurpose.BACKUP_IMPORT -> {
-                R.string.security_auth_purpose_backup_import
+                R.string.authentication_host_purpose_backup_import
             }
 
             AuthenticationPurpose.EXPORT_DIAGNOSTICS -> {
-                R.string.security_auth_purpose_export_diagnostics
+                R.string.authentication_host_purpose_export_diagnostics
             }
 
             AuthenticationPurpose.RECOVER_AUTH_METHODS -> {
-                R.string.security_auth_purpose_recover_auth_methods
+                R.string.authentication_host_purpose_recover_auth_methods
             }
 
             AuthenticationPurpose.CLEAR_DATABASE -> {
-                R.string.security_auth_purpose_clear_database
+                R.string.authentication_host_purpose_clear_database
             }
 
             else -> {
-                R.string.security_auth_verify_identity
+                R.string.authentication_host_verify_identity
             }
         }
 }

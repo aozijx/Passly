@@ -70,7 +70,7 @@ fun AppPasswordSetDialog(
             )
         },
         title = {
-            Text(stringResource(R.string.auth_set_app_password))
+            Text(stringResource(R.string.authentication_set_app_password))
         },
         text = {
             Column {

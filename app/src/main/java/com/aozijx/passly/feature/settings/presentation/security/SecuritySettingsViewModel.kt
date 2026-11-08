@@ -143,7 +143,7 @@ class SecuritySettingsViewModel
                                 owner,
                                 UiErrorMessage(
                                     when (result.failure.code) {
-                                        AuthenticationFailureCode.KEY_INVALIDATED -> R.string.notice_security_key_invalidated
+                                        AuthenticationFailureCode.KEY_INVALIDATED -> R.string.authentication_key_invalidated
                                         AuthenticationFailureCode.LAST_METHOD_REQUIRED -> R.string.settings_auth_last_method_required
                                         AuthenticationFailureCode.SESSION_MODE_RESTRICTED -> R.string.settings_security_session_restricted
                                         else -> R.string.settings_auth_operation_failed

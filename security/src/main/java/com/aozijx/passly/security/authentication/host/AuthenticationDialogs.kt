@@ -93,7 +93,7 @@ private fun MethodDialog(
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.security_auth_verify_identity)) },
+        title = { Text(stringResource(R.string.authentication_host_verify_identity)) },
         text = {
             Column {
                 methods.forEach { method ->
@@ -104,7 +104,7 @@ private fun MethodDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.security_auth_cancel)) } },
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(android.R.string.cancel)) } },
     )
 }
 
@@ -148,9 +148,9 @@ private fun SecretDialog(
                             if (method ==
                                 AuthenticationMethodUiModel.RECOVERY_CODE
                             ) {
-                                R.string.security_auth_recovery_code_label
+                                R.string.authentication_host_recovery_code_label
                             } else {
-                                R.string.security_auth_app_password_label
+                                R.string.authentication_host_app_password_label
                             },
                         ),
                     )
@@ -164,10 +164,10 @@ private fun SecretDialog(
         },
         confirmButton = {
             Button(enabled = secret.isNotEmpty(), onClick = submit) {
-                Text(stringResource(R.string.security_auth_continue))
+                Text(stringResource(R.string.authentication_host_continue))
             }
         },
-        dismissButton = { TextButton(onClick = cancel) { Text(stringResource(R.string.security_auth_cancel)) } },
+        dismissButton = { TextButton(onClick = cancel) { Text(stringResource(android.R.string.cancel)) } },
     )
 }
 
@@ -175,8 +175,8 @@ private fun SecretDialog(
 private fun AuthenticationMethodUiModel.label(): String =
     stringResource(
         when (this) {
-            AuthenticationMethodUiModel.BIOMETRIC -> R.string.security_auth_method_biometric
-            AuthenticationMethodUiModel.APP_PASSWORD -> R.string.security_auth_app_password_label
-            AuthenticationMethodUiModel.RECOVERY_CODE -> R.string.security_auth_restore_access
+            AuthenticationMethodUiModel.BIOMETRIC -> R.string.authentication_host_method_biometric
+            AuthenticationMethodUiModel.APP_PASSWORD -> R.string.authentication_host_app_password_label
+            AuthenticationMethodUiModel.RECOVERY_CODE -> R.string.authentication_host_restore_access
         },
     )

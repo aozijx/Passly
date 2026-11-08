@@ -25,11 +25,6 @@
   <string name="vault_editor_field_hidden">Hidden</string>
   <string name="field_username_hint">Username or email</string>
   <string name="field_category">Category</string>
-  <string name="authentication_label">Authentication</string>
-  <string name="app_password_unlock_description">Unlock the app with a separate password</string>
-  <string name="recovery_code_label">Recovery code</string>
-  <string name="restore_access">Restore access</string>
-  <string name="recovery_code_verify">Verify recovery code</string>
   <string name="restore">Restore</string>
   <!-- Entry Type Names -->
   <string name="entry_type_account">Account</string>
@@ -44,12 +39,9 @@
   <string name="entry_type_bank_card">Bank Card</string>
   <string name="entry_type_id_card">ID Card</string>
   <string name="entry_type_seed_phrase">Seed Phrase</string>
-  <string name="entry_type_recovery_code">Recovery Code</string>
   <string name="select">Select</string>
   <!-- Vault status -->
-  <string name="vault_auth_subtitle">Verify your identity to access Passly</string>
   <string name="notification_permission_denied_message">Notification permission is disabled, so background sync progress won’t be shown.</string>
-  <string name="vault_locked_title">Passly is locked</string>
   <!-- Vault browsing -->
   <string name="vault_search_placeholder">Search items…</string>
   <string name="vault_search_category">Search categories</string>
@@ -141,33 +133,12 @@
   <string name="vault_detail_username">Username</string>
   <string name="vault_detail_add_notes">Add notes…</string>
   <string name="vault_detail_no_notes">No notes</string>
-  <!-- Verification strings -->
-  <string name="auth_biometric_unlock">Biometric Unlock</string>
-  <string name="auth_password_verify">Verify Password</string>
-  <string name="auth_password_unlock">Unlock with Password</string>
-  <string name="auth_app_password_label">App Password</string>
-  <string name="auth_set_app_password">Set App Password</string>
-  <string name="auth_error_credential_incorrect">Incorrect %1$s. Try again.</string>
-  <string name="auth_error_credential_incorrect_attempts" tools:ignore="PluralsCandidate">Incorrect %1$s. %2$d attempts left.</string>
-  <string name="auth_error_rate_limited" tools:ignore="PluralsCandidate">Try again in %1$d seconds.</string>
-  <string name="auth_error_attempt_state_unavailable">Couldn\'t check authentication limits. Try again shortly.</string>
-  <string name="auth_error_failed">Verification failed. Try again.</string>
-  <string name="auth_error_biometric_failed">Biometric verification failed. Try again or unlock with your password.</string>
-  <string name="auth_error_biometric_rate_limited">Biometric verification is temporarily unavailable. Follow your device prompt or unlock with your password.</string>
-  <string name="auth_error_busy">Another authentication is in progress. Try again shortly.</string>
-  <string name="auth_error_host_unavailable">Couldn\'t open the authentication prompt. Try again or use another method.</string>
-  <string name="auth_error_method_unavailable">This authentication method is unavailable. Use another method or reconfigure it in settings.</string>
-  <string name="auth_error_session_restricted">Authentication isn\'t allowed in the current session state. Return and try again.</string>
-  <string name="auth_error_session_unavailable">The secure session couldn\'t be opened. Try again; restart the app if this continues.</string>
-  <string name="auth_error_app_password_setup_failed">Couldn\'t set the app password. Try again.</string>
-  <string name="auth_error_password_too_short">Use at least 6 characters</string>
   <string name="notification_channel_app_messages">App information</string>
   <string name="notification_channel_app_messages_summary">Status bar information such as download results</string>
   <string name="notice_clipboard_cleared">Sensitive clipboard content was cleared</string>
   <string name="notice_clipboard_clear_failed">Could not clear sensitive clipboard content</string>
   <string name="notice_app_locked">Passly locked</string>
   <string name="notice_app_close_reminder">The app is about to close</string>
-  <string name="notice_security_key_invalidated">The security key is invalid. Configure authentication again.</string>
   <string name="notice_security_recovery_required">Use a recovery method to verify your identity again.</string>
   <string name="notice_security_action_failed">Security action failed</string>
   <string name="notice_database_index_rebuild_completed">Search index rebuilt</string>
@@ -242,9 +213,6 @@
   <string name="card_product">Card product</string>
   <string name="card_currency">Currency</string>
   <string name="card_bank_phone">Bank customer service phone</string>
-    <string name="auth_kdf_calibrating">Setting password protection parameters for this device…</string>
-    <string name="auth_kdf_initialization_failed">Could not save password protection parameters. Reopen the app to retry; existing data will not be reset automatically.</string>
-    <string name="auth_kdf_selected">Argon2id parameters saved for this device: %1$d MiB memory, %2$d iterations, parallelism %3$d. Future unlocks use these values.</string>
   <string name="vault_password_card_favorite">Favorite · encrypted</string>
   <string name="vault_password_card_autofill">Autofill credential</string>
   <string name="vault_password_card_protected">Protected login credential</string>

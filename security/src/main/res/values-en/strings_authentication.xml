@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Authentication dialog -->
+    <string name="authentication_host_verify_identity">Verify your identity</string>
+    <string name="authentication_host_continue">Continue</string>
+
+    <!-- Authentication methods and credentials -->
+    <string name="authentication_host_method_biometric">Biometric</string>
+    <string name="authentication_host_app_password_label">App password</string>
+    <string name="authentication_host_recovery_code_label">Recovery code</string>
+    <string name="authentication_host_restore_access">Restore access</string>
+    <string name="authentication_host_biometric_subtitle">Use biometrics to continue</string>
+
+    <!-- Authentication purposes -->
+    <string name="authentication_host_purpose_unlock_vault">Unlock Passly</string>
+    <string name="authentication_host_purpose_autofill">Verify to autofill</string>
+    <string name="authentication_host_purpose_backup_export">Verify to export a backup</string>
+    <string name="authentication_host_purpose_backup_import">Verify to import a backup</string>
+    <string name="authentication_host_purpose_export_diagnostics">Verify to export diagnostics</string>
+    <string name="authentication_host_purpose_recover_auth_methods">Use a recovery code to restore authentication methods</string>
+    <string name="authentication_host_purpose_clear_database">Authenticate to clear Passly data</string>
+</resources>

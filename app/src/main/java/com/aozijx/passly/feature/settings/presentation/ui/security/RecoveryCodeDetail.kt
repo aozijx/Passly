@@ -112,7 +112,7 @@ fun RecoveryCodeDetail(
 
             // 验证恢复码
             Text(
-                text = stringResource(R.string.recovery_code_verify),
+                text = stringResource(R.string.authentication_verify_recovery_code),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
             )
@@ -141,7 +141,7 @@ fun RecoveryCodeDetail(
                                 -> null
                             },
                         collapsedText = stringResource(R.string.restore_access),
-                        expandedText = stringResource(R.string.recovery_code_verify),
+                        expandedText = stringResource(R.string.authentication_verify_recovery_code),
                         inputLabel = stringResource(R.string.recovery_code_label),
                         successText = stringResource(R.string.settings_recovery_code_verify_valid),
                         errorText = stringResource(R.string.settings_recovery_code_verify_invalid),

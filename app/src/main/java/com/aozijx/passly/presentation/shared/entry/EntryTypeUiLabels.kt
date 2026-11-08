@@ -24,5 +24,5 @@ internal val EntryType.labelRes: Int
             EntryType.API_KEY -> R.string.entry_type_api_key
             EntryType.CRYPTO_WALLET -> R.string.entry_type_crypto_wallet
             EntryType.SEED_PHRASE -> R.string.entry_type_seed_phrase
-            EntryType.RECOVERY_CODE -> R.string.entry_type_recovery_code
+            EntryType.RECOVERY_CODE -> R.string.recovery_code_label
         }

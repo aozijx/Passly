@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Shared authentication labels -->
+    <string name="authentication_label">Authentication</string>
+    <string name="authentication_app_password_label">App password</string>
+    <string name="app_password_unlock_description">Unlock the app with a separate password</string>
+    <string name="recovery_code_label">Recovery code</string>
+    <string name="restore_access">Restore access</string>
+    <string name="authentication_verify_recovery_code">Verify recovery code</string>
+
+    <!-- Unlock page -->
+    <string name="unlock_title">Passly is locked</string>
+    <string name="unlock_subtitle">Verify your identity to access Passly</string>
+    <string name="unlock_biometric">Biometric unlock</string>
+    <string name="unlock_with_password">Unlock with password</string>
+    <string name="unlock_password_verify">Verify password</string>
+    <string name="authentication_set_app_password">Set app password</string>
+
+    <!-- Authentication errors -->
+    <string name="authentication_error_credential_incorrect">Incorrect %1$s. Try again.</string>
+    <string name="authentication_error_credential_incorrect_attempts" tools:ignore="PluralsCandidate">Incorrect %1$s. %2$d attempts left.</string>
+    <string name="authentication_error_password_too_short">Use at least 6 characters</string>
+    <string name="authentication_error_app_password_setup_failed">Could not set app password. Try again.</string>
+    <string name="authentication_error_biometric_failed">Biometric failed. Try again or use your password.</string>
+    <string name="authentication_error_biometric_rate_limited">Biometrics are temporarily unavailable. Follow the device prompt or use your password.</string>
+    <string name="authentication_error_host_unavailable">Authentication prompt unavailable. Try again or choose another method.</string>
+    <string name="authentication_error_method_unavailable">This method is unavailable. Choose another or reconfigure it in Settings.</string>
+    <string name="authentication_key_invalidated">Security key expired. Set up authentication again.</string>
+    <string name="authentication_error_rate_limited" tools:ignore="PluralsCandidate">Try again in %1$d seconds.</string>
+    <string name="authentication_error_attempt_state_unavailable">Unable to check attempts. Try again shortly.</string>
+    <string name="authentication_error_busy">Another authentication is in progress. Try again shortly.</string>
+    <string name="authentication_error_session_restricted">Can\'t authenticate in this session. Return and try again.</string>
+    <string name="authentication_error_session_unavailable">Secure session unavailable. Try again; restart Passly if it persists.</string>
+    <string name="authentication_error_failed">Verification failed. Try again.</string>
+
+    <!-- Password KDF initialization -->
+    <string name="authentication_kdf_calibrating">Setting password protection for this device…</string>
+    <string name="authentication_kdf_initialization_failed">Could not save password settings. Restart Passly to retry; existing data will not be reset.</string>
+    <string name="authentication_kdf_selected">Saved Argon2id settings: %1$d MiB, %2$d iterations, parallelism %3$d. Future unlocks will use them.</string>
+</resources>

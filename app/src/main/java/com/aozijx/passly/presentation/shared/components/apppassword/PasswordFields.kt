@@ -56,7 +56,7 @@ fun PasswordFields(
         onValueChange = onNewPasswordChange,
         enabled = enabled,
         singleLine = true,
-        label = { Text(stringResource(R.string.auth_app_password_label)) },
+        label = { Text(stringResource(R.string.authentication_app_password_label)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.LockOpen,

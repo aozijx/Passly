@@ -40,7 +40,7 @@ internal fun AppPasswordSettingsEffect.toAppPasswordMessage(context: Context): S
                 }
 
                 AppPasswordInputError.PASSWORD_TOO_SHORT -> {
-                    context.getString(R.string.auth_error_password_too_short)
+                    context.getString(R.string.authentication_error_password_too_short)
                 }
 
                 AppPasswordInputError.PASSWORD_MISMATCH -> {
@@ -67,8 +67,8 @@ private fun AuthenticationFailure.toMessage(context: Context): String =
         AuthenticationFailureCode.CREDENTIAL_INCORRECT -> {
             if ((attempts.remaining ?: 0) > 0) {
                 context.getString(
-                    R.string.auth_error_credential_incorrect_attempts,
-                    context.getString(R.string.auth_app_password_label),
+                    R.string.authentication_error_credential_incorrect_attempts,
+                    context.getString(R.string.authentication_app_password_label),
                     attempts.remaining ?: 0,
                 )
             } else {
@@ -78,13 +78,13 @@ private fun AuthenticationFailure.toMessage(context: Context): String =
 
         AuthenticationFailureCode.RATE_LIMITED -> {
             context.getString(
-                R.string.auth_error_rate_limited,
+                R.string.authentication_error_rate_limited,
                 (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L),
             )
         }
 
         AuthenticationFailureCode.PASSWORD_POLICY_VIOLATION -> {
-            context.getString(R.string.auth_error_password_too_short)
+            context.getString(R.string.authentication_error_password_too_short)
         }
 
         AuthenticationFailureCode.LAST_METHOD_REQUIRED -> {
