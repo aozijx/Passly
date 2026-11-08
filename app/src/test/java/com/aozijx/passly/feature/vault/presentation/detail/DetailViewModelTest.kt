@@ -1196,6 +1196,7 @@ class DetailViewModelTest {
                 revealRevisionFields = RevealRevisionFieldsUseCase(revisions, authGate),
                 restoreEntryRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
                 relatedPasswordLinks = RelatedPasswordLinks(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
+                logger = testLogger(),
                 otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),
             )
     }

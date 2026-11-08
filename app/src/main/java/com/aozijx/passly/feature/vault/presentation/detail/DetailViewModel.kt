@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -10,6 +11,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
@@ -88,6 +90,7 @@ class DetailViewModel
         private val revealRevisionFields: RevealRevisionFieldsUseCase,
         private val restoreEntryRevision: RestoreEntryRevisionUseCase,
         private val relatedPasswordLinks: RelatedPasswordLinks,
+        private val logger: Logger,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
     ) : ViewModel() {
         private sealed interface SnapshotRead {
@@ -132,14 +135,17 @@ class DetailViewModel
                 onMutation = ::mutate,
                 onReveal = ::setRevealedField,
             )
-        private val passwordBindingWorkflow =
-            DetailPasswordBindingWorkflow(
+        private val passwordRelationsWorkflow =
+            DetailPasswordRelationsWorkflow(
                 scope = viewModelScope,
                 links = relatedPasswordLinks,
                 access = secureSessionAccessState,
                 workSession = workSession,
                 currentEntry = { _uiState.value.entry },
                 currentBindingState = { _uiState.value.passwordBinding },
+                currentRelatedPasswords = { _uiState.value.relatedPasswords },
+                currentUnlinkState = { _uiState.value.passwordUnlink },
+                logger = logger,
                 presentationLoader = presentationLoader,
                 publish = ::mutate,
             )
@@ -607,14 +613,26 @@ class DetailViewModel
                 -> openPasswordBinding()
 
                 DetailUiAction.DismissPasswordBinding -> {
-                    passwordBindingWorkflow.dismiss()
+                    passwordRelationsWorkflow.dismiss()
                 }
 
-                is DetailUiAction.BindPassword -> passwordBindingWorkflow.bind(EntryId(event.targetEntryId))
+                is DetailUiAction.RequestPasswordUnlink -> {
+                    passwordRelationsWorkflow.requestUnlink(EntryId(event.targetEntryId), EntryLinkId(event.linkId))
+                }
+
+                DetailUiAction.DismissPasswordUnlink -> {
+                    passwordRelationsWorkflow.dismissUnlink()
+                }
+
+                DetailUiAction.ConfirmPasswordUnlink -> {
+                    passwordRelationsWorkflow.confirmUnlink()
+                }
+
+                is DetailUiAction.BindPassword -> passwordRelationsWorkflow.bind(EntryId(event.targetEntryId))
             }
         }
 
-        private fun openPasswordBinding() = passwordBindingWorkflow.open()
+        private fun openPasswordBinding() = passwordRelationsWorkflow.open()
 
         private fun copyField(fieldKey: FieldKey) {
             val entry = _uiState.value.entry ?: return
@@ -686,7 +704,7 @@ class DetailViewModel
             snapshotRefreshJob?.cancel()
             historyJob?.cancel()
             packagePickerLoadJob?.cancel()
-            passwordBindingWorkflow.close()
+            passwordRelationsWorkflow.close()
             revisionObservationJob?.cancel()
             revisionOperationJob?.cancel()
             otpRuntime.clearAllSensitiveState()
@@ -875,7 +893,7 @@ class DetailViewModel
             snapshotRefreshJob?.cancel()
             historyJob?.cancel()
             packagePickerLoadJob?.cancel()
-            passwordBindingWorkflow.close()
+            passwordRelationsWorkflow.close()
             qrSession.close()
             revealStore.clear()
             revisionObservationJob?.cancel()

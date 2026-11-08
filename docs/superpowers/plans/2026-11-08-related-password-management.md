@@ -93,6 +93,7 @@
 **Files:**
 - Rename `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordBindingWorkflow.kt` to `DetailPasswordRelationsWorkflow.kt`
 - Rename `app/src/test/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordBindingWorkflowTest.kt` to `DetailPasswordRelationsWorkflowTest.kt`
+- Rename the existing binding-state owner `DetailPasswordBindingUiState.kt` to `DetailPasswordRelationsUiState.kt` and keep binding/unlink state together there.
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiAction.kt`
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt`
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailReducer.kt`
@@ -104,15 +105,15 @@
 **Interfaces:**
 - Rename `DetailPasswordBindingWorkflow` to `DetailPasswordRelationsWorkflow`; retain candidate loading/bind behavior and add `requestUnlink(targetEntryId: EntryId, linkId: EntryLinkId)`, `dismissUnlink()`, and `confirmUnlink()`.
 - Add `currentRelatedPasswords: () -> List<DetailRelatedPassword>` to the workflow so a swipe request must match the current Detail projection before confirmation can open. Use one `linkMutationJob: Job?` to serialize bind and unlink writes.
-- Add `RelatedPasswordUnlinkUiState` in `DetailPresentationModels.kt` with `Closed` and `Confirming(targetEntryId: String, linkId: String, targetTitle: String, phase: Phase)`; `Phase` is `Ready`, `Removing`, or `Failed`.
+- Add `RelatedPasswordUnlinkUiState` in `DetailPasswordRelationsUiState.kt` with `Closed` and `Confirming(targetEntryId: String, linkId: String, targetTitle: String, phase: Phase)`; `Phase` is `Ready`, `Removing`, or `Failed`.
 - Add `DetailUiAction.RequestPasswordUnlink(targetEntryId: String, linkId: String)`, `DismissPasswordUnlink`, and `ConfirmPasswordUnlink`; retry dispatches `ConfirmPasswordUnlink` again.
 - Add `RelatedPasswordUiModel(linkId: String, targetEntryId: String, title: String, username: String)` in `DetailUiModels.kt`.
 
-- [ ] **Step 1: Add failing workflow tests** in `DetailPasswordRelationsWorkflowTest`: `requestedUnlinkCanBeDismissedWithoutDeleting`, `successfulUnlinkRefreshesCurrentRelations`, `inactiveTargetBeforeConfirmationRefreshesAndClosesDialog`, `failedUnlinkKeepsConfirmationRetryable`, `duplicateUnlinkConfirmationStartsOneDelete`, `unlinkResultIsIgnoredAfterPageReplacementOrSessionRevocation`, and `relationRefreshFailureIsLoggedAndLeavesRetryState`.
-- [ ] **Step 2: Run `DetailPasswordRelationsWorkflowTest` and confirm the new lifecycle cases fail.**
-- [ ] **Step 3: Rename and extend the workflow.** Keep one current-entry/session owner, serialize bind and unlink with `linkMutationJob`, disable repeated actions while `Removing`, and update state only while the captured `DetailWorkSession` token and authentication are current. Cancellation propagates. Pass the confirmed target and link ID to the service. After every completed unlink attempt, reload all relation projections; close on success or when the refreshed projection no longer contains that exact eligible link, otherwise keep the dialog in `Failed` for retry.
-- [ ] **Step 4: Log Detail projection reload failures** at the workflow boundary using `Logger.error(Events.Vault.Error, ErrorCodes.Security.VaultOperationFailed, Reasons.UnknownFailure, failure)`; do not log the already-logged service failure twice. Leave failed unlink confirmation open and retryable.
-- [ ] **Step 5: Run `:app:testDebugUnitTest --tests "com.aozijx.passly.feature.vault.presentation.detail.DetailPasswordRelationsWorkflowTest" --tests "com.aozijx.passly.feature.vault.presentation.detail.DetailViewModelTest"` and commit** as `feat(vault): own password unlink lifecycle`.
+- [x] **Step 1: Add failing workflow tests** in `DetailPasswordRelationsWorkflowTest`: `requestedUnlinkCanBeDismissedWithoutDeleting`, `successfulUnlinkRefreshesCurrentRelations`, `inactiveTargetBeforeConfirmationRefreshesAndClosesDialog`, `failedUnlinkKeepsConfirmationRetryable`, `duplicateUnlinkConfirmationStartsOneDelete`, `unlinkResultIsIgnoredAfterPageReplacementOrSessionRevocation`, and `relationRefreshFailureIsLoggedAndLeavesRetryState`, and `unlinkRequestMustMatchCurrentProjectionAndSession`.
+- [x] **Step 2: Run `DetailPasswordRelationsWorkflowTest` and confirm the new lifecycle cases fail.**
+- [x] **Step 3: Rename and extend the workflow.** Keep one current-entry/session owner, serialize bind and unlink with `linkMutationJob`, disable repeated actions while `Removing`, and update state only while the captured `DetailWorkSession` token and authentication are current. Cancellation propagates. Pass the confirmed target and link ID to the service. After every completed unlink attempt, reload all relation projections; close on success or when the refreshed projection no longer contains that exact eligible link, otherwise keep the dialog in `Failed` for retry.
+- [x] **Step 4: Log Detail projection reload failures** at the workflow boundary using `Logger.error(Events.Vault.Error, ErrorCodes.Security.VaultOperationFailed, Reasons.UnknownFailure, failure)`; do not log the already-logged service failure twice. Leave failed unlink confirmation open and retryable.
+- [x] **Step 5: Run `:app:testDebugUnitTest` for `DetailPasswordRelationsWorkflowTest`, `DetailViewModelTest`, and `DetailReducerTest`; all 66 tests passed with 0 failures/errors. Commit** as `feat(vault): own password unlink lifecycle`.
 
 ### Task 4: Polish Detail relationship and picker UI
 

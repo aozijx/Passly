@@ -182,6 +182,7 @@ internal fun toDetailPresentationModel(
                 relatedPasswords = shared.relatedPasswords,
                 canBindPasswords = entry.type == EntryType.LOGIN && entry.deletedAt == null,
                 passwordBinding = state.passwordBinding,
+                passwordUnlink = state.passwordUnlink,
                 tags = entry.tags,
                 associations =
                     DetailAssociatedInfoUiModel(

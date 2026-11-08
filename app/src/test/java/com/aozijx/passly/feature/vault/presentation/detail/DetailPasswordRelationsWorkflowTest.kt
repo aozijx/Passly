@@ -17,6 +17,8 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
+import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
@@ -27,7 +29,7 @@ import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
+import com.aozijx.passly.testing.RecordingTestLogger
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
@@ -40,7 +42,166 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-class DetailPasswordBindingWorkflowTest {
+class DetailPasswordRelationsWorkflowTest {
+    @Test
+    fun unlinkRequestMustMatchCurrentProjectionAndSession() =
+        runTest {
+            val fixture = unlinkFixture(backgroundScope)
+
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("stale-link"))
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+
+            fixture.workSession.close()
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+        }
+
+    @Test
+    fun requestedUnlinkCanBeDismissedWithoutDeleting() =
+        runTest {
+            val fixture = unlinkFixture(backgroundScope)
+
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+            assertEquals(
+                RelatedPasswordUnlinkUiState.Confirming(
+                    "target",
+                    "source-target",
+                    "target",
+                    RelatedPasswordUnlinkUiState.Phase.Ready,
+                ),
+                fixture.unlinkState,
+            )
+
+            fixture.workflow.dismissUnlink()
+
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+            assertEquals(0, fixture.links.deleteAttempts)
+        }
+
+    @Test
+    fun successfulUnlinkRefreshesCurrentRelations() =
+        runTest {
+            val fixture = unlinkFixture(backgroundScope)
+
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+            assertEquals(1, fixture.links.deleteAttempts)
+            assertEquals(listOf(EntryLinkId("source-target")), fixture.links.deletedLinkIds)
+            assertEquals(1, fixture.relationUpdates)
+            assertTrue(fixture.currentRelatedPasswords.isEmpty())
+        }
+
+    @Test
+    fun inactiveTargetBeforeConfirmationRefreshesAndClosesDialog() =
+        runTest {
+            val fixture = unlinkFixture(backgroundScope)
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+            fixture.entries.activeItems = listOf(listItem("source"))
+            fixture.missingEntryIds = setOf(EntryId("target"))
+
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+            assertEquals(0, fixture.links.deleteAttempts)
+            assertEquals(1, fixture.relationUpdates)
+            assertTrue(fixture.currentRelatedPasswords.isEmpty())
+        }
+
+    @Test
+    fun failedUnlinkKeepsConfirmationRetryable() =
+        runTest {
+            val fixture = unlinkFixture(backgroundScope, deleteFailure = true)
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+
+            val failed = fixture.unlinkState as RelatedPasswordUnlinkUiState.Confirming
+            assertEquals(RelatedPasswordUnlinkUiState.Phase.Failed, failed.phase)
+            assertEquals(1, fixture.links.deleteAttempts)
+            assertEquals(1, fixture.relationUpdates)
+            assertEquals(listOf(DetailRelatedPassword(EntryLinkId("source-target"), EntryId("target"), "target", "")), fixture.currentRelatedPasswords)
+
+            fixture.links.failDelete = false
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+            assertEquals(2, fixture.links.deleteAttempts)
+            assertTrue(fixture.currentRelatedPasswords.isEmpty())
+        }
+
+    @Test
+    fun duplicateUnlinkConfirmationStartsOneDelete() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val fixture = unlinkFixture(backgroundScope, deleteGate = gate)
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+
+            assertEquals(1, fixture.links.deleteAttempts)
+            assertEquals(RelatedPasswordUnlinkUiState.Phase.Removing, (fixture.unlinkState as RelatedPasswordUnlinkUiState.Confirming).phase)
+            gate.complete(Unit)
+            runCurrent()
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+        }
+
+    @Test
+    fun unlinkResultIsIgnoredAfterPageReplacementOrSessionRevocation() =
+        runTest {
+            val pageGate = CompletableDeferred<Unit>()
+            val pageFixture = unlinkFixture(backgroundScope, deleteGate = pageGate)
+            pageFixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+            pageFixture.workflow.confirmUnlink()
+            runCurrent()
+            pageFixture.currentEntry = entry("replacement")
+            pageFixture.workSession.open(pageFixture.currentEntry.id)
+            pageFixture.workflow.close()
+            pageGate.complete(Unit)
+            runCurrent()
+            assertEquals(0, pageFixture.relationUpdates)
+
+            val authGate = CompletableDeferred<Unit>()
+            val authFixture = unlinkFixture(backgroundScope, deleteGate = authGate)
+            authFixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+            authFixture.workflow.confirmUnlink()
+            runCurrent()
+            authFixture.access.authenticationState.value = AuthenticationState.Locked
+            authFixture.workflow.close()
+            authGate.complete(Unit)
+            runCurrent()
+            assertEquals(0, authFixture.relationUpdates)
+        }
+
+    @Test
+    fun relationRefreshFailureIsLoggedAndLeavesRetryState() =
+        runTest {
+            val fixture = unlinkFixture(backgroundScope)
+            fixture.failRelationRefresh = true
+            fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
+
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+
+            val failed = fixture.unlinkState as RelatedPasswordUnlinkUiState.Confirming
+            assertEquals(RelatedPasswordUnlinkUiState.Phase.Failed, failed.phase)
+            assertEquals(1, fixture.logger.events.size)
+            assertTrue(fixture.logger.events.single().throwable is IllegalStateException)
+
+            fixture.failRelationRefresh = false
+            fixture.workflow.confirmUnlink()
+            runCurrent()
+            assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
+        }
+
     @Test
     fun candidateResultIsIgnoredAfterSameEntryDetailVisitIsReplaced() =
         runTest {
@@ -179,13 +340,20 @@ class DetailPasswordBindingWorkflowTest {
         candidateGate: CompletableDeferred<List<EntryListItem>>,
         linkWriteGate: CompletableDeferred<Unit>? = null,
         failLinkWrite: Boolean = false,
+        initialLinks: List<EntryLink> = emptyList(),
+        deleteGate: CompletableDeferred<Unit>? = null,
+        deleteFailure: Boolean = false,
     ) {
         val access = TestAccess()
         var currentEntry = entry("source")
-        val links = TestLinks(linkWriteGate, failLinkWrite)
+        val links = TestLinks(linkWriteGate, failLinkWrite, initialLinks, deleteGate, deleteFailure)
         val entries = TestEntries(candidateGate)
+        val logger = RecordingTestLogger()
         var relationUpdates = 0
         var refreshedRelationIds: List<EntryId> = emptyList()
+        var currentRelatedPasswords: List<DetailRelatedPassword> = emptyList()
+        var missingEntryIds: Set<EntryId> = emptySet()
+        var failRelationRefresh = false
         val workSession =
             DetailWorkSession(
                 hasAccess = { access.hasFullSecureSessionAccess() },
@@ -196,19 +364,36 @@ class DetailPasswordBindingWorkflowTest {
             )
         var bindingState: RelatedPasswordBindingUiState = RelatedPasswordBindingUiState.Closed
             private set
+        var unlinkState: RelatedPasswordUnlinkUiState = RelatedPasswordUnlinkUiState.Closed
+            private set
         val workflow =
-            DetailPasswordBindingWorkflow(
+            DetailPasswordRelationsWorkflow(
                 scope = scope,
                 links = RelatedPasswordLinks(entries, links, testLogger()),
                 access = access,
                 workSession = workSession,
                 currentEntry = { currentEntry },
                 currentBindingState = { bindingState },
-                presentationLoader = presentationLoader(links) { refreshedRelationIds = it },
+                currentRelatedPasswords = { currentRelatedPasswords },
+                currentUnlinkState = { unlinkState },
+                logger = logger,
+                presentationLoader =
+                    presentationLoader(
+                        links = links,
+                        onRelationEntryIdsRequested = {
+                            refreshedRelationIds = it
+                            if (failRelationRefresh) throw IllegalStateException("relation refresh failed")
+                        },
+                        isEntryMissing = { it in missingEntryIds },
+                    ),
                 publish = { mutation ->
                     when (mutation) {
                         is DetailMutation.PasswordBindingStateChanged -> bindingState = mutation.state
-                        is DetailMutation.RelationsChanged -> relationUpdates++
+                        is DetailMutation.PasswordUnlinkStateChanged -> unlinkState = mutation.state
+                        is DetailMutation.RelationsChanged -> {
+                            relationUpdates++
+                            currentRelatedPasswords = mutation.relations.relatedPasswords
+                        }
                         else -> Unit
                     }
                 },
@@ -239,34 +424,75 @@ class DetailPasswordBindingWorkflowTest {
     private class TestLinks(
         private val writeGate: CompletableDeferred<Unit>? = null,
         private val failWrite: Boolean = false,
+        initialLinks: List<EntryLink> = emptyList(),
+        private val deleteGate: CompletableDeferred<Unit>? = null,
+        deleteFailure: Boolean = false,
     ) : EntryLinkRepository {
         val upserts = mutableListOf<EntryLink>()
         var upsertAttempts = 0
+        private val storedLinks = initialLinks.toMutableList()
+        var failDelete = deleteFailure
+        var deleteAttempts = 0
+        val deletedLinkIds = mutableListOf<EntryLinkId>()
 
         override fun observeAll(): Flow<List<EntryLink>> = emptyFlow()
 
         override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = emptyFlow()
 
-        override suspend fun getAll(): List<EntryLink> = upserts.toList()
+        override suspend fun getAll(): List<EntryLink> = storedLinks.toList()
 
         override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
-            upserts.filter { it.sourceEntryId == entryId || it.targetEntryId == entryId }
+            storedLinks.filter { it.sourceEntryId == entryId || it.targetEntryId == entryId }
 
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {
             upsertAttempts++
             writeGate?.await()
             if (failWrite) return AppResult.Failure(ValidationError())
             upserts += link
+            storedLinks += link
             return AppResult.Success(Unit)
         }
 
-        override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> = AppResult.Success(Unit)
+        override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> {
+            deleteAttempts++
+            deleteGate?.await()
+            if (failDelete) return AppResult.Failure(ValidationError())
+            deletedLinkIds += linkId
+            storedLinks.removeAll { it.id == linkId }
+            return AppResult.Success(Unit)
+        }
     }
 
     private companion object {
+        fun unlinkFixture(
+            scope: kotlinx.coroutines.CoroutineScope,
+            deleteGate: CompletableDeferred<Unit>? = null,
+            deleteFailure: Boolean = false,
+        ): Fixture {
+            val link =
+                EntryLink.create(
+                    id = EntryLinkId("source-target"),
+                    sourceEntryId = EntryId("source"),
+                    targetEntryId = EntryId("target"),
+                    relationType = EntryRelationType.RELATED_TO,
+                    createdAt = 1L,
+                )
+            return Fixture(
+                scope = scope,
+                candidateGate = completedCandidates(),
+                initialLinks = listOf(link),
+                deleteGate = deleteGate,
+                deleteFailure = deleteFailure,
+            ).apply {
+                currentRelatedPasswords =
+                    listOf(DetailRelatedPassword(link.id, EntryId("target"), "target", ""))
+            }
+        }
+
         fun presentationLoader(
             links: TestLinks,
             onRelationEntryIdsRequested: (List<EntryId>) -> Unit,
+            isEntryMissing: (EntryId) -> Boolean = { false },
         ): DetailPresentationLoader =
             DetailPresentationLoader(
                 sessionQuery =
@@ -278,7 +504,7 @@ class DetailPasswordBindingWorkflowTest {
                                         EntryId("source") -> entry("source")
                                         EntryId("target") -> entry("target")
                                         else -> null
-                                    }
+                                    }?.takeUnless { isEntryMissing(it.id) }
 
                                 override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> {
                                     onRelationEntryIdsRequested(entryIds)
@@ -287,7 +513,7 @@ class DetailPasswordBindingWorkflowTest {
                                             EntryId("source") -> entry("source")
                                             EntryId("target") -> entry("target")
                                             else -> null
-                                        }
+                                        }?.takeUnless { isEntryMissing(it.id) }
                                     }
                                 }
                             },

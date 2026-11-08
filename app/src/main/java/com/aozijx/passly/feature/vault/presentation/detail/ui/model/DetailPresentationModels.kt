@@ -7,6 +7,8 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,
@@ -30,6 +32,7 @@ data class DetailBodyUiModel(
     val relatedPasswords: List<RelatedPasswordUiModel>,
     val canBindPasswords: Boolean,
     val passwordBinding: RelatedPasswordBindingUiState,
+    val passwordUnlink: RelatedPasswordUnlinkUiState,
     val tags: Set<String>,
     val associations: DetailAssociatedInfoUiModel,
     val associatedApps: List<AppPackagePickerItemUiModel>,
@@ -40,26 +43,6 @@ data class DetailBodyUiModel(
     val activities: List<DetailActivityUiModel>,
     val activityHistory: DetailActivityHistoryState,
     val snapshotState: DetailSnapshotState,
-)
-
-sealed interface RelatedPasswordBindingUiState {
-    data object Closed : RelatedPasswordBindingUiState
-
-    data object Loading : RelatedPasswordBindingUiState
-
-    data object LoadFailed : RelatedPasswordBindingUiState
-
-    data class Ready(
-        val candidates: List<RelatedPasswordCandidateUiModel>,
-        val savingEntryId: String? = null,
-        val bindFailed: Boolean = false,
-    ) : RelatedPasswordBindingUiState
-}
-
-data class RelatedPasswordCandidateUiModel(
-    val id: String,
-    val title: String,
-    val username: String,
 )
 
 data class DetailSeedPhraseUiModel(

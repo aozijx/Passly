@@ -26,6 +26,24 @@ import org.junit.Test
 
 class DetailReducerTest {
     @Test
+    fun passwordUnlinkMutationUpdatesTheCurrentState() {
+        val confirming =
+            RelatedPasswordUnlinkUiState.Confirming(
+                targetEntryId = "target",
+                linkId = "link",
+                targetTitle = "Target",
+                phase = RelatedPasswordUnlinkUiState.Phase.Ready,
+            )
+
+        val updated =
+            DetailReducer.reduce(
+                DetailUiState(entry = entry("current")),
+                DetailMutation.PasswordUnlinkStateChanged(confirming),
+            )
+
+        assertEquals(confirming, updated.passwordUnlink)
+    }
+    @Test
     fun relationRefreshUpdatesAllProjectionsOnlyForTheCurrentEntry() {
         val current = entry("current")
         val accountEntry = entry("account")

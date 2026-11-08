@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 
 internal sealed interface DetailTagEditorMutation : DetailMutation
 
@@ -90,6 +89,10 @@ internal sealed interface DetailMutation {
 
     data class PasswordBindingStateChanged(
         val state: RelatedPasswordBindingUiState,
+    ) : DetailMutation
+
+    data class PasswordUnlinkStateChanged(
+        val state: RelatedPasswordUnlinkUiState,
     ) : DetailMutation
 
     data class RelationsChanged(
@@ -195,6 +198,7 @@ internal object DetailReducer {
             }
 
             is DetailMutation.PasswordBindingStateChanged -> state.copy(passwordBinding = mutation.state)
+            is DetailMutation.PasswordUnlinkStateChanged -> state.copy(passwordUnlink = mutation.state)
 
             is DetailMutation.RelationsChanged ->
                 if (state.entry?.id == mutation.entryId) {
@@ -219,6 +223,7 @@ internal object DetailReducer {
                         accountGroupEntries = snapshot.accountGroupEntries,
                         otherRelatedEntries = snapshot.otherRelatedEntries,
                         relatedPasswords = snapshot.relatedPasswords,
+                        passwordUnlink = RelatedPasswordUnlinkUiState.Closed,
                         isEditingTitle = false,
                         editedTitle = presentation.entry.detailDisplayTitle,
                     )
@@ -243,11 +248,13 @@ internal object DetailReducer {
 
             is DetailMutation.EntryPresented -> {
                 mutation.presentation.let { presentation ->
+                    val entryChanged = state.entry?.id != presentation.entry.id
                     state.copy(
                         entry = presentation.entry,
                         sections = presentation.sections,
                         associatedApps = presentation.associatedApps,
                         sensitiveFieldKeys = presentation.sensitiveFieldKeys,
+                        passwordUnlink = if (entryChanged) RelatedPasswordUnlinkUiState.Closed else state.passwordUnlink,
                         editedTitle =
                             if (state.isEditingTitle) {
                                 state.editedTitle

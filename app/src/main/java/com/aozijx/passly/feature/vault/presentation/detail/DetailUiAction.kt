@@ -182,6 +182,15 @@ sealed interface DetailUiAction {
 
     data object DismissPasswordBinding : DetailEntryAction
 
+    data class RequestPasswordUnlink(
+        val targetEntryId: String,
+        val linkId: String,
+    ) : DetailEntryAction
+
+    data object DismissPasswordUnlink : DetailEntryAction
+
+    data object ConfirmPasswordUnlink : DetailEntryAction
+
     data class BindPassword(
         val targetEntryId: String,
     ) : DetailEntryAction
