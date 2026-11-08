@@ -40,8 +40,8 @@ class DatabaseResetViewModelTest {
                 }
             val model = viewModel(null, gateway)
             model.onAction(DatabaseResetUiAction.Reset)
-            val phase = model.uiState.first { it.phase is DatabaseResetPhase.Failed }.phase as DatabaseResetPhase.Failed
-            val failure = phase.reason as DatabaseResetFailure.Unexpected
+            val failedState = model.uiState.first { it is DatabaseResetUiState.Failed } as DatabaseResetUiState.Failed
+            val failure = failedState.reason as DatabaseResetFailure.Unexpected
             assertEquals(UiErrorMessage(R.string.database_reset_error_failed), failure.message)
         }
 
@@ -52,9 +52,9 @@ class DatabaseResetViewModelTest {
             val viewModel = viewModel(AuthorizationResult.Cancelled, gateway)
 
             viewModel.onAction(DatabaseResetUiAction.Reset)
-            val settled = viewModel.uiState.first { it.phase != DatabaseResetPhase.Resetting }
+            val settled = viewModel.uiState.first { it != DatabaseResetUiState.Resetting }
 
-            assertSame(DatabaseResetPhase.Idle, settled.phase)
+            assertSame(DatabaseResetUiState.Idle, settled)
             assertEquals(0, gateway.resetCount)
         }
 
@@ -65,9 +65,9 @@ class DatabaseResetViewModelTest {
             val viewModel = viewModel(null, gateway)
 
             viewModel.onAction(DatabaseResetUiAction.Reset)
-            val completed = viewModel.uiState.first { it.phase == DatabaseResetPhase.Completed }
+            val completed = viewModel.uiState.first { it == DatabaseResetUiState.Completed }
 
-            assertSame(DatabaseResetPhase.Completed, completed.phase)
+            assertSame(DatabaseResetUiState.Completed, completed)
             assertEquals(1, gateway.resetCount)
         }
 
@@ -79,13 +79,13 @@ class DatabaseResetViewModelTest {
             val firstOwner = viewModel.onPageEntered()
 
             viewModel.onAction(DatabaseResetUiAction.Reset)
-            viewModel.uiState.first { it.phase == DatabaseResetPhase.Completed }
+            viewModel.uiState.first { it == DatabaseResetUiState.Completed }
             viewModel.onPageExited(firstOwner)
 
-            assertSame(DatabaseResetPhase.Idle, viewModel.uiState.value.phase)
+            assertSame(DatabaseResetUiState.Idle, viewModel.uiState.value)
             val secondOwner = viewModel.onPageEntered()
             viewModel.onAction(DatabaseResetUiAction.Reset)
-            viewModel.uiState.first { it.phase == DatabaseResetPhase.Completed }
+            viewModel.uiState.first { it == DatabaseResetUiState.Completed }
             viewModel.onPageExited(secondOwner)
 
             assertEquals(2, gateway.resetCount)
@@ -108,16 +108,16 @@ class DatabaseResetViewModelTest {
 
             viewModel.onAction(DatabaseResetUiAction.Reset)
             runCurrent()
-            assertSame(DatabaseResetPhase.Resetting, viewModel.uiState.value.phase)
+            assertSame(DatabaseResetUiState.Resetting, viewModel.uiState.value)
             viewModel.onPageExited(firstOwner)
-            assertSame(DatabaseResetPhase.Resetting, viewModel.uiState.value.phase)
+            assertSame(DatabaseResetUiState.Resetting, viewModel.uiState.value)
 
             resetResult.complete(AppResult.Success(Unit))
             runCurrent()
-            assertSame(DatabaseResetPhase.Completed, viewModel.uiState.value.phase)
+            assertSame(DatabaseResetUiState.Completed, viewModel.uiState.value)
 
             val secondOwner = viewModel.onPageEntered()
-            assertSame(DatabaseResetPhase.Idle, viewModel.uiState.value.phase)
+            assertSame(DatabaseResetUiState.Idle, viewModel.uiState.value)
             viewModel.onPageExited(secondOwner)
             assertEquals(1, resetCount)
         }

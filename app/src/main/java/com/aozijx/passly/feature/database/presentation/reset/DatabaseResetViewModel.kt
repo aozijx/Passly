@@ -20,7 +20,7 @@ class DatabaseResetViewModel
     constructor(
         private val resetDatabase: ResetDatabaseUseCase,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(DatabaseResetUiState())
+        private val _uiState = MutableStateFlow<DatabaseResetUiState>(DatabaseResetUiState.Idle)
         val uiState: StateFlow<DatabaseResetUiState> = _uiState.asStateFlow()
         private var nextPageOwner = 0L
         private var activePageOwner: Long? = null
@@ -45,7 +45,7 @@ class DatabaseResetViewModel
         }
 
         private fun reset() {
-            if (_uiState.value.phase == DatabaseResetPhase.Resetting) return
+            if (_uiState.value is DatabaseResetUiState.Resetting) return
             mutate(DatabaseResetMutation.ResetStarted)
             viewModelScope.launch {
                 when (val result = resetDatabase()) {

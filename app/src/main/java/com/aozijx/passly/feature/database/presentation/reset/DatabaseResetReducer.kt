@@ -6,38 +6,18 @@ internal object DatabaseResetReducer {
         mutation: DatabaseResetMutation,
     ): DatabaseResetUiState =
         when (mutation) {
-            DatabaseResetMutation.PageBoundaryCrossed -> {
-                if (state.phase == DatabaseResetPhase.Resetting) {
-                    state
-                } else {
-                    state.copy(phase = DatabaseResetPhase.Idle)
-                }
-            }
+            DatabaseResetMutation.PageBoundaryCrossed ->
+                if (state is DatabaseResetUiState.Resetting) state else DatabaseResetUiState.Idle
 
-            DatabaseResetMutation.ResetStarted -> {
-                state.copy(phase = DatabaseResetPhase.Resetting)
-            }
+            DatabaseResetMutation.ResetStarted -> DatabaseResetUiState.Resetting
 
-            DatabaseResetMutation.ResetCancelled -> {
-                state.copy(phase = DatabaseResetPhase.Idle)
-            }
+            DatabaseResetMutation.ResetCancelled -> DatabaseResetUiState.Idle
 
-            DatabaseResetMutation.ResetCompleted -> {
-                state.copy(phase = DatabaseResetPhase.Completed)
-            }
+            DatabaseResetMutation.ResetCompleted -> DatabaseResetUiState.Completed
 
-            DatabaseResetMutation.ResetSuccessFeedbackElapsed -> {
-                if (state.phase == DatabaseResetPhase.Completed) {
-                    state.copy(phase = DatabaseResetPhase.Idle)
-                } else {
-                    state
-                }
-            }
+            DatabaseResetMutation.ResetSuccessFeedbackElapsed ->
+                if (state == DatabaseResetUiState.Completed) DatabaseResetUiState.Idle else state
 
-            is DatabaseResetMutation.ResetFailed -> {
-                state.copy(
-                    phase = DatabaseResetPhase.Failed(mutation.reason),
-                )
-            }
+            is DatabaseResetMutation.ResetFailed -> DatabaseResetUiState.Failed(mutation.reason)
         }
 }

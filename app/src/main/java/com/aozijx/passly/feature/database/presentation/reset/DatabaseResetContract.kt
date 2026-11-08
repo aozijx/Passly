@@ -4,29 +4,25 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
-data class DatabaseResetUiState(
-    val phase: DatabaseResetPhase = DatabaseResetPhase.Idle,
-)
-
-sealed interface DatabaseResetPhase {
+sealed interface DatabaseResetUiState {
     @get:StringRes
     val titleRes: Int
     val isButtonEnabled: Boolean
     val isLoading: Boolean
 
-    data object Idle : DatabaseResetPhase {
+    data object Idle : DatabaseResetUiState {
         override val titleRes = R.string.database_reset_action
         override val isButtonEnabled = true
         override val isLoading = false
     }
 
-    data object Resetting : DatabaseResetPhase {
+    data object Resetting : DatabaseResetUiState {
         override val titleRes = R.string.database_reset_loading
         override val isButtonEnabled = false
         override val isLoading = true
     }
 
-    data object Completed : DatabaseResetPhase {
+    data object Completed : DatabaseResetUiState {
         override val titleRes = R.string.database_reset_success
         override val isButtonEnabled = false
         override val isLoading = false
@@ -34,7 +30,7 @@ sealed interface DatabaseResetPhase {
 
     data class Failed(
         val reason: DatabaseResetFailure,
-    ) : DatabaseResetPhase {
+    ) : DatabaseResetUiState {
         @get:StringRes
         override val titleRes = reason.titleRes
         override val isButtonEnabled = false

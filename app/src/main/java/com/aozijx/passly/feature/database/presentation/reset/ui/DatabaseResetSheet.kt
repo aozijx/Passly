@@ -62,7 +62,7 @@ internal fun DatabaseResetSheet(
             )
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                enabled = state.phase.isButtonEnabled,
+                enabled = state.isButtonEnabled,
                 onClick = { showConfirm = true },
                 colors =
                     ButtonDefaults.buttonColors(
@@ -72,7 +72,7 @@ internal fun DatabaseResetSheet(
             ) {
                 val motionScheme = MaterialTheme.motionScheme
                 AnimatedContent(
-                    targetState = state.phase,
+                    targetState = state,
                     transitionSpec = {
                         fadeIn(animationSpec = motionScheme.defaultEffectsSpec()) +
                             slideInVertically(animationSpec = motionScheme.defaultSpatialSpec()) { it / 3 } togetherWith
@@ -80,12 +80,12 @@ internal fun DatabaseResetSheet(
                             slideOutVertically(animationSpec = motionScheme.defaultSpatialSpec()) { -it / 3 }
                     },
                     label = "database_reset_button_content",
-                ) { phase ->
+                ) { currentState ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (phase.isLoading) {
+                        if (currentState.isLoading) {
                             LoadingIndicator(modifier = Modifier.padding(vertical = 2.dp))
                         }
-                        Text(stringResource(phase.titleRes))
+                        Text(stringResource(currentState.titleRes))
                     }
                 }
             }
@@ -95,13 +95,13 @@ internal fun DatabaseResetSheet(
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = {
-                if (!state.phase.isLoading) showConfirm = false
+                if (!state.isLoading) showConfirm = false
             },
             title = { Text(stringResource(R.string.database_reset_confirm_title)) },
             text = { Text(stringResource(R.string.database_reset_confirm_message)) },
             confirmButton = {
                 TextButton(
-                    enabled = !state.phase.isLoading,
+                    enabled = !state.isLoading,
                     onClick = {
                         showConfirm = false
                         onReset()
@@ -115,7 +115,7 @@ internal fun DatabaseResetSheet(
             },
             dismissButton = {
                 TextButton(
-                    enabled = !state.phase.isLoading,
+                    enabled = !state.isLoading,
                     onClick = { showConfirm = false },
                 ) { Text(stringResource(R.string.cancel)) }
             },
