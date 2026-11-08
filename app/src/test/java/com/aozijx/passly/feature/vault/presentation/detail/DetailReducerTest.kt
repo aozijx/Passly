@@ -76,7 +76,7 @@ class DetailReducerTest {
                 entry = entry("Before"),
                 isEditingTitle = true,
                 editedTitle = " Canonical ",
-                saveProgress = DetailSaveProgress(DetailEditCompletion.Title),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
         val presented = DetailReducer.reduce(saving, DetailMutation.EntryPresented(presentation(latest, emptyList())))
         val completed = DetailReducer.reduce(presented, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
@@ -271,7 +271,7 @@ class DetailReducerTest {
                     DetailUiState(
                         entry = entry("Secret"),
                         revealedFields = mapOf(FieldKey.PASSWORD to password),
-                        saveProgress = DetailSaveProgress(DetailEditCompletion.Notes),
+                        saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
                     ),
                     DetailMutation.StateCleared,
                 )
@@ -365,7 +365,7 @@ class DetailReducerTest {
             ) as DetailFaviconEditorState.Open
         val saving =
             DetailUiState(
-                saveProgress = DetailSaveProgress(DetailEditCompletion.Icon),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
                 faviconEditor = requested,
             )
 
@@ -403,7 +403,7 @@ class DetailReducerTest {
 
         val actual = DetailReducer.reduce(state, DetailMutation.SaveStarted(DetailEditCompletion.Icon))
 
-        assertEquals(DetailSaveProgress(DetailEditCompletion.Icon), actual.saveProgress)
+        assertEquals(DetailSaveState.Saving(DetailEditCompletion.Icon), actual.saveState)
         assertEquals(DetailFaviconWorkState.Idle, (actual.faviconEditor as DetailFaviconEditorState.Open).work)
     }
 
@@ -426,7 +426,7 @@ class DetailReducerTest {
         val saved =
             DetailReducer.reduce(
                 DetailUiState(
-                    saveProgress = DetailSaveProgress(DetailEditCompletion.Icon),
+                    saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
                     faviconEditor = promoted,
                 ),
                 DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
@@ -438,7 +438,7 @@ class DetailReducerTest {
     @Test
     fun savingTagsRejectsEditsAndDismissalsUntilTheWriteCompletes() {
         val editor = DetailTagEditorState.Open(initialTags = setOf("Work"), input = "Personal")
-        val saving = DetailUiState(tagEditor = editor, saveProgress = DetailSaveProgress(DetailEditCompletion.Tags))
+        val saving = DetailUiState(tagEditor = editor, saveState = DetailSaveState.Saving(DetailEditCompletion.Tags))
         val changes =
             listOf(
                 DetailMutation.TagInputChanged("New draft"),
@@ -462,7 +462,7 @@ class DetailReducerTest {
         val state =
             DetailUiState(
                 tagEditor = DetailTagEditorState.Open(initialTags = emptySet()),
-                saveProgress = DetailSaveProgress(DetailEditCompletion.Favorite),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Favorite),
             )
 
         val edited = DetailReducer.reduce(state, DetailMutation.TagInputChanged("Personal"))
@@ -492,7 +492,7 @@ class DetailReducerTest {
     fun successfulTagSaveClosesSheetButFailurePreservesDraft() {
         val saving =
             DetailUiState(
-                saveProgress = DetailSaveProgress(DetailEditCompletion.Tags),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
                 tagEditor =
                     DetailTagEditorState.Open(
                         initialTags = setOf("Work"),

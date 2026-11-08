@@ -1,13 +1,12 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.common.search
-import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
 
@@ -313,7 +312,7 @@ internal object DetailReducer {
 
             DetailMutation.TitleEditingStarted -> {
                 state.copy(
-                    saveProgress = state.draftChanged(DetailEditCompletion.Title),
+                    saveState = state.saveState.draftChanged(DetailEditCompletion.Title),
                     isEditingTitle = true,
                     editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
                 )
@@ -321,7 +320,7 @@ internal object DetailReducer {
 
             DetailMutation.TitleEditingCancelled -> {
                 state.copy(
-                    saveProgress = state.draftChanged(DetailEditCompletion.Title),
+                    saveState = state.saveState.draftChanged(DetailEditCompletion.Title),
                     isEditingTitle = false,
                     editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
                 )
@@ -330,13 +329,13 @@ internal object DetailReducer {
             is DetailMutation.EditedTitleChanged -> {
                 state.copy(
                     editedTitle = mutation.value,
-                    saveProgress =
+                    saveState =
                         if (mutation.value ==
                             state.editedTitle
                         ) {
-                            state.saveProgress
+                            state.saveState
                         } else {
-                            state.draftChanged(DetailEditCompletion.Title)
+                            state.saveState.draftChanged(DetailEditCompletion.Title)
                         },
                 )
             }
@@ -344,18 +343,18 @@ internal object DetailReducer {
             is DetailMutation.FieldEditingStarted -> {
                 state.copy(
                     fieldEdits = state.fieldEdits.start(mutation.key, mutation.initialValue),
-                    saveProgress = state.draftChanged(mutation.key.completion()),
+                    saveState = state.saveState.draftChanged(mutation.key.completion()),
                 )
             }
 
             is DetailMutation.FieldDraftChanged -> {
                 state.copy(
                     fieldEdits = state.fieldEdits.update(mutation.key, mutation.value),
-                    saveProgress =
+                    saveState =
                         if (state.fieldEdits.isEditing(mutation.key) && state.fieldEdits.draft(mutation.key) != mutation.value) {
-                            state.draftChanged(mutation.key.completion())
+                            state.saveState.draftChanged(mutation.key.completion())
                         } else {
-                            state.saveProgress
+                            state.saveState
                         },
                 )
             }
@@ -363,7 +362,7 @@ internal object DetailReducer {
             is DetailMutation.FieldEditingCancelled -> {
                 state.copy(
                     fieldEdits = state.fieldEdits.finish(mutation.key),
-                    saveProgress = state.draftChanged(mutation.key.completion()),
+                    saveState = state.saveState.draftChanged(mutation.key.completion()),
                 )
             }
 
@@ -448,7 +447,7 @@ internal object DetailReducer {
 
             is DetailMutation.SaveStarted -> {
                 state.copy(
-                    saveProgress = DetailSaveProgress(mutation.completion),
+                    saveState = DetailSaveState.Saving(mutation.completion),
                     faviconEditor =
                         if (mutation.completion == DetailEditCompletion.Icon) {
                             when (val editor = state.faviconEditor) {
@@ -474,7 +473,11 @@ internal object DetailReducer {
             }
 
             is DetailMutation.SaveSucceeded -> {
-                val saving = state.saveProgress ?: return state
+                val saving =
+                    when (val saveState = state.saveState) {
+                        DetailSaveState.Idle -> return state
+                        is DetailSaveState.Saving -> saveState
+                    }
                 if (saving.completion != mutation.completion) {
                     state
                 } else {
@@ -483,7 +486,7 @@ internal object DetailReducer {
                     state.copy(
                         isEditingTitle = state.isEditingTitle && !finishTitle,
                         editedTitle = if (finishTitle) state.entry?.detailDisplayTitle ?: state.editedTitle else state.editedTitle,
-                        saveProgress = null,
+                        saveState = DetailSaveState.Idle,
                         fieldEdits =
                             if (finishDraft) {
                                 when (mutation.completion) {
@@ -530,12 +533,16 @@ internal object DetailReducer {
             }
 
             is DetailMutation.SaveFailed -> {
-                val saving = state.saveProgress ?: return state
+                val saving =
+                    when (val saveState = state.saveState) {
+                        DetailSaveState.Idle -> return state
+                        is DetailSaveState.Saving -> saveState
+                    }
                 if (saving.completion != mutation.completion) {
                     state
                 } else {
                     state.copy(
-                        saveProgress = null,
+                        saveState = DetailSaveState.Idle,
                         faviconEditor =
                             if (mutation.completion == DetailEditCompletion.Icon) {
                                 when (val editor = state.faviconEditor) {
@@ -567,7 +574,10 @@ internal object DetailReducer {
             }
 
             is DetailTagEditorMutation -> {
-                if (state.saveProgress?.completion == DetailEditCompletion.Tags) {
+                if (
+                    state.saveState is DetailSaveState.Saving &&
+                    state.saveState.completion == DetailEditCompletion.Tags
+                ) {
                     state
                 } else {
                     state.copy(
@@ -583,9 +593,15 @@ internal object DetailReducer {
             }
         }
 
-    private fun DetailUiState.draftChanged(completion: DetailEditCompletion): DetailSaveProgress? =
-        saveProgress?.let { progress ->
-            progress.takeIf { it.completion != completion } ?: progress.copy(draftChanged = true)
+    private fun DetailSaveState.draftChanged(completion: DetailEditCompletion): DetailSaveState =
+        when (this) {
+            DetailSaveState.Idle -> DetailSaveState.Idle
+            is DetailSaveState.Saving ->
+                if (this.completion != completion) {
+                    this
+                } else {
+                    copy(draftChanged = true)
+                }
         }
 
     private fun DetailDraftKey.completion(): DetailEditCompletion =

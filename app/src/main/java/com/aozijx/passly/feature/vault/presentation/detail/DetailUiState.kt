@@ -29,7 +29,7 @@ data class DetailUiState(
     val packagePickerApps: AppPackagePickerUiState<DetailInstalledApp> = AppPackagePickerUiState.NotRequested,
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
-    val saveProgress: DetailSaveProgress? = null,
+    val saveState: DetailSaveState = DetailSaveState.Idle,
     val tagEditor: DetailTagEditorState = DetailTagEditorState.Closed,
     val faviconEditor: DetailFaviconEditorState = DetailFaviconEditorState.Closed,
     val revisions: DetailRevisionState = DetailRevisionState.Closed,
@@ -116,10 +116,14 @@ sealed interface DetailEditCompletion {
     ) : DetailEditCompletion
 }
 
-data class DetailSaveProgress(
-    val completion: DetailEditCompletion,
-    val draftChanged: Boolean = false,
-)
+sealed interface DetailSaveState {
+    data object Idle : DetailSaveState
+
+    data class Saving(
+        val completion: DetailEditCompletion,
+        val draftChanged: Boolean = false,
+    ) : DetailSaveState
+}
 
 sealed interface DetailDraftKey {
     data object Notes : DetailDraftKey

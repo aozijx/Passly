@@ -311,10 +311,10 @@ class DetailWorkSessionTest {
             )
             val reduced =
                 DetailReducer.reduce(
-                    DetailUiState(saveProgress = DetailSaveProgress(completion)),
+                    DetailUiState(saveState = DetailSaveState.Saving(completion)),
                     fixture.mutations.single(),
                 )
-            assertEquals(null, reduced.saveProgress)
+            assertEquals(DetailSaveState.Idle, reduced.saveState)
         }
 
     @Test

@@ -269,7 +269,7 @@ class DetailUiMapperTest {
             DetailUiState(
                 entry = entry,
                 fieldEdits = DetailFieldEditState().start(DetailDraftKey.Notes, "draft"),
-                saveProgress = DetailSaveProgress(DetailEditCompletion.Tags),
+                saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
             )
 
         val presentation =

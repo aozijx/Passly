@@ -130,7 +130,7 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(version, fixture.viewModel.uiState.value.entry?.version)
-                assertEquals(null, fixture.viewModel.uiState.value.saveProgress)
+                assertEquals(DetailSaveState.Idle, fixture.viewModel.uiState.value.saveState)
                 assertEquals(
                     "latest-user",
                     fixture.viewModel.uiState.value.fieldEdits.draft(DetailField.USERNAME.draftKey),
