@@ -472,6 +472,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-08 Data log transformation alias 清理：** `EncryptedLogFileManager` 是版本化日志容器格式 owner 并保存唯一 `TRANSFORMATION` 字面量；`EncryptedLogRecordStore` 两处加解密直接引用该值，删除同文件 companion 的私有转接常量。`FILE_VERSION`、cipher 参数与日志字节格式均未改变；文件管理和记录写入的职责继续分开。
 
+**2026-11-08 Task 75 lint 验证：** 运行 Core、Data、Security、App `lintDebug` 与 `verifyArchitecture`；前三个模块 lint 和架构检查完成。App 在 `:app:lintAnalyzeDebug` 分析 `EntryEditorFields.kt` 时触发 Lint/IntelliJ 内部异常 `AsyncExecutionService.getService must not return null`，未产出有效 App lint 结果。该异常不是源码通过证据；Task 75 最终验证保持开放，需在工具异常消除后重跑 App lint。
+
 
 <a id="task-77"></a>
 
