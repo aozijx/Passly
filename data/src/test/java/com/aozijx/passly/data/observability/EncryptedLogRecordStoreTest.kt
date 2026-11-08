@@ -241,22 +241,30 @@ class EncryptedLogRecordStoreTest {
             assertTrue(store.flush(2_000))
         }
 
-        assertTrue(directory.listFiles()!!.count { it.extension == "log" } <= 3)
-        assertEquals(3, store.readPage(null, 10).records.size)
+        assertEquals(3, directory.listFiles()!!.count { it.extension == "log" })
+        assertEquals(
+            listOf("event_00000002", "event_00000003", "event_00000004"),
+            store.readPage(null, 10).records.map { it.eventId.value },
+        )
         store.close()
     }
 
     @Test
-    fun `rotates by size and enforces total byte retention`() {
-        val store = newStore(maxFileBytes = 1, maxTotalBytes = 2_000)
+    fun `size rotation evicts older files while retaining the active file`() {
+        val maxTotalBytes = 1L
+        val store = newStore(maxFileBytes = 1, maxTotalBytes = maxTotalBytes, maxFiles = 10)
         repeat(8) { index ->
             store.write(sampleRecord(index))
             assertTrue(store.flush(2_000))
         }
 
         val files = directory.listFiles()!!.filter { it.extension == "log" }
-        assertTrue(files.size <= 3)
-        assertTrue(files.sumOf(File::length) <= 2_000)
+        assertEquals(1, files.size)
+        assertTrue(files.single().length() > maxTotalBytes)
+        assertEquals(
+            listOf("event_00000007"),
+            store.readPage(null, 10).records.map { it.eventId.value },
+        )
         store.close()
     }
 
@@ -499,6 +507,7 @@ class EncryptedLogRecordStoreTest {
         random: SecureRandom = SecureRandom(),
         maxFileBytes: Long = 1024 * 1024,
         maxTotalBytes: Long = 3 * 1024 * 1024,
+        maxFiles: Int = 3,
         maxQueuedRecords: Int = 256,
         beforeWrite: () -> Unit = {},
         insideWriteLock: () -> Unit = {},
@@ -510,6 +519,7 @@ class EncryptedLogRecordStoreTest {
         random = random,
         maxFileBytes = maxFileBytes,
         maxTotalBytes = maxTotalBytes,
+        maxFiles = maxFiles,
         maxQueuedRecords = maxQueuedRecords,
         beforeWrite = beforeWrite,
         insideWriteLock = insideWriteLock,

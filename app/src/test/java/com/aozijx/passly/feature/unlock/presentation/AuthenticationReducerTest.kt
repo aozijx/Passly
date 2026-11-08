@@ -1,12 +1,17 @@
 package com.aozijx.passly.feature.unlock.presentation
 
+import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
 import com.aozijx.passly.domain.access.model.AttemptStatus
+import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
+import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -41,13 +46,25 @@ class AuthenticationReducerTest {
         try {
             val short =
                 UnlockReducer.reduce(
-                    UnlockUiState(passwordSetup = UnlockPasswordSetup.Editing()),
-                    UnlockMutation.NewAppPasswordChanged(shortPassword),
+                    UnlockUiState(passwordSetup = UnlockPasswordSetup.Editing(PasswordSetupDraft())),
+                    UnlockMutation.NewAppPasswordChanged(
+                        value = shortPassword,
+                        passwordStrength =
+                            PasswordStrengthState.Visible(
+                                PasswordStrengthEvaluator.evaluate("short"),
+                            ),
+                    ),
                 )
             val withPassword =
                 UnlockReducer.reduce(
                     short,
-                    UnlockMutation.NewAppPasswordChanged(validPassword),
+                    UnlockMutation.NewAppPasswordChanged(
+                        value = validPassword,
+                        passwordStrength =
+                            PasswordStrengthState.Visible(
+                                PasswordStrengthEvaluator.evaluate("long-enough-password"),
+                            ),
+                    ),
                 )
             val matching =
                 UnlockReducer.reduce(
@@ -55,9 +72,9 @@ class AuthenticationReducerTest {
                     UnlockMutation.ConfirmAppPasswordChanged(matchingConfirmation),
                 )
 
-            assertFalse((short.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
-            assertFalse((withPassword.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
-            assertTrue((matching.passwordSetup as UnlockPasswordSetup.Editing).canSubmit())
+            assertFalse((short.passwordSetup as UnlockPasswordSetup.Editing).draft.canSubmit())
+            assertFalse((withPassword.passwordSetup as UnlockPasswordSetup.Editing).draft.canSubmit())
+            assertTrue((matching.passwordSetup as UnlockPasswordSetup.Editing).draft.canSubmit())
         } finally {
             shortPassword.wipe()
             validPassword.wipe()
@@ -153,6 +170,7 @@ class AuthenticationReducerTest {
         val expectedMessages =
             mapOf(
                 AuthenticationFailureCode.BUSY to UnlockFailureMessage.AuthenticationBusy,
+                AuthenticationFailureCode.ATTEMPT_STATE_UNAVAILABLE to UnlockFailureMessage.AttemptStateUnavailable,
                 AuthenticationFailureCode.HOST_UNAVAILABLE to UnlockFailureMessage.AuthenticationHostUnavailable,
                 AuthenticationFailureCode.METHOD_UNAVAILABLE to UnlockFailureMessage.AuthenticationMethodUnavailable,
                 AuthenticationFailureCode.KEY_MISSING to UnlockFailureMessage.AuthenticationMethodUnavailable,
@@ -188,23 +206,51 @@ class AuthenticationReducerTest {
     }
 
     @Test
-    fun `resetting unlock inputs clears only unlock state`() {
+    fun `resetting unlock inputs clears entered values and preserves availability state`() {
+        val appPassword = OwnedChars.fromString("password-input")
+        val recoveryCode = OwnedChars.fromString("recovery-input")
+        val kdfState =
+            KdfInitializationUiState.Ready(
+                AuthenticationKdfParameters(0x13, 65_536, 3, 4, 256),
+            )
+        val availableMethods = AuthenticationMethods(setOf(AuthenticationMethod.APP_PASSWORD))
+        val attemptStatus = AuthenticationAttemptStatus(AttemptStatus(used = 2, limit = 5), retryAfterMs = 1_000L)
         val initial =
             UnlockUiState(
+                kdfInitialization = kdfState,
+                availableMethods = availableMethods,
+                authenticationAttemptStatuses = mapOf(AuthenticationMethod.APP_PASSWORD to attemptStatus),
+                appPassword = appPassword,
+                recoveryCode = recoveryCode,
                 recoveryUnlockVisible = true,
                 inputExpansion = UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
+                verificationPhase =
+                    UnlockVerificationPhase.Failed(
+                        UnlockVerificationFailure(
+                            AuthenticationMethod.APP_PASSWORD,
+                            UnlockFailureMessage.AuthenticationBusy,
+                        ),
+                    ),
             )
 
-        val result =
-            UnlockReducer.reduce(
-                initial,
-                UnlockMutation.UnlockInputsReset,
-            )
+        try {
+            val result = UnlockReducer.reduce(initial, UnlockMutation.UnlockInputsReset)
 
-        assertFalse(result.recoveryUnlockVisible)
-        assertSame(UnlockInputExpansion.Collapsed, result.inputExpansion)
-        assertSame(EmptySensitiveValue, result.appPassword)
-        assertSame(EmptySensitiveValue, result.recoveryCode)
+            assertFalse(result.recoveryUnlockVisible)
+            assertSame(UnlockInputExpansion.Collapsed, result.inputExpansion)
+            assertSame(UnlockVerificationPhase.Idle, result.verificationPhase)
+            assertSame(EmptySensitiveValue, result.appPassword)
+            assertSame(EmptySensitiveValue, result.recoveryCode)
+            assertSame(kdfState, result.kdfInitialization)
+            assertSame(availableMethods, result.availableMethods)
+            assertEquals(
+                mapOf(AuthenticationMethod.APP_PASSWORD to attemptStatus),
+                result.authenticationAttemptStatuses,
+            )
+        } finally {
+            appPassword.wipe()
+            recoveryCode.wipe()
+        }
     }
 
     @Test
@@ -217,8 +263,10 @@ class AuthenticationReducerTest {
                     UnlockUiState(
                         passwordSetup =
                             UnlockPasswordSetup.Editing(
-                                newPassword = password,
-                                confirmPassword = confirm,
+                                PasswordSetupDraft(
+                                    newPassword = password,
+                                    confirmPassword = confirm,
+                                ),
                             ),
                     ),
                     UnlockMutation.PasswordSetupClosed,

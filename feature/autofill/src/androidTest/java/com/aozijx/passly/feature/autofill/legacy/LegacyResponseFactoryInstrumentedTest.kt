@@ -308,25 +308,22 @@ class LegacyResponseFactoryInstrumentedTest {
     }
 
     @Test
-    fun disabledUnsupportedAndFailedOutcomesAdvertiseNothing() {
+    fun unavailableOutcomesCarryTheirOwnReasonWithoutAdvertising() {
         val parsed = ParsedStructure()
+        val cases =
+            listOf(
+                AutofillDiscoveryOutcome.Disabled to Reasons.SessionRestricted,
+                AutofillDiscoveryOutcome.UnsupportedFields to Reasons.NoFillableFields,
+                AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED) to
+                    Reasons.DatabaseUnavailable,
+            )
 
-        assertNull(
-            factory
-                .buildResult(context, AutofillDiscoveryOutcome.Disabled, parsed)
-                .response,
-        )
-        assertNull(
-            factory.buildResult(context, AutofillDiscoveryOutcome.UnsupportedFields, parsed).response,
-        )
-        assertNull(
-            factory
-                .buildResult(
-                    context,
-                    AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED),
-                    parsed,
-                ).response,
-        )
+        cases.forEach { (outcome, reason) ->
+            val result = factory.buildResult(context, outcome, parsed)
+
+            assertNull("$outcome must not advertise a response", result.response)
+            assertEquals(LegacyDiscoveryObservation.Unavailable(reason), result.observation)
+        }
     }
 
     @Test
@@ -350,24 +347,6 @@ class LegacyResponseFactoryInstrumentedTest {
         assertNull(single.findViewById<TextView?>(R.id.item_subtitle))
         assertEquals("Passly", double.findViewById<TextView>(R.id.item_title).text)
         assertEquals("2 accounts", double.findViewById<TextView>(R.id.item_subtitle).text)
-    }
-
-    @Test
-    fun responseBuildResultCarriesOneSemanticDiscoveryObservation() {
-        val parsed = ParsedStructure()
-
-        val result =
-            factory.buildResult(
-                context,
-                AutofillDiscoveryOutcome.Disabled,
-                parsed,
-            )
-
-        assertNull(result.response)
-        assertEquals(
-            LegacyDiscoveryObservation.Unavailable(Reasons.SessionRestricted),
-            result.observation,
-        )
     }
 
     private fun discoveryContext(

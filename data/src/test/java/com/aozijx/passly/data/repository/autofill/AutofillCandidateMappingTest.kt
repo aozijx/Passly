@@ -14,7 +14,7 @@ import org.junit.Test
 
 class AutofillCandidateMappingTest {
     @Test
-    fun `related candidates are filtered from the complete prefilter result before the cap`() {
+    fun `late related candidate survives many nonmatching prefilter rows`() {
         val unrelated =
             List(50) { index ->
                 EntryEntity(

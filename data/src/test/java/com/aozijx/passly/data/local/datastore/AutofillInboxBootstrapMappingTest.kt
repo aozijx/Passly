@@ -10,11 +10,6 @@ import org.junit.Test
 
 class AutofillInboxBootstrapMappingTest {
     @Test
-    fun absentInboxKeyMaterialRemainsUnprovisioned() {
-        assertNull(BootstrapData.getDefaultInstance().readAutofillInboxKeyMaterial())
-    }
-
-    @Test
     fun keyMaterialRoundTripsWithoutChangingExistingBootstrapFields() {
         val material =
             AutofillInboxKeyMaterial(
@@ -59,7 +54,9 @@ class AutofillInboxBootstrapMappingTest {
     }
 
     @Test
-    fun clearingInboxMaterialPreservesOtherBootstrapFields() {
+    fun absentOrClearedInboxMaterialRemainsUnprovisionedAndPreservesOtherFields() {
+        assertNull(BootstrapData.getDefaultInstance().readAutofillInboxKeyMaterial())
+
         val data =
             BootstrapData
                 .newBuilder()
