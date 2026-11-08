@@ -41,32 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.EntryType
-
-internal data class TrashEntryUiModel(
-    val id: String,
-    val version: Int,
-    val title: String,
-    val entryType: EntryType,
-    val username: String,
-    val deletedAtEpochMs: Long?,
-    val associatedDomain: String?,
-    val associatedAppPackage: String?,
-    val iconName: String?,
-    val iconCustomPath: String?,
-)
-
-internal sealed interface TrashErrorUiState {
-    data object Hidden : TrashErrorUiState
-
-    data class LoadFailed(
-        val message: String,
-    ) : TrashErrorUiState
-
-    data class OperationFailed(
-        val message: String,
-    ) : TrashErrorUiState
-}
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryUiModel
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashErrorUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

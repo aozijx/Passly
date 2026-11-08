@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryUiModel
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
@@ -86,12 +87,9 @@ internal fun TrashEntryCard(
                     ) {
                         VaultItemIcon(
                             iconName = entry.iconName,
-                            iconCustomPath = entry.iconCustomPath,
+                            customImageModel = entry.iconImageModel,
                             associatedAppPackage = entry.associatedAppPackage,
-                            entryType = entry.entryType,
-                            title = entry.title,
-                            username = entry.username,
-                            associatedDomain = entry.associatedDomain,
+                            visualCategory = entry.visualCategory,
                         )
                     }
                 }

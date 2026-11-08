@@ -1,7 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
-import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashEntryUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 data class TrashUiState(
@@ -39,22 +38,6 @@ sealed interface TrashOperationState {
         val message: UiErrorMessage,
     ) : TrashOperationState
 }
-
-internal fun TrashContentState.toUiModels(): List<TrashEntryUiModel> =
-    (this as? TrashContentState.Loaded)?.entries.orEmpty().map { entry ->
-        TrashEntryUiModel(
-            id = entry.id.value,
-            version = entry.identity.version.value,
-            title = entry.title,
-            entryType = entry.entryType,
-            username = entry.username,
-            deletedAtEpochMs = entry.deletedAt,
-            associatedDomain = entry.associatedDomain,
-            associatedAppPackage = entry.associatedAppPackage,
-            iconName = entry.icon.name,
-            iconCustomPath = entry.iconCustomPath,
-        )
-    }
 
 sealed interface TrashUiAction {
     data class Restore(

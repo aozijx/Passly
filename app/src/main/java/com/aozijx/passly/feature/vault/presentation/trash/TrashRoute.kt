@@ -8,7 +8,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModelStoreOwner
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashBottomSheet
-import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashErrorUiState
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashErrorUiState
 
 @Composable
 internal fun TrashRoute(
@@ -32,7 +32,7 @@ internal fun TrashRoute(
         }
     TrashBottomSheet(
         visible = true,
-        entries = content.toUiModels(),
+        entries = TrashUiMapper.map((content as? TrashContentState.Loaded)?.entries.orEmpty()),
         isLoading = content == TrashContentState.Loading,
         activeEntryId = activeEntryId,
         isEmptying = operation == TrashOperationState.Emptying,
