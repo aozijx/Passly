@@ -22,6 +22,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
+private const val NANOS_PER_MILLISECOND = 1_000_000L
+private const val LIFECYCLE_FLUSH_TIMEOUT_MS = 300L
+private const val CRASH_FLUSH_TIMEOUT_MS = 300L
+private const val CRASH_EMERGENCY_TIMEOUT_MS = 200L
+
 internal interface CrashHandlerRegistry {
     fun current(): Thread.UncaughtExceptionHandler?
 
@@ -233,13 +238,6 @@ class ObservabilityRuntimeController
             throwable: Throwable,
         ) {
             previousCrashHandler?.uncaughtException(thread, throwable) ?: processTerminator.terminate()
-        }
-
-        private companion object {
-            const val NANOS_PER_MILLISECOND = 1_000_000L
-            const val LIFECYCLE_FLUSH_TIMEOUT_MS = 300L
-            const val CRASH_FLUSH_TIMEOUT_MS = 300L
-            const val CRASH_EMERGENCY_TIMEOUT_MS = 200L
         }
     }
 

@@ -445,7 +445,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 75：统一固定常量的文件位置与 owner，收敛重复合同值
 
-- [ ] 把文件私有/单文件常量从类型尾部移到 Kotlin 文件顶部声明区（imports 后、主要类型/函数前），保留 `private` 等最小可见性与原始值；优先复核 `SessionLeaseGate.kt`、`DefaultAuthorizationGate.kt`、`CredentialAttemptLimiter.kt`、`AutofillInboxKeyMaterialCodec.kt`、`AutofillInboxRecordCodec.kt`、`ObservabilityRuntimeController.kt`、`ObservabilityExportService.kt` 等常量集中在类尾部 companion 的文件。仅位置迁移不改算法、超时、上限或协议行为。
+- [ ] 把文件私有/单文件常量从类型尾部移到 Kotlin 文件顶部声明区（imports 后、主要类型/函数前），保留 `private` 等最小可见性与原始值；优先复核 `SessionLeaseGate.kt`、`DefaultAuthorizationGate.kt`、`CredentialAttemptLimiter.kt`、`AutofillInboxKeyMaterialCodec.kt`、`AutofillInboxRecordCodec.kt`、`ObservabilityExportService.kt` 等常量集中在类尾部 companion 的文件。仅位置迁移不改算法、超时、上限或协议行为。
+- [x] `ObservabilityRuntimeController.kt` 的纳秒换算、生命周期 flush、crash flush 和 emergency flush 常量移至 imports 后的文件级 `private const val`；原值与可见范围不变。
 - [x] Favicon 下载与暂存共享 10 MiB 输入上限；已集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除两类重复值。
 - [x] 诊断页 adapter、导出 service 与 `EncryptedLogRecordStore` 对 `LogRecordStore.readPage()` 使用/执行相同的 500 条单页上限；统一到 Core 端口的 `LogRecordStore.MAX_PAGE_RECORDS`。
 - [x] `TaskClearActivityOwner` 与 `AppShell` 都发布 `APP_CLOSE_REMINDER` 并延迟关闭 task 1 秒；时长统一到 App 生命周期策略 `APP_CLOSE_REMINDER_DELAY_MS`，两处 owner 的取消与认证生命周期仍各自管理。
@@ -471,6 +472,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 **2026-11-08 Favicon crop zoom bounds 去重：** UI `FaviconCropTransform` 和 `FaviconBitmapTransformer` 都将 zoom 限制为 1..6，分别保护手势状态与对 processor 输入的最终裁剪；二者共享 Core `FaviconCropRequest` 契约。将 MIN/MAX 放入请求模型 companion，默认 zoom 与两处 clamp 复用同一边界，测试期望保持独立数值。原边界不变；Data 日志 transformation alias 已在同一 Task 75 的独立批次清理，版本化格式 owner 保持不变。
 
 **2026-11-08 Data log transformation alias 清理：** `EncryptedLogFileManager` 是版本化日志容器格式 owner 并保存唯一 `TRANSFORMATION` 字面量；`EncryptedLogRecordStore` 两处加解密直接引用该值，删除同文件 companion 的私有转接常量。`FILE_VERSION`、cipher 参数与日志字节格式均未改变；文件管理和记录写入的职责继续分开。
+
+**2026-11-08 ObservabilityRuntimeController 常量归位：** 将该控制器尾部 companion 中仅在类内使用的纳秒换算及三种 flush timeout 移到 imports 后的文件级 private 区域；数值和调用点不变。`ObservabilityRuntimeControllerTest` 与 `verifyArchitecture` 通过。
 
 **2026-11-08 Task 75 lint 验证：** 运行 Core、Data、Security、App `lintDebug` 与 `verifyArchitecture`；前三个模块 lint 和架构检查完成。App 在 `:app:lintAnalyzeDebug` 分析 `EntryEditorFields.kt` 时触发 Lint/IntelliJ 内部异常 `AsyncExecutionService.getService must not return null`，未产出有效 App lint 结果。该异常不是源码通过证据；Task 75 最终验证保持开放，需在工具异常消除后重跑 App lint。
 
