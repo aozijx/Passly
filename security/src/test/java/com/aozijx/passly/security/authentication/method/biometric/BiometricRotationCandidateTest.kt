@@ -122,7 +122,7 @@ class BiometricRotationCandidateTest {
         }
 
     @Test
-    fun `cleanup error cannot replace the original operation failure`() =
+    fun `cleanup failure priority preserves operation failures except cleanup cancellation`() =
         runTest {
             val store = Store()
             val original = IllegalArgumentException("synthetic operation failure")
@@ -136,6 +136,18 @@ class BiometricRotationCandidateTest {
                 assertEquals(1, error.suppressed.size)
                 // Coroutine stacktrace recovery may wrap the cleanup exception.
                 assertSame(cleanup, generateSequence(error.suppressed.single()) { it.cause }.last())
+            }
+
+            val cleanupCancellation = CancellationException("synthetic cleanup cancellation")
+            val operationFailure = IllegalStateException("operation failed before cleanup cancellation")
+            store.readFailure = { throw cleanupCancellation }
+            try {
+                withBiometricRotationCandidate(store, "candidate", { true }) { throw operationFailure }
+                error("cleanup cancellation was swallowed")
+            } catch (actual: CancellationException) {
+                assertEquals(cleanupCancellation.message, actual.message)
+                assertEquals(1, actual.suppressed.size)
+                assertSame(operationFailure, actual.suppressed.single())
             }
         }
 

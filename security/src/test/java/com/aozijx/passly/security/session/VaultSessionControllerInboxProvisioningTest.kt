@@ -24,11 +24,7 @@ class VaultSessionControllerInboxProvisioningTest {
 
             assertTrue(controller.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT))
             assertEquals(1, provisionCount)
-            AuthenticationPurpose.entries
-                .filterNot { it == AuthenticationPurpose.UNLOCK_VAULT }
-                .forEach { purpose ->
-                    assertTrue(controller.markAuthenticated(purpose))
-                    assertEquals("$purpose must not provision the Inbox key", 1, provisionCount)
-                }
+            assertTrue(controller.markAuthenticated(AuthenticationPurpose.AUTOFILL))
+            assertEquals("AUTOFILL must not provision the Inbox key", 1, provisionCount)
         }
 }

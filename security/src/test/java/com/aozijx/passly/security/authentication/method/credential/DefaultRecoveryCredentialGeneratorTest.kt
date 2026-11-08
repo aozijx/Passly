@@ -31,7 +31,7 @@ import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.FieldKeyManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class DefaultRecoveryCredentialGeneratorTest {
@@ -60,7 +60,8 @@ class DefaultRecoveryCredentialGeneratorTest {
             val actual = runCatching { manager.generate() }.exceptionOrNull()
 
             assertSame(fatal, actual)
-            assertTrue(runCatching { runner.secret!!.copyForWorker() }.isFailure)
+            assertThrows(IllegalStateException::class.java) { runner.secret!!.copyForWorker() }
+            Unit
         }
 
     private class CapturingFailingKdfRunner(
