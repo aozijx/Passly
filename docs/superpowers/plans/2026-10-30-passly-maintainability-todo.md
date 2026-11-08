@@ -193,8 +193,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；剩余锁定取消与迟到结果测试列在下方。
 
-- [x] 分类查询由 `RecoverableRead` 持有并映射为 `VaultCategoriesState.Loading/Ready/Failed`，失败可通过 `RetryCategories` 重试；ViewModel 测试覆盖首次普通异常、重试恢复、空列表与后续分类更新。UI 和 ViewModel 已删除旧 `availableCategories` 列表状态别名，读取明确状态。
-- [ ] 补充发值后异常、锁定取消与迟到结果的 ViewModel 行为覆盖。当前分类状态从 RecoverableRead 订阅；Paging 查询仍由 `RecoverableRead` + `buildRecoverableVaultQueryStates()` 组合，不另造全局刷新桥。
+- [x] 分类查询由 `RecoverableRead` 持有并映射为 `VaultCategoriesState.Loading/Ready/Failed`，失败可通过 `RetryCategories` 重试；ViewModel 测试覆盖首次及发值后普通异常、重试恢复、空列表与后续分类更新。UI 和 ViewModel 已删除旧 `availableCategories` 列表状态别名，读取明确状态。
+- [ ] 补充锁定取消与迟到结果的 ViewModel 行为覆盖。当前分类状态从 RecoverableRead 订阅；Paging 查询仍由 `RecoverableRead` + `buildRecoverableVaultQueryStates()` 组合，不另造全局刷新桥。
 
 
 ## P2：恢复与交付合同

@@ -118,6 +118,41 @@ class VaultViewModelClipboardOwnerTest {
         }
 
     @Test
+    fun categoryQueryFailureAfterAnEmissionCanBeRetried() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var attempts = 0
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    availableCategories =
+                        flow {
+                            attempts++
+                            if (attempts == 1) {
+                                emit(listOf("Work"))
+                                throw IllegalStateException("category stream failed after emission")
+                            }
+                            emit(listOf("Personal"))
+                        },
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+
+            try {
+                runCurrent()
+
+                assertEquals(VaultCategoriesState.Failed, viewModel.uiState.value.categories)
+
+                viewModel.onAction(VaultUiAction.RetryCategories)
+                runCurrent()
+
+                assertEquals(VaultCategoriesState.Ready(listOf("Personal")), viewModel.uiState.value.categories)
+                assertEquals(2, attempts)
+            } finally {
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
     fun categoryQueryDistinguishesEmptyResultsAndRecoversAfterSessionReadabilityReturns() =
         runTest(mainDispatcherRule.testDispatcher) {
             val categories = MutableSharedFlow<List<String>>(replay = 1)
