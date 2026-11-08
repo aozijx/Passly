@@ -155,6 +155,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-08 Detail 与 seed 重试边界复核：** `prepareEntryForEdit()` 当前捕获普通 `Exception` 发出 effect，`DetailRoute` 仅对匹配当前 `entryId` 的 effect 显示本地化 Toast；用户可重新点 Edit 发起新读取。四个编辑 Route 用 opaque token 调用同步 `loadExistingEntry(result)`；Missing/AccessDenied 或类型/会话不匹配会清空表单并置为 `EditorLoadPhase.Failed`，`EditorLoadFailureEffectHandler` 给出返回后重试提示。此处不存在编辑器内 Repository 重读或复用已消费 token 的路径。上述实现项已闭合；整体 Detail Route 宿主行为和迟到结果过滤仍保持开放，不能用 ViewModel 单测替代。
 
+**2026-11-08 Task 42 定向验证续记：** 对 `EditEntryUseCaseTest`、`LoadEditableEntryUseCaseTest`、Detail ViewModel/Reducer、四类编辑 ViewModel、`EditorWriteSessionTest`、`EditorSaveEffectHandlerTest` 与 `VaultNavigationTest` 分别执行定向单测，共 151 项、0 failures/errors；`verifyArchitecture` 通过。此证据覆盖当前 JVM 行为和生命周期 effect handler，不覆盖真实 Detail Route Toast/重复点击、编辑器 Route 重试显示或 Android Activity 重建，因此 Task 42 保持开放。
+
 **历史调用闭包复核（2026-11-06，迁移前快照）：** `rg` 生产引用显示 `LoadEditableEntryUseCase` / `EditableEntryLoadResult` 只由 `DetailViewModel` 使用：`prepareEntryForEdit()` 以当前 `uiState.entry.id` 调 `loadEditableEntry(entryId)`，收到 `Loaded(entry, authentication)` 后核对 ID、类型、认证对象身份、完整访问权和当前详情条目，再交给 `VaultGraphRegistration.onEditFullForm` stage。四个 Route 从 token 调 `seedCoordinator.consume(token)`，随后同步调用各自 `loadExistingEntry(result)`；这四个函数不依赖或调用读取用例，只校验 seed 访问并把 `seed.entry` 映射成表单。迁移前 `EditDetailEntryUseCase.edit(entryId, edit)` 由 DetailViewModel 和 Password/OTP/BankCard/Wi-Fi 四个 ViewModel 共用，维护互斥、读取最新条目、`EntryEdit.applyTo()`、预期版本更新及一次冲突重试；旧 `feature.vault.detail` 包路径是共享能力命名/依赖泄漏候选。该候选已按上方记录迁到 `feature.vault.entry.EditEntryUseCase`，行为验证仍开放；loader 保留 Detail owner。
 
 
