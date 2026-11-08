@@ -8,11 +8,8 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.metrics.EventAggregator
-import com.aozijx.passly.core.observability.sink.LogClearResult
 import com.aozijx.passly.core.observability.sink.LogRecordStore
-import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
-import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogLine
-import com.aozijx.passly.feature.settings.diagnostics.DiagnosticsLogStore
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsSource
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,7 +21,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 
 internal interface CrashHandlerRegistry {
     fun current(): Thread.UncaughtExceptionHandler?
@@ -47,11 +43,10 @@ class ObservabilityRuntimeController
         private val crashHandlers: CrashHandlerRegistry,
         private val processTerminator: ProcessTerminator,
         private val eventAggregator: EventAggregator,
-        private val diagnosticsLogSettings: DiagnosticsLogSettingsRepository,
+        private val diagnosticsLogSettings: DiagnosticsLogSettingsSource,
         private val recordingPolicy: DiagnosticsLogRecordingPolicy,
         retrySignal: SettingsReadRetrySignal,
-        private val recordEncoder: TsvRecordEncoder = TsvRecordEncoder(),
-    ) : DiagnosticsLogStore {
+    ) {
         private val settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val settingsRead =
             RecoverableRead(
@@ -144,34 +139,6 @@ class ObservabilityRuntimeController
             return flushStore(remainingMs)
         }
 
-        override suspend fun readLines(limit: Int): List<DiagnosticsLogLine> =
-            withContext(Dispatchers.IO) {
-                require(limit > 0) { "Line limit must be positive" }
-                readRecords(limit).map { record ->
-                    DiagnosticsLogLine(
-                        level = record.level,
-                        text = recordEncoder.encode(record),
-                        traceId = record.trace.traceId.value,
-                        event = record.event.value,
-                        errorCode = record.error?.errorCode?.value,
-                        exceptionKind =
-                            record.error
-                                ?.exception
-                                ?.kind
-                                ?.name,
-                        exceptionType =
-                            record.error
-                                ?.exception
-                                ?.type
-                                ?.value,
-                    )
-                }
-            }
-
-        override suspend fun clear(): LogClearResult = withContext(Dispatchers.IO) { store.clear() }
-
-        override suspend fun storageBytes(): Long = withContext(Dispatchers.IO) { store.storageBytes() }
-
         fun shutdown() {
             if (!shutdown.compareAndSet(false, true)) return
             settingsJob?.cancel()
@@ -211,17 +178,6 @@ class ObservabilityRuntimeController
             }
             attemptCleanup { store.close() }
             (failure as? Error)?.let { throw it }
-        }
-
-        internal fun readRecords(limit: Int): List<com.aozijx.passly.core.observability.SanitizedLogRecord> {
-            val result = ArrayList<com.aozijx.passly.core.observability.SanitizedLogRecord>(limit)
-            var cursor: com.aozijx.passly.core.observability.sink.LogRecordCursor? = null
-            do {
-                val page = store.readPage(cursor, minOf(PAGE_SIZE, limit - result.size))
-                result += page.records.take(limit - result.size)
-                cursor = page.nextCursor
-            } while (cursor != null && result.size < limit)
-            return result
         }
 
         private fun recordPreviousExit(exit: PreviousExit) {
@@ -280,7 +236,6 @@ class ObservabilityRuntimeController
         }
 
         private companion object {
-            const val PAGE_SIZE = 500
             const val NANOS_PER_MILLISECOND = 1_000_000L
             const val LIFECYCLE_FLUSH_TIMEOUT_MS = 300L
             const val CRASH_FLUSH_TIMEOUT_MS = 300L

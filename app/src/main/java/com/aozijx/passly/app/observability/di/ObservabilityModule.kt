@@ -13,6 +13,7 @@ import com.aozijx.passly.app.observability.CrashHandlerRegistry
 import com.aozijx.passly.app.observability.CrashRecordCaptureSink
 import com.aozijx.passly.app.observability.DiagnosticsExportStorageGateway
 import com.aozijx.passly.app.observability.DiagnosticsLogRecordingPolicy
+import com.aozijx.passly.app.observability.DiagnosticsLogStoreAdapter
 import com.aozijx.passly.app.observability.ExportClock
 import com.aozijx.passly.app.observability.ExportContextProvider
 import com.aozijx.passly.app.observability.LocalAlertPolicy
@@ -136,7 +137,7 @@ internal object ObservabilityModule {
     ): DiagnosticsExportStorageGateway = AndroidDiagnosticsExportStorageGateway(context)
 
     @Provides
-    fun provideDiagnosticsLogStore(controller: ObservabilityRuntimeController): DiagnosticsLogStore = controller
+    fun provideDiagnosticsLogStore(adapter: DiagnosticsLogStoreAdapter): DiagnosticsLogStore = adapter
 
     @Provides
     fun provideDiagnosticsExportGateway(service: ObservabilityExportService): DiagnosticsExportGateway = service

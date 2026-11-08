@@ -7,7 +7,7 @@ import com.aozijx.passly.core.observability.metrics.EventAggregator
 import com.aozijx.passly.core.observability.privacy.*
 import com.aozijx.passly.core.observability.sink.*
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
-import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsSource
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -327,10 +327,8 @@ class ObservabilityRuntimeControllerTest {
             processTerminator = ProcessTerminator { },
             eventAggregator = EventAggregator(),
             diagnosticsLogSettings =
-                object : DiagnosticsLogSettingsRepository {
+                object : DiagnosticsLogSettingsSource {
                     override val diagnosticsLogRecordingMode = recordingMode
-
-                    override suspend fun setDiagnosticsLogRecordingMode(mode: DiagnosticsLogRecordingMode) = Unit
                 },
             recordingPolicy = recordingPolicy,
             retrySignal = SettingsReadRetrySignal(),

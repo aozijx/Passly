@@ -285,12 +285,14 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 39：拆开诊断运行时生命周期与设置日志读取适配
 
-- [ ] 收窄 `ObservabilityRuntimeController` 的所有权：保留进程级 crash handler 安装/恢复、日志策略监听、上一进程退出记录、生命周期 flush 与 shutdown；让独立的 app 层适配器直接实现 `DiagnosticsLogStore`，负责 `LogRecordStore` 的行读取/编码、清理和存储大小查询。适配器应直接持有必要端口，不要再经控制器加一层纯转发。
-- [ ] 让 `DiagnosticsLogStore` 的 feature-facing `DiagnosticsLogLine` 转换留在该端口的适配边界，不再让进程运行时控制器同时成为 Settings 功能存储实现。DI 继续共享同一个受策略包装的 `LogRecordStore`；验证功能依赖不会绕过记录策略或获得未经脱敏的原始记录。
-- [ ] 新增只读 `DiagnosticsLogSettingsSource`，由 `DiagnosticsLogSettingsRepository` 扩展，并在同一 `ProtoAppPreferencesStore` 上绑定；将 runtime controller 改为依赖只读 source，保留 `StorageSettingsViewModel` 通过 repository 写模式。当前它是设置 Source/Repository 分离族中唯一缺少 read-only port 的能力，运行时不应获得未使用的设置写权限。
-- [ ] 将覆盖分成真实职责：运行时控制器测试继续验证 crash handler、启动监听、flush/shutdown 次序；新增 store adapter 测试验证限量分页、TSV 编码字段、清理结果和 storageBytes 直传；保留 Storage/Diagnostics ViewModel 对 `DiagnosticsLogStore` 的替身测试，并运行 `verifyArchitecture`、相关定向测试与 `git diff --check`。若拆分后新增的对象只是把方法逐个委托给控制器、未减少双方依赖或职责，则不采用该拆分。
+- [x] 收窄 `ObservabilityRuntimeController` 的所有权：保留进程级 crash handler 安装/恢复、日志策略监听、上一进程退出记录、生命周期 flush 与 shutdown；让独立的 app 层适配器直接实现 `DiagnosticsLogStore`，负责 `LogRecordStore` 的行读取/编码、清理和存储大小查询。适配器应直接持有必要端口，不要再经控制器加一层纯转发。
+- [x] 让 `DiagnosticsLogStore` 的 feature-facing `DiagnosticsLogLine` 转换留在该端口的适配边界，不再让进程运行时控制器同时成为 Settings 功能存储实现。DI 继续共享同一个受策略包装的 `LogRecordStore`；验证功能依赖不会绕过记录策略或获得未经脱敏的原始记录。
+- [x] 新增只读 `DiagnosticsLogSettingsSource`，由 `DiagnosticsLogSettingsRepository` 扩展，并在同一 `ProtoAppPreferencesStore` 上绑定；将 runtime controller 改为依赖只读 source，保留 `StorageSettingsViewModel` 通过 repository 写模式。当前它是设置 Source/Repository 分离族中唯一缺少 read-only port 的能力，运行时不应获得未使用的设置写权限。
+- [x] 将覆盖分成真实职责：运行时控制器测试继续验证 crash handler、启动监听、flush/shutdown 次序；新增 store adapter 测试验证限量分页、TSV 编码字段、清理结果和 storageBytes 直传；保留 Storage/Diagnostics ViewModel 对 `DiagnosticsLogStore` 的替身测试，并运行 `verifyArchitecture`、相关定向测试与 `git diff --check`。若拆分后新增的对象只是把方法逐个委托给控制器、未减少双方依赖或职责，则不采用该拆分。
 
 **证据：** `ObservabilityRuntimeController` 同时实现 `DiagnosticsLogStore`，并由 `PasslyApplication` 调用 `start()`、由 `AppLifecycleObserver` 调用 `flush()`/`shutdown()`；同一实例因此跨进程生命周期与 Settings 读取/清理/容量查询两类调用方。它唯一读取 `DiagnosticsLogSettingsRepository.diagnosticsLogRecordingMode`，不调用 setter；`StorageSettingsViewModel` 则同时读写该 Repository。与 Interaction、Message、Security、Library View、Backup Directory 已有 `*Source` + Repository 的端口分离对照，Diagnostics 缺少只读 source 使 runtime 注入了未用写能力。该控制器还把 `SanitizedLogRecord` 转换成 `feature.settings.diagnostics.DiagnosticsLogLine`，承担 feature 合同的展示 DTO 编码，同时持有 `Logger`、crash capture、previous-exit source、crash handler registry、process terminator、event aggregator、设置 repository 和 recording policy。Hilt 将其直接绑定为 `DiagnosticsLogStore`。现有 `ObservabilityRuntimeControllerTest` 主要覆盖 handler 安装、上一进程记录、crash、flush 与 shutdown；Settings ViewModel 测试使用独立 store 替身，没有独立验证生产 adapter 的分页/编码/清理实现。该耦合没有证据表明造成运行时错误；本项是按实际端口调用闭包收窄职责并固定 adapter 行为，实施时必须保持同一个策略包装 store 和 crash capture 顺序，不按类长度机械拆分。
+
+**2026-11-08 实施与验证：** 新增 `DiagnosticsLogStoreAdapter`，直接从 DI 获取同一 `@Singleton LogRecordStore` 策略包装实例，持有分页、TSV 映射、clear 与容量查询；`ObservabilityRuntimeController` 只保留进程生命周期/策略监听职责。`DiagnosticsLogSettingsRepository` 扩展只读 `DiagnosticsLogSettingsSource`，Proto store 同一实例分别绑定读写端口。新增 adapter 用例覆盖 500/1 分页、行字段/TSV 编码、clear 结果与 storageBytes；controller 11/11、adapter 3/3 通过，强制 App 全量 JVM 1089/1089 通过，`verifyArchitecture` 与本批 `git diff --check` 通过。
 
 <a id="task-35"></a>
 

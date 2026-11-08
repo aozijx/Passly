@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
+import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsSource
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
@@ -64,6 +65,10 @@ internal abstract class SettingsPersistenceModule {
     @Binds
     @Singleton
     abstract fun bindDiagnosticsLogSettingsRepository(impl: ProtoAppPreferencesStore): DiagnosticsLogSettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDiagnosticsLogSettingsSource(impl: ProtoAppPreferencesStore): DiagnosticsLogSettingsSource
 
     @Binds
     @Singleton
