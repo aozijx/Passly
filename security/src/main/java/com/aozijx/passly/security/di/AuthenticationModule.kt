@@ -4,6 +4,7 @@ import android.content.Context
 import android.hardware.biometrics.BiometricManager
 import com.aozijx.passly.domain.access.model.RecoveryCredentialFactory
 import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
+import com.aozijx.passly.domain.access.port.AuthenticationAttemptStatusProvider
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodAvailability
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
@@ -23,6 +24,7 @@ import com.aozijx.passly.security.authentication.method.credential.DefaultAuthen
 import com.aozijx.passly.security.authentication.method.credential.DefaultRecoveryCodeDraftFactory
 import com.aozijx.passly.security.authentication.method.credential.DefaultRecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.method.credential.DeviceKdfConfiguration
+import com.aozijx.passly.security.authentication.method.credential.CredentialAttemptLimiter
 import com.aozijx.passly.security.authentication.method.credential.KdfRunner
 import com.aozijx.passly.security.authentication.method.credential.RecoveryCredentialGenerator
 import com.aozijx.passly.security.authentication.method.credential.SingleThreadKdfRunner
@@ -42,6 +44,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AuthenticationModule {
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationAttemptStatusProvider(impl: CredentialAttemptLimiter): AuthenticationAttemptStatusProvider
+
     @Binds
     @Singleton
     abstract fun bindAuthenticationKdfParameterSource(impl: DeviceKdfConfiguration): AuthenticationKdfParameterSource

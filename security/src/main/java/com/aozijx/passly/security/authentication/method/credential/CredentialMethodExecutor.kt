@@ -36,6 +36,9 @@ internal class CredentialMethodExecutor
             credential: CharArray? = null,
         ): MethodExecutionResult {
             val type = method.envelopeType()
+            attemptLimiter.beforeAttempt(method, request)?.let { limited ->
+                return MethodExecutionResult.Failure(limited)
+            }
             val envelope =
                 vaultBootstrapStore.load(type) ?: return failure(
                     AuthenticationFailureCode.METHOD_UNAVAILABLE,
@@ -48,9 +51,6 @@ internal class CredentialMethodExecutor
                 } catch (_: IllegalArgumentException) {
                     return failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
                 }
-            attemptLimiter.beforeAttempt(method, request)?.let { limited ->
-                return MethodExecutionResult.Failure(limited)
-            }
             val input =
                 credential
                     ?.let { SecretHostResult.Submitted(SecretChars.copyOf(it)) }
@@ -66,6 +66,9 @@ internal class CredentialMethodExecutor
 
                 is SecretHostResult.Submitted -> {
                     input.secret.use { secret ->
+                        attemptLimiter.reserveAttempt(method, request)?.let { failure ->
+                            return@use MethodExecutionResult.Failure(failure)
+                        }
                         try {
                             val ownedDek =
                                 kdfRunner.execute(secret) { workerSecret ->
@@ -83,6 +86,10 @@ internal class CredentialMethodExecutor
                                         rawKey.fill(0)
                                     }
                                 }
+                            attemptLimiter.recordSuccess(method, request)?.let { failure ->
+                                ownedDek.discard()
+                                return@use MethodExecutionResult.Failure(failure)
+                            }
                             when (request.purpose) {
                                 AuthenticationPurpose.UNLOCK_VAULT,
                                 AuthenticationPurpose.AUTOFILL,
@@ -96,7 +103,6 @@ internal class CredentialMethodExecutor
                                             purpose = request.purpose,
                                         )
                                     ) {
-                                        attemptLimiter.recordSuccess(method)
                                         MethodExecutionResult.Success(method)
                                     } else {
                                         failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
@@ -105,7 +111,6 @@ internal class CredentialMethodExecutor
 
                                 AuthenticationPurpose.RECOVER_AUTH_METHODS -> {
                                     if (session.commitRecoveryUnlock(ownedDek, request.id.value)) {
-                                        attemptLimiter.recordSuccess(method)
                                         MethodExecutionResult.Success(method)
                                     } else {
                                         failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
@@ -114,16 +119,19 @@ internal class CredentialMethodExecutor
 
                                 else -> {
                                     ownedDek.discard()
-                                    attemptLimiter.recordSuccess(method)
                                     MethodExecutionResult.Success(method)
                                 }
                             }
                         } catch (_: AEADBadTagException) {
                             MethodExecutionResult.Failure(attemptLimiter.recordIncorrect(method, request))
                         } catch (_: GeneralSecurityException) {
-                            failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                            attemptLimiter.releaseAttempt(method, request)?.let { failure ->
+                                MethodExecutionResult.Failure(failure)
+                            } ?: failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
                         } catch (_: IllegalArgumentException) {
-                            failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
+                            attemptLimiter.releaseAttempt(method, request)?.let { failure ->
+                                MethodExecutionResult.Failure(failure)
+                            } ?: failure(AuthenticationFailureCode.ENVELOPE_CORRUPTED, request)
                         }
                     }
                 }
