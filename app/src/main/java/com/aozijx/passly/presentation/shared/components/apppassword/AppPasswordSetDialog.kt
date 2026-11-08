@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
+import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 
 @Composable
 fun AppPasswordSetDialog(
@@ -28,6 +29,7 @@ fun AppPasswordSetDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     strengthUiState: PasswordStrengthUiState,
+    confirmationState: PasswordConfirmationUiState,
     confirmEnabled: Boolean,
     isBusy: Boolean = false,
     errorMessage: String? = null,
@@ -87,6 +89,7 @@ fun AppPasswordSetDialog(
                     onConfirmPasswordChange = onConfirmPasswordChange,
                     onDone = submit,
                     strengthUiState = strengthUiState,
+                    confirmationState = confirmationState,
                     enabled = !isBusy,
                 )
                 if (errorMessage != null) {

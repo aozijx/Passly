@@ -25,6 +25,7 @@ sealed interface RecoveryCodeDraftUiState {
 
 sealed interface RecoveryCodeVerificationUiState {
     val input: SensitiveValue
+    val canSubmit: Boolean get() = !input.isEmpty
 
     data class Editing(
         override val input: SensitiveValue,

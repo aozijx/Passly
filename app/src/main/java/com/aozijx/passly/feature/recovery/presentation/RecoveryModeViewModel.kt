@@ -6,6 +6,7 @@ import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeEffect
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeMutation
@@ -13,6 +14,8 @@ import com.aozijx.passly.feature.recovery.presentation.RecoveryModeReducer
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiAction
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
 import com.aozijx.passly.presentation.shared.event.PageEffects
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
+import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,16 +57,25 @@ class RecoveryModeViewModel
         }
 
         private fun updateNewPassword(value: String) {
-            val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
-            if (passwordProvisioning || setup.phase == RecoveryPasswordSetupPhase.Saving) return
-            setup.newPassword.wipe()
-            mutate(RecoveryModeMutation.NewPasswordChanged(OwnedChars.fromString(value)))
+            val draft = editableDraft() ?: return
+            if (passwordProvisioning) return
+            draft.newPassword.wipe()
+            mutate(
+                RecoveryModeMutation.NewPasswordChanged(
+                    value = OwnedChars.fromString(value),
+                    passwordStrength =
+                        value
+                            .takeIf(String::isNotEmpty)
+                            ?.let { PasswordStrengthState.Visible(PasswordStrengthEvaluator.evaluate(it)) }
+                            ?: PasswordStrengthState.Hidden,
+                ),
+            )
         }
 
         private fun updateConfirmPassword(value: String) {
-            val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
-            if (passwordProvisioning || setup.phase == RecoveryPasswordSetupPhase.Saving) return
-            setup.confirmPassword.wipe()
+            val draft = editableDraft() ?: return
+            if (passwordProvisioning) return
+            draft.confirmPassword.wipe()
             mutate(RecoveryModeMutation.ConfirmPasswordChanged(OwnedChars.fromString(value)))
         }
 
@@ -72,10 +84,14 @@ class RecoveryModeViewModel
             val state = _uiState.value
             if (!ensureRecoveryMode()) return
             val owner = pageEffects.currentOwner ?: return
-            val setup = state.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
-            if (setup.phase == RecoveryPasswordSetupPhase.Saving) return
-            val password = setup.newPassword.toCharArray()
-            val confirm = setup.confirmPassword.toCharArray()
+            val draft =
+                when (val setup = state.passwordSetup) {
+                    is RecoveryPasswordSetup.Editing -> setup.draft
+                    is RecoveryPasswordSetup.Failed -> setup.draft
+                    else -> return
+                }
+            val password = draft.newPassword.toCharArray()
+            val confirm = draft.confirmPassword.toCharArray()
 
             if (password.isEmpty() || !password.contentEquals(confirm)) {
                 MemoryCleaner.wipeCharArray(password)
@@ -176,10 +192,23 @@ class RecoveryModeViewModel
         }
 
         private fun wipePasswords() {
-            val setup = _uiState.value.passwordSetup as? RecoveryPasswordSetup.Editing ?: return
-            setup.newPassword.wipe()
-            setup.confirmPassword.wipe()
+            val draft =
+                when (val setup = _uiState.value.passwordSetup) {
+                    is RecoveryPasswordSetup.Editing -> setup.draft
+                    is RecoveryPasswordSetup.Saving -> setup.draft
+                    is RecoveryPasswordSetup.Failed -> setup.draft
+                    RecoveryPasswordSetup.Closed -> return
+                }
+            draft.newPassword.wipe()
+            draft.confirmPassword.wipe()
         }
+
+        private fun editableDraft(): PasswordSetupDraft? =
+            when (val setup = _uiState.value.passwordSetup) {
+                is RecoveryPasswordSetup.Editing -> setup.draft
+                is RecoveryPasswordSetup.Failed -> setup.draft
+                else -> null
+            }
 
         override fun onCleared() {
             wipePasswords()

@@ -7,7 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
+import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
+import com.aozijx.passly.presentation.mapping.PasswordStrengthState
+import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 
 internal class AppPasswordDialogCoordinator {
     private var activeDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
@@ -16,12 +19,19 @@ internal class AppPasswordDialogCoordinator {
     private val confirmPassword = SensitivePasswordDraft()
 
     val model: AppPasswordDialogsModel
-        get() =
-            AppPasswordDialogsModel(
+        get() {
+            val newPasswordSnapshot = newPassword.snapshot()
+            return AppPasswordDialogsModel(
                 activeAppPasswordDialog = activeDialog,
                 appPasswordCurrent = currentPassword.snapshot(),
-                appPasswordNew = newPassword.snapshot(),
+                appPasswordNew = newPasswordSnapshot,
+                passwordStrength =
+                    newPasswordSnapshot
+                        .takeIf(String::isNotEmpty)
+                        ?.let { PasswordStrengthState.Visible(PasswordStrengthEvaluator.evaluate(it)) }
+                        ?: PasswordStrengthState.Hidden,
                 appPasswordConfirm = confirmPassword.snapshot(),
+                confirmationState = confirmationState(),
                 isSetPasswordConfirmEnabled =
                     passwordPolicyAcceptsNewPassword() &&
                         newPassword.contentEquals(confirmPassword),
@@ -30,6 +40,14 @@ internal class AppPasswordDialogCoordinator {
                         passwordPolicyAcceptsNewPassword() &&
                         newPassword.contentEquals(confirmPassword),
             )
+        }
+
+    private fun confirmationState(): PasswordConfirmationUiState =
+        if (confirmPassword.isNotEmpty && !newPassword.contentEquals(confirmPassword)) {
+            PasswordConfirmationUiState.Mismatch
+        } else {
+            PasswordConfirmationUiState.Hidden
+        }
 
     fun onAppPasswordEntryAuthorized(alreadyEnabled: Boolean) {
         clearDrafts()

@@ -8,7 +8,6 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
@@ -16,20 +15,15 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.dialog.PasslyAlertDialog
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
-
-data class RecoveryPasswordStrengthUiModel(
-    val score: Int,
-    val labelRes: Int,
-    val tone: RecoveryPasswordStrengthTone,
-)
-
-enum class RecoveryPasswordStrengthTone { ERROR, MUTED_ERROR, TERTIARY, SECONDARY, PRIMARY }
+import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
+import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 
 @Composable
 fun RecoveryPasswordDialog(
     newPassword: String,
     confirmPassword: String,
-    strength: RecoveryPasswordStrengthUiModel,
+    confirmationState: PasswordConfirmationUiState,
+    strength: PasswordStrengthUiState,
     confirmEnabled: Boolean,
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
@@ -59,9 +53,16 @@ fun RecoveryPasswordDialog(
                 newVisible =
                     !newVisible
             }
-            if (newPassword.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                PasswordStrengthIndicator(strength.score / 100f, strength.color(), stringResource(strength.labelRes))
+            when (val strengthState = strength) {
+                PasswordStrengthUiState.Hidden -> Unit
+                is PasswordStrengthUiState.Visible -> {
+                    Spacer(Modifier.height(8.dp))
+                    PasswordStrengthIndicator(
+                        strengthState.progress,
+                        strengthState.color,
+                        stringResource(strengthState.textResId),
+                    )
+                }
             }
             Spacer(Modifier.height(12.dp))
             PasswordField(
@@ -72,6 +73,7 @@ fun RecoveryPasswordDialog(
                 confirmVisible,
                 ImeAction.Done,
                 errorMessage,
+                confirmationState,
             ) {
                 confirmVisible =
                     !confirmVisible
@@ -79,7 +81,6 @@ fun RecoveryPasswordDialog(
         }
     }
 }
-
 @Composable
 private fun PasswordField(
     value: String,
@@ -89,6 +90,7 @@ private fun PasswordField(
     visible: Boolean,
     ime: ImeAction = ImeAction.Next,
     error: String? = null,
+    confirmationState: PasswordConfirmationUiState = PasswordConfirmationUiState.Hidden,
     toggle: () -> Unit,
 ) {
     OutlinedTextField(
@@ -110,18 +112,14 @@ private fun PasswordField(
                 )
             }
         },
-        isError =
-            error != null,
-        supportingText = error?.let { message -> { Text(message) } },
+        isError = error != null || confirmationState == PasswordConfirmationUiState.Mismatch,
+        supportingText =
+            when {
+                error != null -> ({ Text(error) })
+                confirmationState == PasswordConfirmationUiState.Mismatch -> {
+                    { Text(stringResource(R.string.recovery_mode_password_mismatch_or_empty)) }
+                }
+                else -> null
+            },
     )
 }
-
-@Composable
-private fun RecoveryPasswordStrengthUiModel.color(): Color =
-    when (tone) {
-        RecoveryPasswordStrengthTone.ERROR -> MaterialTheme.colorScheme.error
-        RecoveryPasswordStrengthTone.MUTED_ERROR -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-        RecoveryPasswordStrengthTone.TERTIARY -> MaterialTheme.colorScheme.tertiary
-        RecoveryPasswordStrengthTone.SECONDARY -> MaterialTheme.colorScheme.secondary
-        RecoveryPasswordStrengthTone.PRIMARY -> MaterialTheme.colorScheme.primary
-    }

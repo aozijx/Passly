@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
+import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 
 @Composable
@@ -42,6 +43,7 @@ fun PasswordFields(
     onConfirmPasswordChange: (String) -> Unit,
     onDone: () -> Unit,
     strengthUiState: PasswordStrengthUiState,
+    confirmationState: PasswordConfirmationUiState,
     enabled: Boolean = true,
 ) {
     var newPasswordVisible by remember { mutableStateOf(false) }
@@ -100,13 +102,16 @@ fun PasswordFields(
         shape = MaterialTheme.shapes.large,
     )
 
-    if (newPassword.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(4.dp))
-        PasswordStrengthIndicator(
-            progress = strengthUiState.progress,
-            color = strengthUiState.color,
-            text = stringResource(strengthUiState.textResId),
-        )
+    when (val strength = strengthUiState) {
+        PasswordStrengthUiState.Hidden -> Unit
+        is PasswordStrengthUiState.Visible -> {
+            Spacer(modifier = Modifier.height(4.dp))
+            PasswordStrengthIndicator(
+                progress = strength.progress,
+                color = strength.color,
+                text = stringResource(strength.textResId),
+            )
+        }
     }
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -155,9 +160,9 @@ fun PasswordFields(
                 imeAction = ImeAction.Done,
             ),
         keyboardActions = KeyboardActions(onDone = { onDone() }),
-        isError = confirmPassword.isNotEmpty() && newPassword != confirmPassword,
+        isError = confirmationState == PasswordConfirmationUiState.Mismatch,
         supportingText =
-            if (confirmPassword.isNotEmpty() && newPassword != confirmPassword) {
+            if (confirmationState == PasswordConfirmationUiState.Mismatch) {
                 { Text(stringResource(R.string.settings_auth_password_mismatch)) }
             } else {
                 null

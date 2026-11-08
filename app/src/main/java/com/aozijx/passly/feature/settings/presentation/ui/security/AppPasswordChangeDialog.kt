@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,12 +24,16 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
-import com.aozijx.passly.presentation.mapping.rememberPasswordStrength
+import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
+import com.aozijx.passly.presentation.mapping.PasswordStrengthState
+import com.aozijx.passly.presentation.mapping.toUiState
 
 data class AppPasswordChangeDialogState(
     val currentPassword: String,
     val newPassword: String,
+    val passwordStrength: PasswordStrengthState,
     val confirmPassword: String,
+    val confirmationState: PasswordConfirmationUiState,
     val confirmEnabled: Boolean,
     val isBusy: Boolean = false,
 )
@@ -108,7 +113,8 @@ fun AppPasswordChangeDialog(
                         onEvent(AppPasswordChangeDialogEvent.ConfirmPasswordChanged(it))
                     },
                     onDone = submit,
-                    strengthUiState = rememberPasswordStrength(state.newPassword),
+                    strengthUiState = state.passwordStrength.toUiState(MaterialTheme.colorScheme),
+                    confirmationState = state.confirmationState,
                     enabled = !state.isBusy,
                 )
             }

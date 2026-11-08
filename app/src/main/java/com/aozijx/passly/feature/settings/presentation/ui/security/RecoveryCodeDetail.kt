@@ -123,6 +123,7 @@ fun RecoveryCodeDetail(
                 state =
                     InputActionButtonState(
                         value = verifyInput,
+                        canSubmit = verification.canSubmit,
                         expanded = isExpanded,
                         phase = verificationPhase,
                     ),

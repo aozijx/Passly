@@ -40,14 +40,13 @@ import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.unlock.presentation.UnlockFailureMessage
 import com.aozijx.passly.feature.unlock.presentation.UnlockInputExpansion
+import com.aozijx.passly.feature.unlock.presentation.KdfInitializationUiState
 import com.aozijx.passly.feature.unlock.presentation.UnlockPasswordSetup
-import com.aozijx.passly.feature.unlock.presentation.UnlockPasswordSetupPhase
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiAction
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
 import com.aozijx.passly.feature.unlock.presentation.UnlockVerificationPhase
-import com.aozijx.passly.feature.unlock.presentation.canSubmit
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
-import com.aozijx.passly.presentation.mapping.rememberPasswordStrength
+import com.aozijx.passly.presentation.mapping.toUiState
 
 @Composable
 fun AuthenticationScreen(
@@ -62,9 +61,9 @@ fun AuthenticationScreen(
     val recoveryCode = state.recoveryCode.toUiString()
     val activeMethod = (state.verificationPhase as? UnlockVerificationPhase.Authenticating)?.method
     val verificationFailure = (state.verificationPhase as? UnlockVerificationPhase.Failed)?.failure
-    val biometricFailureMessage =
     val appPasswordAttemptStatus = state.authenticationAttemptStatuses[AuthenticationMethod.APP_PASSWORD]
     val recoveryCodeAttemptStatus = state.authenticationAttemptStatuses[AuthenticationMethod.RECOVERY_CODE]
+    val biometricFailureMessage =
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.BIOMETRIC }
             ?.message
@@ -160,6 +159,7 @@ fun AuthenticationScreen(
                     state =
                         InputActionButtonState(
                             value = appPassword,
+                            canSubmit = state.canSubmitAppPassword,
                             expanded =
                                 state.inputExpansion ==
                                     UnlockInputExpansion.Expanded(AuthenticationMethod.APP_PASSWORD),
@@ -197,7 +197,6 @@ fun AuthenticationScreen(
                     onAction = { onAction(UnlockUiAction.AppPasswordSubmitted) },
                     onResultConsumed = { onAction(UnlockUiAction.ClearVerificationFailure) },
                 )
-            }
                 if (appPasswordFailureMessage == null) {
                     appPasswordAttemptStatus?.localized(appPasswordLabel)?.let { statusMessage ->
                         Text(
@@ -212,20 +211,16 @@ fun AuthenticationScreen(
                         )
                     }
                 }
+            }
 
-            if (state.availableMethods.available.isEmpty()) {
-                val setup = state.passwordSetup as? UnlockPasswordSetup.Editing
+            if (state.shouldOfferPasswordSetup) {
+                val isSaving = state.passwordSetup is UnlockPasswordSetup.Saving
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.Password,
                     text = stringResource(R.string.auth_set_app_password),
-                    phase =
-                        if (setup?.phase == UnlockPasswordSetupPhase.Saving) {
-                            ActionButtonPhase.InProgress
-                        } else {
-                            ActionButtonPhase.Idle
-                        },
-                    enabled = activeMethod == null && setup?.phase != UnlockPasswordSetupPhase.Saving,
+                    phase = if (isSaving) ActionButtonPhase.InProgress else ActionButtonPhase.Idle,
+                    enabled = activeMethod == null && !isSaving,
                     onClick = { onAction(UnlockUiAction.SetPasswordClicked) },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -244,6 +239,7 @@ fun AuthenticationScreen(
                     state =
                         InputActionButtonState(
                             value = recoveryCode,
+                            canSubmit = state.canSubmitRecoveryCode,
                             expanded =
                                 state.inputExpansion ==
                                     UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
@@ -282,7 +278,6 @@ fun AuthenticationScreen(
                     onAction = { onAction(UnlockUiAction.RecoveryCodeSubmitted) },
                     onResultConsumed = { onAction(UnlockUiAction.ClearVerificationFailure) },
                 )
-            }
                 if (recoveryCodeFailureMessage == null) {
                     recoveryCodeAttemptStatus?.localized(recoveryCodeLabel)?.let { statusMessage ->
                         Text(
@@ -297,33 +292,45 @@ fun AuthenticationScreen(
                         )
                     }
                 }
+            }
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
 
     val passwordSetup = state.passwordSetup
-    if (passwordSetup is UnlockPasswordSetup.Editing) {
+    val passwordDraft =
+        when (passwordSetup) {
+            UnlockPasswordSetup.Closed -> null
+            is UnlockPasswordSetup.Editing -> passwordSetup.draft
+            is UnlockPasswordSetup.Saving -> passwordSetup.draft
+            is UnlockPasswordSetup.Failed -> passwordSetup.draft
+        }
+    if (passwordDraft != null) {
         AppPasswordSetDialog(
-            newPassword = passwordSetup.newPassword.toUiString(),
-            confirmPassword = passwordSetup.confirmPassword.toUiString(),
-            strengthUiState = rememberPasswordStrength(passwordSetup.newPassword.toUiString()),
-            confirmEnabled = passwordSetup.canSubmit() && state.kdfParameters != null,
+            newPassword = passwordDraft.newPassword.toUiString(),
+            confirmPassword = passwordDraft.confirmPassword.toUiString(),
+            strengthUiState =
+                passwordDraft.passwordStrength.toUiState(MaterialTheme.colorScheme),
+            confirmationState = passwordDraft.confirmationState,
+            confirmEnabled =
+                passwordDraft.canSubmit() &&
+                    state.kdfInitialization is KdfInitializationUiState.Ready,
             kdfHint =
-                when {
-                    state.kdfInitializationFailed -> {
+                when (val kdfInitialization = state.kdfInitialization) {
+                    KdfInitializationUiState.Failed -> {
                         stringResource(R.string.auth_kdf_initialization_failed)
                     }
 
-                    state.kdfParameters == null -> {
+                    KdfInitializationUiState.Loading -> {
                         stringResource(R.string.auth_kdf_calibrating)
                     }
 
-                    else -> {
+                    is KdfInitializationUiState.Ready -> {
                         stringResource(
                             R.string.auth_kdf_selected,
-                            state.kdfParameters.memoryKiB / 1024,
-                            state.kdfParameters.iterations,
-                            state.kdfParameters.parallelism,
+                            kdfInitialization.parameters.memoryKiB / 1024,
+                            kdfInitialization.parameters.iterations,
+                            kdfInitialization.parameters.parallelism,
                         )
                     }
                 },
@@ -331,11 +338,8 @@ fun AuthenticationScreen(
             onConfirmPasswordChange = { onAction(UnlockUiAction.ConfirmAppPasswordChanged(it)) },
             onConfirm = { onAction(UnlockUiAction.SetPasswordConfirmed) },
             onDismiss = { onAction(UnlockUiAction.DismissSetPasswordDialog) },
-            isBusy = passwordSetup.phase == UnlockPasswordSetupPhase.Saving,
-            errorMessage =
-                (passwordSetup.phase as? UnlockPasswordSetupPhase.Failed)
-                    ?.message
-                    ?.localized(),
+            isBusy = passwordSetup is UnlockPasswordSetup.Saving,
+            errorMessage = (passwordSetup as? UnlockPasswordSetup.Failed)?.message?.localized(),
         )
     }
 }
@@ -400,14 +404,14 @@ private fun UnlockFailureMessage.localized(
             stringResource(R.string.auth_error_session_unavailable)
         }
 
-        UnlockFailureMessage.PasswordTooShort -> {
-            stringResource(
-                R.string.auth_error_password_too_short,
-            )
         UnlockFailureMessage.AttemptStateUnavailable -> {
             stringResource(R.string.auth_error_attempt_state_unavailable)
         }
 
+        UnlockFailureMessage.PasswordTooShort -> {
+            stringResource(
+                R.string.auth_error_password_too_short,
+            )
         }
 
         UnlockFailureMessage.AppPasswordSetupFailed -> {

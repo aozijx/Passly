@@ -14,10 +14,13 @@ import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationAttemptStatusProvider
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
+import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiAction
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
+import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -129,16 +132,25 @@ class UnlockViewModel
         }
 
         private fun updateNewAppPassword(value: String) {
-            val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
-            if (passwordProvisioning || setup.phase == UnlockPasswordSetupPhase.Saving) return
-            setup.newPassword.wipe()
-            mutate(UnlockMutation.NewAppPasswordChanged(OwnedChars.fromString(value)))
+            val draft = editablePasswordDraft() ?: return
+            if (passwordProvisioning) return
+            draft.newPassword.wipe()
+            mutate(
+                UnlockMutation.NewAppPasswordChanged(
+                    value = OwnedChars.fromString(value),
+                    passwordStrength =
+                        value
+                            .takeIf(String::isNotEmpty)
+                            ?.let { PasswordStrengthState.Visible(PasswordStrengthEvaluator.evaluate(it)) }
+                            ?: PasswordStrengthState.Hidden,
+                ),
+            )
         }
 
         private fun updateConfirmAppPassword(value: String) {
-            val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
-            if (passwordProvisioning || setup.phase == UnlockPasswordSetupPhase.Saving) return
-            setup.confirmPassword.wipe()
+            val draft = editablePasswordDraft() ?: return
+            if (passwordProvisioning) return
+            draft.confirmPassword.wipe()
             mutate(UnlockMutation.ConfirmAppPasswordChanged(OwnedChars.fromString(value)))
         }
 
@@ -156,10 +168,10 @@ class UnlockViewModel
 
         private fun setAppPassword() {
             if (passwordProvisioning) return
-            val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
-            val password = setup.newPassword.toCharArray()
-            val confirm = setup.confirmPassword.toCharArray()
-            if (!setup.canSubmit()) {
+            val draft = editablePasswordDraft() ?: return
+            val password = draft.newPassword.toCharArray()
+            val confirm = draft.confirmPassword.toCharArray()
+            if (!draft.canSubmit()) {
                 MemoryCleaner.wipeCharArray(password)
                 MemoryCleaner.wipeCharArray(confirm)
                 return
@@ -405,10 +417,17 @@ class UnlockViewModel
         }
 
         private fun wipeSetupPasswords() {
-            val setup = _uiState.value.passwordSetup as? UnlockPasswordSetup.Editing ?: return
-            setup.newPassword.wipe()
-            setup.confirmPassword.wipe()
+            val draft = editablePasswordDraft() ?: return
+            draft.newPassword.wipe()
+            draft.confirmPassword.wipe()
         }
+
+        private fun editablePasswordDraft(): PasswordSetupDraft? =
+            when (val setup = _uiState.value.passwordSetup) {
+                is UnlockPasswordSetup.Editing -> setup.draft
+                is UnlockPasswordSetup.Failed -> setup.draft
+                else -> null
+            }
 
         private companion object {
             const val RECOVERY_REVEAL_TAP_THRESHOLD = 12

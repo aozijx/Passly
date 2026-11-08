@@ -1,13 +1,12 @@
 package com.aozijx.passly.feature.unlock.presentation
 
-import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
-import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 
 sealed interface UnlockFailureMessage {
     data class IncorrectCredential(
@@ -30,9 +29,9 @@ sealed interface UnlockFailureMessage {
 
     data object SessionUnavailable : UnlockFailureMessage
 
-    data object PasswordTooShort : UnlockFailureMessage
     data object AttemptStateUnavailable : UnlockFailureMessage
 
+    data object PasswordTooShort : UnlockFailureMessage
 
     data object AppPasswordSetupFailed : UnlockFailureMessage
 
@@ -67,45 +66,38 @@ sealed interface UnlockVerificationPhase {
 sealed interface UnlockPasswordSetup {
     data object Closed : UnlockPasswordSetup
 
-    data class Editing(
-        val newPassword: SensitiveValue = EmptySensitiveValue,
-        val confirmPassword: SensitiveValue = EmptySensitiveValue,
-        val phase: UnlockPasswordSetupPhase = UnlockPasswordSetupPhase.Idle,
+    data class Editing(val draft: PasswordSetupDraft) : UnlockPasswordSetup
+
+    data class Saving(val draft: PasswordSetupDraft) : UnlockPasswordSetup
+
+    data class Failed(
+        val draft: PasswordSetupDraft,
+        val message: UnlockFailureMessage,
     ) : UnlockPasswordSetup
 }
 
-sealed interface UnlockPasswordSetupPhase {
-    data object Idle : UnlockPasswordSetupPhase
+sealed interface KdfInitializationUiState {
+    data object Loading : KdfInitializationUiState
 
-    data object Saving : UnlockPasswordSetupPhase
+    data class Ready(
+        val parameters: AuthenticationKdfParameters,
+    ) : KdfInitializationUiState
 
-    data class Failed(
-        val message: UnlockFailureMessage,
-    ) : UnlockPasswordSetupPhase
+    data object Failed : KdfInitializationUiState
 }
 
 data class UnlockUiState(
-    val kdfParameters: AuthenticationKdfParameters? = null,
-    val kdfInitializationFailed: Boolean = false,
+    val kdfInitialization: KdfInitializationUiState = KdfInitializationUiState.Loading,
     val availableMethods: AuthenticationMethods = AuthenticationMethods(),
+    val authenticationAttemptStatuses: Map<AuthenticationMethod, AuthenticationAttemptStatus> = emptyMap(),
     val appPassword: SensitiveValue = EmptySensitiveValue,
     val recoveryCode: SensitiveValue = EmptySensitiveValue,
     val recoveryUnlockVisible: Boolean = false,
     val inputExpansion: UnlockInputExpansion = UnlockInputExpansion.Collapsed,
     val verificationPhase: UnlockVerificationPhase = UnlockVerificationPhase.Idle,
     val passwordSetup: UnlockPasswordSetup = UnlockPasswordSetup.Closed,
-)
-
-internal fun UnlockPasswordSetup.Editing.canSubmit(): Boolean {
-    val passwordChars = newPassword.toCharArray()
-    val confirmationChars = confirmPassword.toCharArray()
-    return try {
-        phase != UnlockPasswordSetupPhase.Saving &&
-            AppPasswordPolicy.DEFAULT.acceptsLength(passwordChars.size) &&
-            passwordChars.contentEquals(confirmationChars)
-    } finally {
-        MemoryCleaner.wipeCharArray(passwordChars)
-        MemoryCleaner.wipeCharArray(confirmationChars)
-    }
+) {
+    val shouldOfferPasswordSetup: Boolean get() = availableMethods.available.isEmpty()
+    val canSubmitAppPassword: Boolean get() = !appPassword.isEmpty
+    val canSubmitRecoveryCode: Boolean get() = !recoveryCode.isEmpty
 }
-    val authenticationAttemptStatuses: Map<AuthenticationMethod, AuthenticationAttemptStatus> = emptyMap(),
