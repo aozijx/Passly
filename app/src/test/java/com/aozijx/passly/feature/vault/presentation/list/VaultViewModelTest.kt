@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.list
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.lifecycle.ViewModelStore
+import com.aozijx.passly.R
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -351,6 +352,42 @@ class VaultViewModelTest {
         }
 
     @Test
+    fun sortPreferenceFailureShowsCurrentPageFeedbackWithoutChangingSelectedSort() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val currentSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)
+            val requestedSort = EntrySort(EntrySortField.TITLE, SortDirection.ASC)
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    librarySettings = MutableStateFlow(LibraryViewSettings(sort = currentSort)),
+                    setSort = { throw IllegalStateException("settings write failed") },
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val effects = Channel<VaultEffect>(Channel.UNLIMITED)
+            val effectCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.effects.collect { effects.send(it) }
+                }
+
+            try {
+                runCurrent()
+                viewModel.onAction(VaultUiAction.SortOptionSelected(requestedSort))
+                runCurrent()
+
+                val effect = effects.receive() as VaultEffect.ShowError
+                assertEquals(R.string.vault_error_sort_failed, effect.message.resourceId)
+                assertEquals(currentSort, viewModel.uiState.value.selectedSort)
+                assertNull(effects.tryReceive().getOrNull())
+            } finally {
+                viewModel.onPageExited(owner)
+                effectCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
     fun searchAndTypeFilterTogetherReachThePagingSource() =
         runTest(mainDispatcherRule.testDispatcher) {
             val pageQueries = mutableListOf<EntryListQuery>()
@@ -398,13 +435,14 @@ class VaultViewModelTest {
         availableCategories: Flow<List<String>> = flowOf(emptyList()),
         librarySettings: Flow<LibraryViewSettings> = flowOf(defaultLibrarySettings()),
         onPageQuery: (EntryListQuery) -> Unit = {},
+        setSort: suspend (EntrySort) -> Unit = {},
     ): VaultViewModel {
         val access = TestAccessState()
         val entries = TestEntries(onMoveToTrash)
         val clipboard = SensitiveClipboardWriter { clipboardValues += it }
         val activity = TestActivityRecorder
         val sensitiveFields = EmptySensitiveFields
-        val settings = TestSettingsRepository(librarySettings)
+        val settings = TestSettingsRepository(librarySettings, setSort)
         val otpFactory =
             OtpCodeRuntimeFactory(
                 otpConfigRepository = otpConfigRepository,
@@ -518,9 +556,10 @@ class VaultViewModelTest {
 
     private class TestSettingsRepository(
         override val libraryViewSettings: Flow<LibraryViewSettings>,
+        private val setSort: suspend (EntrySort) -> Unit,
     ) : LibraryViewSettingsRepository {
 
-        override suspend fun setSort(sort: EntrySort) = Unit
+        override suspend fun setSort(sort: EntrySort) = setSort.invoke(sort)
 
         override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) = Unit
 

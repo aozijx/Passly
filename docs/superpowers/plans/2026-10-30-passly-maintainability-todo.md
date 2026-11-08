@@ -188,13 +188,16 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 ### Task 32：明确 Vault 列表 ViewModel 的工作流边界并补宿主行为覆盖
 
 - [x] `VaultViewModelTest` 覆盖分类首次/发值后异常与重试、空/非空更新、设置 sort 更新触发 Paging generation、搜索和类型筛选组合进入 Paging query、同条目删除单飞、离页后 field/OTP copy 丢弃以及当前页 copy 成功。
-- [ ] 补齐 Settings 写入失败、删除迟到完成、OTP 可见订阅及删除失效、授权撤销期间操作、其余 page owner 交接与迟到结果行为；纯 `VaultReducer`/`VaultQueryState` 单测仍不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
+- [x] `VaultViewModelTest` 覆盖 sort 设置写入失败：保留当前持久化排序，并仅向活动 page owner 发出本地失败反馈。
+- [ ] 补齐删除迟到完成、OTP 可见订阅及删除失效、授权撤销期间操作、其余 page owner 交接与迟到结果行为；纯 `VaultReducer`/`VaultQueryState` 单测仍不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
 - [x] 依实际依赖拆出 `VaultEntryCommandWorkflow`：它持有删除单飞并执行 trash、field/OTP copy 与当前 page effect 检查；列表筛选、Paging 和 OTP 可见订阅仍由单一 `VaultViewModel`/graph owner 管理，避免再拆出共享 `VaultUiState` 的协调 ViewModel。数据库重置后的 Paging 重订阅继续由 `AppDatabaseSession.observeFullVaultWhenReadable()` 管理，不另造 reload 桥或一一转发类。
 - [ ] 让 Route 消费与各 owner 对齐：`VaultRoute` 负责 Compose/导航/system effect，Content 只接收 immutable state/actions；确保图级 `VaultViewModel` 在 Trash/Detail 转场或目的地保留期间不会重复创建 effect collector 或重复订阅 Paging/OTP。给选定的 owners 增加 Route/NavHost 行为回归后同步状态管理文档，运行 Vault Presentation 定向测试、`verifyArchitecture` 和 `git diff --check`。
 
-**当前证据（2026-11-08）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 提供当前待删除项与 reducer mutation。`VaultViewModelTest` 现有 9 项覆盖分类恢复、settings sort 驱动新 Paging generation、搜索与类型筛选组合、删除单飞及离页/current-page copy。仍缺 Settings 写入失败、删除迟到完成、OTP 可见订阅/删除失效、撤权行为和 Route/NavHost 转场覆盖；`VaultGraphRegistration.vaultGraphViewModel()` 使用图级 VM owner，Route 的 destination 生命周期与 effect collector 仍需宿主验证。
+**当前证据（2026-11-08）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 只分派当前页面动作，不再保留列表删除确认状态。`VaultViewModelTest` 已覆盖分类恢复、sort 设置写入失败、settings sort 驱动新 Paging generation、搜索与类型筛选组合、删除单飞及离页/current-page copy。仍缺删除迟到完成、OTP 可见订阅/删除失效、撤权行为和 Route/NavHost 转场覆盖；`VaultGraphRegistration.vaultGraphViewModel()` 使用图级 VM owner，Route 的 destination 生命周期与 effect collector 仍需宿主验证。
 
-**2026-11-08 Vault 列表删除确认死路径清理：** 调用闭包确认 `VaultScreen` 不消费 `dialogs.pendingDelete`，实际列表删除只由 `QuickDelete` 触发；移除无人调用的 `ItemToDeleteSelected` / `ConfirmDelete`、`pendingDelete` 状态/UI 投影、Reducer mutation 与 workflow 分支。保留真实的 Trash command、同条目单飞、当前 page effect 失败反馈和删除后的 OTP Runtime 清理。切换后全仓无 Vault 列表确认删除旧符号引用（Trash 页面自己的确认状态独立保留）；四个 Vault list 定向测试共 25 项通过，`verifyArchitecture` 通过。Task 32 的 Settings 失败、删除迟到结果、OTP 订阅及 Route/NavHost 覆盖仍待处理。
+**2026-11-08 Vault 列表删除确认死路径清理：** 调用闭包确认 `VaultScreen` 不消费 `dialogs.pendingDelete`，实际列表删除只由 `QuickDelete` 触发；移除无人调用的 `ItemToDeleteSelected` / `ConfirmDelete`、`pendingDelete` 状态/UI 投影、Reducer mutation 与 workflow 分支。保留真实的 Trash command、同条目单飞、当前 page effect 失败反馈和删除后的 OTP Runtime 清理。切换后全仓无 Vault 列表确认删除旧符号引用（Trash 页面自己的确认状态独立保留）；四个 Vault list 定向测试共 26 项通过，`verifyArchitecture` 通过。Task 32 的删除迟到结果、OTP 订阅及 Route/NavHost 覆盖仍待处理。
+
+**2026-11-08 Vault sort 写入失败回归：** 注入 `setSort` 普通异常，验证当前 page owner 收到 `vault_error_sort_failed`，而 `selectedSort` 继续等于设置 Flow 的已保存值。定向 `VaultViewModelTest.sortPreferenceFailureShowsCurrentPageFeedbackWithoutChangingSelectedSort` 通过（1 项）。
 
 **2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；锁定/重开恢复由数据库 observation owner 管理，证据见下方。
 
