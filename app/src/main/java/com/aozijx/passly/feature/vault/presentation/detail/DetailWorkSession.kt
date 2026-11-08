@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import kotlinx.coroutines.CancellationException
@@ -15,6 +16,7 @@ import kotlinx.coroutines.isActive
 internal class DetailWorkSession(
     private val hasAccess: () -> Boolean,
     private val editEntry: suspend (EntryId, EntryEdit) -> AppResult<Entry>,
+    private val fieldReader: EntryFieldReader,
     private val present: suspend (Entry) -> DetailEntryPresentation,
     private val onMutation: (DetailMutation) -> Unit,
     private val onReveal: (FieldKey, SensitiveValue) -> Unit,
@@ -100,7 +102,17 @@ internal class DetailWorkSession(
                 if (completion is DetailEditCompletion.Field && edit is EntryEdit.SetFieldValue) {
                     onReveal(edit.fieldKey, OwnedChars.fromString(edit.value))
                 }
-                if (isCurrent(token) && currentCoroutineContext().isActive) onMutation(DetailMutation.SaveSucceeded(completion))
+                if (isCurrent(token) && currentCoroutineContext().isActive) {
+                    onMutation(
+                        DetailMutation.SaveSucceeded(
+                            completion = completion,
+                            savedFieldValue =
+                                (edit as? EntryEdit.SetFieldValue)?.let { fieldEdit ->
+                                    fieldReader.getFieldValue(result.data, fieldEdit.fieldKey).orEmpty()
+                                },
+                        ),
+                    )
+                }
             }
 
             is AppResult.Failure -> {

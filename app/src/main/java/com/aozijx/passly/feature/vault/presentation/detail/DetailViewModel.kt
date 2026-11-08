@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
@@ -64,6 +65,7 @@ class DetailViewModel
         private val revealEntryFields: RevealEntryFieldsUseCase,
         private val loadEditableEntry: LoadEditableEntryUseCase,
         private val editEntry: EditEntryUseCase,
+        private val fieldReader: EntryFieldReader,
         private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
         private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
         private val faviconImageProcessor: FaviconImageProcessor,
@@ -107,6 +109,7 @@ class DetailViewModel
             DetailWorkSession(
                 hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
                 editEntry = editEntry::edit,
+                fieldReader = fieldReader,
                 present = presentationLoader::present,
                 onMutation = ::mutate,
                 onReveal = ::setRevealedField,
@@ -366,7 +369,13 @@ class DetailViewModel
                 }
 
                 is DetailUiAction.SaveField -> {
-                    if (_uiState.value.entry == null) return
+                    val state = _uiState.value
+                    if (state.entry == null) return
+                    if (
+                        state.fieldEdits.initialValue(event.field.draftKey)?.takeIf(String::isNotEmpty) == event.newValue
+                    ) {
+                        return
+                    }
                     viewModelScope.launch {
                         val fieldKey = event.field.fieldKey
                         persistEntryEdit(

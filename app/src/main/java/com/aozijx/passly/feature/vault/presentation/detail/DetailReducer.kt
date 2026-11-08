@@ -124,7 +124,10 @@ internal sealed interface DetailMutation {
 
     data class SaveSucceeded(
         val completion: DetailEditCompletion,
-    ) : DetailMutation
+        val savedFieldValue: String? = null,
+    ) : DetailMutation {
+        override fun toString() = "SaveSucceeded($completion, ***)"
+    }
 
     data class SaveFailed(
         val completion: DetailEditCompletion,
@@ -483,9 +486,7 @@ internal object DetailReducer {
                         editedTitle = if (finishTitle) state.entry?.detailDisplayTitle ?: state.editedTitle else state.editedTitle,
                         saveState = DetailSaveState.Idle,
                         fieldEdits =
-                            if (!finishDraft) {
-                                state.fieldEdits
-                            } else {
+                            if (finishDraft) {
                                 when (mutation.completion) {
                                     is DetailEditCompletion.Field -> {
                                         state.fieldEdits.finish(DetailDraftKey.EntryField(mutation.completion.key))
@@ -503,6 +504,15 @@ internal object DetailReducer {
                                         state.fieldEdits
                                     }
                                 }
+                            } else if (mutation.completion is DetailEditCompletion.Field) {
+                                mutation.savedFieldValue?.let { savedValue ->
+                                    state.fieldEdits.rebase(
+                                        DetailDraftKey.EntryField(mutation.completion.key),
+                                        savedValue,
+                                    )
+                                } ?: state.fieldEdits
+                            } else {
+                                state.fieldEdits
                             },
                         tagEditor =
                             if (mutation.completion == DetailEditCompletion.Tags) {

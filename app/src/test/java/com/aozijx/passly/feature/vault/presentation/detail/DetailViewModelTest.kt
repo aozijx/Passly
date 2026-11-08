@@ -116,6 +116,31 @@ import org.junit.Test
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
     @Test
+    fun `saving an unchanged field draft does not start an edit`() =
+        runTest {
+            val fixture = Fixture()
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                val version = fixture.viewModel.uiState.value.entry?.version
+
+                fixture.viewModel.onAction(DetailUiAction.StartFieldEdit(DetailField.USERNAME, "latest-user"))
+                fixture.viewModel.onAction(DetailUiAction.SaveField(DetailField.USERNAME, "latest-user"))
+                runCurrent()
+
+                assertEquals(version, fixture.viewModel.uiState.value.entry?.version)
+                assertEquals(DetailSaveState.Idle, fixture.viewModel.uiState.value.saveState)
+                assertEquals(
+                    "latest-user",
+                    fixture.viewModel.uiState.value.fieldEdits.draft(DetailField.USERNAME.draftKey),
+                )
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
     fun `saved login can bind another saved login from its detail page`() =
         runTest {
             val links = MutableEntryLinks()
@@ -1217,6 +1242,7 @@ class DetailViewModelTest {
                 revealEntryFields = RevealEntryFieldsUseCase(authGate, fieldReader, sensitive, activity),
                 loadEditableEntry = LoadEditableEntryUseCase(entries, sensitive, authGate, access, activity),
                 editEntry = EditEntryUseCase(entries, entries, access, testLogger()),
+                fieldReader = fieldReader,
                 copyEntryFieldUseCase =
                     CopyEntryFieldUseCase(
                         authGate,

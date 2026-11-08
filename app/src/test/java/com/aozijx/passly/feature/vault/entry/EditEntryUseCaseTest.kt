@@ -42,6 +42,21 @@ import org.junit.Test
 
 class EditEntryUseCaseTest {
     @Test
+    fun unchangedFieldEditReturnsCurrentEntryWithoutWriting() =
+        runTest {
+            val original = entry(version = 3)
+            val query = FakeQueryRepository(original)
+            val command = FakeCommandRepository(query)
+            val useCase = EditEntryUseCase(query, command, FullSessionAccessState, testLogger())
+
+            val result = useCase.edit(ENTRY_ID, EntryEdit.SetFieldValue(FieldKey.USERNAME, "latest-user"))
+
+            assertEquals(AppResult.Success(original), result)
+            assertTrue(command.expectedVersions.isEmpty())
+            assertTrue(command.submittedChanges.isEmpty())
+        }
+
+    @Test
     fun fullFormEditReappliesToLatestEntryAfterVersionConflict() =
         runTest {
             val query = FakeQueryRepository(entry(version = 3, favorite = true))

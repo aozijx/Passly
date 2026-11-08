@@ -24,6 +24,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
+import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -368,6 +369,7 @@ class DetailPasswordRelationsWorkflowTest {
             DetailWorkSession(
                 hasAccess = { access.hasFullSecureSessionAccess() },
                 editEntry = { _, _ -> error("Entry editing is not part of this test") },
+                fieldReader = DefaultEntryFieldReader(),
                 present = { error("Entry presentation is not part of this test") },
                 onMutation = {},
                 onReveal = { _, _ -> },

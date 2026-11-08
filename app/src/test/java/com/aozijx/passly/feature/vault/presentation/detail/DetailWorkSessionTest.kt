@@ -11,6 +11,8 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.policy.EntryEdit
+import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
+import com.aozijx.passly.domain.entry.policy.EntryEditResult
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import kotlinx.coroutines.CompletableDeferred
@@ -281,7 +283,13 @@ class DetailWorkSessionTest {
             fixture.save(fixture.session.open(ID))
             try {
                 assertTrue(fixture.mutations[0] is DetailMutation.EntryPresented)
-                assertEquals(DetailMutation.SaveSucceeded(DetailEditCompletion.Field(FieldKey.PASSWORD)), fixture.mutations[1])
+                assertEquals(
+                    DetailMutation.SaveSucceeded(
+                        completion = DetailEditCompletion.Field(FieldKey.PASSWORD),
+                        savedFieldValue = "new-password",
+                    ),
+                    fixture.mutations[1],
+                )
                 assertEquals(1, fixture.reveals.size)
             } finally {
                 fixture.wipe()
@@ -359,11 +367,19 @@ class DetailWorkSessionTest {
         val session =
             DetailWorkSession(
                 hasAccess = { access },
-                editEntry = { _, _ ->
+                editEntry = { _, edit ->
                     editCalls++
                     beforeEdit()
-                    AppResult.Success(entry)
+                    when (val applied = edit.applyTo(entry)) {
+                        is EntryEditResult.Updated -> {
+                            entry = applied.entry
+                            AppResult.Success(entry)
+                        }
+
+                        is EntryEditResult.Invalid, EntryEditResult.Unsupported -> error("Test edit should be valid for this entry")
+                    }
                 },
+                fieldReader = DefaultEntryFieldReader(),
                 present = {
                     presentCalls++
                     beforePresent()

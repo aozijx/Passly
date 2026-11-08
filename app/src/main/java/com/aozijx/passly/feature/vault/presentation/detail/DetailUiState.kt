@@ -51,26 +51,49 @@ enum class DetailActivityFilter { ALL, ACTIONS, AUTOFILL }
 
 enum class DetailSnapshotState { Loading, Ready, NotFound, Failed, RefreshingAfterRestore, RefreshFailedAfterRestore }
 
-data class DetailFieldEditState(
-    private val drafts: Map<DetailDraftKey, String> = emptyMap(),
+@ConsistentCopyVisibility
+data class DetailFieldEditState private constructor(
+    private val drafts: Map<DetailDraftKey, DetailFieldEditDraft>,
 ) {
+    constructor() : this(emptyMap())
+
     fun isEditing(key: DetailDraftKey): Boolean = key in drafts
 
-    fun draft(key: DetailDraftKey): String = drafts[key].orEmpty()
+    fun draft(key: DetailDraftKey): String = drafts[key]?.value.orEmpty()
+
+    fun initialValue(key: DetailDraftKey): String? = drafts[key]?.initialValue
 
     fun start(
         key: DetailDraftKey,
         initialValue: String,
-    ): DetailFieldEditState = copy(drafts = drafts + (key to initialValue))
+    ): DetailFieldEditState = copy(drafts = drafts + (key to DetailFieldEditDraft(initialValue, initialValue)))
 
     fun update(
         key: DetailDraftKey,
         value: String,
-    ): DetailFieldEditState = if (key in drafts) copy(drafts = drafts + (key to value)) else this
+    ): DetailFieldEditState =
+        drafts[key]?.let { draft ->
+            copy(drafts = drafts + (key to draft.copy(value = value)))
+        } ?: this
+
+    fun rebase(
+        key: DetailDraftKey,
+        initialValue: String,
+    ): DetailFieldEditState =
+        drafts[key]?.let { draft ->
+            copy(drafts = drafts + (key to draft.copy(initialValue = initialValue)))
+        } ?: this
 
     fun finish(key: DetailDraftKey): DetailFieldEditState = copy(drafts = drafts - key)
 
     override fun toString(): String = "DetailFieldEditState(editingKeys=${drafts.keys})"
+}
+
+private data class DetailFieldEditDraft(
+    val initialValue: String,
+    val value: String,
+) {
+    override fun toString() = "DetailFieldEditDraft(***)"
 }
 
 sealed interface DetailEditCompletion {

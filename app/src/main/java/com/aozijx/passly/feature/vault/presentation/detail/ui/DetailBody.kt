@@ -162,11 +162,7 @@ fun DetailBody(
                                 )
                             },
                             onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
-                            onPassphraseSaved = {
-                                if (it != ssh.passphrase.revealedValue) {
-                                    onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it))
-                                }
-                            },
+                            onPassphraseSaved = { onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it)) },
                             onPrivateKeyClick = {
                                 if (ssh.privateKey.isRevealed) {
                                     onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))

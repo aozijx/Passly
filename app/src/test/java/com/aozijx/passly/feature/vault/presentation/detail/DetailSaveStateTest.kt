@@ -104,7 +104,12 @@ class DetailSaveStateTest {
                     saveState = DetailSaveState.Saving(completion),
                 )
             val changed = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(key, "new draft"))
-            val saved = DetailReducer.reduce(changed, DetailMutation.SaveSucceeded(completion))
+            val savedFieldValue = "submitted".takeIf { completion is DetailEditCompletion.Field }
+            val saved =
+                DetailReducer.reduce(
+                    changed,
+                    DetailMutation.SaveSucceeded(completion, savedFieldValue),
+                )
             assertEquals("new draft", saved.fieldEdits.draft(key))
             assertTrue(saved.fieldEdits.isEditing(key))
             val cancelled = DetailReducer.reduce(saving, DetailMutation.FieldEditingCancelled(key))
@@ -112,6 +117,30 @@ class DetailSaveStateTest {
             val completed = DetailReducer.reduce(reopened, DetailMutation.SaveSucceeded(completion))
             assertTrue(completed.fieldEdits.isEditing(key))
         }
+    }
+
+    @Test
+    fun changedFieldDraftRebasesToTheValueCommittedByAnEarlierSave() {
+        val key = DetailDraftKey.EntryField(FieldKey.PASSWORD)
+        val editing = DetailFieldEditState().start(key, "A")
+        val completion = DetailEditCompletion.Field(FieldKey.PASSWORD)
+        val edited =
+            DetailReducer.reduce(
+                DetailUiState(fieldEdits = editing),
+                DetailMutation.FieldDraftChanged(key, "B"),
+            )
+        val saving = DetailReducer.reduce(edited, DetailMutation.SaveStarted(completion))
+        val changedWhileSaving = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(key, "A"))
+
+        val saved =
+            DetailReducer.reduce(
+                changedWhileSaving,
+                DetailMutation.SaveSucceeded(completion, savedFieldValue = "B"),
+            )
+
+        assertEquals("A", saved.fieldEdits.draft(key))
+        assertEquals("B", saved.fieldEdits.initialValue(key))
+        assertTrue(saved.fieldEdits.isEditing(key))
     }
 
     @Test
