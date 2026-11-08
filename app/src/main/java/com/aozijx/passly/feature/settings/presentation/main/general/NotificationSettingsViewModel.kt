@@ -76,12 +76,7 @@ class NotificationSettingsViewModel
                     val pending = permissionRequestState as? PermissionRequestState.Pending ?: return
                     if (pending.request !== action.request) return
                     permissionRequestState = PermissionRequestState.Idle
-                    readSystemNotificationState()
                     if (pending.enableWhenGranted) emitEffect(NotificationSettingsEffect.ShowPermissionDenied)
-                }
-
-                NotificationSettingsAction.RefreshSystemNotificationState -> {
-                    readSystemNotificationState()
                 }
 
                 NotificationSettingsAction.OpenSystemNotificationSettings -> {
@@ -108,7 +103,7 @@ class NotificationSettingsViewModel
                 permissionRequestState = pending.copy(enableWhenGranted = true)
                 return
             }
-            val system = readSystemNotificationState()
+            val system = systemNotificationStateProvider.current()
             when {
                 !system.runtimePermissionGranted -> {
                     val request = NotificationPermissionRequest()
@@ -143,7 +138,7 @@ class NotificationSettingsViewModel
             val pending = permissionRequestState as? PermissionRequestState.Pending ?: return
             if (pending.request !== request || pending.owner?.let(pageEffects::isActive) != true) return
             permissionRequestState = PermissionRequestState.Idle
-            val system = readSystemNotificationState()
+            val system = systemNotificationStateProvider.current()
             if (!pending.enableWhenGranted) return
             if (system.isPlatformAvailable) {
                 persistSystemNotificationsEnabled(true)
@@ -218,7 +213,6 @@ class NotificationSettingsViewModel
             if (pending.owner === owner) permissionRequestState = PermissionRequestState.Idle
         }
 
-        private fun readSystemNotificationState() = systemNotificationStateProvider.current()
     }
 
 private val SystemNotificationState.isPlatformAvailable: Boolean

@@ -42,10 +42,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorOverlay
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorOverlayUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationErrorUiModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -141,31 +140,19 @@ fun TagEditorSheet(
                 label = { Text(stringResource(R.string.vault_detail_tag_input_label)) },
                 placeholder = { Text(stringResource(R.string.vault_detail_tag_input_hint)) },
                 supportingText =
-                    state.validationError?.let { error ->
+                    state.validationMessage?.let { message ->
                         {
                             Text(
                                 text =
-                                    when (error) {
-                                        TagEditorValidationErrorUiModel.TOO_MANY_TAGS -> {
-                                            pluralStringResource(
-                                                R.plurals.vault_detail_tag_too_many,
-                                                20,
-                                                20,
-                                            )
-                                        }
-
-                                        TagEditorValidationErrorUiModel.TAG_TOO_LONG -> {
-                                            pluralStringResource(
-                                                R.plurals.vault_detail_tag_too_long,
-                                                32,
-                                                32,
-                                            )
-                                        }
-                                    },
+                                    pluralStringResource(
+                                        message.pluralResourceId,
+                                        message.quantity,
+                                        message.quantity,
+                                    ),
                             )
                         }
                     },
-                isError = state.validationError != null,
+                isError = state.validationMessage != null,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions =
@@ -224,7 +211,7 @@ fun TagEditorSheet(
         }
     }
 
-    if (state.overlay == TagEditorOverlayUiState.ConfirmDiscard && !isSaving) {
+    if (state.overlay == DetailTagEditorOverlay.ConfirmDiscard && !isSaving) {
         AlertDialog(
             onDismissRequest = keepEditing,
             title = { Text(stringResource(R.string.vault_detail_tag_discard_title)) },

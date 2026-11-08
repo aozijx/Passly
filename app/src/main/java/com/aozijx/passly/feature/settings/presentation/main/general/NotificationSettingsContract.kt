@@ -44,8 +44,6 @@ internal sealed interface NotificationSettingsAction {
         val request: NotificationPermissionRequest,
     ) : NotificationSettingsAction
 
-    data object RefreshSystemNotificationState : NotificationSettingsAction
-
     data object OpenSystemNotificationSettings : NotificationSettingsAction
 
     data class SetOptionalMessagesEnabled(

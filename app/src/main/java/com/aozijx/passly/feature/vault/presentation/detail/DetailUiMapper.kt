@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.R
 import com.aozijx.passly.presentation.shared.components.EntryClassificationInput
@@ -40,8 +41,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsU
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.ScopedSensitiveText
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorOverlayUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationErrorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationMessageUiModel
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 
 internal fun detailHeaderUiModel(
@@ -328,12 +328,8 @@ internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel =
                 availableTags = availableTags,
                 input = input,
                 suggestions = suggestions.toTagChipsUiState(),
-                validationError = validationError?.toUiModel(),
-                overlay =
-                    when (overlay) {
-                        DetailTagEditorOverlay.None -> TagEditorOverlayUiState.None
-                        DetailTagEditorOverlay.ConfirmDiscard -> TagEditorOverlayUiState.ConfirmDiscard
-                    },
+                validationMessage = validationError?.toMessageUiModel(),
+                overlay = overlay,
                 dirty = dirty,
             )
         }
@@ -392,8 +388,17 @@ private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? =
         -> null
     }
 
-private fun DetailTagValidationError.toUiModel(): TagEditorValidationErrorUiModel =
+private fun EntryTagValidationError.toMessageUiModel(): TagEditorValidationMessageUiModel =
     when (this) {
-        DetailTagValidationError.TOO_MANY_TAGS -> TagEditorValidationErrorUiModel.TOO_MANY_TAGS
-        DetailTagValidationError.TAG_TOO_LONG -> TagEditorValidationErrorUiModel.TAG_TOO_LONG
+        is EntryTagValidationError.TooMany ->
+            TagEditorValidationMessageUiModel(
+                pluralResourceId = R.plurals.vault_detail_tag_too_many,
+                quantity = maximum,
+            )
+
+        is EntryTagValidationError.TooLong ->
+            TagEditorValidationMessageUiModel(
+                pluralResourceId = R.plurals.vault_detail_tag_too_long,
+                quantity = maximum,
+            )
     }

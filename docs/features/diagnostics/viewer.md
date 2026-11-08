@@ -16,7 +16,7 @@
 
 ## 清理和记录设置
 
-`ConfirmClear` 调用 `clearLogs()`；它拒绝重复清理、检查完整安全会话并等待已有刷新 job 退出，再调用 `logStore.clear()`。成功才清空 retained/visible rows；普通失败保留内容并发出 `ClearFailed`，取消传播。已确认清理不因离开页面而取消，反馈只发布给发起时的 page owner。
+`ConfirmClear` 调用 `clearLogs()`；它拒绝重复清理、检查完整安全会话并等待已有刷新 job 退出，再调用 `logStore.clear()`。成功才清空当前 ViewModel 的 retained/visible rows，即使页面已离开并重新进入；普通失败保留内容，且 `ClearFailed` 只发布给发起时仍有效的 page owner。取消传播。已确认清理不因离开页面而取消。
 
 数据管理页单独负责缓存/加密日志占用和清理。日志清理失败以“不可用”占用状态呈现，避免旧容量被误报为清空；缓存清理失败后重新读取真实占用，重新读取失败则显示不可用。日志记录等级默认 INFO 及以上，可关闭、调到 WARN 及以上或开启全部等级；此值只控制常规记录是否进入本地加密日志，脱敏 FATAL 崩溃记录仍保留。降低或关闭等级不删除既有记录，错误 handler 和 Trace 不受该开关控制。写入队列、flush 与加密存储合同详见运行时/存储架构页，本页不重复定义协议。
 

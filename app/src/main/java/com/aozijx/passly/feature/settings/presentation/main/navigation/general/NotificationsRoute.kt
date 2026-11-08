@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -141,15 +140,7 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
 
     DisposableEffect(lifecycleOwner, viewModel) {
         val owner = viewModel.onPageEntered()
-        val observer =
-            LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_RESUME) {
-                    viewModel.onAction(NotificationSettingsAction.RefreshSystemNotificationState)
-                }
-            }
-        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
             permissionLaunch = NotificationPermissionLaunch.Idle
             viewModel.onPageExited(
                 owner,

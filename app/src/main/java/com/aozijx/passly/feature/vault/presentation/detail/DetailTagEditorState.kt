@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
+
 sealed interface DetailTagEditorState {
     data object Closed : DetailTagEditorState
 
@@ -9,7 +11,7 @@ sealed interface DetailTagEditorState {
         val availableTags: Set<String> = emptySet(),
         val input: String = "",
         val suggestions: List<String> = emptyList(),
-        val validationError: DetailTagValidationError? = null,
+        val validationError: EntryTagValidationError? = null,
         val overlay: DetailTagEditorOverlay = DetailTagEditorOverlay.None,
     ) : DetailTagEditorState {
         val dirty: Boolean get() = draftTags != initialTags || input.isNotBlank()
@@ -20,9 +22,4 @@ sealed interface DetailTagEditorOverlay {
     data object None : DetailTagEditorOverlay
 
     data object ConfirmDiscard : DetailTagEditorOverlay
-}
-
-enum class DetailTagValidationError {
-    TOO_MANY_TAGS,
-    TAG_TOO_LONG,
 }

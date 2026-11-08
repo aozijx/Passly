@@ -65,15 +65,9 @@ internal object DetailTagEditorReducer {
                         )
                     }
 
-                    is EntryTagNormalizationResult.TooMany -> {
+                    is EntryTagNormalizationResult.Invalid -> {
                         state.copy(
-                            validationError = DetailTagValidationError.TOO_MANY_TAGS,
-                        )
-                    }
-
-                    is EntryTagNormalizationResult.TooLong -> {
-                        state.copy(
-                            validationError = DetailTagValidationError.TAG_TOO_LONG,
+                            validationError = normalized.error,
                         )
                     }
                 }

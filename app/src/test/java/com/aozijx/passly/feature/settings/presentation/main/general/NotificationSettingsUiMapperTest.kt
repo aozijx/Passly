@@ -4,28 +4,36 @@ import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class NotificationSettingsUiMapperTest {
     @Test
-    fun `maps domain topic settings to stable ui topic order`() {
+    fun `missing topic settings use defaults in stable ui topic order`() {
         val result =
             MessageSettings(
-                optionalMessagesEnabled = true,
+                optionalMessagesEnabled = false,
                 systemNotificationsEnabled = false,
                 topicSettings =
-                    MessageTopic.entries.associateWith { topic ->
-                        TopicMessageSettings(enabled = topic != MessageTopic.CLIPBOARD)
-                    },
+                    mapOf(
+                        MessageTopic.CLIPBOARD to TopicMessageSettings(enabled = false),
+                        MessageTopic.BACKUP to TopicMessageSettings(enabled = false),
+                    ),
             ).toUiModel()
 
-        assertFalse(result.systemNotificationsEnabled)
-        assertEquals(true, result.optionalMessagesEnabled)
-        assertEquals(MessageTopic.entries, result.topics.map { it.topic })
         assertEquals(
-            MessageTopic.entries.map { it != MessageTopic.CLIPBOARD },
-            result.topics.map { it.enabled },
+            NotificationSettingsUiModel(
+                systemNotificationsEnabled = false,
+                optionalMessagesEnabled = false,
+                topics =
+                    listOf(
+                        NotificationTopicUiModel(MessageTopic.CLIPBOARD, enabled = false),
+                        NotificationTopicUiModel(MessageTopic.APP_LIFECYCLE, enabled = true),
+                        NotificationTopicUiModel(MessageTopic.BACKUP, enabled = false),
+                        NotificationTopicUiModel(MessageTopic.SECURITY, enabled = true),
+                        NotificationTopicUiModel(MessageTopic.DATABASE, enabled = true),
+                    ),
+            ),
+            result,
         )
     }
 }

@@ -48,7 +48,10 @@ class EntryTagPolicyTest {
 
         val result = EntryTagPolicy.normalize((1..21).map { "tag-$it" })
 
-        assertEquals(EntryTagNormalizationResult.TooMany(maximum = 20), result)
+        assertEquals(
+            EntryTagNormalizationResult.Invalid(EntryTagValidationError.TooMany(maximum = 20)),
+            result,
+        )
     }
 
     @Test
@@ -59,7 +62,7 @@ class EntryTagPolicyTest {
         val tooLong = "x".repeat(33)
 
         assertEquals(
-            EntryTagNormalizationResult.TooLong(value = tooLong, maximum = 32),
+            EntryTagNormalizationResult.Invalid(EntryTagValidationError.TooLong(maximum = 32)),
             EntryTagPolicy.normalize(listOf("valid", tooLong)),
         )
     }

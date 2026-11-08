@@ -2,19 +2,18 @@ package com.aozijx.passly.domain.entry.policy
 
 import java.util.Locale
 
+sealed interface EntryTagValidationError {
+    data class TooMany(val maximum: Int) : EntryTagValidationError
+
+    data class TooLong(val maximum: Int) : EntryTagValidationError
+}
+
 sealed interface EntryTagNormalizationResult {
     data class Valid(
         val tags: Set<String>,
     ) : EntryTagNormalizationResult
 
-    data class TooMany(
-        val maximum: Int,
-    ) : EntryTagNormalizationResult
-
-    data class TooLong(
-        val value: String,
-        val maximum: Int,
-    ) : EntryTagNormalizationResult
+    data class Invalid(val error: EntryTagValidationError) : EntryTagNormalizationResult
 }
 
 /** Owns tag normalization and size constraints applied before Entry tag updates. */
@@ -30,11 +29,15 @@ object EntryTagPolicy {
             .filter(String::isNotEmpty)
             .forEach { tag -> distinct.putIfAbsent(tag.normalizedKey(), tag) }
 
-        distinct.values.firstOrNull { it.length > MAX_TAG_LENGTH }?.let { tag ->
-            return EntryTagNormalizationResult.TooLong(tag, MAX_TAG_LENGTH)
+        distinct.values.firstOrNull { it.length > MAX_TAG_LENGTH }?.let {
+            return EntryTagNormalizationResult.Invalid(
+                EntryTagValidationError.TooLong(MAX_TAG_LENGTH),
+            )
         }
         if (distinct.size > MAX_TAG_COUNT) {
-            return EntryTagNormalizationResult.TooMany(MAX_TAG_COUNT)
+            return EntryTagNormalizationResult.Invalid(
+                EntryTagValidationError.TooMany(MAX_TAG_COUNT),
+            )
         }
 
         val sorted =

@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -61,6 +60,9 @@ class PermissionManagementViewModelTest {
             viewModel.uiState.first { it.backupDirectoryReadState is RecoverableReadState.Ready }
 
             assertEquals(2, starts)
-            assertTrue(viewModel.uiState.value.backupDirectoryReadState is RecoverableReadState.Ready)
+            assertEquals(
+                RecoverableReadState.Ready(null),
+                viewModel.uiState.value.backupDirectoryReadState,
+            )
         }
 }

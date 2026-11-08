@@ -1,5 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.detail.model
 
+import androidx.annotation.PluralsRes
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorOverlay
+
 sealed interface DetailTagEditorUiModel {
     data object Hidden : DetailTagEditorUiModel
 
@@ -8,19 +11,13 @@ sealed interface DetailTagEditorUiModel {
         val availableTags: Set<String>,
         val input: String,
         val suggestions: DetailTagChipsUiState,
-        val validationError: TagEditorValidationErrorUiModel?,
-        val overlay: TagEditorOverlayUiState,
+        val validationMessage: TagEditorValidationMessageUiModel?,
+        val overlay: DetailTagEditorOverlay,
         val dirty: Boolean,
     ) : DetailTagEditorUiModel
 }
 
-sealed interface TagEditorOverlayUiState {
-    data object None : TagEditorOverlayUiState
-
-    data object ConfirmDiscard : TagEditorOverlayUiState
-}
-
-enum class TagEditorValidationErrorUiModel {
-    TOO_MANY_TAGS,
-    TAG_TOO_LONG,
-}
+data class TagEditorValidationMessageUiModel(
+    @PluralsRes val pluralResourceId: Int,
+    val quantity: Int,
+)

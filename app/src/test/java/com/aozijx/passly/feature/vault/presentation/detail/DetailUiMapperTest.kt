@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -7,6 +8,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
@@ -27,7 +29,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPa
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationErrorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationMessageUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -64,19 +66,35 @@ class DetailUiMapperTest {
     }
 
     @Test
-    fun `tag editor mapping carries dirty draft and validation into ui model`() {
-        val state =
-            DetailTagEditorState.Open(
-                initialTags = setOf("Work"),
-                draftTags = setOf("Personal"),
-                validationError = DetailTagValidationError.TOO_MANY_TAGS,
+    fun `tag editor mapping carries dirty draft and both validation limits`() {
+        val scenarios =
+            listOf(
+                EntryTagValidationError.TooMany(maximum = 20) to
+                    TagEditorValidationMessageUiModel(
+                        pluralResourceId = R.plurals.vault_detail_tag_too_many,
+                        quantity = 20,
+                    ),
+                EntryTagValidationError.TooLong(maximum = 32) to
+                    TagEditorValidationMessageUiModel(
+                        pluralResourceId = R.plurals.vault_detail_tag_too_long,
+                        quantity = 32,
+                    ),
             )
 
-        val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
+        scenarios.forEach { (validationError, expectedMessage) ->
+            val state =
+                DetailTagEditorState.Open(
+                    initialTags = setOf("Work"),
+                    draftTags = setOf("Personal"),
+                    validationError = validationError,
+                )
 
-        assertTrue(actual.dirty)
-        assertEquals(DetailTagChipsUiState.Items(listOf("Personal")), actual.draftTags)
-        assertEquals(TagEditorValidationErrorUiModel.TOO_MANY_TAGS, actual.validationError)
+            val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
+
+            assertTrue(actual.dirty)
+            assertEquals(DetailTagChipsUiState.Items(listOf("Personal")), actual.draftTags)
+            assertEquals(expectedMessage, actual.validationMessage)
+        }
     }
 
     @Test
