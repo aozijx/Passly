@@ -13,7 +13,7 @@ internal object DetailTagEditorReducer {
                 val tags =
                     when (val normalized = EntryTagPolicy.normalize(mutation.currentTags)) {
                         is EntryTagNormalizationResult.Valid -> normalized.tags
-                        else -> mutation.currentTags
+                        is EntryTagNormalizationResult.Invalid -> mutation.currentTags
                     }
                 DetailTagEditorState.Open(
                     initialTags = tags,

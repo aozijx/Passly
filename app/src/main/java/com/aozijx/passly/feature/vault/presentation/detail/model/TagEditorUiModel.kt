@@ -18,6 +18,6 @@ sealed interface DetailTagEditorUiModel {
 }
 
 data class TagEditorValidationMessageUiModel(
-    @PluralsRes val pluralResourceId: Int,
+    @param:PluralsRes @get:PluralsRes val pluralResourceId: Int,
     val quantity: Int,
 )

@@ -413,7 +413,7 @@ class DetailViewModel
                             }
                         }
 
-                        else -> {
+                        is EntryTagNormalizationResult.Invalid -> {
                             mutate(DetailMutation.TagSubmitted(editor.input))
                         }
                     }
