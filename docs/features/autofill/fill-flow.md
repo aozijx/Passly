@@ -84,7 +84,7 @@ Autofill lease 仍持有本轮临时会话时，interaction 才可从创建时�
 由 DEK 派生，SEALED 锁定会在数据库 session 排干后清除 DEK 和派生 field key。这里没有“提前解密、等认证完成再填充”的
 缓存路径。单元回归测试覆盖新鲜认证未完成时 resolver 调用次数为零。
 
-正常返回的取消、失败与拒绝由各平台流程映射为取消或不可用状态。认证调用异常、共享 waiter 终结与 lease 清理由[Autofill 后续 Task 81](../../superpowers/plans/2026-11-07-passly-autofill-followups.md#task-81)记录为已完成合同。
+正常返回的取消、失败与拒绝由各平台流程映射为取消或不可用状态。并发授权请求共享同一 attempt；拥有 attempt 的调用在认证、lease 和终结阶段失败时，会在 `NonCancellable` 收尾中终结共享结果并移除当前 attempt。若已获取 Autofill lease，失败清理会释放 lease；普通清理异常作为 suppressed failure 保留，fatal `Error` 继续传播。取消写入取消终态后仍传播原取消，不会让等待者永久挂起。
 
 Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInteraction(request.interactionId)`；授权成功后，`continueAuthorized(request)` 调用 `discover(request)`，再把 `request.toDomainRequest()`、同一个 `request.interactionId`、`request.roleMap()` 和 `request.directEntryId` 分别传给 `DiscoverAutofillCandidates.invoke(request, interactionId, classifiedRoles, directEntryId)`。已分类 role map 因而不会在 Domain use case 中被第二次启发式解析。发现结果若为 `Candidates` 且请求含 `directEntryId`，ViewModel 直接以该 ID 进入选择解析；底部候选模式则先保存 trace continuation，再发布候选 UI；系统菜单/Inline 模式直接构造 discovery response。
 
@@ -187,6 +187,7 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 | --- | --- | --- |
 | 发现可填充凭据候选 | `DiscoverAutofillCandidates` | [`DiscoverAutofillCandidates.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidates.kt) |
 | 解析用户选择并准备填充结果 | `ResolveAutofillSelection` | [`ResolveAutofillSelection.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/ResolveAutofillSelection.kt) |
+| 合并授权 attempt 并终结共享结果 | `AuthorizeAutofillInteraction.invoke()`、`finish()` | [`AuthorizeAutofillInteraction.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/AuthorizeAutofillInteraction.kt) |
 | 向平台提交 Autofill 结果 | `AutofillResultDelivery.commitResult()` | [`AutofillResultDelivery.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillResultDelivery.kt) |
 | 维护交互授权、候选与结束状态 | `AutofillInteractionStore.create()`、`beginAuthorization()`、`recordCandidates()`、`finish()` | [`AutofillInteractionStore.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillInteractionStore.kt) |
 | 保留、重试临时 Autofill session 锁责任 | `AutofillUnlockLease.release()`、`awaitReadyForInteraction()` | [`AutofillUnlockLease.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt) |

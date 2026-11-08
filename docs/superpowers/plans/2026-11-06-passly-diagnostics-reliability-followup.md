@@ -5,17 +5,6 @@
 **2026-11-07 顺序：** Task 4（异常断言和 App 测试基线）已完成；剩余先处理 Task 1 writer/flush 失败，再处理 Task 2 导出结果；Task 3 流清理可独立处理。原 Tasks 1/2 当前调用仍在，本轮未改实现。
 
 
-<a id="task-4"></a>
-
-## Task 4：恢复诊断导出的异常传播回归基线
-
-- [x] 复核 8 项失败：历史运行结果为 expected same / was not same，但异常类与显示消息一致；ObservabilityExportService.export() 确有 withContext(Dispatchers.IO) 边界，当前合同要求保留取消/fatal 类型、传播和清理，不要求异常对象跨协程边界保持引用身份。
-- [x] 将 8 处引用身份断言改为类型与消息断言，保留原有文件/目标清理、共享文件保留和主次异常 suppression 断言。未删除失败用例，也未改生产异常处理。
-- [x] 定向确认异常类别/消息断言，再完整执行 App JVM；不以删/跳失败用例、吞 Error 或把取消转普通 Result 闭合。
-
-**2026-11-07 完成：** `ObservabilityExportServiceTest` 的 8 处 identity 断言改为异常类型与 message 后，App 全量单测通过（本次全套共 991 项，0 失败）。旧 App 987/9、984/9 均为修正前快照；Scanner 失败由 Scanner Task 4 跟踪。Task 1–3 可靠性/资源事项仍未完成。
-
-
 <a id="task-1"></a>
 
 ## Task 1：让 fatal 写入失败反映到 flush 结果

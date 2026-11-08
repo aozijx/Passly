@@ -8,9 +8,7 @@
 | 2 | [Task 21](#task-21)：统一宿主结果交付与销毁验收 | 已实现合同的宿主/设备验证，包含原 Task 9 |
 | 3 | [Task 82](#task-82)：设置变更后现存交互有效期 | 待裁定策略，尚未认定为运行缺陷 |
 
-已完成记录：[Task 81](#task-81)（共享授权异常终态）、[Task 33](#task-33)（系统状态初读与 observer 生命周期）。
-
-网页接收方身份由[安全 TODO Task 6](2026-11-06-passly-security-scan-followups.md#task-6)持有并优先处理；质量门禁由[主待办 Task 73/86](2026-10-30-passly-maintainability-todo.md#task-73)持有。这里不复制安全问题、Lint 报告或整个 ViewModel 审计。
+网页接收方身份由[安全 TODO Task 6](2026-11-06-passly-security-scan-followups.md#task-6)持有并优先处理；质量门禁由[主待办 Task 73](2026-10-30-passly-maintainability-todo.md#task-73)持有。这里不复制安全问题、Lint 报告或整个 ViewModel 审计。
 
 <a id="task-21"></a>
 
@@ -45,28 +43,8 @@
 
 **当前证据：** DiscoverAutofillCandidates 从专属 AutofillSettingsSource 读取策略并检查 enabled/supports；ResolveAutofillSelection 只验证既有 scope、state、已展示候选及读取结果。缺少“关闭即撤销”或“原请求继续”的明确产品合同，不能仅凭不重读设置认定漏洞。
 
-## 已完成记录
-
-<a id="task-81"></a>
-
-## Task 81：异常终结共享授权 attempt
-
-- [x] 在 prepare 成为授权 owner 后，为 requester、lease 获取及授权收尾的普通异常与 fatal Error 定义清理终态：移除对应 attempts 项并结束共享 deferred，避免后续 caller 永久 await；保留取消/fatal 传播及已有完整 Vault 会话所有权。
-- [x] 用两个 caller 共享同一 interaction 的行为测试覆盖普通失败、取消、fatal、会话已解锁后的 lease 清理、重试和迟到结果；验证 waiter 结束、interaction/lease 清理及错误类型，不用 timeout 清表掩盖异常 owner。
-
-**2026-11-07 完成：** owner 现在对认证、lease 和 finish 阶段的任何 Throwable 都在 NonCancellable 收尾中写入 Failed、释放可能已获取的 Autofill lease、移除当前 attempt 并终结共享 deferred。普通异常由 owner 传播，普通清理异常作为 suppressed 保留；清理若抛出 fatal `Error`，则传播 fatal `Error`，避免把它压成普通失败。取消仍写入 Cancelled 并传播取消。`AutofillInteractionLifecycleTest` 覆盖共享 caller 的普通异常、fatal、取消、认证状态已解锁后的 lease 清理、不同 interaction 重试和 waiter 终结；同套用例已有迟到认证成功被已取消 interaction 收尾的回归。`:feature:autofill:testDebugUnitTest` 全量通过。
-
-<a id="task-33"></a>
-
-## Task 33：系统状态初读与 observer 生命周期
-
-- [x] 在 App 的 AndroidAutofillServiceStatusSource 中收敛重复初读：保留先注册 observer、再发已注册快照，消除注册前的 onStart 额外读取；不能改成先读后注册而引入丢失变化窗口。
-- [x] 用 observer flow 生命周期测试覆盖首次快照、变更、注册/读取/回调失败、取消注销及 fatal Error 传播；现有 ViewModel 测试覆盖失败 source 重试时旧 collector 先取消。
-
-**2026-11-07 完成：** App `AndroidAutofillServiceStatusSource` 将平台读取映射与 `observeBooleanStatus` observer 生命周期拆开；Flow 只在注册 observer 后读取一次初始快照，移除注册前的 `onStart` 查询。`AutofillServiceStatusObservationTest` 覆盖注册顺序、初始值、变更、注册/读取/observer 回调失败、取消注销和 fatal Error；Flow 异常校验具体类型和 message，不要求 coroutine stacktrace recovery 保留异常对象 identity。`AutofillSettingsViewModelTest.retry restarts only failed system source` 覆盖重试替换时取消旧 collector。2026-11-07 全量复跑 App 单测 991 项、Feature Autofill 单测 135 项均通过；`verifyArchitecture` 通过。
-
 ## 本次清理决定
 
-- **合并：** 原 Task 9 → 21，原 Task 52 → 33；主清单移除这些重复段落。本页当前未完成项为 Task 21、82；Task 81、33 已完成并保留验收记录。
+- **合并：** 原 Task 9 → 21；原 Task 52 的系统状态观察验收已完成并从计划清除。主清单移除重复段落；本页当前未完成项为 Task 21、82。
 - **移除：** 原 Task 85 的强制 entries.firstOrNull → when 形式改造。当前协议已用显式 wireKey/wireValue，未知值仍拒绝；没有依据说明查找形式本身造成行为缺陷。保留稳定键和未知值拒绝合同，不改生产实现。
 - **归档：** 模块抽取与 BottomSheet 认证计划转为实施记录，去掉过期任务、临时工作区指令、固定 AVD 名称与 reset/setup 操作前提；剩余验收只由本页 Task 21 持有。

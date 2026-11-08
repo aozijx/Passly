@@ -172,6 +172,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [Security 模块边界迁移审查记录](reviews/2026-11-07-security-boundaries-migration.md)
 - [Domain 职责凝聚迁移审查记录](reviews/2026-11-07-domain-cohesion-migration.md)
 - [Vault 卡片样式设置实施审查](reviews/2026-11-07-vault-card-style-settings.md)
+- [Session 关闭与 DEK 擦除审查](reviews/2026-11-07-session-close-and-dek-wipe.md)
 - [Vault Presentation 边界审查](reviews/2026-11-08-vault-presentation-boundaries.md)
 
 #### 2026-10

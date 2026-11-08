@@ -4,7 +4,7 @@
 
 **范围：** 将 Backup 的 Room 快照读取、恢复与资源文件事务从 App 实现迁移到 Domain port / Data 实现，并核对导出缓冲所有权。
 
-**状态：** Data port 迁移与端到端流式 I/O 重构均已完成。Archive Service 的跨边界参数路由、流关闭及缓冲清理由[验证矩阵](../features/backup/verification.md#service-编排)和对应测试覆盖；本记录保留 Data 端口迁移证据，不再引用已关闭的流式待办。
+**状态：** Data port 迁移与端到端流式 I/O 重构均已完成。Archive Service 的跨边界参数路由、流关闭及缓冲清理由[验证矩阵](../features/backup/verification.md#现有测试入口与覆盖范围)和对应测试覆盖；本记录保留 Data 端口迁移证据，不再引用已关闭的流式待办。
 
 ## 当前调用合同
 

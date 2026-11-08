@@ -8,11 +8,11 @@
 
 | 顺序 | 执行入口 | 依赖与原因 |
 | --- | --- | --- |
-| 1 / P1 | [安全 Tasks 6、2](2026-11-06-passly-security-scan-followups.md)，本页 37→26、59 | 接收方身份、lease 关闭、撤权与提交事实；先完成 Data admission 与撤权线性化，再闭合 Runtime/reset 跨层终态；Task 43 已完成，安全 Task 8 已完成 |
-| 2 / P1 | 本页 38、42、40、41、32；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | 保存期输入、seed/流资源、操作终态、分类查询、flush；先固定失败结果再改 owner |
-| 3 / P2 | 本页 46、51；[安全 Tasks 3、4、7、9](2026-11-06-passly-security-scan-followups.md)、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；备份端到端流式重构已完成；Autofill 设置策略待办由专题清单维护 |
+| 1 / P1 | [安全 Task 6](2026-11-06-passly-security-scan-followups.md#task-6)、[Session 与 DEK 审查记录](../../reviews/2026-11-07-session-close-and-dek-wipe.md)，本页 37→26、59 | 接收方身份、lease 关闭、撤权与提交事实；先完成 Data admission 与撤权线性化，再闭合 Runtime/reset 跨层终态 |
+| 2 / P1 | 本页 42、40、32；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | seed/流资源、目录操作终态、分类查询与 flush；先固定失败结果再改 owner |
+| 3 / P2 | 本页 46、51；[安全 Tasks 3、7、9](2026-11-06-passly-security-scan-followups.md)、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；备份端到端流式重构已完成；Autofill 设置策略待办由专题清单维护 |
 | 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
-| 5 / P3 | 本页 83 → 84/80，39、35、34、36、78、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；39/77 先稳定诊断可靠性 |
+| 5 / P3 | 本页 83 → 84/80，35、34、36、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；77 先稳定诊断可靠性 |
 
 安全 Task 1/5/10、Autofill 设置快照、OTP HOTP 和非 ASCII 搜索仍有策略合同待裁定；本轮不臆定产品行为，不把候选升级为已验证漏洞。允许独立项并行，表中箭头表示必须先满足的前置条件。
 
@@ -21,46 +21,27 @@
 | 主题 | 唯一详细待办/验收来源 | 本页关联 |
 | --- | --- | --- |
 | 架构与并发 | [架构与并发 TODO](2026-11-06-app-architecture-concurrency-todo.md) | 26、37、51、80、83、84；具体缺陷先处理，广域提案随后 |
-| Autofill 后续 | [唯一后续清单](2026-11-07-passly-autofill-followups.md) | 21 宿主验收、82 设置策略；81 授权异常与 33 系统观察已完成，不再作为当前待办 |
-| Scanner | [审查 TODO](2026-11-06-passly-scanner-review-followups.md)、[取景框计划](2026-11-06-scanner-entry-and-framing.md) | 42、51、86；显式关闭/宿主暂停区分在专题 Task 4 |
-| Vault / OTP | [搜索 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP TODO](2026-11-06-passly-otp-review-followups.md) | 27、32、34–36、42、43 |
-| Backup / 诊断 | [Backup 格式说明](../../features/backup/passly-archive-v1.md)、[数据端口迁移审查记录](../../reviews/2026-11-07-backup-data-port-migration.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 39–41、73、74、77、86 |
-| 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 26、37、43–46、59、64；安全 Task 2 统一持有非合作 lease 关闭清单 |
+| Autofill 后续 | [唯一后续清单](2026-11-07-passly-autofill-followups.md) | 21 宿主验收、82 设置策略；其他已完成合同已归入主题文档 |
+| Scanner | [审查 TODO](2026-11-06-passly-scanner-review-followups.md)、[取景框计划](2026-11-06-scanner-entry-and-framing.md) | 42、51；显式关闭/宿主暂停区分在专题 Task 4 |
+| Vault / OTP | [搜索 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP TODO](2026-11-06-passly-otp-review-followups.md) | 27、32、34–36、42 |
+| Backup / 诊断 | [Backup 格式说明](../../features/backup/passly-archive-v1.md)、[数据端口迁移审查记录](../../reviews/2026-11-07-backup-data-port-migration.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 40、73、74、77 |
+| 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 26、37、44–46、59、64；非合作 lease 关闭验收归档在安全审查记录 |
 
 ## Autofill 重构后的清理
 
-Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除；21/33/81/82 由[专题清单](2026-11-07-passly-autofill-followups.md)唯一维护。当前 Autofill 清单只把 21、82 列为未完成；81、33 保留为已完成证据。下方扫描数量与失败统计是历史采样记录。
+Autofill 的旧段落已从本页移出：宿主验收合并到 Task 21，系统状态观察合同已从完成计划清除，85 的形式改造也已移除。当前专题清单只保留 Task 21、82；其余当前合同见 Autofill 主题页。下方扫描数量与失败统计是历史采样记录。
 
 ## 此前扫描与验证记录
 
 - 历次源码数量和失败数是并行工作区的时间点快照，已移除；当前验收以各 Task 未完成项为准。
-- Task 86 记录并关闭旧 App/Autofill 单测与 lint 失败；不再把历史失败快照当成现状。
+- 旧 App/Autofill 单测与 lint 历史失败已关闭，不再作为当前待办。
 - Autofill/Room/Auth/UI 合同修正已放入对应专题或功能文档；Domain 端口迁移证据见[迁移审查记录](../../reviews/2026-11-07-domain-cohesion-migration.md)。
 - 真实设备、APK Analyzer、KDF/低内存基准和强杀持久性未由 JVM/静态验证替代，仍由相关 Task 跟踪。
-
-## P0：当前无工程门禁阻断
-
-<a id="task-86"></a>
-
-### Task 86：恢复本轮扫描发现的验证基线（已完成）
-
-- [x] 修正 `AutofillServiceStatusObservationTest` 5 个过强 identity 断言为异常类型和 message 断言；source 异常合同保持不变。
-- [x] 重跑 App 与 Autofill 单测：App 991 项、Feature Autofill 135 项均通过。App/Autofill Lint 已在 Autofill entry 拆分后的工作区运行成功。
-
-**2026-11-07 完成：** 旧 984 项/9 失败和 7 个 lint errors 是历史快照。诊断异常断言、Scanner 停止输入分支与相关 Lint 项已由 owner 修正。状态观察异常在 `callbackFlow` 的 coroutine stacktrace recovery 边界被复制，5 处 `assertSame` 失败实际/期望类型和 message 相同；收窄为稳定语义断言后，过滤用例 7/7 通过，随后 App 991/991、Feature Autofill 135/135 通过。Lint 使用此前同一 entry 拆分源码状态的成功结果，不把当前全量单测命令描述成运行过 Lint。
-
-
-## P1：敏感数据、并发与用户流程缺口
 
 <a id="task-37"></a>
 
 ### Task 37：为认证撤权与数据库操作定义同一线性化边界
-
-- [x] 明确锁定从请求发起到 Data 禁止新命令进入 DAO 的线性化点。`VaultSessionController.lock()` 先发布 `AuthenticationState.Locking`；`AppDatabaseSession` 直接查询 Security-owned `SecureSessionAccessState`，在 Runtime lease 内、DAO block 前重新核验授权。lock 请求前通过 admission 的操作持有 lease，由 Runtime drain 等待真实退出。
-- [x] 审计并收口数据库命令入口。`DatabaseTransactionRunner`、Entry/Link/Sensitive/OTP Repository、Autofill Candidate/Credential Resolver、Backup Store、Activity Recorder 与附件 GC 均迁移到 Full Vault 或 Autofill 专用 session API；删除 Repository/runner 自己的授权检查与重复注入。GC 仍在文件副作用前核验 Full Vault。数据库清理使用单独命名的 maintenance API，仍受 Runtime lease/lock gate 保护。没有无授权的通用 `query/transaction` 重载。
-- [x] 统一 `DatabaseTransactionRunner.read()`、`write()` 与 `writeForAutofill()` 的 lease 内授权复核；直接 Full Vault 与 Autofill 命令使用同一个 `AppDatabaseSession` admission 边界。新增边界回归分别让 read/write 的授权第一次为真、lease 内复核时为假，并断言 DAO block 不运行。
 - [ ] 增加可控挂起的跨层终态回归：在 Security lock 等待数据库 lease/resource 与敏感 key 清理时，从 runner、直接 Full Vault Repository 与 Autofill Repository 发起读写，验证线性化点之后新命令不触达 DAO；已进入事务准确报告提交/回滚/取消结果，敏感 permit、会话、DEK、key 与 lock state 一致。边界与真实 Repository 集成测试证明调用闭包后，不需为每个薄适配器复制同一测试。
-- [x] 串行执行当前 Security、Runtime Session、Data JVM 单测与 `verifyArchitecture`：Security 179/179、Runtime Session 34/34、Data 170/170；目标变更 `git diff --check` 通过。
 - [ ] 在可用设备上验收真实 Data lease/Room DAO 与 Security reset/lock 交错终态；当前 `adb devices` 无连接设备，instrumentation runtime 尚未执行。恢复模式、Autofill session 结束和 idle timeout 的撤权次序仍需按本项统一验收。
 
 **审查证据：** 原调用闭包中 Runner 与多个 Repository 各自只在获取 lease 前检查授权。当前 `AppDatabaseSession` 通过 Hilt `Provider<SecureSessionAccessState>` 获取当前 Security owner，并按 Full Vault/Autofill 语义提供 protected query/transaction；旧的无授权通用 command API 与逐调用谓词均已删除。普通命令入口均已迁移；maintenance API 只给数据库清理与测试 fixture 使用，GC 不使用旁路。Room observations 也由 `AppDatabaseSession.observeFullVaultWhenReadable()` 内部读取授权 Flow，再组合 Runtime lock/generation 重新订阅，Repository 不再注入或传递授权状态。当前边界测试用可控 access-state 验证第二次授权拒绝时 read/write DAO block 不运行；它还未验证真实锁定与 Repository/Autofill 并发入口的提交/取消终态，因此 Task 37 仍未完成。
@@ -69,7 +50,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 Data admission 批次：** `AppDatabaseSession` 通过惰性 Security provider 直接读取认证权限，并在 lease 内再次核验；Repository 与 Runner 不再传递授权谓词或持有重复访问状态，Room observation 也由 session 集中读取认证 Flow。Full Vault、Autofill 与 maintenance 入口语义显式区分。新增 Room observation instrumentation 回归，分别验证 read/write 在第二次授权核验拒绝且 DAO block 不执行；`:app:kspDebugKotlin`、Data 主代码与 AndroidTest 源集编译通过。`:security:testDebugUnitTest` 与 `:runtime:session:test` 强制重跑通过；`adb devices` 无可用设备，instrumentation 未运行。同步修正数据库映射和认证文档。Task 37 仍待真实 Security/Data 并发终态、Autofill/Recovery/idle/reset 次序验收和定向验证。\n\n**2026-11-07 Room 撤权/事务终态批次：** 新增真实 Room 事务屏障测试：Full Vault 事务获准并进入 DAO 后撤销认证，Runtime soft-lock 等待该 lease；线性化点后的新查询返回拒绝结果、不运行 DAO；释放原事务后确认提交并排空 lease。Data AndroidTest 源集编译通过。连接测试启动前设备在并发 App instrumentation 期间断开，Gradle 报 `No connected devices`，设备端用例仍未执行。
 
-**2026-11-07 GC 授权回调收敛：** `AttachmentGarbageCollectionWorker` 不再接收 `hasFullAccess` 函数参数，改为在每个分页、条目与退避检查点直接查询 `SecureSessionAccessState`；生产调用点不再转发谓词，测试通过可变认证状态覆盖撤权边界。早期定向构建曾被旧 Core→Security 实现依赖阻断；该依赖已通过 Security 边界迁移移除。后续记录的 `:core:testDebugUnitTest`、`:security:testDebugUnitTest`、Data unit/AndroidTest 源码编译与 `verifyArchitecture` 均通过，Task 43 也记录 `AttachmentGarbageCollectionWorker` 7/7 通过。因此旧 KSP 阻断不再是当前待办；Task 37 仍待更广的授权线性化、事务终态、Autofill/Recovery/reset 交错行为验收。
+**2026-11-07 GC 授权回调收敛：** `AttachmentGarbageCollectionWorker` 不再接收 `hasFullAccess` 函数参数，改为在每个分页、条目与退避检查点直接查询 `SecureSessionAccessState`；生产调用点不再转发谓词，测试通过可变认证状态覆盖撤权边界。早期定向构建曾被旧 Core→Security 实现依赖阻断；该依赖已通过 Security 边界迁移移除。后续记录的 `:core:testDebugUnitTest`、`:security:testDebugUnitTest`、Data unit/AndroidTest 源码编译与 `verifyArchitecture` 均通过，`AttachmentGarbageCollectionWorker` 7/7 通过。因此旧 KSP 阻断不再是当前待办；Task 37 仍待更广的授权线性化、事务终态、Autofill/Recovery/reset 交错行为验收。
 
 **2026-11-07 生命周期顺序复核：** idle/background 与 Autofill 结果完成后的释放都调用 `VaultSessionController.lock()`；RecoveryMode 锁定升级为 SEALED，Autofill 最后一个 borrower 释放受结果完成屏障保护。Reset 由 `SecureDatabaseResetCoordinator` 在同一 Security `sessionMutex` 下执行，先 SEALED，再按 Runtime lock state 恢复或撤销 permit/清 key；`security lock waits for database reset to finish reopening` 屏障测试验证 lock 等待 reset 完成。该测试使用可控 DatabaseSession fake，真实 Room lease/DAO 结果与 reset/lock 交错仍未联合验收，因此保留 Task 37。
 
@@ -79,26 +60,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 <a id="task-26"></a>
 
 ### Task 26：明确 Runtime Session 生命周期转换的并发所有者
-
-- [x] 定义 open/resume/soft-lock/seal/close 的统一生命周期 owner：RuntimeSessionManager 串行化转换；保留 VaultSessionController 会话级串行化并明确锁顺序。
-- [x] 屏障测试覆盖两个首次 unlock 并发 open、open 与 seal、seal drain 中 unlock 不能提前 resume、soft-lock/resume；不得覆盖未关闭句柄，终态与生命周期 Mutex 顺序一致。
-- [x] 定义 seal 等待 drain 时取消的清理 owner、结果与恢复：一旦发布 SEALED，Runtime 捕获调用方取消、请求 lease 取消并等待实际 drain/close，再传播取消，不留下无人回收的句柄。
-- [x] 非合作 lease 超时关闭的详细清单由[安全 Task 2](2026-11-06-passly-security-scan-followups.md#task-2)持有；Task 2 已实现实际 drain 后关闭。
 - [ ] 与 Task 37 完成 soft-lock、认证撤权和 Data Reset 的跨层终态验收：覆盖已有 lease 的读写/观察在排空与取消后的真实退出、迟到结果处理及 reset 与并发 lock 的交错。Data 命令 admission 已在 Task 37 统一；此项只保留仍缺的跨层终态测试。运行 Runtime、Security Session、Data Reset 定向测试。
 
 **2026-11-07 Runtime lifecycle 串行化：** `RuntimeSessionManager.lifecycleMutex` 保护完整 `unlock`（close-failure 检查、resume、key copy、resource open）、`softLock` 与 `seal`；`VaultSessionController` 的会话互斥继续作为外层 owner，`SecureDatabaseResetCoordinator` 也使用该外层互斥。锁顺序为 Security/reset session mutex → Runtime lifecycle mutex → SessionLeaseGate 的 resource/lease mutex；请求 lease 与执行资源操作分阶段取 gate 锁，`resumeIfOpen` 唯一的嵌套顺序为 resource mutex → lease mutex。五项屏障用例先在旧实现失败，再在新 owner 下通过，覆盖两个首次 unlock、open/seal、seal drain/unlock、soft-lock/resume 和 seal 调用方取消。
 
 **2026-11-07 soft-lock 排空批次：** Runtime 在 `softLock()` 发布 `SOFT_LOCKED` 后等待活动 lease；5 秒超时或调用方取消会请求登记 owner 取消，再在不可取消清理区等待实际退出，保留已打开的 handle。新增两项屏障回归，分别验证超时取消与调用方取消后仍等待、不关闭资源，且新 lease 被拒绝。Runtime 用例通过。Security 当前已先发布认证撤权、等待 Runtime soft-lock/seal 排空，再清敏感会话 key；Task 26 仅保留与 Task 37 共用的 Reset/跨层终态验收。
-
-<a id="task-43"></a>
-
-### Task 43：保证条目与修订敏感揭示异常时擦除部分结果
-
-- [x] 为 `RevealEntryFieldsUseCase.reveal()` 建立局部敏感值所有权交接，并为 `RevealRevisionFieldsUseCase` 补齐授权门在 Repository 返回后失败/取消时的清理。异常退出时擦除已累计值，成功返回才转交；Detail ViewModel 收到结果后再交给 `DetailWorkSession`，History ViewModel 对迟到结果 wipe、对当前结果交给 revision reveal store。
-- [x] Data producer 使用同一局部 owner 构造 `RoomSensitiveFieldRepository.revealMany()` 与 `RoomEntryRevisionRepository.reveal()` 结果；DAO/decrypt/assembly 失败时擦除部分结果后原样重抛。可控后续字段失败测试已覆盖 builder 的部分累积清理。
-- [x] 覆盖读取/创建中途失败、授权后置取消、记录异常/取消、组装失败与调用方交接。低敏字段测试确认前一字段已读取后第二字段异常原样传播；该分支与高敏字段共用同一局部 owner/finally 清理，不额外注入只用于测试的 OwnedChars factory。实际 DAO/decrypt 调用位于共享 builder 的 create block 中，后续创建失败由同一行为测试覆盖。Detail/History 的发布、迟到结果 wipe 与离页清理合同按 ViewModel、工作会话和两个 reveal store 复核。
-
-**证据：** `RevealEntryFieldsUseCase` 在 authorize 调用前跟踪低敏 `OwnedChars`，并跟踪授权 block 内返回的高敏结果；`finally` 只把实际放入成功返回 map 的值交给调用方，异常/取消时擦除全部已持有值。`RevealEntryFieldsUseCaseTest` 7/7 通过，覆盖第二个低敏字段读取异常传播、activity recording 异常/取消、授权 suspend 边界取消及既有成功/拒绝行为；擦除断言覆盖 activity 异常/取消和授权 block 完成后的取消。Data 新增 `buildSensitiveResults`，两个 Room Repository 都经此 helper 创建/组装结果；后续 create/decrypt/DAO 或 assemble 失败时擦除已累积值后重抛，`RoomEntryRevisionRepositoryBoundaryTest` 4/4 通过，分别验证后续 create 与 assemble 失败。History UseCase 暂持 Repository 的成功 reveal 结果，只有 `RevisionOperationResult.Succeeded` 才转移所有权；gate 在 block 返回后取消与成功转移测试已执行，`EntryRevisionUseCasesTest` 6/6 通过。GC 授权回调收敛后 worker 测试 7/7 通过。`DetailViewModelTest` 24/24、`DetailWorkSessionTest` 18/18、`DetailRevealStoreTest` 2/2、`DetailRevisionRevealStoreTest` 1/1 通过。`:data:compileDebugAndroidTestKotlin`、根 `verifyArchitecture`、定向 `git diff --check` 均通过。调用方能在 store 接管成功结果；viewmodel 离页/替换时取消工作并清除 store，`RevealRevisionFieldsUseCase` 对授权边界无法返回的值兜底擦除。此 task 完成。
 
 <a id="task-59"></a>
 
@@ -116,29 +82,9 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 **2026-11-07 候选清理恢复：** `withBiometricRotationCandidate()` 在操作已返回结果后读取轮换状态/清理候选若遇普通 `Exception`，不再覆盖操作结果；成功结果标记 `BIOMETRIC_ROTATION_CLEANUP` 以使用已有恢复合同，失败或取消结果保留原结果。`CancellationException` 继续传播，fatal `Error` 不捕获。新增回归先按旧实现失败，修复后 Security 单测 175 项/33 类全部通过。仍待真实 rotation/provisioner 测试覆盖 durable commit 后刷新失败，以及提交前/后取消、启动恢复和 host lease。
 
 
-<a id="task-38"></a>
-
-### Task 38：让密码配置状态机在保存期间拒绝迟到输入
-
-- [x] 在 `UnlockViewModel` 与 `RecoveryModeViewModel` 的状态所有者/Reducer 闭合 `Saving` 状态：提交启动后到达的新密码、确认密码、重新打开或关闭对话框命令不能结束/替换当前请求，也不能重新开放第二次提交。不能只依靠 Compose `enabled = false`，因为 ViewModel 是状态和命令合同的最终所有者。
-- [x] 以单飞状态与页面 owner 保证操作期间不能重开或重复提交，旧结果不能改写之后的密码草稿；覆盖 Changed/Reopened/Dismissed/重复提交以及 Success/Failure/Cancelled/普通异常次序，断言调用数量、对话框状态和反馈归属、敏感值清理。
-- [x] 检查 App Password Settings 和恢复码设置的等价 guard；只修复确认存在的漏洞，不引入跨功能通用状态框架。运行 Unlock/Recovery ViewModel 与 reducer 定向测试、`verifyArchitecture` 和 `git diff --check`。
-
-**完成证据（2026-11-07）：** `UnlockViewModel` 与 `RecoveryModeViewModel` 现在以 owner 内单飞标志拒绝 Saving 期间的编辑、重开、关闭和第二次提交；Reducer 也拒绝 Saving 状态变更，并擦除被丢弃的敏感输入。恢复页面退出会丢弃当前草稿，旧请求完成不能向重新进入的页面投递结果。两组新增 ViewModel 测试覆盖成功、结构化失败、取消后重试、普通异常映射、并发命令抑制、离页/重入和 `OwnedChars`/局部数组清理。App Password Settings 已有操作进行态与页面 owner guard；Recovery Code Settings 已有 `commitInFlight` 和 Committing dismiss guard，且页面退出后通过提交核对恢复持久事实，不需重复增加锁。定向 Unlock/Recovery ViewModel 与 Reducer 测试以及 `verifyArchitecture` 通过；最终 `git diff --check` 通过。生产依赖仍通过 Domain `AuthenticationMethodProvisioner`，没有引入实现类依赖或兼容桥接。
-
-**2026-11-07 测试语义校正：** 全量 App 单测发现认证输入清理后仍有旧断言把 Saving/Accepted 状态当作持有原 `OwnedChars`，取消重试也未重新输入。测试改为提交前保留 owned-buffer 引用并断言提交后状态为空、原缓冲已擦除；重试前显式重新输入。Unlock、Recovery Mode、Recovery Code Settings 定向测试通过；完整 `:app:testDebugUnitTest` 1024 项通过。
-
 <a id="task-42"></a>
 
 ### Task 42：让共享条目编辑能力由条目编辑层持有
-
-- [x] 按实际调用闭包迁移共享条目更新能力：`EditEntryUseCase.edit(entryId, edit)` 位于 `feature.vault.entry`，Detail 与 Password/OTP/BankCard/Wi-Fi ViewModel 均已改用新 owner，旧 `EditDetailEntryUseCase` 生产实现已从 `feature.vault.detail` 删除；更新逻辑和 `EntryEdit` 契约保留。读取型 `LoadEditableEntryUseCase` / `EditableEntryLoadResult` 仍只由 `DetailViewModel.prepareEntryForEdit()` 消费，保留 Detail owner，不机械搬入编辑层。此为当前工作树的源码迁移结果，门禁与行为验证仍见下列待办。
-- [x] 按新 owner 收敛包依赖与架构门禁：编辑能力只依赖 Domain/Core 端口与规则，禁止 `presentation/editor/*` 反向依赖 Detail presentation 或仅为搬包新增同签名转发层。迁移保留认证代际检查、敏感字段揭示与 wipe、编辑版本/冲突合同、统一日志及成功/失败行为；若发现该能力确实拥有 Detail 专属宿主状态，先拆清该状态 owner，不把页面导航/状态搬入 UseCase。
-- [x] 为 Detail 预加载补齐可恢复异常反馈与重试合同：`DetailViewModel.prepareEntryForEdit()` 只映射普通 `Exception` 为当前条目 `EditPreparationFailed` effect，继续传播 `CancellationException` 与 fatal `Error`，不会伪装成 `NotFound`/`AccessDenied`。`DetailRoute` 过滤过期条目 effect 并显示本地化失败 Toast；保留编辑入口，用户再次点击即可重新预加载。ViewModel 的普通异常后重试、取消和 fatal 传播有定向测试；Route 的实际 Toast/重复点击宿主行为仍由最后一项整体验收跟踪。
-- [x] 完成完整表单 reveal 的 JVM 敏感值驻留评估：`SensitiveValue.toTransientString()` 通过 `String(chars)` 创建不可变明文副本，值随后进入 Domain `Entry`/credential、一次性 seed 和 Password/OTP/BankCard/Wi-Fi 的 String 表单状态。当前领域及表单合同都要求 String；局部换成可变缓冲会造成第二套模型且不能消除构造 Entry、Compose 输入值和持久化写入时的 String 副本。现有路径可在 `finally` 覆盖临时 `CharArray`、wipe 被 reveal 的 `SensitiveValue`，并在 seed 消费/丢弃/锁定及表单清理时释放可控引用；这些操作不能保证擦除不可变 String。保持现有单一 String 模型，不声称可靠 JVM 内存擦除；若未来要改变此边界，需先为 Domain、表单与写入链路设计统一可控缓冲合同，不能单改表单字段。
-- [x] 分开定义 Detail 预加载失败与编辑器 seed 失败的重试路径：Detail 读取失败由详情页显示提示，再次点击 Edit 会启动新的预加载；编辑器 `loadExistingEntry(result)` 只校验并消费 seed，不重新查询条目。Missing/无效 seed 进入 `EditorLoadPhase.Failed`，Route 通过 `EditorLoadFailureEffectHandler` 提示“返回后重试”；没有添加已消费 token 的虚假重试。导航暂存失败按精确 token 补偿已在上方关闭。条目/认证替换、迟到结果及 Route 宿主可见性仍纳入整体行为验收。
-- [x] 闭合 seed 暂存后的导航失败补偿：完整编辑与扫码 Wi-Fi 都改由 `EntryEditorSeedCoordinator.navigateWithSeed()` 统一持有 stage、route 构造、导航和精确 token cleanup；移除 `EntryEditorSeedStager` 双路径。普通 `Exception` 清理本次 token、记录原始 Throwable 并返回可见失败结果；取消和 fatal `Error` 清理后原样传播。导航回调重入并暂存新 token 时，旧调用的失败补偿不删除新 token。单槽仍只释放受控引用，不声称擦除不可变 String；消费、认证撤销和 graph 销毁语义保留。
-- [x] 闭合共享 `EditorWriteSession` 的 fatal `Error` 路径：当前保存协程对 `CancellationException` 和普通 `Exception` 有显式转换，但 fatal `Error` 会原样逃逸且不会调用 `onIdle()`/`onClear()`；若宿主在错误传播后仍存活，session 可能卡在 `Saving` 且敏感表单仍保留。定义窄清理路径擦除表单并释放忙碌状态，同时继续传播原始 `Error`，不能将未知提交结果映射为可重试 `Failed`，避免可能的重复写入。
 - [ ] 按当前 owner 补齐并执行行为验收：`LoadEditableEntryUseCase` 与 `DetailViewModel.prepareEntryForEdit()` 覆盖 Repository/授权/activity-recording 普通异常、取消、认证撤销及条目版本变化；Detail Route 覆盖失败可见性和重新发起。`EditEntryUseCaseTest` 已从旧 `feature.vault.detail` 路径迁到 `feature.vault.entry`，同包引用新 owner；Detail/四类编辑 ViewModel 测试已改为调用新 owner，但仍需运行并核对版本冲突、取消和迟到结果合同；seed 消费测试覆盖无效/已消费 token 后需返回 Detail 重新 stage。另为 `EditorWriteSession` 覆盖 fatal Error 清理并继续重抛。运行相关 UseCase/ViewModel/Route 测试、`verifyArchitecture` 与 `git diff --check`。
 
 **2026-11-07 Detail 预加载异常实现进度：** `prepareEntryForEdit()` 现对普通异常发出携带 `EntryId` 的 `EditPreparationFailed`，仅在同一详情条目、认证状态和完整访问仍有效时发送；Route 对过期条目事件静默丢弃，并复用本地化“无法加载条目”提示，用户再次点编辑即可重新发起。取消和 fatal `Error` 原样传播，没有新增兼容入口。`DetailViewModelTest` 27 项通过（含普通异常后重试、取消传播与 `LinkageError` 传播），六个编辑能力/页面测试合计 98 项通过，`verifyArchitecture` 与 `git diff --check` 通过。Route 的生命周期/Toast 可见性尚无独立宿主行为断言，因此上方完整验收仍未关闭。
@@ -159,36 +105,14 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 <a id="task-40"></a>
 
 ### Task 40：让备份目录设置命令失败可见并保留授权状态
-
-- [x] 在 `DataManagementSettingsViewModel` 为目录选择与清除命令建立完整失败反馈：协程取消继续传播；普通异常记录 Backup 错误日志并转为当前页面 owner 的失败 Effect，不得从 `viewModelScope.launch` 无处理逸出，也不得把未完成操作呈现为成功。
-- [x] 收窄 `BackupDirectorySettingsInteractor` 的补偿异常边界：补偿读取与 NonCancellable grant release 不再吞 fatal `Error`；普通异常依持久状态补偿，已提交设置下旧 grant 清理失败保留 Saved，并记录资源清理告警。
-- [x] 目录清除失败时保留持久 URI 与仍被配置引用的 Android grant，向用户呈现明确失败；目录选择失败时只在设置确定没有引用新 URI 后释放新 grant。`BackupRoute` 仅在清除成功后关闭确认框，失败时保留重试入口并防止重复提交。
 - [ ] 已增加 ViewModel/Interactor 单测与清除对话框仪器测试，覆盖异常、取消、fatal Error、授权保留/释放顺序及页面 owner；保留“先持久化新 URI、再释放旧 URI”顺序。完整 App 单测、AndroidTest Kotlin 编译、`verifyArchitecture`、`git diff --check` 已通过；需在连接设备后执行 `BackupDirectoryClearDialogTest` 再关闭本项。
 
 **2026-11-08 失败反馈与日志批次：** `BackupDirectorySettingsInteractor` 将普通操作异常与取消/fatal Error 分开处理，补偿读取或授权释放中的 fatal 错误继续传播；提交后旧目录 grant 清理失败记录 `Backup.ResourceCleanupFailed`，不反转已提交结果。`DataManagementSettingsViewModel` 对选择/清除普通异常记录 `Backup.Error` 并发当前页失败 Effect，CancellationException 继续传播；页面退出后 selection 迟到结果仍被 owner gate 丢弃。清除 UI 等待成功后关闭，失败保留对话框重试；测试覆盖忙碌态按钮不可重复提交。定向 `BackupDirectorySettingsInteractorTest` 16/16、`DataManagementSettingsViewModelTest` 5/5 通过；完整 App 单测 XML 汇总 191 份、1064 项、0 failures/errors；`:app:compileDebugAndroidTestKotlin`、`verifyArchitecture`、`git diff --check` 通过。`adb devices` 无设备，仪器测试尚未运行，故 Task 40 保持未完成。
 
-<a id="task-41"></a>
-
-### Task 41：保证 Backup Gateway 异常能结束操作状态
-
-- [x] 让 `DefaultBackupOperationGateway` 的公开操作遵守统一终态合同：`AuthorizationGate`、备份目录设置读取、SAF storage port 或 archive service 抛出的普通异常都变成 `BackupExecutionResult.Failure` 并通过 `AppErrorReporter` 记录；`CancellationException` 和 fatal `Error` 继续传播，提交/清理与敏感密码清零顺序保持不变。Gateway 映射后 ViewModel 不会重复处理同一异常。
-- [x] 覆盖 `BackupViewModel.execute()` 的异常终态：漏出的普通异常复位 Executing 状态、报告错误并经当前 page owner 发布失败 effect；密码仍在 `finally` 清除，可再次使用失败工作流；取消继续传播。
-- [x] 扩展 `DefaultBackupOperationGatewayTest`、`BackupViewModelLifecycleTest` 与 `BackupViewModelAccessTest`，注入目录 `Flow.first()`、AuthorizationGate、storage/check、archive service 和 ViewModel 普通异常，并保留协程取消、目标清理及敏感密码清零断言。Backup 包定向单测与 `verifyArchitecture`、`git diff --check` 已通过；一次性目录读取异常与 `RecoverableRead` 长期订阅恢复分别由不同 owner 验证。
-
-**2026-11-08 Backup 异常终态批次：** `DefaultBackupOperationGateway` 在授权回调边界接住授权/操作普通异常，设置目录 `Flow.first()`、export target 创建、可写性检查和 archive service 的直接异常均映射到 `BackupExecutionResult.Failure` 并通过 `AppErrorReporter` 记录；取消与 fatal `Error` 原样传播，部分 export 清理优先级及操作密码 `finally` 清零保留。`BackupViewModel.execute()` 作为兜底边界将漏出的普通异常报告并映射到既有失败 mutation/notice，当前页面可重试；Gateway 已映射的结果不会再被 ViewModel 重复捕获。新增授权 gate、目录 Flow、storage check、import service 与 VM 抛错回归，包含报告次数、页面失败终态和密码清零。`:app:testDebugUnitTest --tests "com.aozijx.passly.feature.backup.*" verifyArchitecture` 通过；生成测试 XML 汇总 Backup package 119 项、0 failures/errors；`git diff --check` 通过。
-
 <a id="task-32"></a>
 
 ### Task 32：明确 Vault 列表 ViewModel 的工作流边界并补宿主行为覆盖
-
-- [x] `VaultViewModelTest` 覆盖分类首次/发值后异常与重试、空/非空更新、设置 sort 更新触发 Paging generation、搜索和类型筛选组合进入 Paging query、同条目删除单飞、离页后 field/OTP copy 丢弃以及当前页 copy 成功。
-- [x] `VaultViewModelTest` 覆盖 sort 设置写入失败：保留当前持久化排序，并仅向活动 page owner 发出本地失败反馈。
-- [x] `VaultViewModelTest` 覆盖可见 OTP 订阅后条目移入回收站会清除 OTP 状态，后续页面刷新不会通过残留订阅重新激活该条目。
-- [x] `VaultViewModelTest` 覆盖删除失败在页面退出后才返回时不向已退出的 page owner 发出错误 effect。
-- [x] `VaultOtpSubscriptionEffectTest` 覆盖 OTP 显示开启时订阅、关闭及离开组合时退订；AndroidTest 源码编译通过，设备运行仍待有可用设备时验证。
-- [x] 收口 Vault 命令的授权撤销竞态：Trash 授权闭包内再次查询 `SecureSessionAccessState`，锁定后不进入条目查询/命令；field/OTP copy 的交付谓词同时要求 page owner 有效及完整会话仍获准。`TrashCommandUseCaseTest.sessionLockedWhileAuthorizationIsPendingDoesNotRunCommand` 与 `VaultViewModelTest.sessionRevocationWhileAuthorizationIsPendingSuppressesCopy` 覆盖认证等待期间锁定；定向 Trash 命令/映射测试通过。
 - [ ] 补齐授权撤销期间操作及其余 page owner 交接/迟到结果行为；纯 `VaultReducer`/`VaultQueryState` 单测仍不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
-- [x] 依实际依赖拆出 `VaultEntryCommandWorkflow`：它持有删除单飞并执行 trash、field/OTP copy 与当前 page effect 检查；列表筛选、Paging 和 OTP 可见订阅仍由单一 `VaultViewModel`/graph owner 管理，避免再拆出共享 `VaultUiState` 的协调 ViewModel。数据库重置后的 Paging 重订阅继续由 `AppDatabaseSession.observeFullVaultWhenReadable()` 管理，不另造 reload 桥或一一转发类。
 - [ ] 让 Route 消费与各 owner 对齐：`VaultRoute` 负责 Compose/导航/system effect，Content 只接收 immutable state/actions；确保图级 `VaultViewModel` 在 Trash/Detail 转场或目的地保留期间不会重复创建 effect collector 或重复订阅 Paging/OTP。给选定的 owners 增加 Route/NavHost 行为回归后同步状态管理文档，运行 Vault Presentation 定向测试、`verifyArchitecture` 和 `git diff --check`。
 
 **当前证据（2026-11-08）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 只分派当前页面动作，不再保留列表删除确认状态。`VaultViewModelTest` 已覆盖分类恢复、sort 写入失败、settings sort 驱动新 Paging generation、搜索与类型筛选组合、删除单飞、删除后 OTP 状态清理、退出页面后的删除失败抑制，以及离页/current-page copy；新增撤权期间锁定时不复制回归。`TrashCommandUseCaseTest` 现在验证授权等待期间锁定不会触达条目查询或命令。`VaultOtpSubscriptionEffectTest` 覆盖 OTP 行的组合生命周期订阅与退订。Route/NavHost 转场覆盖仍缺；`VaultGraphRegistration.vaultGraphViewModel()` 使用图级 VM owner，Route 的 destination 生命周期与 effect collector 仍需宿主验证。
@@ -207,9 +131,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；锁定/重开恢复由数据库 observation owner 管理，证据见下方。
 
-- [x] 分类查询由 `RecoverableRead` 持有并映射为 `VaultCategoriesState.Loading/Ready/Failed`，失败可通过 `RetryCategories` 重试；ViewModel 测试覆盖首次及发值后普通异常、重试恢复、空列表与后续分类更新。UI 和 ViewModel 已删除旧 `availableCategories` 列表状态别名，读取明确状态。
-- [x] 锁定/重开由 Data observation owner 的 `flatMapLatest` 取消旧 Room Flow、锁定期间发占位值并在可读后重订阅；`DatabaseObservationRecoveryTest` 与 `RoomObservationSessionTest` 覆盖锁定竞态和重开，`RecoverableReadTest` 验证取消不会伪装成失败，`VaultViewModelTest` 验证空/非空分类投影。分类 Flow 属于 graph-scoped VM，不是 page 请求；无需再造 page token 或重复的迟到结果桥接层。Paging 查询仍由 `RecoverableRead` + `buildRecoverableVaultQueryStates()` 组合。
-
 
 ## P2：恢复与交付合同
 
@@ -218,7 +139,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 ### Task 46：让认证方式 StateFlow 发布同一持久快照的最新解析结果
 
 - [ ] 补真实 manager/store/provisioner 集成覆盖：同一持久快照解析、并发刷新、提交后刷新、调用方取消、恢复事件；状态对象单测不代替 manager 合同。
-- [x] 为普通刷新失败建立 manager-owned 指数退避重试（1s 起步、最高 60s），不创建重复 retry job；成功刷新只由现有 generation/revision owner 发布，取消继续传播，fatal `Error` 不吞并。
 - [ ] 为启动时首次刷新失败提供可观察状态，并补真实 manager/store/provisioner 同一持久快照、并发刷新、提交后刷新、调用方取消和恢复事件行为覆盖。认证设置变更后的提交后刷新失败已有 Domain pending 状态与页面提示，但启动空状态仍无独立失败/重试投影。
 
 **2026-11-07：retained，收窄剩余合同。** resolver 已读统一 credentials snapshot，AuthenticationMethodsState 已有 generation、串行解析、recovery revision，刷新由 manager 长期 scope 托管；测试覆盖状态对象竞争/取消/失败 observer。移除旧“分别解析过时快照”的描述。
@@ -239,14 +159,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 73：把官方 Android 检查纳入维护复核并处理已发现的质量项
 
-- [x] Autofill entry API guard/context、Scanner camera opt-in 与 SecurityRoute 配置感知资源访问已按当前实现修正。
-- [x] App 与 Autofill Lint 在 entry 拆分后的工作区复跑退出 0；历史 warning/error 计数不再作为当前清理目标。
-
 - [ ] 按本轮 app/Autofill Lint 新报告裁定剩余项，不沿用旧数量；清理 EmptySuperCall、冗余 API、UseKtx、资源时保留清理/持久时序及中英文合同。
 - [ ] 依赖升级独立验证：catalog 当前 palette 1.1.0、Material3 1.5.0-beta02、DataStore 1.3.0、SQLCipher 4.20.0 已更新；旧“14 条升级提示”不再整体列为未实施。
 - [ ] APK Analyzer 保存交付/release APK 的 DEX、资源、native、assets 基线；历史 debug 体积不是 release 优化收益，设备/性能验收按功能 owner 执行。
 
-**2026-11-07 更正：** DetailViewModelTest 旧 CREATE/Lifecycle 夹具已改 AUTOFILL，实际 retry 并验证订阅两次及 Ready，移出待修。ScannerResultCard 的 Modifier 位置已调整，Lint 任务已在 entry 拆分后成功退出；当前测试失败由 Task 86 收敛并已清零，不沿用 2026-11-02 统计。
+**2026-11-07 更正：** DetailViewModelTest 旧 CREATE/Lifecycle 夹具已改 AUTOFILL，实际 retry 并验证订阅两次及 Ready，移出待修。ScannerResultCard 的 Modifier 位置已调整，Lint 任务已在 entry 拆分后成功退出；当前测试失败已收敛并清零，不沿用 2026-11-02 统计。
 
 <a id="task-83"></a>
 
@@ -287,7 +204,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 ### Task 80：统一 Presentation 的 MVVM 与单向数据流契约
 
 - [ ] 全量盘点 `:app` 的 Route、ViewModel、UI state/action/effect、Reducer、Repository Flow 与 Compose state holder，按真实状态 owner 和任务生命周期分类；至少覆盖设置、列表/分页、详情、编辑器、备份、扫描、认证/恢复、权限与平台宿主。记录每页当前模式、依赖闭包、异步任务组、取消/重试与 effect 交付合同，标明保留、迁移或需进一步调查及证据；不要按文件名、分支数或是否存在 `Reducer` 推断架构。
-- [x] 正式规范已统一为一套架构契约：分层 MVVM + 单向数据流（UDF）。ViewModel 是屏幕业务状态 owner，暴露不可变、可观察的屏幕 `UiState` 并接收 UI 操作；Repository Flow、异步操作结果和离散用户输入都是状态生产过程的输入，不是两种不同架构。语义方法或类型化 `UiAction` 按表达清晰度选择；Reducer 仅是复杂转换时可选的纯实现，Effect 也只是受生命周期/owner 约束的宿主交互出口。静态 Content 与短暂视觉状态无需 ViewModel，不构成另一套架构。
 - [ ] 明确单一数据真相源合同并审查潜在双份状态：持久业务数据以 Repository/Domain 为真相源，ViewModel 的屏幕状态是其可丢弃投影；用户编辑草稿、筛选输入、展开状态等可以是独立的屏幕/交互状态，但须有明确 owner、生命周期和提交/丢弃语义。排查从 Repository 读取后另存一份可独立修改的长期副本、Flow 与手动赋值竞争同一字段、多个 ViewModel/Compose state 同时声称拥有同一状态等情形；区分有意未提交草稿与意外镜像，禁止把 Action 另做一条并行业务状态真相。保留 Paging 等确有独立语义的输出，不为形式统一强塞到一个 State，也不引入全局 EventBus。
 - [ ] 按统一契约审查所有页面并制定分批迁移清单：合并重复的 Action/状态/事件转发与纯桥接；移除没有带来明确状态转换保证或可测试性的 MVI ceremony；让真实多输入/异步工作流仍按 UDF 汇入屏幕状态，必要时用纯 Reducer。只在能明确减少职责、重复或依赖时改代码；不得以统一为由制造上帝 ViewModel、万能 Reducer/Effect handler、全局状态容器或新的转发层。复杂状态机、认证提交顺序、协议分支、敏感数据清理与平台生命周期合同不得表驱动化抹平。
 - [ ] 对所有 ViewModel 做职责密度与依赖闭包审计，标出同时拥有多个独立业务流程/状态机、宽依赖集合、重复决策映射或不同取消/重试任务组的候选；按[ViewModel owner 边界](../../architecture/viewmodel-ownership.md)和[维护边界](../../development/maintenance-boundaries.md)，结合调用方、状态 owner、事务/安全边界决定保留或拆分，不能仅按行数拆。
@@ -298,19 +214,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07：retained，仅剩逐页审计/迁移。** architecture-and-state.md 已明确分层 MVVM + UDF、Repository 真相源、可选 Reducer 和 UseCase owner；viewmodel-ownership.md 已有对应边界。移除“正式规范仍分四套架构”的过期事实。Task 84 持有 ViewModel/Coordinator 调用闭包清单，Task 83 持有具体 Detail 候选，本 Task 只管状态生产、真相源及 action/effect 模式，不复制 owner 清单。
 
-<a id="task-39"></a>
-
-### Task 39：拆开诊断运行时生命周期与设置日志读取适配
-
-- [x] 收窄 `ObservabilityRuntimeController` 的所有权：保留进程级 crash handler 安装/恢复、日志策略监听、上一进程退出记录、生命周期 flush 与 shutdown；让独立的 app 层适配器直接实现 `DiagnosticsLogStore`，负责 `LogRecordStore` 的行读取/编码、清理和存储大小查询。适配器应直接持有必要端口，不要再经控制器加一层纯转发。
-- [x] 让 `DiagnosticsLogStore` 的 feature-facing `DiagnosticsLogLine` 转换留在该端口的适配边界，不再让进程运行时控制器同时成为 Settings 功能存储实现。DI 继续共享同一个受策略包装的 `LogRecordStore`；验证功能依赖不会绕过记录策略或获得未经脱敏的原始记录。
-- [x] 新增只读 `DiagnosticsLogSettingsSource`，由 `DiagnosticsLogSettingsRepository` 扩展，并在同一 `ProtoAppPreferencesStore` 上绑定；将 runtime controller 改为依赖只读 source，保留 `StorageSettingsViewModel` 通过 repository 写模式。当前它是设置 Source/Repository 分离族中唯一缺少 read-only port 的能力，运行时不应获得未使用的设置写权限。
-- [x] 将覆盖分成真实职责：运行时控制器测试继续验证 crash handler、启动监听、flush/shutdown 次序；新增 store adapter 测试验证限量分页、TSV 编码字段、清理结果和 storageBytes 直传；保留 Storage/Diagnostics ViewModel 对 `DiagnosticsLogStore` 的替身测试，并运行 `verifyArchitecture`、相关定向测试与 `git diff --check`。若拆分后新增的对象只是把方法逐个委托给控制器、未减少双方依赖或职责，则不采用该拆分。
-
-**证据：** `ObservabilityRuntimeController` 同时实现 `DiagnosticsLogStore`，并由 `PasslyApplication` 调用 `start()`、由 `AppLifecycleObserver` 调用 `flush()`/`shutdown()`；同一实例因此跨进程生命周期与 Settings 读取/清理/容量查询两类调用方。它唯一读取 `DiagnosticsLogSettingsRepository.diagnosticsLogRecordingMode`，不调用 setter；`StorageSettingsViewModel` 则同时读写该 Repository。与 Interaction、Message、Security、Library View、Backup Directory 已有 `*Source` + Repository 的端口分离对照，Diagnostics 缺少只读 source 使 runtime 注入了未用写能力。该控制器还把 `SanitizedLogRecord` 转换成 `feature.settings.diagnostics.DiagnosticsLogLine`，承担 feature 合同的展示 DTO 编码，同时持有 `Logger`、crash capture、previous-exit source、crash handler registry、process terminator、event aggregator、设置 repository 和 recording policy。Hilt 将其直接绑定为 `DiagnosticsLogStore`。现有 `ObservabilityRuntimeControllerTest` 主要覆盖 handler 安装、上一进程记录、crash、flush 与 shutdown；Settings ViewModel 测试使用独立 store 替身，没有独立验证生产 adapter 的分页/编码/清理实现。该耦合没有证据表明造成运行时错误；本项是按实际端口调用闭包收窄职责并固定 adapter 行为，实施时必须保持同一个策略包装 store 和 crash capture 顺序，不按类长度机械拆分。
-
-**2026-11-08 实施与验证：** 新增 `DiagnosticsLogStoreAdapter`，直接从 DI 获取同一 `@Singleton LogRecordStore` 策略包装实例，持有分页、TSV 映射、clear 与容量查询；`ObservabilityRuntimeController` 只保留进程生命周期/策略监听职责。`DiagnosticsLogSettingsRepository` 扩展只读 `DiagnosticsLogSettingsSource`，Proto store 同一实例分别绑定读写端口。新增 adapter 用例覆盖 500/1 分页、行字段/TSV 编码、clear 结果与 storageBytes；controller 11/11、adapter 3/3 通过，强制 App 全量 JVM 1089/1089 通过，`verifyArchitecture` 与本批 `git diff --check` 通过。
-
 <a id="task-35"></a>
 
 ### Task 35：验收 EntryLink 写入与端点删除竞态
@@ -320,10 +223,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 <a id="task-34"></a>
 
 ### Task 34：收窄未消费的 Activity 查询流
-
-- [x] 从 `ActivityQueryRepository` 移除没有生产消费者的 `observeAll()` 与 `observeByType(activityType)`，并同步删除 `RoomActivityQueryRepository` 实现和 Detail 测试替身中的空实现；`EntryActivityQueryDao` 继续只保留真实消费路径。
-- [x] 删除无调用者的 `EntryActivityAnalyticsDao`、`AppDatabase.entryActivityAnalyticsDao()` accessor 和其局部 DTO。引用闭包只到 DAO 声明及 accessor；列表 usage stats 由 `EntryPagingQueryFactory` 的 Paging SQL 提供。保留 `RoomObservationSessionTest` 使用的 Activity/Link `observeAll()` session gate 查询；这次不扩展到其余 Activity DAO 方法。
-- [x] 清理未消费的 Activity DAO 查询。符号闭包确认无反射、Hilt 多绑定或生成消费者；将 Room session gate 集成用例从全表观察迁移到生产用的按条目观察。保留修订恢复对 `getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()` 的行为断言，不制造符号不存在测试。
 - [ ] 在可用设备上运行 `RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest`；当前未连接 Android 设备，instrumentation runtime 尚未验证。
 
 **证据：** `ActivityQueryRepository.observeByEntryId()` 唯一生产调用位于 `DetailViewModel`，支持详情活动记录；`observeAll()` 与 `observeByType()` 没有生产 consumer。全仓搜索 `EntryActivityQueryDao` 的方法后，确认 usage/mutation 四类观察、四个 paging、`getById()`、`exists()`、`count()` 和两个 usage/mutation counts 只在 DAO 声明。`observeAll()` 由 `RoomObservationSessionTest` 用作 session gate 集成测试入口；`getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()` 在 `EntryRevisionRestoreTransactionTest` 中验证恢复行为，需要保留覆盖。`EntryActivityAnalyticsDao` 的四个聚合查询只在 DAO 声明及 `AppDatabase` accessor 出现，没有生产调用者；列表 usageCount/lastUsedAt 实际由 `EntryPagingQueryFactory` 内联 SQL 生成。现有 `DetailViewModelTest` fake 实现全量/类型方法仅为满足接口，没有行为断言；未发现正式文档声明这些额外 API 合同。
@@ -337,45 +236,15 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 <a id="task-36"></a>
 
 ### Task 36：按生产消费闭包收敛修订 Room DAO
-
-- [x] 移除没有调用者的 `EntryRevisionQueryDao.getByVersion()`、`getByEntryId()`、`getLatest()`、`countAll()`；测试改为消费生产 `observeByEntryId()` Flow，并继续断言历史顺序、总量和恢复后最新快照。
-- [x] 移除无消费者的 `EntryRevisionCommandDao.upsertForImport()`、`upsertAllForImport()`、`deleteBefore(timestamp)` 与测试专用 `insertAllStrict()`；生命周期测试改为逐条 `insertStrict()`。完整备份合同排除修订历史。
-- [x] 保留有实际事务消费者的方法：普通修订写入、恢复、删除、按条目/全局裁剪、清空回收站修订和旧图标引用回收；保留 `countByIconCustomReference()` 等图标引用保护查询。未改 Room Schema/internal format 版本 1，也未把修订持久化职责搬到 App/Presentation。
-- [x] 将 `RoomObservationSessionTest`、EntryRevision restore/history rebuilder、历史裁剪和图标引用回收断言保留并迁移到生产读取路径；内部 DAO API 收敛不改变正式修订历史文档合同。Data 主源码、AndroidTest 源码编译、`verifyArchitecture`、`git diff --check` 通过。
 - [ ] 在可用设备上运行受影响的 Data instrumentation tests；当前无连接设备，运行时数据库行为尚未验证。
 
 **证据：** 当前生产 Repository 通过 `observeByEntryId()` 发布修订元数据，通过 `getById()` 加载、揭示和恢复目标修订；`EntryRevisionWriter`、永久删除、清空回收站与图标回收路径消费其余写入、裁剪及图标引用查询。`getByEntryId()`、`getLatest()`、`countAll()` 和 `insertAllStrict()` 仅被仪器测试使用，现已改用生产 Flow 和逐条严格插入；Import upsert 与 `deleteBefore()` 无调用点，且 [`docs/features/backup/backup-workflows.md`](../../features/backup/backup-workflows.md) 明确完整备份不含修订历史。更新保留历史上限、恢复后最新快照、清空回收站及附件/图标引用保护行为断言。
 
 **2026-11-08 批次：** 删除修订 DAO 中无消费者的查询、Import 写入和过期清理方法；把所有测试专用 get/count/batch insert 调用迁到 `observeByEntryId()` 与逐条 `insertStrict()`，保留行为断言。未改表结构或 schema。`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`、`verifyArchitecture` 通过；目标文件 `git diff --check` 通过；instrumentation tests 因当前无连接设备未运行。
 
-<a id="task-78"></a>
-
-### Task 78：让完整表单可编辑能力查询不伪造 seed token 参数
-
-- [x] 将 `DetailUiMapper.detailHeaderUiModel()` 对可编辑类型的探测从 `editRouteFor(entry.type, entry.id.value) != null` 改为只接受 `EntryType` 的能力查询，或采用同样不会要求虚构路由参数的类型注册表接口。确认详情展示与实际导航仍由同一组支持类型决定，且不生成/消费 seed、不改变路由字符串。
-- [x] 核对 `VaultEditorDestinationRegistry` 是否还存在其他只为探测 capability 而传入占位 `seedToken` 的调用；保留真正创建路由时的 `editRouteFor(type, token)`。增加针对四种受支持类型和所有不支持类型的映射覆盖后运行相关 Detail UI Mapper 测试、`verifyArchitecture` 与 `git diff --check`。
-
-**证据（2026-11-06 源码复核）：** `toDetailPresentationModel(state, otp, revisionReveals)` 调用 `detailHeaderUiModel(entry, state)`；后者只需要 Boolean `canEditFullForm`，却以 `VaultEditorDestinationRegistry.editRouteFor(entry.type, entry.id.value) != null` 探测能力并丢弃返回的 route。注册表签名 `editRouteFor(type: EntryType, seedToken: String): String?` 对 LOGIN/OTP/BANK_CARD/WIFI 分别调用 `AppRoute.EditPassword/EditOtp/EditBankCard/EditWifi.createRoute(seedToken)`，其余 EntryType 返回 `null`，因此 `entry.id.value` 被放在 route 的 seedToken 槽位；当时的调用不导航、不创建或消费 seed，能力结果实际只由 type 分支决定。唯一另一处生产消费者在 `VaultGraphRegistration` 的真实导航闭包：先以 `seedCoordinator.stage(editableEntry)` 获取 `staged.token.value`，再调用 `editRouteFor(editableEntry.entry.type, staged.token.value)`，route 为 null 时执行 `seedCoordinator.discard(staged.token)`，否则 `navigateToRoute(route)`。当时全仓检索未发现其它占位参数探测；测试也未覆盖详情能力投影。此项属于路由构造的多余依赖与参数语义误用，而非已证实的用户可见故障；整改与验证见下方完成记录。
-
-**完成（2026-11-07）：** `VaultEditorDestinationRegistry` 现在以唯一的 `EntryType -> route factory` 注册表同时回答 `supportsFullFormEdit(type)` 和用真实 staged token 构造路由；`DetailUiMapper` 不再把 entry ID 塞进 `seedToken` 参数，也不生成并丢弃 route。实际导航仍使用 `editRouteFor(type, staged.token.value)`。全量 `EntryType` 覆盖确认 capability 与 route 一致，路由字符串原样断言保留；Detail mapper 覆盖支持/不支持投影。定向 `VaultEditorDestinationRegistryTest` + `DetailUiMapperTest`、`verifyArchitecture` 和 `git diff --check` 通过。
-
-<a id="task-79"></a>
-
-### Task 79：移除二维码会话仅供旧调用签名使用的授权回调桥
-
-- [x] 移除仅由测试调用的次级构造器 `(Entry) -> EntryQrExportResult`；生产 `DetailViewModel` 原本已使用带 `onAuthorized` 的主构造器，没有需要兼容的生产 owner。
-- [x] 将 `DetailQrSessionTest` 全部迁到主构造器并显式控制授权回调，覆盖授权前 Authorizing、授权后 Loading、拒绝/取消隐藏、generation 过期 payload 擦除及锁定/关闭清理；不更改 `ExportEntryQrUseCase.invoke(entry, onAuthorized)` 的授权边界。
-
-**2026-11-07 完成：** 生产调用唯一一处 `DetailViewModel` 已使用显式授权回调；全仓生产引用没有单参数 consumer。新增状态回归用例在旧构造器下先实际失败（授权尚未回调就进入 Loading），再将 10 个 session 用例统一迁到双参数主构造器并删除次级构造器。定向 `DetailQrSessionTest` 10 项通过；完整 App 测试显式按 `com.aozijx.passly.*` 执行，XML 汇总 992 项、0 失败、0 error。第一次 full-task 汇总曾被并行定向测试的 11 项报告覆盖，因此不作为全套证据；最终验证使用显式包过滤并在同一命令结束时汇总 XML。
-
-
 <a id="task-74"></a>
 
 ### Task 74：按测试对象优化单测结构与重复装配
-
-- [x] 拆分 `SourceBoundaryPolicyTest.kt`：按 package/layer、reference scanner、module dependency、presentation、module ownership 分到直接 owner 测试文件，保留原有合同断言。
-- [x] 拆分 `VaultSessionControllerLifecycleTest.kt`：锁/重置、后台锁、Inbox provisioning 按生产职责分组，共享测试调度器与 fixture 收敛到同包 support。
-- [x] 按 archive owner 拆分 `BackupCodecTest.kt`：容器头/分块加密、JSON streaming、keyed mapper、registry/validator 与 Bitwarden adapter 分别由专属测试覆盖。
 - [ ] Detail 生产 owner 稳定后再评估是否拆分 `DetailViewModelTest.kt`；按独立工作流和生命周期职责决定，不以行数拆分，避免搬动仍在变化的 fixture 合同。
 - [ ] 继续全仓 `src/test`、`src/androidTest`、`src/testFixtures` 的逻辑审查；逐项追生产 owner、输入/状态/副作用断言及失败/取消清理，再决定合并或删除。不同模块、平台生命周期、稳定协议键和安全策略保持各自 owner。详细扫描计数不在此维护，避免把动态快照误作完成证明。
 
@@ -384,53 +253,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 ### Task 75：统一固定常量的文件位置与 owner，收敛重复合同值
 
 - [ ] 继续按语义 owner 审查 companion 常量；仅将确属文件级的实现值移至文件顶部，类型/协议专属值归入准确 owner，不为位置变化改动算法或 wire 值。
-- [x] `SessionLeaseGate.kt` 的 lease drain 轮询间隔和纳秒换算从 companion 移至文件级 `private const val`；原值与调用不变。
-- [x] `DefaultAuthorizationGate.kt` 的 permit TTL 移至文件级 `private const val`；10 秒有效期与授权流程不变。
-- [x] `CredentialAttemptLimiter.kt` 的尝试次数上限与 lockout 时长改为文件级 `private const val`；仅该实现消费，测试使用独立阈值期望，不保留 companion 常量 API。
-- [x] `ObservabilityRuntimeController.kt` 的纳秒换算、生命周期 flush、crash flush 和 emergency flush 常量移至 imports 后的文件级 `private const val`；原值与可见范围不变。
-- [x] `ObservabilityExportService.kt` 的单文件导出上限和 flush timeout 移到文件级 `private const val`；删除对 `DiagnosticsExportFileRetention.MAX_AGE_MS` 的本地转接常量，直接引用所属 retention owner。
-- [x] Favicon 下载与暂存共享 10 MiB 输入上限；已集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除两类重复值。
-- [x] 诊断页 adapter、导出 service 与 `EncryptedLogRecordStore` 对 `LogRecordStore.readPage()` 使用/执行相同的 500 条单页上限；统一到 Core 端口的 `LogRecordStore.MAX_PAGE_RECORDS`。
-- [x] `TaskClearActivityOwner` 与 `AppShell` 都发布 `APP_CLOSE_REMINDER` 并延迟关闭 task 1 秒；时长统一到 App 生命周期策略 `APP_CLOSE_REMINDER_DELAY_MS`，两处 owner 的取消与认证生命周期仍各自管理。
-- [x] `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 共用 RSA algorithm 与 SHA-256 digest 名称；已集中到 Security Inbox 的 `AutofillInboxCryptoAlgorithms`。Record 专属 RSA-OAEP transformation 与 MGF1 随格式合同归入 `AutofillInboxProtocol.Record`。
-- [x] Inbox key material 与 record/payload 的 magic、版本、字段宽度和编码限额集中到 `AutofillInboxProtocol`；key ID/GCM tag 长度只定义一次。算法 provider 名称继续归 `AutofillInboxCryptoAlgorithms`，总记录/队列大小继续归 Domain 的 `AutofillInboxLimits`。
-- [x] `EnvelopeManager` 与 `VerificationTag` 复用 Core 的 `CryptoConfig.ALGORITHM`，移除重复的 AES/GCM transformation 字符串；各自的 IV/tag 编码合同保留在 Security owner。
-- [x] Backup V1 的 `CIPHER_TRANSFORMATION` 已归属 `BackupContainerV1Spec`，`BackupRecordCrypto` 复用该协议 owner；保留 cipher ID 和序列化格式。Favicon 裁剪缩放上下限已统一到共享 `FaviconCropRequest` 契约；Data 日志记录直接引用其版本化格式 owner，不保留本地别名。
 - [ ] 验证新增/迁移后的可见范围、所有调用点和单一真相源；持久化 key、wire tag、格式版本不得改变，安全限制不得被放宽。补充/迁移对应常量与协议测试；运行受影响模块单测、`verifyArchitecture`、lint 和 `git diff --check`。同步更新 Kotlin 规范中的位置规则；不要建立无 owner 的全局 `Constants.kt`，也不要把资源文本、Gradle 构建值或运行时可调配置复制成 Kotlin 常量。
 
-**约定完成与扫描证据（2026-11-02）：** `docs/development/kotlin-style.md` 新增“常量与固定值归属”规则，`AGENTS.md` 加入简短入口约束；常量按文件私有实现、跨文件同 owner、协议/算法语义、资源/Gradle/运行期配置分别归属。生产源码静态扫描命中 360 个 `const val` 声明，多个声明位于文件尾部 companion；精确字面量聚合发现一批待语义核验的重复（例：observability page size、应用关闭延迟、Favicon 输入上限、Autofill Inbox RSA/SHA 标识）。该扫描同时发现相同数字在不同文件中表达不同策略，故本任务要求核对消费者和行为合同后再集中；本轮只更新规则与 TODO，未移动常量或更改生产代码。
+**扫描与批次结论：** 初始 360 个 `const val` 的扫描只是历史快照；本任务已按消费者和语义 owner 完成多批归位/去重，已完成范围见本摘要。涉及的 owner 包括日志分页、Favicon 输入与裁剪、App 关闭提醒、Autofill Inbox 协议/算法、Security 与 Backup 加密标识、版本化日志格式，以及 Session/授权/认证实现私有值。迁移保留原安全边界、持久化 key、协议字段和 wire 值；测试期望保留独立字面量。
 
-**2026-11-08 LogRecordStore 分页上限批次：** Task 39 已将诊断读操作迁到 `DiagnosticsLogStoreAdapter`，旧待办中的 `ObservabilityRuntimeController` owner 描述过时。现确认 Viewer adapter、`ObservabilityExportService` 都通过相同的 `LogRecordStore.readPage(cursor, limit)` 读取；Data 的 `EncryptedLogRecordStore` 也把每次 `readPage()` 限制在 1..500，并在 `readBetween()` 里以 500 分段读取。这是端口的真实分页合同，将 `MAX_PAGE_RECORDS` 放进 `LogRecordStore`，三个生产调用点共享它并删除原私有副本。Data 测试先因接口常量缺失而编译失败，迁移后定向 store 测试通过；App adapter/export 测试、`verifyArchitecture` 与 `git diff --check` 通过。Viewer、Export、Observability 架构和错误处理文档已按当前 owner 更新。关闭 task 的提醒延迟与 Inbox RSA/SHA 标识已分别在后续批次归一。
-
-**2026-11-08 Favicon 上限批次：** `DefaultFaviconImageProcessor.stageHttpsUrl()` 先经 `FaviconImageDownloader.download()` 读取受限响应，再把字节交给 `FaviconImageStore.stage()`；用户上传也直接经过同一暂存输入边界。因此下载和暂存对同类 favicon 输入施加同一个 10 MiB 上限，属于同一 Feature 合同。将值集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除 Downloader 与 Store 上的重复类常量；定向下载测试改用独立 10 MiB 期望值，边界行为不变。`:app:testDebugUnitTest --tests "com.aozijx.passly.app.entry.favicon.FaviconImageDownloaderTest"`、`verifyArchitecture` 通过，`git diff --check` 通过；Store 的 Android instrumentation 未运行（当前无连接设备）。Task 75 的其他常量族与 Store 的设备运行验证仍开放。
-
-**2026-11-08 App 关闭提醒时长批次：** `TaskClearActivityOwner` 和 `AppShell` 都先发布 `NoticeCode.APP_CLOSE_REMINDER` 再等待 1 秒关闭 task；同一提醒使用同一时长。将重复值放入 `app.lifecycle.APP_CLOSE_REMINDER_DELAY_MS`，保留两处 owner 各自的任务取消、认证撤销和 Compose/Activity 生命周期处理。更新待办 owner 名称以匹配 `TaskClearActivityOwner`。`TaskClearActivityOwnerTest`、App 编译和 `verifyArchitecture` 通过；关闭时序、延迟值不变。
-
-**2026-11-08 Autofill Inbox 算法标识批次：** `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 位于同一 Security Inbox owner；公钥生成/类型校验共用 `RSA` provider 标识，fingerprint 与 OAEP 参数共用 `SHA-256` provider 名称。集中到 `AutofillInboxCryptoAlgorithms` 并删除两个 codec 的重复声明。仅共享重复标识，RecordCodec 使用的 RSA-OAEP transformation 和 MGF1 参数保持本地；测试中的 provider/协议字符串保持独立字面期望。`AutofillInboxKeyMaterialCodecTest`、`AutofillInboxRecordCodecTest` 及 `verifyArchitecture` 通过，协议字节格式不变。
-
-**2026-11-08 Security AES/GCM transformation 去重：** `EnvelopeManager` 和 `VerificationTag` 的 `Cipher.getInstance()` 原读取各自声明的 `AES/GCM/NoPadding`，与 Core `CryptoConfig.ALGORITHM` 完全相同；Security 已依赖 Core。两处改用现有 Core 算法标识并删除局部副本，保留 Envelope/VerificationTag 各自的 IV、tag、AAD 与字节格式合同。Data 日志文件以 `EncryptedLogFileManager` 版本化格式 owner 保留本地值；Backup 的 V1 cipher ID/记录合同另行处理。定向 Envelope、VerificationTag 测试与 `verifyArchitecture` 通过。
-
-**2026-11-08 Backup V1 cipher transformation 去重：** `BackupRecordCrypto.crypt()` 原在 `Cipher.getInstance()` 写死 `AES/GCM/NoPadding`；此算法属于 Backup V1 容器格式，移入 `BackupContainerV1Spec.CIPHER_TRANSFORMATION`，由记录加解密实现引用同一来源。`CIPHER_AES_256_GCM_ID` 仍为 1，header 字段和加密记录格式不变；只合并同协议 owner 内的固定算法标识，不与 Security/Data 的算法格式常量共用。定向 Backup codec/分块流测试及 `verifyArchitecture` 通过。
-
-**2026-11-08 Data log transformation alias 清理：** `EncryptedLogFileManager` 是版本化日志容器格式 owner 并保存唯一 `TRANSFORMATION` 字面量；`EncryptedLogRecordStore` 两处加解密直接引用该值，删除同文件 companion 的私有转接常量。`FILE_VERSION`、cipher 参数与日志字节格式均未改变；文件管理和记录写入的职责继续分开。
-
-**2026-11-08 ObservabilityRuntimeController 常量归位：** 将该控制器尾部 companion 中仅在类内使用的纳秒换算及三种 flush timeout 移到 imports 后的文件级 private 区域；数值和调用点不变。`ObservabilityRuntimeControllerTest` 与 `verifyArchitecture` 通过。
-
-**2026-11-08 ObservabilityExportService 常量归位：** 将 `MAX_EXPORT_RECORDS` 与 `FLUSH_TIMEOUT_MS` 从类尾 companion 移到文件级 `private const val`，删除 `DELETE_DELAY_MS` 转接并直接读取 `DiagnosticsExportFileRetention.MAX_AGE_MS`。导出数量、flush 时间和清理时间行为不变；定向 `ObservabilityExportServiceTest` 与 `verifyArchitecture` 通过，App Kotlin 编译通过。
-
-**2026-11-08 SessionLeaseGate 常量归位：** 将 `DRAIN_POLL_MS` 与 `NANOS_PER_MILLISECOND` 从类尾 companion 移至文件级 `private const val`，保留 50 ms 轮询与 1,000,000 纳秒换算。`:runtime:session:test`、`verifyArchitecture` 和 `git diff --check` 通过。
-
-**2026-11-08 DefaultAuthorizationGate 常量归位：** 将 `PERMIT_TTL_MS` 从类尾 companion 移到文件级 `private const val`，授权许可的 10 秒有效期与 revoke 时机不变。`:security:testDebugUnitTest` 179 项通过，`verifyArchitecture` 与 `git diff --check` 通过。
-
-**2026-11-08 CredentialAttemptLimiter 策略常量收口：** `MAX_ATTEMPTS` 与 `LOCKOUT_MS` 的生产引用全部位于 limiter 内，跨文件引用只有单测；将其改为文件级 `private const val`，测试改用独立阈值 5。`Context.currentAttemptTime()` 移到文件级 private extension 并删除不再需要的 companion。`CredentialAttemptLimiterTest` 与 `verifyArchitecture` 通过。
-
-**2026-11-08 Autofill Inbox protocol owner 收口：** key envelope 与 record/payload 格式常量移至单一 `AutofillInboxProtocol` 专用文件，并按 KeyMaterial/Record 分组；共享 key ID 与 GCM tag 字节长度去重。Codec 删除类尾 protocol companion；provider 算法名称和 Domain 总体存储限额继续留在各自 owner。magic、版本、编码和密码参数原值不变；两个 codec 定向测试、独立 record/payload magic 与版本字节断言、`verifyArchitecture` 与 `git diff --check` 通过，测试期望使用独立格式字面量。
-
-**2026-11-08 Task 75 lint 验证：** 运行 Core、Data、Security、App `lintDebug` 与 `verifyArchitecture`；前三个模块 lint 和架构检查完成。App 在 `:app:lintAnalyzeDebug` 分析 `EntryEditorFields.kt` 时触发 Lint/IntelliJ 内部异常 `AsyncExecutionService.getService must not return null`，未产出有效 App lint 结果。该异常不是源码通过证据；Task 75 最终验证保持开放，需在工具异常消除后重跑 App lint。
-
-**2026-11-08 Favicon crop zoom bounds 去重：** UI `FaviconCropTransform` 和 `FaviconBitmapTransformer` 都将 zoom 限制为 1..6，分别保护手势状态与对 processor 输入的最终裁剪；二者共享 Core `FaviconCropRequest` 契约。将 MIN/MAX 放入请求模型 companion，默认 zoom 与两处 clamp 复用同一边界，测试期望保持独立数值。原边界不变；Data 日志 transformation alias 已在同一 Task 75 的独立批次清理，版本化格式 owner 保持不变。
-
-
+**验证缺口：** 相关定向单测、受影响模块编译和 `verifyArchitecture` 已分批通过；Favicon Store Android instrumentation 因无连接设备未执行。Core/Data/Security lint 已通过，App lint 在 `:app:lintAnalyzeDebug` 遇到 IntelliJ `AsyncExecutionService.getService must not return null`，没有有效结果，须修复工具环境后重跑。故本 Task 的完整验证仍开放。
 <a id="task-77"></a>
 
 ### Task 77：核实诊断日志退出时的持久性与周期写入策略
@@ -465,11 +292,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 <a id="task-27"></a>
 
 ### Task 27：闭合 OTP Runtime 缓存失效与刷新故障恢复合同
-
-- [x] 成功保存 `EntryType.OTP` 的 `FieldKey.OTP_SECRET` 或成功恢复包含不同 OTP 配置的历史修订后，立即使当前 Detail 工作流中的 OTP schedule/code 失效，并基于已持久化的新配置重新生成；在 OTP 周期边界到达前，展示和复制都不得继续使用旧配置对应的 TOTP。保存失败、无效编辑、同值编辑和页面/认证 owner 替换分别保留正确的缓存与取消行为。
 - [ ] 为 Route 生命周期补宿主行为验证：OTP 编辑成功返回时 Detail 刷新当前条目，编辑取消/失败不会触发保存成功路径；Vault 列表恢复时只刷新仍可见订阅，离开后不重新激活无 owner 条目。当前无跨 ViewModel 全局广播桥。
 - [ ] 增加 Route/编辑器宿主行为回归：OTP secret 保存成功后返回 Detail 时展示与 copy 使用新配置；离页/锁定期间迟到结果不得覆盖当前状态。运行 OtpCodeRuntime、DetailViewModel 与 Vault OTP 订阅相关测试、`verifyArchitecture` 和 `git diff --check`。
-- [x] 将 Vault 列表 `copyField()` 与 `copyOtp()` 的剪贴板写入绑定到 page owner：退出 Route 后授权恢复不得写入剪贴板或发出旧页面事件；仍有效 owner 可正常复制。
 
 **实现边界：** Detail 与 Vault List 通过独立 Runtime 持有各自 OTP state。OTP 编辑页保存成功返回前台时，Route 刷新本 Runtime 当前仍请求的条目；Detail 的成功历史修订恢复分支也立即刷新当前条目。`entryChanged()` 保留 active/subscription owner，只撤销旧 epoch、schedule 与验证码，再对仍有 owner 的条目异步重载；不会把临时列表订阅提升成永久 active entry。激活读取由 entry epoch 去重，但显式 owner/config 变化可以替换未完成读取的 epoch，旧结果及其认证/锁定异常不能覆盖新配置。Detail ViewModel 现在覆盖前台重载与 restore 成功/失败；未覆盖真实 Route lifecycle、编辑成功返回、锁定或离页期间晚到结果。
 **Vault 列表复制 owner 修复（2026-11-07）：** `VaultViewModel.copyField()` / `copyOtp()` 向 copy use case 传递 `pageEffects.isActive(owner)` 作为 `canDeliver`，并移除两个 use case 的默认 `{ true }`，使调用方必须明确提供交付条件。宿主行为测试覆盖授权等待期间离页后字段与 OTP 都不写剪贴板、活动 owner 字段复制仍成功并发出事件；`VaultViewModelTest` 3 项与 `CopyEntryFieldUseCaseTest` 7 项测试通过。唯一详细验收留在本 Task；OTP 产品行为另见[OTP Task 1](2026-11-06-passly-otp-review-followups.md#task-1)。
@@ -521,5 +345,5 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 - 范围覆盖所有模块的 `src/test`、`src/androidTest` 和 `src/testFixtures`。审查标准是生产 owner、行为合同和断言实际证明的结果；同名、同主题或文件短小本身都不是合并依据。
 - 已在多个模块完成候选交叉核对和部分测试逻辑修正，但全项目审查未完成，尤其 App/Feature 仍需继续逐 owner 检查。此前逐轮源码数量会随并行改动变化，已从本计划删除，不再作为完成证据。
-- 未关闭事项：Task 74 的全仓逐例复核与 Detail ViewModel 测试拆分评估；Task 42 的银行卡 `paymentPlatform` 编辑保留核实；Detail identity、SSH、seed phrase、passkey 投影仍缺少直接映射断言（现有 `DetailSectionResolverTest` 只验证 section inclusion）；Data `InitializeEntryRevisionHistory` 的 generation 标记、事务失败重试和提交后清理仍缺直接 owner 测试。历史记录中 `CompareEntryRevisionUseCase` 的“无直接测试”说法已过时，当前 `EntryRevisionUseCasesTest` 已覆盖其版本选择及加载失败映射。
+- 本轮 Detail mapper 复核为 identity、SSH、seed phrase、passkey 增加直接状态投影断言，并将 Wi-Fi 凭据断言迁到当前可空行模型；新增/调整测试尚未执行。相同文件名候选也按 owner 对照：AppBackup unit/androidTest 分别验证 restore 与 read，三个模块的 `TestLogger`、两个模块的 `IsolatedTestContext` 是源集/模块隔离的测试支撑，未发现可安全合并的重复行为测试。未关闭事项仍包括 Task 74 的全仓逐例复核与 Detail ViewModel 测试拆分评估、Task 42 的银行卡 `paymentPlatform` 编辑保留核实，以及 Data `InitializeEntryRevisionHistory` 的 generation 标记、事务失败重试和提交后清理 owner 测试。历史记录中 `CompareEntryRevisionUseCase` 的“无直接测试”说法已过时，当前 `EntryRevisionUseCasesTest` 已覆盖其版本选择及加载失败映射。
 - 本轮没有运行测试；完成度须以尚未审查的测试 owner 与未关闭事项为准，`git diff --check` 只验证文本空白，不代表测试通过。

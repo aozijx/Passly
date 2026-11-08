@@ -30,7 +30,7 @@ Room schema 当前没有认证 Envelope 真相源；不得重新把认证材料�
 2. 解锁时读取指定 Envelope，解封并验证 DEK。
 3. `DekManager` 保存 DEK 的内存副本并派生会话密钥。
 4. 添加认证方式只新增或替换 Envelope。
-5. 锁定强度由 `VaultSessionController.lock(request)` 按 `request.reason` 映射。`USER` / `IDLE_TIMEOUT` 为 `SOFT_LOCKED`：撤销授权、调用数据库会话 `softLock()` 排空 lease，保持数据库打开和 DEK 缓存，只清除字段会话密钥；后续认证可复用 DEK 并重新打开会话。`AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 为 `SEALED`：撤销授权，调用 `sessionManager.seal()` 等待 lease 实际退出并关闭数据库，清除字段会话密钥后才调用 `DekManager.lock()` 覆盖 DEK。非合作 lease 不会因 `Job.cancel()` 或等待超时就被当作已退出；资源保持打开，锁定继续等待，细节见[安全审查 Task 2](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-2避免活动会话-lease-未退出时关闭数据库)。
+5. 锁定强度由 `VaultSessionController.lock(request)` 按 `request.reason` 映射。`USER` / `IDLE_TIMEOUT` 为 `SOFT_LOCKED`：撤销授权、调用数据库会话 `softLock()` 排空 lease，保持数据库打开和 DEK 缓存，只清除字段会话密钥；后续认证可复用 DEK 并重新打开会话。`AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 为 `SEALED`：撤销授权，调用 `sessionManager.seal()` 等待 lease 实际退出并关闭数据库，清除字段会话密钥后才调用 `DekManager.lock()` 覆盖 DEK。非合作 lease 不会因 `Job.cancel()` 或等待超时就被当作已退出；资源保持打开，锁定继续等待，验收记录见[Session 关闭与 DEK 擦除审查](../reviews/2026-11-07-session-close-and-dek-wipe.md)。
 
 当前应用没有删除完整 Vault 的操作。设置中的“永久重置”只删除 SQLCipher 数据库及托管附件/图片，随后用现有
 Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物识别绑定和 Autofill Inbox 的密钥材料及队列
@@ -52,7 +52,7 @@ Bootstrap DEK 打开空数据库；认证 Envelope、verification tag、生物�
 2026-11-07 已修复原缓存 DEK 在状态替换时失去引用的问题：`DekManager.lock()` 先保存 `previousState`，再发布
 `DekState.Locking`，随后在 `NonCancellable` 区覆盖 `previousState.dek`、清除字段 key 并发布 `DekState.Locked`。
 锁定期间日志/清理异常仍完成收尾并传播；回归测试持有原数组引用验证其内容归零，并覆盖取消与 fatal `Error`。
-历史证据与限制见[安全跟踪 Task 8](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-8在状态替换前覆盖原缓存-dek)。
+DEK 覆盖时序的验收证据与擦除限制见[Session 关闭与 DEK 擦除审查](../reviews/2026-11-07-session-close-and-dek-wipe.md)。
 
 ## 代码位置
 

@@ -36,7 +36,7 @@
 
 **严重度：低。** `SessionLeaseGate.seal()` 在 drain 超时后请求取消 lease owner，等待 `POST_CANCEL_GRACE_MS = 100` 后仍会调用通用 `close()`；`Job.cancel()` 本身不能证明操作已退出。当前测试覆盖合作式取消，没有覆盖忽略取消且 lease 仍活动时的关闭竞态；尚未确认生产中存在具体非合作 caller。
 
-**整改方向：** 活跃 lease 归零后再关闭资源，或实现并验证资源端 abort 合同；增加不合作 lease 的并发测试。详见[安全整改跟踪](../superpowers/plans/2026-11-06-passly-security-scan-followups.md)中的 Task 2。
+**整改结果：** Runtime 等待活动 lease 归零后才关闭资源；忽略取消的操作会让锁定继续等待。屏障回归与当前合同见[Session 关闭与 DEK 擦除审查](../reviews/2026-11-07-session-close-and-dek-wipe.md)。
 
 ## 已复核但未判定为漏洞的候选
 

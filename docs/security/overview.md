@@ -18,7 +18,7 @@ flowchart TB
 - SQLCipher 保护数据库整体，敏感负载另做字段级认证加密。
 - 非敏感 Profile 元数据使用结构化列支持本地查询；密码、密钥、OTP Secret 等高敏字段不进入查询索引。
 - `USER` / `IDLE_TIMEOUT` 触发 `SOFT_LOCKED`：阻止新租约并排空现有 lease，数据库保持打开、DEK 保留，字段会话密钥清除；重新认证可恢复会话。
-- `AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 触发 `SEALED`：撤销授权后等待数据库 lease 实际退出，再封存/关闭数据库、清除字段会话密钥并擦除 DEK。忽略取消的 lease 仍存活时不会强制关闭其资源；锁定保持等待。lease drain 合同见[安全审查 Task 2](../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-2避免活动会话-lease-未退出时关闭数据库)。
+- `AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 触发 `SEALED`：撤销授权后等待数据库 lease 实际退出，再封存/关闭数据库、清除字段会话密钥并擦除 DEK。忽略取消的 lease 仍存活时不会强制关闭其资源；锁定保持等待。验收证据见[Session 关闭与 DEK 擦除审查](../reviews/2026-11-07-session-close-and-dek-wipe.md)。
 
 ## 信任边界
 

@@ -22,6 +22,6 @@
 | 职责 | 代码 |
 | --- | --- |
 | Vault 列表状态与命令 | [`VaultViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt)、[`VaultEntryCommandWorkflow.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultEntryCommandWorkflow.kt) |
-| Detail 页面协调与修订工作流 | [`DetailViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevisionWorkflow.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRevisionWorkflow.kt) |
-| 编辑器写入生命周期 | [`EditorWriteSession.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt)、[`EditorLoadFailureEffectHandler.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorLoadFailureEffectHandler.kt) |
-| 应用组合与页面导航 | [`PasslyAppNavigation.kt`](../../app/src/main/java/com/aozijx/passly/app/navigation/PasslyAppNavigation.kt) |
+| Detail 页面协调与修订工作流 | [`DetailViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevisionWorkflow.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/history/DetailRevisionWorkflow.kt) |
+| 编辑器写入与失败提示 | [`EditorWriteSession.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt)、[`EditorSaveEffectHandler.kt`](../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorSaveEffectHandler.kt) |
+| 应用页面导航 | [`PasslyAppNavigation.kt`](../../app/src/main/java/com/aozijx/passly/presentation/PasslyAppNavigation.kt) |

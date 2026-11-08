@@ -29,7 +29,7 @@
 
 ## 执行入口与去重（2026-11-07）
 
-先按[主维护待办](2026-10-30-passly-maintainability-todo.md)处理 Task 86 验证基线和 26/37/59 等具体合同及 [Autofill 后续清单](2026-11-07-passly-autofill-followups.md)，本页广域提案不排在已确认问题之前。Task 1 中 Autofill 模块比较/抽取已被当前迁移替代，剩余为边界与宿主验收；诊断独立进程仍待决策。Task 6 持久设置已有 RecoverableRead，不重新实现；Task 7 引用实际 owner 清单，不复制主待办 80/83/84。
+先按[主维护待办](2026-10-30-passly-maintainability-todo.md)处理仍开放的 26/37/59 等具体合同及 [Autofill 后续清单](2026-11-07-passly-autofill-followups.md)，本页广域提案不排在已确认问题之前。Task 1 中 Autofill 模块比较/抽取已被当前迁移替代，剩余为边界与宿主验收；诊断独立进程仍待决策。Task 6 持久设置已有 RecoverableRead，不重新实现；Task 7 引用实际 owner 清单，不复制主待办 80/83/84。
 
 ## 待办
 

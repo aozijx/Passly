@@ -40,9 +40,7 @@ UI 的无障碍描述只包含“二维码”，不包含网络密码或 OTP 密
 Domain 测试覆盖稳定键、特殊字符、开放网络、隐藏网络和损坏凭据；App 单测覆盖授权顺序、读取最新密码、
 取消传播、锁定清理和迟到结果。AndroidTest 使用真实 Bitmap 和 ZXing 解码检查中文及特殊字符，并检查
 Wi-Fi 展示入口。无设备时只能确认 AndroidTest 编译与测试 APK 打包，不能宣称真实扫码连接已验证。
-当前 `DetailQrSessionTest` 仍通过旧签名次级构造器注入单参数 export；该桥在调用 export 前立即触发 `onAuthorized()`，
-所以这些 session 测试不验证生产路径“授权前保持 `Authorizing`、进入授权闭包后转 `Loading`”的时序。
-移除这个测试便利桥并用双参数 export 明确控制回调的工作见[维护 TODO Task 79](../../superpowers/plans/2026-10-30-passly-maintainability-todo.md)。
+`DetailQrSessionTest` 使用与生产相同的双参数 export 合同，可明确控制授权回调，并验证授权前保持 `Authorizing`、进入授权闭包后转为 `Loading` 的时序。
 
 ## 代码位置
 
