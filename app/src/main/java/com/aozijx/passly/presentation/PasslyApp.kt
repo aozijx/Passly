@@ -8,6 +8,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
 import com.aozijx.passly.app.message.presentation.AppNoticeEffects
@@ -18,7 +19,6 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
 import com.aozijx.passly.feature.shell.presentation.AppShell
-import com.aozijx.passly.feature.shell.presentation.AppShellSettingsState
 import com.aozijx.passly.feature.shell.presentation.AppShellUiAction
 import com.aozijx.passly.feature.shell.presentation.AppShellViewModel
 import com.aozijx.passly.feature.shell.presentation.AppWindowPolicyEffects
@@ -39,11 +39,11 @@ internal fun PasslyApp(
 
     val settings =
         when (val state = shellState.settings) {
-            AppShellSettingsState.Loading -> {
+            RecoverableReadState.Loading -> {
                 return
             }
 
-            is AppShellSettingsState.Failed -> {
+            is RecoverableReadState.Failed -> {
                 AppTheme(
                     appearance = AppearanceSettings(),
                     appCornerRadiusDp = InterfaceSettings().appCornerRadiusDp,
@@ -55,8 +55,8 @@ internal fun PasslyApp(
                 return
             }
 
-            is AppShellSettingsState.Ready -> {
-                state
+            is RecoverableReadState.Ready -> {
+                state.value
             }
         }
 

@@ -1,6 +1,7 @@
 package com.aozijx.passly.app.theme
 
 import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
@@ -67,11 +68,11 @@ class AppThemeSettingsViewModelTest {
             backgroundScope.launch { viewModel.state.collect {} }
             runCurrent()
 
-            assertEquals(AppThemeSettingsState.Failed(ReadFailure.CORRUPT_DATA), viewModel.state.value)
+            assertEquals(RecoverableReadState.Failed(ReadFailure.CORRUPT_DATA), viewModel.state.value)
             viewModel.retry()
             runCurrent()
 
             assertEquals(2, starts)
-            assertTrue(viewModel.state.value is AppThemeSettingsState.Ready)
+            assertTrue(viewModel.state.value is RecoverableReadState.Ready)
         }
 }

@@ -1,10 +1,9 @@
 package com.aozijx.passly.feature.shell.presentation
 
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.feature.shell.presentation.AppShellUiState
 import org.junit.Assert.assertEquals
@@ -18,7 +17,7 @@ class AppShellReducerTest {
         val state = AppShellUiState()
         val policy = state.windowPolicy
 
-        assertSame(AppShellSettingsState.Loading, state.settings)
+        assertSame(RecoverableReadState.Loading, state.settings)
         assertEquals(true, policy.isSecureContentEnabled)
         assertEquals(false, policy.isStatusBarAutoHide)
     }
@@ -117,17 +116,22 @@ class AppShellReducerTest {
                     sessionMode = AppShellSessionMode.VAULT,
                     databaseState = AppShellDatabaseState.Failed(error),
                 ),
-                AppShellMutation.SettingsChanged(
-                    appearance = appearance,
-                    interfaceSettings = InterfaceSettings(appCornerRadiusDp = 30f),
-                    securitySettings =
-                        SecuritySettings(
-                            isSecureContentEnabled = false,
+                AppShellMutation.SettingsStateChanged(
+                    RecoverableReadState.Ready(
+                        AppShellSettings(
+                            appearance = appearance,
+                            appCornerRadiusDp = 30f,
+                            windowPolicy =
+                                AppWindowPolicy(
+                                    isSecureContentEnabled = false,
+                                    isStatusBarAutoHide = false,
+                                ),
                         ),
+                    ),
                 ),
             )
 
-        val settings = result.settings as AppShellSettingsState.Ready
+        val settings = (result.settings as RecoverableReadState.Ready).value
         assertSame(appearance, settings.appearance)
         assertEquals(30f, settings.appCornerRadiusDp)
         assertFalse(settings.windowPolicy.isSecureContentEnabled)

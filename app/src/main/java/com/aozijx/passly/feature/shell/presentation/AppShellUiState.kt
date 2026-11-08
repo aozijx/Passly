@@ -1,31 +1,23 @@
 package com.aozijx.passly.feature.shell.presentation
 
-import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
 
 data class AppShellUiState(
     val sessionMode: AppShellSessionMode = AppShellSessionMode.AUTHENTICATION,
-    val settings: AppShellSettingsState = AppShellSettingsState.Loading,
+    val settings: RecoverableReadState<AppShellSettings> = RecoverableReadState.Loading,
     val databaseState: AppShellDatabaseState = AppShellDatabaseState.Available,
 )
 
-sealed interface AppShellSettingsState {
-    data object Loading : AppShellSettingsState
-
-    data class Failed(
-        val failure: ReadFailure,
-    ) : AppShellSettingsState
-
-    data class Ready(
-        val appearance: AppearanceSettings,
-        val appCornerRadiusDp: Float,
-        val windowPolicy: AppWindowPolicy,
-    ) : AppShellSettingsState
-}
+data class AppShellSettings(
+    val appearance: AppearanceSettings,
+    val appCornerRadiusDp: Float,
+    val windowPolicy: AppWindowPolicy,
+)
 
 internal val AppShellUiState.windowPolicy: AppWindowPolicy
-    get() = (settings as? AppShellSettingsState.Ready)?.windowPolicy ?: AppWindowPolicy()
+    get() = (settings as? RecoverableReadState.Ready)?.value?.windowPolicy ?: AppWindowPolicy()
 
 sealed interface AppShellDatabaseState {
     data object Available : AppShellDatabaseState

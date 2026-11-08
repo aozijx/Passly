@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 /** Renders only after the persisted appearance and interface preferences are available. */
@@ -13,18 +14,18 @@ internal fun PersistedAppTheme(content: @Composable () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentState = state
     when (currentState) {
-        AppThemeSettingsState.Loading -> {
+        RecoverableReadState.Loading -> {
             return
         }
 
-        is AppThemeSettingsState.Failed -> {
+        is RecoverableReadState.Failed -> {
             SettingsReadFailureContent(onRetry = viewModel::retry)
         }
 
-        is AppThemeSettingsState.Ready -> {
+        is RecoverableReadState.Ready -> {
             AppTheme(
-                appearance = currentState.appearance,
-                appCornerRadiusDp = currentState.appCornerRadiusDp,
+                appearance = currentState.value.appearance,
+                appCornerRadiusDp = currentState.value.appCornerRadiusDp,
                 content = content,
             )
         }

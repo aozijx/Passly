@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.shell.presentation
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.DatabaseSessionFailureState
@@ -64,14 +65,14 @@ class AppShellViewModelTest {
             runCurrent()
 
             assertEquals(
-                AppShellSettingsState.Failed(ReadFailure.CORRUPT_DATA),
+                RecoverableReadState.Failed(ReadFailure.CORRUPT_DATA),
                 fixture.model.uiState.value.settings,
             )
             fixture.model.onAction(AppShellUiAction.RetrySettings)
             runCurrent()
 
             assertEquals(2, starts)
-            assertTrue(fixture.model.uiState.value.settings is AppShellSettingsState.Ready)
+            assertTrue(fixture.model.uiState.value.settings is RecoverableReadState.Ready)
             fixture.close()
         }
 

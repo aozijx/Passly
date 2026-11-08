@@ -1,25 +1,14 @@
 package com.aozijx.passly.feature.shell.presentation
 
-import com.aozijx.passly.app.settings.ReadFailure
-import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
-import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.app.settings.RecoverableReadState
 
 internal sealed interface AppShellMutation {
     data class SessionChanged(
         val mode: AppShellSessionMode,
     ) : AppShellMutation
 
-    data class SettingsChanged(
-        val appearance: AppearanceSettings,
-        val interfaceSettings: InterfaceSettings,
-        val securitySettings: SecuritySettings,
-    ) : AppShellMutation
-
-    data object SettingsLoading : AppShellMutation
-
-    data class SettingsFailed(
-        val failure: ReadFailure,
+    data class SettingsStateChanged(
+        val state: RecoverableReadState<AppShellSettings>,
     ) : AppShellMutation
 
     data object DatabaseRetryStarted : AppShellMutation
@@ -44,27 +33,8 @@ internal object AppShellReducer {
                 state.copy(sessionMode = mutation.mode)
             }
 
-            is AppShellMutation.SettingsChanged -> {
-                state.copy(
-                    settings =
-                        AppShellSettingsState.Ready(
-                            appearance = mutation.appearance,
-                            appCornerRadiusDp = mutation.interfaceSettings.appCornerRadiusDp,
-                            windowPolicy =
-                                AppWindowPolicy(
-                                    isSecureContentEnabled = mutation.securitySettings.isSecureContentEnabled,
-                                    isStatusBarAutoHide = mutation.interfaceSettings.hideSystemBars,
-                                ),
-                        ),
-                )
-            }
-
-            AppShellMutation.SettingsLoading -> {
-                state.copy(settings = AppShellSettingsState.Loading)
-            }
-
-            is AppShellMutation.SettingsFailed -> {
-                state.copy(settings = AppShellSettingsState.Failed(mutation.failure))
+            is AppShellMutation.SettingsStateChanged -> {
+                state.copy(settings = mutation.state)
             }
 
             AppShellMutation.DatabaseRetryStarted -> {
