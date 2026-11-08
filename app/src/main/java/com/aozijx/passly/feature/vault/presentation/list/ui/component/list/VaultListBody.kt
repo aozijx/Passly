@@ -43,8 +43,7 @@ internal fun VaultListBody(
     ) {
         AnimatedVisibility(
             visible =
-                !state.toolbar.isSearchActive &&
-                    state.toolbar.selectedCategory == null &&
+                state.content.isQuickFilterBarAvailable &&
                     (
                         state.navigation.hasActiveFilters ||
                             !state.layout.collapseQuickFilterBarOnScroll ||

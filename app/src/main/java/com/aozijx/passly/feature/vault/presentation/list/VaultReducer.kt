@@ -48,7 +48,7 @@ internal object VaultReducer {
             }
 
             is VaultMutation.CategoryChanged -> {
-                state.copy(selectedCategory = mutation.category)
+                state.copy(selectedCategory = mutation.category?.takeIf(String::isNotBlank))
             }
 
             is VaultMutation.CategorySearchQueryChanged -> {

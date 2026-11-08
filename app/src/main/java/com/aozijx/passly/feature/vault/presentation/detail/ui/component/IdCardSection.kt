@@ -26,7 +26,7 @@ fun IdCardSection(
             onEdit = null,
             onReveal = onIdNumberReveal,
         )
-        model.username.takeIf(String::isNotBlank)?.let {
+        model.username?.let {
             DetailItem(
                 label = stringResource(R.string.vault_detail_username),
                 value = it,

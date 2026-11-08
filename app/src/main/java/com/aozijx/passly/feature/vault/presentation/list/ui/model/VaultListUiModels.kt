@@ -78,6 +78,7 @@ data class VaultFilterOptionUiModel(
 @Immutable
 data class VaultListContentUiModel(
     val showTotpCode: Boolean,
+    val isQuickFilterBarAvailable: Boolean,
     val cardPresentations: List<VaultCardPresentationUiModel>,
     val swipeLeftAction: SwipeActionType,
     val swipeRightAction: SwipeActionType,

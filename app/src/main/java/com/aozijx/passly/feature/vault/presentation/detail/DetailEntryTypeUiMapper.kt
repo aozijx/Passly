@@ -97,7 +97,12 @@ internal fun detailIdentityUiModel(
     fields: DetailFieldProjection,
 ): DetailIdentityUiModel {
     val idNumber = fields.protected(FieldKey.ID_NUMBER, SensitiveFieldKey.IDENTITY_NUMBER)
-    return DetailIdentityUiModel(idNumber.present, idNumber.value, idNumber.revealed, entry.username)
+    return DetailIdentityUiModel(
+        hasIdNumber = idNumber.present,
+        idNumber = idNumber.value,
+        idNumberRevealed = idNumber.revealed,
+        username = entry.username.takeIf(String::isNotBlank),
+    )
 }
 
 internal fun detailSshUiModel(

@@ -114,7 +114,6 @@ internal fun toDetailPresentationModel(
                         associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
                         entryType = entry.type,
                         title = entry.detailDisplayTitle,
-                        username = entry.username,
                         associatedDomain = entry.associatedDomain,
                         visualCategory =
                             EntryVisualCategoryClassifier.classify(

@@ -211,6 +211,7 @@ internal fun VaultUiState.toUiModel(display: VaultListDisplayUiModel): VaultList
         content =
             VaultListContentUiModel(
                 showTotpCode = showTOTPCode,
+                isQuickFilterBarAvailable = !isSearchActive && selectedCategory == null,
                 cardPresentations = display.cardPresentations,
                 swipeLeftAction = display.swipeLeftAction,
                 swipeRightAction = display.swipeRightAction,

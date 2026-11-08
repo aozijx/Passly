@@ -13,7 +13,6 @@ data class DetailIconCardUiModel(
     val associatedAppPackage: String?,
     val entryType: EntryType,
     val title: String,
-    val username: String,
     val associatedDomain: String?,
     val visualCategory: EntryVisualCategory,
     @param:StringRes val iconDescriptionRes: Int,

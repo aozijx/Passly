@@ -109,7 +109,7 @@ data class DetailIdentityUiModel(
     val hasIdNumber: Boolean,
     val idNumber: String?,
     val idNumberRevealed: Boolean,
-    val username: String,
+    val username: String?,
 )
 
 data class DetailSshUiModel(

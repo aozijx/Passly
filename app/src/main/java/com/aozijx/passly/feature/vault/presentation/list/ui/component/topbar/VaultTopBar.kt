@@ -74,7 +74,7 @@ fun VaultTopBar(
                 )
             },
         )
-        uiState.menu.selectedCategory?.takeIf(String::isNotBlank)?.let { category ->
+        uiState.menu.selectedCategory?.let { category ->
             InputChip(
                 selected = true,
                 onClick = { onAction(VaultUiAction.ClearCategory) },
