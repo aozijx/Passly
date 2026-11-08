@@ -1,5 +1,6 @@
 package com.aozijx.passly.security.dek
 
+import com.aozijx.passly.core.error.boundary.CryptoException
 import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.BiometricBinding
 import com.aozijx.passly.domain.access.model.BiometricBootstrapState
@@ -17,6 +18,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -56,16 +58,19 @@ class AttachmentContentCryptoTest {
             val content = "# markdown with image".toByteArray()
             val id = crypto.contentId(content)
             val encrypted = crypto.encrypt(content, id)
-            assertTrue(runCatching { crypto.decrypt(encrypted, "a".repeat(64)) }.isFailure)
+            val tagFailure = runCatching { crypto.decrypt(encrypted, "a".repeat(64)) }.exceptionOrNull()
+            assertEquals(CryptoException.TagVerificationFailed::class, tagFailure!!::class)
 
             dekManager.lock()
-            assertTrue(runCatching { crypto.contentId(content) }.isFailure)
+            val lockedFailure = runCatching { crypto.contentId(content) }.exceptionOrNull()
+            assertEquals(IllegalStateException::class, lockedFailure!!::class)
         }
 
     @Test
     fun `new attachment key and nonce are wiped when nonce generation fails`() =
         runBlocking {
-            val random = CapturingSecureRandom(failingCall = 2, failure = IllegalStateException("nonce generation failed"))
+            val injectedFailure = IllegalStateException("nonce generation failed")
+            val random = CapturingSecureRandom(failingCall = 2, failure = injectedFailure)
             val manager = AttachmentDataKeyManager(store, dekManager, random)
 
             val failure =
@@ -73,7 +78,7 @@ class AttachmentContentCryptoTest {
                     runCatching { manager.withKey { Unit } }.exceptionOrNull()
                 }
 
-            assertTrue(failure is IllegalStateException)
+            assertSame(injectedFailure, failure)
             assertEquals(2, random.buffers.size)
             random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
         }
@@ -81,7 +86,8 @@ class AttachmentContentCryptoTest {
     @Test
     fun `new attachment key is wiped when random generation fails partway through`() =
         runBlocking {
-            val random = CapturingSecureRandom(failingCall = 1, failure = IllegalStateException("key generation failed"))
+            val injectedFailure = IllegalStateException("key generation failed")
+            val random = CapturingSecureRandom(failingCall = 1, failure = injectedFailure)
             val manager = AttachmentDataKeyManager(store, dekManager, random)
 
             val failure =
@@ -89,7 +95,7 @@ class AttachmentContentCryptoTest {
                     runCatching { manager.withKey { Unit } }.exceptionOrNull()
                 }
 
-            assertTrue(failure is IllegalStateException)
+            assertSame(injectedFailure, failure)
             assertEquals(1, random.buffers.size)
             assertArrayEquals(ByteArray(random.buffers.first().size), random.buffers.first())
         }
@@ -99,14 +105,15 @@ class AttachmentContentCryptoTest {
         runBlocking {
             val random = CapturingSecureRandom()
             val manager = AttachmentDataKeyManager(store, dekManager, random)
-            store.attachmentKeySaveFailure = IllegalStateException("attachment envelope save failed")
+            val injectedFailure = IllegalStateException("attachment envelope save failed")
+            store.attachmentKeySaveFailure = injectedFailure
 
             val failure =
                 withContext(NonCancellable) {
                     runCatching { manager.withKey { Unit } }.exceptionOrNull()
                 }
 
-            assertTrue(failure is IllegalStateException)
+            assertSame(injectedFailure, failure)
             assertEquals(2, random.buffers.size)
             random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
         }
@@ -114,17 +121,17 @@ class AttachmentContentCryptoTest {
     @Test
     fun `new attachment key is wiped when envelope persistence is cancelled or fatal`() =
         runBlocking {
-            listOf(CancellationException("save cancelled"), AssertionError("fatal save failure")).forEach { failure ->
+            listOf(CancellationException("save cancelled"), AssertionError("fatal save failure")).forEach { injectedFailure ->
                 val random = CapturingSecureRandom()
                 val manager = AttachmentDataKeyManager(store, dekManager, random)
-                store.attachmentKeySaveFailure = failure
+                store.attachmentKeySaveFailure = injectedFailure
 
                 val observed =
                     withContext(NonCancellable) {
                         runCatching { manager.withKey { Unit } }.exceptionOrNull()
                     }
 
-                assertTrue(observed is CancellationException || observed is AssertionError)
+                assertSame(injectedFailure, observed)
                 assertEquals(2, random.buffers.size)
                 random.buffers.forEach { assertArrayEquals(ByteArray(it.size), it) }
             }

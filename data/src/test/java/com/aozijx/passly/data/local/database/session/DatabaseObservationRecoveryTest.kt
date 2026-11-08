@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -94,16 +95,17 @@ class DatabaseObservationRecoveryTest {
     @Test
     fun `ordinary database query failures are not converted to empty values`() =
         runTest {
+            val readFailure = IOException("database read failed")
             val result =
                 runCatching {
                     observeDatabaseFlowWhenReadable(
                         readAccess = flowOf(DatabaseReadAccess(readable = true, lockGeneration = 0L)),
                         emptyValue = { "locked" },
                     ) {
-                        flow<String> { throw IOException("database read failed") }
+                        flow<String> { throw readFailure }
                     }.toList()
                 }
 
-            assertTrue(result.exceptionOrNull() is IOException)
+            assertSame(readFailure, result.exceptionOrNull())
         }
 }

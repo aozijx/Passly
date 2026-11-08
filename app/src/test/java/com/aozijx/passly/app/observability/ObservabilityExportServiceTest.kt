@@ -111,6 +111,7 @@ class ObservabilityExportServiceTest {
                     .map { Json.parseToJsonElement(it).jsonObject }
                     .toList()
             val manifest = records.single { it["type"]?.jsonPrimitive?.content == "manifest" }
+            assertEquals(1, manifest.getValue("schema_version").jsonPrimitive.content.toInt())
             assertEquals("Passly", manifest.getValue("app_name").jsonPrimitive.content)
             assertEquals("Pixel", manifest.getValue("model").jsonPrimitive.content)
             assertEquals(1, records.count { it["type"]?.jsonPrimitive?.content == "manifest" })
@@ -195,8 +196,9 @@ class ObservabilityExportServiceTest {
             val files = RecordingExportStorageGateway(cacheDirectory, shareFailure = true)
             val service = service(PageStore(listOf(record("event_00000001", 100))), files)
 
-            assertTrue(service.export(TestPermit, shareRequest()).isFailure)
+            val result = service.export(TestPermit, shareRequest())
 
+            assertEquals("share failed", result.exceptionOrNull()?.message)
             assertFalse(files.target!!.exists())
             assertFalse(files.deleteScheduled)
         }
@@ -531,8 +533,10 @@ class ObservabilityExportServiceTest {
                     permitAccepted = false,
                 )
 
-            assertTrue(service.export(TestPermit, shareRequest()).isFailure)
+            val result = service.export(TestPermit, shareRequest())
 
+            assertEquals(SecurityException::class, result.exceptionOrNull()!!::class)
+            assertEquals("Diagnostics export authorization rejected", result.exceptionOrNull()?.message)
             assertEquals(null, files.target)
             assertEquals(0, files.clearCalls)
         }

@@ -36,6 +36,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -272,10 +273,11 @@ class AutofillInteractionLifecycleTest {
             authentication.firstAttemptStarted.await()
             val waiter = async { runCatching { authorize(interaction.id) } }
             runCurrent()
-            authentication.failFirstAttempt.complete(AssertionError("fatal authentication failure"))
+            val fatalFailure = AssertionError("fatal authentication failure")
+            authentication.failFirstAttempt.complete(fatalFailure)
 
-            assertTrue(owner.await().exceptionOrNull() is AssertionError)
-            assertTrue(waiter.await().exceptionOrNull() is AssertionError)
+            assertSame(fatalFailure, owner.await().exceptionOrNull())
+            assertSame(fatalFailure, waiter.await().exceptionOrNull())
             assertEquals(
                 AutofillInteractionState.Failed(
                     AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
@@ -308,10 +310,8 @@ class AutofillInteractionLifecycleTest {
 
             val ownerFailure = owner.await().exceptionOrNull()
             val waiterFailure = waiter.await().exceptionOrNull()
-            assertTrue(ownerFailure is AssertionError)
-            assertTrue(waiterFailure is AssertionError)
-            assertEquals(cleanupFailure.message, ownerFailure?.message)
-            assertEquals(cleanupFailure.message, waiterFailure?.message)
+            assertSame(cleanupFailure, ownerFailure)
+            assertSame(cleanupFailure, waiterFailure)
             assertEquals(
                 AutofillInteractionState.Failed(
                     AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
@@ -337,9 +337,10 @@ class AutofillInteractionLifecycleTest {
             authentication.firstAttemptStarted.await()
             val waiter = async { authorize(interaction.id) }
             runCurrent()
-            authentication.failFirstAttempt.complete(CancellationException("caller cancelled"))
+            val cancellation = CancellationException("caller cancelled")
+            authentication.failFirstAttempt.complete(cancellation)
 
-            assertTrue(owner.await().exceptionOrNull() is CancellationException)
+            assertSame(cancellation, owner.await().exceptionOrNull())
             assertTrue(waiter.await() is AutofillAuthorizationOutcome.Cancelled)
             assertEquals(AutofillInteractionState.Cancelled, store.snapshot(interaction.id)?.state)
             assertEquals(AuthenticationState.Locked, vault.authenticationState.value)

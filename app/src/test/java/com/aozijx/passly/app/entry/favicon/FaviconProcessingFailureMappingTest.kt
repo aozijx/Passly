@@ -1,6 +1,7 @@
 package com.aozijx.passly.app.entry.favicon
 
 import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
+import com.aozijx.passly.core.platform.media.FaviconProcessingException
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CancellationException
@@ -44,8 +45,10 @@ class FaviconProcessingFailureMappingTest {
         runTest {
             val ordinaryFailure = IllegalStateException("image processing failed")
             val result = resultOfPreservingCancellation { throw ordinaryFailure }
-            assertTrue(result.isFailure)
-            assertSame(ordinaryFailure, result.exceptionOrNull()?.cause)
+            val mappedFailure = requireNotNull(result.exceptionOrNull())
+            assertEquals(FaviconProcessingException::class, mappedFailure::class)
+            assertEquals(FaviconProcessingFailure.INVALID_IMAGE, (mappedFailure as FaviconProcessingException).failure)
+            assertSame(ordinaryFailure, mappedFailure.cause)
 
             val cancelled = CancellationException("cancelled")
             val propagatedCancellation =

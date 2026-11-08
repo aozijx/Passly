@@ -36,7 +36,7 @@ class DekManagerTest {
             assertArrayEquals(ByteArray(cachedDek.size), cachedDek)
             assertSame(DekState.Locked, manager.state)
             assertFalse(manager.isUnlocked.value)
-            assertTrue(runCatching { fieldKeyManager.copyKey() }.exceptionOrNull() is IllegalStateException)
+            assertFieldKeyUnavailable(fieldKeyManager)
 
             manager.lock()
             assertSame(DekState.Locked, manager.state)
@@ -66,13 +66,11 @@ class DekManagerTest {
                         runCatching { manager.lock() }.exceptionOrNull()
                     }
 
-                assertTrue(observedFailure != null)
-                assertEquals(logFailure::class, observedFailure!!::class)
-                assertEquals(logFailure.message, observedFailure.message)
+                assertSame(logFailure, observedFailure)
                 assertArrayEquals(ByteArray(cachedDek.size), cachedDek)
                 assertSame(DekState.Locked, manager.state)
                 assertFalse(manager.isUnlocked.value)
-                assertTrue(runCatching { fieldKeyManager.copyKey() }.exceptionOrNull() is IllegalStateException)
+                assertFieldKeyUnavailable(fieldKeyManager)
             }
         }
 
@@ -97,7 +95,8 @@ class DekManagerTest {
     fun `field key derivation cancellation propagates after restoring the locked state`() =
         runBlocking {
             val fieldKeyManager = FailingFieldKeyLifecycle()
-            fieldKeyManager.derivationFailure = CancellationException("field key derivation cancelled")
+            val injectedFailure = CancellationException("field key derivation cancelled")
+            fieldKeyManager.derivationFailure = injectedFailure
             val manager = DekManager(InMemoryVaultBootstrapStore(), fieldKeyManager, testLogger())
             val inputDek = ByteArray(32) { 4 }
 
@@ -106,12 +105,17 @@ class DekManagerTest {
                     runCatching { manager.setDek(EnvelopeType.APP_PASSWORD, inputDek) }.exceptionOrNull()
                 }
 
-            assertTrue(failure is CancellationException)
+            assertSame(injectedFailure, failure)
             assertSame(DekState.Locked, manager.state)
             assertFalse(manager.isUnlocked.value)
             assertArrayEquals(ByteArray(inputDek.size), inputDek)
             assertFalse(fieldKeyManager.hasKey)
         }
+
+    private fun assertFieldKeyUnavailable(fieldKeyManager: FieldKeyManager) {
+        val failure = runCatching { fieldKeyManager.copyKey() }.exceptionOrNull()
+        assertEquals(IllegalStateException::class, failure!!::class)
+    }
 
     private class InMemoryVaultBootstrapStore : VaultBootstrapStore {
         private val envelopes = linkedMapOf<EnvelopeType, KeyEnvelope>()
