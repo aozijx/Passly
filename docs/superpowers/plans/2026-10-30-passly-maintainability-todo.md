@@ -468,7 +468,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-08 Backup V1 cipher transformation 去重：** `BackupRecordCrypto.crypt()` 原在 `Cipher.getInstance()` 写死 `AES/GCM/NoPadding`；此算法属于 Backup V1 容器格式，移入 `BackupContainerV1Spec.CIPHER_TRANSFORMATION`，由记录加解密实现引用同一来源。`CIPHER_AES_256_GCM_ID` 仍为 1，header 字段和加密记录格式不变；只合并同协议 owner 内的固定算法标识，不与 Security/Data 的算法格式常量共用。定向 Backup codec/分块流测试及 `verifyArchitecture` 通过。
 
-**2026-11-08 Favicon crop zoom bounds 去重：** UI `FaviconCropTransform` 和 `FaviconBitmapTransformer` 都将 zoom 限制为 1..6，分别保护手势状态与对 processor 输入的最终裁剪；二者共享 Core `FaviconCropRequest` 契约。将 MIN/MAX 放入请求模型 companion，默认 zoom 与两处 clamp 复用同一边界，测试期望保持独立数值。原边界不变；Data 日志文件 transformation 仍属于版本化日志格式 owner，待单独核对。
+**2026-11-08 Favicon crop zoom bounds 去重：** UI `FaviconCropTransform` 和 `FaviconBitmapTransformer` 都将 zoom 限制为 1..6，分别保护手势状态与对 processor 输入的最终裁剪；二者共享 Core `FaviconCropRequest` 契约。将 MIN/MAX 放入请求模型 companion，默认 zoom 与两处 clamp 复用同一边界，测试期望保持独立数值。原边界不变；Data 日志 transformation alias 已在同一 Task 75 的独立批次清理，版本化格式 owner 保持不变。
 
 **2026-11-08 Data log transformation alias 清理：** `EncryptedLogFileManager` 是版本化日志容器格式 owner 并保存唯一 `TRANSFORMATION` 字面量；`EncryptedLogRecordStore` 两处加解密直接引用该值，删除同文件 companion 的私有转接常量。`FILE_VERSION`、cipher 参数与日志字节格式均未改变；文件管理和记录写入的职责继续分开。
 
