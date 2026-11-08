@@ -61,6 +61,9 @@
   <string name="vault_search_placeholder">搜索密码项…</string>
   <string name="vault_search_category">搜索分类</string>
   <string name="vault_search_category_hint">搜索分类…</string>
+  <string name="vault_categories_loading">正在加载分类…</string>
+  <string name="vault_categories_load_failed">无法加载分类</string>
+  <string name="vault_categories_empty">暂无分类</string>
   <string name="vault_clear_filter">清除筛选</string>
   <string name="vault_menu_filter">分类筛选</string>
   <string name="vault_menu_hide_totp">隐藏动态口令</string>

@@ -54,6 +54,9 @@
   <string name="vault_search_placeholder">Search items…</string>
   <string name="vault_search_category">Search categories</string>
   <string name="vault_search_category_hint">Search categories…</string>
+  <string name="vault_categories_loading">Loading categories…</string>
+  <string name="vault_categories_load_failed">Could not load categories</string>
+  <string name="vault_categories_empty">No categories</string>
   <string name="vault_clear_filter">Clear filter</string>
   <string name="vault_menu_filter">Filter by category</string>
   <string name="vault_menu_hide_totp">Hide codes</string>

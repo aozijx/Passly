@@ -125,7 +125,9 @@ fun VaultScreen(
                         menu =
                             VaultMenuUiState(
                                 showTotpCode = state.content.showTotpCode,
-                                availableCategories = state.toolbar.availableCategories,
+                                categorySearchQuery = state.toolbar.categorySearchQuery,
+                                matchingCategories = state.toolbar.matchingCategories,
+                                categoriesState = state.toolbar.categoriesState,
                                 selectedCategory = state.toolbar.selectedCategory,
                                 selectedSort = state.toolbar.selectedSort,
                             ),

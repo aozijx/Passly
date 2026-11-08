@@ -15,7 +15,13 @@ sealed interface VaultUiAction {
         val category: String?,
     ) : VaultUiAction
 
+    data class CategorySearchQueryChanged(
+        val query: String,
+    ) : VaultUiAction
+
     data object ClearCategory : VaultUiAction
+
+    data object RetryCategories : VaultUiAction
 
     data class SortOptionSelected(
         val sort: EntrySort,

@@ -3,6 +3,9 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.model
 import androidx.compose.runtime.Immutable
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 import kotlinx.coroutines.flow.Flow
 
 @Immutable
@@ -94,7 +97,9 @@ data class VaultListToolbarUiModel(
     val selectedCategory: String?,
     val selectedSort: VaultSortUiModel,
     val isSearchActive: Boolean,
-    val availableCategories: List<String>,
+    val categoriesState: VaultCategoriesState,
+    val categorySearchQuery: String,
+    val matchingCategories: List<String>,
 )
 
 @Immutable

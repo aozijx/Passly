@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.presentation.shared.components.menu.MenuOptionText
 import com.aozijx.passly.presentation.shared.components.menu.selectedMenuModifier
@@ -135,6 +137,8 @@ internal fun FilterSubMenu(
     onSearchQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
     items: List<String>,
+    categoriesState: VaultCategoriesState,
+    onRetry: () -> Unit,
     selectedItem: String?,
     itemText: (String) -> String,
     onItemSelected: (String?) -> Unit,
@@ -194,12 +198,47 @@ internal fun FilterSubMenu(
         selected = selectedItem == null,
         onClick = { onItemSelected(null) },
     )
-    items.forEach { item ->
-        EntryTypeMenuItem(
-            text = itemText(item),
-            selected = selectedItem == item,
-            onClick = { onItemSelected(item) },
-        )
+    when (categoriesState) {
+        VaultCategoriesState.Loading -> {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.vault_categories_loading)) },
+                enabled = false,
+                leadingIcon = {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                },
+                onClick = {},
+            )
+        }
+
+        VaultCategoriesState.Failed -> {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.vault_categories_load_failed)) },
+                enabled = false,
+                onClick = {},
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.retry)) },
+                onClick = onRetry,
+            )
+        }
+
+        is VaultCategoriesState.Ready -> {
+            if (categoriesState.values.isEmpty()) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.vault_categories_empty)) },
+                    enabled = false,
+                    onClick = {},
+                )
+            } else {
+                items.forEach { item ->
+                    EntryTypeMenuItem(
+                        text = itemText(item),
+                        selected = selectedItem == item,
+                        onClick = { onItemSelected(item) },
+                    )
+                }
+            }
+        }
     }
 }
 

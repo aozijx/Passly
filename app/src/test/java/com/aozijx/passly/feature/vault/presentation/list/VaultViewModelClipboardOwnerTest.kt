@@ -57,15 +57,19 @@ import com.aozijx.passly.runtime.session.SessionStateProvider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -74,6 +78,93 @@ import org.junit.Test
 class VaultViewModelClipboardOwnerTest {
     @get:Rule
     val mainDispatcherRule = com.aozijx.passly.testing.MainDispatcherRule()
+
+    @Test
+    fun categoryQueryFailureDoesNotEscapeTheViewModelScope() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var attempts = 0
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    availableCategories =
+                        flow {
+                            attempts++
+                            if (attempts == 1) throw IllegalStateException("category read failed")
+                            emit(listOf("Work"))
+                        },
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            var escapedFailure: IllegalStateException? = null
+
+            try {
+                try {
+                    runCurrent()
+                } catch (failure: IllegalStateException) {
+                    escapedFailure = failure
+                }
+
+                assertNull("a repository observation failure must become recoverable state", escapedFailure)
+                assertEquals(VaultCategoriesState.Failed, viewModel.uiState.value.categories)
+
+                viewModel.onAction(VaultUiAction.RetryCategories)
+                runCurrent()
+
+                assertEquals(VaultCategoriesState.Ready(listOf("Work")), viewModel.uiState.value.categories)
+                assertEquals(2, attempts)
+            } finally {
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun categoryQueryDistinguishesEmptyResultsAndRecoversAfterSessionReadabilityReturns() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val categories = MutableSharedFlow<List<String>>(replay = 1)
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    availableCategories = categories,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+
+            try {
+                runCurrent()
+                categories.emit(emptyList())
+                runCurrent()
+                assertEquals(VaultCategoriesState.Ready(emptyList()), viewModel.uiState.value.categories)
+
+                categories.emit(listOf("Work"))
+                runCurrent()
+                assertEquals(VaultCategoriesState.Ready(listOf("Work")), viewModel.uiState.value.categories)
+            } finally {
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun duplicateDeleteForTheSameEntryIsSingleFlight() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val gate = PausingAuthorizationGate()
+            val movedEntries = mutableListOf<EntryId>()
+            val viewModel = createViewModel(gate, mutableListOf(), onMoveToTrash = movedEntries::add)
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            viewModel.onPageEntered()
+
+            try {
+                viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
+                gate.started.await()
+                viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertEquals(listOf(ENTRY_ID), movedEntries)
+            } finally {
+                gate.resume.complete(Unit)
+                viewModelStore.clear()
+            }
+        }
 
     @Test
     fun routeExitWhileCopyWaitsForAuthorizationPreventsClipboardWriteAndEffect() =
@@ -182,9 +273,11 @@ class VaultViewModelClipboardOwnerTest {
         gate: AuthorizationGate,
         clipboardValues: MutableList<String>,
         otpConfigRepository: OtpConfigRepository = EmptyOtpConfigRepository,
+        onMoveToTrash: (EntryId) -> Unit = {},
+        availableCategories: Flow<List<String>> = flowOf(emptyList()),
     ): VaultViewModel {
         val access = TestAccessState()
-        val entries = TestEntries()
+        val entries = TestEntries(onMoveToTrash)
         val clipboard = SensitiveClipboardWriter { clipboardValues += it }
         val activity = TestActivityRecorder
         val sensitiveFields = EmptySensitiveFields
@@ -196,7 +289,7 @@ class VaultViewModelClipboardOwnerTest {
                 sensitiveKeyFreshnessState = TestSensitiveKeyFreshnessState,
             )
         return VaultViewModel(
-            entryListQueryRepository = TestEntryListQueryRepository,
+                entryListQueryRepository = TestEntryListQueryRepository(availableCategories),
             entryPageSource =
                 object : VaultEntryPageSource {
                     override fun pages(
@@ -205,18 +298,21 @@ class VaultViewModelClipboardOwnerTest {
                     ) = flowOf(PagingData.empty<EntryListItem>())
                 },
             settingsRepository = settings,
-            trashCommand = TrashCommandUseCase(entries, entries, access, gate),
-            copyEntryField =
-                CopyEntryFieldUseCase(
-                    authorizationGate = gate,
-                    entryQueryRepository = entries,
-                    entryFieldReader = DefaultEntryFieldReader(),
-                    sensitiveFieldRepository = sensitiveFields,
-                    clipboardWriter = clipboard,
-                    activityRecorder = activity,
+            entryCommandWorkflowFactory =
+                VaultEntryCommandWorkflowFactory(
+                    secureSessionAccessState = access,
+                    trashCommand = TrashCommandUseCase(entries, entries, access, gate),
+                    copyEntryField =
+                        CopyEntryFieldUseCase(
+                            authorizationGate = gate,
+                            entryQueryRepository = entries,
+                            entryFieldReader = DefaultEntryFieldReader(),
+                            sensitiveFieldRepository = sensitiveFields,
+                            clipboardWriter = clipboard,
+                            activityRecorder = activity,
+                        ),
+                    copyOtpCode = CopyOtpCodeUseCase(gate, clipboard, activity),
                 ),
-            copyOtpCode = CopyOtpCodeUseCase(gate, clipboard, activity),
-            secureSessionAccessState = access,
             otpCodeRuntimeFactory = otpFactory,
         )
     }
@@ -242,7 +338,9 @@ class VaultViewModelClipboardOwnerTest {
         override fun isUnlocked() = true
     }
 
-    private class TestEntries : EntryQueryRepository, EntryCommandRepository {
+    private class TestEntries(
+        private val onMoveToTrash: (EntryId) -> Unit,
+    ) : EntryQueryRepository, EntryCommandRepository {
         override suspend fun getById(entryId: EntryId): Entry? = entry.takeIf { it.id == entryId }
 
         override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entry.takeIf { it.id in entryIds }?.let(::listOf).orEmpty()
@@ -258,7 +356,10 @@ class VaultViewModelClipboardOwnerTest {
         override suspend fun moveToTrash(
             id: EntryId,
             expectedVersion: EntryVersion,
-        ): AppResult<Unit> = AppResult.Success(Unit)
+        ): AppResult<Unit> {
+            onMoveToTrash(id)
+            return AppResult.Success(Unit)
+        }
 
         override suspend fun restoreEntry(
             id: EntryId,
@@ -281,8 +382,9 @@ class VaultViewModelClipboardOwnerTest {
         }
     }
 
-    private object TestEntryListQueryRepository : EntryListQueryRepository {
-        override val availableCategories: Flow<List<String>> = flowOf(emptyList())
+    private class TestEntryListQueryRepository(
+        override val availableCategories: Flow<List<String>>,
+    ) : EntryListQueryRepository {
         override val deletedEntries: Flow<List<EntryListItem>> = flowOf(emptyList())
 
         override suspend fun getActiveByType(entryType: EntryType): List<EntryListItem> = emptyList()

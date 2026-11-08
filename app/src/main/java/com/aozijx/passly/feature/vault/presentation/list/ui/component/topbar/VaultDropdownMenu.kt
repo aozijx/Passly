@@ -24,7 +24,6 @@ internal fun VaultDropdownMenu(
     onRouteRequest: (VaultRouteRequest) -> Unit,
 ) {
     var currentPage by remember(expanded) { mutableStateOf(VaultMenuPage.MAIN) }
-    var categorySearchQuery by remember(expanded) { mutableStateOf("") }
     var categorySearchVisible by remember(expanded) { mutableStateOf(false) }
     val categoryFocusRequester = remember { FocusRequester() }
 
@@ -32,20 +31,12 @@ internal fun VaultDropdownMenu(
         if (categorySearchVisible) categoryFocusRequester.requestFocus()
     }
 
-    val filteredCategories =
-        remember(uiState.availableCategories, categorySearchQuery) {
-            if (categorySearchQuery.isBlank()) {
-                uiState.availableCategories
-            } else {
-                uiState.availableCategories.filter {
-                    it.contains(categorySearchQuery, ignoreCase = true)
-                }
-            }
-        }
-
     DropdownMenu(
         expanded = expanded,
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            onAction(VaultUiAction.CategorySearchQueryChanged(""))
+            onDismissRequest()
+        },
     ) {
         when (currentPage) {
             VaultMenuPage.MAIN -> {
@@ -76,11 +67,16 @@ internal fun VaultDropdownMenu(
                     searchLabelRes = R.string.vault_search_category,
                     searchHintRes = R.string.vault_search_category_hint,
                     isSearchVisible = categorySearchVisible,
-                    onToggleSearch = { categorySearchVisible = it },
-                    searchQuery = categorySearchQuery,
-                    onSearchQueryChange = { categorySearchQuery = it },
+                    onToggleSearch = {
+                        categorySearchVisible = it
+                        if (!it) onAction(VaultUiAction.CategorySearchQueryChanged(""))
+                    },
+                    searchQuery = uiState.categorySearchQuery,
+                    onSearchQueryChange = { onAction(VaultUiAction.CategorySearchQueryChanged(it)) },
                     focusRequester = categoryFocusRequester,
-                    items = filteredCategories,
+                    items = uiState.matchingCategories,
+                    categoriesState = uiState.categoriesState,
+                    onRetry = { onAction(VaultUiAction.RetryCategories) },
                     selectedItem = uiState.selectedCategory,
                     itemText = { it },
                     onItemSelected = {
@@ -90,7 +86,7 @@ internal fun VaultDropdownMenu(
                     onBack = {
                         if (categorySearchVisible) {
                             categorySearchVisible = false
-                            categorySearchQuery = ""
+                            onAction(VaultUiAction.CategorySearchQueryChanged(""))
                         } else {
                             currentPage = VaultMenuPage.MAIN
                         }

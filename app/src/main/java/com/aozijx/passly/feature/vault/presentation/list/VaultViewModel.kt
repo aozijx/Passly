@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingConfig
@@ -10,24 +9,15 @@ import androidx.paging.map
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
-import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.entry.model.EntryId
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
-import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
-import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
-import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.trash.TrashCommandResult
-import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
@@ -53,10 +43,7 @@ class VaultViewModel
         private val entryListQueryRepository: EntryListQueryRepository,
         private val entryPageSource: VaultEntryPageSource,
         private val settingsRepository: LibraryViewSettingsRepository,
-        private val trashCommand: TrashCommandUseCase,
-        private val copyEntryField: CopyEntryFieldUseCase,
-        private val copyOtpCode: CopyOtpCodeUseCase,
-        private val secureSessionAccessState: SecureSessionAccessState,
+        private val entryCommandWorkflowFactory: VaultEntryCommandWorkflowFactory,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
     ) : ViewModel() {
         private val pageEffects = PageEffects<VaultEffect>()
@@ -69,9 +56,16 @@ class VaultViewModel
             emitEffect(VaultEffect.ShowError(message))
         }
 
-        private val deletingEntryIds = mutableSetOf<EntryId>()
-
         private val totp = otpCodeRuntimeFactory.create(viewModelScope)
+
+        private val entryCommands =
+            entryCommandWorkflowFactory.create(
+                scope = viewModelScope,
+                otpRuntime = totp,
+                pageEffects = pageEffects,
+                pendingDelete = { _uiState.value.pendingDelete },
+                mutate = ::mutate,
+            )
 
         private val librarySettingsRead =
             RecoverableRead(
@@ -80,6 +74,12 @@ class VaultViewModel
             )
 
         val librarySettingsState = librarySettingsRead.state
+
+        private val categoriesRead =
+            RecoverableRead(
+                source = entryListQueryRepository.availableCategories,
+                scope = viewModelScope,
+            )
 
         private val queryState: Flow<VaultQueryState?> =
             buildRecoverableVaultQueryStates(
@@ -114,8 +114,16 @@ class VaultViewModel
                     mutate(VaultMutation.CategoryChanged(action.category))
                 }
 
+                is VaultUiAction.CategorySearchQueryChanged -> {
+                    mutate(VaultMutation.CategorySearchQueryChanged(action.query))
+                }
+
                 VaultUiAction.ClearCategory -> {
                     mutate(VaultMutation.CategoryChanged(null))
+                }
+
+                VaultUiAction.RetryCategories -> {
+                    categoriesRead.retry()
                 }
 
                 is VaultUiAction.SortOptionSelected -> {
@@ -139,19 +147,19 @@ class VaultViewModel
                 }
 
                 VaultUiAction.ConfirmDelete -> {
-                    confirmDelete()
+                    entryCommands.confirmDelete()
                 }
 
                 is VaultUiAction.QuickDelete -> {
-                    quickDelete(action.entryId)
+                    entryCommands.quickDelete(action.entryId)
                 }
 
                 is VaultUiAction.CopyField -> {
-                    copyField(action.entryId, action.entryType, action.fieldKey)
+                    entryCommands.copyField(action.entryId, action.entryType, action.fieldKey)
                 }
 
                 is VaultUiAction.CopyOtp -> {
-                    copyOtp(action.entryId)
+                    entryCommands.copyOtp(action.entryId)
                 }
             }
         }
@@ -186,93 +194,6 @@ class VaultViewModel
             totp.refreshRequestedEntries()
         }
 
-        private fun quickDelete(entryId: String) {
-            if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
-            moveToTrash(EntryId(entryId))
-        }
-
-        private fun confirmDelete() {
-            if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
-            val item = uiState.value.pendingDelete ?: return
-            moveToTrash(item.id)
-        }
-
-        private fun copyField(
-            entryId: String,
-            entryType: EntryType,
-            fieldKey: FieldKey,
-        ) {
-            if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_access)) return
-            val owner = pageEffects.currentOwner ?: return
-            viewModelScope.launch {
-                when (
-                    copyEntryField(
-                        EntryId(entryId),
-                        entryType,
-                        fieldKey,
-                        canDeliver = { pageEffects.isActive(owner) },
-                    )
-                ) {
-                    CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.FieldCopied(fieldKey))
-
-                    CopyEntryFieldResult.NotAuthorized,
-                    CopyEntryFieldResult.Unavailable,
-                    -> Unit
-                }
-            }
-        }
-
-        private fun copyOtp(entryId: String) {
-            if (!ensureFullSecureSessionAccess(R.string.vault_error_copy_otp_access)) return
-            val owner = pageEffects.currentOwner ?: return
-            viewModelScope.launch {
-                when (
-                    copyOtpCode(
-                        EntryId(entryId),
-                        canDeliver = { pageEffects.isActive(owner) },
-                    ) {
-                        (totp.states.value[entryId] as? OtpCodeState.Ready)?.code
-                    }
-                ) {
-                    CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.OtpCopied)
-
-                    CopyEntryFieldResult.NotAuthorized,
-                    CopyEntryFieldResult.Unavailable,
-                    -> Unit
-                }
-            }
-        }
-
-        private fun moveToTrash(entryId: EntryId) {
-            val owner = pageEffects.currentOwner ?: return
-            if (!deletingEntryIds.add(entryId)) return
-            viewModelScope.launch {
-                try {
-                    when (val result = trashCommand.moveToTrash(entryId)) {
-                        TrashCommandResult.Completed -> {
-                            totp.entryRemoved(entryId.value)
-                            if (pageEffects.isActive(owner)) {
-                                mutate(VaultMutation.DeletedEntryHandled(entryId.value))
-                            }
-                        }
-
-                        TrashCommandResult.NotAuthorized -> {
-                            Unit
-                        }
-
-                        is TrashCommandResult.Failed -> {
-                            emitError(
-                                owner,
-                                result.error.toUiErrorMessage(R.string.vault_error_trash_failed),
-                            )
-                        }
-                    }
-                } finally {
-                    deletingEntryIds.remove(entryId)
-                }
-            }
-        }
-
         init {
             viewModelScope.launch {
                 librarySettingsState
@@ -286,8 +207,14 @@ class VaultViewModel
             }
 
             viewModelScope.launch {
-                entryListQueryRepository.availableCategories.collect { categories ->
-                    mutate(VaultMutation.CategoriesChanged(categories))
+                categoriesRead.state.collect { readState ->
+                    val categories =
+                        when (readState) {
+                            RecoverableReadState.Loading -> VaultCategoriesState.Loading
+                            is RecoverableReadState.Ready -> VaultCategoriesState.Ready(readState.value)
+                            is RecoverableReadState.Failed -> VaultCategoriesState.Failed
+                        }
+                    mutate(VaultMutation.CategoriesStateChanged(categories))
                 }
             }
         }
@@ -309,15 +236,6 @@ class VaultViewModel
             message: UiErrorMessage,
         ) {
             pageEffects.tryEmit(owner, VaultEffect.ShowError(message))
-        }
-
-        private fun ensureFullSecureSessionAccess(
-            @StringRes messageRes: Int,
-        ): Boolean {
-            if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
-            emitError(UiErrorMessage(messageRes))
-            mutate(VaultMutation.DialogsCleared)
-            return false
         }
 
         private fun mutate(mutation: VaultMutation) {

@@ -223,7 +223,7 @@ class VaultQueryStateTest {
             states.value = states.value.copy(showTOTPCode = !states.value.showTOTPCode)
             runCurrent()
             advanceTimeBy(100L)
-            states.value = states.value.copy(availableCategories = listOf("Work"), selectedCategory = "Work")
+            states.value = states.value.copy(categories = VaultCategoriesState.Ready(listOf("Work")), selectedCategory = "Work")
             runCurrent()
             advanceTimeBy(50L)
             runCurrent()

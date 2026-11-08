@@ -104,7 +104,9 @@ class VaultTopBarMenuTest {
             menu =
                 VaultMenuUiState(
                     showTotpCode = false,
-                    availableCategories = emptyList(),
+                    categorySearchQuery = "",
+                    matchingCategories = emptyList(),
+                    categoriesState = VaultCategoriesState.Ready(emptyList()),
                     selectedCategory = null,
                     selectedSort =
                         VaultSortUiModel.presets.first {

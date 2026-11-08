@@ -14,6 +14,10 @@ internal sealed interface VaultMutation {
         val category: String?,
     ) : VaultMutation
 
+    data class CategorySearchQueryChanged(
+        val query: String,
+    ) : VaultMutation
+
     data class FilterToggled(
         val filter: AddType?,
     ) : VaultMutation
@@ -36,8 +40,8 @@ internal sealed interface VaultMutation {
         val entryId: String,
     ) : VaultMutation
 
-    data class CategoriesChanged(
-        val categories: List<String>,
+    data class CategoriesStateChanged(
+        val categories: VaultCategoriesState,
     ) : VaultMutation
 
     data object DialogsCleared : VaultMutation
@@ -55,6 +59,10 @@ internal object VaultReducer {
 
             is VaultMutation.CategoryChanged -> {
                 state.copy(selectedCategory = mutation.category)
+            }
+
+            is VaultMutation.CategorySearchQueryChanged -> {
+                state.copy(categorySearchQuery = mutation.query)
             }
 
             is VaultMutation.FilterToggled -> {
@@ -94,8 +102,8 @@ internal object VaultReducer {
                 )
             }
 
-            is VaultMutation.CategoriesChanged -> {
-                state.copy(availableCategories = mutation.categories)
+            is VaultMutation.CategoriesStateChanged -> {
+                state.copy(categories = mutation.categories)
             }
 
             VaultMutation.DialogsCleared -> {

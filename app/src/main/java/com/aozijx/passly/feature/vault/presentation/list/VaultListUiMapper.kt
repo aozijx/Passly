@@ -147,7 +147,12 @@ internal fun VaultUiState.toUiModel(display: VaultListDisplayUiModel): VaultList
                 selectedCategory = selectedCategory,
                 selectedSort = sort.toUiModel(),
                 isSearchActive = isSearchActive,
-                availableCategories = availableCategories,
+                categoriesState = categories,
+                categorySearchQuery = categorySearchQuery,
+                matchingCategories =
+                    ((categories as? VaultCategoriesState.Ready)?.values ?: emptyList()).filter { category ->
+                        categorySearchQuery.isBlank() || category.contains(categorySearchQuery.trim(), ignoreCase = true)
+                    },
             ),
         navigation =
             VaultListNavigationUiModel(

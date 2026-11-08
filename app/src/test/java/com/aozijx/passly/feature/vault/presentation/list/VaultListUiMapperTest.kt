@@ -102,6 +102,39 @@ class VaultListUiMapperTest {
         assertEquals(false, initial.content.isPullToSearchEnabled)
     }
 
+    @Test
+    fun categorySearchMapsTrimmedCaseInsensitiveMatchesAndPreservesQuery() {
+        val model =
+            requireNotNull(
+                VaultUiState(
+                    selectedSort = createdAtDescendingSort(),
+                    categories = VaultCategoriesState.Ready(listOf("Personal", "Work", "Work Account", "social")),
+                    categorySearchQuery = " WORk ",
+                ).toUiModel(display()),
+            )
+
+        assertEquals(" WORk ", model.toolbar.categorySearchQuery)
+        assertEquals(listOf("Work", "Work Account"), model.toolbar.matchingCategories)
+        assertEquals(
+            VaultCategoriesState.Ready(listOf("Personal", "Work", "Work Account", "social")),
+            model.toolbar.categoriesState,
+        )
+    }
+
+    @Test
+    fun categoryFailureStateIsPreservedForRetryPresentation() {
+        val model =
+            requireNotNull(
+                VaultUiState(
+                    selectedSort = createdAtDescendingSort(),
+                    categories = VaultCategoriesState.Failed,
+                ).toUiModel(display()),
+            )
+
+        assertEquals(VaultCategoriesState.Failed, model.toolbar.categoriesState)
+        assertTrue(model.toolbar.matchingCategories.isEmpty())
+    }
+
     private fun display() =
         VaultListDisplayUiModel(
             cardPresentations = emptyList(),

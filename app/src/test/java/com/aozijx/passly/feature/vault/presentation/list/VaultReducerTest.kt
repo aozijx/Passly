@@ -40,13 +40,27 @@ class VaultReducerTest {
         val result =
             VaultReducer.reduce(
                 initial,
-                VaultMutation.CategoriesChanged(listOf("Work")),
+                VaultMutation.CategoriesStateChanged(VaultCategoriesState.Ready(listOf("Work"))),
             )
 
         assertEquals("work", result.searchQuery)
         assertTrue(result.isSearchActive)
         assertEquals(setOf(AddType.PASSWORD), result.selectedFilters)
-        assertEquals(listOf("Work"), result.availableCategories)
+        assertEquals(VaultCategoriesState.Ready(listOf("Work")), result.categories)
+    }
+
+    @Test
+    fun `category search query is owned by list state without changing selected category`() {
+        val initial = VaultUiState(selectedCategory = "Personal", categorySearchQuery = "per")
+
+        val result =
+            VaultReducer.reduce(
+                initial,
+                VaultMutation.CategorySearchQueryChanged("work"),
+            )
+
+        assertEquals("work", result.categorySearchQuery)
+        assertEquals("Personal", result.selectedCategory)
     }
 
     @Test
@@ -59,14 +73,14 @@ class VaultReducerTest {
                         EntryIdentity(EntryId("pending"), EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
                         EntryProfile(title = "Pending"),
                     ),
-                availableCategories = listOf("Personal"),
+                categories = VaultCategoriesState.Ready(listOf("Personal")),
             )
 
         val result = VaultReducer.reduce(initial, VaultMutation.DialogsCleared)
 
         assertNull(result.pendingDelete)
         assertFalse(result.showTOTPCode)
-        assertEquals(listOf("Personal"), result.availableCategories)
+        assertEquals(VaultCategoriesState.Ready(listOf("Personal")), result.categories)
     }
 
     @Test

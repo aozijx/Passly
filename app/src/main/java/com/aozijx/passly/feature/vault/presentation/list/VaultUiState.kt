@@ -10,7 +10,18 @@ data class VaultUiState(
     val selectedFilters: Set<AddType> = emptySet(),
     val selectedSort: EntrySort? = null,
     val isSearchActive: Boolean = false,
-    val availableCategories: List<String> = emptyList(),
+    val categories: VaultCategoriesState = VaultCategoriesState.Loading,
+    val categorySearchQuery: String = "",
     val showTOTPCode: Boolean = true,
     val pendingDelete: EntryListItem? = null,
 )
+
+sealed interface VaultCategoriesState {
+    data object Loading : VaultCategoriesState
+
+    data class Ready(
+        val values: List<String>,
+    ) : VaultCategoriesState
+
+    data object Failed : VaultCategoriesState
+}
