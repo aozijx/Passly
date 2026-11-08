@@ -14,7 +14,6 @@ import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -48,7 +47,7 @@ class NotificationSettingsViewModel
         private val pageEffects = PageEffects<NotificationSettingsEffect>()
         val effects = pageEffects.effects
 
-        val uiState: StateFlow<RecoverableReadState<NotificationSettingsUiModel>> = messagesRead.state
+        internal val uiState: StateFlow<RecoverableReadState<NotificationSettingsUiModel>> = messagesRead.state
 
         internal fun onAction(action: NotificationSettingsAction) {
             when (action) {

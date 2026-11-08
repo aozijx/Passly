@@ -153,7 +153,7 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
         onBack = onBack,
     ) {
-        when (state) {
+        when (val currentState = state) {
             RecoverableReadState.Loading -> {
                 Unit
             }
@@ -166,7 +166,7 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
                 item {
                     SettingsSection {
                         NotificationSettingsSection(
-                            state = state.value,
+                            state = currentState.value,
                             onAction = viewModel::onAction,
                         )
                     }
