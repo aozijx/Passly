@@ -9,7 +9,7 @@ import org.junit.Test
 
 class RecoveryModeReducerTest {
     @Test
-    fun `successful password setup clears sensitive references`() {
+    fun `successful password setup closes the dialog state`() {
         val password = OwnedChars.fromString("temporary")
         val confirm = OwnedChars.fromString("temporary")
         try {
@@ -43,7 +43,7 @@ class RecoveryModeReducerTest {
     }
 
     @Test
-    fun `opening dialog preserves no full access state`() {
+    fun `opening dialog starts with empty password drafts`() {
         val result =
             RecoveryModeReducer.reduce(
                 RecoveryModeUiState.Closed,

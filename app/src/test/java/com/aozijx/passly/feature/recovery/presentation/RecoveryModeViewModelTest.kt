@@ -39,12 +39,15 @@ class RecoveryModeViewModelTest {
             viewModel.onAction(RecoveryModeUiAction.SetPasswordClicked)
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged(PASSWORD))
             viewModel.onAction(RecoveryModeUiAction.ConfirmPasswordChanged(PASSWORD))
-            val submittedPassword =
-                (viewModel.uiState.value as RecoveryModeUiState.Editing).draft.newPassword as OwnedChars
+            val draft = (viewModel.uiState.value as RecoveryModeUiState.Editing).draft
+            val submittedPassword = draft.newPassword as OwnedChars
+            val submittedConfirmation = draft.confirmPassword as OwnedChars
             viewModel.onAction(RecoveryModeUiAction.SubmitNewPassword)
             runCurrent()
 
             val submittedSetup = viewModel.uiState.value as RecoveryModeUiState.Saving
+            assertTrue(submittedPassword.isWiped)
+            assertTrue(submittedConfirmation.isWiped)
             assertTrue(submittedSetup.draft.newPassword.isEmpty)
 
             viewModel.onAction(RecoveryModeUiAction.NewPasswordChanged("another-long-password"))
@@ -64,7 +67,6 @@ class RecoveryModeViewModelTest {
             runCurrent()
 
             assertEquals(RecoveryModeUiState.Closed, viewModel.uiState.value)
-            assertTrue(submittedPassword.isWiped)
             assertTrue(provisioner.submitted.single().all { it == '\u0000' })
         }
 
