@@ -135,7 +135,7 @@ class DeviceLockHandlerTest {
 
             val result = handler.handle(DeviceLockTrigger.SCREEN_OFF)
 
-            assertTrue(result is DeviceLockResult.Locked)
+            assertEquals(DeviceLockResult.Locked(shouldClearTask = false), result)
             assertEquals(LockReason.BACKGROUND, lockController.reason)
             assertEquals(LockTrigger.SCREEN_OFF, lockController.trigger)
         }
@@ -175,7 +175,7 @@ class DeviceLockHandlerTest {
 
             settings.value = RecoverableReadState.Ready(SecuritySettings(isFlipToLockEnabled = true))
 
-            assertTrue(result.await() is DeviceLockResult.Locked)
+            assertEquals(DeviceLockResult.Locked(shouldClearTask = false), result.await())
             assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
         }
 
