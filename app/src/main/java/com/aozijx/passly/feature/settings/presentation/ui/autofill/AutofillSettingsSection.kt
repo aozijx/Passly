@@ -12,9 +12,9 @@ import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
-import com.aozijx.passly.feature.settings.presentation.ui.autofill.model.AutofillSettingsUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
@@ -22,14 +22,16 @@ import com.aozijx.passly.presentation.shared.components.group.switchSettingsGrou
 
 @Composable
 internal fun AutofillSettingsSection(
-    settings: AutofillSettingsUiModel,
+    settings: AutofillSettings,
+    supportsCredentialManager: Boolean,
+    systemService: AutofillSourceState<Boolean>,
     onAction: (AutofillSettingsAction) -> Unit,
 ) {
     var showPresentationMenu by remember { mutableStateOf(false) }
 
     val enabled = settings.enabled
     SettingsSectionTitle(text = stringResource(R.string.settings_autofill_section))
-    if (settings.systemService is AutofillSourceState.Failed) {
+    if (systemService is AutofillSourceState.Failed) {
         Row {
             Text(stringResource(R.string.settings_autofill_system_status_unavailable))
             TextButton(onClick = { onAction(AutofillSettingsAction.RetrySystemService) }) {
@@ -45,7 +47,7 @@ internal fun AutofillSettingsSection(
                         key = "autofill.system_settings",
                         title = stringResource(R.string.settings_autofill_system_service),
                         subtitle = stringResource(R.string.settings_autofill_system_service_summary),
-                        value = stringResource(settings.systemService.toDisplayString()),
+                        value = stringResource(systemService.toDisplayString()),
                         onClick = { onAction(AutofillSettingsAction.OpenSystemAutofillSettings) },
                     ),
                 )
@@ -83,7 +85,7 @@ internal fun AutofillSettingsSection(
                 add(
                     switchSettingsGroupItem(
                         key = "autofill.credential_manager_enabled",
-                        visible = settings.supportsCredentialManager,
+                        visible = supportsCredentialManager,
                         enabled = enabled,
                         title = stringResource(R.string.settings_autofill_credential_manager),
                         subtitle =

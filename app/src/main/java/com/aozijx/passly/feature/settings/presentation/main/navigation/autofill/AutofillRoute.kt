@@ -30,8 +30,7 @@ import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
-import com.aozijx.passly.feature.settings.presentation.autofill.toAutofillSettingsUiModel
-import com.aozijx.passly.feature.settings.presentation.ui.autofill.AutofillDetail
+import com.aozijx.passly.feature.settings.presentation.ui.autofill.AutofillSettingsSection
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 
@@ -102,15 +101,14 @@ internal fun AutofillRoute(onBack: (() -> Unit)?) {
             }
         } else {
             item {
-                AutofillDetail(
-                    state =
-                        preferences.toAutofillSettingsUiModel(
-                            supportsCredentialManager =
-                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                            systemService = state.systemService,
-                        ),
-                    onAction = viewModel::onAction,
-                )
+                SettingsSection {
+                    AutofillSettingsSection(
+                        settings = preferences,
+                        supportsCredentialManager = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                        systemService = state.systemService,
+                        onAction = viewModel::onAction,
+                    )
+                }
             }
         }
     }

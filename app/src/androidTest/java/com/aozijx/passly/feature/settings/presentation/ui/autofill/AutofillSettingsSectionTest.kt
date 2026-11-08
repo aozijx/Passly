@@ -11,9 +11,9 @@ import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
+import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
-import com.aozijx.passly.feature.settings.presentation.ui.autofill.model.AutofillSettingsUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,20 +25,13 @@ class AutofillSettingsSectionTest {
     @Test
     fun presentationOptionsRemainAvailableAndEmitSelectedValueWithoutCredentialManagerSupport() {
         val actions = mutableListOf<AutofillSettingsAction>()
-        val settings =
-            AutofillSettingsUiModel(
-                enabled = true,
-                presentation = AutofillPresentation.SYSTEM_INLINE,
-                credentialManagerEnabled = false,
-                supportsCredentialManager = false,
-                requireAuthentication = true,
-                strictDomainMatching = true,
-                systemService = AutofillSourceState.Ready(true),
-            )
+        val settings = AutofillSettings(credentialManagerEnabled = false)
         composeRule.setContent {
             MaterialTheme {
                 AutofillSettingsSection(
                     settings = settings,
+                    supportsCredentialManager = false,
+                    systemService = AutofillSourceState.Ready(true),
                     onAction = actions::add,
                 )
             }
@@ -71,10 +64,15 @@ class AutofillSettingsSectionTest {
     @Test
     fun systemStatusFailureIsUnknownAndCanBeRetried() {
         val actions = mutableListOf<AutofillSettingsAction>()
-        val settings = settings().copy(systemService = AutofillSourceState.Failed(false))
+        val systemService = AutofillSourceState.Failed(false)
         composeRule.setContent {
             MaterialTheme {
-                AutofillSettingsSection(settings = settings, onAction = actions::add)
+                AutofillSettingsSection(
+                    settings = settings(),
+                    supportsCredentialManager = false,
+                    systemService = systemService,
+                    onAction = actions::add,
+                )
             }
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -98,7 +96,12 @@ class AutofillSettingsSectionTest {
         val actions = mutableListOf<AutofillSettingsAction>()
         composeRule.setContent {
             MaterialTheme {
-                AutofillSettingsSection(settings = settings(), onAction = actions::add)
+                AutofillSettingsSection(
+                    settings = settings(),
+                    supportsCredentialManager = false,
+                    systemService = AutofillSourceState.Ready(true),
+                    onAction = actions::add,
+                )
             }
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -116,14 +119,5 @@ class AutofillSettingsSectionTest {
         assertEquals(listOf(AutofillSettingsAction.SetStrictDomainMatching(false)), actions)
     }
 
-    private fun settings() =
-        AutofillSettingsUiModel(
-            enabled = true,
-            presentation = AutofillPresentation.SYSTEM_INLINE,
-            credentialManagerEnabled = false,
-            supportsCredentialManager = false,
-            requireAuthentication = true,
-            strictDomainMatching = true,
-            systemService = AutofillSourceState.Ready(true),
-        )
+    private fun settings() = AutofillSettings(credentialManagerEnabled = false)
 }
