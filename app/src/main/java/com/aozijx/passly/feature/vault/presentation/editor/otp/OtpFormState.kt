@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -37,4 +38,23 @@ data class OtpFormState(
             )
 
     val isValid: Boolean get() = title.isNotBlank() && configInput.parse() is OtpConfigInputResult.Valid
+
+    val invalidFields: Set<FieldKey>
+        get() = configInput.parse().invalidFields()
+
+    val secretInputState: OtpSecretInputState
+        get() =
+            when {
+                secret.isEmpty() -> OtpSecretInputState.Empty
+                configInput.parse().invalidFields().contains(FieldKey.OTP_SECRET) -> OtpSecretInputState.Invalid
+                else -> OtpSecretInputState.Valid
+            }
 }
+
+enum class OtpSecretInputState { Empty, Valid, Invalid }
+
+private fun OtpConfigInputResult.invalidFields(): Set<FieldKey> =
+    when (this) {
+        is OtpConfigInputResult.Invalid -> fields
+        is OtpConfigInputResult.Valid -> emptySet()
+    }

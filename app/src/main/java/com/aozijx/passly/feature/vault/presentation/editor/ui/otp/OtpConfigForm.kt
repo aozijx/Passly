@@ -16,8 +16,8 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
+import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpSecretInputState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
@@ -28,8 +28,8 @@ fun OtpConfigForm(
     onAction: (AddOtpAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val invalidFields = (state.configInput.parse() as? OtpConfigInputResult.Invalid)?.fields.orEmpty()
-    val secretInvalid = state.secret.isNotEmpty() && FieldKey.OTP_SECRET in invalidFields
+    val secretInvalid = state.secretInputState == OtpSecretInputState.Invalid
+    val invalidFields = state.invalidFields
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
