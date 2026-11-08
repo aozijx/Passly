@@ -14,7 +14,7 @@
 
 - Direct password relations are `RELATED_TO` links whose two endpoints are active, saved `EntryType.LOGIN` entries.
 - Unlink removes only the link; it does not delete either entry.
-- Reuse `EntryLinkRepository.delete(linkId)` to delete the existing bind-link row by ID. `RoomEntryLinkRepository` already performs this in its transaction, snapshots both endpoints, and schedules/drains existing attachment cleanup; do not add a table/column, migration, DAO method, or change the repository contract.
+- A bind is one persisted `EntryLink` row; unbind is the inverse operation: delete the selected row by `linkId` through `EntryLinkRepository.delete(linkId)`. `RoomEntryLinkRepository` already performs this in its transaction, snapshots both endpoints, and schedules/drains existing attachment cleanup. Do not add an unbound state/flag, table/column, migration, DAO method, or change the repository contract.
 - A left swipe opens confirmation. Dismissing confirmation leaves the link unchanged; confirming removes only the selected link.
 - Bind/unlink work belongs to the current Detail entry and secure-session owner. Propagate cancellation, suppress stale results, log ordinary operation failures and keep a retry path.
 - Use existing Material 3 components and swipe container; add no dependency or image asset. Update Chinese and English resources together.
