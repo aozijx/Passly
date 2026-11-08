@@ -146,32 +146,36 @@ internal fun toDetailPresentationModel(
                     if (DetailSectionKey.CREDENTIAL in state.sections) {
                         CredentialSectionUiState(
                             username =
-                                CredentialFieldUiState(
-                                    visible =
-                                        entry.type != EntryType.WIFI && (
-                                            entry.username.isNotBlank() ||
-                                                SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
-                                        ),
-                                    revealedValue = revealedUsername?.asScopedSensitiveText(),
-                                    isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
-                                    editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
-                                    valueForEditing = revealedUsername.copyToString() ?: entry.username,
-                                ),
+                                (
+                                    entry.type != EntryType.WIFI && (
+                                        entry.username.isNotBlank() ||
+                                            SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
+                                    )
+                                ).takeIf { it }?.let {
+                                    CredentialFieldUiState(
+                                        titleRes = R.string.field_username,
+                                        revealedValue = revealedUsername?.asScopedSensitiveText(),
+                                        isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
+                                        editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
+                                        valueForEditing = revealedUsername.copyToString() ?: entry.username,
+                                    )
+                                },
                             password =
-                                CredentialFieldUiState(
-                                    visible =
-                                        if (entry.type == EntryType.WIFI) {
-                                            !entry.secret.wifi
-                                                ?.password
-                                                .isNullOrBlank()
-                                        } else {
-                                            password.present || entry.type != EntryType.LOGIN
-                                        },
-                                    revealedValue = revealedPassword?.asScopedSensitiveText(),
-                                    isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
-                                    editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
-                                    valueForEditing = revealedPassword.copyToString().orEmpty(),
-                                ),
+                                (
+                                    if (entry.type == EntryType.WIFI) {
+                                        !entry.secret.wifi?.password.isNullOrBlank()
+                                    } else {
+                                        password.isPresent || entry.type != EntryType.LOGIN
+                                    }
+                                ).takeIf { it }?.let {
+                                    CredentialFieldUiState(
+                                        titleRes = R.string.password_label,
+                                        revealedValue = revealedPassword?.asScopedSensitiveText(),
+                                        isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
+                                        editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
+                                        valueForEditing = revealedPassword.copyToString().orEmpty(),
+                                    )
+                                },
                         )
                     } else {
                         null

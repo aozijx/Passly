@@ -123,16 +123,8 @@ sealed interface DetailSeedPhraseUiModel {
     }
 }
 
-sealed interface DetailPasskeyDataUiModel {
-    data object Absent : DetailPasskeyDataUiModel
-
-    data object Hidden : DetailPasskeyDataUiModel
-
-    data class Revealed(val value: String) : DetailPasskeyDataUiModel
-}
-
 data class DetailPasskeyUiModel(
-    val data: DetailPasskeyDataUiModel,
+    val data: ProtectedDetailFieldUiState,
     val hardwareKeyInfo: String?,
 )
 

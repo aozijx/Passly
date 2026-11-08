@@ -48,8 +48,8 @@ fun SshKeySection(
         } else {
             DetailItem(
                 label = stringResource(R.string.passphrase),
-                value = model.passphrase,
-                isRevealed = model.passphraseRevealed,
+                value = model.passphrase.revealedValue,
+                isRevealed = model.passphrase.isRevealed,
                 onCopy = onPassphraseCopy,
                 onEdit = onPassphraseEditStarted,
                 onReveal = onPassphraseReveal,
@@ -68,8 +68,8 @@ fun SshKeySection(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 MaskedText(
-                    model.privateKey?.take(60)?.plus("..."),
-                    model.privateKeyRevealed,
+                    model.privateKey.revealedValue?.take(60)?.plus("..."),
+                    model.privateKey.isRevealed,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start,
                     fontWeight = FontWeight.Normal,
@@ -77,7 +77,7 @@ fun SshKeySection(
                 )
             }
         }
-        model.privateKey?.let { key ->
+        model.privateKey.revealedValue?.let { key ->
             Card(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 Column(Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.ssh_private_key_full), color = MaterialTheme.colorScheme.primary)

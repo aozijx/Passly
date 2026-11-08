@@ -27,7 +27,7 @@ data class DetailActivityUiModel(
 )
 
 data class CredentialFieldUiState(
-    val visible: Boolean,
+    @param:StringRes val titleRes: Int,
     val revealedValue: ScopedSensitiveText?,
     val isEditing: Boolean,
     val editedValue: String,
@@ -35,8 +35,8 @@ data class CredentialFieldUiState(
 )
 
 data class CredentialSectionUiState(
-    val username: CredentialFieldUiState,
-    val password: CredentialFieldUiState,
+    val username: CredentialFieldUiState?,
+    val password: CredentialFieldUiState?,
 )
 
 data class RelatedEntryUiModel(
@@ -76,26 +76,35 @@ data class DetailNotesUiModel(
 
 data class DetailBankCardUiModel(
     val cardholder: String?,
-    val cardholderRevealed: Boolean,
-    val cardNumber: String?,
-    val cardNumberRevealed: Boolean,
-    val hasCardNumber: Boolean,
-    val cvv: String?,
-    val cvvRevealed: Boolean,
-    val hasCvv: Boolean,
+    val cardNumber: ProtectedDetailFieldUiState,
+    val cvv: ProtectedDetailFieldUiState,
     val expiration: String?,
-    val paymentPin: String?,
-    val paymentPinRevealed: Boolean,
-    val hasPaymentPin: Boolean,
+    val paymentPin: ProtectedDetailFieldUiState,
     val editingCardholder: Boolean,
     val editedCardholder: String,
     val editingCardNumber: Boolean,
     val editedCardNumber: String,
     val editingCvv: Boolean,
     val editedCvv: String,
-    val canRevealMore: Boolean,
     val bankDetails: List<DetailCardTextFieldUiModel> = emptyList(),
-)
+) {
+    val hasCvv: Boolean get() = cvv.isPresent || editingCvv
+    val canRevealMore: Boolean get() = cardNumber.isHidden || cvv.isHidden || paymentPin.isHidden
+}
+
+sealed interface ProtectedDetailFieldUiState {
+    val isPresent: Boolean get() = this !is Absent
+    val isHidden: Boolean get() = this is Hidden
+    val isRevealed: Boolean get() = this is Revealed
+    val revealedValue: String?
+        get() = (this as? Revealed)?.value
+
+    data object Absent : ProtectedDetailFieldUiState
+
+    data object Hidden : ProtectedDetailFieldUiState
+
+    data class Revealed(val value: String) : ProtectedDetailFieldUiState
+}
 
 data class DetailCardTextFieldUiModel(
     val field: DetailField,
@@ -106,24 +115,19 @@ data class DetailCardTextFieldUiModel(
 )
 
 data class DetailIdentityUiModel(
-    val hasIdNumber: Boolean,
-    val idNumber: String?,
-    val idNumberRevealed: Boolean,
+    val idNumber: ProtectedDetailFieldUiState,
     val username: String?,
 )
 
 data class DetailSshUiModel(
     val fingerprint: String,
-    val hasPassphrase: Boolean,
-    val hasPrivateKey: Boolean,
-    val passphrase: String?,
-    val passphraseRevealed: Boolean,
-    val privateKey: String?,
-    val privateKeyRevealed: Boolean,
+    val passphrase: ProtectedDetailFieldUiState,
+    val privateKey: ProtectedDetailFieldUiState,
     val isEditingPassphrase: Boolean,
     val editedPassphrase: String,
-    val canRevealMore: Boolean,
-)
+) {
+    val canRevealMore: Boolean get() = passphrase.isHidden || privateKey.isHidden
+}
 
 sealed interface DetailOtpUiModel {
     data object Pending : DetailOtpUiModel

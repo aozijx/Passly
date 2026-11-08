@@ -154,14 +154,21 @@ fun DetailBody(
                             onPassphraseCopy = { onAction(DetailUiAction.CopyField(DetailField.SSH_PASSPHRASE)) },
                             onPassphraseReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PASSPHRASE)) },
                             onPassphraseEditStarted = {
-                                onAction(DetailUiAction.StartFieldEdit(DetailField.SSH_PASSPHRASE, ssh.passphrase.orEmpty()))
+                                onAction(
+                                    DetailUiAction.StartFieldEdit(
+                                        DetailField.SSH_PASSPHRASE,
+                                        ssh.passphrase.revealedValue.orEmpty(),
+                                    ),
+                                )
                             },
                             onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
                             onPassphraseSaved = {
-                                if (it != ssh.passphrase) onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it))
+                                if (it != ssh.passphrase.revealedValue) {
+                                    onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it))
+                                }
                             },
                             onPrivateKeyClick = {
-                                if (ssh.privateKeyRevealed) {
+                                if (ssh.privateKey.isRevealed) {
                                     onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))
                                 } else {
                                     onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PRIVATE_KEY))

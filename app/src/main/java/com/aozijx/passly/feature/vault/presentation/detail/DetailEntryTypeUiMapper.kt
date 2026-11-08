@@ -9,8 +9,8 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailCardTextFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyDataUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
 
@@ -24,19 +24,12 @@ internal class DetailFieldProjection(
     fun protected(
         fieldKey: FieldKey,
         sensitiveKey: SensitiveFieldKey,
-    ): DetailProtectedField =
-        DetailProtectedField(
-            present = sensitiveKey in state.sensitiveFieldKeys,
-            value = state.revealed(fieldKey).copyToString(),
-        )
-}
-
-internal data class DetailProtectedField(
-    val present: Boolean,
-    val value: String?,
-) {
-    val revealed: Boolean get() = value != null
-    val hidden: Boolean get() = present && !revealed
+    ): ProtectedDetailFieldUiState {
+        if (sensitiveKey !in state.sensitiveFieldKeys) return ProtectedDetailFieldUiState.Absent
+        return state.revealed(fieldKey).copyToString()
+            ?.let(ProtectedDetailFieldUiState::Revealed)
+            ?: ProtectedDetailFieldUiState.Hidden
+    }
 }
 
 internal fun detailBankCardUiModel(
@@ -63,24 +56,16 @@ internal fun detailBankCardUiModel(
 
     return DetailBankCardUiModel(
         cardholder = card?.cardHolder?.takeIf(String::isNotBlank),
-        cardholderRevealed = true,
-        cardNumber = cardNumber.value,
-        cardNumberRevealed = cardNumber.revealed,
-        hasCardNumber = cardNumber.present,
-        cvv = cvv.value,
-        cvvRevealed = cvv.revealed,
-        hasCvv = cvv.present || state.fieldEdits.isEditing(FieldKey.CARD_CVV),
+        cardNumber = cardNumber,
+        cvv = cvv,
         expiration = card?.cardExpiry,
-        paymentPin = paymentPin.value,
-        paymentPinRevealed = paymentPin.revealed,
-        hasPaymentPin = paymentPin.present,
+        paymentPin = paymentPin,
         editingCardholder = state.fieldEdits.isEditing(FieldKey.CARD_HOLDER),
         editedCardholder = state.fieldEdits.draft(FieldKey.CARD_HOLDER),
         editingCardNumber = state.fieldEdits.isEditing(FieldKey.CARD_NUMBER),
         editedCardNumber = state.fieldEdits.draft(FieldKey.CARD_NUMBER),
         editingCvv = state.fieldEdits.isEditing(FieldKey.CARD_CVV),
         editedCvv = state.fieldEdits.draft(FieldKey.CARD_CVV),
-        canRevealMore = cardNumber.hidden || cvv.hidden || paymentPin.hidden,
         bankDetails =
             listOf(
                 bankDetail(DetailField.CARD_ISSUING_BANK, R.string.card_issuing_bank, card?.issuingBank),
@@ -99,9 +84,7 @@ internal fun detailIdentityUiModel(
 ): DetailIdentityUiModel {
     val idNumber = fields.protected(FieldKey.ID_NUMBER, SensitiveFieldKey.IDENTITY_NUMBER)
     return DetailIdentityUiModel(
-        hasIdNumber = idNumber.present,
-        idNumber = idNumber.value,
-        idNumberRevealed = idNumber.revealed,
+        idNumber = idNumber,
         username = entry.username.takeIf(String::isNotBlank),
     )
 }
@@ -114,54 +97,39 @@ internal fun detailSshUiModel(
     val passphrase = fields.protected(FieldKey.SSH_PASSPHRASE, SensitiveFieldKey.SSH_PASSPHRASE)
     val privateKey = fields.protected(FieldKey.SSH_KEY, SensitiveFieldKey.SSH_PRIVATE_KEY)
     return DetailSshUiModel(
-        entry.username,
-        passphrase.present,
-        privateKey.present,
-        passphrase.value,
-        passphrase.revealed,
-        privateKey.value,
-        privateKey.revealed,
-        state.fieldEdits.isEditing(FieldKey.SSH_PASSPHRASE),
-        state.fieldEdits.draft(FieldKey.SSH_PASSPHRASE),
-        privateKey.hidden || passphrase.hidden,
+        fingerprint = entry.username,
+        passphrase = passphrase,
+        privateKey = privateKey,
+        isEditingPassphrase = state.fieldEdits.isEditing(FieldKey.SSH_PASSPHRASE),
+        editedPassphrase = state.fieldEdits.draft(FieldKey.SSH_PASSPHRASE),
     )
 }
 
 internal fun detailSeedPhraseUiModel(fields: DetailFieldProjection): DetailSeedPhraseUiModel =
-    fields.protected(FieldKey.SEED_PHRASE, SensitiveFieldKey.SEED_PHRASE).let {
-        val revealedValue = it.value
-        when {
-            !it.present -> DetailSeedPhraseUiModel.Absent
-            revealedValue == null -> DetailSeedPhraseUiModel.Hidden
-            else ->
-                revealedValue
-                    .split(" ")
-                    .filter(String::isNotBlank)
-                    .takeIf { words -> words.isNotEmpty() }
-                    ?.let(DetailSeedPhraseUiModel::RevealedWords)
-                    ?: DetailSeedPhraseUiModel.RevealedWithoutWords
-        }
+    when (val protected = fields.protected(FieldKey.SEED_PHRASE, SensitiveFieldKey.SEED_PHRASE)) {
+        ProtectedDetailFieldUiState.Absent -> DetailSeedPhraseUiModel.Absent
+        ProtectedDetailFieldUiState.Hidden -> DetailSeedPhraseUiModel.Hidden
+        is ProtectedDetailFieldUiState.Revealed ->
+            protected.value
+                .split(" ")
+                .filter(String::isNotBlank)
+                .takeIf { words -> words.isNotEmpty() }
+                ?.let(DetailSeedPhraseUiModel::RevealedWords)
+                ?: DetailSeedPhraseUiModel.RevealedWithoutWords
     }
 
 internal fun detailPasskeyUiModel(
     entry: Entry,
     fields: DetailFieldProjection,
 ): DetailPasskeyUiModel =
-    fields
-        .protected(
+    DetailPasskeyUiModel(
+        data =
+            fields.protected(
             FieldKey.PASSKEY_DATA,
             SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE,
-        ).let {
-            DetailPasskeyUiModel(
-                data =
-                    when {
-                        !it.present -> DetailPasskeyDataUiModel.Absent
-                        it.value == null -> DetailPasskeyDataUiModel.Hidden
-                        else -> DetailPasskeyDataUiModel.Revealed(it.value)
-                    },
-                hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo?.takeIf(String::isNotBlank),
-            )
-        }
+            ),
+        hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo?.takeIf(String::isNotBlank),
+    )
 
 internal fun DetailFieldEditState.isEditing(fieldKey: FieldKey): Boolean = isEditing(DetailDraftKey.EntryField(fieldKey))
 

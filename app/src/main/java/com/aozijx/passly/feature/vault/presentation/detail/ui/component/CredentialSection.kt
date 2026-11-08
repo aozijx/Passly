@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialSectionUiState
@@ -26,8 +25,8 @@ fun CredentialSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        CredentialField(state.username, DetailField.USERNAME, onAction)
-        CredentialField(state.password, DetailField.PASSWORD, onAction)
+        state.username?.let { CredentialField(it, DetailField.USERNAME, onAction) }
+        state.password?.let { CredentialField(it, DetailField.PASSWORD, onAction) }
     }
 }
 
@@ -37,18 +36,9 @@ private fun CredentialField(
     field: DetailField,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    if (!state.visible) return
-
     val revealedValue = state.revealedValue?.useChars(::String)
     SensitiveFieldCard(
-        title =
-            stringResource(
-                when (field) {
-                    DetailField.USERNAME -> R.string.field_username
-                    DetailField.PASSWORD -> R.string.password_label
-                    else -> error("Unsupported credential field: $field")
-                },
-            ),
+        title = stringResource(state.titleRes),
         isEditing = state.isEditing,
         editedValue = state.editedValue,
         revealedValue = revealedValue,

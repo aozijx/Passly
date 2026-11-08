@@ -1,8 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.DetailField
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -12,24 +13,16 @@ class DetailRevealSelectionTest {
         val card =
             DetailBankCardUiModel(
                 cardholder = null,
-                cardholderRevealed = true,
-                cardNumber = null,
-                cardNumberRevealed = false,
-                hasCardNumber = true,
-                cvv = null,
-                cvvRevealed = true,
-                hasCvv = true,
+                cardNumber = ProtectedDetailFieldUiState.Hidden,
+                cvv = ProtectedDetailFieldUiState.Revealed("123"),
                 expiration = null,
-                paymentPin = null,
-                paymentPinRevealed = false,
-                hasPaymentPin = false,
+                paymentPin = ProtectedDetailFieldUiState.Absent,
                 editingCardholder = false,
                 editedCardholder = "",
                 editingCardNumber = false,
                 editedCardNumber = "",
                 editingCvv = false,
                 editedCvv = "",
-                canRevealMore = true,
             )
 
         assertEquals(
@@ -43,15 +36,10 @@ class DetailRevealSelectionTest {
         val ssh =
             DetailSshUiModel(
                 fingerprint = "fingerprint",
-                hasPassphrase = true,
-                hasPrivateKey = true,
-                passphrase = null,
-                passphraseRevealed = false,
-                privateKey = "revealed",
-                privateKeyRevealed = true,
+                passphrase = ProtectedDetailFieldUiState.Hidden,
+                privateKey = ProtectedDetailFieldUiState.Revealed("revealed"),
                 isEditingPassphrase = false,
                 editedPassphrase = "",
-                canRevealMore = true,
             )
 
         assertEquals(setOf(DetailField.SSH_PASSPHRASE), ssh.fieldsToReveal())

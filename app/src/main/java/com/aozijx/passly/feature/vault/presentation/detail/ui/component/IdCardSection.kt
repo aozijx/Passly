@@ -8,6 +8,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 
 @Composable
 fun IdCardSection(
@@ -20,8 +21,13 @@ fun IdCardSection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.id_number),
-            value = if (model.hasIdNumber) model.idNumber else stringResource(R.string.not_set),
-            isRevealed = model.idNumberRevealed || !model.hasIdNumber,
+            value =
+                when (val idNumber = model.idNumber) {
+                    ProtectedDetailFieldUiState.Absent -> stringResource(R.string.not_set)
+                    ProtectedDetailFieldUiState.Hidden -> null
+                    is ProtectedDetailFieldUiState.Revealed -> idNumber.value
+                },
+            isRevealed = model.idNumber.isRevealed || !model.idNumber.isPresent,
             onCopy = onIdNumberCopy,
             onEdit = null,
             onReveal = onIdNumberReveal,

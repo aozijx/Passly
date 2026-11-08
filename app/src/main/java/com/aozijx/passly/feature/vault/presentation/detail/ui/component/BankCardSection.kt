@@ -27,7 +27,7 @@ fun BankCardSection(
             DetailField.CARDHOLDER,
             stringResource(R.string.cardholder),
             model.cardholder,
-            model.cardholderRevealed,
+            true,
             model.editingCardholder,
             model.editedCardholder,
             onAction,
@@ -45,12 +45,12 @@ fun BankCardSection(
                 false,
             )
         }
-        if (model.hasCardNumber) {
+        if (model.cardNumber.isPresent) {
             CardField(
                 DetailField.CARD_NUMBER,
                 stringResource(R.string.card_number),
-                model.cardNumber,
-                model.cardNumberRevealed,
+                model.cardNumber.revealedValue,
+                model.cardNumber.isRevealed,
                 model.editingCardNumber,
                 model.editedCardNumber,
                 onAction,
@@ -61,8 +61,8 @@ fun BankCardSection(
             CardField(
                 DetailField.CARD_CVV,
                 stringResource(R.string.card_cvv),
-                model.cvv,
-                model.cvvRevealed,
+                model.cvv.revealedValue,
+                model.cvv.isRevealed,
                 model.editingCvv,
                 model.editedCvv,
                 onAction,
@@ -79,11 +79,11 @@ fun BankCardSection(
                 onEdit = null,
             )
         }
-        if (model.hasPaymentPin) {
+        if (model.paymentPin.isPresent) {
             DetailItem(
                 label = stringResource(R.string.payment_pin),
-                value = model.paymentPin,
-                isRevealed = model.paymentPinRevealed,
+                value = model.paymentPin.revealedValue,
+                isRevealed = model.paymentPin.isRevealed,
                 onCopy = { onAction(DetailUiAction.CopyField(DetailField.PAYMENT_PIN)) },
                 onEdit = null,
                 onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PAYMENT_PIN)) },

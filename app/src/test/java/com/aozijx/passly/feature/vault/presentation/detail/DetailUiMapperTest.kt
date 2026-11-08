@@ -318,8 +318,9 @@ class DetailUiMapperTest {
 
         assertEquals("Office", presentation.header.title)
         assertTrue(presentation.content.canShowWifiQr)
-        assertFalse(requireNotNull(presentation.content.credential).username.visible)
-        assertTrue(requireNotNull(presentation.content.credential).password.visible)
+        val credential = requireNotNull(presentation.content.credential)
+        assertNull(credential.username)
+        assertEquals(R.string.password_label, requireNotNull(credential.password).titleRes)
     }
 
     @Test
@@ -368,10 +369,9 @@ class DetailUiMapperTest {
         assertEquals("Product", bankDetails[DetailField.CARD_PRODUCT])
         assertEquals("CNY / USD", bankDetails[DetailField.CARD_CURRENCY])
         assertEquals("+86 123456", bankDetails[DetailField.CARD_BANK_PHONE])
-        assertTrue(card.cardholderRevealed)
-        assertTrue(card.hasCardNumber)
+        assertTrue(card.cardNumber.isPresent)
         assertTrue(card.hasCvv)
-        assertTrue(card.hasPaymentPin)
+        assertTrue(card.paymentPin.isPresent)
         assertTrue(card.canRevealMore)
     }
 

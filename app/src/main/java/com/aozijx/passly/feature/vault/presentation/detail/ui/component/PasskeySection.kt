@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyDataUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 
 @Composable
 fun PasskeySection(
@@ -23,9 +23,9 @@ fun PasskeySection(
     val notSet = stringResource(R.string.not_set)
     val (passkeyData, isPasskeyDataRevealed) =
         when (val data = model.data) {
-            DetailPasskeyDataUiModel.Absent -> notSet to true
-            DetailPasskeyDataUiModel.Hidden -> null to false
-            is DetailPasskeyDataUiModel.Revealed -> data.value to true
+            ProtectedDetailFieldUiState.Absent -> notSet to true
+            ProtectedDetailFieldUiState.Hidden -> null to false
+            is ProtectedDetailFieldUiState.Revealed -> data.value to true
         }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(

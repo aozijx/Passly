@@ -5,13 +5,13 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiMode
 
 internal fun DetailBankCardUiModel.fieldsToReveal(): Set<DetailField> =
     buildSet {
-        if (hasCardNumber && !cardNumberRevealed) add(DetailField.CARD_NUMBER)
-        if (hasCvv && !cvvRevealed) add(DetailField.CARD_CVV)
-        if (hasPaymentPin && !paymentPinRevealed) add(DetailField.PAYMENT_PIN)
+        if (cardNumber.isPresent && !cardNumber.isRevealed) add(DetailField.CARD_NUMBER)
+        if (hasCvv && !cvv.isRevealed) add(DetailField.CARD_CVV)
+        if (paymentPin.isPresent && !paymentPin.isRevealed) add(DetailField.PAYMENT_PIN)
     }
 
 internal fun DetailSshUiModel.fieldsToReveal(): Set<DetailField> =
     buildSet {
-        if (hasPrivateKey && !privateKeyRevealed) add(DetailField.SSH_PRIVATE_KEY)
-        if (hasPassphrase && !passphraseRevealed) add(DetailField.SSH_PASSPHRASE)
+        if (privateKey.isPresent && !privateKey.isRevealed) add(DetailField.SSH_PRIVATE_KEY)
+        if (passphrase.isPresent && !passphrase.isRevealed) add(DetailField.SSH_PASSPHRASE)
     }
