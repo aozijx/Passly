@@ -30,9 +30,9 @@ class BackupDirectoryClearDialogTest {
         }
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        compose.onNodeWithText(context.getString(R.string.settings_backup_clear_selection)).assertIsNotEnabled()
+        compose.onNodeWithText(context.getString(R.string.settings_clear_action)).assertIsNotEnabled()
         compose.onNodeWithText(context.getString(R.string.cancel)).assertIsNotEnabled()
-        compose.onNodeWithText(context.getString(R.string.settings_backup_clear_selection)).performClick()
+        compose.onNodeWithText(context.getString(R.string.settings_clear_action)).performClick()
 
         assertEquals(0, confirmations)
         assertEquals(0, dismissals)
@@ -52,7 +52,7 @@ class BackupDirectoryClearDialogTest {
         }
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        compose.onNodeWithText(context.getString(R.string.settings_backup_clear_selection)).performClick()
+        compose.onNodeWithText(context.getString(R.string.settings_clear_action)).performClick()
 
         assertEquals(1, confirmations)
     }
