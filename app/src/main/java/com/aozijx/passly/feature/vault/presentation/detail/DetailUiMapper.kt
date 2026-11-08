@@ -34,7 +34,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentat
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedSectionsUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
@@ -140,7 +139,7 @@ internal fun toDetailPresentationModel(
                                 else -> R.string.vault_detail_favicon_default
                             },
                     ),
-                sections = state.sections.mapNotNullTo(linkedSetOf(), DetailSectionKey::toUiModel),
+                sections = state.sections.toSet(),
                 credential =
                     if (DetailSectionKey.CREDENTIAL in state.sections) {
                         CredentialSectionUiState(
@@ -357,30 +356,6 @@ internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
         override fun toString() = "***"
     }
 }
-
-private fun DetailSectionKey.toUiModel(): DetailSectionUiModel? =
-    when (this) {
-        DetailSectionKey.CREDENTIAL -> DetailSectionUiModel.CREDENTIAL
-
-        DetailSectionKey.OTP -> DetailSectionUiModel.OTP
-
-        DetailSectionKey.BANK_CARD -> DetailSectionUiModel.BANK_CARD
-
-        DetailSectionKey.IDENTITY -> DetailSectionUiModel.IDENTITY
-
-        DetailSectionKey.SSH -> DetailSectionUiModel.SSH
-
-        DetailSectionKey.SEED_PHRASE -> DetailSectionUiModel.SEED_PHRASE
-
-        DetailSectionKey.PASSKEY -> DetailSectionUiModel.PASSKEY
-
-        DetailSectionKey.ENTRY_TYPE,
-        DetailSectionKey.ASSOCIATED_INFO,
-        DetailSectionKey.NOTES,
-        DetailSectionKey.METADATA,
-        DetailSectionKey.ACTIVITY,
-        -> null
-    }
 
 private fun EntryTagValidationError.toMessageUiModel(): TagEditorValidationMessageUiModel =
     when (this) {

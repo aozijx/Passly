@@ -27,7 +27,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiMode
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationMessageUiModel
 import org.junit.Assert.assertEquals
@@ -272,7 +271,7 @@ class DetailUiMapperTest {
     }
 
     @Test
-    fun presentationMapperProjectsOnlyRenderableSections() {
+    fun presentationMapperPreservesResolvedSectionsForConditionalRendering() {
         val state =
             DetailUiState(
                 entry = noteEntry(),
@@ -289,7 +288,17 @@ class DetailUiMapperTest {
 
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
-        assertEquals(setOf(DetailSectionUiModel.CREDENTIAL), presentation.content.sections)
+        assertEquals(
+            setOf(
+                DetailSectionKey.CREDENTIAL,
+                DetailSectionKey.ENTRY_TYPE,
+                DetailSectionKey.ASSOCIATED_INFO,
+                DetailSectionKey.NOTES,
+                DetailSectionKey.METADATA,
+                DetailSectionKey.ACTIVITY,
+            ),
+            presentation.content.sections,
+        )
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiSta
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
+import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
@@ -20,7 +21,7 @@ data class DetailPresentationModel(
 
 data class DetailBodyUiModel(
     val icon: DetailIconCardUiModel,
-    val sections: Set<DetailSectionUiModel>,
+    val sections: Set<DetailSectionKey>,
     val credential: CredentialSectionUiState?,
     val otp: DetailOtpUiModel?,
     val canShowWifiQr: Boolean,
@@ -213,14 +214,4 @@ sealed interface DetailRevisionComparisonUiState {
     ) : DetailRevisionComparisonUiState
 
     data object Failed : DetailRevisionComparisonUiState
-}
-
-enum class DetailSectionUiModel {
-    CREDENTIAL,
-    OTP,
-    BANK_CARD,
-    IDENTITY,
-    SSH,
-    SEED_PHRASE,
-    PASSKEY,
 }

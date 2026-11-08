@@ -46,7 +46,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySe
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSectionUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 
 @Composable
 fun DetailBody(
@@ -92,7 +92,7 @@ fun DetailBody(
                     onEdit = { onAction(DetailUiAction.OpenFaviconEditor) },
                 )
             }
-            if (DetailSectionUiModel.CREDENTIAL in model.sections) {
+            if (DetailSectionKey.CREDENTIAL in model.sections) {
                 model.credential?.let { credential ->
                     item {
                         CredentialSection(
@@ -114,7 +114,7 @@ fun DetailBody(
                     }
                 }
             }
-            if (DetailSectionUiModel.OTP in model.sections) {
+            if (DetailSectionKey.OTP in model.sections) {
                 item {
                     TotpSection(
                         currentState = model.otp,
@@ -123,7 +123,7 @@ fun DetailBody(
                     )
                 }
             }
-            if (DetailSectionUiModel.BANK_CARD in model.sections) {
+            if (DetailSectionKey.BANK_CARD in model.sections) {
                 model.bankCard?.let { card ->
                     item {
                         BankCardSection(
@@ -133,7 +133,7 @@ fun DetailBody(
                     }
                 }
             }
-            if (DetailSectionUiModel.IDENTITY in model.sections) {
+            if (DetailSectionKey.IDENTITY in model.sections) {
                 model.identity?.let { identity ->
                     item {
                         IdCardSection(
@@ -145,7 +145,7 @@ fun DetailBody(
                     }
                 }
             }
-            if (DetailSectionUiModel.SSH in model.sections) {
+            if (DetailSectionKey.SSH in model.sections) {
                 model.ssh?.let { ssh ->
                     item {
                         SshKeySection(
@@ -179,7 +179,7 @@ fun DetailBody(
                     }
                 }
             }
-            if (DetailSectionUiModel.SEED_PHRASE in model.sections) {
+            if (DetailSectionKey.SEED_PHRASE in model.sections) {
                 model.seedPhrase?.let { seed ->
                     item {
                         SeedPhraseSection(
@@ -190,7 +190,7 @@ fun DetailBody(
                     }
                 }
             }
-            if (DetailSectionUiModel.PASSKEY in model.sections) {
+            if (DetailSectionKey.PASSKEY in model.sections) {
                 model.passkey?.let { passkey ->
                     item {
                         PasskeySection(
