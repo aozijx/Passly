@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingOperationState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateSearchResults
 
 @Composable
@@ -62,7 +63,7 @@ fun RelatedPasswordPickerSheet(
                         label = { Text(stringResource(R.string.vault_detail_bind_password_search)) },
                         singleLine = true,
                     )
-                    if (current.bindFailed) {
+                    if (current.operation == RelatedPasswordBindingOperationState.Failed) {
                         Text(stringResource(R.string.vault_detail_bind_password_failed))
                     }
                     when (val results = current.results) {
@@ -85,13 +86,16 @@ fun RelatedPasswordPickerSheet(
                                                     Text(candidate.title)
                                                     candidate.username?.let { Text(it) }
                                                 }
-                                                if (current.savingEntryId == candidate.id) {
+                                                if (
+                                                    current.operation ==
+                                                        RelatedPasswordBindingOperationState.Saving(candidate.id)
+                                                ) {
                                                     LoadingIndicator(
                                                         modifier = Modifier.size(24.dp).testTag("related-password-saving"),
                                                     )
                                                 } else {
                                                     TextButton(
-                                                        enabled = current.savingEntryId == null,
+                                                        enabled = current.operation !is RelatedPasswordBindingOperationState.Saving,
                                                         onClick = { onAction(DetailUiAction.BindPassword(candidate.id)) },
                                                     ) {
                                                         Text(stringResource(R.string.vault_detail_bind_password_action))

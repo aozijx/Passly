@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onNodeWithTag
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingOperationState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateSearchResults
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateUiModel
 import org.junit.Assert.assertEquals
@@ -59,7 +60,7 @@ class RelatedPasswordPickerSheetTest {
         show(
             RelatedPasswordBindingUiState.Ready(
                 candidates = listOf(RelatedPasswordCandidateUiModel("id", "Portal", "person")),
-                savingEntryId = "id",
+                operation = RelatedPasswordBindingOperationState.Saving("id"),
             ),
         )
 

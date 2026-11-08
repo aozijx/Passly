@@ -306,8 +306,7 @@ class DetailPasswordRelationsWorkflowTest {
             runCurrent()
 
             val ready = fixture.bindingState as RelatedPasswordBindingUiState.Ready
-            assertEquals(true, ready.bindFailed)
-            assertEquals(null, ready.savingEntryId)
+            assertEquals(RelatedPasswordBindingOperationState.Failed, ready.operation)
             assertEquals(0, fixture.relationUpdates)
         }
 
@@ -342,7 +341,7 @@ class DetailPasswordRelationsWorkflowTest {
             runCurrent()
 
             val ready = fixture.bindingState as RelatedPasswordBindingUiState.Ready
-            assertEquals(true, ready.bindFailed)
+            assertEquals(RelatedPasswordBindingOperationState.Failed, ready.operation)
             assertEquals(0, fixture.links.upsertAttempts)
         }
 

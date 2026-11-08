@@ -11,9 +11,16 @@ sealed interface RelatedPasswordBindingUiState {
         val candidates: List<RelatedPasswordCandidateUiModel>,
         val query: String = "",
         val results: RelatedPasswordCandidateSearchResults = candidates.toSearchResults(""),
-        val savingEntryId: String? = null,
-        val bindFailed: Boolean = false,
+        val operation: RelatedPasswordBindingOperationState = RelatedPasswordBindingOperationState.Idle,
     ) : RelatedPasswordBindingUiState
+}
+
+sealed interface RelatedPasswordBindingOperationState {
+    data object Idle : RelatedPasswordBindingOperationState
+
+    data class Saving(val entryId: String) : RelatedPasswordBindingOperationState
+
+    data object Failed : RelatedPasswordBindingOperationState
 }
 
 sealed interface RelatedPasswordCandidateSearchResults {

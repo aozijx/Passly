@@ -83,12 +83,16 @@ internal class DetailPasswordRelationsWorkflow(
     fun bind(targetEntryId: EntryId) {
         val entry = activeCurrentEntry() ?: return
         val picker = currentBindingState() as? RelatedPasswordBindingUiState.Ready ?: return
-        if (picker.savingEntryId != null || picker.candidates.none { it.id == targetEntryId.value }) return
+        if (picker.operation is RelatedPasswordBindingOperationState.Saving ||
+            picker.candidates.none { it.id == targetEntryId.value }
+        ) {
+            return
+        }
         val token = workSession.current(entry.id) ?: return
         val authentication = access.authenticationState.value
         if (linkMutationJob?.isActive == true) return
         candidateJob?.cancel()
-        publish(bindingState(picker.copy(savingEntryId = targetEntryId.value, bindFailed = false)))
+        publish(bindingState(picker.copy(operation = RelatedPasswordBindingOperationState.Saving(targetEntryId.value))))
         linkMutationJob =
             scope.launch {
                 try {
@@ -96,7 +100,7 @@ internal class DetailPasswordRelationsWorkflow(
                     if (!isCurrent(entry.id, token, authentication)) return@launch
                     if (result is AppResult.Failure) {
                         if (currentBindingState() != RelatedPasswordBindingUiState.Closed) {
-                            publish(bindingState(picker.copy(bindFailed = true)))
+                            publish(bindingState(picker.copy(operation = RelatedPasswordBindingOperationState.Failed)))
                         }
                         return@launch
                     }
@@ -112,7 +116,7 @@ internal class DetailPasswordRelationsWorkflow(
                     if (isCurrent(entry.id, token, authentication) &&
                         currentBindingState() != RelatedPasswordBindingUiState.Closed
                     ) {
-                        publish(bindingState(picker.copy(bindFailed = true)))
+                        publish(bindingState(picker.copy(operation = RelatedPasswordBindingOperationState.Failed)))
                     }
                 }
             }
