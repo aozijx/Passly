@@ -1,5 +1,6 @@
 package com.aozijx.passly.security.envelope
 
+import com.aozijx.passly.core.crypto.CryptoConfig
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.EnvelopeType
 import com.aozijx.passly.domain.access.model.KdfAlgorithm
@@ -17,7 +18,6 @@ private const val IV_LENGTH = 12
 private const val GCM_TAG_BITS = 128
 private const val AUTHENTICATION_SALT_LENGTH = 16
 private const val GCM_TAG_BYTES = GCM_TAG_BITS / Byte.SIZE_BITS
-private const val ALGORITHM = "AES/GCM/NoPadding"
 private const val AUTHENTICATION_CONTEXT_LABEL = "Passly.authentication-envelope.v1"
 
 internal object EnvelopeManager {
@@ -34,7 +34,7 @@ internal object EnvelopeManager {
         parameters: AuthenticationKdfParameters,
     ): KeyEnvelope {
         val iv = ByteArray(IV_LENGTH).also(random::nextBytes)
-        val cipher = Cipher.getInstance(ALGORITHM)
+        val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
         cipher.init(Cipher.ENCRYPT_MODE, wrappingKey, GCMParameterSpec(GCM_TAG_BITS, iv))
         cipher.updateAAD(authenticationAad(type, algorithm, salt, KeyEnvelope.VERSION_CURRENT, parameters))
         return KeyEnvelope(

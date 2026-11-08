@@ -1,6 +1,7 @@
 package com.aozijx.passly.security.dek
 
 import com.aozijx.passly.core.common.crypto.ConstantTime
+import com.aozijx.passly.core.crypto.CryptoConfig
 import java.nio.ByteBuffer
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -13,12 +14,11 @@ import javax.crypto.spec.SecretKeySpec
 internal object VerificationTag {
     private const val IV_LENGTH = 12
     private const val GCM_TAG_BITS = 128
-    private const val ALGORITHM = "AES/GCM/NoPadding"
     private val VERIFY_PLAINTEXT = "PASSLY_DEK_VERIFY_V1".toByteArray(Charsets.UTF_8)
 
     fun create(dek: ByteArray): ByteArray {
         val iv = ByteArray(IV_LENGTH).also(SecureRandom()::nextBytes)
-        val cipher = Cipher.getInstance(ALGORITHM)
+        val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
         cipher.init(
             Cipher.ENCRYPT_MODE,
             SecretKeySpec(dek, "AES"),
@@ -43,7 +43,7 @@ internal object VerificationTag {
         val buffer = ByteBuffer.wrap(encodedTag)
         val iv = ByteArray(IV_LENGTH).also(buffer::get)
         val ciphertext = ByteArray(buffer.remaining()).also(buffer::get)
-        val cipher = Cipher.getInstance(ALGORITHM)
+        val cipher = Cipher.getInstance(CryptoConfig.ALGORITHM)
         cipher.init(
             Cipher.DECRYPT_MODE,
             SecretKeySpec(dek, "AES"),
