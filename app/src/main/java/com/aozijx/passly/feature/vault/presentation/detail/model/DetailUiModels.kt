@@ -27,16 +27,12 @@ data class DetailActivityUiModel(
 )
 
 data class CredentialFieldUiState(
+    val field: DetailField,
     @param:StringRes val titleRes: Int,
     val revealedValue: ScopedSensitiveText?,
     val isEditing: Boolean,
     val editedValue: String,
     val valueForEditing: String = editedValue,
-)
-
-data class CredentialSectionUiState(
-    val username: CredentialFieldUiState?,
-    val password: CredentialFieldUiState?,
 )
 
 data class RelatedEntryUiModel(

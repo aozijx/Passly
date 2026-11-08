@@ -1,17 +1,30 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
+import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
-internal fun DetailBankCardUiModel.fieldsToReveal(): Set<DetailField> =
+internal fun DetailUiState.bankCardFieldsToReveal(): Set<DetailField> =
     buildSet {
-        if (cardNumber.isPresent && !cardNumber.isRevealed) add(DetailField.CARD_NUMBER)
-        if (hasCvv && !cvv.isRevealed) add(DetailField.CARD_CVV)
-        if (paymentPin.isPresent && !paymentPin.isRevealed) add(DetailField.PAYMENT_PIN)
+        if (SensitiveFieldKey.CARD_NUMBER in sensitiveFieldKeys && revealed(FieldKey.CARD_NUMBER) == null) {
+            add(DetailField.CARD_NUMBER)
+        }
+        if (
+            (SensitiveFieldKey.CARD_CVV in sensitiveFieldKeys || fieldEdits.isEditing(FieldKey.CARD_CVV)) &&
+            revealed(FieldKey.CARD_CVV) == null
+        ) {
+            add(DetailField.CARD_CVV)
+        }
+        if (SensitiveFieldKey.CARD_PAYMENT_PIN in sensitiveFieldKeys && revealed(FieldKey.PAYMENT_PIN) == null) {
+            add(DetailField.PAYMENT_PIN)
+        }
     }
 
-internal fun DetailSshUiModel.fieldsToReveal(): Set<DetailField> =
+internal fun DetailUiState.sshFieldsToReveal(): Set<DetailField> =
     buildSet {
-        if (privateKey.isPresent && !privateKey.isRevealed) add(DetailField.SSH_PRIVATE_KEY)
-        if (passphrase.isPresent && !passphrase.isRevealed) add(DetailField.SSH_PASSPHRASE)
+        if (SensitiveFieldKey.SSH_PRIVATE_KEY in sensitiveFieldKeys && revealed(FieldKey.SSH_KEY) == null) {
+            add(DetailField.SSH_PRIVATE_KEY)
+        }
+        if (SensitiveFieldKey.SSH_PASSPHRASE in sensitiveFieldKeys && revealed(FieldKey.SSH_PASSPHRASE) == null) {
+            add(DetailField.SSH_PASSPHRASE)
+        }
     }

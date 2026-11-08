@@ -8,7 +8,6 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiSta
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
-import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
@@ -21,15 +20,7 @@ data class DetailPresentationModel(
 
 data class DetailBodyUiModel(
     val icon: DetailIconCardUiModel,
-    val sections: Set<DetailSectionKey>,
-    val credential: CredentialSectionUiState?,
-    val otp: DetailOtpUiModel,
-    val canShowWifiQr: Boolean,
-    val bankCard: DetailBankCardUiModel?,
-    val identity: DetailIdentityUiModel?,
-    val ssh: DetailSshUiModel?,
-    val seedPhrase: DetailSeedPhraseUiModel?,
-    val passkey: DetailPasskeyUiModel?,
+    val sections: List<DetailBodySectionUiModel>,
     val relatedSections: DetailRelatedSectionsUiModel,
     val passwordBinding: RelatedPasswordBindingUiState,
     val passwordUnlink: RelatedPasswordUnlinkUiState,
@@ -43,6 +34,28 @@ data class DetailBodyUiModel(
     val activityHistory: DetailActivityHistoryUiState,
     val snapshotState: DetailSnapshotState,
 )
+
+sealed interface DetailBodySectionUiModel {
+    data class Credential(val fields: List<CredentialFieldUiState>) : DetailBodySectionUiModel {
+        init {
+            require(fields.isNotEmpty())
+        }
+    }
+
+    data object WifiQr : DetailBodySectionUiModel
+
+    data class Otp(val state: DetailOtpUiModel) : DetailBodySectionUiModel
+
+    data class BankCard(val state: DetailBankCardUiModel) : DetailBodySectionUiModel
+
+    data class Identity(val state: DetailIdentityUiModel) : DetailBodySectionUiModel
+
+    data class Ssh(val state: DetailSshUiModel) : DetailBodySectionUiModel
+
+    data class SeedPhrase(val state: DetailSeedPhraseUiModel) : DetailBodySectionUiModel
+
+    data class Passkey(val state: DetailPasskeyUiModel) : DetailBodySectionUiModel
+}
 
 sealed interface DetailActivityHistoryUiState {
     data object Loading : DetailActivityHistoryUiState

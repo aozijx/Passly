@@ -349,23 +349,11 @@ class DetailViewModel
                 }
 
                 DetailUiAction.RevealBankCardFields -> {
-                    revealFieldsFromPresentation(
-                        presentation.value
-                            ?.content
-                            ?.bankCard
-                            ?.fieldsToReveal()
-                            .orEmpty(),
-                    )
+                    revealFieldsFromState(_uiState.value.bankCardFieldsToReveal())
                 }
 
                 DetailUiAction.RevealSshFields -> {
-                    revealFieldsFromPresentation(
-                        presentation.value
-                            ?.content
-                            ?.ssh
-                            ?.fieldsToReveal()
-                            .orEmpty(),
-                    )
+                    revealFieldsFromState(_uiState.value.sshFieldsToReveal())
                 }
 
                 is DetailUiAction.SaveField -> {
@@ -654,7 +642,7 @@ class DetailViewModel
             }
         }
 
-        private fun revealFieldsFromPresentation(fields: Set<DetailField>) {
+        private fun revealFieldsFromState(fields: Set<DetailField>) {
             val current = _uiState.value.entry ?: return
             val hiddenKeys =
                 fields

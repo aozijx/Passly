@@ -50,8 +50,8 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhra
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
-import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -104,110 +104,94 @@ fun DetailBody(
                     onEdit = { onAction(DetailUiAction.OpenFaviconEditor) },
                 )
             }
-            if (DetailSectionKey.CREDENTIAL in model.sections) {
-                model.credential?.let { credential ->
-                    item {
-                        CredentialSection(
-                            state = credential,
-                            onAction = onAction,
-                        )
-                    }
-                }
-            }
-            if (model.canShowWifiQr) {
-                item {
-                    OutlinedButton(
-                        onClick = { onAction(DetailUiAction.ShowEntryQr) },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Default.QrCode, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.vault_show_wifi_qr))
-                    }
-                }
-            }
-            if (DetailSectionKey.OTP in model.sections) {
-                item {
-                    TotpSection(
-                        currentState = model.otp,
-                        onQrClick = { onAction(DetailUiAction.ShowEntryQr) },
-                        onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
-                    )
-                }
-            }
-            if (DetailSectionKey.BANK_CARD in model.sections) {
-                model.bankCard?.let { card ->
-                    item {
-                        BankCardSection(
-                            model = card,
-                            onAction = onAction,
-                        )
-                    }
-                }
-            }
-            if (DetailSectionKey.IDENTITY in model.sections) {
-                model.identity?.let { identity ->
-                    item {
-                        IdCardSection(
-                            model = identity,
-                            onIdNumberCopy = { onAction(DetailUiAction.CopyField(DetailField.ID_NUMBER)) },
-                            onIdNumberReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.ID_NUMBER)) },
-                            onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
-                        )
-                    }
-                }
-            }
-            if (DetailSectionKey.SSH in model.sections) {
-                model.ssh?.let { ssh ->
-                    item {
-                        SshKeySection(
-                            model = ssh,
-                            onFingerprintCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
-                            onPassphraseCopy = { onAction(DetailUiAction.CopyField(DetailField.SSH_PASSPHRASE)) },
-                            onPassphraseReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PASSPHRASE)) },
-                            onPassphraseEditStarted = {
-                                onAction(
-                                    DetailUiAction.StartFieldEdit(
-                                        DetailField.SSH_PASSPHRASE,
-                                        ssh.passphrase.revealedValue.orEmpty(),
-                                    ),
-                                )
-                            },
-                            onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
-                            onPassphraseSaved = { onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it)) },
-                            onPrivateKeyClick = {
-                                if (ssh.privateKey.isRevealed) {
-                                    onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))
-                                } else {
-                                    onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PRIVATE_KEY))
-                                }
-                            },
-                            onRevealAll = { onAction(DetailUiAction.RevealSshFields) },
-                        )
-                    }
-                }
-            }
-            if (DetailSectionKey.SEED_PHRASE in model.sections) {
-                model.seedPhrase?.let { seed ->
-                    item {
-                        SeedPhraseSection(
-                            state = seed,
-                            onCopy = { onAction(DetailUiAction.CopyField(DetailField.SEED_PHRASE)) },
-                            onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SEED_PHRASE)) },
-                        )
-                    }
-                }
-            }
-            if (DetailSectionKey.PASSKEY in model.sections) {
-                model.passkey?.let { passkey ->
-                    item {
-                        PasskeySection(
-                            model = passkey,
-                            onPasskeyCopy = { onAction(DetailUiAction.CopyField(DetailField.PASSKEY_DATA)) },
-                            onPasskeyReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PASSKEY_DATA)) },
-                            onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailField.HARDWARE_INFO)) },
-                        )
-                    }
+            model.sections.forEach { section ->
+                when (section) {
+                    is DetailBodySectionUiModel.Credential ->
+                        item {
+                            CredentialSection(fields = section.fields, onAction = onAction)
+                        }
+
+                    DetailBodySectionUiModel.WifiQr ->
+                        item {
+                            OutlinedButton(
+                                onClick = { onAction(DetailUiAction.ShowEntryQr) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(Icons.Default.QrCode, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.vault_show_wifi_qr))
+                            }
+                        }
+
+                    is DetailBodySectionUiModel.Otp ->
+                        item {
+                            TotpSection(
+                                currentState = section.state,
+                                onQrClick = { onAction(DetailUiAction.ShowEntryQr) },
+                                onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
+                            )
+                        }
+
+                    is DetailBodySectionUiModel.BankCard ->
+                        item { BankCardSection(model = section.state, onAction = onAction) }
+
+                    is DetailBodySectionUiModel.Identity ->
+                        item {
+                            IdCardSection(
+                                model = section.state,
+                                onIdNumberCopy = { onAction(DetailUiAction.CopyField(DetailField.ID_NUMBER)) },
+                                onIdNumberReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.ID_NUMBER)) },
+                                onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
+                            )
+                        }
+
+                    is DetailBodySectionUiModel.Ssh ->
+                        item {
+                            val ssh = section.state
+                            SshKeySection(
+                                model = ssh,
+                                onFingerprintCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
+                                onPassphraseCopy = { onAction(DetailUiAction.CopyField(DetailField.SSH_PASSPHRASE)) },
+                                onPassphraseReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PASSPHRASE)) },
+                                onPassphraseEditStarted = {
+                                    onAction(
+                                        DetailUiAction.StartFieldEdit(
+                                            DetailField.SSH_PASSPHRASE,
+                                            ssh.passphrase.revealedValue.orEmpty(),
+                                        ),
+                                    )
+                                },
+                                onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
+                                onPassphraseSaved = { onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it)) },
+                                onPrivateKeyClick = {
+                                    if (ssh.privateKey.isRevealed) {
+                                        onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))
+                                    } else {
+                                        onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PRIVATE_KEY))
+                                    }
+                                },
+                                onRevealAll = { onAction(DetailUiAction.RevealSshFields) },
+                            )
+                        }
+
+                    is DetailBodySectionUiModel.SeedPhrase ->
+                        item {
+                            SeedPhraseSection(
+                                state = section.state,
+                                onCopy = { onAction(DetailUiAction.CopyField(DetailField.SEED_PHRASE)) },
+                                onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SEED_PHRASE)) },
+                            )
+                        }
+
+                    is DetailBodySectionUiModel.Passkey ->
+                        item {
+                            PasskeySection(
+                                model = section.state,
+                                onPasskeyCopy = { onAction(DetailUiAction.CopyField(DetailField.PASSKEY_DATA)) },
+                                onPasskeyReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PASSKEY_DATA)) },
+                                onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailField.HARDWARE_INFO)) },
+                            )
+                        }
                 }
             }
             item {

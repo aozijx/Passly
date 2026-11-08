@@ -9,7 +9,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialFieldUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 /**
@@ -18,15 +17,16 @@ import com.aozijx.passly.feature.vault.presentation.detail.DetailField
  */
 @Composable
 fun CredentialSection(
-    state: CredentialSectionUiState,
+    fields: List<CredentialFieldUiState>,
     onAction: (DetailUiAction) -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        state.username?.let { CredentialField(it, DetailField.USERNAME, onAction) }
-        state.password?.let { CredentialField(it, DetailField.PASSWORD, onAction) }
+        fields.forEach { field ->
+            CredentialField(field, field.field, onAction)
+        }
     }
 }
 

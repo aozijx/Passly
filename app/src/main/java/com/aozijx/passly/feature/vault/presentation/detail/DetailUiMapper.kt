@@ -18,12 +18,12 @@ import com.aozijx.passly.feature.vault.presentation.common.mapItems
 import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionSheetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialFieldUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.CredentialSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityHistoryUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedAppsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedInfoUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHeaderUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIconCardUiModel
@@ -39,8 +39,10 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsU
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.ScopedSensitiveText
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationMessageUiModel
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 internal fun detailHeaderUiModel(
     entry: Entry,
@@ -95,8 +97,6 @@ internal fun toDetailPresentationModel(
             )
         }
     val fields = DetailFieldProjection(state)
-    val revealedUsername = state.revealed(FieldKey.USERNAME)
-    val revealedPassword = state.revealed(FieldKey.PASSWORD)
     val password = fields.protected(FieldKey.PASSWORD, SensitiveFieldKey.PASSWORD)
 
     return DetailPresentationModel(
@@ -139,77 +139,7 @@ internal fun toDetailPresentationModel(
                                 else -> R.string.vault_detail_favicon_default
                             },
                     ),
-                sections = state.sections.toSet(),
-                credential =
-                    if (DetailSectionKey.CREDENTIAL in state.sections) {
-                        CredentialSectionUiState(
-                            username =
-                                (
-                                    entry.type != EntryType.WIFI && (
-                                        entry.username.isNotBlank() ||
-                                            SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys
-                                    )
-                                ).takeIf { it }?.let {
-                                    CredentialFieldUiState(
-                                        titleRes = R.string.field_username,
-                                        revealedValue = revealedUsername?.asScopedSensitiveText(),
-                                        isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
-                                        editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
-                                        valueForEditing = revealedUsername.copyToString() ?: entry.username,
-                                    )
-                                },
-                            password =
-                                (
-                                    if (entry.type == EntryType.WIFI) {
-                                        !entry.secret.wifi?.password.isNullOrBlank()
-                                    } else {
-                                        password.isPresent || entry.type != EntryType.LOGIN
-                                    }
-                                ).takeIf { it }?.let {
-                                    CredentialFieldUiState(
-                                        titleRes = R.string.password_label,
-                                        revealedValue = revealedPassword?.asScopedSensitiveText(),
-                                        isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
-                                        editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
-                                        valueForEditing = revealedPassword.copyToString().orEmpty(),
-                                    )
-                                },
-                        )
-                    } else {
-                        null
-                    },
-                otp = detailOtpUiModel(otp),
-                canShowWifiQr = entry.type == EntryType.WIFI,
-                bankCard =
-                    if (DetailSectionKey.BANK_CARD in state.sections) {
-                        detailBankCardUiModel(entry, state, fields)
-                    } else {
-                        null
-                    },
-                identity =
-                    if (DetailSectionKey.IDENTITY in state.sections) {
-                        detailIdentityUiModel(entry, fields)
-                    } else {
-                        null
-                    },
-                ssh =
-                    if (DetailSectionKey.SSH in state.sections) {
-                        detailSshUiModel(entry, state, fields)
-                    } else {
-                        null
-                    },
-                seedPhrase =
-                    if (DetailSectionKey.SEED_PHRASE in state.sections) {
-                        detailSeedPhraseUiModel(fields)
-                    } else {
-                        null
-                    },
-                passkey =
-                    if (DetailSectionKey.PASSKEY in state.sections) {
-                        detailPasskeyUiModel(entry, fields)
-                    } else {
-                        null
-                    },
+                sections = detailBodySectionsUiModels(entry, state, otp, fields, password),
                 relatedSections =
                     relatedSectionsUiModel(
                         accountGroupEntries = accountGroupEntries,
@@ -261,6 +191,74 @@ internal fun toDetailPresentationModel(
             ),
     )
 }
+
+private fun detailBodySectionsUiModels(
+    entry: Entry,
+    state: DetailUiState,
+    otp: OtpCodeState?,
+    fields: DetailFieldProjection,
+    password: ProtectedDetailFieldUiState,
+): List<DetailBodySectionUiModel> =
+    buildList {
+        if (DetailSectionKey.CREDENTIAL in state.sections) {
+            val credentialFields =
+                buildList {
+                    if (
+                        entry.type != EntryType.WIFI &&
+                        (entry.username.isNotBlank() || SensitiveFieldKey.PASSWORD !in state.sensitiveFieldKeys)
+                    ) {
+                        add(
+                            CredentialFieldUiState(
+                                field = DetailField.USERNAME,
+                                titleRes = R.string.field_username,
+                                revealedValue = state.revealed(FieldKey.USERNAME)?.asScopedSensitiveText(),
+                                isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
+                                editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
+                                valueForEditing = state.revealed(FieldKey.USERNAME).copyToString() ?: entry.username,
+                            ),
+                        )
+                    }
+                    val shouldShowPassword =
+                        if (entry.type == EntryType.WIFI) {
+                            !entry.secret.wifi?.password.isNullOrBlank()
+                        } else {
+                            password.isPresent || entry.type != EntryType.LOGIN
+                        }
+                    if (shouldShowPassword) {
+                        add(
+                            CredentialFieldUiState(
+                                field = DetailField.PASSWORD,
+                                titleRes = R.string.password_label,
+                                revealedValue = state.revealed(FieldKey.PASSWORD)?.asScopedSensitiveText(),
+                                isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
+                                editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
+                                valueForEditing = state.revealed(FieldKey.PASSWORD).copyToString().orEmpty(),
+                            ),
+                        )
+                    }
+                }
+            if (credentialFields.isNotEmpty()) {
+                add(DetailBodySectionUiModel.Credential(credentialFields))
+            }
+        }
+        if (entry.type == EntryType.WIFI) add(DetailBodySectionUiModel.WifiQr)
+        if (DetailSectionKey.OTP in state.sections) add(DetailBodySectionUiModel.Otp(detailOtpUiModel(otp)))
+        if (DetailSectionKey.BANK_CARD in state.sections) {
+            add(DetailBodySectionUiModel.BankCard(detailBankCardUiModel(entry, state, fields)))
+        }
+        if (DetailSectionKey.IDENTITY in state.sections) {
+            add(DetailBodySectionUiModel.Identity(detailIdentityUiModel(entry, fields)))
+        }
+        if (DetailSectionKey.SSH in state.sections) {
+            add(DetailBodySectionUiModel.Ssh(detailSshUiModel(entry, state, fields)))
+        }
+        if (DetailSectionKey.SEED_PHRASE in state.sections) {
+            add(DetailBodySectionUiModel.SeedPhrase(detailSeedPhraseUiModel(fields)))
+        }
+        if (DetailSectionKey.PASSKEY in state.sections) {
+            add(DetailBodySectionUiModel.Passkey(detailPasskeyUiModel(entry, fields)))
+        }
+    }
 
 private fun relatedSectionsUiModel(
     accountGroupEntries: List<RelatedEntryUiModel>,

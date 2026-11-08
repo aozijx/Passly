@@ -23,6 +23,7 @@ import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityHistoryUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
@@ -45,7 +46,9 @@ class DetailUiMapperTest {
                 secret = EntrySecret(credential = CardCredential()),
             )
         val state = DetailUiState(entry = entry, sections = listOf(DetailSectionKey.BANK_CARD))
-        val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
+        val card =
+            requireNotNull(toDetailPresentationModel(state, null))
+                .content.sections.filterIsInstance<DetailBodySectionUiModel.BankCard>().single().state
 
         assertNull(card.cardholder)
     }
@@ -281,7 +284,7 @@ class DetailUiMapperTest {
     }
 
     @Test
-    fun presentationMapperPreservesResolvedSectionsForConditionalRendering() {
+    fun presentationMapperProjectsRenderableSectionsInResolvedOrder() {
         val state =
             DetailUiState(
                 entry = noteEntry(),
@@ -299,16 +302,43 @@ class DetailUiMapperTest {
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
         assertEquals(
-            setOf(
-                DetailSectionKey.CREDENTIAL,
-                DetailSectionKey.ENTRY_TYPE,
-                DetailSectionKey.ASSOCIATED_INFO,
-                DetailSectionKey.NOTES,
-                DetailSectionKey.METADATA,
-                DetailSectionKey.ACTIVITY,
-            ),
-            presentation.content.sections,
+            listOf(DetailBodySectionUiModel.Credential::class),
+            presentation.content.sections.map { it::class },
         )
+    }
+
+    @Test
+    fun presentationMapperEmitsEveryResolvedSectionAsExplicitPayload() {
+        val state =
+            DetailUiState(
+                entry = noteEntry(),
+                sections =
+                    listOf(
+                        DetailSectionKey.CREDENTIAL,
+                        DetailSectionKey.OTP,
+                        DetailSectionKey.BANK_CARD,
+                        DetailSectionKey.IDENTITY,
+                        DetailSectionKey.SSH,
+                        DetailSectionKey.SEED_PHRASE,
+                        DetailSectionKey.PASSKEY,
+                    ),
+            )
+
+        val sections = requireNotNull(toDetailPresentationModel(state, null)).content.sections
+
+        assertEquals(
+            listOf(
+                DetailBodySectionUiModel.Credential::class,
+                DetailBodySectionUiModel.Otp::class,
+                DetailBodySectionUiModel.BankCard::class,
+                DetailBodySectionUiModel.Identity::class,
+                DetailBodySectionUiModel.Ssh::class,
+                DetailBodySectionUiModel.SeedPhrase::class,
+                DetailBodySectionUiModel.Passkey::class,
+            ),
+            sections.map { it::class },
+        )
+        assertEquals(DetailOtpUiModel.NotRequested, (sections[1] as DetailBodySectionUiModel.Otp).state)
     }
 
     @Test
@@ -336,11 +366,15 @@ class DetailUiMapperTest {
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
         assertEquals("Office", presentation.header.title)
-        assertEquals(DetailOtpUiModel.NotRequested, presentation.content.otp)
-        assertTrue(presentation.content.canShowWifiQr)
-        val credential = requireNotNull(presentation.content.credential)
-        assertNull(credential.username)
-        assertEquals(R.string.password_label, requireNotNull(credential.password).titleRes)
+        val sections = presentation.content.sections
+        assertEquals(
+            listOf(DetailBodySectionUiModel.Credential::class, DetailBodySectionUiModel.WifiQr::class),
+            sections.map { it::class },
+        )
+        val credential = (sections.first() as DetailBodySectionUiModel.Credential).fields
+        assertEquals(1, credential.size)
+        assertEquals(DetailField.PASSWORD, credential.single().field)
+        assertEquals(R.string.password_label, credential.single().titleRes)
     }
 
     @Test
@@ -380,7 +414,9 @@ class DetailUiMapperTest {
                     ),
             )
 
-        val card = requireNotNull(toDetailPresentationModel(state, null)?.content?.bankCard)
+        val card =
+            requireNotNull(toDetailPresentationModel(state, null))
+                .content.sections.filterIsInstance<DetailBodySectionUiModel.BankCard>().single().state
 
         assertEquals("Alice", card.cardholder)
         val bankDetails = card.bankDetails.associate { it.field to it.value }
