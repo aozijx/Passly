@@ -50,9 +50,13 @@ internal data class BackupExportOptions(
     val includeDeleted: Boolean = true,
     val includedEntryTypes: Set<EntryType> = EntryType.entries.toSet(),
 ) {
+    val allEntryTypesSelected: Boolean get() = includedEntryTypes == EntryType.entries.toSet()
+
+    val needsEntryTypeSelection: Boolean get() = includedEntryTypes.isEmpty()
+
     val canSubmit: Boolean
         get() =
-            includedEntryTypes.isNotEmpty() &&
+            !needsEntryTypeSelection &&
                 (!format.requiresPassword || !password.isEmpty)
 }
 

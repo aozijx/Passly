@@ -10,6 +10,7 @@ import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -99,10 +100,23 @@ internal class BackupViewModel
                     mutate(BackupMutation.IncludeDeletedUpdated(action.include))
                 }
 
-                is BackupUiAction.UpdateIncludedEntryTypes -> {
+                is BackupUiAction.ToggleIncludedEntryType -> {
+                    val options = (_uiState.value.workflow as? BackupWorkflow.ConfigureExport)?.options ?: return
                     mutate(
-                        BackupMutation.IncludedEntryTypesUpdated(action.types),
+                        BackupMutation.IncludedEntryTypesUpdated(
+                            options.includedEntryTypes.toMutableSet().apply {
+                                if (!add(action.type)) remove(action.type)
+                            },
+                        ),
                     )
+                }
+
+                BackupUiAction.SelectAllEntryTypes -> {
+                    mutate(BackupMutation.IncludedEntryTypesUpdated(EntryType.entries.toSet()))
+                }
+
+                BackupUiAction.ClearEntryTypes -> {
+                    mutate(BackupMutation.IncludedEntryTypesUpdated(emptySet()))
                 }
 
                 is BackupUiAction.SubmitExport -> {

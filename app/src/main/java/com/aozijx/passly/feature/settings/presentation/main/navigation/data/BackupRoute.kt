@@ -22,6 +22,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.presentation.BackupOperationRoute
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsEffect
+import com.aozijx.passly.feature.settings.presentation.backup.BackupDirectoryUiState
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiAction
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsViewModel
@@ -84,10 +85,12 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
             R.string.settings_backup_directory_unavailable,
         )
     val operationFailedMessage = stringResource(R.string.settings_backup_directory_operation_failed)
-    val pathLabel =
-        remember(readyState.directoryUri) {
-            UriDisplayNameFormatter.format(readyState.directoryUri) ?: notSetText
+    val directoryUri =
+        when (val directory = readyState.directory) {
+            BackupDirectoryUiState.Unconfigured -> null
+            is BackupDirectoryUiState.Configured -> directory.uri
         }
+    val pathLabel = remember(directoryUri) { UriDisplayNameFormatter.format(directoryUri) ?: notSetText }
     val backupPathPicker =
         rememberLauncherForActivityResult(
             ActivityResultContracts.OpenDocumentTree(),
@@ -153,8 +156,13 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
     ) {
         item {
             BackupOperationRoute(
-                directoryUri = readyState.directoryUri,
+                directoryUri = directoryUri,
                 directoryLabel = pathLabel,
+                configuredDirectoryLabel =
+                    when (readyState.directory) {
+                        BackupDirectoryUiState.Unconfigured -> null
+                        is BackupDirectoryUiState.Configured -> pathLabel
+                    },
                 lastExportFileLabel = notSetText,
                 onPickBackupPath = {
                     val owner = pageOwner.value
@@ -170,10 +178,9 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
                     }
                 },
                 onClearBackupPath =
-                    if (readyState.directoryUri.isNullOrBlank()) {
-                        null
-                    } else {
-                        ({ showClearDirectoryDialog = true })
+                    when (readyState.directory) {
+                        BackupDirectoryUiState.Unconfigured -> null
+                        is BackupDirectoryUiState.Configured -> ({ showClearDirectoryDialog = true })
                     },
             )
         }

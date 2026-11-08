@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKind
 
 /** Stable protocol keys. Kotlin enum names are deliberately not part of the archive format. */
 internal object BackupArchiveKeyRegistry {
@@ -94,13 +93,6 @@ internal object BackupArchiveKeyRegistry {
         )
     private val relationKeys = relations.entries.associate { (key, value) -> value to key }
 
-    private val resources =
-        mapOf(
-            "icon" to BackupResourceKind.ICON,
-            "attachment" to BackupResourceKind.ATTACHMENT,
-        )
-    private val resourceKeys = resources.entries.associate { (key, value) -> value to key }
-
     fun entryTypeKey(type: EntryType): String = entryTypeKeys.getValue(type)
 
     fun entryType(key: String): EntryType? = entryTypes[key]
@@ -113,7 +105,4 @@ internal object BackupArchiveKeyRegistry {
 
     fun relationType(key: String): EntryRelationType? = relations[key]
 
-    fun resourceKindKey(kind: BackupResourceKind): String = resourceKeys.getValue(kind)
-
-    fun resourceKind(key: String): BackupResourceKind? = resources[key]
 }

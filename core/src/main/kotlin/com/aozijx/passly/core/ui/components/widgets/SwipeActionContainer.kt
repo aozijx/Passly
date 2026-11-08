@@ -151,9 +151,6 @@ fun SwipeActionContainer(
                             else -> null
                         }
                     thresholdHapticSent = false
-                    if (action != null) {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
                     action?.onAction?.invoke()
                     settleToRest()
                 },
@@ -177,7 +174,7 @@ fun SwipeActionContainer(
 
                     val thresholdReached = abs(swipeOffset) >= triggerThresholdPx
                     if (thresholdReached && !thresholdHapticSent) {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
                     }
                     thresholdHapticSent = thresholdReached
                 },

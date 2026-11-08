@@ -5,12 +5,13 @@ import java.util.UUID
 enum class LogLevel(
     val wireId: Int,
     val exportValue: String,
+    val priority: Int,
 ) {
-    DEBUG(0, "DEBUG"),
-    INFO(1, "INFO"),
-    WARN(2, "WARN"),
-    ERROR(3, "ERROR"),
-    FATAL(4, "FATAL"),
+    DEBUG(0, "DEBUG", 0),
+    INFO(1, "INFO", 1),
+    WARN(2, "WARN", 2),
+    ERROR(3, "ERROR", 3),
+    FATAL(4, "FATAL", 4),
     ;
 
     companion object {

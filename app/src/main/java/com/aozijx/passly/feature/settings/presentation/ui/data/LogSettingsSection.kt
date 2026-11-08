@@ -14,6 +14,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.DiagnosticsLogRecordingMode
 import com.aozijx.passly.feature.settings.presentation.main.data.StorageSizeUiState
+import com.aozijx.passly.feature.settings.presentation.mapping.labelResource
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
@@ -37,8 +38,8 @@ internal fun LogSettingsSection(
                             key = "logs.recording_settings",
                             title = stringResource(R.string.settings_diagnostics_recording_title),
                             selected = logRecordingMode,
-                            selectedLabel = logRecordingMode.recordingLabel(),
-                            options = DiagnosticsLogRecordingMode.entries.map { it to it.recordingLabel() },
+                            selectedLabel = stringResource(logRecordingMode.labelResource()),
+                            options = DiagnosticsLogRecordingMode.entries.map { it to stringResource(it.labelResource()) },
                             expanded = recordingModeMenuExpanded,
                             onExpandedChange = { recordingModeMenuExpanded = it },
                             onSelect = onLogRecordingModeChange,
@@ -68,23 +69,3 @@ internal fun LogSettingsSection(
             },
     )
 }
-
-private fun DiagnosticsLogRecordingMode.recordingLabel(): String =
-    when (this) {
-        DiagnosticsLogRecordingMode.DISABLED -> {
-            "Off"
-        }
-
-        DiagnosticsLogRecordingMode.WARN_AND_ABOVE,
-        DiagnosticsLogRecordingMode.INFO_AND_ABOVE,
-        -> {
-            name
-                .substringBefore("_AND_ABOVE")
-                .lowercase()
-                .replaceFirstChar(Char::uppercase)
-        }
-
-        DiagnosticsLogRecordingMode.DEBUG_AND_ABOVE -> {
-            "All"
-        }
-    }

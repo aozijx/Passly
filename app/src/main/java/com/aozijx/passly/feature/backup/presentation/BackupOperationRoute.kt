@@ -28,6 +28,7 @@ import com.aozijx.passly.presentation.shared.event.collectPageEffects
 fun BackupOperationRoute(
     directoryUri: String?,
     directoryLabel: String,
+    configuredDirectoryLabel: String?,
     lastExportFileLabel: String,
     onPickBackupPath: () -> Unit,
     onClearBackupPath: (() -> Unit)?,
@@ -144,7 +145,7 @@ fun BackupOperationRoute(
     BackupRestoreSheet(
         state =
             state.toSheetUiState(
-                configuredDirectoryLabel = directoryLabel.takeIf { !directoryUri.isNullOrBlank() },
+            configuredDirectoryLabel = configuredDirectoryLabel,
             ),
         onAction = viewModel::onAction,
     )

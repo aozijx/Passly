@@ -10,21 +10,7 @@ sealed class SettingsDestination(
 ) : Serializable {
     companion object {
         private val destinations by lazy {
-            listOf(
-                Security,
-                Privacy,
-                Permissions,
-                Appearance,
-                Interface,
-                Interaction,
-                Autofill,
-                DataManagement,
-                BackupRestore,
-                Notifications,
-                RecoveryCode,
-                About,
-                Diagnostics,
-            ).associateBy(SettingsDestination::route)
+            settingsDetailRoutes().associateBy(SettingsDestination::route)
         }
 
         fun fromRouteKey(routeKey: String): SettingsDestination? = destinations[routeKey]

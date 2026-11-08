@@ -6,20 +6,10 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsAction
+import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsUiModel
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
-
-internal data class NotificationSettingsUiModel(
-    val systemNotificationsEnabled: Boolean,
-    val optionalMessagesEnabled: Boolean,
-    val topics: List<NotificationTopicUiModel>,
-)
-
-internal data class NotificationTopicUiModel(
-    val topic: MessageTopic,
-    val enabled: Boolean,
-)
 
 @Composable
 internal fun NotificationSettingsSection(

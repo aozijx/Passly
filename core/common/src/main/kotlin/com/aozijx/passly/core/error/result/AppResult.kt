@@ -42,11 +42,6 @@ sealed class AppResult<out T> {
         return this
     }
 
-    suspend fun onSuccessSuspend(action: suspend (T) -> Unit): AppResult<T> {
-        if (this is Success) action(data)
-        return this
-    }
-
     fun onFailure(action: (AppError) -> Unit): AppResult<T> {
         if (this is Failure) action(error)
         return this

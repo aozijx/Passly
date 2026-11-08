@@ -72,7 +72,7 @@ fun InputActionButton(
         performInputActionSubmit(
             enabled = enabled,
             phase = state.phase,
-            hasInput = state.value.isNotEmpty(),
+            canSubmit = state.canSubmit,
             onAction = onAction,
             dismissInput = dismissInput,
         )
@@ -156,7 +156,7 @@ fun InputActionButton(
                     ActionButtonPhase.InProgress,
                     -> ""
                 },
-            enabled = enabled && (!state.expanded || state.value.isNotEmpty()),
+            enabled = enabled && (!state.expanded || state.canSubmit),
             onClick = {
                 if (state.expanded) submit() else onExpandedChange(true)
             },
@@ -166,6 +166,7 @@ fun InputActionButton(
 
 data class InputActionButtonState(
     val value: String = "",
+    val canSubmit: Boolean,
     val expanded: Boolean = false,
     val phase: ActionButtonPhase = ActionButtonPhase.Idle,
 )
@@ -185,11 +186,11 @@ data class InputActionButtonConfig(
 internal fun performInputActionSubmit(
     enabled: Boolean,
     phase: ActionButtonPhase,
-    hasInput: Boolean,
+    canSubmit: Boolean,
     onAction: () -> Unit,
     dismissInput: () -> Unit,
 ) {
-    if (enabled && phase == ActionButtonPhase.Idle && hasInput) {
+    if (enabled && phase == ActionButtonPhase.Idle && canSubmit) {
         onAction()
         dismissInput()
     }

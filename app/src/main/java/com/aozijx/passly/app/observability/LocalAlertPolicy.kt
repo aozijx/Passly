@@ -40,12 +40,6 @@ class LocalAlertPolicy
             return null
         }
 
-        @Synchronized
-        fun activeAlert(nowMs: Long): LocalDiagnosticAlert? {
-            expire(nowMs)
-            return alert
-        }
-
         private fun expire(nowMs: Long) {
             if (alert?.let { nowMs - it.createdAtMs > WINDOW_MS } == true) {
                 alert = null

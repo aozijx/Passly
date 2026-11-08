@@ -111,7 +111,7 @@ class ObservabilityExportServiceTest {
                     .map { Json.parseToJsonElement(it).jsonObject }
                     .toList()
             val manifest = records.single { it["type"]?.jsonPrimitive?.content == "manifest" }
-            assertEquals(1, manifest.getValue("schema_version").jsonPrimitive.content.toInt())
+            assertEquals(2, manifest.getValue("schema_version").jsonPrimitive.content.toInt())
             assertEquals("Passly", manifest.getValue("app_name").jsonPrimitive.content)
             assertEquals("Pixel", manifest.getValue("model").jsonPrimitive.content)
             assertEquals(1, records.count { it["type"]?.jsonPrimitive?.content == "manifest" })

@@ -10,13 +10,14 @@ import com.google.zxing.qrcode.QRCodeWriter
 
 object QrCodeEncoder {
     fun encode(
-        content: String,
+        content: CharArray,
         size: Int = 512,
-    ): Bitmap? =
-        try {
+    ): Bitmap? {
+        if (content.isEmpty()) return null
+        return try {
             val matrix =
                 QRCodeWriter().encode(
-                    content,
+                    String(content),
                     BarcodeFormat.QR_CODE,
                     size,
                     size,
@@ -32,4 +33,5 @@ object QrCodeEncoder {
         } catch (_: Exception) {
             null
         }
+    }
 }

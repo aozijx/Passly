@@ -127,8 +127,6 @@ object LogStatements {
                 },
             )
 
-        fun backgroundLockSkipped(): LogStatement = DebugStatement(Events.Application.BackgroundLockSkipped, LogFields.Empty)
-
         fun nativeLibraryLoadFailed(throwable: Throwable): LogStatement =
             ErrorStatement(
                 Events.Application.NativeLibraryLoadFailed,

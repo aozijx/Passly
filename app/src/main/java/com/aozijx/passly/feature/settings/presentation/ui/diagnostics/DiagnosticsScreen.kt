@@ -45,6 +45,7 @@ import com.aozijx.passly.feature.settings.diagnostics.LogFormat
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsAction
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsExportState
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsLoadState
+import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsVisibleLines
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.isClearing
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.isConfirmationVisible
 import com.aozijx.passly.feature.settings.presentation.main.diagnostics.DiagnosticsUiState
@@ -117,45 +118,34 @@ internal fun DiagnosticsScreen(
                 }
             }
 
-            is DiagnosticsLoadState.Ready,
-            is DiagnosticsLoadState.RefreshFailed,
-            -> {
-                if (state.loadState is DiagnosticsLoadState.RefreshFailed) {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                stringResource(R.string.settings_log_refresh_failed),
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                            TextButton(onClick = { onAction(DiagnosticsAction.Refresh) }) {
-                                Text(stringResource(R.string.retry))
-                            }
+            is DiagnosticsLoadState.Ready -> {
+                when (val lines = state.visibleLines) {
+                    DiagnosticsVisibleLines.Empty -> item { StatusText(stringResource(R.string.settings_log_empty)) }
+                    is DiagnosticsVisibleLines.Items -> items(lines.lines) { line ->
+                        DiagnosticsLineContent(line) { selectedLine = it }
+                    }
+                }
+            }
+
+            is DiagnosticsLoadState.RefreshFailed -> {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            stringResource(R.string.settings_log_refresh_failed),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        TextButton(onClick = { onAction(DiagnosticsAction.Refresh) }) {
+                            Text(stringResource(R.string.retry))
                         }
                     }
                 }
-                if (state.visibleLines.isEmpty()) {
-                    if (state.loadState is DiagnosticsLoadState.Ready) {
-                        item { StatusText(stringResource(R.string.settings_log_empty)) }
-                    }
-                } else {
-                    items(state.visibleLines.size) { index ->
-                        val line = state.visibleLines[index]
-                        Text(
-                            text = line.text,
-                            fontFamily = FontFamily.Monospace,
-                            color = line.level.semanticColor(),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .combinedClickable(
-                                        onClick = {},
-                                        onLongClick = { selectedLine = line },
-                                    ).padding(vertical = 6.dp),
-                        )
+                when (val lines = state.visibleLines) {
+                    DiagnosticsVisibleLines.Empty -> item { StatusText(stringResource(R.string.settings_log_empty)) }
+                    is DiagnosticsVisibleLines.Items -> items(lines.lines) { line ->
+                        DiagnosticsLineContent(line) { selectedLine = it }
                     }
                 }
             }
@@ -188,6 +178,26 @@ internal fun DiagnosticsScreen(
             onDismiss = { selectedLine = null },
         )
     }
+}
+
+@Composable
+private fun DiagnosticsLineContent(
+    line: DiagnosticsLogLine,
+    onLineSelected: (DiagnosticsLogLine) -> Unit,
+) {
+    Text(
+        text = line.text,
+        fontFamily = FontFamily.Monospace,
+        color = line.level.semanticColor(),
+        style = MaterialTheme.typography.bodySmall,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = { onLineSelected(line) },
+                ).padding(vertical = 6.dp),
+    )
 }
 
 @Composable

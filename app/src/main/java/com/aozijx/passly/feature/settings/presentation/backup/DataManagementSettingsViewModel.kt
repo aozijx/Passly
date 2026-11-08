@@ -45,7 +45,14 @@ class DataManagementSettingsViewModel
                     _uiState.value =
                         when (read) {
                             RecoverableReadState.Loading -> DataManagementSettingsUiState.Loading
-                            is RecoverableReadState.Ready -> DataManagementSettingsUiState.Ready(read.value)
+                            is RecoverableReadState.Ready ->
+                                DataManagementSettingsUiState.Ready(
+                                    directory =
+                                        read.value
+                                            ?.takeIf(String::isNotBlank)
+                                            ?.let(BackupDirectoryUiState::Configured)
+                                            ?: BackupDirectoryUiState.Unconfigured,
+                                )
                             is RecoverableReadState.Failed -> DataManagementSettingsUiState.Failed(read.failure)
                         }
                 }
@@ -76,7 +83,7 @@ class DataManagementSettingsViewModel
 
                     DataManagementSettingsUiAction.ClearBackupDirectory -> {
                         if (clearOwner != null && pageEffects.isActive(clearOwner) && !clearInFlight &&
-                            _uiState.value is DataManagementSettingsUiState.Ready
+                            _uiState.value.isReady
                         ) {
                             clearInFlight = true
                             try {
@@ -143,7 +150,7 @@ class DataManagementSettingsViewModel
 
         fun beginDirectorySelection(owner: Any): String? {
             if (!pageEffects.isActive(owner) || pendingDirectorySelection != null ||
-                _uiState.value !is DataManagementSettingsUiState.Ready
+                !_uiState.value.isReady
             ) {
                 return null
             }

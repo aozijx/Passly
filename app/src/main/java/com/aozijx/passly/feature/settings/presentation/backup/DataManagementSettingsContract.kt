@@ -10,9 +10,22 @@ sealed interface DataManagementSettingsUiState {
     ) : DataManagementSettingsUiState
 
     data class Ready(
-        val directoryUri: String?,
+        val directory: BackupDirectoryUiState,
     ) : DataManagementSettingsUiState
 }
+
+sealed interface BackupDirectoryUiState {
+    data object Unconfigured : BackupDirectoryUiState
+
+    data class Configured(val uri: String) : BackupDirectoryUiState {
+        init {
+            require(uri.isNotBlank())
+        }
+    }
+}
+
+val DataManagementSettingsUiState.isReady: Boolean
+    get() = this is DataManagementSettingsUiState.Ready
 
 sealed interface DataManagementSettingsUiAction {
     data object RetryRead : DataManagementSettingsUiAction

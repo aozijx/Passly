@@ -15,12 +15,16 @@ data class DiagnosticsUiState(
     val retainedLines: List<DiagnosticsLogLine>
         get() = loadState.retainedLines
 
-    val visibleLines: List<DiagnosticsLogLine>
+    val visibleLines: DiagnosticsVisibleLines
         get() {
             val query = searchQuery.trim()
-            return retainedLines.filter { line ->
+            val matches = retainedLines.filter { line ->
                 line.matchesSelectedLevel() && (query.isEmpty() || line.matches(query))
             }
+            return matches
+                .takeIf { it.isNotEmpty() }
+                ?.let(DiagnosticsVisibleLines::Items)
+                ?: DiagnosticsVisibleLines.Empty
         }
 
     private fun DiagnosticsLogLine.matches(query: String): Boolean =
@@ -35,6 +39,16 @@ data class DiagnosticsUiState(
 
     companion object {
         val DEFAULT_VISIBLE_LEVELS = setOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR)
+    }
+}
+
+sealed interface DiagnosticsVisibleLines {
+    data object Empty : DiagnosticsVisibleLines
+
+    data class Items(val lines: List<DiagnosticsLogLine>) : DiagnosticsVisibleLines {
+        init {
+            require(lines.isNotEmpty())
+        }
     }
 }
 

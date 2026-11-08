@@ -340,6 +340,10 @@
   <string name="settings_log_view_subtitle">按所选等级加密保存在本机</string>
   <string name="settings_diagnostics_title">诊断日志</string>
   <string name="settings_diagnostics_recording_title">日志记录等级</string>
+  <string name="settings_diagnostics_recording_disabled">关闭</string>
+  <string name="settings_diagnostics_recording_warn_and_above">警告及以上</string>
+  <string name="settings_diagnostics_recording_info_and_above">信息及以上</string>
+  <string name="settings_diagnostics_recording_all">全部</string>
   <string name="settings_diagnostics_recording_save_failed">无法保存日志记录设置</string>
   <string name="settings_diagnostics_menu">日志操作</string>
   <string name="settings_diagnostics_search">搜索事件、错误代码、异常类或 Trace</string>

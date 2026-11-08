@@ -24,12 +24,6 @@ interface BackupStorageSupport {
         internal const val BACKUP_FILE_MIME = "application/octet-stream"
         internal const val DIRECTORY_MIME = DocumentsContract.Document.MIME_TYPE_DIR
 
-        fun defaultDocumentsTreeUri(): Uri =
-            DocumentsContract.buildTreeDocumentUri(
-                "com.android.externalstorage.documents",
-                "primary:Documents",
-            )
-
         fun ensureAppDirectoryTreeUri(
             context: Context,
             selectedTreeUri: Uri,

@@ -3,8 +3,6 @@ package com.aozijx.passly.feature.settings.presentation.main.general
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
-import com.aozijx.passly.feature.settings.presentation.ui.general.NotificationSettingsUiModel
-import com.aozijx.passly.feature.settings.presentation.ui.general.NotificationTopicUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 sealed interface NotificationSettingsUiState {
@@ -22,15 +20,19 @@ sealed interface NotificationSettingsUiState {
         val notificationChannelEnabled: Boolean,
         val topicSettings: Map<MessageTopic, TopicMessageSettings>,
     ) : NotificationSettingsUiState {
-        val systemNotificationAvailable: Boolean
-            get() =
-                runtimeNotificationPermissionGranted &&
-                    notificationsEnabledBySystem &&
-                    notificationChannelEnabled
-
-        fun topicSetting(topic: MessageTopic): TopicMessageSettings = requireNotNull(topicSettings[topic]) { "Missing settings for $topic" }
     }
 }
+
+internal data class NotificationSettingsUiModel(
+    val systemNotificationsEnabled: Boolean,
+    val optionalMessagesEnabled: Boolean,
+    val topics: List<NotificationTopicUiModel>,
+)
+
+internal data class NotificationTopicUiModel(
+    val topic: MessageTopic,
+    val enabled: Boolean,
+)
 
 internal fun NotificationSettingsUiState.Ready.toUiModel() =
     NotificationSettingsUiModel(
@@ -40,7 +42,7 @@ internal fun NotificationSettingsUiState.Ready.toUiModel() =
             MessageTopic.entries.map { topic ->
                 NotificationTopicUiModel(
                     topic = topic,
-                    enabled = topicSetting(topic).enabled,
+                    enabled = (topicSettings[topic] ?: TopicMessageSettings()).enabled,
                 )
             },
     )

@@ -96,19 +96,14 @@ internal fun BackupExportOptionsContent(
             TextButton(
                 onClick = {
                     onAction(
-                        BackupUiAction.UpdateIncludedEntryTypes(
-                            if (state.includedEntryTypes.size == EntryType.entries.size) {
-                                emptySet()
-                            } else {
-                                EntryType.entries.toSet()
-                            },
-                        ),
+                        if (state.allEntryTypesSelected) BackupUiAction.ClearEntryTypes
+                        else BackupUiAction.SelectAllEntryTypes,
                     )
                 },
             ) {
                 Text(
                     stringResource(
-                        if (state.includedEntryTypes.size == EntryType.entries.size) {
+                        if (state.allEntryTypesSelected) {
                             R.string.settings_backup_clear_selection
                         } else {
                             R.string.settings_backup_select_all
@@ -124,18 +119,12 @@ internal fun BackupExportOptionsContent(
             EntryType.entries.forEach { type ->
                 FilterChip(
                     selected = type in state.includedEntryTypes,
-                    onClick = {
-                        val updated =
-                            state.includedEntryTypes.toMutableSet().apply {
-                                if (!add(type)) remove(type)
-                            }
-                        onAction(BackupUiAction.UpdateIncludedEntryTypes(updated))
-                    },
+                    onClick = { onAction(BackupUiAction.ToggleIncludedEntryType(type)) },
                     label = { Text(stringResource(type.labelRes)) },
                 )
             }
         }
-        if (state.includedEntryTypes.isEmpty()) {
+        if (state.needsEntryTypeSelection) {
             Text(
                 stringResource(R.string.settings_backup_entry_type_required),
                 color = MaterialTheme.colorScheme.error,
