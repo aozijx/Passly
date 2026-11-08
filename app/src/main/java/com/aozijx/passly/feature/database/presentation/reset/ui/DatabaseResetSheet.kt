@@ -8,9 +8,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -72,7 +72,7 @@ internal fun DatabaseResetSheet(
             ) {
                 val motionScheme = MaterialTheme.motionScheme
                 AnimatedContent(
-                    targetState = state,
+                    targetState = state.titleRes,
                     transitionSpec = {
                         fadeIn(animationSpec = motionScheme.defaultEffectsSpec()) +
                             slideInVertically(animationSpec = motionScheme.defaultSpatialSpec()) { it / 3 } togetherWith
@@ -80,12 +80,11 @@ internal fun DatabaseResetSheet(
                             slideOutVertically(animationSpec = motionScheme.defaultSpatialSpec()) { -it / 3 }
                     },
                     label = "database_reset_button_content",
-                ) { currentState ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (currentState.isLoading) {
-                            LoadingIndicator(modifier = Modifier.padding(vertical = 2.dp))
-                        }
-                        Text(stringResource(currentState.titleRes))
+                ) { titleRes ->
+                    if (titleRes == null) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    } else {
+                        Text(stringResource(titleRes))
                     }
                 }
             }

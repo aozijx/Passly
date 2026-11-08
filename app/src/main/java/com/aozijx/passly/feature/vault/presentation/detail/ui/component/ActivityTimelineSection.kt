@@ -12,8 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,6 +37,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityU
 import java.text.DateFormat
 import java.util.Date
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ActivityTimelineSection(
     selectedFilter: DetailActivityFilter,
@@ -75,10 +77,7 @@ fun ActivityTimelineSection(
 
             when (state) {
                 DetailActivityHistoryUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(vertical = 8.dp).size(20.dp),
-                        strokeWidth = 2.dp,
-                    )
+                    LoadingIndicator(modifier = Modifier.padding(vertical = 8.dp).size(32.dp))
                 }
 
                 DetailActivityHistoryUiState.FailedEmpty -> {

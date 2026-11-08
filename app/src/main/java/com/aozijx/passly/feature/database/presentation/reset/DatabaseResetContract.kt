@@ -6,7 +6,7 @@ import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 sealed interface DatabaseResetUiState {
     @get:StringRes
-    val titleRes: Int
+    val titleRes: Int?
     val isButtonEnabled: Boolean
     val isLoading: Boolean
 
@@ -17,7 +17,7 @@ sealed interface DatabaseResetUiState {
     }
 
     data object Resetting : DatabaseResetUiState {
-        override val titleRes = R.string.database_reset_loading
+        override val titleRes = null
         override val isButtonEnabled = false
         override val isLoading = true
     }

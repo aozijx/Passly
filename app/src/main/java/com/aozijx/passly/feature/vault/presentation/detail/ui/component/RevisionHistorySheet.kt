@@ -5,19 +5,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
@@ -164,6 +166,7 @@ private fun RevisionList(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RevisionComparison(
     content: DetailRevisionComparisonUiState,
@@ -221,7 +224,7 @@ private fun RevisionComparison(
                     modifier = Modifier.fillMaxWidth().padding(24.dp),
                 ) {
                     if (content.restore == DetailRevisionRestorePhase.Restoring) {
-                        CircularProgressIndicator()
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
                     } else {
                         Text(stringResource(R.string.revision_restore_action))
                     }
@@ -231,10 +234,11 @@ private fun RevisionComparison(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun Loading() {
     Row(
         modifier = Modifier.fillMaxWidth().padding(24.dp),
         horizontalArrangement = Arrangement.Center,
-    ) { CircularProgressIndicator() }
+    ) { LoadingIndicator(modifier = Modifier.size(32.dp)) }
 }

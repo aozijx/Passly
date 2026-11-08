@@ -1,11 +1,15 @@
 package com.aozijx.passly.presentation.shared.components.apppassword
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +24,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppPasswordSetDialog(
     newPassword: String,
@@ -34,6 +39,7 @@ fun AppPasswordSetDialog(
     isBusy: Boolean = false,
     errorMessage: String? = null,
     kdfHint: String? = null,
+    isKdfLoading: Boolean = false,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -75,11 +81,26 @@ fun AppPasswordSetDialog(
                 )
                 if (kdfHint != null) {
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = kdfHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    if (isKdfLoading) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            LoadingIndicator(modifier = Modifier.size(24.dp))
+                            Text(
+                                text = kdfHint,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = kdfHint,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.size(16.dp))
                 PasswordFields(

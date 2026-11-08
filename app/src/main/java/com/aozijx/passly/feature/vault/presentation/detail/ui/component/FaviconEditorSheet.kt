@@ -28,12 +28,13 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -69,7 +70,7 @@ import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
 import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FaviconEditorSheet(
     state: DetailFaviconEditorUiModel.Visible,
@@ -184,7 +185,7 @@ fun FaviconEditorSheet(
                     enabled = state.dirty && dismissAllowed,
                 ) {
                     if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
                     } else {
                         Text(stringResource(R.string.save))
                     }
@@ -210,6 +211,7 @@ fun FaviconEditorSheet(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun FaviconCustomImage(
     state: DetailFaviconEditorUiModel.Visible,
     onUploadRequested: () -> Unit,
@@ -252,7 +254,7 @@ private fun FaviconCustomImage(
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (processing) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                LoadingIndicator(modifier = Modifier.size(24.dp))
             } else {
                 Icon(Icons.Default.CloudDownload, contentDescription = null)
                 Text(

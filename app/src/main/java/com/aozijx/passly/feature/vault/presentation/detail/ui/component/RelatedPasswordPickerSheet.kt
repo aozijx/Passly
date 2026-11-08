@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -28,7 +30,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindin
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateSearchResults
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 fun RelatedPasswordPickerSheet(
     state: RelatedPasswordBindingUiState,
     onAction: (DetailUiAction) -> Unit,
@@ -43,7 +45,9 @@ fun RelatedPasswordPickerSheet(
             when (val current = state) {
                 RelatedPasswordBindingUiState.Closed -> Unit
                 RelatedPasswordBindingUiState.Loading ->
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    LoadingIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally).size(32.dp),
+                    )
                 RelatedPasswordBindingUiState.LoadFailed -> {
                     Text(stringResource(R.string.vault_detail_bind_password_load_failed))
                     TextButton(onClick = { onAction(DetailUiAction.RetryPasswordBinding) }) {
@@ -82,8 +86,8 @@ fun RelatedPasswordPickerSheet(
                                                     candidate.username?.let { Text(it) }
                                                 }
                                                 if (current.savingEntryId == candidate.id) {
-                                                    CircularProgressIndicator(
-                                                        modifier = Modifier.testTag("related-password-saving"),
+                                                    LoadingIndicator(
+                                                        modifier = Modifier.size(24.dp).testTag("related-password-saving"),
                                                     )
                                                 } else {
                                                     TextButton(

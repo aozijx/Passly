@@ -229,7 +229,6 @@
   <string name="database_reset_title">永久清空 Passly 数据</string>
   <string name="database_reset_description">删除数据库、附件和自定义图片，并重建空数据库。应用设置与认证方式将保留。</string>
   <string name="database_reset_action">永久清空</string>
-  <string name="database_reset_loading">正在清空…</string>
   <string name="database_reset_confirm_title">确定永久清空 Passly 数据？</string>
   <string name="database_reset_confirm_message">此操作会永久删除数据库、附件和自定义图片，无法撤销。应用设置和认证方式会保留；确认后还需要重新验证身份。</string>
   <string name="database_reset_confirm_action">验证并清空</string>

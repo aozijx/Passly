@@ -16,10 +16,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -47,7 +48,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditor
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun TagEditorSheet(
     state: DetailTagEditorUiModel.Visible,
@@ -199,10 +200,7 @@ fun TagEditorSheet(
                             .testTag("tag-editor-save"),
                 ) {
                     if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
                     } else {
                         Text(stringResource(R.string.save))
                     }

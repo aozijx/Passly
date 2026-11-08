@@ -300,6 +300,7 @@ fun AuthenticationScreen(
                         )
                     }
                 },
+            isKdfLoading = state.kdfInitialization is KdfInitializationUiState.Loading,
             onNewPasswordChange = { onAction(UnlockUiAction.NewAppPasswordChanged(it)) },
             onConfirmPasswordChange = { onAction(UnlockUiAction.ConfirmAppPasswordChanged(it)) },
             onConfirm = { onAction(UnlockUiAction.SetPasswordConfirmed) },

@@ -9,6 +9,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -18,6 +22,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -81,6 +87,7 @@ internal fun VaultRoute(
     val vaultDisplayConfig =
         when (val state = vaultDisplayState) {
             VaultDisplayUiState.Loading -> {
+                VaultPageLoading()
                 return
             }
 
@@ -100,6 +107,7 @@ internal fun VaultRoute(
         }
     when (librarySettingsState) {
         RecoverableReadState.Loading -> {
+            VaultPageLoading()
             return
         }
 
@@ -286,6 +294,17 @@ internal fun VaultRoute(
             },
             onDismiss = { overlay = VaultOverlay.None },
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun VaultPageLoading() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        LoadingIndicator()
     }
 }
 
