@@ -21,6 +21,8 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
@@ -90,6 +92,34 @@ class TrashCommandUseCaseTest {
         }
 
     @Test
+    fun sessionLockedWhileAuthorizationIsPendingDoesNotRunCommand() =
+        runTest {
+            val access = MutableAccess(AuthenticationState.Authenticated(1L))
+            val authorizationStarted = CompletableDeferred<Unit>()
+            val finishAuthorization = CompletableDeferred<Unit>()
+            val fixture =
+                fixture(
+                    state = AuthenticationState.Authenticated(1L),
+                    entry = entry(),
+                    access = access,
+                    beforeAuthorizedBlock = {
+                        authorizationStarted.complete(Unit)
+                        finishAuthorization.await()
+                    },
+                )
+
+            val command = async { fixture.useCase.moveToTrash(EntryId("entry")) }
+            authorizationStarted.await()
+            access.authenticationState.value = AuthenticationState.Locked
+            finishAuthorization.complete(Unit)
+
+            val result = command.await()
+            assertTrue((result as TrashCommandResult.Failed).error is SessionModeRestricted)
+            assertEquals(0, fixture.query.reads)
+            assertEquals(0, fixture.commands.moves)
+        }
+
+    @Test
     fun lockedSessionCannotRestore() =
         runTest {
             val fixture = fixture(AuthenticationState.Locked)
@@ -146,12 +176,14 @@ class TrashCommandUseCaseTest {
         state: AuthenticationState,
         entry: Entry? = null,
         authorizationAllowed: Boolean = true,
+        access: MutableAccess = MutableAccess(state),
+        beforeAuthorizedBlock: suspend () -> Unit = {},
     ): Fixture {
         val commands = RecordingCommands()
         val query = RecordingQuery(entry)
-        val authorization = RecordingAuthorizationGate(authorizationAllowed)
+        val authorization = RecordingAuthorizationGate(authorizationAllowed, beforeAuthorizedBlock)
         return Fixture(
-            useCase = TrashCommandUseCase(commands, query, FixedAccess(state), authorization),
+            useCase = TrashCommandUseCase(commands, query, access, authorization),
             query = query,
             commands = commands,
             authorization = authorization,
@@ -171,16 +203,17 @@ class TrashCommandUseCaseTest {
         val authorization: RecordingAuthorizationGate,
     )
 
-    private class FixedAccess(
+    private class MutableAccess(
         state: AuthenticationState,
     ) : SecureSessionAccessState {
-        override val authenticationState: StateFlow<AuthenticationState> = MutableStateFlow(state)
+        override val authenticationState = MutableStateFlow(state)
 
         override fun isUnlocked() = authenticationState.value is AuthenticationState.Authenticated
     }
 
     private class RecordingAuthorizationGate(
         private val allowed: Boolean,
+        private val beforeAuthorizedBlock: suspend () -> Unit,
     ) : AuthorizationGate {
         var lastScope: AuthorizationScope? = null
 
@@ -191,6 +224,7 @@ class TrashCommandUseCaseTest {
         ): AuthorizationResult<T> {
             lastScope = scope
             return if (allowed) {
+                beforeAuthorizedBlock()
                 AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
             } else {
                 AuthorizationResult.Cancelled

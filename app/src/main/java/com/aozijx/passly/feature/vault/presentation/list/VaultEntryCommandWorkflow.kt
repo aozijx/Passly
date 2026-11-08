@@ -75,7 +75,9 @@ internal class VaultEntryCommandWorkflow(
                     EntryId(entryId),
                     entryType,
                     fieldKey,
-                    canDeliver = { pageEffects.isActive(owner) },
+                    canDeliver = {
+                        pageEffects.isActive(owner) && secureSessionAccessState.hasFullSecureSessionAccess()
+                    },
                 )
             ) {
                 CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.FieldCopied(fieldKey))
@@ -94,7 +96,9 @@ internal class VaultEntryCommandWorkflow(
             when (
                 copyOtpCode(
                     EntryId(entryId),
-                    canDeliver = { pageEffects.isActive(owner) },
+                    canDeliver = {
+                        pageEffects.isActive(owner) && secureSessionAccessState.hasFullSecureSessionAccess()
+                    },
                     codeProvider = { (otpRuntime.states.value[entryId] as? OtpCodeState.Ready)?.code },
                 )
             ) {

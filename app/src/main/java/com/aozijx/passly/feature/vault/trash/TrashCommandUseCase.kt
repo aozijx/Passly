@@ -65,7 +65,7 @@ internal class TrashCommandUseCase
                     authorizationGate.authorize(
                         AuthorizationScope.Global(AuthenticationPurpose.DELETE_ENTRY),
                     ) {
-                        command()
+                        sessionRestriction() ?: command()
                     }
             ) {
                 is AuthorizationResult.Allowed -> authorization.value

@@ -387,6 +387,43 @@ class VaultViewModelTest {
         }
 
     @Test
+    fun sessionRevocationWhileAuthorizationIsPendingSuppressesCopy() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val gate = PausingAuthorizationGate()
+            val access = TestAccessState()
+            val clipboardValues = mutableListOf<String>()
+            val viewModel = createViewModel(gate, clipboardValues, secureSessionAccessState = access)
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            viewModel.onPageEntered()
+            val effects = Channel<VaultEffect>(Channel.UNLIMITED)
+            val effectCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.effects.collect(effects::send)
+                }
+
+            try {
+                viewModel.onAction(
+                    VaultUiAction.CopyField(
+                        entryId = ENTRY_ID.value,
+                        entryType = EntryType.ACCOUNT,
+                        fieldKey = FieldKey.USERNAME,
+                    ),
+                )
+                gate.started.await()
+                access.authenticationState.value = AuthenticationState.Locked
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertTrue("a locked session must not copy", clipboardValues.isEmpty())
+                assertNull(effects.tryReceive().getOrNull())
+            } finally {
+                gate.resume.complete(Unit)
+                effectCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
     fun settingsSortUpdatesTheViewModelPagingGeneration() =
         runTest(mainDispatcherRule.testDispatcher) {
             val initialSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)
@@ -515,8 +552,9 @@ class VaultViewModelTest {
         onPageQuery: (EntryListQuery) -> Unit = {},
         setSort: suspend (EntrySort) -> Unit = {},
         moveToTrashResult: AppResult<Unit> = AppResult.Success(Unit),
+        secureSessionAccessState: TestAccessState = TestAccessState(),
     ): VaultViewModel {
-        val access = TestAccessState()
+        val access = secureSessionAccessState
         val entries = TestEntries(onMoveToTrash, moveToTrashResult)
         val clipboard = SensitiveClipboardWriter { clipboardValues += it }
         val activity = TestActivityRecorder
