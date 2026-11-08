@@ -22,6 +22,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
+private const val DRAIN_POLL_MS = 50L
+private const val NANOS_PER_MILLISECOND = 1_000_000L
+
 internal class SessionLeaseGate<Handle : Any>(
     private val resource: SessionResource<Handle>,
     private val eventSink: SessionEventSink,
@@ -512,9 +515,4 @@ internal class SessionLeaseGate<Handle : Any>(
     }
 
     private fun elapsedRealtimeMs(): Long = System.nanoTime() / NANOS_PER_MILLISECOND
-
-    private companion object {
-        const val DRAIN_POLL_MS = 50L
-        const val NANOS_PER_MILLISECOND = 1_000_000L
-    }
 }
