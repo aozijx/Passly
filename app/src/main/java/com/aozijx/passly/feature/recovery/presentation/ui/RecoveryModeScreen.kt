@@ -64,7 +64,7 @@ fun RecoveryModeScreen(
                 stringResource(R.string.recovery_mode_set_password),
                 stringResource(R.string.app_password_unlock_description),
                 onSetPassword,
-                state is RecoveryModeUiState.Saving,
+                state.isSaving,
             )
         }
         Spacer(Modifier.height(16.dp))
@@ -78,19 +78,12 @@ fun RecoveryModeScreen(
             )
         }
     }
-    val draft =
-        when (state) {
-            RecoveryModeUiState.Closed -> null
-            is RecoveryModeUiState.Editing -> state.draft
-            is RecoveryModeUiState.Saving -> state.draft
-            is RecoveryModeUiState.Failed -> state.draft
-        }
-    if (draft != null) {
+    state.dialogDraft?.let { draft ->
         RecoveryPasswordDialog(
             draft,
             canSubmit = state.canSubmit,
-            isSaving = state is RecoveryModeUiState.Saving,
-            failure = (state as? RecoveryModeUiState.Failed)?.reason,
+            isSaving = state.isSaving,
+            failureMessageRes = state.failureMessageRes,
             newPasswordVisible = newPasswordVisible,
             confirmPasswordVisible = confirmPasswordVisible,
             onNewPasswordChange = onNewPasswordChange,

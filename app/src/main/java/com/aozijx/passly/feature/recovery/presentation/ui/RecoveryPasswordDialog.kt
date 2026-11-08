@@ -15,7 +15,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.dialog.PasslyAlertDialog
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
-import com.aozijx.passly.feature.recovery.presentation.RecoveryPasswordSetupFailure
 import com.aozijx.passly.feature.recovery.presentation.toRecoveryPasswordStrengthUiState
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
@@ -25,7 +24,7 @@ import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 fun RecoveryPasswordDialog(
     draft: PasswordSetupDraft,
     canSubmit: Boolean,
-    failure: RecoveryPasswordSetupFailure?,
+    failureMessageRes: Int?,
     isSaving: Boolean,
     newPasswordVisible: Boolean,
     confirmPasswordVisible: Boolean,
@@ -39,14 +38,14 @@ fun RecoveryPasswordDialog(
     val newPassword = draft.newPassword.toUiString()
     val confirmPassword = draft.confirmPassword.toUiString()
     val strength = draft.passwordStrength.toRecoveryPasswordStrengthUiState(MaterialTheme.colorScheme)
-    val errorMessage = failure?.let { stringResource(it.messageResId()) }
+    val errorMessage = failureMessageRes?.let { stringResource(it) }
     PasslyAlertDialog(
         title = stringResource(R.string.recovery_mode_password_dialog_title),
         confirmText = stringResource(R.string.save),
         dismissText = stringResource(R.string.cancel),
         onConfirm = onConfirm,
-        onDismiss = { if (!isSaving) onDismiss() },
-        confirmEnabled = !isSaving && canSubmit,
+        onDismiss = onDismiss,
+        confirmEnabled = canSubmit,
     ) {
         Column {
             Text(
@@ -85,13 +84,6 @@ fun RecoveryPasswordDialog(
         }
     }
 }
-
-@Composable
-private fun RecoveryPasswordSetupFailure.messageResId(): Int =
-    when (this) {
-        RecoveryPasswordSetupFailure.PasswordMismatchOrEmpty -> R.string.recovery_mode_password_mismatch_or_empty
-        RecoveryPasswordSetupFailure.SetupFailed -> R.string.recovery_mode_password_setup_failed
-    }
 
 private fun com.aozijx.passly.domain.sensitive.SensitiveValue.toUiString(): String {
     val chars = toCharArray()
