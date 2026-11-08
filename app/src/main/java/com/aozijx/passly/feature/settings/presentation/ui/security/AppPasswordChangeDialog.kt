@@ -23,43 +23,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogEvent
+import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogsModel
 import com.aozijx.passly.presentation.shared.components.apppassword.PasswordFields
-import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import com.aozijx.passly.presentation.mapping.toUiState
 
-data class AppPasswordChangeDialogState(
-    val currentPassword: String,
-    val newPassword: String,
-    val passwordStrength: PasswordStrengthState,
-    val confirmPassword: String,
-    val confirmationState: PasswordConfirmationUiState,
-    val confirmEnabled: Boolean,
-    val isBusy: Boolean = false,
-)
-
-sealed interface AppPasswordChangeDialogEvent {
-    data class CurrentPasswordChanged(
-        val password: String,
-    ) : AppPasswordChangeDialogEvent
-
-    data class NewPasswordChanged(
-        val password: String,
-    ) : AppPasswordChangeDialogEvent
-
-    data class ConfirmPasswordChanged(
-        val password: String,
-    ) : AppPasswordChangeDialogEvent
-
-    data object Confirmed : AppPasswordChangeDialogEvent
-
-    data object Dismissed : AppPasswordChangeDialogEvent
-}
-
 @Composable
-fun AppPasswordChangeDialog(
-    state: AppPasswordChangeDialogState,
-    onEvent: (AppPasswordChangeDialogEvent) -> Unit,
+internal fun AppPasswordChangeDialog(
+    state: AppPasswordDialogsModel,
+    onEvent: (AppPasswordDialogEvent) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -68,14 +40,14 @@ fun AppPasswordChangeDialog(
         keyboardController?.hide()
     }
     val submit = {
-        if (!state.isBusy && state.confirmEnabled) {
+        if (!state.isBusy && state.isChangePasswordConfirmEnabled) {
             dismissInput()
-            onEvent(AppPasswordChangeDialogEvent.Confirmed)
+            onEvent(AppPasswordDialogEvent.ConfirmChange)
         }
     }
     val dismiss = {
         dismissInput()
-        if (!state.isBusy) onEvent(AppPasswordChangeDialogEvent.Dismissed)
+        if (!state.isBusy) onEvent(AppPasswordDialogEvent.DismissChange)
     }
     AlertDialog(
         onDismissRequest = dismiss,
@@ -83,9 +55,9 @@ fun AppPasswordChangeDialog(
         text = {
             Column {
                 OutlinedTextField(
-                    value = state.currentPassword,
+                    value = state.appPasswordCurrent,
                     onValueChange = {
-                        onEvent(AppPasswordChangeDialogEvent.CurrentPasswordChanged(it))
+                        onEvent(AppPasswordDialogEvent.CurrentChanged(it))
                     },
                     enabled = !state.isBusy,
                     label = { Text(stringResource(R.string.settings_auth_current_password)) },
@@ -104,13 +76,13 @@ fun AppPasswordChangeDialog(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 PasswordFields(
-                    newPassword = state.newPassword,
-                    confirmPassword = state.confirmPassword,
+                    newPassword = state.appPasswordNew,
+                    confirmPassword = state.appPasswordConfirm,
                     onNewPasswordChange = {
-                        onEvent(AppPasswordChangeDialogEvent.NewPasswordChanged(it))
+                        onEvent(AppPasswordDialogEvent.NewChanged(it))
                     },
                     onConfirmPasswordChange = {
-                        onEvent(AppPasswordChangeDialogEvent.ConfirmPasswordChanged(it))
+                        onEvent(AppPasswordDialogEvent.ConfirmChanged(it))
                     },
                     onDone = submit,
                     strengthUiState = state.passwordStrength.toUiState(MaterialTheme.colorScheme),
@@ -122,7 +94,7 @@ fun AppPasswordChangeDialog(
         confirmButton = {
             TextButton(
                 onClick = submit,
-                enabled = !state.isBusy && state.confirmEnabled,
+                enabled = !state.isBusy && state.isChangePasswordConfirmEnabled,
             ) {
                 Text(stringResource(R.string.save))
             }

@@ -43,41 +43,7 @@ internal fun AppPasswordDialogs(
         }
 
         AppPasswordDialogState.Change -> {
-            AppPasswordChangeDialog(
-                state =
-                    AppPasswordChangeDialogState(
-                        currentPassword = state.appPasswordCurrent,
-                        newPassword = state.appPasswordNew,
-                        passwordStrength = state.passwordStrength,
-                        confirmPassword = state.appPasswordConfirm,
-                        confirmationState = state.confirmationState,
-                        confirmEnabled = state.isChangePasswordConfirmEnabled,
-                        isBusy = state.isBusy,
-                    ),
-                onEvent = { event ->
-                    when (event) {
-                        is AppPasswordChangeDialogEvent.CurrentPasswordChanged -> {
-                            onEvent(AppPasswordDialogEvent.CurrentChanged(event.password))
-                        }
-
-                        is AppPasswordChangeDialogEvent.NewPasswordChanged -> {
-                            onEvent(AppPasswordDialogEvent.NewChanged(event.password))
-                        }
-
-                        is AppPasswordChangeDialogEvent.ConfirmPasswordChanged -> {
-                            onEvent(AppPasswordDialogEvent.ConfirmChanged(event.password))
-                        }
-
-                        AppPasswordChangeDialogEvent.Confirmed -> {
-                            onEvent(AppPasswordDialogEvent.ConfirmChange)
-                        }
-
-                        AppPasswordChangeDialogEvent.Dismissed -> {
-                            onEvent(AppPasswordDialogEvent.DismissChange)
-                        }
-                    }
-                },
-            )
+            AppPasswordChangeDialog(state = state, onEvent = onEvent)
         }
     }
 }
