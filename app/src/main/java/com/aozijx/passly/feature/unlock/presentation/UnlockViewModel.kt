@@ -217,16 +217,11 @@ class UnlockViewModel
         }
 
         private fun onBackPressed() {
-            when (val expansion = _uiState.value.inputExpansion) {
-                is UnlockInputExpansion.Expanded -> {
-                    onInputExpanded(expansion.method, false)
-                }
-
-                UnlockInputExpansion.Collapsed -> {
+            _uiState.value.inputExpansion?.let { onInputExpanded(it, false) }
+                ?: run {
                     recoveryRevealTapCount = 0
                     mutate(UnlockMutation.RecoveryUnlockVisibilityChanged(false))
                 }
-            }
         }
 
         private fun verifyWithBiometric() {
@@ -249,14 +244,12 @@ class UnlockViewModel
             expanded: Boolean,
         ) {
             if (expanded) {
-                val current = _uiState.value.inputExpansion as? UnlockInputExpansion.Expanded
-                current?.method?.takeUnless { it == method }?.let(::clearCredential)
-                mutate(UnlockMutation.InputExpansionChanged(UnlockInputExpansion.Expanded(method)))
+                _uiState.value.inputExpansion?.takeUnless { it == method }?.let(::clearCredential)
+                mutate(UnlockMutation.InputExpansionChanged(method))
             } else {
                 clearCredential(method)
-                val current = _uiState.value.inputExpansion as? UnlockInputExpansion.Expanded
-                if (current?.method == method) {
-                    mutate(UnlockMutation.InputExpansionChanged(UnlockInputExpansion.Collapsed))
+                if (_uiState.value.inputExpansion == method) {
+                    mutate(UnlockMutation.InputExpansionChanged(null))
                 }
             }
         }

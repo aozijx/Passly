@@ -39,7 +39,6 @@ import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.unlock.presentation.UnlockFailureMessage
-import com.aozijx.passly.feature.unlock.presentation.UnlockInputExpansion
 import com.aozijx.passly.feature.unlock.presentation.KdfInitializationUiState
 import com.aozijx.passly.feature.unlock.presentation.UnlockPasswordSetup
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiAction
@@ -160,9 +159,7 @@ fun AuthenticationScreen(
                         InputActionButtonState(
                             value = appPassword,
                             canSubmit = state.canSubmitAppPassword,
-                            expanded =
-                                state.inputExpansion ==
-                                    UnlockInputExpansion.Expanded(AuthenticationMethod.APP_PASSWORD),
+                            expanded = state.inputExpansion == AuthenticationMethod.APP_PASSWORD,
                             phase =
                                 when {
                                     activeMethod == AuthenticationMethod.APP_PASSWORD -> {
@@ -220,9 +217,7 @@ fun AuthenticationScreen(
                         InputActionButtonState(
                             value = recoveryCode,
                             canSubmit = state.canSubmitRecoveryCode,
-                            expanded =
-                                state.inputExpansion ==
-                                    UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
+                            expanded = state.inputExpansion == AuthenticationMethod.RECOVERY_CODE,
                             phase =
                                 when {
                                     activeMethod == AuthenticationMethod.RECOVERY_CODE -> {

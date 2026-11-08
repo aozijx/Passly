@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -251,7 +252,7 @@ class AuthenticationReducerTest {
                 appPassword = appPassword,
                 recoveryCode = recoveryCode,
                 recoveryUnlockVisible = true,
-                inputExpansion = UnlockInputExpansion.Expanded(AuthenticationMethod.RECOVERY_CODE),
+                inputExpansion = AuthenticationMethod.RECOVERY_CODE,
                 verificationPhase =
                     UnlockVerificationPhase.Failed(
                         UnlockVerificationFailure(
@@ -265,7 +266,7 @@ class AuthenticationReducerTest {
             val result = UnlockReducer.reduce(initial, UnlockMutation.UnlockInputsReset)
 
             assertFalse(result.recoveryUnlockVisible)
-            assertSame(UnlockInputExpansion.Collapsed, result.inputExpansion)
+            assertNull(result.inputExpansion)
             assertSame(UnlockVerificationPhase.Idle, result.verificationPhase)
             assertSame(EmptySensitiveValue, result.appPassword)
             assertSame(EmptySensitiveValue, result.recoveryCode)

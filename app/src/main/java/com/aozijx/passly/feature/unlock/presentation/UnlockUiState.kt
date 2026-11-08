@@ -47,14 +47,6 @@ data class UnlockVerificationFailure(
     val message: UnlockFailureMessage,
 )
 
-sealed interface UnlockInputExpansion {
-    data object Collapsed : UnlockInputExpansion
-
-    data class Expanded(
-        val method: AuthenticationMethod,
-    ) : UnlockInputExpansion
-}
-
 sealed interface UnlockVerificationPhase {
     data object Idle : UnlockVerificationPhase
 
@@ -97,7 +89,7 @@ data class UnlockUiState(
     val appPassword: SensitiveValue = EmptySensitiveValue,
     val recoveryCode: SensitiveValue = EmptySensitiveValue,
     val recoveryUnlockVisible: Boolean = false,
-    val inputExpansion: UnlockInputExpansion = UnlockInputExpansion.Collapsed,
+    val inputExpansion: AuthenticationMethod? = null,
     val verificationPhase: UnlockVerificationPhase = UnlockVerificationPhase.Idle,
     val passwordSetup: UnlockPasswordSetup = UnlockPasswordSetup.Closed,
 ) {

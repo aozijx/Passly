@@ -39,7 +39,7 @@ internal sealed interface UnlockMutation {
     ) : UnlockMutation
 
     data class InputExpansionChanged(
-        val expansion: UnlockInputExpansion,
+        val expansion: AuthenticationMethod?,
     ) : UnlockMutation
 
     data class AuthenticationStarted(
@@ -211,7 +211,7 @@ internal object UnlockReducer {
                     appPassword = EmptySensitiveValue,
                     recoveryCode = EmptySensitiveValue,
                     recoveryUnlockVisible = false,
-                    inputExpansion = UnlockInputExpansion.Collapsed,
+                    inputExpansion = null,
                     verificationPhase = UnlockVerificationPhase.Idle,
                 )
             }
