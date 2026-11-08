@@ -8,6 +8,7 @@ import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
+import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
@@ -48,7 +49,19 @@ class NotificationSettingsViewModelTest {
                         flow {
                             starts++
                             if (starts == 1) throw IOException("read failure")
-                            emit(MessageSettings())
+                            emit(
+                                MessageSettings(
+                                    optionalMessagesEnabled = false,
+                                    systemNotificationsEnabled = false,
+                                    topicSettings =
+                                        MessageTopic.entries.associateWith { topic ->
+                                            TopicMessageSettings(
+                                                enabled = topic != MessageTopic.SECURITY,
+                                                minimumLevel = MessageLevel.WARNING,
+                                            )
+                                        },
+                                ),
+                            )
                             awaitCancellation()
                         },
                 )
@@ -61,7 +74,23 @@ class NotificationSettingsViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is NotificationSettingsUiState.Ready)
+            assertEquals(
+                NotificationSettingsUiState.Ready(
+                    optionalMessagesEnabled = false,
+                    systemNotificationsEnabled = false,
+                    runtimeNotificationPermissionGranted = true,
+                    notificationsEnabledBySystem = true,
+                    notificationChannelEnabled = true,
+                    topicSettings =
+                        MessageTopic.entries.associateWith { topic ->
+                            TopicMessageSettings(
+                                enabled = topic != MessageTopic.SECURITY,
+                                minimumLevel = MessageLevel.WARNING,
+                            )
+                        },
+                ),
+                model.uiState.value,
+            )
         }
 
     @Test

@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.security
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
@@ -47,13 +48,14 @@ class SecuritySettingsViewModelTest {
     fun `security settings read failure is visible and retry restarts source`() =
         runTest {
             var starts = 0
+            val restoredSettings = SecuritySettings(isLockOnBackground = true, lockTimeout = 90_000L)
             val fixture =
                 Fixture(
                     source =
                         flow {
                             starts++
                             if (starts == 1) throw IOException("read failure")
-                            emit(SecuritySettings())
+                            emit(restoredSettings)
                             awaitCancellation()
                         },
                 ) { AuthenticationResult.Cancelled(CancellationReason.USER) }
@@ -61,12 +63,23 @@ class SecuritySettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, model.uiState.value is RecoverableReadState.Failed)
+            assertEquals(RecoverableReadState.Failed(ReadFailure.IO), model.uiState.value)
             model.onAction(SecuritySettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is RecoverableReadState.Ready)
+            assertEquals(
+                RecoverableReadState.Ready(
+                    SecuritySettingsValues(
+                        lockTimeout = 90_000L,
+                        isInvalidateKeyOnBioChange = true,
+                        isLockOnBackground = true,
+                        isBiometricEnabled = true,
+                        isAuthenticationChangeInProgress = false,
+                    ),
+                ),
+                model.uiState.value,
+            )
         }
 
     @Test

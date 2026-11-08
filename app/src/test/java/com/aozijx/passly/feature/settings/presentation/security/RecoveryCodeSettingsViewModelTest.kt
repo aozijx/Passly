@@ -124,38 +124,40 @@ class RecoveryCodeSettingsViewModelTest {
         }
 
     @Test
-    fun `rejected verification input is wiped when page exits`() =
+    fun `rejected and failed verification clear input before page exit`() =
         runTest {
-            val model = fixture(DeferredCommitDraft(CompletableDeferred()))
-            val owner = model.onPageEntered()
-            model.onAction(RecoveryCodeSettingsAction.VerificationInputChanged("rejected-code"))
-            val input = model.uiState.value.verification.input as OwnedChars
-            model.onAction(RecoveryCodeSettingsAction.Verify)
-            runCurrent()
-            assertEquals(true, model.uiState.value.verification is RecoveryCodeVerificationUiState.Rejected)
+            val scenarios: List<Triple<String, TestProvisioner, RecoveryCodeVerificationUiState>> =
+                listOf(
+                    Triple(
+                        "rejected",
+                        TestProvisioner { false },
+                        RecoveryCodeVerificationUiState.Rejected,
+                    ),
+                    Triple(
+                        "failed",
+                        TestProvisioner { throw IllegalStateException("verification failed") },
+                        RecoveryCodeVerificationUiState.Failed,
+                    ),
+                )
 
-            model.onPageExited(owner)
+            scenarios.forEach { (name, provisioner, expectedVerification) ->
+                val model = fixture(DeferredCommitDraft(CompletableDeferred()), provisioner)
+                val owner = model.onPageEntered()
+                model.onAction(RecoveryCodeSettingsAction.VerificationInputChanged("$name-code"))
+                val input = model.uiState.value.verification.input as OwnedChars
+                model.onAction(RecoveryCodeSettingsAction.Verify)
+                runCurrent()
 
-            assertEquals(true, input.isWiped)
-            assertEquals(true, model.uiState.value.verification.input.isEmpty)
-        }
+                assertEquals(expectedVerification, model.uiState.value.verification)
+                assertEquals(true, input.isWiped)
 
-    @Test
-    fun `failed verification input is wiped when page exits`() =
-        runTest {
-            val provisioner = TestProvisioner { throw IllegalStateException("verification failed") }
-            val model = fixture(DeferredCommitDraft(CompletableDeferred()), provisioner)
-            val owner = model.onPageEntered()
-            model.onAction(RecoveryCodeSettingsAction.VerificationInputChanged("failed-code"))
-            val input = model.uiState.value.verification.input as OwnedChars
-            model.onAction(RecoveryCodeSettingsAction.Verify)
-            runCurrent()
-            assertEquals(true, model.uiState.value.verification is RecoveryCodeVerificationUiState.Failed)
+                model.onPageExited(owner)
 
-            model.onPageExited(owner)
-
-            assertEquals(true, input.isWiped)
-            assertEquals(true, model.uiState.value.verification.input.isEmpty)
+                assertEquals(
+                    RecoveryCodeVerificationUiState.Editing(OwnedChars.EMPTY),
+                    model.uiState.value.verification,
+                )
+            }
         }
 
     @Test

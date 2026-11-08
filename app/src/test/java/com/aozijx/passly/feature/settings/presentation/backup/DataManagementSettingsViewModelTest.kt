@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.backup
 
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.Reasons
@@ -61,7 +62,10 @@ class DataManagementSettingsViewModelTest {
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, viewModel.uiState.value is RecoverableReadState.Failed)
+            assertEquals(
+                RecoverableReadState.Failed(ReadFailure.IO),
+                viewModel.uiState.value,
+            )
             viewModel.onAction(DataManagementSettingsUiAction.RetryRead)
             runCurrent()
 

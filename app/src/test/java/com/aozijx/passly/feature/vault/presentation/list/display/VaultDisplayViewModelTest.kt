@@ -4,9 +4,11 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.CorruptSettingsDataException
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
@@ -46,6 +48,7 @@ class VaultDisplayViewModelTest {
     fun `settings failure is visible and retry recollects persisted preferences`() =
         runTest {
             var starts = 0
+            val cardPresentations = listOf(EntryCardPresentation("login", "password"))
             val librarySettings =
                 flow {
                     starts++
@@ -53,6 +56,7 @@ class VaultDisplayViewModelTest {
                     emit(
                         LibraryViewSettings(
                             sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                            entryCardPresentations = cardPresentations,
                         ),
                     )
                     awaitCancellation()
@@ -61,7 +65,13 @@ class VaultDisplayViewModelTest {
                 VaultDisplayViewModel(
                     interfaceSettingsRepository =
                         TestInterfaceSettingsRepository(
-                            MutableStateFlow(InterfaceSettings()),
+                            MutableStateFlow(
+                                InterfaceSettings(
+                                    hideSystemBars = true,
+                                    collapseTopBarOnScroll = false,
+                                    collapseQuickFilterBarOnScroll = true,
+                                ),
+                            ),
                         ),
                     librarySettingsSource =
                         object : LibraryViewSettingsSource {
@@ -69,7 +79,15 @@ class VaultDisplayViewModelTest {
                         },
                     interactionSettingsSource =
                         object : InteractionSettingsSource {
-                            override val interaction = MutableStateFlow(InteractionSettings())
+                            override val interaction =
+                                MutableStateFlow(
+                                    InteractionSettings(
+                                        isSwipeEnabled = true,
+                                        isPullToSearchEnabled = true,
+                                        swipeLeftAction = SwipeActionType.COPY_USERNAME,
+                                        swipeRightAction = SwipeActionType.DELETE,
+                                    ),
+                                )
                         },
                 )
             backgroundScope.launch { viewModel.config.collect {} }
@@ -83,7 +101,25 @@ class VaultDisplayViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, viewModel.config.value is VaultDisplayUiState.Ready)
+            assertEquals(
+                VaultDisplayUiState.Ready(
+                    layout =
+                        VaultLayoutConfig(
+                            hideSystemBars = true,
+                            collapseTopBarOnScroll = false,
+                            collapseQuickFilterBarOnScroll = true,
+                        ),
+                    style = VaultStyleConfig(entryCardPresentations = cardPresentations),
+                    interaction =
+                        VaultInteractionConfig(
+                            isSwipeEnabled = true,
+                            isPullToSearchEnabled = true,
+                            swipeLeftAction = SwipeActionType.COPY_USERNAME,
+                            swipeRightAction = SwipeActionType.DELETE,
+                        ),
+                ),
+                viewModel.config.value,
+            )
         }
 
     @Test

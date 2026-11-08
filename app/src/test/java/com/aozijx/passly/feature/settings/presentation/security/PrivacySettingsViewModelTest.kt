@@ -1,9 +1,12 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
+import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
@@ -30,13 +33,21 @@ class PrivacySettingsViewModelTest {
     fun `security preference failure is visible and retry re-subscribes source`() =
         runTest {
             var starts = 0
+            val restoredSettings =
+                SecuritySettings(
+                    isSecureContentEnabled = false,
+                    isFlipToLockEnabled = false,
+                    isFlipExitAndClearStackEnabled = true,
+                    reauthenticateSensitiveCopies = false,
+                    clipboardClearPolicy = ClipboardClearPolicy(enabled = false, delaySeconds = 60),
+                )
             val repository =
                 object : SecuritySettingsRepository by EmptySecuritySettingsRepository {
                     override val security: Flow<SecuritySettings> =
                         flow {
                             starts++
                             if (starts == 1) throw IOException("read failure")
-                            emit(SecuritySettings())
+                            emit(restoredSettings)
                             awaitCancellation()
                         }
                 }
@@ -44,12 +55,25 @@ class PrivacySettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, model.uiState.value is RecoverableReadState.Failed)
+            assertEquals(RecoverableReadState.Failed(ReadFailure.IO), model.uiState.value)
             model.onAction(PrivacySettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is RecoverableReadState.Ready)
+            assertEquals(
+                RecoverableReadState.Ready(
+                    PrivacySettingsUiModel(
+                        isSecureContentEnabled = false,
+                        isFlipToLockEnabled = false,
+                        isFlipExitAndClearStackEnabled = true,
+                        reauthenticateSensitiveCopies = false,
+                        clipboardClearEnabled = false,
+                        clipboardClearDelaySeconds = 60,
+                        clipboardClearDelayOptions = listOf(15, 30, 60, 120),
+                    ),
+                ),
+                model.uiState.value,
+            )
         }
 
     @Test
