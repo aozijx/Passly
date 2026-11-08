@@ -25,7 +25,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -157,18 +156,14 @@ class UnlockViewModelTest {
         }
 
     @Test
-    fun `entry restores attempts and updates the lockout countdown`() =
+    fun `entry does not read authentication attempt status`() =
         runTest {
-            val statuses =
-                ArrayDeque(
-                    listOf(
-                        attemptStatus(2_300L),
-                        attemptStatus(1_300L),
-                        attemptStatus(300L),
-                        attemptStatus(null, used = 0),
-                    ),
-                )
-            val provider = FakeAttemptStatusProvider { statuses.removeFirst() }
+            var statusReads = 0
+            val provider =
+                FakeAttemptStatusProvider {
+                    statusReads += 1
+                    attemptStatus(2_300L)
+                }
             val viewModel =
                 UnlockViewModel(
                     authenticationManager =
@@ -185,23 +180,8 @@ class UnlockViewModelTest {
 
             runCurrent()
 
-            val restored = viewModel.uiState.value.authenticationAttemptStatuses.getValue(AuthenticationMethod.APP_PASSWORD)
-            assertEquals(5, restored.attempts.used)
-            assertEquals(2_300L, restored.retryAfterMs)
-
-            advanceTimeBy(1_000L)
-            runCurrent()
-            assertEquals(
-                1_300L,
-                viewModel.uiState.value.authenticationAttemptStatuses.getValue(AuthenticationMethod.APP_PASSWORD).retryAfterMs,
-            )
-
-            advanceTimeBy(2_000L)
-            runCurrent()
-            assertEquals(
-                0,
-                viewModel.uiState.value.authenticationAttemptStatuses.getValue(AuthenticationMethod.APP_PASSWORD).attempts.used,
-            )
+            assertEquals(0, statusReads)
+            assertTrue(viewModel.uiState.value.authenticationAttemptStatuses.isEmpty())
         }
 
     private class FakeAuthenticationManager(initialMethods: AuthenticationMethods = AuthenticationMethods()) : AuthenticationManager {

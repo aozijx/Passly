@@ -64,9 +64,6 @@ class UnlockViewModel
             viewModelScope.launch {
                 authenticationManager.methods.collect { methods ->
                     mutate(UnlockMutation.AvailableMethodsChanged(methods))
-                    methods.available
-                        .filter { it != AuthenticationMethod.BIOMETRIC }
-                        .forEach(::refreshAttemptStatus)
                 }
             }
         }
@@ -322,7 +319,6 @@ class UnlockViewModel
                     ) {
                         is AuthenticationResult.Success -> {
                             resetInputState()
-                            refreshAttemptStatus(method)
                         }
 
                         is AuthenticationResult.Cancelled -> {
@@ -346,12 +342,12 @@ class UnlockViewModel
             when (method) {
                 AuthenticationMethod.APP_PASSWORD -> {
                     _uiState.value.appPassword.wipe()
-                    mutate(UnlockMutation.AppPasswordChanged(EmptySensitiveValue))
+                    mutate(UnlockMutation.CredentialInputCleared(method))
                 }
 
                 AuthenticationMethod.RECOVERY_CODE -> {
                     _uiState.value.recoveryCode.wipe()
-                    mutate(UnlockMutation.RecoveryCodeChanged(EmptySensitiveValue))
+                    mutate(UnlockMutation.CredentialInputCleared(method))
                 }
 
                 AuthenticationMethod.BIOMETRIC -> {

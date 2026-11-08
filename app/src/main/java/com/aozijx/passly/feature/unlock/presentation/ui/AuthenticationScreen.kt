@@ -197,20 +197,6 @@ fun AuthenticationScreen(
                     onAction = { onAction(UnlockUiAction.AppPasswordSubmitted) },
                     onResultConsumed = { onAction(UnlockUiAction.ClearVerificationFailure) },
                 )
-                if (appPasswordFailureMessage == null) {
-                    appPasswordAttemptStatus?.localized(appPasswordLabel)?.let { statusMessage ->
-                        Text(
-                            text = statusMessage,
-                            style = MaterialTheme.typography.bodySmall,
-                            color =
-                                if (appPasswordAttemptStatus.retryAfterMs != null) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        )
-                    }
-                }
             }
 
             if (state.shouldOfferPasswordSetup) {
@@ -278,20 +264,6 @@ fun AuthenticationScreen(
                     onAction = { onAction(UnlockUiAction.RecoveryCodeSubmitted) },
                     onResultConsumed = { onAction(UnlockUiAction.ClearVerificationFailure) },
                 )
-                if (recoveryCodeFailureMessage == null) {
-                    recoveryCodeAttemptStatus?.localized(recoveryCodeLabel)?.let { statusMessage ->
-                        Text(
-                            text = statusMessage,
-                            style = MaterialTheme.typography.bodySmall,
-                            color =
-                                if (recoveryCodeAttemptStatus.retryAfterMs != null) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        )
-                    }
-                }
             }
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -424,22 +396,5 @@ private fun UnlockFailureMessage.localized(
             stringResource(R.string.auth_error_failed)
         }
     }
-
-@Composable
-private fun AuthenticationAttemptStatus.localized(methodLabel: String): String? {
-    val retryDelay = retryAfterMs
-    val remainingAttempts = attempts.remaining
-    return when {
-        retryDelay != null -> {
-            stringResource(R.string.auth_error_rate_limited, retryDelay.toSecondsCeiling())
-        }
-
-        attempts.used > 0 && remainingAttempts != null -> {
-            stringResource(R.string.auth_error_attempts_remaining, methodLabel, remainingAttempts)
-        }
-
-        else -> null
-    }
-}
 
 private fun Long.toSecondsCeiling(): Long = ((this + 999L) / 1000L).coerceAtLeast(1L)

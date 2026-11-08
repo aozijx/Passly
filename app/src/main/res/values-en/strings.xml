@@ -151,7 +151,6 @@
   <string name="auth_error_method_incorrect">The %1$s is incorrect. Enter it again.</string>
   <string name="auth_error_method_incorrect_attempts" tools:ignore="PluralsCandidate">The %1$s is incorrect. %2$d attempts left.</string>
   <string name="auth_error_rate_limited" tools:ignore="PluralsCandidate">Too many attempts. Try again in %1$d seconds.</string>
-  <string name="auth_error_attempts_remaining" tools:ignore="PluralsCandidate">%1$s has %2$d attempts remaining.</string>
   <string name="auth_error_attempt_state_unavailable">Couldn\'t check authentication limits. Try again shortly.</string>
   <string name="auth_error_failed">Verification failed. Try again.</string>
   <string name="auth_error_busy">Another authentication is in progress. Try again shortly.</string>
