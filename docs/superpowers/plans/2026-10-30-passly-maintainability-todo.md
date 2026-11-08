@@ -194,6 +194,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **当前证据（2026-11-08）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 提供当前待删除项与 reducer mutation。`VaultViewModelTest` 现有 9 项覆盖分类恢复、settings sort 驱动新 Paging generation、搜索与类型筛选组合、删除单飞及离页/current-page copy。仍缺 Settings 写入失败、删除迟到完成、OTP 可见订阅/删除失效、撤权行为和 Route/NavHost 转场覆盖；`VaultGraphRegistration.vaultGraphViewModel()` 使用图级 VM owner，Route 的 destination 生命周期与 effect collector 仍需宿主验证。
 
+**2026-11-08 Vault 列表删除确认死路径清理：** 调用闭包确认 `VaultScreen` 不消费 `dialogs.pendingDelete`，实际列表删除只由 `QuickDelete` 触发；移除无人调用的 `ItemToDeleteSelected` / `ConfirmDelete`、`pendingDelete` 状态/UI 投影、Reducer mutation 与 workflow 分支。保留真实的 Trash command、同条目单飞、当前 page effect 失败反馈和删除后的 OTP Runtime 清理。切换后全仓无 Vault 列表确认删除旧符号引用（Trash 页面自己的确认状态独立保留）；四个 Vault list 定向测试共 25 项通过，`verifyArchitecture` 通过。Task 32 的 Settings 失败、删除迟到结果、OTP 订阅及 Route/NavHost 覆盖仍待处理。
+
 **2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；锁定/重开恢复由数据库 observation owner 管理，证据见下方。
 
 - [x] 分类查询由 `RecoverableRead` 持有并映射为 `VaultCategoriesState.Loading/Ready/Failed`，失败可通过 `RetryCategories` 重试；ViewModel 测试覆盖首次及发值后普通异常、重试恢复、空列表与后续分类更新。UI 和 ViewModel 已删除旧 `availableCategories` 列表状态别名，读取明确状态。

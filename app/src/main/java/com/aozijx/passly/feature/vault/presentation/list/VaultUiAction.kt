@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.list
 
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -36,12 +35,6 @@ sealed interface VaultUiAction {
     ) : VaultUiAction
 
     data object ToggleShowTotpCode : VaultUiAction
-
-    data class ItemToDeleteSelected(
-        val item: EntryListItem?,
-    ) : VaultUiAction
-
-    data object ConfirmDelete : VaultUiAction
 
     data class QuickDelete(
         val entryId: String,

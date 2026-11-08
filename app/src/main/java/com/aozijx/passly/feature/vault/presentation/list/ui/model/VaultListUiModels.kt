@@ -87,7 +87,6 @@ data class VaultListScreenUiModel(
     val toolbar: VaultListToolbarUiModel,
     val navigation: VaultListNavigationUiModel,
     val content: VaultListContentUiModel,
-    val dialogs: VaultListDialogsUiModel,
     val layout: VaultListLayoutUiModel,
 )
 
@@ -117,11 +116,6 @@ data class VaultListContentUiModel(
     val swipeRightAction: SwipeActionType,
     val isSwipeEnabled: Boolean,
     val isPullToSearchEnabled: Boolean,
-)
-
-@Immutable
-data class VaultListDialogsUiModel(
-    val pendingDelete: VaultListItemUiModel?,
 )
 
 @Immutable

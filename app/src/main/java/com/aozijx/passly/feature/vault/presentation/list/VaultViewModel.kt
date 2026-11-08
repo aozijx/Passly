@@ -63,8 +63,6 @@ class VaultViewModel
                 scope = viewModelScope,
                 otpRuntime = totp,
                 pageEffects = pageEffects,
-                pendingDelete = { _uiState.value.pendingDelete },
-                mutate = ::mutate,
             )
 
         private val librarySettingsRead =
@@ -142,14 +140,6 @@ class VaultViewModel
                     toggleShowTOTPCode()
                 }
 
-                is VaultUiAction.ItemToDeleteSelected -> {
-                    setItemToDelete(action.item)
-                }
-
-                VaultUiAction.ConfirmDelete -> {
-                    entryCommands.confirmDelete()
-                }
-
                 is VaultUiAction.QuickDelete -> {
                     entryCommands.quickDelete(action.entryId)
                 }
@@ -176,10 +166,6 @@ class VaultViewModel
 
         private fun toggleShowTOTPCode() {
             mutate(VaultMutation.TotpVisibilityToggled)
-        }
-
-        private fun setItemToDelete(item: EntryListItem?) {
-            mutate(VaultMutation.PendingDeleteChanged(item))
         }
 
         fun subscribeVisibleOtp(entryId: String) {

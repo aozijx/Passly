@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -34,8 +33,6 @@ internal class VaultEntryCommandWorkflowFactory
             scope: CoroutineScope,
             otpRuntime: OtpCodeRuntime,
             pageEffects: PageEffects<VaultEffect>,
-            pendingDelete: () -> EntryListItem?,
-            mutate: (VaultMutation) -> Unit,
         ) =
             VaultEntryCommandWorkflow(
                 scope = scope,
@@ -45,8 +42,6 @@ internal class VaultEntryCommandWorkflowFactory
                 copyOtpCode = copyOtpCode,
                 otpRuntime = otpRuntime,
                 pageEffects = pageEffects,
-                pendingDelete = pendingDelete,
-                mutate = mutate,
             )
     }
 
@@ -59,20 +54,12 @@ internal class VaultEntryCommandWorkflow(
     private val copyOtpCode: CopyOtpCodeUseCase,
     private val otpRuntime: OtpCodeRuntime,
     private val pageEffects: PageEffects<VaultEffect>,
-    private val pendingDelete: () -> EntryListItem?,
-    private val mutate: (VaultMutation) -> Unit,
 ) {
     private val deletingEntryIds = mutableSetOf<EntryId>()
 
     fun quickDelete(entryId: String) {
         if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
         moveToTrash(EntryId(entryId))
-    }
-
-    fun confirmDelete() {
-        if (!ensureFullSecureSessionAccess(R.string.vault_error_delete_access)) return
-        val item = pendingDelete() ?: return
-        moveToTrash(item.id)
     }
 
     fun copyField(
@@ -128,9 +115,6 @@ internal class VaultEntryCommandWorkflow(
                 when (val result = trashCommand.moveToTrash(entryId)) {
                     TrashCommandResult.Completed -> {
                         otpRuntime.entryRemoved(entryId.value)
-                        if (pageEffects.isActive(owner)) {
-                            mutate(VaultMutation.DeletedEntryHandled(entryId.value))
-                        }
                     }
 
                     TrashCommandResult.NotAuthorized -> Unit
@@ -153,7 +137,6 @@ internal class VaultEntryCommandWorkflow(
     ): Boolean {
         if (secureSessionAccessState.hasFullSecureSessionAccess()) return true
         pageEffects.tryEmit(VaultEffect.ShowError(UiErrorMessage(messageRes)))
-        mutate(VaultMutation.DialogsCleared)
         return false
     }
 }

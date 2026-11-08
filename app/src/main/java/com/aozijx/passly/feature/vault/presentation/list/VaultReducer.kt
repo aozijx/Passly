@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiState
@@ -32,19 +31,10 @@ internal sealed interface VaultMutation {
 
     data object TotpVisibilityToggled : VaultMutation
 
-    data class PendingDeleteChanged(
-        val item: EntryListItem?,
-    ) : VaultMutation
-
-    data class DeletedEntryHandled(
-        val entryId: String,
-    ) : VaultMutation
-
     data class CategoriesStateChanged(
         val categories: VaultCategoriesState,
     ) : VaultMutation
 
-    data object DialogsCleared : VaultMutation
 }
 
 internal object VaultReducer {
@@ -92,24 +82,9 @@ internal object VaultReducer {
                 state.copy(showTOTPCode = !state.showTOTPCode)
             }
 
-            is VaultMutation.PendingDeleteChanged -> {
-                state.copy(pendingDelete = mutation.item)
-            }
-
-            is VaultMutation.DeletedEntryHandled -> {
-                state.copy(
-                    pendingDelete = state.pendingDelete?.takeUnless { it.id.value == mutation.entryId },
-                )
-            }
-
             is VaultMutation.CategoriesStateChanged -> {
                 state.copy(categories = mutation.categories)
             }
 
-            VaultMutation.DialogsCleared -> {
-                state.copy(
-                    pendingDelete = null,
-                )
-            }
         }
 }

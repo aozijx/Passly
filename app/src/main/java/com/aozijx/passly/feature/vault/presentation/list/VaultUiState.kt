@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 
@@ -13,7 +12,6 @@ data class VaultUiState(
     val categories: VaultCategoriesState = VaultCategoriesState.Loading,
     val categorySearchQuery: String = "",
     val showTOTPCode: Boolean = true,
-    val pendingDelete: EntryListItem? = null,
 )
 
 sealed interface VaultCategoriesState {

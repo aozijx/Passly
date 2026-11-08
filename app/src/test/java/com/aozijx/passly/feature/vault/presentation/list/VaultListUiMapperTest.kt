@@ -78,31 +78,6 @@ class VaultListUiMapperTest {
     }
 
     @Test
-    fun dialogChangesAreIsolatedFromPagingAndPageChromeState() {
-        val display = display()
-        val sort = createdAtDescendingSort()
-        val initial = VaultUiState(selectedSort = sort).toUiModel(display)
-        val pending =
-            EntryListItem(
-                EntryIdentity(EntryId("pending"), EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
-                EntryProfile(title = "Pending"),
-            )
-        val withDialog =
-            VaultUiState(selectedSort = sort, pendingDelete = pending)
-                .toUiModel(display)
-
-        requireNotNull(initial)
-        requireNotNull(withDialog)
-
-        assertEquals(initial.toolbar, withDialog.toolbar)
-        assertEquals(initial.navigation, withDialog.navigation)
-        assertEquals(initial.content, withDialog.content)
-        assertEquals(initial.layout, withDialog.layout)
-        assertEquals(pending.toUiModel(), withDialog.dialogs.pendingDelete)
-        assertEquals(false, initial.content.isPullToSearchEnabled)
-    }
-
-    @Test
     fun categorySearchMapsTrimmedCaseInsensitiveMatchesAndPreservesQuery() {
         val model =
             requireNotNull(

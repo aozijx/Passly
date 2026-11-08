@@ -13,7 +13,6 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUi
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDialogsUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListLayoutUiModel
@@ -168,10 +167,6 @@ internal fun VaultUiState.toUiModel(display: VaultListDisplayUiModel): VaultList
                 swipeRightAction = display.swipeRightAction,
                 isSwipeEnabled = display.isSwipeEnabled,
                 isPullToSearchEnabled = display.isPullToSearchEnabled,
-            ),
-        dialogs =
-            VaultListDialogsUiModel(
-                pendingDelete = pendingDelete?.toUiModel(),
             ),
         layout =
             VaultListLayoutUiModel(
