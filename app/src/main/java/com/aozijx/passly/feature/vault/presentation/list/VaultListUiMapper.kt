@@ -79,11 +79,19 @@ internal fun EntryListItem.toUiModel(): VaultListItemUiModel {
     )
 }
 
-internal fun OtpCodeState.toUiModel(): VaultOtpUiState =
+internal fun OtpCodeState.toUiModel(otpKind: VaultOtpKindUiModel?): VaultOtpUiState =
     when (this) {
         OtpCodeState.Pending -> VaultOtpUiState.Pending
-        is OtpCodeState.Ready -> VaultOtpUiState.Ready(code, progress)
+        is OtpCodeState.Ready -> VaultOtpUiState.Ready(code.toDisplayCode(otpKind), progress)
         is OtpCodeState.Failed -> VaultOtpUiState.Failed
+    }
+
+private fun String.toDisplayCode(otpKind: VaultOtpKindUiModel?): String =
+    when {
+        otpKind == VaultOtpKindUiModel.STEAM -> this
+        length == 6 -> "${take(3)} ${drop(3)}"
+        length == 8 -> "${take(4)} ${drop(4)}"
+        else -> chunked(3).joinToString(" ")
     }
 
 internal fun EntrySort.toUiModel() =

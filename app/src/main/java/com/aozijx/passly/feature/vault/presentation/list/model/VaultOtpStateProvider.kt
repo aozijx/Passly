@@ -8,7 +8,7 @@ sealed interface VaultOtpUiState {
     data object Pending : VaultOtpUiState
 
     data class Ready(
-        val code: String,
+        val displayCode: String,
         val progress: Float,
     ) : VaultOtpUiState
 

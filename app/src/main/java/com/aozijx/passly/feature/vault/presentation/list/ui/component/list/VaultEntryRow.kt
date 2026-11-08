@@ -27,6 +27,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListConte
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -43,6 +44,7 @@ internal fun VaultEntryRow(
         if (item.hasOtp) {
             observeVaultOtpState(
                 entryId = item.id,
+                otpKind = item.otpKind,
                 provider = otpStateProvider,
                 enabled = content.showTotpCode,
             )
@@ -127,6 +129,7 @@ internal fun VaultEntryRow(
 @Composable
 internal fun observeVaultOtpState(
     entryId: String,
+    otpKind: VaultOtpKindUiModel?,
     provider: VaultOtpStateProvider,
     enabled: Boolean,
 ): VaultOtpUiState? {
@@ -136,8 +139,8 @@ internal fun observeVaultOtpState(
         onDispose { provider.unsubscribe(entryId) }
     }
     val stateFlow =
-        remember(entryId, provider) {
-            provider.state(entryId).distinctUntilChanged()
+        remember(entryId, otpKind, provider) {
+            provider.state(entryId, otpKind).distinctUntilChanged()
         }
     val current by stateFlow.collectAsStateWithLifecycle(initialValue = null)
     return current

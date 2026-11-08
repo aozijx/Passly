@@ -13,6 +13,7 @@ import androidx.palette.graphics.Palette
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import kotlinx.coroutines.CancellationException
 
 data class ImagePaletteColors(
     val accent: Color,
@@ -44,30 +45,33 @@ private object ImagePaletteCache {
 
 @Composable
 fun rememberImagePaletteColors(
-    imageModel: Any?,
-    cacheKey: Any? = imageModel,
+    imageUri: String?,
 ): ImagePaletteColors? {
+    val uri = imageUri?.takeIf(String::isNotBlank) ?: return null
     val context = LocalContext.current
-    val resolvedKey = cacheKey?.toString().orEmpty()
-    var colors by remember(resolvedKey) {
-        mutableStateOf(ImagePaletteCache.get(resolvedKey))
+    var colors by remember(uri) {
+        mutableStateOf(ImagePaletteCache.get(uri))
     }
 
-    LaunchedEffect(imageModel, resolvedKey) {
-        colors = ImagePaletteCache.get(resolvedKey)
-        if (imageModel == null || resolvedKey.isBlank() || colors != null) return@LaunchedEffect
+    LaunchedEffect(uri) {
+        colors = ImagePaletteCache.get(uri)
+        if (colors != null) return@LaunchedEffect
 
         val bitmap =
-            runCatching {
+            try {
                 val request =
                     ImageRequest
                         .Builder(context)
-                        .data(imageModel)
+                        .data(uri)
                         .allowHardware(false)
                         .build()
                 val result = context.imageLoader.execute(request)
                 (result as? SuccessResult)?.drawable?.toBitmap()
-            }.getOrNull() ?: return@LaunchedEffect
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                null
+            } ?: return@LaunchedEffect
 
         val swatch =
             Palette
@@ -87,7 +91,7 @@ fun rememberImagePaletteColors(
                 accent = Color(swatch.rgb),
                 onAccent = Color(swatch.bodyTextColor),
             ).also {
-                ImagePaletteCache.put(resolvedKey, it)
+                ImagePaletteCache.put(uri, it)
             }
     }
 

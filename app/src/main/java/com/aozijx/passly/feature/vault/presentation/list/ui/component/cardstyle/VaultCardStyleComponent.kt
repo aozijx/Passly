@@ -43,6 +43,8 @@ interface VaultCardStyleComponent {
 }
 
 internal object CardStylePreviewFixtures {
+    val otpState = VaultOtpUiState.Ready(displayCode = "123 456", progress = 0.4f)
+
     fun defaultEntry(entryType: EntryType) =
         previewEntry(
             entryType = entryType,

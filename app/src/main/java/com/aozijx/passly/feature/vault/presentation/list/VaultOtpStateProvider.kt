@@ -4,13 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 
 interface VaultOtpStateProvider {
-    fun state(entryId: String): Flow<VaultOtpUiState?>
+    fun state(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel?,
+    ): Flow<VaultOtpUiState?>
 
     fun subscribe(entryId: String)
 
@@ -31,7 +35,10 @@ internal class VaultOtpStateProviderBindings(
         this.onUnsubscribe = onUnsubscribe
     }
 
-    override fun state(entryId: String): Flow<VaultOtpUiState?> = states.map { current -> current[entryId]?.toUiModel() }
+    override fun state(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel?,
+    ): Flow<VaultOtpUiState?> = states.map { current -> current[entryId]?.toUiModel(otpKind) }
 
     override fun subscribe(entryId: String) = onSubscribe(entryId)
 

@@ -13,7 +13,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -24,7 +23,6 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
@@ -77,16 +75,15 @@ fun DefaultOtpItem(
     entry: VaultListItemUiModel,
     totpState: VaultOtpUiState?,
     showCode: Boolean = true,
-    previewCode: String? = null,
-    previewProgress: Float? = null,
     onClick: () -> Unit,
 ) {
-    val currentState =
-        previewCode?.let { VaultOtpUiState.Ready(it, previewProgress ?: 0f) } ?: totpState
-
-    val isSteam =
-        remember(entry.otpKind) {
-            entry.otpKind == VaultOtpKindUiModel.STEAM
+    val readyState = totpState as? VaultOtpUiState.Ready
+    val progress = readyState?.progress ?: 0f
+    val progressColor =
+        if (readyState != null && progress < 0.2f) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.primary
         }
 
     Card(
@@ -127,35 +124,16 @@ fun DefaultOtpItem(
             }
 
             CircularProgressIndicator(
-                progress = {
-                    previewProgress ?: (currentState as? VaultOtpUiState.Ready)?.progress ?: 0f
-                },
+                progress = { progress },
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 3.dp,
-                color =
-                    if (
-                        (previewProgress ?: (currentState as? VaultOtpUiState.Ready)?.progress ?: 1f) < 0.2f
-                    ) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
+                color = progressColor,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             )
 
             if (showCode) {
                 Text(
-                    text =
-                        if (isSteam) {
-                            previewCode ?: (currentState as? VaultOtpUiState.Ready)?.code ?: "------"
-                        } else {
-                            previewCode
-                                ?: (currentState as? VaultOtpUiState.Ready)
-                                    ?.code
-                                    ?.chunked(3)
-                                    ?.joinToString(" ")
-                                ?: "------"
-                        },
+                    text = readyState?.displayCode ?: "------",
                     style =
                         MaterialTheme.typography.titleLarge.copy(
                             fontFamily = FontFamily.Monospace,
@@ -206,10 +184,8 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
         if (entryType == EntryType.OTP) {
             DefaultOtpItem(
                 entry = entry,
-                totpState = null,
+                totpState = CardStylePreviewFixtures.otpState,
                 showCode = true,
-                previewCode = "123 456",
-                previewProgress = 0.4f,
                 onClick = onClick,
             )
         } else {

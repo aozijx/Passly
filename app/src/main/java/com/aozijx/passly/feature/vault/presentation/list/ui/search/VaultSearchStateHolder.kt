@@ -48,7 +48,7 @@ class VaultSearchStateHolder internal constructor(
 
     fun submit(query: String) {
         uiState = uiState.settle(query)
-        if (query.isBlank()) onSearchActiveChange(false)
+        if (uiState == VaultSearchState.Browsing) onSearchActiveChange(false)
     }
 
     fun clear() {
@@ -69,7 +69,7 @@ class VaultSearchStateHolder internal constructor(
     fun handleBack() {
         if (uiState.isEditing) {
             uiState = uiState.settle(currentQuery())
-            if (currentQuery().isBlank()) onSearchActiveChange(false)
+            if (uiState == VaultSearchState.Browsing) onSearchActiveChange(false)
         } else {
             exit()
         }
@@ -77,7 +77,7 @@ class VaultSearchStateHolder internal constructor(
 
     fun pause() {
         uiState = uiState.onScreenPaused(currentQuery())
-        if (currentSearchActive() && currentQuery().isBlank()) {
+        if (currentSearchActive() && uiState == VaultSearchState.Browsing) {
             onSearchActiveChange(false)
         }
     }
