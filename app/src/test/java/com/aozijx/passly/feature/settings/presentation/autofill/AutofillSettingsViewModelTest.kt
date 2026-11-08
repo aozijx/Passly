@@ -212,7 +212,7 @@ class AutofillSettingsViewModelTest {
         }
 
     @Test
-    fun `strict domain matching action updates only that preference`() =
+    fun `presentation and strict matching actions reach their repository writers`() =
         runTest {
             val repository = RecordingAutofillSettingsRepository()
             val viewModel =
@@ -224,9 +224,11 @@ class AutofillSettingsViewModelTest {
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
 
+            viewModel.onAction(AutofillSettingsAction.SetPresentation(AutofillPresentation.BOTTOM_SHEET))
             viewModel.onAction(AutofillSettingsAction.SetStrictDomainMatching(false))
             advanceUntilIdle()
 
+            assertEquals(listOf(AutofillPresentation.BOTTOM_SHEET), repository.presentationWrites)
             assertEquals(listOf(false), repository.strictDomainMatchingWrites)
             assertEquals(0, repository.credentialManagerWrites)
         }
@@ -268,6 +270,7 @@ class AutofillSettingsViewModelTest {
         private val save: suspend () -> Unit = {},
     ) : AutofillSettingsRepository {
         var credentialManagerWrites = 0
+        val presentationWrites = mutableListOf<AutofillPresentation>()
         val strictDomainMatchingWrites = mutableListOf<Boolean>()
 
         override suspend fun setCredentialManagerEnabled(enabled: Boolean) {
@@ -282,7 +285,10 @@ class AutofillSettingsViewModelTest {
 
         override suspend fun setAutofillEnabled(enabled: Boolean) = save()
 
-        override suspend fun setAutofillPresentation(presentation: AutofillPresentation) = save()
+        override suspend fun setAutofillPresentation(presentation: AutofillPresentation) {
+            save()
+            presentationWrites += presentation
+        }
 
         override suspend fun setAutofillAuthenticationRequired(required: Boolean) = save()
 

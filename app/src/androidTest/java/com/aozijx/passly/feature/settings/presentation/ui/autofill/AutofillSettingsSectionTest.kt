@@ -23,7 +23,8 @@ class AutofillSettingsSectionTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun presentationOptionsRemainAvailableWithoutCredentialManagerSupport() {
+    fun presentationOptionsRemainAvailableAndEmitSelectedValueWithoutCredentialManagerSupport() {
+        val actions = mutableListOf<AutofillSettingsAction>()
         val settings =
             AutofillSettingsUiModel(
                 enabled = true,
@@ -38,7 +39,7 @@ class AutofillSettingsSectionTest {
             MaterialTheme {
                 AutofillSettingsSection(
                     settings = settings,
-                    onAction = {},
+                    onAction = actions::add,
                 )
             }
         }
@@ -56,6 +57,15 @@ class AutofillSettingsSectionTest {
                 .onNode(hasText(context.getString(label)) and hasAnyAncestor(isDialog()))
                 .assertIsDisplayed()
         }
+
+        composeRule
+            .onNode(hasText(context.getString(R.string.settings_autofill_mode_bottom_sheet)) and hasAnyAncestor(isDialog()))
+            .performClick()
+
+        assertEquals(
+            listOf(AutofillSettingsAction.SetPresentation(AutofillPresentation.BOTTOM_SHEET)),
+            actions,
+        )
     }
 
     @Test
