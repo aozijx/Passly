@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.appearance
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
@@ -12,6 +13,7 @@ import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
+import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
@@ -55,12 +57,12 @@ class InterfaceSettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(InterfaceSettingsUiState.Failed(ReadFailure.IO), model.uiState.value)
+            assertEquals(RecoverableReadState.Failed(ReadFailure.IO), model.uiState.value)
             model.onAction(InterfaceSettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is InterfaceSettingsUiState.Ready)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Ready)
         }
 
     @Test
@@ -114,7 +116,7 @@ class InterfaceSettingsViewModelTest {
             runCurrent()
             assertEquals(
                 EntryHierarchyDisplayMode.EXPANDED,
-                (model.uiState.value as InterfaceSettingsUiState.Ready).entryHierarchyDisplayMode,
+                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiModel>).value.entryHierarchyDisplayMode,
             )
             assertEquals(emptyList<UiErrorMessage>(), errors)
         }
@@ -138,7 +140,7 @@ class InterfaceSettingsViewModelTest {
             runCurrent()
             assertEquals(
                 listOf(presentation),
-                (model.uiState.value as InterfaceSettingsUiState.Ready).entryCardPresentations,
+                (model.uiState.value as RecoverableReadState.Ready<InterfaceUiModel>).value.entryCardPresentations,
             )
         }
 

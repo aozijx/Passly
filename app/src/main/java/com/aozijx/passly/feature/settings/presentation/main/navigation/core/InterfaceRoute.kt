@@ -6,10 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
-import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsViewModel
-import com.aozijx.passly.feature.settings.presentation.appearance.toInterfaceUiModel
 import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.InterfaceDetail
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
@@ -30,19 +29,19 @@ internal fun InterfaceRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.INTERFACE.titleRes),
         onBack = onBack,
     ) {
-        when (val readyState = state) {
-            InterfaceSettingsUiState.Loading -> {
+        when (state) {
+            RecoverableReadState.Loading -> {
                 Unit
             }
 
-            is InterfaceSettingsUiState.Failed -> {
+            is RecoverableReadState.Failed -> {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InterfaceSettingsAction.RetryRead) }) }
             }
 
-            is InterfaceSettingsUiState.Ready -> {
+            is RecoverableReadState.Ready -> {
                 item {
                     InterfaceDetail(
-                        state = readyState.toInterfaceUiModel(),
+                        state = state.value,
                         onAction = viewModel::onAction,
                     )
                 }

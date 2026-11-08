@@ -3,21 +3,19 @@ package com.aozijx.passly.feature.settings.presentation.appearance
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
-import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
+import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -37,11 +35,13 @@ class InterfaceSettingsViewModel
                         settingsRepository.interfaceSettings,
                         librarySettingsRepository.libraryViewSettings,
                     ) { prefs, librarySettings ->
-                        InterfaceSettingsUiState.Ready(
+                        InterfaceUiModel(
                             hideSystemBars = prefs.hideSystemBars,
                             collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
                             collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
                             appCornerRadiusDp = prefs.appCornerRadiusDp,
+                            appCornerRadiusRange =
+                                AppCornerRadiusConstraints.MIN_DP..AppCornerRadiusConstraints.MAX_DP,
                             entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode,
                             entryCardPresentations = librarySettings.entryCardPresentations,
                         )
@@ -49,19 +49,7 @@ class InterfaceSettingsViewModel
                 scope = viewModelScope,
             )
 
-        val uiState: StateFlow<InterfaceSettingsUiState> =
-            settingsRead.state
-                .map { state ->
-                    when (state) {
-                        RecoverableReadState.Loading -> InterfaceSettingsUiState.Loading
-                        is RecoverableReadState.Ready -> state.value
-                        is RecoverableReadState.Failed -> InterfaceSettingsUiState.Failed(state.failure)
-                    }
-                }.stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5_000L),
-                    InterfaceSettingsUiState.Loading,
-                )
+        val uiState: StateFlow<RecoverableReadState<InterfaceUiModel>> = settingsRead.state
 
         fun onAction(action: InterfaceSettingsAction) {
             when (action) {
@@ -108,7 +96,7 @@ class InterfaceSettingsViewModel
         }
 
         private fun saveSetting(write: suspend () -> Unit) {
-            if (uiState.value !is InterfaceSettingsUiState.Ready) return
+            if (uiState.value !is RecoverableReadState.Ready) return
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 writePreferenceWithFeedback(
