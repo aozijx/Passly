@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.domain.entry.policy.WifiCredentialValidation
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 
 data class AddWifiFormState(
     val ssid: String = "",
@@ -16,12 +17,6 @@ data class AddWifiFormState(
     val notes: String = "",
     val tags: String = "",
 )
-
-sealed interface AddWifiSavePhase {
-    data object Idle : AddWifiSavePhase
-
-    data object Saving : AddWifiSavePhase
-}
 
 sealed interface AddWifiInitialContent {
     data object Blank : AddWifiInitialContent
@@ -40,13 +35,12 @@ enum class AddWifiInitializationGate { NeedsInitialContent, Unavailable, Already
 data class AddWifiUiState(
     val form: AddWifiFormState = AddWifiFormState(),
     val fieldErrors: Map<FieldKey, EntryViolationCode> = form.visibleFieldErrors(),
-    val savePhase: AddWifiSavePhase = AddWifiSavePhase.Idle,
+    val saveState: EditorSaveState = EditorSaveState.Idle,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
     val canSave: Boolean
         get() =
-            form.fieldErrors().isEmpty() && savePhase == AddWifiSavePhase.Idle &&
-                loadPhase != EditorLoadPhase.Loading && loadPhase != EditorLoadPhase.Failed
+            form.fieldErrors().isEmpty() && saveState.canStartSave && loadPhase.allowsSaving
 }
 
 internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> =

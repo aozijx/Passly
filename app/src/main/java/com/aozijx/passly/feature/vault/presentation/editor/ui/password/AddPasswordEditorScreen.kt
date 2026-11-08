@@ -31,7 +31,6 @@ import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordAction
-import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
@@ -62,7 +61,7 @@ fun AddPasswordEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_password_title else R.string.vault_add_password_title),
         canSave = state.canSave,
-        isSaving = state.savePhase == AddPasswordSavePhase.Saving,
+        isSaving = state.saveState.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,

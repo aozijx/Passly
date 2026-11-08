@@ -180,7 +180,19 @@ internal class EditorWriteSession(
 
 internal enum class EditorWriteSessionClearReason { WriteSucceeded, AccessInvalidated, OwnerClosed }
 
-enum class EditorLoadPhase { NotRequested, Loading, Ready, Failed }
+enum class EditorLoadPhase {
+    NotRequested,
+    Loading,
+    Ready,
+    Failed;
+
+    val allowsSaving: Boolean
+        get() =
+            when (this) {
+                NotRequested, Ready -> true
+                Loading, Failed -> false
+            }
+}
 
 internal fun EditorWriteSessionClearReason.toEditorLoadPhase(editingExisting: Boolean): EditorLoadPhase =
     when {

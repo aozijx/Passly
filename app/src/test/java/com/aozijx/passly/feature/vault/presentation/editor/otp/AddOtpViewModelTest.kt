@@ -27,6 +27,7 @@ import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
@@ -397,7 +398,7 @@ class AddOtpViewModelTest {
         assertEquals(config.encoding, roundTripped.encoding)
         assertEquals(config.issuer, roundTripped.issuer)
         assertEquals(config.accountName, roundTripped.accountName)
-        assertEquals(AddOtpSavePhase.Idle, state.savePhase)
+        assertEquals(EditorSaveState.Idle, state.saveState)
     }
 
     @Test

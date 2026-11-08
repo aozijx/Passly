@@ -16,7 +16,6 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpCodeState
-import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
@@ -37,7 +36,7 @@ fun AddOtpEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_otp_title else R.string.vault_add_otp_title),
         canSave = state.canSave,
-        isSaving = state.savePhase == AddOtpSavePhase.Saving,
+        isSaving = state.saveState.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = {

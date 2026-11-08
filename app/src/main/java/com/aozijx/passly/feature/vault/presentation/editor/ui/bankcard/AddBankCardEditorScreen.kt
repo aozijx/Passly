@@ -31,7 +31,6 @@ import com.aozijx.passly.domain.entry.policy.CardNumberInvalidReason
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
@@ -63,7 +62,7 @@ fun AddBankCardEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_bank_card_title else R.string.vault_add_bank_card_title),
         canSave = state.canSave,
-        isSaving = state.savePhase == AddBankCardSavePhase.Saving,
+        isSaving = state.saveState.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,

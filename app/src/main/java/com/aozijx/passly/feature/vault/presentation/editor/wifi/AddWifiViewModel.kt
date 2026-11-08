@@ -13,6 +13,7 @@ import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
+import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
 import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
@@ -55,10 +56,10 @@ class AddWifiViewModel
                         editEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
                     }
                 },
-                onSaving = { _uiState.value = _uiState.value.copy(savePhase = AddWifiSavePhase.Saving) },
+                onSaving = { _uiState.value = _uiState.value.copy(saveState = EditorSaveState.Saving) },
                 onIdle = {
                     val current = _uiState.value
-                    _uiState.value = current.withForm(current.form).copy(savePhase = AddWifiSavePhase.Idle)
+                    _uiState.value = current.withForm(current.form).copy(saveState = EditorSaveState.Idle)
                 },
                 onClear = ::clearSensitiveContent,
             )
