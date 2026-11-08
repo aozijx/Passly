@@ -189,6 +189,14 @@
   <string name="vault_detail_bind_password_action">Bind</string>
   <string name="vault_detail_bind_password_load_failed">Could not load passwords. Try again.</string>
   <string name="vault_detail_bind_password_failed">Binding failed. Try again.</string>
+  <string name="vault_detail_related_passwords_title">Related passwords</string>
+  <string name="vault_detail_related_passwords_empty">No related passwords yet. Add a saved password to link it.</string>
+  <string name="vault_detail_unlink_accessibility_action">Remove related password</string>
+  <string name="vault_detail_unlink_title">Remove password link?</string>
+  <string name="vault_detail_unlink_message">Only the link to “%1$s” will be removed. Both saved password entries will remain.</string>
+  <string name="vault_detail_unlink_confirm">Unlink</string>
+  <string name="vault_detail_unlink_failed">Could not remove the link. You can try again.</string>
+  <string name="vault_detail_unlink_removing">Removing link…</string>
   <string name="app_package_picker_title">Choose associated app</string>
   <string name="app_package_picker_search">Search apps or package names</string>
   <string name="app_package_picker_load_failed">Apps could not be loaded. Try again.</string>

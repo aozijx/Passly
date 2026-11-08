@@ -200,6 +200,14 @@
   <string name="vault_detail_bind_password_action">绑定</string>
   <string name="vault_detail_bind_password_load_failed">密码列表加载失败，请重试。</string>
   <string name="vault_detail_bind_password_failed">绑定失败，请重试。</string>
+  <string name="vault_detail_related_passwords_title">关联密码</string>
+  <string name="vault_detail_related_passwords_empty">还没有关联密码，可以添加已保存的密码。</string>
+  <string name="vault_detail_unlink_accessibility_action">解除密码关联</string>
+  <string name="vault_detail_unlink_title">解除密码关联？</string>
+  <string name="vault_detail_unlink_message">仅移除与“%1$s”的关联，两个已保存的密码项都会保留。</string>
+  <string name="vault_detail_unlink_confirm">解除关联</string>
+  <string name="vault_detail_unlink_failed">解除关联失败，可以重试。</string>
+  <string name="vault_detail_unlink_removing">正在解除关联…</string>
   <string name="app_package_picker_title">选择关联应用</string>
   <string name="app_package_picker_search">搜索应用或包名</string>
   <string name="app_package_picker_load_failed">应用列表暂时无法加载，请重试。</string>

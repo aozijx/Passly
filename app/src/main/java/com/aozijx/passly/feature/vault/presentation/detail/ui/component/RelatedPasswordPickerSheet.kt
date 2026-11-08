@@ -17,17 +17,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateSearchResults
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,8 +34,6 @@ fun RelatedPasswordPickerSheet(
     onAction: (DetailUiAction) -> Unit,
 ) {
     if (state == RelatedPasswordBindingUiState.Closed) return
-    var search by remember { mutableStateOf("") }
-
     ModalBottomSheet(onDismissRequest = { onAction(DetailUiAction.DismissPasswordBinding) }) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -56,8 +52,8 @@ fun RelatedPasswordPickerSheet(
                 }
                 is RelatedPasswordBindingUiState.Ready -> {
                     OutlinedTextField(
-                        value = search,
-                        onValueChange = { search = it },
+                        value = current.query,
+                        onValueChange = { onAction(DetailUiAction.PasswordBindingSearchChanged(it)) },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text(stringResource(R.string.vault_detail_bind_password_search)) },
                         singleLine = true,
@@ -65,42 +61,42 @@ fun RelatedPasswordPickerSheet(
                     if (current.bindFailed) {
                         Text(stringResource(R.string.vault_detail_bind_password_failed))
                     }
-                    val candidates = current.candidates.filter { candidate ->
-                        candidate.title.contains(search, ignoreCase = true) ||
-                            candidate.username.contains(search, ignoreCase = true)
-                    }
-                    if (current.candidates.isEmpty()) {
-                        Text(stringResource(R.string.vault_detail_bind_password_empty))
-                    } else if (candidates.isEmpty()) {
-                        Text(stringResource(R.string.vault_detail_bind_password_no_matches))
-                    } else {
-                        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
-                            items(candidates, key = { it.id }) { candidate ->
-                                ListItem(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ListItemDefaults.colors(),
-                                    content = {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(candidate.title)
-                                                if (candidate.username.isNotBlank()) Text(candidate.username)
-                                            }
-                                            if (current.savingEntryId == candidate.id) {
-                                                CircularProgressIndicator()
-                                            } else {
-                                                TextButton(
-                                                    enabled = current.savingEntryId == null,
-                                                    onClick = { onAction(DetailUiAction.BindPassword(candidate.id)) },
-                                                ) {
-                                                    Text(stringResource(R.string.vault_detail_bind_password_action))
+                    when (val results = current.results) {
+                        RelatedPasswordCandidateSearchResults.NoCandidates ->
+                            Text(stringResource(R.string.vault_detail_bind_password_empty))
+                        RelatedPasswordCandidateSearchResults.NoMatches ->
+                            Text(stringResource(R.string.vault_detail_bind_password_no_matches))
+                        is RelatedPasswordCandidateSearchResults.Matches -> {
+                            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
+                                items(results.candidates, key = { it.id }) { candidate ->
+                                    ListItem(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ListItemDefaults.colors(),
+                                        content = {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(candidate.title)
+                                                    candidate.username?.let { Text(it) }
+                                                }
+                                                if (current.savingEntryId == candidate.id) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.testTag("related-password-saving"),
+                                                    )
+                                                } else {
+                                                    TextButton(
+                                                        enabled = current.savingEntryId == null,
+                                                        onClick = { onAction(DetailUiAction.BindPassword(candidate.id)) },
+                                                    ) {
+                                                        Text(stringResource(R.string.vault_detail_bind_password_action))
+                                                    }
                                                 }
                                             }
-                                        }
-                                    },
-                                )
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
