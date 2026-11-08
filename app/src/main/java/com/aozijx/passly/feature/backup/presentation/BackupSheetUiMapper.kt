@@ -27,6 +27,8 @@ private fun BackupExportOptions.toUiState(configuredDirectoryLabel: String?) =
         includeAttachments = includeAttachments,
         includeDeleted = includeDeleted,
         includedEntryTypes = includedEntryTypes,
+        allEntryTypesSelected = allEntryTypesSelected,
+        needsEntryTypeSelection = needsEntryTypeSelection,
         canSubmit = canSubmit,
     )
 

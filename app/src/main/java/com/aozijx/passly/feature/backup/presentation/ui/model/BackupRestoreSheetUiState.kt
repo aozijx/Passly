@@ -18,6 +18,8 @@ internal sealed interface BackupRestoreSheetUiState {
         val includeAttachments: Boolean,
         val includeDeleted: Boolean,
         val includedEntryTypes: Set<EntryType>,
+        val allEntryTypesSelected: Boolean,
+        val needsEntryTypeSelection: Boolean,
         val canSubmit: Boolean,
     ) : BackupRestoreSheetUiState
 
