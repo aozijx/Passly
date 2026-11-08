@@ -61,7 +61,7 @@ fun AddPasswordEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_password_title else R.string.vault_add_password_title),
         canSave = state.canSave,
-        isSaving = state.saveState.isSaving,
+        isSaving = state.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,

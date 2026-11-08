@@ -16,15 +16,9 @@ class AddEntrySaveCapabilityTest {
         val otpForm = OtpFormState(title = "Mail", secret = "JBSWY3DPEHPK3PXP")
 
         assertTrue(AddPasswordUiState(form = passwordForm).canSave)
-        assertFalse(
-            AddPasswordUiState(form = passwordForm, saveState = EditorSaveState.Saving).canSave,
-        )
+        assertFalse(AddPasswordUiState(form = passwordForm, isSaving = true).canSave)
         assertTrue(AddOtpCodeState(form = otpForm).canSave)
-        assertFalse(AddOtpCodeState(form = otpForm, saveState = EditorSaveState.Saving).canSave)
-        assertFalse(EditorSaveState.Idle.isSaving)
-        assertTrue(EditorSaveState.Saving.isSaving)
-        assertTrue(EditorSaveState.Idle.canStartSave)
-        assertFalse(EditorSaveState.Saving.canStartSave)
+        assertFalse(AddOtpCodeState(form = otpForm, isSaving = true).canSave)
         assertTrue(EditorLoadPhase.NotRequested.allowsSaving)
         assertTrue(EditorLoadPhase.Ready.allowsSaving)
         assertFalse(EditorLoadPhase.Loading.allowsSaving)

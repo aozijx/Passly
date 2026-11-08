@@ -16,7 +16,6 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemU
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
 import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
@@ -55,9 +54,9 @@ class AddPasswordViewModel
                         editEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
                     }
                 },
-                onSaving = { _uiState.value = _uiState.value.copy(saveState = EditorSaveState.Saving) },
+                onSaving = { _uiState.value = _uiState.value.copy(isSaving = true) },
                 onIdle = {
-                    _uiState.value = _uiState.value.copy(saveState = EditorSaveState.Idle)
+                    _uiState.value = _uiState.value.copy(isSaving = false)
                 },
                 onClear = ::clearSensitiveContent,
             )

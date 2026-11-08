@@ -61,7 +61,7 @@ fun AddBankCardEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_bank_card_title else R.string.vault_add_bank_card_title),
         canSave = state.canSave,
-        isSaving = state.saveState.isSaving,
+        isSaving = state.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,

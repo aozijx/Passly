@@ -51,7 +51,7 @@ fun AddWifiEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_wifi_title else R.string.vault_add_wifi_title),
         canSave = state.canSave,
-        isSaving = state.saveState.isSaving,
+        isSaving = state.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = ::save,

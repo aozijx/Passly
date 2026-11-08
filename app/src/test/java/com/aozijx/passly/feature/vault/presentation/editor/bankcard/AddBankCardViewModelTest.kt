@@ -24,7 +24,6 @@ import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
@@ -131,7 +130,7 @@ class AddBankCardViewModelTest {
             runCurrent()
             assertEquals(0, created.size)
             assertEquals(emptyList<EditorSaveEffect>(), effects)
-            assertEquals(EditorSaveState.Idle, model.uiState.value.saveState)
+            assertFalse(model.uiState.value.isSaving)
             model.onAction(AddBankCardAction.CvvChanged(" 123 "))
             model.onAction(AddBankCardAction.Save)
             runCurrent()
@@ -257,9 +256,9 @@ class AddBankCardViewModelTest {
             state.form.cardNumberValidation,
         )
         assertEquals("4111 1111 1111 1111", state.form.cardNumber)
-        assertEquals(EditorSaveState.Idle, state.saveState)
+        assertFalse(state.isSaving)
         assertFalse(
-            state.copy(saveState = EditorSaveState.Saving).canSave,
+            state.copy(isSaving = true).canSave,
         )
     }
 

@@ -3,7 +3,6 @@ package com.aozijx.passly.feature.vault.presentation.editor.password
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 
 data class AddPasswordFormState(
     val title: String = "",
@@ -23,7 +22,7 @@ data class AddPasswordFormState(
 data class AddPasswordUiState(
     val form: AddPasswordFormState = AddPasswordFormState(),
     val availableApps: AppPackagePickerUiState<AppPackagePickerItemUiModel> = AppPackagePickerUiState.NotRequested,
-    val saveState: EditorSaveState = EditorSaveState.Idle,
+    val isSaving: Boolean = false,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
     val associatedApp: AppPackagePickerItemUiModel?
@@ -45,5 +44,5 @@ data class AddPasswordUiState(
 
     val canSave: Boolean
         get() =
-            form.isValid && saveState.canStartSave && loadPhase.allowsSaving
+            form.isValid && !isSaving && loadPhase.allowsSaving
 }

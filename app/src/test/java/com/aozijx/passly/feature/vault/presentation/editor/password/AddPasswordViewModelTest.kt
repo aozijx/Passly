@@ -25,7 +25,6 @@ import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
@@ -38,6 +37,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -206,7 +206,7 @@ class AddPasswordViewModelTest {
 
         val state: AddPasswordUiState = viewModel.uiState.value
         assertTrue(state.canSave)
-        assertEquals(EditorSaveState.Idle, state.saveState)
+        assertFalse(state.isSaving)
         assertEquals("", state.form.username)
         assertEquals(" secret ", state.form.password)
     }

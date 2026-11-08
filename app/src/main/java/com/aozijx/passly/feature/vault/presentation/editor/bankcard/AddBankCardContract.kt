@@ -7,7 +7,6 @@ import com.aozijx.passly.domain.entry.policy.CardCvvValidator
 import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.domain.entry.policy.CardNumberValidator
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 
 enum class CardType(
     @param:StringRes val labelRes: Int,
@@ -48,12 +47,12 @@ data class AddBankCardFormState(
 
 data class AddBankCardUiState(
     val form: AddBankCardFormState = AddBankCardFormState(),
-    val saveState: EditorSaveState = EditorSaveState.Idle,
+    val isSaving: Boolean = false,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
     val canSave: Boolean
         get() =
-            form.isValid && saveState.canStartSave && loadPhase.allowsSaving
+            form.isValid && !isSaving && loadPhase.allowsSaving
 }
 
 internal fun cardExpiryYearRange(currentYear: Int): IntRange = currentYear..(currentYear + 20)

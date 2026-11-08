@@ -28,7 +28,6 @@ import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
-import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
@@ -389,7 +388,7 @@ class AddWifiViewModelTest {
             runCurrent()
 
             assertEquals(1, repository.createCalls)
-            assertEquals(EditorSaveState.Saving, viewModel.uiState.value.saveState)
+            assertTrue(viewModel.uiState.value.isSaving)
 
             release.complete(Unit)
             advanceUntilIdle()
@@ -428,7 +427,7 @@ class AddWifiViewModelTest {
             assertEquals(EditorSaveEffect.Failed, viewModel.effects.first())
             assertEquals("password", viewModel.uiState.value.form.password)
             assertTrue(viewModel.uiState.value.canSave)
-            assertEquals(EditorSaveState.Idle, viewModel.uiState.value.saveState)
+            assertFalse(viewModel.uiState.value.isSaving)
         }
 
     @Test

@@ -36,7 +36,7 @@ fun AddOtpEditorScreen(
     AddEntryScaffold(
         title = stringResource(if (isEditingExisting) R.string.vault_edit_otp_title else R.string.vault_add_otp_title),
         canSave = state.canSave,
-        isSaving = state.saveState.isSaving,
+        isSaving = state.isSaving,
         snackbarHostState = snackbarHostState,
         onBack = onBack,
         onSave = {
