@@ -56,11 +56,54 @@ import com.aozijx.passly.presentation.shared.components.group.sliderSettingsGrou
 import com.aozijx.passly.presentation.shared.components.group.switchSettingsGroupItem
 import kotlin.math.roundToInt
 
+internal data class CardStyleGroupUiModel(
+    val entryType: EntryType,
+    val entryTypeKey: String,
+    val options: List<CardStyleOptionUiModel>,
+)
+
+internal data class CardStyleOptionUiModel(
+    val styleKey: String,
+    val titleRes: Int,
+    val selected: Boolean,
+    val selection: EntryCardPresentation,
+)
+
+internal object CardStyleSettingsProjection {
+    fun from(presentations: List<EntryCardPresentation>): List<CardStyleGroupUiModel> =
+        CardStyleRegistry.configurableEntryTypes.map { entryType ->
+            val entryTypeKey = CardStyleRegistry.entryTypeKey(entryType)
+            val storedPresentation = presentations.firstOrNull { it.entryTypeKey == entryTypeKey }
+            val styles = CardStyleRegistry.stylesFor(entryType)
+            val selectedStyle =
+                styles.firstOrNull { it.key == storedPresentation?.variantKey } ?: styles.first()
+
+            CardStyleGroupUiModel(
+                entryType = entryType,
+                entryTypeKey = entryTypeKey,
+                options =
+                    styles.map { style ->
+                        CardStyleOptionUiModel(
+                            styleKey = style.key,
+                            titleRes = style.titleRes,
+                            selected = style.key == selectedStyle.key,
+                            selection =
+                                (storedPresentation ?: EntryCardPresentation(entryTypeKey = entryTypeKey))
+                                    .copy(variantKey = style.key),
+                        )
+                    },
+            )
+        }
+}
+
 @Composable
 internal fun InterfaceDetail(
     state: InterfaceUiModel,
     onAction: (InterfaceSettingsAction) -> Unit,
 ) {
+    val cardStyleGroups = remember(state.entryCardPresentations) {
+        CardStyleSettingsProjection.from(state.entryCardPresentations)
+    }
     var appCornerRadius by remember(state.appCornerRadiusDp) {
         mutableFloatStateOf(state.appCornerRadiusDp)
     }
@@ -131,13 +174,12 @@ internal fun InterfaceDetail(
                             contentPadding = PaddingValues(12.dp),
                             content = {
                                 Column {
-                                    CardStyleRegistry.configurableEntryTypes.forEachIndexed { index, entryType ->
+                                    cardStyleGroups.forEachIndexed { index, group ->
                                         if (index > 0) Spacer(modifier = Modifier.height(12.dp))
                                         CardStyleChoices(
-                                            entryType = entryType,
-                                            presentations = state.entryCardPresentations,
-                                            onSelect = { presentation ->
-                                                onAction(InterfaceSettingsAction.SetEntryCardPresentation(presentation))
+                                            group = group,
+                                            onSelect = { selection ->
+                                                onAction(InterfaceSettingsAction.SetEntryCardPresentation(selection))
                                             },
                                         )
                                     }
@@ -219,17 +261,15 @@ internal fun InterfaceDetail(
 
 @Composable
 private fun CardStyleChoices(
-    entryType: EntryType,
-    presentations: List<EntryCardPresentation>,
+    group: CardStyleGroupUiModel,
     onSelect: (EntryCardPresentation) -> Unit,
 ) {
-    val typeKey = CardStyleRegistry.entryTypeKey(entryType)
+    val typeKey = group.entryTypeKey
     var expanded by rememberSaveable(typeKey) { mutableStateOf(false) }
-    val entryTypeLabel = stringResource(entryType.labelRes)
-    val stored = presentations.firstOrNull { it.entryTypeKey == typeKey }
-    val styles = CardStyleRegistry.stylesFor(entryType)
-    val selectedStyleKey =
-        styles.firstOrNull { it.key == stored?.variantKey }?.key ?: styles.first().key
+    val entryTypeLabel = stringResource(group.entryType.labelRes)
+    val stylesByKey = remember(group.entryType) {
+        CardStyleRegistry.stylesFor(group.entryType).associateBy { it.key }
+    }
 
     SegmentedSettingsGroup(
         items =
@@ -261,14 +301,10 @@ private fun CardStyleChoices(
                             Row(
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
                             ) {
-                                styles.forEach { style ->
-                                    val selected = style.key == selectedStyleKey
-                                    val selectStyle = {
-                                        onSelect(
-                                            (stored ?: EntryCardPresentation(entryTypeKey = typeKey))
-                                                .copy(variantKey = style.key),
-                                        )
-                                    }
+                                group.options.forEach { option ->
+                                    val style = stylesByKey.getValue(option.styleKey)
+                                    val selected = option.selected
+                                    val selectStyle = { onSelect(option.selection) }
                                     Card(
                                         onClick = selectStyle,
                                         modifier =
@@ -292,7 +328,7 @@ private fun CardStyleChoices(
                                                     onClick = selectStyle,
                                                 )
                                                 Text(
-                                                    text = stringResource(style.titleRes),
+                                                    text = stringResource(option.titleRes),
                                                     style = MaterialTheme.typography.titleSmall,
                                                 )
                                             }
@@ -305,7 +341,7 @@ private fun CardStyleChoices(
                                                 contentAlignment = Alignment.Center,
                                             ) {
                                                 Box(Modifier.fillMaxWidth()) {
-                                                    style.Preview(entryType, onClick = selectStyle)
+                                                    style.Preview(group.entryType, onClick = selectStyle)
                                                 }
                                             }
                                         }
