@@ -8,6 +8,28 @@ import com.aozijx.passly.domain.autofill.model.AutofillInboxLimits
 import com.aozijx.passly.domain.autofill.model.AutofillInboxPendingDraft
 import com.aozijx.passly.domain.autofill.model.AutofillInboxSource
 import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.GCM_TAG_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.KEY_ID_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.CONTENT_KEY_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.DRAFT_ID_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MAX_DOMAIN_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MAX_PACKAGE_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MAX_PAGE_TITLE_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MAX_PASSWORD_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MAX_PAYLOAD_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MAX_USERNAME_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MGF1
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.MIN_RECORD_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.NULL_STRING_LENGTH
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.PAYLOAD_MAGIC
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.PAYLOAD_VERSION
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.RECORD_AAD_HEADER_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.RECORD_MAGIC
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.RECORD_VERSION
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.RSA_CIPHERTEXT_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.RSA_OAEP_TRANSFORMATION
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.U16_BYTES
+import com.aozijx.passly.security.autofill.inbox.AutofillInboxProtocol.Record.U32_BYTES
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -147,8 +169,9 @@ internal class AutofillInboxRecordCodec
 
         private fun decodeHeader(encoded: ByteArray): DecodedHeader {
             val buffer = ByteBuffer.wrap(encoded).order(ByteOrder.BIG_ENDIAN)
-            val magic = ByteArray(RECORD_MAGIC.size).also(buffer::get)
-            require(magic.contentEquals(RECORD_MAGIC)) { "Invalid Inbox record magic" }
+            val expectedMagic = RECORD_MAGIC.toByteArray(StandardCharsets.US_ASCII)
+            val magic = ByteArray(expectedMagic.size).also(buffer::get)
+            require(magic.contentEquals(expectedMagic)) { "Invalid Inbox record magic" }
             require(buffer.get() == RECORD_VERSION) { "Unsupported Inbox record version" }
             val keyId = ByteArray(KEY_ID_BYTES).also(buffer::get)
             val draftId = AutofillInboxDraftId.fromBytes(ByteArray(DRAFT_ID_BYTES).also(buffer::get))
@@ -193,7 +216,7 @@ internal class AutofillInboxRecordCodec
             val output = WipingByteArrayOutputStream()
             try {
                 DataOutputStream(output).use { data ->
-                    data.write(PAYLOAD_MAGIC)
+                    data.write(PAYLOAD_MAGIC.toByteArray(StandardCharsets.US_ASCII))
                     data.writeByte(PAYLOAD_VERSION.toInt())
                     data.write(draftId.toByteArray())
                     data.writeByte(source.wireKey)
@@ -213,8 +236,9 @@ internal class AutofillInboxRecordCodec
         private fun decodePayload(plaintext: ByteArray): AutofillInboxPendingDraft =
             try {
                 DataInputStream(ByteArrayInputStream(plaintext)).use { data ->
-                    val magic = ByteArray(PAYLOAD_MAGIC.size).also(data::readFully)
-                    require(magic.contentEquals(PAYLOAD_MAGIC)) { "Invalid Inbox payload magic" }
+                    val expectedMagic = PAYLOAD_MAGIC.toByteArray(StandardCharsets.US_ASCII)
+                    val magic = ByteArray(expectedMagic.size).also(data::readFully)
+                    require(magic.contentEquals(expectedMagic)) { "Invalid Inbox payload magic" }
                     require(data.readUnsignedByte().toByte() == PAYLOAD_VERSION) {
                         "Unsupported Inbox payload version"
                     }
@@ -333,7 +357,7 @@ internal class AutofillInboxRecordCodec
             ByteBuffer
                 .allocate(RECORD_AAD_HEADER_BYTES)
                 .order(ByteOrder.BIG_ENDIAN)
-                .put(RECORD_MAGIC)
+                .put(RECORD_MAGIC.toByteArray(StandardCharsets.US_ASCII))
                 .put(RECORD_VERSION)
                 .put(keyId)
                 .put(draftId.toByteArray())
@@ -355,32 +379,5 @@ internal class AutofillInboxRecordCodec
                 MemoryCleaner.wipeByteArray(buf)
                 reset()
             }
-        }
-
-        private companion object {
-            val RECORD_MAGIC = "PASSLYINBOX".toByteArray(StandardCharsets.US_ASCII)
-            val PAYLOAD_MAGIC = "PASSLYDRAFT".toByteArray(StandardCharsets.US_ASCII)
-            const val RECORD_VERSION: Byte = 1
-            const val PAYLOAD_VERSION: Byte = 1
-            const val RSA_OAEP_TRANSFORMATION = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
-            const val MGF1 = "MGF1"
-            const val U16_BYTES = 2
-            const val U32_BYTES = 4
-            const val KEY_ID_BYTES = 16
-            const val DRAFT_ID_BYTES = 16
-            const val RSA_CIPHERTEXT_BYTES = 384
-            const val CONTENT_KEY_BYTES = 32
-            const val GCM_TAG_BYTES = 16
-            const val RECORD_AAD_HEADER_BYTES = 11 + 1 + KEY_ID_BYTES + DRAFT_ID_BYTES + 8
-            const val MIN_RECORD_BYTES =
-                RECORD_AAD_HEADER_BYTES + U16_BYTES + RSA_CIPHERTEXT_BYTES +
-                    CryptoConfig.IV_LENGTH + U32_BYTES + GCM_TAG_BYTES + 1
-            const val MAX_PAYLOAD_BYTES = AutofillInboxLimits.MAX_RECORD_BYTES - 512
-            const val MAX_PACKAGE_BYTES = 512
-            const val MAX_DOMAIN_BYTES = 4 * 1024
-            const val MAX_PAGE_TITLE_BYTES = 8 * 1024
-            const val MAX_USERNAME_BYTES = 8 * 1024
-            const val MAX_PASSWORD_BYTES = 32 * 1024
-            const val NULL_STRING_LENGTH = -1
         }
     }

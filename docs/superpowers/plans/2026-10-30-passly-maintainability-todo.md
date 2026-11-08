@@ -445,16 +445,17 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 75：统一固定常量的文件位置与 owner，收敛重复合同值
 
-- [ ] 把文件私有/单文件常量从类型尾部移到 Kotlin 文件顶部声明区（imports 后、主要类型/函数前），保留 `private` 等最小可见性与原始值；优先复核 `AutofillInboxKeyMaterialCodec.kt`、`AutofillInboxRecordCodec.kt` 等常量集中在类尾部 companion 的文件。仅位置迁移不改算法、超时、上限或协议行为。
-- [x] `ObservabilityRuntimeController.kt` 的纳秒换算、生命周期 flush、crash flush 和 emergency flush 常量移至 imports 后的文件级 `private const val`；原值与可见范围不变。
-- [x] `ObservabilityExportService.kt` 的单文件导出上限和 flush timeout 移到文件级 `private const val`；删除对 `DiagnosticsExportFileRetention.MAX_AGE_MS` 的本地转接常量，直接引用所属 retention owner。
+- [ ] 继续按语义 owner 审查 companion 常量；仅将确属文件级的实现值移至文件顶部，类型/协议专属值归入准确 owner，不为位置变化改动算法或 wire 值。
 - [x] `SessionLeaseGate.kt` 的 lease drain 轮询间隔和纳秒换算从 companion 移至文件级 `private const val`；原值与调用不变。
 - [x] `DefaultAuthorizationGate.kt` 的 permit TTL 移至文件级 `private const val`；10 秒有效期与授权流程不变。
 - [x] `CredentialAttemptLimiter.kt` 的尝试次数上限与 lockout 时长改为文件级 `private const val`；仅该实现消费，测试使用独立阈值期望，不保留 companion 常量 API。
+- [x] `ObservabilityRuntimeController.kt` 的纳秒换算、生命周期 flush、crash flush 和 emergency flush 常量移至 imports 后的文件级 `private const val`；原值与可见范围不变。
+- [x] `ObservabilityExportService.kt` 的单文件导出上限和 flush timeout 移到文件级 `private const val`；删除对 `DiagnosticsExportFileRetention.MAX_AGE_MS` 的本地转接常量，直接引用所属 retention owner。
 - [x] Favicon 下载与暂存共享 10 MiB 输入上限；已集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除两类重复值。
 - [x] 诊断页 adapter、导出 service 与 `EncryptedLogRecordStore` 对 `LogRecordStore.readPage()` 使用/执行相同的 500 条单页上限；统一到 Core 端口的 `LogRecordStore.MAX_PAGE_RECORDS`。
 - [x] `TaskClearActivityOwner` 与 `AppShell` 都发布 `APP_CLOSE_REMINDER` 并延迟关闭 task 1 秒；时长统一到 App 生命周期策略 `APP_CLOSE_REMINDER_DELAY_MS`，两处 owner 的取消与认证生命周期仍各自管理。
-- [x] `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 共用 RSA algorithm 与 SHA-256 digest 名称；已集中到 Security Inbox 的 `AutofillInboxCryptoAlgorithms`。记录专属 RSA-OAEP transformation 与 MGF1 保留在 RecordCodec。
+- [x] `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 共用 RSA algorithm 与 SHA-256 digest 名称；已集中到 Security Inbox 的 `AutofillInboxCryptoAlgorithms`。Record 专属 RSA-OAEP transformation 与 MGF1 随格式合同归入 `AutofillInboxProtocol.Record`。
+- [x] Inbox key material 与 record/payload 的 magic、版本、字段宽度和编码限额集中到 `AutofillInboxProtocol`；key ID/GCM tag 长度只定义一次。算法 provider 名称继续归 `AutofillInboxCryptoAlgorithms`，总记录/队列大小继续归 Domain 的 `AutofillInboxLimits`。
 - [x] `EnvelopeManager` 与 `VerificationTag` 复用 Core 的 `CryptoConfig.ALGORITHM`，移除重复的 AES/GCM transformation 字符串；各自的 IV/tag 编码合同保留在 Security owner。
 - [x] Backup V1 的 `CIPHER_TRANSFORMATION` 已归属 `BackupContainerV1Spec`，`BackupRecordCrypto` 复用该协议 owner；保留 cipher ID 和序列化格式。Favicon 裁剪缩放上下限已统一到共享 `FaviconCropRequest` 契约；Data 日志记录直接引用其版本化格式 owner，不保留本地别名。
 - [ ] 验证新增/迁移后的可见范围、所有调用点和单一真相源；持久化 key、wire tag、格式版本不得改变，安全限制不得被放宽。补充/迁移对应常量与协议测试；运行受影响模块单测、`verifyArchitecture`、lint 和 `git diff --check`。同步更新 Kotlin 规范中的位置规则；不要建立无 owner 的全局 `Constants.kt`，也不要把资源文本、Gradle 构建值或运行时可调配置复制成 Kotlin 常量。
@@ -473,8 +474,6 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-08 Backup V1 cipher transformation 去重：** `BackupRecordCrypto.crypt()` 原在 `Cipher.getInstance()` 写死 `AES/GCM/NoPadding`；此算法属于 Backup V1 容器格式，移入 `BackupContainerV1Spec.CIPHER_TRANSFORMATION`，由记录加解密实现引用同一来源。`CIPHER_AES_256_GCM_ID` 仍为 1，header 字段和加密记录格式不变；只合并同协议 owner 内的固定算法标识，不与 Security/Data 的算法格式常量共用。定向 Backup codec/分块流测试及 `verifyArchitecture` 通过。
 
-**2026-11-08 Favicon crop zoom bounds 去重：** UI `FaviconCropTransform` 和 `FaviconBitmapTransformer` 都将 zoom 限制为 1..6，分别保护手势状态与对 processor 输入的最终裁剪；二者共享 Core `FaviconCropRequest` 契约。将 MIN/MAX 放入请求模型 companion，默认 zoom 与两处 clamp 复用同一边界，测试期望保持独立数值。原边界不变；Data 日志 transformation alias 已在同一 Task 75 的独立批次清理，版本化格式 owner 保持不变。
-
 **2026-11-08 Data log transformation alias 清理：** `EncryptedLogFileManager` 是版本化日志容器格式 owner 并保存唯一 `TRANSFORMATION` 字面量；`EncryptedLogRecordStore` 两处加解密直接引用该值，删除同文件 companion 的私有转接常量。`FILE_VERSION`、cipher 参数与日志字节格式均未改变；文件管理和记录写入的职责继续分开。
 
 **2026-11-08 ObservabilityRuntimeController 常量归位：** 将该控制器尾部 companion 中仅在类内使用的纳秒换算及三种 flush timeout 移到 imports 后的文件级 private 区域；数值和调用点不变。`ObservabilityRuntimeControllerTest` 与 `verifyArchitecture` 通过。
@@ -487,7 +486,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-08 CredentialAttemptLimiter 策略常量收口：** `MAX_ATTEMPTS` 与 `LOCKOUT_MS` 的生产引用全部位于 limiter 内，跨文件引用只有单测；将其改为文件级 `private const val`，测试改用独立阈值 5。`Context.currentAttemptTime()` 移到文件级 private extension 并删除不再需要的 companion。`CredentialAttemptLimiterTest` 与 `verifyArchitecture` 通过。
 
+**2026-11-08 Autofill Inbox protocol owner 收口：** key envelope 与 record/payload 格式常量移至单一 `AutofillInboxProtocol` 专用文件，并按 KeyMaterial/Record 分组；共享 key ID 与 GCM tag 字节长度去重。Codec 删除类尾 protocol companion；provider 算法名称和 Domain 总体存储限额继续留在各自 owner。magic、版本、编码和密码参数原值不变；两个 codec 定向测试、独立 record/payload magic 与版本字节断言、`verifyArchitecture` 与 `git diff --check` 通过，测试期望使用独立格式字面量。
+
 **2026-11-08 Task 75 lint 验证：** 运行 Core、Data、Security、App `lintDebug` 与 `verifyArchitecture`；前三个模块 lint 和架构检查完成。App 在 `:app:lintAnalyzeDebug` 分析 `EntryEditorFields.kt` 时触发 Lint/IntelliJ 内部异常 `AsyncExecutionService.getService must not return null`，未产出有效 App lint 结果。该异常不是源码通过证据；Task 75 最终验证保持开放，需在工具异常消除后重跑 App lint。
+
+**2026-11-08 Favicon crop zoom bounds 去重：** UI `FaviconCropTransform` 和 `FaviconBitmapTransformer` 都将 zoom 限制为 1..6，分别保护手势状态与对 processor 输入的最终裁剪；二者共享 Core `FaviconCropRequest` 契约。将 MIN/MAX 放入请求模型 companion，默认 zoom 与两处 clamp 复用同一边界，测试期望保持独立数值。原边界不变；Data 日志 transformation alias 已在同一 Task 75 的独立批次清理，版本化格式 owner 保持不变。
 
 
 <a id="task-77"></a>
