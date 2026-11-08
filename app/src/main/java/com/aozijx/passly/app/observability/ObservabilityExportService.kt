@@ -32,6 +32,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
+private const val MAX_EXPORT_RECORDS = 5_000
+private const val FLUSH_TIMEOUT_MS = 300L
+
 internal interface DiagnosticsExportStorageGateway {
     fun clearStaleExports()
 
@@ -221,8 +224,6 @@ class ObservabilityExportService
         }
 
         private companion object {
-            const val MAX_EXPORT_RECORDS = 5_000
-            const val FLUSH_TIMEOUT_MS = 300L
             val EXPORT_SCOPE = AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS)
         }
     }
@@ -295,7 +296,8 @@ internal class AndroidDiagnosticsExportStorageGateway
                 Result.failure(failure)
             }
 
-        override fun scheduleDeletion(file: File): Boolean = Handler(Looper.getMainLooper()).postDelayed({ file.delete() }, DELETE_DELAY_MS)
+        override fun scheduleDeletion(file: File): Boolean =
+            Handler(Looper.getMainLooper()).postDelayed({ file.delete() }, DiagnosticsExportFileRetention.MAX_AGE_MS)
 
         override fun delete(file: File) {
             file.delete()
@@ -316,7 +318,4 @@ internal class AndroidDiagnosticsExportStorageGateway
             }
         }
 
-        private companion object {
-            const val DELETE_DELAY_MS = DiagnosticsExportFileRetention.MAX_AGE_MS
-        }
     }
