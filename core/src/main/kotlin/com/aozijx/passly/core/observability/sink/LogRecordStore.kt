@@ -33,6 +33,11 @@ enum class LogClearResult {
 interface LogRecordStore :
     LogSink,
     AutoCloseable {
+    companion object {
+        /** Upper bound for records requested by one [readPage] call. */
+        const val MAX_PAGE_RECORDS = 500
+    }
+
     fun write(record: SanitizedLogRecord)
 
     override fun emit(record: SanitizedLogRecord) = write(record)

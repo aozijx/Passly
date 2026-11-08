@@ -63,7 +63,8 @@ core/observability/
 
 app/observability/
   ObservabilityAppErrorReporter.kt -- Reporter 实现
-  ObservabilityRuntimeController.kt -- 生命周期、崩溃与本地存储所有者
+  ObservabilityRuntimeController.kt -- 生命周期与崩溃运行时所有者
+  DiagnosticsLogStoreAdapter.kt -- 设置诊断页的日志读取/清理适配
 
 app/message/
   model/                   -- AppNotice、NoticeCode 与类型化参数

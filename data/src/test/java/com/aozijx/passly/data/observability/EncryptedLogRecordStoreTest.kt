@@ -63,6 +63,21 @@ class EncryptedLogRecordStoreTest {
     }
 
     @Test
+    fun `readPage rejects requests above the shared page size contract`() {
+        val store = newStore()
+        try {
+            assertThrows(IllegalArgumentException::class.java) {
+                store.readPage(
+                    cursor = null,
+                    limit = com.aozijx.passly.core.observability.sink.LogRecordStore.MAX_PAGE_RECORDS + 1,
+                )
+            }
+        } finally {
+            store.close()
+        }
+    }
+
+    @Test
     fun `flush reports records rejected while storage is offline`() {
         val store = newStore()
         directory.deleteRecursively()

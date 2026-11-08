@@ -1,11 +1,11 @@
 # 日志运行时与加密存储
 
-状态：当前实现（代码核对：2026-11-06）。
+状态：当前实现（代码核对：2026-11-08）。
 
 | 层 | 职责 |
 | --- | --- |
 | `core/observability` | Logger API、事件与字段目录、Trace、隐私策略、聚合和 Sink 契约 |
-| `app/observability` | Android 装配、Logcat、Perfetto、崩溃捕获、导出编码和目标分发 |
+| `app/observability` | Android 装配、Logcat、Perfetto、崩溃捕获、诊断读取适配、导出编码和目标分发 |
 | `data/observability` | 已脱敏记录 codec、加密日志文件、轮换和分页读取 |
 | `feature/settings/diagnostics` | 查看与导出的应用层合同，不依赖 Android UI |
 | Settings presentation | 查看、筛选、搜索、复制、清除、保存与分享交互 |
@@ -85,6 +85,7 @@ fatal `Error` 在这些清理动作后从 writer 线程传播。普通 crash han
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
-| 观测运行时启动、读取、刷新与关闭 | `ObservabilityRuntimeController.start()`、`readLines()`、`flush()`、`shutdown()` | [`ObservabilityRuntimeController.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
+| 观测运行时启动、崩溃处理、flush 与关闭 | `ObservabilityRuntimeController.start()`、`flush()`、`shutdown()` | [`ObservabilityRuntimeController.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
+| 诊断记录读取、分页与页面行映射 | `DiagnosticsLogStoreAdapter.readLines()`、`readRecords()` | [`DiagnosticsLogStoreAdapter.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsLogStoreAdapter.kt)、[`LogRecordStore.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
 | 加密日志记录读写、批次与 flush marker | `EncryptedLogRecordStore.write()`、`WriteTask.run()`、`writeBatch(batch)`、`flush(timeoutMs)`、`clear()` | [`EncryptedLogRecordStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)、[`LogRecordStore.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
 | 日志文件轮转与过期文件清理 | `EncryptedLogFileManager.cleanup()`、`clear()` | [`EncryptedLogFileManager.kt`](../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt) |

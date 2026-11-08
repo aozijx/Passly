@@ -120,7 +120,7 @@ internal class EncryptedLogRecordStore(
         cursor: LogRecordCursor?,
         limit: Int,
     ): LogRecordPage {
-        require(limit in 1..MAX_PAGE_RECORDS) { "Invalid page size" }
+        require(limit in 1..LogRecordStore.MAX_PAGE_RECORDS) { "Invalid page size" }
         val files = manager.listLogFiles()
         val total = files.sumOf(manager::countRecords)
         val startIndex = cursor?.fileIndex ?: 0
@@ -207,7 +207,7 @@ internal class EncryptedLogRecordStore(
         val result = ArrayList<SanitizedLogRecord>(limit)
         var cursor: LogRecordCursor? = null
         do {
-            val page = readPage(cursor, minOf(MAX_PAGE_RECORDS, limit - result.size))
+            val page = readPage(cursor, minOf(LogRecordStore.MAX_PAGE_RECORDS, limit - result.size))
             result +=
                 page.records
                     .filter { it.timestampMs in startTimestampMs until endTimestampMs }
@@ -619,7 +619,6 @@ internal class EncryptedLogRecordStore(
         private const val MAX_BATCH_RECORDS = 16
         private const val BATCH_WINDOW_MS = 50L
         private const val FRAME_METADATA_BYTES = 4 + NONCE_BYTES + 8 + 1 + 4
-        private const val MAX_PAGE_RECORDS = 500
         private const val CLEAR_FLUSH_TIMEOUT_MS = 500L
         private const val CLOSE_TIMEOUT_MS = 500L
     }

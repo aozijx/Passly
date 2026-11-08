@@ -209,7 +209,11 @@ class ObservabilityExportService
             val records = ArrayList<SanitizedLogRecord>(MAX_EXPORT_RECORDS)
             var cursor: LogRecordCursor? = null
             do {
-                val page = store.readPage(cursor, minOf(PAGE_SIZE, MAX_EXPORT_RECORDS - records.size))
+                val page =
+                    store.readPage(
+                        cursor,
+                        minOf(LogRecordStore.MAX_PAGE_RECORDS, MAX_EXPORT_RECORDS - records.size),
+                    )
                 records += page.records.take(MAX_EXPORT_RECORDS - records.size)
                 cursor = page.nextCursor
             } while (cursor != null && records.size < MAX_EXPORT_RECORDS)
@@ -217,7 +221,6 @@ class ObservabilityExportService
         }
 
         private companion object {
-            const val PAGE_SIZE = 500
             const val MAX_EXPORT_RECORDS = 5_000
             const val FLUSH_TIMEOUT_MS = 300L
             val EXPORT_SCOPE = AuthorizationScope.Global(AuthenticationPurpose.EXPORT_DIAGNOSTICS)

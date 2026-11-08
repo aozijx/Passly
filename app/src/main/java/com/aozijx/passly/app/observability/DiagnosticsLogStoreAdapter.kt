@@ -42,14 +42,11 @@ internal class DiagnosticsLogStoreAdapter
             val result = ArrayList<SanitizedLogRecord>(limit)
             var cursor: LogRecordCursor? = null
             do {
-                val page = store.readPage(cursor, minOf(PAGE_SIZE, limit - result.size))
+                val page = store.readPage(cursor, minOf(LogRecordStore.MAX_PAGE_RECORDS, limit - result.size))
                 result += page.records.take(limit - result.size)
                 cursor = page.nextCursor
             } while (cursor != null && result.size < limit)
             return result
         }
 
-        private companion object {
-            const val PAGE_SIZE = 500
-        }
     }
