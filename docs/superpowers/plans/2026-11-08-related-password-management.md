@@ -83,10 +83,10 @@
 - Add `suspend fun unlink(sourceEntryId: EntryId, targetEntryId: EntryId, linkId: EntryLinkId): AppResult<Unit>`; the service verifies the current edge has that ID, `RELATED_TO` type, and the same endpoints in either direction before calling `EntryLinkRepository.delete(linkId)`.
 - Do not modify `EntryLinkEntity`, `EntryLinkCommandDao`, `EntryLinkRepository`, Room schema version, or backup representation for unlink; this operation removes one already-persisted relationship record through the existing repository path.
 
-- [ ] **Step 1: Add failing unlink tests.** In `RelatedPasswordLinksTest`, add `unlinkDeletesSelectedSymmetricRelatedToLink`, `unlinkIsIdempotentWhenLinkIsAbsent`, `unlinkRejectsMismatchedLinkIdOrEndpoints`, `unlinkRejectsInactiveOrNonLoginEndpoints`, `unlinkLeavesUnrelatedLinkTypesUntouched`, and `unlinkLogsRepositoryFailureAndPropagatesCancellation`.
-- [ ] **Step 2: Run `RelatedPasswordLinksTest` and confirm the new unlink cases fail.**
-- [ ] **Step 3: Rename the service and test file; implement `unlink`.** Revalidate both endpoints using the existing active LOGIN query, resolve the exact link ID from `getLinks(sourceEntryId)`, verify its `RELATED_TO` type and symmetric source/target endpoints, then call existing `delete(linkId)`. Log failures once using the service's existing logger boundary; rethrow `CancellationException`.
-- [ ] **Step 4: Run `:app:testDebugUnitTest --tests "com.aozijx.passly.feature.vault.detail.RelatedPasswordLinksTest"` and commit** as `refactor(vault): centralize related password links`.
+- [x] **Step 1: Add failing unlink tests.** In `RelatedPasswordLinksTest`, add `unlinkDeletesSelectedSymmetricRelatedToLink`, `unlinkIsIdempotentWhenLinkIsAbsent`, `unlinkRejectsMismatchedLinkIdOrEndpoints`, `unlinkRejectsInactiveOrNonLoginEndpoints`, `unlinkLeavesUnrelatedLinkTypesUntouched`, and `unlinkLogsRepositoryFailureAndPropagatesCancellation`.
+- [x] **Step 2: Run `RelatedPasswordLinksTest` and confirm the new unlink cases fail.**
+- [x] **Step 3: Rename the service and test file; implement `unlink`.** Revalidate both endpoints using the existing active LOGIN query, resolve the exact link ID from `getLinks(sourceEntryId)`, verify its `RELATED_TO` type and symmetric source/target endpoints, then call existing `delete(linkId)`. If the requested edge is already absent, return success without deleting; if the same endpoints still have a link under a different ID, reject the stale request. Log failures once using the service's existing logger boundary; rethrow `CancellationException`.
+- [x] **Step 4: Run `:app:testDebugUnitTest --tests "com.aozijx.passly.feature.vault.detail.RelatedPasswordLinksTest"` and commit** as `refactor(vault): centralize related password links`.
 
 ### Task 3: Own confirmation and unlink lifecycle in the Detail relationship workflow
 

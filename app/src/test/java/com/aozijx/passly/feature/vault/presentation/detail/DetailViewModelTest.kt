@@ -67,7 +67,7 @@ import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordBinding
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -1195,7 +1195,7 @@ class DetailViewModelTest {
                 compareEntryRevision = CompareEntryRevisionUseCase(revisions),
                 revealRevisionFields = RevealRevisionFieldsUseCase(revisions, authGate),
                 restoreEntryRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
-                relatedPasswordBinding = RelatedPasswordBinding(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
+                relatedPasswordLinks = RelatedPasswordLinks(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
                 otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),
             )
     }

@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordBinding
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordCandidateUiModel
 import kotlinx.coroutines.CancellationException
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 /** Owns the picker request and bind operation for the current Detail page. */
 internal class DetailPasswordBindingWorkflow(
     private val scope: CoroutineScope,
-    private val binding: RelatedPasswordBinding,
+    private val links: RelatedPasswordLinks,
     private val access: SecureSessionAccessState,
     private val workSession: DetailWorkSession,
     private val currentEntry: () -> Entry?,
@@ -37,7 +37,7 @@ internal class DetailPasswordBindingWorkflow(
         candidateJob =
             scope.launch {
                 try {
-                    val candidates = binding.candidates(entry.id)
+                    val candidates = links.candidates(entry.id)
                     if (isCurrent(entry.id, token, authentication) &&
                         currentBindingState() == RelatedPasswordBindingUiState.Loading
                     ) {
@@ -78,7 +78,7 @@ internal class DetailPasswordBindingWorkflow(
         bindingJob =
             scope.launch {
                 try {
-                    val result = binding.bind(entry.id, targetEntryId)
+                    val result = links.bind(entry.id, targetEntryId)
                     if (!isCurrent(entry.id, token, authentication)) return@launch
                     if (result.isFailure) {
                         if (currentBindingState() != RelatedPasswordBindingUiState.Closed) {

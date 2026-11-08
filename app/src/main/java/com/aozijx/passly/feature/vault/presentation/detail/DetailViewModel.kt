@@ -27,7 +27,7 @@ import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordBinding
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -87,7 +87,7 @@ class DetailViewModel
         private val compareEntryRevision: CompareEntryRevisionUseCase,
         private val revealRevisionFields: RevealRevisionFieldsUseCase,
         private val restoreEntryRevision: RestoreEntryRevisionUseCase,
-        private val relatedPasswordBinding: RelatedPasswordBinding,
+        private val relatedPasswordLinks: RelatedPasswordLinks,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
     ) : ViewModel() {
         private sealed interface SnapshotRead {
@@ -135,7 +135,7 @@ class DetailViewModel
         private val passwordBindingWorkflow =
             DetailPasswordBindingWorkflow(
                 scope = viewModelScope,
-                binding = relatedPasswordBinding,
+                links = relatedPasswordLinks,
                 access = secureSessionAccessState,
                 workSession = workSession,
                 currentEntry = { _uiState.value.entry },

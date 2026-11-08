@@ -26,7 +26,7 @@ import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordBinding
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
@@ -199,7 +199,7 @@ class DetailPasswordBindingWorkflowTest {
         val workflow =
             DetailPasswordBindingWorkflow(
                 scope = scope,
-                binding = RelatedPasswordBinding(entries, links, testLogger()),
+                links = RelatedPasswordLinks(entries, links, testLogger()),
                 access = access,
                 workSession = workSession,
                 currentEntry = { currentEntry },

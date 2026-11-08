@@ -19,7 +19,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 
-internal class RelatedPasswordBinding
+internal class RelatedPasswordLinks
     @Inject
     constructor(
         private val entryListQueryRepository: EntryListQueryRepository,
@@ -77,6 +77,53 @@ internal class RelatedPasswordBinding
                 if (result is AppResult.Failure) logFailure(result.error)
                 result
             }
+
+        suspend fun unlink(
+            sourceEntryId: EntryId,
+            targetEntryId: EntryId,
+            linkId: EntryLinkId,
+        ): AppResult<Unit> =
+            withLoggedFailure {
+                if (sourceEntryId == targetEntryId) return@withLoggedFailure AppResult.Failure(ValidationError())
+
+                val activeIds = activePasswords().mapTo(hashSetOf()) { it.id }
+                if (sourceEntryId !in activeIds || targetEntryId !in activeIds) {
+                    return@withLoggedFailure AppResult.Failure(ValidationError())
+                }
+
+                val sourceLinks = entryLinkRepository.getLinks(sourceEntryId)
+                val selectedLink = sourceLinks.firstOrNull { it.id == linkId }
+                if (selectedLink == null) {
+                    val samePasswordRelationExists =
+                        sourceLinks.any { link ->
+                            link.relationType == EntryRelationType.RELATED_TO &&
+                                hasEndpoints(link, sourceEntryId, targetEntryId)
+                        }
+                    return@withLoggedFailure if (samePasswordRelationExists) {
+                        AppResult.Failure(ValidationError())
+                    } else {
+                        AppResult.Success(Unit)
+                    }
+                }
+
+                if (selectedLink.relationType != EntryRelationType.RELATED_TO ||
+                    !hasEndpoints(selectedLink, sourceEntryId, targetEntryId)
+                ) {
+                    return@withLoggedFailure AppResult.Failure(ValidationError())
+                }
+
+                val result = entryLinkRepository.delete(linkId)
+                if (result is AppResult.Failure) logFailure(result.error)
+                result
+            }
+
+        private fun hasEndpoints(
+            link: EntryLink,
+            firstEntryId: EntryId,
+            secondEntryId: EntryId,
+        ): Boolean =
+            (link.sourceEntryId == firstEntryId && link.targetEntryId == secondEntryId) ||
+                (link.sourceEntryId == secondEntryId && link.targetEntryId == firstEntryId)
 
         private suspend fun activePasswords(): List<EntryListItem> =
             entryListQueryRepository
