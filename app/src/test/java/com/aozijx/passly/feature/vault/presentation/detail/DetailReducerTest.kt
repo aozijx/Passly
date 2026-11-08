@@ -29,11 +29,8 @@ class DetailReducerTest {
     @Test
     fun passwordUnlinkMutationUpdatesTheCurrentState() {
         val confirming =
-            RelatedPasswordUnlinkUiState.Confirming(
-                targetEntryId = "target",
-                linkId = "link",
-                targetTitle = "Target",
-                phase = RelatedPasswordUnlinkUiState.Phase.Ready,
+            RelatedPasswordUnlinkUiState.AwaitingConfirmation(
+                target = RelatedPasswordUnlinkTargetUiModel("target", "link", "Target"),
             )
 
         val updated =

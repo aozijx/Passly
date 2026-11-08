@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkTargetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedSectionsUiModel
@@ -116,9 +118,8 @@ fun RelatedEntriesSection(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     passwords.entries.forEachIndexed { index, related ->
                         val removing =
-                            (unlinkState as? RelatedPasswordUnlinkUiState.Confirming)
-                                ?.takeIf { it.phase == RelatedPasswordUnlinkUiState.Phase.Removing }
-                                ?.targetEntryId == related.targetEntryId
+                            unlinkState is RelatedPasswordUnlinkUiState.Removing &&
+                                unlinkState.target.targetEntryId == related.targetEntryId
                         val requestUnlink = {
                             onAction(DetailUiAction.RequestPasswordUnlink(related.targetEntryId, related.linkId))
                         }
@@ -197,38 +198,86 @@ private fun UnlinkConfirmationDialog(
     state: RelatedPasswordUnlinkUiState,
     onAction: (DetailUiAction) -> Unit,
 ) {
-    val confirmation = state as? RelatedPasswordUnlinkUiState.Confirming ?: return
-    val removing = confirmation.phase == RelatedPasswordUnlinkUiState.Phase.Removing
-    val failed = confirmation.phase == RelatedPasswordUnlinkUiState.Phase.Failed
-    AlertDialog(
-        onDismissRequest = {
-            if (!removing) onAction(DetailUiAction.DismissPasswordUnlink)
-        },
-        title = { Text(stringResource(R.string.vault_detail_unlink_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.vault_detail_unlink_message, confirmation.targetTitle))
-                if (failed) Text(stringResource(R.string.vault_detail_unlink_failed), color = MaterialTheme.colorScheme.error)
-                if (removing) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    when (state) {
+        RelatedPasswordUnlinkUiState.Closed -> Unit
+        is RelatedPasswordUnlinkUiState.AwaitingConfirmation -> {
+            UnlinkConfirmationDialogContent(
+                target = state.target,
+                confirmTextRes = R.string.vault_detail_unlink_confirm,
+                confirmEnabled = true,
+                onDismiss = { onAction(DetailUiAction.DismissPasswordUnlink) },
+                statusContent = {},
+                onConfirm = { onAction(DetailUiAction.ConfirmPasswordUnlink) },
+            )
+        }
+
+        is RelatedPasswordUnlinkUiState.Removing -> {
+            UnlinkConfirmationDialogContent(
+                target = state.target,
+                confirmTextRes = R.string.vault_detail_unlink_removing,
+                confirmEnabled = false,
+                onDismiss = null,
+                statusContent = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         CircularProgressIndicator()
                         Text(stringResource(R.string.vault_detail_unlink_removing))
                     }
-                }
+                },
+                onConfirm = { onAction(DetailUiAction.ConfirmPasswordUnlink) },
+            )
+        }
+
+        is RelatedPasswordUnlinkUiState.Failed -> {
+            UnlinkConfirmationDialogContent(
+                target = state.target,
+                confirmTextRes = R.string.vault_detail_unlink_confirm,
+                confirmEnabled = true,
+                onDismiss = { onAction(DetailUiAction.DismissPasswordUnlink) },
+                statusContent = {
+                    Text(
+                        stringResource(R.string.vault_detail_unlink_failed),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                },
+                onConfirm = { onAction(DetailUiAction.ConfirmPasswordUnlink) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnlinkConfirmationDialogContent(
+    target: RelatedPasswordUnlinkTargetUiModel,
+    confirmTextRes: Int,
+    confirmEnabled: Boolean,
+    onDismiss: (() -> Unit)?,
+    statusContent: @Composable ColumnScope.() -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { onDismiss?.invoke() },
+        title = { Text(stringResource(R.string.vault_detail_unlink_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.vault_detail_unlink_message, target.targetTitle))
+                statusContent()
             }
         },
         confirmButton = {
             TextButton(
-                enabled = !removing,
-                onClick = { onAction(DetailUiAction.ConfirmPasswordUnlink) },
+                enabled = confirmEnabled,
+                onClick = onConfirm,
             ) {
-                Text(stringResource(if (removing) R.string.vault_detail_unlink_removing else R.string.vault_detail_unlink_confirm))
+                Text(stringResource(confirmTextRes))
             }
         },
         dismissButton = {
             TextButton(
-                enabled = !removing,
-                onClick = { onAction(DetailUiAction.DismissPasswordUnlink) },
+                enabled = confirmEnabled,
+                onClick = { onDismiss?.invoke() },
             ) {
                 Text(stringResource(R.string.cancel))
             }

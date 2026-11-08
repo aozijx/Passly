@@ -63,11 +63,8 @@ class DetailPasswordRelationsWorkflowTest {
 
             fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
             assertEquals(
-                RelatedPasswordUnlinkUiState.Confirming(
-                    "target",
-                    "source-target",
-                    "target",
-                    RelatedPasswordUnlinkUiState.Phase.Ready,
+                RelatedPasswordUnlinkUiState.AwaitingConfirmation(
+                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
                 ),
                 fixture.unlinkState,
             )
@@ -120,8 +117,12 @@ class DetailPasswordRelationsWorkflowTest {
             fixture.workflow.confirmUnlink()
             runCurrent()
 
-            val failed = fixture.unlinkState as RelatedPasswordUnlinkUiState.Confirming
-            assertEquals(RelatedPasswordUnlinkUiState.Phase.Failed, failed.phase)
+            assertEquals(
+                RelatedPasswordUnlinkUiState.Failed(
+                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                ),
+                fixture.unlinkState,
+            )
             assertEquals(1, fixture.links.deleteAttempts)
             assertEquals(1, fixture.relationUpdates)
             assertEquals(listOf(DetailRelatedPassword(EntryLinkId("source-target"), EntryId("target"), "target", "")), fixture.currentRelatedPasswords)
@@ -148,7 +149,12 @@ class DetailPasswordRelationsWorkflowTest {
             runCurrent()
 
             assertEquals(1, fixture.links.deleteAttempts)
-            assertEquals(RelatedPasswordUnlinkUiState.Phase.Removing, (fixture.unlinkState as RelatedPasswordUnlinkUiState.Confirming).phase)
+            assertEquals(
+                RelatedPasswordUnlinkUiState.Removing(
+                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                ),
+                fixture.unlinkState,
+            )
             gate.complete(Unit)
             runCurrent()
             assertEquals(RelatedPasswordUnlinkUiState.Closed, fixture.unlinkState)
@@ -191,8 +197,12 @@ class DetailPasswordRelationsWorkflowTest {
             fixture.workflow.confirmUnlink()
             runCurrent()
 
-            val failed = fixture.unlinkState as RelatedPasswordUnlinkUiState.Confirming
-            assertEquals(RelatedPasswordUnlinkUiState.Phase.Failed, failed.phase)
+            assertEquals(
+                RelatedPasswordUnlinkUiState.Failed(
+                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                ),
+                fixture.unlinkState,
+            )
             assertEquals(1, fixture.logger.events.size)
             assertTrue(fixture.logger.events.single().throwable is IllegalStateException)
 

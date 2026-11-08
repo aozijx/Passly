@@ -126,40 +126,54 @@ internal class DetailPasswordRelationsWorkflow(
         if (workSession.current(entry.id) == null || !access.hasFullSecureSessionAccess()) return
         if (linkMutationJob?.isActive == true) return
         val related = currentRelatedPasswords().firstOrNull { it.linkId == linkId && it.targetEntryId == targetEntryId } ?: return
-        val state = currentUnlinkState()
-        if (state is RelatedPasswordUnlinkUiState.Confirming && state.phase == RelatedPasswordUnlinkUiState.Phase.Removing) return
+        if (currentUnlinkState() is RelatedPasswordUnlinkUiState.Removing) return
         publish(
             unlinkState(
-                RelatedPasswordUnlinkUiState.Confirming(
-                    targetEntryId = related.targetEntryId.value,
-                    linkId = related.linkId.value,
-                    targetTitle = related.title,
-                    phase = RelatedPasswordUnlinkUiState.Phase.Ready,
+                RelatedPasswordUnlinkUiState.AwaitingConfirmation(
+                    target =
+                        RelatedPasswordUnlinkTargetUiModel(
+                            targetEntryId = related.targetEntryId.value,
+                            linkId = related.linkId.value,
+                            targetTitle = related.title,
+                        ),
                 ),
             ),
         )
     }
 
     fun dismissUnlink() {
-        val state = currentUnlinkState() as? RelatedPasswordUnlinkUiState.Confirming ?: return
-        if (state.phase == RelatedPasswordUnlinkUiState.Phase.Removing) return
-        publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
+        when (currentUnlinkState()) {
+            is RelatedPasswordUnlinkUiState.AwaitingConfirmation,
+            is RelatedPasswordUnlinkUiState.Failed,
+            -> publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
+
+            RelatedPasswordUnlinkUiState.Closed,
+            is RelatedPasswordUnlinkUiState.Removing,
+            -> Unit
+        }
     }
 
     fun confirmUnlink() {
-        val confirmation = currentUnlinkState() as? RelatedPasswordUnlinkUiState.Confirming ?: return
-        if (confirmation.phase == RelatedPasswordUnlinkUiState.Phase.Removing || linkMutationJob?.isActive == true) return
+        val target =
+            when (val state = currentUnlinkState()) {
+                is RelatedPasswordUnlinkUiState.AwaitingConfirmation -> state.target
+                is RelatedPasswordUnlinkUiState.Failed -> state.target
+                RelatedPasswordUnlinkUiState.Closed,
+                is RelatedPasswordUnlinkUiState.Removing,
+                -> return
+            }
+        if (linkMutationJob?.isActive == true) return
         val entry = activeCurrentEntry() ?: return
         val token = workSession.current(entry.id) ?: return
         val authentication = access.authenticationState.value
-        val targetEntryId = EntryId(confirmation.targetEntryId)
-        val linkId = EntryLinkId(confirmation.linkId)
+        val targetEntryId = EntryId(target.targetEntryId)
+        val linkId = EntryLinkId(target.linkId)
 
-        publish(unlinkState(confirmation.copy(phase = RelatedPasswordUnlinkUiState.Phase.Removing)))
+        publish(unlinkState(RelatedPasswordUnlinkUiState.Removing(target)))
         if (currentRelatedPasswords().none { it.linkId == linkId && it.targetEntryId == targetEntryId }) {
             linkMutationJob =
                 scope.launch {
-                    refreshStaleConfirmation(entry.id, token, authentication, confirmation)
+                    refreshStaleConfirmation(entry.id, token, authentication, target)
                 }
             return
         }
@@ -183,7 +197,7 @@ internal class DetailPasswordRelationsWorkflow(
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
-                        failConfirmationIfCurrent(entry.id, token, authentication, confirmation)
+                        failConfirmationIfCurrent(entry.id, token, authentication, target)
                         return@launch
                     }
                 if (!isCurrent(entry.id, token, authentication)) return@launch
@@ -194,7 +208,7 @@ internal class DetailPasswordRelationsWorkflow(
                 if (succeeded || !linkStillPresent) {
                     publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
                 } else {
-                    publish(unlinkState(confirmation.copy(phase = RelatedPasswordUnlinkUiState.Phase.Failed)))
+                    publish(unlinkState(RelatedPasswordUnlinkUiState.Failed(target)))
                 }
             }
     }
@@ -210,7 +224,7 @@ internal class DetailPasswordRelationsWorkflow(
         entryId: EntryId,
         token: DetailWorkSession.Scope.Active,
         authentication: AuthenticationState,
-        confirmation: RelatedPasswordUnlinkUiState.Confirming,
+        target: RelatedPasswordUnlinkTargetUiModel,
     ) {
         try {
             val relations = reloadRelations(entryId)
@@ -220,7 +234,7 @@ internal class DetailPasswordRelationsWorkflow(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            failConfirmationIfCurrent(entryId, token, authentication, confirmation)
+            failConfirmationIfCurrent(entryId, token, authentication, target)
         }
     }
 
@@ -243,10 +257,10 @@ internal class DetailPasswordRelationsWorkflow(
         entryId: EntryId,
         token: DetailWorkSession.Scope.Active,
         authentication: AuthenticationState,
-        confirmation: RelatedPasswordUnlinkUiState.Confirming,
+        target: RelatedPasswordUnlinkTargetUiModel,
     ) {
-        if (isCurrent(entryId, token, authentication) && currentUnlinkState() == confirmation.copy(phase = RelatedPasswordUnlinkUiState.Phase.Removing)) {
-            publish(unlinkState(confirmation.copy(phase = RelatedPasswordUnlinkUiState.Phase.Failed)))
+        if (isCurrent(entryId, token, authentication) && currentUnlinkState() == RelatedPasswordUnlinkUiState.Removing(target)) {
+            publish(unlinkState(RelatedPasswordUnlinkUiState.Failed(target)))
         }
     }
 

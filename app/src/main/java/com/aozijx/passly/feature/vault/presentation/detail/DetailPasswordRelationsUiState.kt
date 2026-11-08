@@ -53,12 +53,21 @@ data class RelatedPasswordCandidateUiModel(
 sealed interface RelatedPasswordUnlinkUiState {
     data object Closed : RelatedPasswordUnlinkUiState
 
-    data class Confirming(
-        val targetEntryId: String,
-        val linkId: String,
-        val targetTitle: String,
-        val phase: Phase,
+    data class AwaitingConfirmation(
+        val target: RelatedPasswordUnlinkTargetUiModel,
     ) : RelatedPasswordUnlinkUiState
 
-    enum class Phase { Ready, Removing, Failed }
+    data class Removing(
+        val target: RelatedPasswordUnlinkTargetUiModel,
+    ) : RelatedPasswordUnlinkUiState
+
+    data class Failed(
+        val target: RelatedPasswordUnlinkTargetUiModel,
+    ) : RelatedPasswordUnlinkUiState
 }
+
+data class RelatedPasswordUnlinkTargetUiModel(
+    val targetEntryId: String,
+    val linkId: String,
+    val targetTitle: String,
+)

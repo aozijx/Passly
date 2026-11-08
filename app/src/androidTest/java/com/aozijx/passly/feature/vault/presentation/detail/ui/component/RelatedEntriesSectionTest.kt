@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkTargetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
@@ -64,7 +65,10 @@ class RelatedEntriesSectionTest {
         val actions = mutableListOf<DetailUiAction>()
         showSection(
             actions = actions,
-            unlinkState = confirming(RelatedPasswordUnlinkUiState.Phase.Failed),
+            unlinkState =
+                RelatedPasswordUnlinkUiState.Failed(
+                    RelatedPasswordUnlinkTargetUiModel("target", "link", "Portal"),
+                ),
         )
 
         compose.onNodeWithText(text(R.string.vault_detail_unlink_failed)).assertIsDisplayed()
@@ -141,8 +145,10 @@ class RelatedEntriesSectionTest {
         }
     }
 
-    private fun confirming(phase: RelatedPasswordUnlinkUiState.Phase = RelatedPasswordUnlinkUiState.Phase.Ready) =
-        RelatedPasswordUnlinkUiState.Confirming("target", "link", "Portal", phase)
+    private fun confirming() =
+        RelatedPasswordUnlinkUiState.AwaitingConfirmation(
+            RelatedPasswordUnlinkTargetUiModel("target", "link", "Portal"),
+        )
 
     private fun text(resourceId: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(resourceId)
 }
