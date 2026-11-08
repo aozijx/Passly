@@ -208,6 +208,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-08 Vault OTP 行订阅编译核对：** 既有 `VaultOtpSubscriptionEffectTest.subscriptionTracksVisibilityAndCompositionLifetime` 覆盖显示开关与组合销毁时的 unsubscribe；`:app:compileDebugAndroidTestKotlin` 通过。当前无连接设备，instrumentation 运行未验证。
 
+**2026-11-08 VaultRoute 无效 owner 开关清理：** 全仓仅有 `VaultRoute` 自身声明和默认值为 `true` 的条件读取，没有调用方传入 `false`；删除 `isEffectsPage` 参数与不可达分支，保留 overlay 关闭时创建、overlay 打开时退出的现有 owner 生命周期。Route/NavHost 转场期间的 owner 行为仍待宿主验证。
+
 **2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；锁定/重开恢复由数据库 observation owner 管理，证据见下方。
 
 - [x] 分类查询由 `RecoverableRead` 持有并映射为 `VaultCategoriesState.Loading/Ready/Failed`，失败可通过 `RetryCategories` 重试；ViewModel 测试覆盖首次及发值后普通异常、重试恢复、空列表与后续分类更新。UI 和 ViewModel 已删除旧 `availableCategories` 列表状态别名，读取明确状态。

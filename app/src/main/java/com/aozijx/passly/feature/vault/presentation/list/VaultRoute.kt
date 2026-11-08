@@ -65,12 +65,10 @@ internal fun VaultRoute(
     navigation: VaultNavigation,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    isEffectsPage: Boolean = true,
 ) {
     var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
-    DisposableEffect(vaultViewModel, isEffectsPage, overlay) {
-        val active = isEffectsPage && overlay == VaultOverlay.None
-        val owner = if (active) vaultViewModel.onPageEntered() else null
+    DisposableEffect(vaultViewModel, overlay) {
+        val owner = if (overlay == VaultOverlay.None) vaultViewModel.onPageEntered() else null
         onDispose {
             owner?.let(vaultViewModel::onPageExited)
         }
