@@ -61,8 +61,8 @@ internal fun LogSettingsSection(
                         key = "logs.clear",
                         icon = Icons.Default.DeleteSweep,
                         title = stringResource(R.string.settings_log_clear_action),
-                        value = state.formattedSize,
-                        isLoading = state.isLoading,
+                        value = (state as? StorageSizeUiState.Available)?.formattedSize,
+                        isLoading = state is StorageSizeUiState.Loading,
                         onClick = onClearLogs,
                     ),
                 )
