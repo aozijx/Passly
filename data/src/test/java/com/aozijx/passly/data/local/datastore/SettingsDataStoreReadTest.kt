@@ -17,7 +17,7 @@ class SettingsDataStoreReadTest {
             val cause = CorruptionException("invalid protobuf")
             val observed =
                 try {
-                flow<Int> { throw cause }.tagCorruptSettingsData().first()
+                    flow<Int> { throw cause }.tagCorruptSettingsData().first()
                     null
                 } catch (error: CorruptSettingsDataException) {
                     error
@@ -27,7 +27,7 @@ class SettingsDataStoreReadTest {
         }
 
     @Test
-    fun `io failures and cancellation keep their original meaning`() =
+    fun `io failures cancellation and fatal errors keep their original meaning`() =
         runTest {
             val ioFailure = IOException("unavailable")
             val observedIo =
@@ -45,8 +45,17 @@ class SettingsDataStoreReadTest {
                 } catch (error: CancellationException) {
                     error
                 }
+            val fatalError = AssertionError("fatal")
+            val observedFatal =
+                try {
+                    flow<Int> { throw fatalError }.tagCorruptSettingsData().first()
+                    null
+                } catch (error: AssertionError) {
+                    error
+                }
 
             assertSame(ioFailure, observedIo)
             assertSame(cancellation, observedCancellation)
+            assertSame(fatalError, observedFatal)
         }
 }
