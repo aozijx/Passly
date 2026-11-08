@@ -1,27 +1,9 @@
 package com.aozijx.passly.feature.settings.presentation.main.general
 
-import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
-
-sealed interface NotificationSettingsUiState {
-    data object Loading : NotificationSettingsUiState
-
-    data class Failed(
-        val failure: ReadFailure,
-    ) : NotificationSettingsUiState
-
-    data class Ready(
-        val optionalMessagesEnabled: Boolean,
-        val systemNotificationsEnabled: Boolean,
-        val runtimeNotificationPermissionGranted: Boolean,
-        val notificationsEnabledBySystem: Boolean,
-        val notificationChannelEnabled: Boolean,
-        val topicSettings: Map<MessageTopic, TopicMessageSettings>,
-    ) : NotificationSettingsUiState {
-    }
-}
 
 internal data class NotificationSettingsUiModel(
     val systemNotificationsEnabled: Boolean,
@@ -34,7 +16,7 @@ internal data class NotificationTopicUiModel(
     val enabled: Boolean,
 )
 
-internal fun NotificationSettingsUiState.Ready.toUiModel() =
+internal fun MessageSettings.toUiModel() =
     NotificationSettingsUiModel(
         systemNotificationsEnabled = systemNotificationsEnabled,
         optionalMessagesEnabled = optionalMessagesEnabled,

@@ -8,16 +8,15 @@ import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.app.settings.SettingsReadRetrySignal
+import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -39,10 +38,9 @@ class NotificationSettingsViewModel
         }
 
         private var permissionRequestState: PermissionRequestState = PermissionRequestState.Idle
-        private val systemNotificationState = MutableStateFlow(systemNotificationStateProvider.current())
         private val messagesRead =
             RecoverableRead(
-                source = settingsRepository.messages,
+                source = settingsRepository.messages.map(MessageSettings::toUiModel),
                 scope = viewModelScope,
                 sharedRetrySignal = settingsReadRetrySignal,
             )
@@ -50,34 +48,7 @@ class NotificationSettingsViewModel
         private val pageEffects = PageEffects<NotificationSettingsEffect>()
         val effects = pageEffects.effects
 
-        val uiState: StateFlow<NotificationSettingsUiState> =
-            messagesRead.state
-                .combine(systemNotificationState) { read, system ->
-                    when (read) {
-                        RecoverableReadState.Loading -> {
-                            NotificationSettingsUiState.Loading
-                        }
-
-                        is RecoverableReadState.Failed -> {
-                            NotificationSettingsUiState.Failed(read.failure)
-                        }
-
-                        is RecoverableReadState.Ready -> {
-                            NotificationSettingsUiState.Ready(
-                                optionalMessagesEnabled = read.value.optionalMessagesEnabled,
-                                systemNotificationsEnabled = read.value.systemNotificationsEnabled,
-                                runtimeNotificationPermissionGranted = system.runtimePermissionGranted,
-                                notificationsEnabledBySystem = system.notificationsEnabledBySystem,
-                                notificationChannelEnabled = system.channelEnabled,
-                                topicSettings = read.value.topicSettings,
-                            )
-                        }
-                    }
-                }.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5_000),
-                    initialValue = NotificationSettingsUiState.Loading,
-                )
+        val uiState: StateFlow<RecoverableReadState<NotificationSettingsUiModel>> = messagesRead.state
 
         internal fun onAction(action: NotificationSettingsAction) {
             when (action) {
@@ -189,7 +160,7 @@ class NotificationSettingsViewModel
         private fun saveSetting(write: suspend () -> Unit) {
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
-                if (uiState.value !is NotificationSettingsUiState.Ready) return@launch
+                if (uiState.value !is RecoverableReadState.Ready) return@launch
                 writePreferenceWithFeedback(
                     failureRes = R.string.settings_notifications_save_failed,
                     onFailure = { emitEffect(owner, NotificationSettingsEffect.SaveFailed(it)) },
@@ -247,7 +218,7 @@ class NotificationSettingsViewModel
             if (pending.owner === owner) permissionRequestState = PermissionRequestState.Idle
         }
 
-        private fun readSystemNotificationState() = systemNotificationStateProvider.current().also { systemNotificationState.value = it }
+        private fun readSystemNotificationState() = systemNotificationStateProvider.current()
     }
 
 private val SystemNotificationState.isPlatformAvailable: Boolean

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.main.general
 
+import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import org.junit.Assert.assertEquals
@@ -10,18 +11,14 @@ class NotificationSettingsUiMapperTest {
     @Test
     fun `maps domain topic settings to stable ui topic order`() {
         val result =
-            NotificationSettingsUiState
-                .Ready(
-                    optionalMessagesEnabled = true,
-                    systemNotificationsEnabled = false,
-                    runtimeNotificationPermissionGranted = true,
-                    notificationsEnabledBySystem = true,
-                    notificationChannelEnabled = true,
-                    topicSettings =
-                        MessageTopic.entries.associateWith { topic ->
-                            TopicMessageSettings(enabled = topic != MessageTopic.CLIPBOARD)
-                        },
-                ).toUiModel()
+            MessageSettings(
+                optionalMessagesEnabled = true,
+                systemNotificationsEnabled = false,
+                topicSettings =
+                    MessageTopic.entries.associateWith { topic ->
+                        TopicMessageSettings(enabled = topic != MessageTopic.CLIPBOARD)
+                    },
+            ).toUiModel()
 
         assertFalse(result.systemNotificationsEnabled)
         assertEquals(true, result.optionalMessagesEnabled)

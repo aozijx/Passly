@@ -27,6 +27,7 @@ import com.aozijx.passly.app.message.compose.LocalAppNoticePublisher
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.RuntimePermission
@@ -34,9 +35,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationPermissionRequest
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsEffect
-import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.main.general.NotificationSettingsViewModel
-import com.aozijx.passly.feature.settings.presentation.main.general.toUiModel
 import com.aozijx.passly.feature.settings.presentation.ui.general.NotificationSettingsSection
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
@@ -163,20 +162,20 @@ internal fun NotificationsRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.NOTIFICATIONS.titleRes),
         onBack = onBack,
     ) {
-        when (val readyState = state) {
-            NotificationSettingsUiState.Loading -> {
+        when (state) {
+            RecoverableReadState.Loading -> {
                 Unit
             }
 
-            is NotificationSettingsUiState.Failed -> {
+            is RecoverableReadState.Failed -> {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(NotificationSettingsAction.RetryRead) }) }
             }
 
-            is NotificationSettingsUiState.Ready -> {
+            is RecoverableReadState.Ready -> {
                 item {
                     SettingsSection {
                         NotificationSettingsSection(
-                            state = readyState.toUiModel(),
+                            state = state.value,
                             onAction = viewModel::onAction,
                         )
                     }

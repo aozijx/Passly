@@ -5,6 +5,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.app.message.contract.SystemNotificationState
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
@@ -69,25 +70,24 @@ class NotificationSettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(NotificationSettingsUiState.Failed(ReadFailure.IO), model.uiState.value)
+            assertEquals(RecoverableReadState.Failed(ReadFailure.IO), model.uiState.value)
             model.onAction(NotificationSettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
             assertEquals(
-                NotificationSettingsUiState.Ready(
-                    optionalMessagesEnabled = false,
-                    systemNotificationsEnabled = false,
-                    runtimeNotificationPermissionGranted = true,
-                    notificationsEnabledBySystem = true,
-                    notificationChannelEnabled = true,
-                    topicSettings =
-                        MessageTopic.entries.associateWith { topic ->
-                            TopicMessageSettings(
-                                enabled = topic != MessageTopic.SECURITY,
-                                minimumLevel = MessageLevel.WARNING,
-                            )
-                        },
+                RecoverableReadState.Ready(
+                    NotificationSettingsUiModel(
+                        optionalMessagesEnabled = false,
+                        systemNotificationsEnabled = false,
+                        topics =
+                            MessageTopic.entries.map { topic ->
+                                NotificationTopicUiModel(
+                                    topic = topic,
+                                    enabled = topic != MessageTopic.SECURITY,
+                                )
+                            },
+                    ),
                 ),
                 model.uiState.value,
             )
@@ -115,7 +115,7 @@ class NotificationSettingsViewModelTest {
             val repository = RecordingMessageSettingsRepository(emptyFlow())
             val viewModel = viewModel(repository, availableState())
 
-            assertEquals(NotificationSettingsUiState.Loading, viewModel.uiState.value)
+            assertEquals(RecoverableReadState.Loading, viewModel.uiState.value)
         }
 
     @Test
