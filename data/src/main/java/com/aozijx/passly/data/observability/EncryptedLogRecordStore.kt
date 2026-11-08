@@ -387,7 +387,7 @@ internal class EncryptedLogRecordStore(
         plain: ByteArray,
     ): ByteArray {
         val nonce = ByteArray(NONCE_BYTES).also(random::nextBytes)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val cipher = Cipher.getInstance(EncryptedLogFileManager.TRANSFORMATION)
         cipher.init(
             Cipher.ENCRYPT_MODE,
             SecretKeySpec(entry.dataKey, "AES"),
@@ -570,7 +570,7 @@ internal class EncryptedLogRecordStore(
         nonce: ByteArray,
         ciphertext: ByteArray,
     ): ByteArray {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val cipher = Cipher.getInstance(EncryptedLogFileManager.TRANSFORMATION)
         cipher.init(
             Cipher.DECRYPT_MODE,
             SecretKeySpec(key, "AES"),
@@ -611,7 +611,6 @@ internal class EncryptedLogRecordStore(
 
     companion object {
         const val DIRECTORY_NAME = "logs"
-        private const val TRANSFORMATION = EncryptedLogFileManager.TRANSFORMATION
         private const val NONCE_BYTES = EncryptedLogFileManager.NONCE_BYTES
         private const val TAG_BYTES = EncryptedLogFileManager.GCM_TAG_BYTES
         private const val MAX_FILE_BYTES = 1024 * 1024L
