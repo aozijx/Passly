@@ -154,8 +154,7 @@ fun LockAuthSettingsSection(
                 navigationSettingsGroupItem(
                     key = "security.app_password",
                     icon = Icons.Default.Lock,
-                    title = stringResource(R.string.settings_security_app_password),
-                    subtitle = stringResource(R.string.app_password_unlock_description),
+                    title = stringResource(R.string.authentication_app_password_label),
                     value =
                         stringResource(
                             if (state.isAppPasswordEnabled) R.string.settings_value_configured else R.string.not_set,
@@ -166,7 +165,7 @@ fun LockAuthSettingsSection(
                     key = "security.biometric_enabled",
                     enabled = !state.isAuthenticationChangeInProgress,
                     icon = Icons.Default.Fingerprint,
-                    title = stringResource(R.string.settings_security_biometric_unlock),
+                    title = stringResource(R.string.unlock_biometric),
                     subtitle = stringResource(R.string.settings_security_biometric_enabled_description),
                     checked = state.isBiometricEnabled,
                     onCheckedChange = onBiometricEnabledChange,

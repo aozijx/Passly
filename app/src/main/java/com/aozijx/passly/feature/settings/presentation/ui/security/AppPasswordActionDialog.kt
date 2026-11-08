@@ -16,8 +16,7 @@ fun AppPasswordActionDialog(
 ) {
     AlertDialog(
         onDismissRequest = { if (!isBusy) onDismiss() },
-        title = { Text(stringResource(R.string.settings_app_password_manage_title)) },
-        text = { Text(stringResource(R.string.settings_app_password_manage_description)) },
+        title = { Text(stringResource(R.string.settings_app_password_title)) },
         confirmButton = {
             TextButton(onClick = onChangePassword, enabled = !isBusy) {
                 Text(stringResource(R.string.settings_app_password_change_action))

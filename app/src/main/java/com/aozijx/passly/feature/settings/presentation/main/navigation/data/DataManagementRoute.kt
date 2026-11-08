@@ -160,7 +160,7 @@ internal fun DataManagementRoute(
                         viewModel.onAction(StorageSettingsAction.ClearLogs)
                     },
                 ) {
-                    Text(stringResource(R.string.settings_log_clear_confirm_action))
+                    Text(stringResource(R.string.clear))
                 }
             },
             dismissButton = {

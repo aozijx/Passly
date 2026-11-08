@@ -53,7 +53,7 @@ internal fun DatabaseResetSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(R.string.database_reset_title),
+                text = stringResource(R.string.settings_database_reset_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text(

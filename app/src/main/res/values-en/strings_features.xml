@@ -24,6 +24,11 @@
     <string name="vault_add_type_passkey_description">Passwordless sign-in credential</string>
     <string name="vault_add_type_recovery_code_description">Backup account recovery codes</string>
 
+    <!-- Vault card styles -->
+    <string name="vault_card_style_default">Standard</string>
+    <string name="vault_card_style_password">Password card</string>
+    <string name="vault_card_style_totp">One-time code</string>
+
     <!-- Entry history -->
     <string name="vault_detail_history_label">Activity log</string>
     <string name="vault_detail_history_updates">Changes</string>
@@ -38,6 +43,28 @@
     <string name="vault_detail_activity_view">Viewed</string>
     <string name="vault_detail_activity_export">Exported</string>
     <string name="vault_detail_activity_import">Imported</string>
+
+    <!-- Trash -->
+    <plurals name="vault_trash_count">
+        <item quantity="one">%d entry</item>
+        <item quantity="other">%d entries</item>
+    </plurals>
+    <string name="vault_trash_delete">Delete permanently</string>
+    <string name="vault_trash_delete_confirm_message">Delete this entry, its attachments, and history? This can\'t be undone.</string>
+    <string name="vault_trash_delete_confirm_title">Permanently delete “%1$s”?</string>
+    <string name="vault_trash_deleted_at">Deleted %1$s</string>
+    <string name="vault_trash_description">Restore deleted entries or remove them permanently</string>
+    <string name="vault_trash_empty">Trash is empty</string>
+    <string name="vault_trash_empty_description">Deleted entries will appear here</string>
+    <string name="vault_trash_empty_action">Empty</string>
+    <plurals name="vault_trash_empty_confirm_message">
+        <item quantity="one">This permanently deletes %d entry in the trash and its attachments. This cannot be undone.</item>
+        <item quantity="other">This permanently deletes %d entries in the trash and their attachments. This cannot be undone.</item>
+    </plurals>
+    <string name="vault_trash_empty_confirm_title">Empty trash?</string>
+    <string name="vault_trash_emptying">Emptying…</string>
+    <string name="vault_trash_error_dismiss">Got it</string>
+    <string name="vault_trash_title">Trash</string>
 
     <!-- Wi-Fi -->
     <string name="wifi_ssid">Wi-Fi name</string>
@@ -57,7 +84,6 @@
     <string name="card_expiry_month">MM</string>
     <string name="card_expiry_year">YY</string>
     <string name="card_expiry_not_set">Not set</string>
-    <string name="card_expiry_clear">Clear</string>
     <string name="card_type">Card type</string>
     <string name="card_type_debit">Debit card</string>
     <string name="card_type_credit">Credit card</string>

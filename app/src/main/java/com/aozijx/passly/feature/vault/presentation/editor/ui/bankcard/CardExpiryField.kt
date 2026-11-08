@@ -119,7 +119,7 @@ private fun CardExpiryPickerSheet(
                 )
                 if (selection != null) {
                     TextButton(onClick = onClear) {
-                        Text(stringResource(R.string.card_expiry_clear))
+                        Text(stringResource(R.string.clear))
                     }
                 }
             }

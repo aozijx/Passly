@@ -45,7 +45,7 @@ fun VaultFilterBar(
                     onClick = { onFilterToggled(null) },
                     label = {
                         Text(
-                            text = stringResource(R.string.tab_all),
+                            text = stringResource(R.string.all),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight =
                                 if (allFiltersSelected) {

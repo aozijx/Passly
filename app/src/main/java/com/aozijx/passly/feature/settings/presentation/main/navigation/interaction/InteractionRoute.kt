@@ -92,7 +92,7 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
         when (activeDialog) {
             SwipeActionDialog.Left -> {
                 SwipeActionSelectDialog(
-                    title = stringResource(R.string.settings_swipe_select_left_action),
+                    title = stringResource(R.string.settings_swipe_gesture_left_action),
                     currentAction = readyState.swipeLeftAction,
                     onActionSelected = {
                         viewModel.onAction(InteractionSettingsAction.SetSwipeLeftAction(it))
@@ -104,7 +104,7 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
 
             SwipeActionDialog.Right -> {
                 SwipeActionSelectDialog(
-                    title = stringResource(R.string.settings_swipe_select_right_action),
+                    title = stringResource(R.string.settings_swipe_gesture_right_action),
                     currentAction = readyState.swipeRightAction,
                     onActionSelected = {
                         viewModel.onAction(InteractionSettingsAction.SetSwipeRightAction(it))

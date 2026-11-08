@@ -126,7 +126,7 @@ internal fun TrashEntryCard(
                         }
                         deletedLabel?.let { label ->
                             Text(
-                                text = stringResource(R.string.settings_trash_deleted_at, label),
+                                text = stringResource(R.string.vault_trash_deleted_at, label),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -167,7 +167,7 @@ internal fun TrashEntryCard(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.settings_swipe_action_delete))
+                    Text(stringResource(R.string.delete))
                 }
             }
         }

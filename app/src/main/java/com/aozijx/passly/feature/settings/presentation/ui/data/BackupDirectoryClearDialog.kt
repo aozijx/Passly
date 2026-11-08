@@ -28,7 +28,7 @@ internal fun BackupDirectoryClearDialog(
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Spacer(modifier = Modifier.size(8.dp))
                 }
-                Text(stringResource(R.string.settings_backup_clear_selection))
+                Text(stringResource(R.string.clear))
             }
         },
         dismissButton = {

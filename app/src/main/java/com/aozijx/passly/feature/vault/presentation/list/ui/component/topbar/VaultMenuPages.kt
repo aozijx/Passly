@@ -196,7 +196,7 @@ internal fun FilterSubMenu(
     }
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     EntryTypeMenuItem(
-        text = stringResource(R.string.tab_all),
+        text = stringResource(R.string.all),
         selected = selectedItem == null,
         onClick = { onItemSelected(null) },
     )

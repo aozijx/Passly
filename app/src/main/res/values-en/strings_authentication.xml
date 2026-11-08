@@ -3,6 +3,10 @@
     <!-- Shared authentication labels -->
     <string name="authentication_label">Authentication</string>
     <string name="authentication_app_password_label">App password</string>
+    <string name="authentication_app_password_hint">Use at least 6 characters. A mix of letters, numbers, and symbols is recommended.</string>
+    <string name="authentication_app_password_confirm_label">Confirm password</string>
+    <string name="authentication_app_password_mismatch">Passwords do not match</string>
+
     <string name="app_password_unlock_description">Unlock the app with a separate password</string>
     <string name="recovery_code_label">Recovery code</string>
     <string name="restore_access">Restore access</string>

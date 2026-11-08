@@ -121,7 +121,7 @@ fun PasswordFields(
         onValueChange = onConfirmPasswordChange,
         enabled = enabled,
         singleLine = true,
-        label = { Text(stringResource(R.string.settings_auth_app_password_confirm_label)) },
+        label = { Text(stringResource(R.string.authentication_app_password_confirm_label)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Outlined.Lock,
@@ -163,7 +163,7 @@ fun PasswordFields(
         isError = confirmationState == PasswordConfirmationUiState.Mismatch,
         supportingText =
             if (confirmationState == PasswordConfirmationUiState.Mismatch) {
-                { Text(stringResource(R.string.settings_auth_password_mismatch)) }
+                { Text(stringResource(R.string.authentication_app_password_mismatch)) }
             } else {
                 null
             },

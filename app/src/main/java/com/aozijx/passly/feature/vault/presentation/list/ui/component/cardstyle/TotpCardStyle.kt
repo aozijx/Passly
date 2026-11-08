@@ -184,7 +184,7 @@ fun TotpStyleVaultItem(
 
 internal object TotpVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "totp"
-    override val titleRes: Int = R.string.settings_interface_card_style_totp
+    override val titleRes: Int = R.string.vault_card_style_totp
 
     override fun supportsEntryType(entryType: EntryType): Boolean =
         entryType == EntryType.OTP

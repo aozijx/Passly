@@ -28,14 +28,9 @@ import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 internal fun BackupFormatPickerContent(onFormatSelected: (BackupExportFormat) -> Unit) {
     BackupSheetColumn {
         Text(
-            text = stringResource(R.string.settings_backup_format_picker_title),
+            text = stringResource(R.string.settings_export_format_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = stringResource(R.string.settings_backup_format_picker_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         BackupFormatCard(
             icon = Icons.Default.Lock,

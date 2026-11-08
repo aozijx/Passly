@@ -75,7 +75,7 @@ fun AppPasswordSetDialog(
         text = {
             Column {
                 Text(
-                    text = stringResource(R.string.settings_auth_password_hint),
+                    text = stringResource(R.string.authentication_app_password_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

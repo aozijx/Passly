@@ -24,8 +24,8 @@ internal fun DataManagementSection(
                     navigationSettingsGroupItem(
                         key = "data.trash",
                         icon = Icons.Default.DeleteSweep,
-                        title = stringResource(R.string.settings_trash_title),
-                        subtitle = stringResource(R.string.settings_trash_description),
+                        title = stringResource(R.string.vault_trash_title),
+                        subtitle = stringResource(R.string.vault_trash_description),
                         onClick = onOpenTrash,
                     ),
                     navigationSettingsGroupItem(

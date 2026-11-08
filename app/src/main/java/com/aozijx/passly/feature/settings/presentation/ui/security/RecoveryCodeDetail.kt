@@ -88,7 +88,7 @@ fun RecoveryCodeDetail(
 
         if (state.hasRecoveryCode) {
             Text(
-                text = stringResource(R.string.settings_recovery_code_saved),
+                text = stringResource(R.string.settings_recovery_code_enabled),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,

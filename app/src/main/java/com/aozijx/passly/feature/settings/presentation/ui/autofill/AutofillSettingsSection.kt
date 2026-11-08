@@ -30,7 +30,7 @@ internal fun AutofillSettingsSection(
     var showPresentationMenu by remember { mutableStateOf(false) }
 
     val enabled = settings.enabled
-    SettingsSectionTitle(text = stringResource(R.string.settings_autofill_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_page_autofill))
     if (systemService is AutofillSourceState.Failed) {
         Row {
             Text(stringResource(R.string.settings_autofill_system_status_unavailable))

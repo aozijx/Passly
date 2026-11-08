@@ -164,7 +164,7 @@ fun PasswordStyleVaultItem(
 
 internal object PasswordVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "password"
-    override val titleRes: Int = R.string.settings_interface_card_style_password
+    override val titleRes: Int = R.string.vault_card_style_password
 
     override fun supportsEntryType(entryType: EntryType): Boolean = entryType == EntryType.LOGIN
 

@@ -13,19 +13,10 @@
     <string name="trash_error_command">回收站操作失败</string>
     <string name="trash_error_empty">无法清空回收站</string>
     <string name="trash_error_session_restricted">当前会话不能操作回收站</string>
-    <string name="database_reset_error_failed">清空 Passly 数据失败</string>
-    <string name="settings_interaction_save_failed">保存失败</string>
     <string name="database_session_retry_failed">数据库重试失败</string>
     <string name="vault_error_delete_access">当前会话不能删除条目</string>
     <string name="vault_error_copy_access">当前会话不能复制敏感字段</string>
     <string name="vault_error_copy_otp_access">当前会话不能复制动态验证码</string>
     <string name="vault_error_trash_failed">无法将条目移入回收站</string>
     <string name="vault_error_sort_failed">无法保存排序设置</string>
-    <string name="settings_interface_save_failed">无法保存界面设置</string>
-    <string name="settings_appearance_save_failed">无法保存外观设置</string>
-    <string name="settings_privacy_save_failed">无法保存隐私设置</string>
-    <string name="settings_autofill_save_failed">无法保存自动填充设置</string>
-    <string name="settings_notifications_save_failed">无法保存通知设置</string>
-    <string name="settings_security_save_failed">无法保存安全设置</string>
-    <string name="settings_security_session_restricted">当前会话不能修改认证设置</string>
 </resources>

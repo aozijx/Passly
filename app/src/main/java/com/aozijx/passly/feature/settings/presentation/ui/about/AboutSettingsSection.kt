@@ -17,7 +17,7 @@ internal fun AboutSettingsSection(
     onPrivacyPolicyClick: () -> Unit,
     onOpenSourceLicensesClick: () -> Unit,
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.settings_about_section))
+        SettingsSectionTitle(text = stringResource(R.string.settings_page_about))
     SegmentedSettingsGroup(
         items =
             listOf(

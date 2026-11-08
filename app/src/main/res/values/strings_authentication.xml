@@ -3,6 +3,10 @@
     <!-- Shared authentication labels -->
     <string name="authentication_label">认证</string>
     <string name="authentication_app_password_label">应用密码</string>
+    <string name="authentication_app_password_hint">至少 6 个字符，建议混合使用字母、数字和符号</string>
+    <string name="authentication_app_password_confirm_label">确认密码</string>
+    <string name="authentication_app_password_mismatch">密码不一致</string>
+
     <string name="app_password_unlock_description">使用独立密码解锁应用</string>
     <string name="recovery_code_label">恢复码</string>
     <string name="restore_access">恢复访问权限</string>

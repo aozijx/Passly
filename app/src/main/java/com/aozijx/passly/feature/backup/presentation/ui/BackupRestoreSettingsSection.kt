@@ -24,7 +24,7 @@ internal fun BackupRestoreSettingsSection(
     onTestWrite: () -> Unit,
     onClearPath: (() -> Unit)?,
 ) {
-    SettingsSectionTitle(text = stringResource(R.string.settings_backup_restore_section))
+    SettingsSectionTitle(text = stringResource(R.string.settings_page_backup_restore))
     SegmentedSettingsGroup(
         items =
             listOf(

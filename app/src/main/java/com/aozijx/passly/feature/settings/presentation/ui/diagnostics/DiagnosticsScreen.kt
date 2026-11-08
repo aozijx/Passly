@@ -264,7 +264,7 @@ private fun FormatSheet(
                     if (action == ExportAction.SHARE) {
                         stringResource(R.string.settings_diagnostics_share_format)
                     } else {
-                        stringResource(R.string.settings_diagnostics_export_format)
+                        stringResource(R.string.settings_export_format_title)
                     },
                 style = MaterialTheme.typography.titleLarge,
             )
@@ -318,7 +318,7 @@ private fun ConfirmClearDialog(
             ) {
                 Text(
                     stringResource(
-                        if (isClearInProgress) R.string.settings_log_clearing else R.string.settings_log_clear_confirm_action,
+                        if (isClearInProgress) R.string.settings_log_clearing else R.string.clear,
                     ),
                 )
             }
@@ -339,7 +339,7 @@ private fun CopyDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_diagnostics_copy_title)) },
+        title = { Text(stringResource(R.string.settings_diagnostics_info_title)) },
         confirmButton = {
             TextButton(onClick = onCopyTrace) {
                 Text(stringResource(R.string.settings_diagnostics_copy_trace))

@@ -51,7 +51,7 @@ internal fun LogSettingsSection(
                     navigationSettingsGroupItem(
                         key = "logs.view",
                         icon = Icons.Default.BugReport,
-                        title = stringResource(R.string.settings_log_view_title),
+                        title = stringResource(R.string.settings_diagnostics_title),
                         subtitle = stringResource(R.string.settings_log_view_subtitle),
                         onClick = onOpenDiagnostics,
                     ),

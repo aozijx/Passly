@@ -153,7 +153,7 @@ fun DefaultOtpItem(
 
 internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "default"
-    override val titleRes: Int = R.string.settings_interface_card_style_default
+    override val titleRes: Int = R.string.vault_card_style_default
 
     @Composable
     override fun Render(

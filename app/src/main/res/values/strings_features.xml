@@ -26,6 +26,11 @@
     <string name="vault_add_type_passkey_description">免密码登录凭据</string>
     <string name="vault_add_type_recovery_code_description">账号恢复备用代码</string>
 
+    <!-- Vault card styles -->
+    <string name="vault_card_style_default">标准</string>
+    <string name="vault_card_style_password">密码卡片</string>
+    <string name="vault_card_style_totp">动态验证码</string>
+
     <!-- 条目历史 -->
     <string name="vault_detail_history_label">活动日志</string>
     <string name="vault_detail_history_updates">变更</string>
@@ -40,6 +45,26 @@
     <string name="vault_detail_activity_view">查看</string>
     <string name="vault_detail_activity_export">导出</string>
     <string name="vault_detail_activity_import">导入</string>
+
+    <!-- 回收站 -->
+    <plurals name="vault_trash_count">
+        <item quantity="other">%d 个条目</item>
+    </plurals>
+    <string name="vault_trash_delete">永久删除</string>
+    <string name="vault_trash_delete_confirm_message">删除此条目及其附件和历史记录？无法撤销。</string>
+    <string name="vault_trash_delete_confirm_title">永久删除“%1$s”？</string>
+    <string name="vault_trash_deleted_at">删除于 %1$s</string>
+    <string name="vault_trash_description">恢复已删除条目，或将其永久删除</string>
+    <string name="vault_trash_empty">回收站是空的</string>
+    <string name="vault_trash_empty_description">删除的条目会显示在这里</string>
+    <string name="vault_trash_empty_action">清空</string>
+    <plurals name="vault_trash_empty_confirm_message">
+        <item quantity="other">将永久删除回收站中的 %d 个条目及其附件，无法撤销。</item>
+    </plurals>
+    <string name="vault_trash_empty_confirm_title">清空回收站？</string>
+    <string name="vault_trash_emptying">正在清空…</string>
+    <string name="vault_trash_error_dismiss">知道了</string>
+    <string name="vault_trash_title">回收站</string>
 
     <!-- Wi-Fi -->
     <string name="wifi_ssid">Wi-Fi 名称</string>
@@ -61,7 +86,6 @@
     <string name="card_expiry_month">月</string>
     <string name="card_expiry_year">年</string>
     <string name="card_expiry_not_set">未设置</string>
-    <string name="card_expiry_clear">清除</string>
     <string name="card_type">卡片类型</string>
     <string name="card_type_debit">借记卡</string>
     <string name="card_type_credit">信用卡</string>

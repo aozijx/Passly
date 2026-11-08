@@ -59,7 +59,7 @@ fun ActivityTimelineSection(
                 ActivityFilterChip(
                     selected = selectedFilter == DetailActivityFilter.ALL,
                     onClick = { onFilterChanged(DetailActivityFilter.ALL) },
-                    label = stringResource(R.string.tab_all),
+                    label = stringResource(R.string.all),
                 )
                 ActivityFilterChip(
                     selected = selectedFilter == DetailActivityFilter.ACTIONS,

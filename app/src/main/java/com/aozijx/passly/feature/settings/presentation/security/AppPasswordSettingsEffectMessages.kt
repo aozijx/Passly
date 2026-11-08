@@ -44,7 +44,7 @@ internal fun AppPasswordSettingsEffect.toAppPasswordMessage(context: Context): S
                 }
 
                 AppPasswordInputError.PASSWORD_MISMATCH -> {
-                    context.getString(R.string.settings_auth_password_mismatch)
+                    context.getString(R.string.authentication_app_password_mismatch)
                 }
             }
         }

@@ -93,7 +93,7 @@ internal fun TrashBottomSheet(
                 is TrashErrorUiState.OperationFailed -> {
                     TrashError(
                         message = stringResource(state.error.messageResource),
-                        actionLabel = stringResource(R.string.settings_trash_error_dismiss),
+                        actionLabel = stringResource(R.string.vault_trash_error_dismiss),
                         onAction = onClearError,
                     )
                 }
@@ -111,7 +111,7 @@ internal fun TrashBottomSheet(
                 is TrashEntryListUiState.LoadFailed -> {
                     TrashError(
                         message = stringResource(entries.messageResource),
-                        actionLabel = stringResource(R.string.settings_trash_retry),
+                        actionLabel = stringResource(R.string.retry),
                         onAction = onRetryLoad,
                     )
                 }
@@ -158,10 +158,10 @@ internal fun TrashBottomSheet(
                 if (!isBusy) pendingDelete = null
             },
             title = {
-                Text(stringResource(R.string.settings_trash_delete_confirm_title, entry.title))
+                Text(stringResource(R.string.vault_trash_delete_confirm_title, entry.title))
             },
             text = {
-                Text(stringResource(R.string.settings_trash_delete_confirm_message))
+                Text(stringResource(R.string.vault_trash_delete_confirm_message))
             },
             confirmButton = {
                 TextButton(
@@ -172,7 +172,7 @@ internal fun TrashBottomSheet(
                     },
                 ) {
                     Text(
-                        text = stringResource(R.string.settings_trash_delete),
+                        text = stringResource(R.string.vault_trash_delete),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -193,11 +193,11 @@ internal fun TrashBottomSheet(
             onDismissRequest = {
                 if (!isBusy) confirmEmpty = false
             },
-            title = { Text(stringResource(R.string.settings_trash_empty_confirm_title)) },
+            title = { Text(stringResource(R.string.vault_trash_empty_confirm_title)) },
             text = {
                 Text(
                     pluralStringResource(
-                        R.plurals.settings_trash_empty_confirm_message,
+                        R.plurals.vault_trash_empty_confirm_message,
                         state.entryCount,
                         state.entryCount,
                     ),
@@ -212,7 +212,7 @@ internal fun TrashBottomSheet(
                     },
                 ) {
                     Text(
-                        text = stringResource(R.string.settings_trash_empty_action),
+                        text = stringResource(R.string.vault_trash_empty_action),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -246,7 +246,7 @@ private fun TrashHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.settings_trash_title),
+                text = stringResource(R.string.vault_trash_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -258,7 +258,7 @@ private fun TrashHeader(
                 shape = MaterialTheme.shapes.large,
             ) {
                 Text(
-                    text = pluralStringResource(R.plurals.settings_trash_count, count, count),
+                    text = pluralStringResource(R.plurals.vault_trash_count, count, count),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                 )
@@ -286,9 +286,9 @@ private fun TrashHeader(
                 text =
                     stringResource(
                         if (isEmptying) {
-                            R.string.settings_trash_emptying
+                            R.string.vault_trash_emptying
                         } else {
-                            R.string.settings_trash_empty_action
+                            R.string.vault_trash_empty_action
                         },
                     ),
                 color =
@@ -342,12 +342,12 @@ private fun TrashEmpty() {
             )
         }
         Text(
-            text = stringResource(R.string.settings_trash_empty),
+            text = stringResource(R.string.vault_trash_empty),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
-            text = stringResource(R.string.settings_trash_empty_description),
+            text = stringResource(R.string.vault_trash_empty_description),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

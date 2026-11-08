@@ -103,7 +103,7 @@ internal fun BackupExportOptionsContent(
                 Text(
                     stringResource(
                         if (state.allEntryTypesSelected) {
-                            R.string.settings_backup_clear_selection
+                            R.string.clear
                         } else {
                             R.string.settings_backup_select_all
                         },

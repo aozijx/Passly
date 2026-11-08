@@ -185,7 +185,7 @@ class SecuritySettingsViewModelTest {
             model.onAction(SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(false))
             runCurrent()
 
-            assertEquals(listOf(UiErrorMessage(R.string.notice_security_key_invalidated)), errors)
+            assertEquals(listOf(UiErrorMessage(R.string.authentication_key_invalidated)), errors)
         }
 
     @Test
