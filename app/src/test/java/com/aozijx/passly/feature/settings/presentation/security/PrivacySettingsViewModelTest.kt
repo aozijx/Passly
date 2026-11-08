@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.SecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
@@ -43,12 +44,12 @@ class PrivacySettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, model.uiState.value is PrivacySettingsUiState.Failed)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Failed)
             model.onAction(PrivacySettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is PrivacySettingsUiState.Ready)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Ready)
         }
 
     @Test
@@ -60,7 +61,7 @@ class PrivacySettingsViewModelTest {
                     clipboardCleaner = { false },
                 )
 
-            assertEquals(PrivacySettingsUiState.Loading, viewModel.uiState.value)
+            assertEquals(RecoverableReadState.Loading, viewModel.uiState.value)
         }
 
     @Test

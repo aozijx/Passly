@@ -6,15 +6,15 @@ import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.clipboard.port.OwnedClipboardCleaner
+import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
+import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -32,31 +32,21 @@ class PrivacySettingsViewModel
                 source =
                     settingsRepository.security
                         .map { security ->
-                            PrivacySettingsUiState.Ready(
+                            PrivacySettingsUiModel(
                                 isSecureContentEnabled = security.isSecureContentEnabled,
                                 isFlipToLockEnabled = security.isFlipToLockEnabled,
                                 isFlipExitAndClearStackEnabled = security.isFlipExitAndClearStackEnabled,
                                 reauthenticateSensitiveCopies = security.reauthenticateSensitiveCopies,
                                 clipboardClearEnabled = security.clipboardClearPolicy.enabled,
                                 clipboardClearDelaySeconds = security.clipboardClearPolicy.delaySeconds,
+                                clipboardClearDelayOptions =
+                                    ClipboardClearPolicy.ALLOWED_DELAY_SECONDS.toList(),
                             )
                         },
                 scope = viewModelScope,
             )
 
-        val uiState: StateFlow<PrivacySettingsUiState> =
-            settingsRead.state
-                .map { state ->
-                    when (state) {
-                        RecoverableReadState.Loading -> PrivacySettingsUiState.Loading
-                        is RecoverableReadState.Ready -> state.value
-                        is RecoverableReadState.Failed -> PrivacySettingsUiState.Failed(state.failure)
-                    }
-                }.stateIn(
-                    viewModelScope,
-                    SharingStarted.WhileSubscribed(5_000L),
-                    PrivacySettingsUiState.Loading,
-                )
+        val uiState: StateFlow<RecoverableReadState<PrivacySettingsUiModel>> = settingsRead.state
 
         fun onAction(action: PrivacySettingsAction) {
             when (action) {
@@ -114,7 +104,7 @@ class PrivacySettingsViewModel
         }
 
         private fun saveSetting(write: suspend () -> Unit) {
-            if (uiState.value !is PrivacySettingsUiState.Ready) return
+            if (uiState.value !is RecoverableReadState.Ready) return
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 writePreferenceWithFeedback(

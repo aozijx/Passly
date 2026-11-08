@@ -14,14 +14,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.settings.presentation.security.PrivacySettingsAction
 import com.aozijx.passly.feature.settings.presentation.security.PrivacySettingsEffect
-import com.aozijx.passly.feature.settings.presentation.security.PrivacySettingsUiState
 import com.aozijx.passly.feature.settings.presentation.security.PrivacySettingsViewModel
-import com.aozijx.passly.feature.settings.presentation.security.toPrivacySettingsUiModel
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 import com.aozijx.passly.feature.settings.presentation.ui.security.PrivacyDetail
+import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.presentation.shared.state.SettingsReadFailureContent
 
 @Composable
@@ -32,6 +32,7 @@ internal fun PrivacyRoute(onBack: (() -> Unit)?) {
         onDispose { viewModel.onPageExited(owner) }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentReadState = state
     val context = LocalContext.current
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -52,19 +53,19 @@ internal fun PrivacyRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.PRIVACY.titleRes),
         onBack = onBack,
     ) {
-        when (val readyState = state) {
-            PrivacySettingsUiState.Loading -> {
+        when (currentReadState) {
+            RecoverableReadState.Loading -> {
                 Unit
             }
 
-            is PrivacySettingsUiState.Failed -> {
+            is RecoverableReadState.Failed -> {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(PrivacySettingsAction.RetryRead) }) }
             }
 
-            is PrivacySettingsUiState.Ready -> {
+            is RecoverableReadState.Ready<PrivacySettingsUiModel> -> {
                 item {
                     PrivacyDetail(
-                        state = readyState.toPrivacySettingsUiModel(),
+                        state = currentReadState.value,
                         onSecureContentEnabledChange = {
                             viewModel.onAction(PrivacySettingsAction.SetSecureContentEnabled(it))
                         },
