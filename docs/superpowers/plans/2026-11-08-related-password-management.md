@@ -144,8 +144,8 @@
 - Update `docs/superpowers/plans/2026-11-07-related-password-binding.md` to remove its stale unchecked binding test items and point to the current relationship behavior.
 - Update Task 35 in `docs/superpowers/plans/2026-10-30-passly-maintainability-todo.md` with implementation and verification evidence; remove the temporary “design pending review” marker.
 
-- [ ] **Step 1: Reconcile the old binding plan with current tests.** Mark bind-failure retry, success refresh, and duplicate-tap checks complete using `DetailPasswordBindingWorkflowTest`; retain the Room upsert endpoint-deleted-during-write acceptance as an open item and point it to Task 35 rather than silently closing it.
-- [ ] **Step 2: Transfer the durable binding/unlink user contract** to `entry-editor-and-persistence.md`; update the old plan to link to that feature contract and this plan instead of duplicating current implementation details.
-- [ ] **Step 3: Run `:app:testDebugUnitTest`, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`.** Record exact results and any device test not run.
-- [ ] **Step 4: Review the final diff and staged paths** to ensure the shared `SwipeActionContainer.kt`, unlock/authentication changes, `AGENTS.md`, `.agents/`, and other unrelated user work are excluded.
-- [ ] **Step 5: Commit the documentation and final TODO evidence** as `docs(vault): record related password management`.
+- [x] **Step 1: Reconcile the old binding plan with current tests.** `DetailPasswordRelationsWorkflowTest` covers bind-failure retry, success refresh, and duplicate-tap suppression; retain the Room upsert endpoint-deleted-during-write acceptance as an open item in Task 35.
+- [x] **Step 2: Transfer the durable binding/unlink user contract** to `entry-editor-and-persistence.md`; archive the old plan with links to that contract and this plan.
+- [x] **Step 3: Run `:app:testDebugUnitTest`, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`.** App: 1085 tests, 0 failures/errors. Data: 170 tests, 0 failures/errors. Architecture and diff checks passed. Compose instrumentation was not run because no device or AVD is available.
+- [x] **Step 4: Review the final diff and staged paths** to ensure the shared `SwipeActionContainer.kt`, unlock/authentication changes, `AGENTS.md`, `.agents/`, and other unrelated user work are excluded.
+- [x] **Step 5: Commit the documentation and final TODO evidence** as `docs(vault): record related password management`.

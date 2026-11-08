@@ -10,6 +10,8 @@
 
 **Spec:** [2026-11-07-related-password-binding-design.md](../specs/2026-11-07-related-password-binding-design.md)
 
+> **Archived on 2026-11-08.** The durable user contract is now in [entry-editor-and-persistence.md](../../features/vault/entry-editor-and-persistence.md#详情页密码关联), and the active implementation/verification plan is [2026-11-08-related-password-management.md](2026-11-08-related-password-management.md). This file records the earlier binding implementation; its task descriptions are historical. The Room upsert race where an endpoint disappears during the write remains open under [maintainability TODO Task 35](2026-10-30-passly-maintainability-todo.md#task-35).
+
 ## Global Constraints
 
 - Bind only active persisted `EntryType.LOGIN` entries through `EntryRelationType.RELATED_TO`.
@@ -77,9 +79,11 @@
 - [x] Add a Detail action visible only for active saved LOGIN entries and picker states for loading, candidates, saving, empty, and retryable failure.
 - [x] Test candidate results after same-entry page replacement, session revocation, and picker dismissal; stale requests do not publish candidates.
 - [x] Test binding write cancellation when replacing the Detail page; the in-flight link write is cancelled before persistence.
-- [x] `RelatedPasswordBindingTest` covers valid saved endpoints, rejects an unsaved endpoint, and makes an existing relation idempotent.
-- [ ] Test the workflow's bind-failure retry and success refresh states, in-flight duplicate taps, and endpoint deletion during the Room write transaction.
+- [x] `RelatedPasswordLinksTest` covers valid saved endpoints, rejects an unsaved endpoint, and makes an existing relation idempotent.
+- [x] `DetailPasswordRelationsWorkflowTest` covers bind-failure retry, success refresh, and suppression of duplicate in-flight taps. The separate Room upsert endpoint-deleted-during-write acceptance remains open in Task 35.
 - [x] Add a searchable lazy candidate sheet that shows title/username summaries, never credential fields, with localized labels and explicit bind affordance.
 - [x] On success, refresh only the current Detail relationship projection; ordinary failures are logged and shown without closing the retry path.
 - [x] Run the focused Detail tests through the full `:app:testDebugUnitTest` suite, `:data:testDebugUnitTest`, `verifyArchitecture`, and `git diff --check`; App passed 1037 tests and Data passed 168 tests, with no failures. Data was up-to-date in the latest run; its test report is from the preceding full execution.
 - [x] Commit `feat(vault): bind saved passwords from detail`.
+
+**Superseded follow-up:** Unlink behavior, its exact-link deletion contract, confirmation UI, session ownership, and current test names are maintained only in the active plan linked above; do not extend this historical plan with another implementation path.

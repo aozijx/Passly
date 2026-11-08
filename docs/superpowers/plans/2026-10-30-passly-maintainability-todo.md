@@ -298,13 +298,17 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [x] 候选只通过 `EntryListItem` 查询活动 LOGIN 条目；写入前重验两端存在且未删除，Room link transaction 再次原子校验端点活动状态、保留修订快照/GC，并按 `RELATED_TO` 对称合同唯一写入。没有新增兼容分支或 fallback。
 - [x] 保留 `DetailSessionQuery` 的全量 link 图查询：`EntryAccountGraph` 需要跨 MEMBER_OF_ACCOUNT、OTP_FOR、RECOVERY_FOR 闭包找同组成员，直接按 entry 查询会漏项；详情结果现在再并入直接 `RELATED_TO` 邻项。
 - [x] 收敛关联条目加载的 N+1 查询：Domain `EntryQueryRepository.getByIds()` 复用 `EntryQueryDao.getByIds()`，空输入不打开 session，Room 在一次可读 session 中按输入顺序装配结果，忽略查询时已不存在的 ID；详情关系一次批量装载。
-- [x] 保留关系 CRUD、Domain link model/policy、历史快照、Backup 稳定关系键和 `EntryLinkCommandDao`；本任务只增加用户确认的绑定闭包，不删除关系持久化合同。Room schema/internal format 未改。
+- [x] 保留关系 CRUD、Domain link model/policy、历史快照、Backup 稳定关系键和 `EntryLinkCommandDao`；绑定与解绑均复用既有持久化合同，Room schema/internal format 未改。
+- [x] 关系管理实现：按[详情页密码关系设计](../specs/2026-11-08-related-password-management-design.md)与[实施计划](2026-11-08-related-password-management.md)拆分账户组/其他关系与活动 LOGIN↔LOGIN `RELATED_TO` 投影；完成绑定、左滑确认解绑、双语 UI、错误日志、失败重试、会话/页面生命周期守卫和解绑后详情刷新。解绑复用现有 `EntryLinkRepository.delete(linkId)`，只删除指定 link，保留两个条目及现有事务快照/清理；数据库结构、Repository 契约和备份格式未改。分批提交：`0b144c032`、`22453f02c`、`73646d530`、`62a9c1305`。
+- [ ] 在可用 Android 设备/AVD 上运行 `RelatedEntriesSectionTest` 与 `RelatedPasswordPickerSheetTest`。测试源码编译和 Detail mapper 单测已验证；当前没有连接设备，也没有配置 AVD，Compose 运行结果待设备可用后补齐。
 
 **2026-11-07 实现证据：** 批量关系解析测试已通过；详情绑定 ViewModel/UI 测试在临时隔离一份未提交的权限测试文件后编译，56 个定向测试中 55 个通过，唯一失败是新混合关系测试 fixture 把 LOGIN 与 NONE 凭据组合，已修正为合法 LOGIN/OTP 凭据。之后重跑被工作区持续变化中的权限设置代码阻塞：`PermissionsRoute`/`PermissionManagementScreen` 引用了缺失的 `settings_permissions_*` 资源。Data unit tests、`:app:compileDebugKotlin`、`verifyArchitecture`、`git diff --check` 在权限改动进入该次构建前通过；权限设置文件均保留原样。修正后的混合关系测试待阻塞解除后重跑。
 
 **实现前审查证据（2026-11-06）：** 当时生产调用只有 `DetailSessionQuery.getAll()`；Repository 的 `getLinks()`、`upsert()`、`delete()` 与两种观察方法没有 App consumer。`getAll()` 将全部 links 交给 `EntryAccountGraph` 计算 ACCOUNT 分组，不能直接改为按单个 entry 查询，否则 OTP_FOR 会漏掉该账户其他 login/recovery/OTP 成员。Detail 随后逐个 `getById()` 读取关联项，闲置 `EntryQueryDao.getByIds()` 并为每项重新获取数据库 session。`RoomObservationSessionTest` 用 `EntryLinkQueryDao.observeAll()` 检查通用 session gate，删除 DAO API 前需保留此覆盖。此段只记录改动前快照，不代表当前消费状态。
 
-**实现后消费闭包（2026-11-07）：** `DetailSessionQuery` 保留 `getAll()` 图查询并将 `RELATED_TO` 邻项并入结果；`RelatedPasswordBinding` 已消费 `getLinks()` 与 `upsert()`，写入沿用 Room 事务中的活动端点校验、修订快照与 GC。`observeAll()`、`observeLinks()`、`delete()` 仍没有 App consumer；本次按用户确认保留 EntryLink 关系 API 作为后续关联管理基础，未保留任何兼容分支或 fallback。详情项改为一次 `getByIds()` 批量读取，复用现有 DAO 并按请求顺序还原。完整实现和验证状态见上方 Task 35 记录。
+**实现后消费闭包（2026-11-08）：** `DetailSessionQuery` 仍保留 `getAll()` 图查询供 `EntryAccountGraph` 计算账户组，并在同一 link snapshot 上区分账户组、其他关系和可解绑的 LOGIN↔LOGIN `RELATED_TO` link。`RelatedPasswordLinks` 消费 `getLinks()`、`upsert()` 与 `delete(linkId)`；`delete()` 现在由确认解绑流程实际调用，继续复用现有 Room 事务、端点修订快照和附件清理。生产 App 当前未消费 `observeAll()` / `observeLinks()`。候选仍来自活动 LOGIN 的非敏感 `EntryListItem` 批量查询；详情目标通过 `getByIds()` 一次装配。没有兼容分支、Schema 变更或备份格式变更。
+
+**2026-11-08 详情密码关系实现与验证：** Task 1-4 分别提交为 `0b144c032`、`22453f02c`、`73646d530`、`62a9c1305`。Task 1 的 80 项 query/loader/reducer/UI mapper/绑定工作流定向单测、Task 2 的 46 项 links/workflow/ViewModel 定向单测、Task 3 的 66 项 workflow/ViewModel/reducer 定向单测通过；Task 4 的 `DetailUiMapperTest` 通过，`:app:compileDebugKotlin` 通过。Android 测试源码编译曾在临时补上工作区另一处 `VaultTopBarMenuTest` 缺失的 `VaultCategoriesState` import 后通过，临时改动已撤销；当前工作树该顶栏测试仍有此独立编译问题。`adb devices -l` 无设备且无已配置 AVD，因此两组 Compose instrumentation 尚未运行。Room upsert 端点在事务写入期间删除的竞态仍作为独立验收项保留，不因 unlink 的事务复用而关闭。
 
 <a id="task-34"></a>
 
