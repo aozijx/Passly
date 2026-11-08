@@ -36,6 +36,7 @@ import com.aozijx.passly.core.ui.components.common.InputActionButton
 import com.aozijx.passly.core.ui.components.common.InputActionButtonConfig
 import com.aozijx.passly.core.ui.components.common.InputActionButtonState
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
+import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.unlock.presentation.UnlockFailureMessage
 import com.aozijx.passly.feature.unlock.presentation.UnlockInputExpansion
@@ -62,6 +63,8 @@ fun AuthenticationScreen(
     val activeMethod = (state.verificationPhase as? UnlockVerificationPhase.Authenticating)?.method
     val verificationFailure = (state.verificationPhase as? UnlockVerificationPhase.Failed)?.failure
     val biometricFailureMessage =
+    val appPasswordAttemptStatus = state.authenticationAttemptStatuses[AuthenticationMethod.APP_PASSWORD]
+    val recoveryCodeAttemptStatus = state.authenticationAttemptStatuses[AuthenticationMethod.RECOVERY_CODE]
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.BIOMETRIC }
             ?.message
@@ -70,12 +73,12 @@ fun AuthenticationScreen(
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.APP_PASSWORD }
             ?.message
-            ?.localized(appPasswordLabel)
+            ?.localized(appPasswordLabel, appPasswordAttemptStatus)
     val recoveryCodeFailureMessage =
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
             ?.message
-            ?.localized(recoveryCodeLabel)
+            ?.localized(recoveryCodeLabel, recoveryCodeAttemptStatus)
 
     Column(
         modifier =
@@ -184,7 +187,9 @@ fun AuthenticationScreen(
                                 appPasswordFailureMessage
                                     ?: stringResource(R.string.auth_error_failed),
                         ),
-                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD,
+                    enabled =
+                        (activeMethod == null || activeMethod == AuthenticationMethod.APP_PASSWORD) &&
+                            appPasswordAttemptStatus?.retryAfterMs == null,
                     onValueChange = { onAction(UnlockUiAction.AppPasswordChanged(it)) },
                     onExpandedChange = {
                         onAction(UnlockUiAction.InputExpanded(AuthenticationMethod.APP_PASSWORD, it))
@@ -193,6 +198,20 @@ fun AuthenticationScreen(
                     onResultConsumed = { onAction(UnlockUiAction.ClearVerificationFailure) },
                 )
             }
+                if (appPasswordFailureMessage == null) {
+                    appPasswordAttemptStatus?.localized(appPasswordLabel)?.let { statusMessage ->
+                        Text(
+                            text = statusMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color =
+                                if (appPasswordAttemptStatus.retryAfterMs != null) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                        )
+                    }
+                }
 
             if (state.availableMethods.available.isEmpty()) {
                 val setup = state.passwordSetup as? UnlockPasswordSetup.Editing
@@ -253,7 +272,9 @@ fun AuthenticationScreen(
                                 recoveryCodeFailureMessage
                                     ?: stringResource(R.string.auth_error_failed),
                         ),
-                    enabled = activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE,
+                    enabled =
+                        (activeMethod == null || activeMethod == AuthenticationMethod.RECOVERY_CODE) &&
+                            recoveryCodeAttemptStatus?.retryAfterMs == null,
                     onValueChange = { onAction(UnlockUiAction.RecoveryCodeChanged(it)) },
                     onExpandedChange = {
                         onAction(UnlockUiAction.InputExpanded(AuthenticationMethod.RECOVERY_CODE, it))
@@ -262,6 +283,20 @@ fun AuthenticationScreen(
                     onResultConsumed = { onAction(UnlockUiAction.ClearVerificationFailure) },
                 )
             }
+                if (recoveryCodeFailureMessage == null) {
+                    recoveryCodeAttemptStatus?.localized(recoveryCodeLabel)?.let { statusMessage ->
+                        Text(
+                            text = statusMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color =
+                                if (recoveryCodeAttemptStatus.retryAfterMs != null) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                        )
+                    }
+                }
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
@@ -315,7 +350,10 @@ private fun SensitiveValue.toUiString(): String {
 }
 
 @Composable
-private fun UnlockFailureMessage.localized(methodLabel: String? = null): String =
+private fun UnlockFailureMessage.localized(
+    methodLabel: String? = null,
+    attemptStatus: AuthenticationAttemptStatus? = null,
+): String =
     when (this) {
         is UnlockFailureMessage.IncorrectCredential -> {
             if (methodLabel != null && (remainingAttempts ?: 0) > 0) {
@@ -334,7 +372,7 @@ private fun UnlockFailureMessage.localized(methodLabel: String? = null): String 
         is UnlockFailureMessage.RateLimited -> {
             stringResource(
                 R.string.auth_error_rate_limited,
-                retryAfterSeconds,
+                attemptStatus?.retryAfterMs?.toSecondsCeiling() ?: retryAfterSeconds,
             )
         }
 
@@ -366,6 +404,10 @@ private fun UnlockFailureMessage.localized(methodLabel: String? = null): String 
             stringResource(
                 R.string.auth_error_password_too_short,
             )
+        UnlockFailureMessage.AttemptStateUnavailable -> {
+            stringResource(R.string.auth_error_attempt_state_unavailable)
+        }
+
         }
 
         UnlockFailureMessage.AppPasswordSetupFailed -> {
@@ -378,3 +420,22 @@ private fun UnlockFailureMessage.localized(methodLabel: String? = null): String 
             stringResource(R.string.auth_error_failed)
         }
     }
+
+@Composable
+private fun AuthenticationAttemptStatus.localized(methodLabel: String): String? {
+    val retryDelay = retryAfterMs
+    val remainingAttempts = attempts.remaining
+    return when {
+        retryDelay != null -> {
+            stringResource(R.string.auth_error_rate_limited, retryDelay.toSecondsCeiling())
+        }
+
+        attempts.used > 0 && remainingAttempts != null -> {
+            stringResource(R.string.auth_error_attempts_remaining, methodLabel, remainingAttempts)
+        }
+
+        else -> null
+    }
+}
+
+private fun Long.toSecondsCeiling(): Long = ((this + 999L) / 1000L).coerceAtLeast(1L)

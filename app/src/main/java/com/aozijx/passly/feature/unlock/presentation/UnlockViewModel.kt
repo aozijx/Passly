@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationRequest
 import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
+import com.aozijx.passly.domain.access.port.AuthenticationAttemptStatusProvider
 import com.aozijx.passly.domain.access.port.AuthenticationManager
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
@@ -20,6 +21,9 @@ import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +34,7 @@ class UnlockViewModel
     @Inject
     constructor(
         private val authenticationManager: AuthenticationManager,
+        private val attemptStatusProvider: AuthenticationAttemptStatusProvider,
         private val kdfParameterSource: AuthenticationKdfParameterSource,
         private val methodProvisioner: AuthenticationMethodProvisioner,
     ) : ViewModel() {
@@ -41,6 +46,7 @@ class UnlockViewModel
 
         private var recoveryRevealTapCount = 0
         private var passwordProvisioning = false
+        private val attemptStatusJobs = mutableMapOf<AuthenticationMethod, Job>()
 
         init {
             viewModelScope.launch {
@@ -55,6 +61,9 @@ class UnlockViewModel
             viewModelScope.launch {
                 authenticationManager.methods.collect { methods ->
                     mutate(UnlockMutation.AvailableMethodsChanged(methods))
+                    methods.available
+                        .filter { it != AuthenticationMethod.BIOMETRIC }
+                        .forEach(::refreshAttemptStatus)
                 }
             }
         }
@@ -301,6 +310,7 @@ class UnlockViewModel
                     ) {
                         is AuthenticationResult.Success -> {
                             resetInputState()
+                            refreshAttemptStatus(method)
                         }
 
                         is AuthenticationResult.Cancelled -> {
@@ -309,6 +319,7 @@ class UnlockViewModel
 
                         is AuthenticationResult.Failure -> {
                             mutate(UnlockMutation.AuthenticationFailed(method, result.failure))
+                            if (method != AuthenticationMethod.BIOMETRIC) refreshAttemptStatus(method)
                         }
                     }
                 } finally {
@@ -347,7 +358,43 @@ class UnlockViewModel
             _uiState.value = UnlockReducer.reduce(_uiState.value, mutation)
         }
 
+        private fun refreshAttemptStatus(method: AuthenticationMethod) {
+            val previous = attemptStatusJobs.remove(method)
+            previous?.cancel()
+            lateinit var job: Job
+            job =
+                viewModelScope.launch(start = CoroutineStart.LAZY) {
+                    try {
+                        var status = attemptStatusProvider.status(method)
+                        mutate(UnlockMutation.AuthenticationAttemptStatusChanged(method, status))
+                        while (status.retryAfterMs != null) {
+                            delay(1_000L)
+                            status = attemptStatusProvider.status(method)
+                            mutate(UnlockMutation.AuthenticationAttemptStatusChanged(method, status))
+                        }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (_: Exception) {
+                        mutate(
+                            UnlockMutation.AuthenticationFailed(
+                                method,
+                                AuthenticationFailure(
+                                    code = AuthenticationFailureCode.ATTEMPT_STATE_UNAVAILABLE,
+                                    method = method,
+                                ),
+                            ),
+                        )
+                    } finally {
+                        if (attemptStatusJobs[method] === job) attemptStatusJobs.remove(method)
+                    }
+                }
+            attemptStatusJobs[method] = job
+            job.start()
+        }
+
         override fun onCleared() {
+            attemptStatusJobs.values.forEach(Job::cancel)
+            attemptStatusJobs.clear()
             wipeUnlockInputs()
             wipeSetupPasswords()
         }

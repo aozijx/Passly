@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.unlock.presentation
 
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
+import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
@@ -42,6 +43,11 @@ internal sealed interface UnlockMutation {
     data class AuthenticationFailed(
         val method: AuthenticationMethod,
         val failure: AuthenticationFailure,
+    ) : UnlockMutation
+
+    data class AuthenticationAttemptStatusChanged(
+        val method: AuthenticationMethod,
+        val status: AuthenticationAttemptStatus,
     ) : UnlockMutation
 
     data object AuthenticationFinished : UnlockMutation
@@ -131,6 +137,13 @@ internal object UnlockReducer {
                                 message = mutation.failure.toVerificationMessage(),
                             ),
                         ),
+                )
+            }
+
+            is UnlockMutation.AuthenticationAttemptStatusChanged -> {
+                state.copy(
+                    authenticationAttemptStatuses = state.authenticationAttemptStatuses + (mutation.method to mutation.status),
+                    verificationPhase = state.verificationPhase.withAttemptStatus(mutation.method, mutation.status),
                 )
             }
 
@@ -258,6 +271,10 @@ internal object UnlockReducer {
                 UnlockFailureMessage.AuthenticationBusy
             }
 
+            AuthenticationFailureCode.ATTEMPT_STATE_UNAVAILABLE -> {
+                UnlockFailureMessage.AttemptStateUnavailable
+            }
+
             AuthenticationFailureCode.HOST_UNAVAILABLE -> {
                 UnlockFailureMessage.AuthenticationHostUnavailable
             }
@@ -306,6 +323,23 @@ internal object UnlockReducer {
             }
         }
 }
+
+private fun UnlockVerificationPhase.withAttemptStatus(
+    method: AuthenticationMethod,
+    status: AuthenticationAttemptStatus,
+): UnlockVerificationPhase {
+    val failed = this as? UnlockVerificationPhase.Failed ?: return this
+    if (failed.failure.method != method || failed.failure.message !is UnlockFailureMessage.RateLimited) return this
+    val retryAfterMs = status.retryAfterMs ?: return UnlockVerificationPhase.Idle
+    return failed.copy(
+        failure =
+            failed.failure.copy(
+                message = UnlockFailureMessage.RateLimited(retryAfterMs.toRetryAfterSeconds()),
+            ),
+    )
+}
+
+private fun Long.toRetryAfterSeconds(): Long = ((this + 999L) / 1000L).coerceAtLeast(1L)
 
 private fun UnlockVerificationPhase.withFailureCleared(): UnlockVerificationPhase =
     when (this) {

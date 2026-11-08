@@ -168,6 +168,8 @@
   <string name="auth_error_failed">验证失败，请重试</string>
   <string name="auth_error_busy">正在进行其他认证，请稍后重试</string>
   <string name="auth_error_host_unavailable">无法打开认证界面，请重试或使用其他认证方式</string>
+  <string name="auth_error_attempts_remaining">%1$s还可尝试 %2$d 次</string>
+  <string name="auth_error_attempt_state_unavailable">暂时无法检查认证次数，请稍后重试</string>
   <string name="auth_error_method_unavailable">此认证方式当前不可用，请使用其他方式或在设置中重新配置</string>
   <string name="auth_error_session_restricted">当前会话状态不允许进行此认证，请返回后重试</string>
   <string name="auth_error_session_unavailable">无法安全开启会话，请重试；若持续出现，请重新启动应用</string>

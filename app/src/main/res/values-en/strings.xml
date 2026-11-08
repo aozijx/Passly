@@ -151,6 +151,8 @@
   <string name="auth_error_failed">Verification failed. Try again.</string>
   <string name="auth_error_busy">Another authentication is in progress. Try again shortly.</string>
   <string name="auth_error_host_unavailable">Couldn\'t open the authentication prompt. Try again or use another method.</string>
+  <string name="auth_error_attempts_remaining" tools:ignore="PluralsCandidate">%1$s has %2$d attempts remaining.</string>
+  <string name="auth_error_attempt_state_unavailable">Couldn\'t check authentication limits. Try again shortly.</string>
   <string name="auth_error_method_unavailable">This authentication method is unavailable. Use another method or reconfigure it in settings.</string>
   <string name="auth_error_session_restricted">Authentication isn\'t allowed in the current session state. Return and try again.</string>
   <string name="auth_error_session_unavailable">The secure session couldn\'t be opened. Try again; restart the app if this continues.</string>
