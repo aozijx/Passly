@@ -72,12 +72,12 @@ fun AuthenticationScreen(
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.APP_PASSWORD }
             ?.message
-            ?.localized(appPasswordLabel, appPasswordAttemptStatus)
+            ?.localized()
     val recoveryCodeFailureMessage =
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
             ?.message
-            ?.localized(recoveryCodeLabel, recoveryCodeAttemptStatus)
+            ?.localized()
 
     Column(
         modifier =
@@ -209,12 +209,6 @@ fun AuthenticationScreen(
                     enabled = activeMethod == null && !isSaving,
                     onClick = { onAction(UnlockUiAction.SetPasswordClicked) },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.auth_biometric_unavailable_password_required),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
 
             if (AuthenticationMethod.RECOVERY_CODE in state.availableMethods &&
@@ -326,34 +320,36 @@ private fun SensitiveValue.toUiString(): String {
 }
 
 @Composable
-private fun UnlockFailureMessage.localized(
-    methodLabel: String? = null,
-    attemptStatus: AuthenticationAttemptStatus? = null,
-): String =
+private fun UnlockFailureMessage.localized(): String =
     when (this) {
         is UnlockFailureMessage.IncorrectCredential -> {
-            if (methodLabel != null && (remainingAttempts ?: 0) > 0) {
+            if ((remainingAttempts ?: 0) > 0) {
                 stringResource(
                     R.string.auth_error_method_incorrect_attempts,
-                    methodLabel,
                     remainingAttempts ?: 0,
                 )
-            } else if (methodLabel != null) {
-                stringResource(R.string.auth_error_method_incorrect, methodLabel)
             } else {
-                stringResource(R.string.auth_error_failed)
+                stringResource(R.string.auth_error_method_incorrect)
             }
         }
 
         is UnlockFailureMessage.RateLimited -> {
             stringResource(
                 R.string.auth_error_rate_limited,
-                attemptStatus?.retryAfterMs?.toSecondsCeiling() ?: retryAfterSeconds,
+                retryAfterSeconds,
             )
         }
 
         UnlockFailureMessage.BiometricKeyInvalidated -> {
             stringResource(R.string.notice_security_key_invalidated)
+        }
+
+        UnlockFailureMessage.BiometricAuthenticationFailed -> {
+            stringResource(R.string.auth_error_biometric_failed)
+        }
+
+        UnlockFailureMessage.BiometricRateLimited -> {
+            stringResource(R.string.auth_error_biometric_rate_limited)
         }
 
         UnlockFailureMessage.AuthenticationBusy -> {
@@ -396,5 +392,3 @@ private fun UnlockFailureMessage.localized(
             stringResource(R.string.auth_error_failed)
         }
     }
-
-private fun Long.toSecondsCeiling(): Long = ((this + 999L) / 1000L).coerceAtLeast(1L)

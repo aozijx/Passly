@@ -140,6 +140,41 @@ class AuthenticationReducerTest {
     }
 
     @Test
+    fun `biometric failures map to biometric messages without counting attempts`() {
+        val incorrect =
+            UnlockReducer.reduce(
+                UnlockReducer.reduce(
+                    UnlockUiState(),
+                    UnlockMutation.AuthenticationStarted(AuthenticationMethod.BIOMETRIC),
+                ),
+                UnlockMutation.AuthenticationFailed(
+                    method = AuthenticationMethod.BIOMETRIC,
+                    failure = AuthenticationFailure(AuthenticationFailureCode.CREDENTIAL_INCORRECT),
+                ),
+            )
+        assertEquals(
+            UnlockFailureMessage.BiometricAuthenticationFailed,
+            (incorrect.verificationPhase as UnlockVerificationPhase.Failed).failure.message,
+        )
+
+        val rateLimited =
+            UnlockReducer.reduce(
+                UnlockReducer.reduce(
+                    UnlockUiState(),
+                    UnlockMutation.AuthenticationStarted(AuthenticationMethod.BIOMETRIC),
+                ),
+                UnlockMutation.AuthenticationFailed(
+                    method = AuthenticationMethod.BIOMETRIC,
+                    failure = AuthenticationFailure(AuthenticationFailureCode.RATE_LIMITED, retryAfterMs = 30_000L),
+                ),
+            )
+        assertEquals(
+            UnlockFailureMessage.BiometricRateLimited,
+            (rateLimited.verificationPhase as UnlockVerificationPhase.Failed).failure.message,
+        )
+    }
+
+    @Test
     fun `unlock reports remaining password attempts`() {
         val started =
             UnlockReducer.reduce(

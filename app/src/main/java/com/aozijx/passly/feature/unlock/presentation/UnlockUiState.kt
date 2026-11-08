@@ -19,6 +19,10 @@ sealed interface UnlockFailureMessage {
 
     data object BiometricKeyInvalidated : UnlockFailureMessage
 
+    data object BiometricAuthenticationFailed : UnlockFailureMessage
+
+    data object BiometricRateLimited : UnlockFailureMessage
+
     data object AuthenticationBusy : UnlockFailureMessage
 
     data object AuthenticationHostUnavailable : UnlockFailureMessage
@@ -101,3 +105,5 @@ data class UnlockUiState(
     val canSubmitAppPassword: Boolean get() = !appPassword.isEmpty
     val canSubmitRecoveryCode: Boolean get() = !recoveryCode.isEmpty
 }
+
+internal fun Long.toRetryAfterSeconds(): Long = ((this + 999L) / 1000L).coerceAtLeast(1L)

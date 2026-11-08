@@ -126,7 +126,7 @@ Security Route 每次离开 Composition 都会清空应用密码设置/修改对
 
 状态保存剩余失败计数、墙上时钟截止时间、单调 `elapsedRealtime` 截止时间和设备 boot count。同一开机周期用单调时间计算倒计时；检测到重启时退回到持久化墙上时钟。倒计时到期后归零并清除锁定截止值。认证次数读写或时钟获取失败会返回 `ATTEMPT_STATE_UNAVAILABLE`；凭据验证在预留无法持久化时不会继续进入 KDF。Proto 使用显式 `app_password` / `recovery_code` 稳定键，不依赖 Kotlin enum 名称或序号。
 
-Unlock 不在页面进入时读取尝试状态，也不在成功认证后为显示计数而查询。密码或恢复码认证失败后，`UnlockViewModel` 才读取持久状态；若仍处于 cooldown，则每秒刷新剩余时间直至解锁。查询失败会映射为 `ATTEMPT_STATE_UNAVAILABLE`。当前 UI 不显示闲置状态下的尝试计数；失败结果携带的剩余次数只在失败状态仍被保留时用于错误文案。认证失败后的 `finally` 会清空凭据并派发输入变更，Reducer 同时清除失败态，因此当前失败反馈可能在页面呈现前丢失。该 owner 行为与错误反馈仍待验证和修正，见[维护 TODO Task 74](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-74)。
+Unlock 不在页面进入时读取尝试状态，也不在成功认证后为显示计数而查询。密码或恢复码认证失败后，`UnlockViewModel` 才读取持久状态；若仍处于 cooldown，则每秒刷新剩余时间直至解锁。查询失败会映射为 `ATTEMPT_STATE_UNAVAILABLE`。当前 UI 不在闲置或成功后显示尝试计数；失败结果携带的剩余次数只在失败状态仍保留时用于错误文案。认证失败后的 `finally` 清空凭据并派发 `CredentialInputCleared`（只清凭据缓冲区）与 `AuthenticationFinished`，两者都不清除 `Failed` 阶段，因此失败反馈保留到按钮侧 `onResultConsumed` 清除——非限流失效约 2.5 秒后清除，`RateLimited` 保留到 cooldown 归零再回到 Idle。生物识别失败按方式映射为独立的 `BiometricAuthenticationFailed` / `BiometricRateLimited` 文案，不显示剩余次数，也不进入应用侧的失败计数。
 
 ## 恢复码草稿
 

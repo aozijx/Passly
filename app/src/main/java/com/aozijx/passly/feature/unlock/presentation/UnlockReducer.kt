@@ -34,6 +34,10 @@ internal sealed interface UnlockMutation {
         val value: SensitiveValue,
     ) : UnlockMutation
 
+    data class CredentialInputCleared(
+        val method: AuthenticationMethod,
+    ) : UnlockMutation
+
     data class InputExpansionChanged(
         val expansion: UnlockInputExpansion,
     ) : UnlockMutation
@@ -118,6 +122,14 @@ internal object UnlockReducer {
                 )
             }
 
+            is UnlockMutation.CredentialInputCleared -> {
+                when (mutation.method) {
+                    AuthenticationMethod.APP_PASSWORD -> state.copy(appPassword = EmptySensitiveValue)
+                    AuthenticationMethod.RECOVERY_CODE -> state.copy(recoveryCode = EmptySensitiveValue)
+                    AuthenticationMethod.BIOMETRIC -> state
+                }
+            }
+
             is UnlockMutation.InputExpansionChanged -> {
                 state.copy(
                     inputExpansion = mutation.expansion,
@@ -137,7 +149,7 @@ internal object UnlockReducer {
                         UnlockVerificationPhase.Failed(
                             UnlockVerificationFailure(
                                 method = mutation.method,
-                                message = mutation.failure.toVerificationMessage(),
+                                message = mutation.failure.toVerificationMessage(mutation.method),
                             ),
                         ),
                 )
@@ -164,9 +176,14 @@ internal object UnlockReducer {
             }
 
             UnlockMutation.VerificationFailureCleared -> {
-                state.copy(
-                    verificationPhase = state.verificationPhase.withFailureCleared(),
-                )
+                val failure = (state.verificationPhase as? UnlockVerificationPhase.Failed)?.failure
+                if (failure?.message is UnlockFailureMessage.RateLimited) {
+                    state
+                } else {
+                    state.copy(
+                        verificationPhase = state.verificationPhase.withFailureCleared(),
+                    )
+                }
             }
 
             UnlockMutation.UnlockInputsReset -> {
@@ -234,16 +251,24 @@ internal object UnlockReducer {
             }
         }
 
-    private fun AuthenticationFailure.toVerificationMessage(): UnlockFailureMessage =
+    private fun AuthenticationFailure.toVerificationMessage(method: AuthenticationMethod): UnlockFailureMessage =
         when (code) {
             AuthenticationFailureCode.CREDENTIAL_INCORRECT -> {
-                UnlockFailureMessage.IncorrectCredential(attempts.remaining)
+                if (method == AuthenticationMethod.BIOMETRIC) {
+                    UnlockFailureMessage.BiometricAuthenticationFailed
+                } else {
+                    UnlockFailureMessage.IncorrectCredential(attempts.remaining)
+                }
             }
 
             AuthenticationFailureCode.RATE_LIMITED -> {
-                UnlockFailureMessage.RateLimited(
-                    retryAfterSeconds = (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L),
-                )
+                if (method == AuthenticationMethod.BIOMETRIC) {
+                    UnlockFailureMessage.BiometricRateLimited
+                } else {
+                    UnlockFailureMessage.RateLimited(
+                        retryAfterSeconds = (retryAfterMs ?: 0L).toRetryAfterSeconds(),
+                    )
+                }
             }
 
             AuthenticationFailureCode.KEY_INVALIDATED -> {
@@ -297,7 +322,7 @@ internal object UnlockReducer {
 
             AuthenticationFailureCode.RATE_LIMITED -> {
                 UnlockFailureMessage.RateLimited(
-                    retryAfterSeconds = (((retryAfterMs ?: 0L) + 999L) / 1000L).coerceAtLeast(1L),
+                    retryAfterSeconds = (retryAfterMs ?: 0L).toRetryAfterSeconds(),
                 )
             }
 
@@ -321,8 +346,6 @@ private fun UnlockVerificationPhase.withAttemptStatus(
             ),
     )
 }
-
-private fun Long.toRetryAfterSeconds(): Long = ((this + 999L) / 1000L).coerceAtLeast(1L)
 
 private fun UnlockVerificationPhase.withFailureCleared(): UnlockVerificationPhase =
     when (this) {
