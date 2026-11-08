@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.list
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -21,8 +22,11 @@ class VaultOtpSubscriptionEffectTest {
         val events = mutableListOf<String>()
         val provider =
             object : VaultOtpStateProvider {
-                override fun state(entryId: String): Flow<VaultOtpUiState?> =
-                    flowOf(VaultOtpUiState.Ready(code = "123456", progress = 0.5f))
+                override fun state(
+                    entryId: String,
+                    otpKind: VaultOtpKindUiModel?,
+                ): Flow<VaultOtpUiState?> =
+                    flowOf(VaultOtpUiState.Ready(displayCode = "123456", progress = 0.5f))
 
                 override fun subscribe(entryId: String) {
                     events += "subscribe:$entryId"
@@ -34,7 +38,14 @@ class VaultOtpSubscriptionEffectTest {
             }
 
         composeRule.setContent {
-            if (showEntry.value) observeVaultOtpState("otp-1", provider, enabled = enabled.value)
+            if (showEntry.value) {
+                observeVaultOtpState(
+                    entryId = "otp-1",
+                    otpKind = VaultOtpKindUiModel.STANDARD,
+                    provider = provider,
+                    enabled = enabled.value,
+                )
+            }
         }
         composeRule.runOnIdle {
             assertEquals(emptyList<String>(), events)
