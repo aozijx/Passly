@@ -25,7 +25,9 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -33,6 +35,18 @@ import org.junit.Test
 class StorageSettingsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @Test
+    fun `storage size state exposes display values without subtype checks`() {
+        assertNull(StorageSizeUiState.Loading.formattedSize)
+        assertTrue(StorageSizeUiState.Loading.isLoading)
+
+        assertEquals("12 KB", StorageSizeUiState.Available("12 KB").formattedSize)
+        assertFalse(StorageSizeUiState.Available("12 KB").isLoading)
+
+        assertNull(StorageSizeUiState.Unavailable.formattedSize)
+        assertFalse(StorageSizeUiState.Unavailable.isLoading)
+    }
 
     @Test
     fun `recording mode read failure is visible and retry re-subscribes`() =

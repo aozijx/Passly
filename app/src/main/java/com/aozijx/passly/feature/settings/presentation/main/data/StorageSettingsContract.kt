@@ -10,10 +10,15 @@ data class StorageSettingsUiState(
 )
 
 sealed interface StorageSizeUiState {
-    data object Loading : StorageSizeUiState
+    val formattedSize: String? get() = null
+    val isLoading: Boolean get() = false
+
+    data object Loading : StorageSizeUiState {
+        override val isLoading = true
+    }
 
     data class Available(
-        val formattedSize: String,
+        override val formattedSize: String,
     ) : StorageSizeUiState
 
     data object Unavailable : StorageSizeUiState
