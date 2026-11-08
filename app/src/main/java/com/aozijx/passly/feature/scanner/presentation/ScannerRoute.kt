@@ -5,9 +5,15 @@ import android.os.VibrationEffect
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -149,6 +155,34 @@ internal fun ScannerRoute(
             resultPresentation = resultPresentation,
             viewfinderFrame = viewfinderFrame,
             onAction = ::handleScreenAction,
+        )
+    }
+}
+
+@Composable
+internal fun AnimatedScannerOverlay(
+    visible: Boolean,
+    resolveResult: (String) -> ScannerResultPlan,
+    onDismiss: () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter =
+            fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideInVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    initialOffsetY = { it },
+                ),
+        exit =
+            fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
+                slideOutVertically(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    targetOffsetY = { it },
+                ),
+    ) {
+        ScannerRoute(
+            resolveResult = resolveResult,
+            onDismiss = onDismiss,
         )
     }
 }

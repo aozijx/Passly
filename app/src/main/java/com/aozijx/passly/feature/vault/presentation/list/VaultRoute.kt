@@ -2,18 +2,12 @@ package com.aozijx.passly.feature.vault.presentation.list
 
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -35,11 +29,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.feature.scanner.presentation.AnimatedScannerOverlay
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
 import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
-import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.list.action.VaultCopyRequest
@@ -65,9 +59,9 @@ internal fun VaultRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    var overlay by rememberSaveable { mutableStateOf(VaultOverlay.None) }
-    DisposableEffect(vaultViewModel, overlay) {
-        val owner = if (overlay == VaultOverlay.None) vaultViewModel.onPageEntered() else null
+    var isScannerVisible by rememberSaveable { mutableStateOf(false) }
+    DisposableEffect(vaultViewModel, isScannerVisible) {
+        val owner = if (!isScannerVisible) vaultViewModel.onPageEntered() else null
         onDispose {
             owner?.let(vaultViewModel::onPageExited)
         }
@@ -211,7 +205,7 @@ internal fun VaultRoute(
         onRouteRequest = { request ->
             when (request) {
                 VaultRouteRequest.OpenScanner -> {
-                    overlay = VaultOverlay.Scanner
+                    isScannerVisible = true
                 }
 
                 VaultRouteRequest.OpenSettings -> {
@@ -224,77 +218,62 @@ internal fun VaultRoute(
         },
     )
 
-    AnimatedVisibility(
-        visible = overlay == VaultOverlay.Scanner,
-        enter =
-            fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                slideInVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    initialOffsetY = { it },
-                ),
-        exit =
-            fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                slideOutVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    targetOffsetY = { it },
-                ),
-    ) {
-        ScannerRoute(
-            resolveResult = { rawValue ->
-                when (val code = resolveVaultScannedCode(rawValue)) {
-                    is VaultScannedCode.Otp ->
-                        ScannerResultPlan(
-                            presentation =
-                                ScannerResultPresentation(
-                                    showCopyAction = false,
-                                    primaryActionLabel = ScannerPrimaryActionLabel.Save,
-                                ),
-                            confirm = {
-                                if (scannedOtpImportViewModel.importScannedOtp(code.config)) {
-                                    ScannerResultHandling.Handled
-                                } else {
-                                    ScannerResultHandling.Rejected
-                                }
-                            },
-                        )
+    AnimatedScannerOverlay(
+        visible = isScannerVisible,
+        resolveResult = { rawValue ->
+            when (val code = resolveVaultScannedCode(rawValue)) {
+                is VaultScannedCode.Otp ->
+                    ScannerResultPlan(
+                        presentation =
+                            ScannerResultPresentation(
+                                showCopyAction = false,
+                                primaryActionLabel = ScannerPrimaryActionLabel.Save,
+                            ),
+                        confirm = {
+                            if (scannedOtpImportViewModel.importScannedOtp(code.config)) {
+                                ScannerResultHandling.Handled
+                            } else {
+                                ScannerResultHandling.Rejected
+                            }
+                        },
+                    )
 
-                    is VaultScannedCode.Wifi ->
-                        ScannerResultPlan(
-                            presentation = ScannerResultPresentation.DEFAULT,
-                            confirm = {
-                                when (navigation.navigate(VaultDestinationRequest.EditScannedWifi(code.payload))) {
-                                    VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
-                                    VaultNavigationResult.UnsupportedDestination,
-                                    VaultNavigationResult.AccessDenied,
-                                    is VaultNavigationResult.NavigationFailed,
-                                    -> ScannerResultHandling.Rejected
-                                }
-                            },
-                        )
+                is VaultScannedCode.Wifi ->
+                    ScannerResultPlan(
+                        presentation = ScannerResultPresentation.DEFAULT,
+                        confirm = {
+                            when (navigation.navigate(VaultDestinationRequest.EditScannedWifi(code.payload))) {
+                                VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
+                                VaultNavigationResult.UnsupportedDestination,
+                                VaultNavigationResult.AccessDenied,
+                                is VaultNavigationResult.NavigationFailed,
+                                -> ScannerResultHandling.Rejected
+                            }
+                        },
+                    )
 
-                    is VaultScannedCode.WebLink ->
-                        ScannerResultPlan(
-                            presentation = ScannerResultPresentation.DEFAULT,
-                            confirm = {
-                                if (context.openScannedWebLink(code.uri)) {
-                                    ScannerResultHandling.Handled
-                                } else {
-                                    Toast.makeText(context, R.string.scanner_open_link_failed, Toast.LENGTH_SHORT).show()
-                                    ScannerResultHandling.Rejected
-                                }
-                            },
-                        )
+                is VaultScannedCode.WebLink ->
+                    ScannerResultPlan(
+                        presentation = ScannerResultPresentation.DEFAULT,
+                        confirm = {
+                            if (context.openScannedWebLink(code.uri)) {
+                                ScannerResultHandling.Handled
+                            } else {
+                                Toast.makeText(context, R.string.scanner_open_link_failed, Toast.LENGTH_SHORT).show()
+                                ScannerResultHandling.Rejected
+                            }
+                        },
+                    )
 
-                    VaultScannedCode.Unsupported ->
-                        ScannerResultPlan(
-                            presentation = ScannerResultPresentation.DEFAULT,
-                            confirm = { ScannerResultHandling.Rejected },
-                        )
-                }
-            },
-            onDismiss = { overlay = VaultOverlay.None },
-        )
-    }
+                VaultScannedCode.Unsupported ->
+                    ScannerResultPlan(
+                        presentation = ScannerResultPresentation.DEFAULT,
+                        confirm = { ScannerResultHandling.Rejected },
+                    )
+            }
+        },
+        onDismiss = { isScannerVisible = false },
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -315,8 +294,3 @@ private fun android.content.Context.openScannedWebLink(uri: URI): Boolean =
     } catch (_: Exception) {
         false
     }
-
-private enum class VaultOverlay {
-    None,
-    Scanner,
-}

@@ -1,14 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,7 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
-import com.aozijx.passly.feature.scanner.presentation.ScannerRoute
+import com.aozijx.passly.feature.scanner.presentation.AnimatedScannerOverlay
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
 import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
 import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
@@ -54,7 +48,7 @@ fun AddWifiEditorRoute(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
-    var overlay by remember { mutableStateOf<WifiEditorOverlay>(WifiEditorOverlay.None) }
+    var isScannerVisible by remember { mutableStateOf(false) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     EditorLoadFailureEffectHandler(uiState.loadPhase, editSeedToken != null, snackbarHostState, loadFailedMessage)
@@ -84,54 +78,33 @@ fun AddWifiEditorRoute(
         state = uiState,
         onAction = viewModel::onAction,
         onBack = onBack,
-        onScan = { overlay = WifiEditorOverlay.Scanner },
+        onScan = { isScannerVisible = true },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
         isEditingExisting = editSeedToken != null,
     )
 
-    AnimatedVisibility(
-        visible = overlay == WifiEditorOverlay.Scanner,
-        enter =
-            fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                slideInVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    initialOffsetY = { it },
-                ),
-        exit =
-            fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                slideOutVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    targetOffsetY = { it },
-                ),
-    ) {
-        ScannerRoute(
-            resolveResult = { rawValue ->
-                val payload = (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
-                val presentation =
-                    if (payload != null) {
-                        ScannerResultPresentation(primaryActionLabel = ScannerPrimaryActionLabel.Use)
+    AnimatedScannerOverlay(
+        visible = isScannerVisible,
+        resolveResult = { rawValue ->
+            val payload = (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
+            val presentation =
+                if (payload != null) {
+                    ScannerResultPresentation(primaryActionLabel = ScannerPrimaryActionLabel.Use)
+                } else {
+                    ScannerResultPresentation.DEFAULT
+                }
+            ScannerResultPlan(
+                presentation = presentation,
+                confirm = {
+                    if (payload != null && viewModel.tryApplyScannedWifi(payload)) {
+                        ScannerResultHandling.Handled
                     } else {
-                        ScannerResultPresentation.DEFAULT
+                        ScannerResultHandling.Rejected
                     }
-                ScannerResultPlan(
-                    presentation = presentation,
-                    confirm = {
-                        if (payload != null && viewModel.tryApplyScannedWifi(payload)) {
-                            ScannerResultHandling.Handled
-                        } else {
-                            ScannerResultHandling.Rejected
-                        }
-                    },
-                )
-            },
-            onDismiss = { overlay = WifiEditorOverlay.None },
-        )
-    }
-}
-
-private sealed interface WifiEditorOverlay {
-    data object None : WifiEditorOverlay
-
-    data object Scanner : WifiEditorOverlay
+                },
+            )
+        },
+        onDismiss = { isScannerVisible = false },
+    )
 }
