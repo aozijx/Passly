@@ -46,7 +46,7 @@ class TrashUiMapperTest {
         assertEquals(3, result.version)
         assertEquals("Mail", result.title)
         assertEquals(EntryType.LOGIN, result.entryType)
-        assertEquals("person@example.com", result.username)
+        assertEquals("person@example.com", result.supportingText)
         assertEquals(20L, result.deletedAtEpochMs)
         assertEquals("example.com", result.associatedDomain)
         assertEquals("com.example", result.associatedAppPackage)
