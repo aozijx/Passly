@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.settings.presentation.ui.security
 
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.MaterialTheme
+import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialog
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogEvent
-import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogState
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogsModel
 import com.aozijx.passly.presentation.mapping.toUiState
 import com.aozijx.passly.presentation.shared.components.apppassword.AppPasswordSetDialog
@@ -14,11 +14,11 @@ internal fun AppPasswordDialogs(
     onEvent: (AppPasswordDialogEvent) -> Unit,
 ) {
     when (state.activeAppPasswordDialog) {
-        AppPasswordDialogState.None -> {
+        null -> {
             Unit
         }
 
-        AppPasswordDialogState.Action -> {
+        AppPasswordDialog.ACTION -> {
             AppPasswordActionDialog(
                 isBusy = state.isBusy,
                 onDismiss = { onEvent(AppPasswordDialogEvent.DismissAction) },
@@ -27,7 +27,7 @@ internal fun AppPasswordDialogs(
             )
         }
 
-        AppPasswordDialogState.Set -> {
+        AppPasswordDialog.SET -> {
             AppPasswordSetDialog(
                 newPassword = state.appPasswordNew,
                 confirmPassword = state.appPasswordConfirm,
@@ -42,7 +42,7 @@ internal fun AppPasswordDialogs(
             )
         }
 
-        AppPasswordDialogState.Change -> {
+        AppPasswordDialog.CHANGE -> {
             AppPasswordChangeDialog(state = state, onEvent = onEvent)
         }
     }

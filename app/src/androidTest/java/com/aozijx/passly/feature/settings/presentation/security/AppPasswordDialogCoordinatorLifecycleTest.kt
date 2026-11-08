@@ -51,7 +51,7 @@ class AppPasswordDialogCoordinatorLifecycleTest {
     }
 
     private fun assertEmpty(coordinator: AppPasswordDialogCoordinator) {
-        assertEquals(AppPasswordDialogState.None, coordinator.model.activeAppPasswordDialog)
+        assertEquals(null, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordCurrent)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)

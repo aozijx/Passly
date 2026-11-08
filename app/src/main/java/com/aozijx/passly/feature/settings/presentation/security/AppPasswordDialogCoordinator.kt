@@ -12,7 +12,7 @@ import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 
 internal class AppPasswordDialogCoordinator {
-    private var activeDialog by mutableStateOf<AppPasswordDialogState>(AppPasswordDialogState.None)
+    private var activeDialog by mutableStateOf<AppPasswordDialog?>(null)
     private val currentPassword = SensitivePasswordDraft()
     private val newPassword = SensitivePasswordDraft()
     private val confirmPassword = SensitivePasswordDraft()
@@ -51,9 +51,9 @@ internal class AppPasswordDialogCoordinator {
         clearDrafts()
         activeDialog =
             if (alreadyEnabled) {
-                AppPasswordDialogState.Action
+                AppPasswordDialog.ACTION
             } else {
-                AppPasswordDialogState.Set
+                AppPasswordDialog.SET
             }
     }
 
@@ -68,54 +68,54 @@ internal class AppPasswordDialogCoordinator {
         if (isBusy) return null
         return when (event) {
             AppPasswordDialogEvent.DismissAction -> {
-                if (activeDialog == AppPasswordDialogState.Action) closeAndClear()
+                if (activeDialog == AppPasswordDialog.ACTION) closeAndClear()
                 null
             }
 
             AppPasswordDialogEvent.ShowChange -> {
-                if (activeDialog == AppPasswordDialogState.Action) {
-                    activeDialog = AppPasswordDialogState.Change
+                if (activeDialog == AppPasswordDialog.ACTION) {
+                    activeDialog = AppPasswordDialog.CHANGE
                 }
                 null
             }
 
             AppPasswordDialogEvent.ShowDisable -> {
-                AppPasswordChangeRequest.Disable.takeIf { activeDialog == AppPasswordDialogState.Action }
+                AppPasswordChangeRequest.Disable.takeIf { activeDialog == AppPasswordDialog.ACTION }
             }
 
             AppPasswordDialogEvent.DismissSet,
             AppPasswordDialogEvent.DismissChange,
             -> {
                 val isActiveDismissal =
-                    (event == AppPasswordDialogEvent.DismissSet && activeDialog == AppPasswordDialogState.Set) ||
-                        (event == AppPasswordDialogEvent.DismissChange && activeDialog == AppPasswordDialogState.Change)
+                    (event == AppPasswordDialogEvent.DismissSet && activeDialog == AppPasswordDialog.SET) ||
+                        (event == AppPasswordDialogEvent.DismissChange && activeDialog == AppPasswordDialog.CHANGE)
                 if (isActiveDismissal) closeAndClear()
                 null
             }
 
             is AppPasswordDialogEvent.CurrentChanged -> {
-                if (activeDialog == AppPasswordDialogState.Change) {
+                if (activeDialog == AppPasswordDialog.CHANGE) {
                     currentPassword.replace(event.value.toCharArray())
                 }
                 null
             }
 
             is AppPasswordDialogEvent.NewChanged -> {
-                if (activeDialog == AppPasswordDialogState.Set || activeDialog == AppPasswordDialogState.Change) {
+                if (activeDialog?.acceptsPasswordDraftChanges == true) {
                     newPassword.replace(event.value.toCharArray())
                 }
                 null
             }
 
             is AppPasswordDialogEvent.ConfirmChanged -> {
-                if (activeDialog == AppPasswordDialogState.Set || activeDialog == AppPasswordDialogState.Change) {
+                if (activeDialog?.acceptsPasswordDraftChanges == true) {
                     confirmPassword.replace(event.value.toCharArray())
                 }
                 null
             }
 
             AppPasswordDialogEvent.ConfirmSet -> {
-                if (activeDialog == AppPasswordDialogState.Set) {
+                if (activeDialog == AppPasswordDialog.SET) {
                     val request =
                         AppPasswordChangeRequest.Set(
                             password = newPassword.copy(),
@@ -129,7 +129,7 @@ internal class AppPasswordDialogCoordinator {
             }
 
             AppPasswordDialogEvent.ConfirmChange -> {
-                if (activeDialog == AppPasswordDialogState.Change) {
+                if (activeDialog == AppPasswordDialog.CHANGE) {
                     val request =
                         AppPasswordChangeRequest.Change(
                             currentPassword = currentPassword.copy(),
@@ -152,7 +152,7 @@ internal class AppPasswordDialogCoordinator {
     private fun passwordPolicyAcceptsNewPassword(): Boolean = AppPasswordPolicy.DEFAULT.acceptsLength(newPassword.size)
 
     private fun closeAndClear() {
-        activeDialog = AppPasswordDialogState.None
+        activeDialog = null
         clearDrafts()
     }
 

@@ -21,7 +21,7 @@ class AppPasswordDialogCoordinatorTest {
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.ConfirmSet, isBusy = true))
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.NewChanged("rejected-password"), isBusy = true))
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.DismissSet, isBusy = true))
-        assertEquals(AppPasswordDialogState.Set, coordinator.model.activeAppPasswordDialog)
+        assertEquals(AppPasswordDialog.SET, coordinator.model.activeAppPasswordDialog)
         assertEquals("long-enough-password", coordinator.model.appPasswordNew)
     }
 
@@ -30,7 +30,7 @@ class AppPasswordDialogCoordinatorTest {
         val coordinator = AppPasswordDialogCoordinator()
 
         coordinator.onAppPasswordEntryAuthorized(alreadyEnabled = false)
-        assertEquals(AppPasswordDialogState.Set, coordinator.model.activeAppPasswordDialog)
+        assertEquals(AppPasswordDialog.SET, coordinator.model.activeAppPasswordDialog)
         assertNull(
             coordinator.onEvent(AppPasswordDialogEvent.NewChanged("long-enough-password")),
         )
@@ -45,14 +45,14 @@ class AppPasswordDialogCoordinatorTest {
         assertArrayEquals("long-enough-password".toCharArray(), setRequest.confirmation)
 
         coordinator.onAppPasswordOperationSucceeded()
-        assertEquals(AppPasswordDialogState.None, coordinator.model.activeAppPasswordDialog)
+        assertEquals(null, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)
 
         coordinator.onAppPasswordEntryAuthorized(alreadyEnabled = true)
-        assertEquals(AppPasswordDialogState.Action, coordinator.model.activeAppPasswordDialog)
+        assertEquals(AppPasswordDialog.ACTION, coordinator.model.activeAppPasswordDialog)
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.ShowChange))
-        assertEquals(AppPasswordDialogState.Change, coordinator.model.activeAppPasswordDialog)
+        assertEquals(AppPasswordDialog.CHANGE, coordinator.model.activeAppPasswordDialog)
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.CurrentChanged("current")))
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.NewChanged("new-password-value")))
         assertNull(coordinator.onEvent(AppPasswordDialogEvent.ConfirmChanged("different")))
@@ -77,7 +77,7 @@ class AppPasswordDialogCoordinatorTest {
         assertEquals("long-enough-password", String(request.password))
         assertEquals("long-enough-password", String(request.confirmation))
         assertNotSame(request.password, request.confirmation)
-        assertEquals(AppPasswordDialogState.Set, coordinator.model.activeAppPasswordDialog)
+        assertEquals(AppPasswordDialog.SET, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)
         request.password.fill('\u0000')
@@ -100,7 +100,7 @@ class AppPasswordDialogCoordinatorTest {
         assertEquals("new-password-value", String(request.confirmation))
         assertNotSame(request.currentPassword, request.newPassword)
         assertNotSame(request.newPassword, request.confirmation)
-        assertEquals(AppPasswordDialogState.Change, coordinator.model.activeAppPasswordDialog)
+        assertEquals(AppPasswordDialog.CHANGE, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordCurrent)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)
@@ -124,7 +124,7 @@ class AppPasswordDialogCoordinatorTest {
         assertEquals("", coordinator.model.appPasswordConfirm)
 
         coordinator.onEvent(AppPasswordDialogEvent.DismissAction)
-        assertEquals(AppPasswordDialogState.None, coordinator.model.activeAppPasswordDialog)
+        assertEquals(null, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordCurrent)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)
@@ -142,7 +142,7 @@ class AppPasswordDialogCoordinatorTest {
         coordinator.clear()
         coordinator.clear()
 
-        assertEquals(AppPasswordDialogState.None, coordinator.model.activeAppPasswordDialog)
+        assertEquals(null, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordCurrent)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)
@@ -183,7 +183,7 @@ class AppPasswordDialogCoordinatorTest {
     }
 
     private fun assertEmpty(coordinator: AppPasswordDialogCoordinator) {
-        assertEquals(AppPasswordDialogState.None, coordinator.model.activeAppPasswordDialog)
+        assertEquals(null, coordinator.model.activeAppPasswordDialog)
         assertEquals("", coordinator.model.appPasswordCurrent)
         assertEquals("", coordinator.model.appPasswordNew)
         assertEquals("", coordinator.model.appPasswordConfirm)
