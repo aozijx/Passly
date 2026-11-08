@@ -274,6 +274,50 @@ class VaultViewModelTest {
         }
 
     @Test
+    fun completedDeleteClearsVisibleOtpAndDoesNotReactivateItOnRefresh() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val gate = PausingAuthorizationGate()
+            val deletedEntries = mutableListOf<EntryId>()
+            val viewModel =
+                createViewModel(
+                    gate,
+                    mutableListOf(),
+                    ReadyOtpConfigRepository,
+                    onMoveToTrash = deletedEntries::add,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val otpStateCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.totpStatesFlow.collect()
+                }
+
+            try {
+                viewModel.subscribeVisibleOtp(ENTRY_ID.value)
+                runCurrent()
+                assertTrue(viewModel.totpStatesFlow.value[ENTRY_ID.value] is OtpCodeState.Ready)
+
+                viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
+                gate.started.await()
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertEquals(listOf(ENTRY_ID), deletedEntries)
+                assertNull(viewModel.totpStatesFlow.value[ENTRY_ID.value])
+
+                viewModel.refreshVisibleOtp()
+                runCurrent()
+
+                assertNull("deleted OTP must not be reactivated by page refresh", viewModel.totpStatesFlow.value[ENTRY_ID.value])
+            } finally {
+                gate.resume.complete(Unit)
+                viewModel.onPageExited(owner)
+                otpStateCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
     fun currentPageCanCopyAfterAuthorizationCompletes() =
         runTest(mainDispatcherRule.testDispatcher) {
             val gate = PausingAuthorizationGate()
