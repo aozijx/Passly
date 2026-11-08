@@ -32,13 +32,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
+import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
 import com.aozijx.passly.feature.scanner.presentation.ScannerScreenAction
 import com.aozijx.passly.feature.scanner.presentation.ScannerUiState
 import com.aozijx.passly.feature.scanner.presentation.ScannerViewfinderFrame
 
 @Composable
 internal fun ScannerScreen(
-    model: ScannerScreenModel,
+    content: ScannerUiState,
+    isScanning: Boolean,
+    isResultActionLocked: Boolean,
+    resultPresentation: ScannerResultPresentation,
     viewfinderFrame: ScannerViewfinderFrame,
     onAction: (ScannerScreenAction) -> Unit,
 ) {
@@ -46,17 +50,17 @@ internal fun ScannerScreen(
     val motionScheme = MaterialTheme.motionScheme
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ScannerViewfinder(isScanning = model.isScanning, frame = viewfinderFrame)
+        ScannerViewfinder(isScanning = isScanning, frame = viewfinderFrame)
         ScannerTopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
-            isBusy = model.isResultActionLocked,
+            isBusy = isResultActionLocked,
             onAction = onAction,
         )
 
         AnimatedContent(
-            targetState = model.content,
+            targetState = content,
             transitionSpec = {
                 (fadeIn(animationSpec = motionScheme.fastEffectsSpec()) + slideInVertically(
                     animationSpec = motionScheme.defaultSpatialSpec(),
@@ -83,8 +87,8 @@ internal fun ScannerScreen(
                 is ScannerUiState.ShowingResult -> {
                     ScannerResultCard(
                         rawValue = scannerState.result.rawValue,
-                        isBusy = model.isResultActionLocked,
-                        presentation = model.resultPresentation,
+                        isBusy = isResultActionLocked,
+                        presentation = resultPresentation,
                         onAction = onAction,
                     )
                 }

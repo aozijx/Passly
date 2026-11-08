@@ -24,7 +24,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.ui.ScannerScreen
-import com.aozijx.passly.feature.scanner.presentation.ui.ScannerScreenModel
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
 import kotlinx.coroutines.launch
@@ -125,11 +124,9 @@ internal fun ScannerRoute(
 
     BackHandler { handleScreenAction(ScannerScreenAction.Dismiss) }
 
-    val screenModel = ScannerScreenModel(
-        content = state,
-        isResultActionLocked = resultPhase != ScannerResultPhase.Ready,
-        resultPresentation = resultPlan?.presentation ?: ScannerResultPresentation.DEFAULT,
-    )
+    val isResultActionLocked = resultPhase != ScannerResultPhase.Ready
+    val resultPresentation = resultPlan?.presentation ?: ScannerResultPresentation.DEFAULT
+    val isScanning = state == ScannerUiState.Scanning && !isResultActionLocked
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().background(Color.Black),
@@ -142,11 +139,14 @@ internal fun ScannerRoute(
             onBarcodeDetected = { viewModel.onAction(ScannerUiAction.BarcodeDetected(it)) },
             onPermissionDenied = ::dismissScanner,
             onFailure = { viewModel.onAction(ScannerUiAction.CameraFailure(it)) },
-            isScanning = screenModel.isScanning,
+            isScanning = isScanning,
             viewfinderFrame = viewfinderFrame,
         )
         ScannerScreen(
-            model = screenModel,
+            content = state,
+            isScanning = isScanning,
+            isResultActionLocked = isResultActionLocked,
+            resultPresentation = resultPresentation,
             viewfinderFrame = viewfinderFrame,
             onAction = ::handleScreenAction,
         )
