@@ -222,21 +222,21 @@ internal fun FilterSubMenu(
             )
         }
 
+        VaultCategoriesState.ReadyEmpty -> {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.vault_categories_empty)) },
+                enabled = false,
+                onClick = {},
+            )
+        }
+
         is VaultCategoriesState.Ready -> {
-            if (categoriesState.values.isEmpty()) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.vault_categories_empty)) },
-                    enabled = false,
-                    onClick = {},
+            items.forEach { item ->
+                EntryTypeMenuItem(
+                    text = itemText(item),
+                    selected = selectedItem == item,
+                    onClick = { onItemSelected(item) },
                 )
-            } else {
-                items.forEach { item ->
-                    EntryTypeMenuItem(
-                        text = itemText(item),
-                        selected = selectedItem == item,
-                        onClick = { onItemSelected(item) },
-                    )
-                }
             }
         }
     }

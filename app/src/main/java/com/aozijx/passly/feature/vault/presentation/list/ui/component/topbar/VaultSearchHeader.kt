@@ -14,6 +14,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
+import com.aozijx.passly.feature.vault.presentation.list.ui.search.isDirectManipulation
+import com.aozijx.passly.feature.vault.presentation.list.ui.search.isEditing
+import com.aozijx.passly.feature.vault.presentation.list.ui.search.layoutProgress
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
 
 @Composable

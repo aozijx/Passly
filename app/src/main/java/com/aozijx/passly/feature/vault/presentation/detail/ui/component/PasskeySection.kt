@@ -31,10 +31,10 @@ fun PasskeySection(
             onReveal = onPasskeyReveal,
         )
 
-        if (!hardwareKeyInfo.isNullOrBlank()) {
+        hardwareKeyInfo?.let { info ->
             DetailItem(
                 label = hardwareKeyInfoLabel,
-                value = hardwareKeyInfo,
+                value = info,
                 isRevealed = true,
                 onCopy = onHardwareKeyCopy,
                 onEdit = null,

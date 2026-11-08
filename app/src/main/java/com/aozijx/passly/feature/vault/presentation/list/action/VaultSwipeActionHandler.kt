@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.list.action
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 
 sealed interface VaultCopyRequest {
     data class Field(

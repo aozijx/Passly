@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailCardTextFieldUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIdentityUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPasskeyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSeedPhraseUiModel
@@ -50,7 +49,7 @@ internal fun detailBankCardUiModel(
     val paymentPin = fields.protected(FieldKey.PAYMENT_PIN, SensitiveFieldKey.CARD_PAYMENT_PIN)
 
     fun bankDetail(
-        field: DetailFieldUiModel,
+        field: DetailField,
         @StringRes labelRes: Int,
         value: String?,
     ) = DetailCardTextFieldUiModel(
@@ -83,12 +82,12 @@ internal fun detailBankCardUiModel(
         canRevealMore = cardNumber.hidden || cvv.hidden || paymentPin.hidden,
         bankDetails =
             listOf(
-                bankDetail(DetailFieldUiModel.CARD_ISSUING_BANK, R.string.card_issuing_bank, card?.issuingBank),
-                bankDetail(DetailFieldUiModel.CARD_BANK_BRANCH, R.string.card_bank_branch, card?.bankBranch),
-                bankDetail(DetailFieldUiModel.CARD_PRODUCT, R.string.card_product, card?.cardProduct),
-                bankDetail(DetailFieldUiModel.CARD_CURRENCY, R.string.card_currency, card?.currency),
-                bankDetail(DetailFieldUiModel.CARD_BANK_PHONE, R.string.card_bank_phone, card?.bankPhone),
-                bankDetail(DetailFieldUiModel.BILLING_ADDRESS, R.string.billing_address, card?.billingAddress),
+                bankDetail(DetailField.CARD_ISSUING_BANK, R.string.card_issuing_bank, card?.issuingBank),
+                bankDetail(DetailField.CARD_BANK_BRANCH, R.string.card_bank_branch, card?.bankBranch),
+                bankDetail(DetailField.CARD_PRODUCT, R.string.card_product, card?.cardProduct),
+                bankDetail(DetailField.CARD_CURRENCY, R.string.card_currency, card?.currency),
+                bankDetail(DetailField.CARD_BANK_PHONE, R.string.card_bank_phone, card?.bankPhone),
+                bankDetail(DetailField.BILLING_ADDRESS, R.string.billing_address, card?.billingAddress),
             ),
     )
 }
@@ -124,7 +123,18 @@ internal fun detailSshUiModel(
 
 internal fun detailSeedPhraseUiModel(fields: DetailFieldProjection): DetailSeedPhraseUiModel =
     fields.protected(FieldKey.SEED_PHRASE, SensitiveFieldKey.SEED_PHRASE).let {
-        DetailSeedPhraseUiModel(present = it.present, revealedValue = it.value)
+        val revealedValue = it.value
+        when {
+            !it.present -> DetailSeedPhraseUiModel.Absent
+            revealedValue == null -> DetailSeedPhraseUiModel.Hidden
+            else ->
+                revealedValue
+                    .split(" ")
+                    .filter(String::isNotBlank)
+                    .takeIf { words -> words.isNotEmpty() }
+                    ?.let(DetailSeedPhraseUiModel::RevealedWords)
+                    ?: DetailSeedPhraseUiModel.RevealedWithoutWords
+        }
     }
 
 internal fun detailPasskeyUiModel(
@@ -139,7 +149,7 @@ internal fun detailPasskeyUiModel(
             DetailPasskeyUiModel(
                 present = it.present,
                 revealedValue = it.value,
-                hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo,
+                hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo?.takeIf(String::isNotBlank),
             )
         }
 

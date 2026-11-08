@@ -173,7 +173,7 @@ class VaultViewModelTest {
                 runCurrent()
                 categories.emit(emptyList())
                 runCurrent()
-                assertEquals(VaultCategoriesState.Ready(emptyList()), viewModel.uiState.value.categories)
+                assertEquals(VaultCategoriesState.ReadyEmpty, viewModel.uiState.value.categories)
 
                 categories.emit(listOf("Work"))
                 runCurrent()

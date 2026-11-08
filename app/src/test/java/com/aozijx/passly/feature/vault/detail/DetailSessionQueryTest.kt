@@ -138,15 +138,14 @@ class DetailSessionQueryTest {
             listOf(
                 link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
                 link("otp", "otp", "login", EntryRelationType.OTP_FOR),
-                link("recovery", "recovery", "account", EntryRelationType.RECOVERY_FOR),
             )
 
         assertEquals(
-            linkedSetOf(EntryId("login"), EntryId("recovery"), EntryId("otp")),
+            linkedSetOf(EntryId("login"), EntryId("otp")),
             resolveAccountGroupEntryIds(EntryId("account"), EntryType.ACCOUNT, links),
         )
         assertEquals(
-            linkedSetOf(EntryId("account"), EntryId("recovery"), EntryId("otp")),
+            linkedSetOf(EntryId("account"), EntryId("otp")),
             resolveAccountGroupEntryIds(EntryId("login"), EntryType.LOGIN, links),
         )
         assertEquals(

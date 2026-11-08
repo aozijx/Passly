@@ -2,8 +2,8 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.list
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpStateProvider
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals

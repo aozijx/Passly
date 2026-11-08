@@ -43,6 +43,16 @@ class EditorWriteSessionTest {
         }
 
     @Test
+    fun successfulWriteUsesSuccessClearReason() =
+        runTest {
+            val fixture = Fixture(backgroundScope)
+            fixture.save()
+            runCurrent()
+
+            assertEquals(listOf(EditorWriteSessionClearReason.WriteSucceeded), fixture.clearReasons)
+        }
+
+    @Test
     fun conflatedLockAndUnlockWithTheSameTimestampStillInvalidatesTheOldEffect() =
         runTest {
             val fixture = Fixture(backgroundScope)
@@ -293,6 +303,7 @@ class EditorWriteSessionTest {
         var form = "original"
         var saving = false
         var starts = 0
+        val clearReasons = mutableListOf<EditorWriteSessionClearReason>()
         val session =
             EditorWriteSession(
                 scope,
@@ -303,7 +314,8 @@ class EditorWriteSessionTest {
                     starts++
                 },
                 onIdle = { saving = false },
-                onClear = {
+                onClear = { reason ->
+                    clearReasons += reason
                     form = ""
                     saving = false
                 },

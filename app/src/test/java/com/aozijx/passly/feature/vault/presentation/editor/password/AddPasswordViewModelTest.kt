@@ -22,6 +22,8 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
@@ -84,7 +86,7 @@ class AddPasswordViewModelTest {
                     ?.login
                     ?.password,
             )
-            assertTrue(!model.uiState.value.loadFailed)
+            assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
 
             fixture.access.authenticationState.value = AuthenticationState.Locked
             advanceUntilIdle()
@@ -108,7 +110,7 @@ class AddPasswordViewModelTest {
             model.onAction(AddPasswordAction.LoadAssociatedApps)
             advanceUntilIdle()
             assertEquals(0, queries)
-            assertTrue(!model.uiState.value.availableAppsLoaded)
+            assertTrue(model.uiState.value.availableApps == AppPackagePickerUiState.NotRequested)
         }
 
     @Test
@@ -143,7 +145,8 @@ class AddPasswordViewModelTest {
             assertEquals(2, queries)
             assertEquals(
                 "new.app",
-                model.uiState.value.availableApps
+                (model.uiState.value.availableApps as AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
+                    .apps
                     .single()
                     .packageName,
             )
@@ -169,11 +172,8 @@ class AddPasswordViewModelTest {
             }
             release.complete(Unit)
             advanceUntilIdle()
-            assertTrue(
-                model.uiState.value.availableApps
-                    .isEmpty(),
-            )
-            assertTrue(!model.uiState.value.availableAppsLoaded)
+            assertTrue(model.uiState.value.availableApps !is AppPackagePickerUiState.Ready)
+            assertTrue(model.uiState.value.availableApps == AppPackagePickerUiState.NotRequested)
         }
 
     @Test
@@ -242,7 +242,8 @@ class AddPasswordViewModelTest {
             assertEquals("com.example.mail", viewModel.uiState.value.form.associatedAppPackage)
             assertEquals(
                 "Mail",
-                viewModel.uiState.value.availableApps
+                (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
+                    .apps
                     .single()
                     .label,
             )
@@ -282,10 +283,11 @@ class AddPasswordViewModelTest {
             advanceUntilIdle()
 
             assertEquals(2, queries)
-            assertTrue(viewModel.uiState.value.availableAppsLoaded)
+            assertTrue(viewModel.uiState.value.availableApps is AppPackagePickerUiState.Ready)
             assertEquals(
                 "com.example.mail",
-                viewModel.uiState.value.availableApps
+                (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
+                    .apps
                     .single()
                     .packageName,
             )

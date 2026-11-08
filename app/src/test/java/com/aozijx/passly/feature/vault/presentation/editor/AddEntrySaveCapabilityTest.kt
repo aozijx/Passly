@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.editor
 
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpCodeState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpSavePhase
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
@@ -12,7 +13,7 @@ import org.junit.Test
 
 class AddEntrySaveCapabilityTest {
     @Test
-    fun validPasswordAndOtpFormsCanSaveOnlyWhileIdle() {
+    fun validPasswordAndOtpFormsCanSaveOnlyWhileIdleAndAvailable() {
         val passwordForm = AddPasswordFormState(title = "Mail", password = "secret")
         val otpForm = OtpFormState(title = "Mail", secret = "JBSWY3DPEHPK3PXP")
 
@@ -22,5 +23,9 @@ class AddEntrySaveCapabilityTest {
         )
         assertTrue(AddOtpCodeState(form = otpForm).canSave)
         assertFalse(AddOtpCodeState(form = otpForm, savePhase = AddOtpSavePhase.Saving).canSave)
+        assertFalse(AddPasswordUiState(form = passwordForm, loadPhase = EditorLoadPhase.Loading).canSave)
+        assertFalse(AddPasswordUiState(form = passwordForm, loadPhase = EditorLoadPhase.Failed).canSave)
+        assertFalse(AddOtpCodeState(form = otpForm, loadPhase = EditorLoadPhase.Loading).canSave)
+        assertFalse(AddOtpCodeState(form = otpForm, loadPhase = EditorLoadPhase.Failed).canSave)
     }
 }

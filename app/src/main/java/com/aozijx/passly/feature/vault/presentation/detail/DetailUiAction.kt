@@ -2,206 +2,205 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import android.net.Uri
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconEditorTabUiModel
 
 sealed interface DetailUiAction {
-    data object StartTitleEdit : DetailEntryAction
+    data object StartTitleEdit : DetailUiAction
 
-    data object CancelTitleEdit : DetailEntryAction
+    data object CancelTitleEdit : DetailUiAction
 
     data class UpdateEditedTitle(
         val value: String,
-    ) : DetailEntryAction
+    ) : DetailUiAction
 
-    data object SaveTitle : DetailEntryAction
+    data object SaveTitle : DetailUiAction
 
-    data object ToggleFavorite : DetailEntryAction
+    data object ToggleFavorite : DetailUiAction
 
-    data object StartNotesEdit : DetailEntryAction
+    data object StartNotesEdit : DetailUiAction
 
     data class UpdateNotesDraft(
         val value: String,
-    ) : DetailEntryAction
+    ) : DetailUiAction
 
-    data object SaveNotes : DetailEntryAction
+    data object SaveNotes : DetailUiAction
 
-    data object StartDomainEdit : DetailEntryAction
+    data object StartDomainEdit : DetailUiAction
 
     data class UpdateDomainDraft(
         val value: String,
-    ) : DetailEntryAction
+    ) : DetailUiAction
 
-    data object SaveDomain : DetailEntryAction
+    data object SaveDomain : DetailUiAction
 
-    data object LoadPackagePickerApps : DetailEntryAction
+    data object LoadPackagePickerApps : DetailUiAction
 
-    data object RetryDetailLoad : DetailEntryAction
+    data class PackagePickerSearchChanged(
+        val query: String,
+    ) : DetailUiAction
 
-    data object RetrySnapshotRefresh : DetailEntryAction
+    data object RetryDetailLoad : DetailUiAction
+
+    data object RetrySnapshotRefresh : DetailUiAction
 
     data class SelectAssociatedPackage(
         val packageName: String,
-    ) : DetailEntryAction
+    ) : DetailUiAction
 
     data class StartFieldEdit(
-        val field: DetailFieldUiModel,
+        val field: DetailField,
         val initialValue: String,
-    ) : DetailSensitiveAction
+    ) : DetailUiAction
 
     data class UpdateFieldDraft(
-        val field: DetailFieldUiModel,
+        val field: DetailField,
         val value: String,
-    ) : DetailSensitiveAction
+    ) : DetailUiAction
 
     data class CancelFieldEdit(
-        val field: DetailFieldUiModel,
-    ) : DetailSensitiveAction
+        val field: DetailField,
+    ) : DetailUiAction
 
     data class ToggleFieldVisibility(
-        val field: DetailFieldUiModel,
-    ) : DetailSensitiveAction
+        val field: DetailField,
+    ) : DetailUiAction
 
-    data object RevealBankCardFields : DetailSensitiveAction
+    data object RevealBankCardFields : DetailUiAction
 
-    data object RevealSshFields : DetailSensitiveAction
+    data object RevealSshFields : DetailUiAction
 
     data class SaveField(
-        val field: DetailFieldUiModel,
+        val field: DetailField,
         val newValue: String,
-    ) : DetailSensitiveAction
+    ) : DetailUiAction
 
-    data object OpenTagEditor : DetailTagAction
+    data object OpenTagEditor : DetailUiAction
 
     data class UpdateTagInput(
         val value: String,
-    ) : DetailTagAction
+    ) : DetailUiAction
 
     data class SubmitTag(
         val value: String,
-    ) : DetailTagAction
+    ) : DetailUiAction
 
     data class RemoveTag(
         val value: String,
-    ) : DetailTagAction
+    ) : DetailUiAction
 
-    data object SaveTags : DetailTagAction
+    data object SaveTags : DetailUiAction
 
-    data object DismissTagEditor : DetailTagAction
+    data object DismissTagEditor : DetailUiAction
 
-    data object ConfirmDiscardTags : DetailTagAction
+    data object ConfirmDiscardTags : DetailUiAction
 
-    data object KeepEditingTags : DetailTagAction
+    data object KeepEditingTags : DetailUiAction
 
-    data object OpenFaviconEditor : DetailFaviconAction
+    data object OpenFaviconEditor : DetailUiAction
 
     data class SelectFaviconSource(
-        val source: FaviconDraftSourceUiModel,
-    ) : DetailFaviconAction
+        val source: DetailFaviconSource,
+    ) : DetailUiAction
 
     data class SelectFaviconTab(
-        val tab: FaviconEditorTabUiModel,
-    ) : DetailFaviconAction
+        val tab: DetailFaviconTab,
+    ) : DetailUiAction
 
     data class UpdateFaviconSearch(
         val value: String,
-    ) : DetailFaviconAction
+    ) : DetailUiAction
 
     data class UpdateFaviconImageUrl(
         val value: String,
-    ) : DetailFaviconAction
+    ) : DetailUiAction
 
     data class PickedFaviconImage(
         val uri: Uri,
-    ) : DetailFaviconAction
+    ) : DetailUiAction
 
-    data object DownloadFaviconImage : DetailFaviconAction
+    data object DownloadFaviconImage : DetailUiAction
 
-    data object UseFaviconWithoutCrop : DetailFaviconAction
+    data object UseFaviconWithoutCrop : DetailUiAction
 
     data class CropFaviconImage(
         val zoom: Float,
         val offsetX: Float,
         val offsetY: Float,
-    ) : DetailFaviconAction
+    ) : DetailUiAction
 
-    data object CancelFaviconCrop : DetailFaviconAction
+    data object CancelFaviconCrop : DetailUiAction
 
-    data object SaveFavicon : DetailFaviconAction
+    data object SaveFavicon : DetailUiAction
 
-    data object DismissFaviconEditor : DetailFaviconAction
+    data object DismissFaviconEditor : DetailUiAction
 
-    data object ConfirmDiscardFavicon : DetailFaviconAction
+    data object ConfirmDiscardFavicon : DetailUiAction
 
-    data object KeepEditingFavicon : DetailFaviconAction
+    data object KeepEditingFavicon : DetailUiAction
 
     data class CopyField(
-        val field: DetailFieldUiModel,
-    ) : DetailSensitiveAction
+        val field: DetailField,
+    ) : DetailUiAction
 
-    data object CopyOtpCode : DetailSensitiveAction
+    data object CopyOtpCode : DetailUiAction
 
-    data object ShowEntryQr : DetailSensitiveAction
+    data object ShowEntryQr : DetailUiAction
 
-    data object DismissEntryQr : DetailSensitiveAction
+    data object DismissEntryQr : DetailUiAction
 
     data class ToggleAccessHistoryRecording(
         val enabled: Boolean,
-    ) : DetailSensitiveAction
+    ) : DetailUiAction
 
-    data object ClearSensitiveState : DetailSensitiveAction
+    data object ClearSensitiveState : DetailUiAction
 
-    data object OpenRevisionHistory : DetailRevisionAction
+    data object OpenRevisionHistory : DetailUiAction
 
-    data object RetryRevisionHistory : DetailRevisionAction
+    data object RetryRevisionHistory : DetailUiAction
 
-    data object DismissRevisionHistory : DetailRevisionAction
+    data object DismissRevisionHistory : DetailUiAction
 
     data class SelectRevision(
         val revisionId: String,
-    ) : DetailRevisionAction
+    ) : DetailUiAction
 
-    data object RevisionBack : DetailRevisionAction
+    data object RevisionBack : DetailUiAction
 
     data class RevealRevisionField(
         val key: SensitiveFieldKey,
-    ) : DetailRevisionAction
+    ) : DetailUiAction
 
-    data object RequestRevisionRestore : DetailRevisionAction
+    data object RequestRevisionRestore : DetailUiAction
 
-    data object CancelRevisionRestore : DetailRevisionAction
+    data object CancelRevisionRestore : DetailUiAction
 
-    data object ConfirmRevisionRestore : DetailRevisionAction
+    data object ConfirmRevisionRestore : DetailUiAction
 
-    data object RetryActivityHistory : DetailEntryAction
+    data object RetryActivityHistory : DetailUiAction
 
-    data object OpenPasswordBinding : DetailEntryAction
+    data class ActivityFilterChanged(
+        val filter: DetailActivityFilter,
+    ) : DetailUiAction
 
-    data object RetryPasswordBinding : DetailEntryAction
+    data object OpenPasswordBinding : DetailUiAction
 
-    data object DismissPasswordBinding : DetailEntryAction
+    data object RetryPasswordBinding : DetailUiAction
+
+    data class PasswordBindingSearchChanged(
+        val query: String,
+    ) : DetailUiAction
+
+    data object DismissPasswordBinding : DetailUiAction
 
     data class RequestPasswordUnlink(
         val targetEntryId: String,
         val linkId: String,
-    ) : DetailEntryAction
+    ) : DetailUiAction
 
-    data object DismissPasswordUnlink : DetailEntryAction
+    data object DismissPasswordUnlink : DetailUiAction
 
-    data object ConfirmPasswordUnlink : DetailEntryAction
+    data object ConfirmPasswordUnlink : DetailUiAction
 
     data class BindPassword(
         val targetEntryId: String,
-    ) : DetailEntryAction
+    ) : DetailUiAction
 }
-
-sealed interface DetailEntryAction : DetailUiAction
-
-sealed interface DetailSensitiveAction : DetailUiAction
-
-sealed interface DetailTagAction : DetailUiAction
-
-sealed interface DetailFaviconAction : DetailUiAction
-
-sealed interface DetailRevisionAction : DetailUiAction

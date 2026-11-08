@@ -3,7 +3,10 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -47,9 +50,29 @@ class CardStyleRegistryTest {
 
     @Test
     fun `style preference keys are stable and independent of enum names`() {
-        assertEquals("login", CardStyleRegistry.entryTypeKey(EntryType.LOGIN))
-        assertEquals("bank_card", CardStyleRegistry.entryTypeKey(EntryType.BANK_CARD))
-        assertEquals("otp", CardStyleRegistry.entryTypeKey(EntryType.OTP))
+        val expectedKeys =
+            mapOf(
+                EntryType.ACCOUNT to "account",
+                EntryType.LOGIN to "login",
+                EntryType.NOTE to "note",
+                EntryType.BANK_CARD to "bank_card",
+                EntryType.ID_CARD to "id_card",
+                EntryType.PASSPORT to "passport",
+                EntryType.DRIVER_LICENSE to "driver_license",
+                EntryType.SSH_KEY to "ssh_key",
+                EntryType.WIFI to "wifi",
+                EntryType.PASSKEY to "passkey",
+                EntryType.OTP to "otp",
+                EntryType.DATABASE_CREDENTIAL to "database_credential",
+                EntryType.SERVER_CREDENTIAL to "server_credential",
+                EntryType.API_KEY to "api_key",
+                EntryType.CRYPTO_WALLET to "crypto_wallet",
+                EntryType.SEED_PHRASE to "seed_phrase",
+                EntryType.RECOVERY_CODE to "recovery_code",
+            )
+
+        assertEquals(EntryType.entries.toSet(), expectedKeys.keys)
+        assertEquals(expectedKeys, EntryType.entries.associateWith(CardStyleRegistry::entryTypeKey))
     }
 
     @Test
@@ -86,10 +109,14 @@ class CardStyleRegistryTest {
         associatedAppPackage = null,
         iconName = null,
         iconCustomPath = null,
+        iconImageModel = null,
+        visualCategory = EntryVisualCategory.ACCOUNT,
         hasPassword = hasPassword,
         hasOtp = hasOtp,
         otpKind = null,
         otpPreview = null,
+        passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(EntryType.LOGIN),
+        passwordCardSupportingText = VaultPasswordCardSupportingTextUiModel.PROTECTED,
     )
 
     private fun presentation(

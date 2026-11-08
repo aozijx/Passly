@@ -22,11 +22,12 @@ class PasswordStrengthUiStateTest {
 
         mappings.forEachIndexed { index, (level, color, textResId) ->
             val score = (index + 1) * 10
-            val uiState = PasswordStrengthResult(score, level).toUiState(colorScheme)
+            val uiState = PasswordStrengthResult(score, level).toUiState(colorScheme, isVisible = true)
 
             assertEquals(score / 100f, uiState.progress)
             assertEquals(color, uiState.color)
             assertEquals(textResId, uiState.textResId)
+            assertEquals(true, uiState.isVisible)
         }
     }
 }

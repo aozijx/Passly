@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.navigation
 
 import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.model.AddType
 
 internal object VaultEditorDestinationRegistry {
     private val editRouteFactories: Map<EntryType, (String) -> String> =
@@ -15,15 +15,15 @@ internal object VaultEditorDestinationRegistry {
 
     private val routes =
         mapOf(
-            VaultAddTypeUiModel.PASSWORD to AppRoute.AddPassword.route,
-            VaultAddTypeUiModel.TOTP to AppRoute.AddOtp.route,
-            VaultAddTypeUiModel.BANK_CARD to AppRoute.AddBankCard.route,
-            VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
+            AddType.PASSWORD to AppRoute.AddPassword.route,
+            AddType.TOTP to AppRoute.AddOtp.route,
+            AddType.BANK_CARD to AppRoute.AddBankCard.route,
+            AddType.WIFI to AppRoute.AddWifi.route,
         )
 
-    val creatableTypes: List<VaultAddTypeUiModel> = routes.keys.toList()
+    val creatableTypes: List<AddType> = routes.keys.toList()
 
-    fun routeFor(type: VaultAddTypeUiModel): String? = routes[type]
+    fun routeFor(type: AddType): String? = routes[type]
 
     fun supportsFullFormEdit(type: EntryType): Boolean = type in editRouteFactories
 

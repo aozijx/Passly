@@ -99,20 +99,21 @@ class VaultAddTypeUiModelTest {
     fun allTypesCanBeFilteredButOnlyFourHaveCreationDestinations() {
         val expectedRoutes =
             listOf(
-                VaultAddTypeUiModel.PASSWORD to AppRoute.AddPassword.route,
-                VaultAddTypeUiModel.TOTP to AppRoute.AddOtp.route,
-                VaultAddTypeUiModel.BANK_CARD to AppRoute.AddBankCard.route,
-                VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
-                VaultAddTypeUiModel.SSH_KEY to null,
-                VaultAddTypeUiModel.ID_CARD to null,
-                VaultAddTypeUiModel.SEED_PHRASE to null,
-                VaultAddTypeUiModel.PASSKEY to null,
-                VaultAddTypeUiModel.RECOVERY_CODE to null,
+                AddType.PASSWORD to AppRoute.AddPassword.route,
+                AddType.TOTP to AppRoute.AddOtp.route,
+                AddType.BANK_CARD to AppRoute.AddBankCard.route,
+                AddType.WIFI to AppRoute.AddWifi.route,
+                AddType.SSH_KEY to null,
+                AddType.ID_CARD to null,
+                AddType.SEED_PHRASE to null,
+                AddType.PASSKEY to null,
+                AddType.RECOVERY_CODE to null,
             )
 
-        assertEquals(VaultAddTypeUiModel.entries.toSet(), expectedRoutes.map { it.first }.toSet())
-        expectedRoutes.forEach { (ui, route) ->
-            assertEquals(route, VaultEditorDestinationRegistry.routeFor(ui))
+        assertEquals(AddType.entries.toSet(), expectedRoutes.map { it.first }.toSet())
+        expectedRoutes.forEach { (type, route) ->
+            assertEquals(route, VaultEditorDestinationRegistry.routeFor(type))
+            val ui = type.toUiModel()
             val selected = VaultReducer.reduce(VaultUiState(), VaultMutation.FilterToggled(ui.featureType))
             assertEquals(setOf(ui), selected.selectedFilters.map(AddType::toUiModel).toSet())
             val cleared = VaultReducer.reduce(selected, VaultMutation.FilterToggled(ui.featureType))

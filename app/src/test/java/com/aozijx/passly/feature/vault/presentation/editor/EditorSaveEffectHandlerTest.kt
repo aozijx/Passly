@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -131,6 +132,60 @@ class EditorSaveEffectHandlerTest {
             owner.lifecycle.currentState = Lifecycle.State.STARTED
             runCurrent()
             assertEquals(listOf("snackbar", "dismissed", "saved"), handled)
+        }
+
+    @Test
+    fun `load failure waits for a started page and is not replayed after resume`() =
+        runTest {
+            val owner = Owner()
+            owner.lifecycle.currentState = Lifecycle.State.CREATED
+            var failureNotices = 0
+            backgroundScope.launch {
+                collectEditorLoadFailureEffects(
+                    lifecycle = owner.lifecycle,
+                    phases = flowOf(EditorLoadPhase.Failed),
+                    hasEditSeed = true,
+                    onFailure = { failureNotices++ },
+                )
+            }
+            runCurrent()
+            assertEquals(0, failureNotices)
+
+            owner.lifecycle.currentState = Lifecycle.State.STARTED
+            runCurrent()
+            assertEquals(1, failureNotices)
+
+            owner.lifecycle.currentState = Lifecycle.State.CREATED
+            owner.lifecycle.currentState = Lifecycle.State.STARTED
+            runCurrent()
+            assertEquals(1, failureNotices)
+        }
+
+    @Test
+    fun `load failure notice canceled by stop is delivered again on resume`() =
+        runTest {
+            val owner = Owner()
+            owner.lifecycle.currentState = Lifecycle.State.STARTED
+            var failureNotices = 0
+            backgroundScope.launch {
+                collectEditorLoadFailureEffects(
+                    lifecycle = owner.lifecycle,
+                    phases = flowOf(EditorLoadPhase.Failed),
+                    hasEditSeed = true,
+                    onFailure = {
+                        failureNotices++
+                        if (failureNotices == 1) awaitCancellation()
+                    },
+                )
+            }
+            runCurrent()
+            assertEquals(1, failureNotices)
+
+            owner.lifecycle.currentState = Lifecycle.State.CREATED
+            runCurrent()
+            owner.lifecycle.currentState = Lifecycle.State.STARTED
+            runCurrent()
+            assertEquals(2, failureNotices)
         }
 
     private class Owner : LifecycleOwner {

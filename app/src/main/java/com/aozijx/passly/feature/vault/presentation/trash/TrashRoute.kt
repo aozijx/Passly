@@ -8,7 +8,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.ViewModelStoreOwner
 import com.aozijx.passly.feature.vault.presentation.trash.ui.TrashBottomSheet
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashBottomSheetUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashErrorUiState
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryListUiState
 
 @Composable
 internal fun TrashRoute(
@@ -25,18 +27,34 @@ internal fun TrashRoute(
     val content = state.content
     val activeEntryId = (operation as? TrashOperationState.Entry)?.entryId
     val error =
-        when {
-            operation is TrashOperationState.Failed -> TrashErrorUiState.OperationFailed(stringResource(operation.message.resourceId))
-            content is TrashContentState.Failed -> TrashErrorUiState.LoadFailed(stringResource(content.message.resourceId))
-            else -> TrashErrorUiState.Hidden
+        when (operation) {
+            is TrashOperationState.Failed -> TrashErrorUiState.OperationFailed(stringResource(operation.message.resourceId))
+            TrashOperationState.Emptying,
+            is TrashOperationState.Entry,
+            TrashOperationState.Idle,
+            -> TrashErrorUiState.Hidden
+        }
+    val contentUiState =
+        if (operation == TrashOperationState.Emptying) {
+            TrashEntryListUiState.Emptying
+        } else {
+            when (content) {
+                TrashContentState.Loading -> TrashEntryListUiState.Loading
+                is TrashContentState.Failed -> TrashEntryListUiState.LoadFailed(stringResource(content.message.resourceId))
+                is TrashContentState.Loaded ->
+                    TrashUiMapper.map(content.entries)
+                        .takeIf { it.isNotEmpty() }
+                        ?.let { TrashEntryListUiState.Items(it, activeEntryId) }
+                        ?: TrashEntryListUiState.Empty
+            }
         }
     TrashBottomSheet(
-        visible = true,
-        entries = TrashUiMapper.map((content as? TrashContentState.Loaded)?.entries.orEmpty()),
-        isLoading = content == TrashContentState.Loading,
-        activeEntryId = activeEntryId,
-        isEmptying = operation == TrashOperationState.Emptying,
-        error = error,
+        state =
+            TrashBottomSheetUiState(
+                entries = contentUiState,
+                isBusy = state.isBusy,
+                error = error,
+            ),
         onDismiss = onDismiss,
         onRestore = { viewModel.onAction(TrashUiAction.Restore(it.id, it.version)) },
         onDelete = { viewModel.onAction(TrashUiAction.DeletePermanently(it.id, it.version)) },

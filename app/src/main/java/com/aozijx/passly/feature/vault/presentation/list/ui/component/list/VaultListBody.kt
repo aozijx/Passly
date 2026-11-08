@@ -17,9 +17,9 @@ import androidx.paging.PagingData
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultFilterBar
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListScreenUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -35,8 +35,6 @@ internal fun VaultListBody(
     modifier: Modifier = Modifier,
 ) {
     val motionScheme = MaterialTheme.motionScheme
-    val hasActiveQuickFilters = state.navigation.selectedFilters.isNotEmpty()
-
     Column(
         modifier =
             modifier
@@ -48,7 +46,7 @@ internal fun VaultListBody(
                 !state.toolbar.isSearchActive &&
                     state.toolbar.selectedCategory == null &&
                     (
-                        hasActiveQuickFilters ||
+                        state.navigation.hasActiveFilters ||
                             !state.layout.collapseQuickFilterBarOnScroll ||
                             scrollBehavior.state.collapsedFraction < 0.5f
                     ),
@@ -56,8 +54,8 @@ internal fun VaultListBody(
             exit = shrinkVertically(animationSpec = motionScheme.defaultSpatialSpec()),
         ) {
             VaultFilterBar(
-                filters = state.navigation.filterOptions,
-                selectedFilters = state.navigation.selectedFilters,
+                filters = state.navigation.filters,
+                allFiltersSelected = state.navigation.allFiltersSelected,
                 onFilterToggled = { filter ->
                     onAction(VaultUiAction.FilterToggled(filter?.featureType))
                 },

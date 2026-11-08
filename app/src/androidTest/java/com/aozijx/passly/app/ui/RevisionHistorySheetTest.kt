@@ -24,13 +24,13 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionComparisonUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionValueUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionListUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionRestoreUiState
@@ -47,7 +47,7 @@ class RevisionHistorySheetTest {
     fun emptyHistoryAndComparisonWrapTheirContentAndKeepRestoreAvailable() {
         val model =
             mutableStateOf<DetailRevisionSheetUiModel>(
-                DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.Ready(emptyList())),
+                DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.ReadyEmpty),
             )
         val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
@@ -87,13 +87,13 @@ class RevisionHistorySheetTest {
                 DetailRevisionDifferenceUiModel(
                     RevisionFieldId.CustomField(it, "Field $it"),
                     RevisionDifferenceKind.CHANGED,
-                    RevisionFieldValue.Text("Before $it"),
-                    RevisionFieldValue.Text("After $it"),
+                    DetailRevisionValueUiModel.Text("Before $it"),
+                    DetailRevisionValueUiModel.Text("After $it"),
                 )
             }
         val model =
             mutableStateOf<DetailRevisionSheetUiModel>(
-                DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.Ready(revisions)),
+                DetailRevisionSheetUiModel.ListPage(DetailRevisionListUiState.ReadyItems(revisions)),
             )
         val actions = mutableListOf<DetailUiAction>()
         compose.setContent {
@@ -137,8 +137,8 @@ class RevisionHistorySheetTest {
                         DetailRevisionDifferenceUiModel(
                             RevisionFieldId.ProtectedField(FieldKey.PASSWORD),
                             RevisionDifferenceKind.CHANGED,
-                            null,
-                            null,
+                            DetailRevisionValueUiModel.Absent,
+                            DetailRevisionValueUiModel.Absent,
                         ),
                         actions::add,
                     )
@@ -146,8 +146,8 @@ class RevisionHistorySheetTest {
                         DetailRevisionDifferenceUiModel(
                             RevisionFieldId.Sensitive(SensitiveFieldKey.PASSWORD),
                             RevisionDifferenceKind.ADDED,
-                            null,
-                            null,
+                            DetailRevisionValueUiModel.Absent,
+                            DetailRevisionValueUiModel.Absent,
                         ),
                         actions::add,
                     )
@@ -155,8 +155,8 @@ class RevisionHistorySheetTest {
                         DetailRevisionDifferenceUiModel(
                             RevisionFieldId.Sensitive(SensitiveFieldKey.CARD_CVV),
                             RevisionDifferenceKind.REMOVED,
-                            null,
-                            null,
+                            DetailRevisionValueUiModel.Absent,
+                            DetailRevisionValueUiModel.Absent,
                         ),
                         actions::add,
                     )

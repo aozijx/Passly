@@ -14,11 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EntryTagsItem(
-    tags: Set<String>,
+    tags: DetailTagChipsUiState,
     onClick: () -> Unit,
 ) {
     FlowRow(
@@ -30,14 +31,18 @@ fun EntryTagsItem(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (tags.isEmpty()) {
-            Text(
-                text = stringResource(R.string.vault_detail_tags_add),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        } else {
-            tags.forEach { tag ->
-                AssistChip(onClick = onClick, label = { Text(tag) })
+        when (tags) {
+            DetailTagChipsUiState.Empty -> {
+                Text(
+                    text = stringResource(R.string.vault_detail_tags_add),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+
+            is DetailTagChipsUiState.Items -> {
+                tags.tags.forEach { tag ->
+                    AssistChip(onClick = onClick, label = { Text(tag) })
+                }
             }
         }
     }

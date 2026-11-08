@@ -33,9 +33,9 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.rememberFabV
 import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.rememberPullToSearchNestedScrollConnection
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListScreenUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.rememberVaultSearchStateHolder
 import kotlinx.coroutines.flow.Flow
 

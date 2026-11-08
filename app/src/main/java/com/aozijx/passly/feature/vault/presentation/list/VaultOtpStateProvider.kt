@@ -4,11 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpStateProvider
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+
+interface VaultOtpStateProvider {
+    fun state(entryId: String): Flow<VaultOtpUiState?>
+
+    fun subscribe(entryId: String)
+
+    fun unsubscribe(entryId: String)
+}
 
 internal class VaultOtpStateProviderBindings(
     private val states: StateFlow<Map<String, OtpCodeState>>,

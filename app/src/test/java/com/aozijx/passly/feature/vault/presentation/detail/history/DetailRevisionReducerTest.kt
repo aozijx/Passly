@@ -11,7 +11,7 @@ import org.junit.Test
 
 class DetailRevisionReducerTest {
     @Test
-    fun backToListCannotCancelAnActiveRestore() {
+    fun activeRestoreIgnoresNavigationMutations() {
         val state =
             DetailRevisionState.Open(
                 entryId = EntryId("entry"),
@@ -29,25 +29,6 @@ class DetailRevisionReducerTest {
 
         assertEquals(state, DetailRevisionReducer.reduce(state, DetailRevisionMutation.BackToList))
         assertEquals(state, DetailRevisionReducer.reduce(state, DetailRevisionMutation.Closed))
-    }
-
-    @Test
-    fun reopeningHistoryCannotReplaceAnActiveRestore() {
-        val state =
-            DetailRevisionState.Open(
-                entryId = EntryId("entry"),
-                revisions = DetailRevisionListState.Ready(listOf(metadata())),
-                page =
-                    DetailRevisionPage.Comparison(
-                        revisionId = "revision",
-                        phase =
-                            DetailRevisionComparisonPhase.Ready(
-                                differences = emptyList(),
-                                restore = DetailRevisionRestorePhase.Restoring,
-                            ),
-                    ),
-            )
-
         assertEquals(state, DetailRevisionReducer.reduce(state, DetailRevisionMutation.Opened(EntryId("entry"))))
     }
 

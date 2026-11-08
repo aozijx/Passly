@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 @Composable

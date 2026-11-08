@@ -1,52 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.model
 
 import androidx.compose.runtime.Immutable
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
-import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
-import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
-import kotlinx.coroutines.flow.Flow
-
-@Immutable
-data class VaultListItemUiModel(
-    val id: String,
-    val entryType: EntryType,
-    val title: String,
-    val username: String,
-    val category: String?,
-    val favorite: Boolean,
-    val associatedDomain: String?,
-    val associatedAppPackage: String?,
-    val iconName: String?,
-    val iconCustomPath: String?,
-    val hasPassword: Boolean,
-    val hasOtp: Boolean,
-    val otpKind: VaultOtpKindUiModel?,
-    val otpPreview: String?,
-)
-
-enum class VaultOtpKindUiModel { STANDARD, STEAM }
-
-@Immutable
-sealed interface VaultOtpUiState {
-    data object Pending : VaultOtpUiState
-
-    data class Ready(
-        val code: String,
-        val progress: Float,
-    ) : VaultOtpUiState
-
-    data object Failed : VaultOtpUiState
-}
-
-interface VaultOtpStateProvider {
-    fun state(entryId: String): Flow<VaultOtpUiState?>
-
-    fun subscribe(entryId: String)
-
-    fun unsubscribe(entryId: String)
-}
 
 @Immutable
 data class VaultSortUiModel(
@@ -103,9 +59,20 @@ data class VaultListToolbarUiModel(
 
 @Immutable
 data class VaultListNavigationUiModel(
-    val selectedFilters: Set<VaultAddTypeUiModel>,
-    val filterOptions: List<VaultAddTypeUiModel>,
+    val filters: List<VaultFilterOptionUiModel>,
     val creationOptions: List<VaultAddTypeUiModel>,
+) {
+    val allFiltersSelected: Boolean
+        get() = filters.none(VaultFilterOptionUiModel::selected)
+
+    val hasActiveFilters: Boolean
+        get() = filters.any(VaultFilterOptionUiModel::selected)
+}
+
+@Immutable
+data class VaultFilterOptionUiModel(
+    val type: VaultAddTypeUiModel,
+    val selected: Boolean,
 )
 
 @Immutable

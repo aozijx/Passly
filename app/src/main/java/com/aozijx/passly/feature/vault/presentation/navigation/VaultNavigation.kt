@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.navigation
 import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.model.AddType
 
 internal sealed interface VaultDestinationRequest {
     data object OpenSettings : VaultDestinationRequest
@@ -13,7 +13,7 @@ internal sealed interface VaultDestinationRequest {
     ) : VaultDestinationRequest
 
     data class OpenEditor(
-        val type: VaultAddTypeUiModel,
+        val type: AddType,
     ) : VaultDestinationRequest
 
     data class EditScannedWifi(

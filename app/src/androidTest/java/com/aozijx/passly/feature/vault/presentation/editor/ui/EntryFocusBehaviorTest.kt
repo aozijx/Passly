@@ -4,6 +4,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -42,7 +43,10 @@ class EntryFocusBehaviorTest {
         }
 
         composeRule.onNodeWithTag("editor-screen").assertIsDisplayed()
-        composeRule.onNodeWithTag("editor-save-action").assertIsDisplayed()
+        composeRule
+            .onNodeWithTag("editor-save-action")
+            .assertIsDisplayed()
+            .assertHasClickAction()
 
         val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
         val title = resources.getString(R.string.field_title)

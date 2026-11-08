@@ -6,7 +6,6 @@ data class AddOtpCodeState(
     val form: OtpFormState = OtpFormState(),
     val savePhase: AddOtpSavePhase = AddOtpSavePhase.Idle,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
-    val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
         get() =

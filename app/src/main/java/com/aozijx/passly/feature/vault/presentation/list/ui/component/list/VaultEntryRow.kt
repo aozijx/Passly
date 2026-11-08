@@ -25,9 +25,9 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpStateProvider
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable

@@ -8,6 +8,7 @@ import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -82,7 +83,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisio
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionLockedException
 import com.aozijx.passly.runtime.session.SessionStateProvider
@@ -366,16 +367,15 @@ class DetailViewModelTest {
                 runCurrent()
                 model.onAction(DetailUiAction.LoadPackagePickerApps)
                 runCurrent()
-                assertTrue(model.uiState.value.packagePickerAppsLoadFailed)
+                assertEquals(AppPackagePickerUiState.Failed, model.uiState.value.packagePickerApps)
                 model.onAction(DetailUiAction.LoadPackagePickerApps)
                 runCurrent()
 
                 assertEquals(2, queries)
-                assertTrue(model.uiState.value.packagePickerAppsLoaded)
-                assertFalse(model.uiState.value.packagePickerAppsLoadFailed)
+                val ready = model.uiState.value.packagePickerApps as AppPackagePickerUiState.Ready<DetailInstalledApp>
                 assertEquals(
                     "com.example.mail",
-                    model.uiState.value.packagePickerApps
+                    ready.apps
                         .single()
                         .packageName,
                 )
@@ -417,7 +417,7 @@ class DetailViewModelTest {
                     model.uiState.value.entry
                         ?.title,
                 )
-                assertFalse(model.uiState.value.packagePickerAppsLoadFailed)
+                assertFalse(model.uiState.value.packagePickerApps is AppPackagePickerUiState.Failed)
             } finally {
                 store.clear()
             }
@@ -447,7 +447,7 @@ class DetailViewModelTest {
                 model.load(OTHER_ENTRY_ID.value)
                 runCurrent()
 
-                assertFalse(model.uiState.value.packagePickerAppsLoadFailed)
+                assertFalse(model.uiState.value.packagePickerApps is AppPackagePickerUiState.Failed)
             } finally {
                 store.clear()
             }
@@ -507,16 +507,16 @@ class DetailViewModelTest {
             try {
                 model.load(ENTRY_ID.value)
                 runCurrent()
-                assertEquals(listOf(activity), model.uiState.value.history)
-                assertEquals(DetailActivityHistoryState.Failed, model.uiState.value.activityHistory)
+                assertEquals(listOf(activity), model.uiState.value.activityHistory.activities)
+                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Failed)
                 assertEquals(1, subscriptions)
 
                 model.onAction(DetailUiAction.RetryActivityHistory)
                 runCurrent()
 
                 assertEquals(2, subscriptions)
-                assertEquals(emptyList<EntryActivity>(), model.uiState.value.history)
-                assertEquals(DetailActivityHistoryState.Ready, model.uiState.value.activityHistory)
+                assertEquals(emptyList<EntryActivity>(), model.uiState.value.activityHistory.activities)
+                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Ready)
             } finally {
                 store.clear()
             }
@@ -557,6 +557,7 @@ class DetailViewModelTest {
                 store.clear()
             }
         }
+
     @Test
     fun revisionHistoryInitializationFailureCanBeRetriedBeforeMetadataSubscription() =
         runTest {
@@ -597,7 +598,6 @@ class DetailViewModelTest {
             }
         }
 
-
     @Test
     fun activityHistorySessionLockIsNotReportedAsQueryFailure() =
         runTest {
@@ -615,7 +615,7 @@ class DetailViewModelTest {
                 model.load(ENTRY_ID.value)
                 runCurrent()
 
-                assertEquals(DetailActivityHistoryState.Loading, model.uiState.value.activityHistory)
+                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Loading)
             } finally {
                 store.clear()
             }
@@ -658,7 +658,7 @@ class DetailViewModelTest {
                     model.uiState.value.entry
                         ?.title,
                 )
-                assertEquals(DetailActivityHistoryState.Ready, model.uiState.value.activityHistory)
+                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Ready)
             } finally {
                 releaseOldObserver.complete(Unit)
                 store.clear()
@@ -1184,8 +1184,8 @@ class DetailViewModelTest {
     private class Fixture(
         installedApps: InstalledAppDirectory = EmptyInstalledAppDirectory,
         activityQueryRepository: ActivityQueryRepository = EmptyActivityQueryRepository,
-        revisionInitialization: () -> AppResult<Unit> = { AppResult.Success(Unit) },
         revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>> = { flowOf(listOf(revisionMetadata())) },
+        revisionInitialization: () -> AppResult<Unit> = { AppResult.Success(Unit) },
         entryQueryRepository: (MutableEntries) -> EntryQueryRepository = { it },
         sensitiveFieldRepository: SensitiveFieldRepository = EmptySensitiveFieldRepository(),
         entryLinkRepository: EntryLinkRepository = EmptyEntryLinkRepository,
@@ -1233,10 +1233,13 @@ class DetailViewModelTest {
                         DetailSessionQuery(entryQuery, sensitive, entryLinkRepository),
                         installedAppDirectory,
                     ),
-                observeEntryRevisionMetadata = ObserveEntryRevisionMetadataUseCase(revisions),
-                compareEntryRevision = CompareEntryRevisionUseCase(revisions),
-                revealRevisionFields = RevealRevisionFieldsUseCase(revisions, authGate),
-                restoreEntryRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
+                revisionWorkflowFactory =
+                    DetailRevisionWorkflowFactory(
+                        observeMetadata = ObserveEntryRevisionMetadataUseCase(revisions),
+                        compareRevision = CompareEntryRevisionUseCase(revisions),
+                        revealFields = RevealRevisionFieldsUseCase(revisions, authGate),
+                        restoreRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
+                    ),
                 relatedPasswordLinks = RelatedPasswordLinks(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
                 logger = testLogger(),
                 otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),

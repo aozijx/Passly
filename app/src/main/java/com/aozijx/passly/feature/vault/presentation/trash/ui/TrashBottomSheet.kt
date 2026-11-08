@@ -41,18 +41,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashBottomSheetUiState
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryListUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashErrorUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TrashBottomSheet(
-    visible: Boolean,
-    entries: List<TrashEntryUiModel>,
-    isLoading: Boolean,
-    activeEntryId: String?,
-    isEmptying: Boolean,
-    error: TrashErrorUiState,
+    state: TrashBottomSheetUiState,
     onDismiss: () -> Unit,
     onRestore: (TrashEntryUiModel) -> Unit,
     onDelete: (TrashEntryUiModel) -> Unit,
@@ -60,11 +57,9 @@ internal fun TrashBottomSheet(
     onClearError: () -> Unit,
     onRetryLoad: () -> Unit,
 ) {
-    if (!visible) return
-
     var pendingDelete by remember { mutableStateOf<TrashEntryUiModel?>(null) }
     var confirmEmpty by remember { mutableStateOf(false) }
-    val isBusy = activeEntryId != null || isEmptying
+    val isBusy = state.isBusy
 
     ModalBottomSheet(
         onDismissRequest = {
@@ -84,52 +79,48 @@ internal fun TrashBottomSheet(
                     .padding(bottom = 16.dp),
         ) {
             TrashHeader(
-                count = entries.size,
-                isEmptying = isEmptying,
-                enabled = !isLoading && entries.isNotEmpty() && !isBusy,
+                count = state.entryCount,
+                isEmptying = state.entries == TrashEntryListUiState.Emptying,
+                enabled = state.canEmpty,
                 onEmpty = { confirmEmpty = true },
             )
 
-            when (error) {
+            when (state.error) {
                 TrashErrorUiState.Hidden -> {
                     Unit
                 }
 
-                is TrashErrorUiState.LoadFailed -> {
-                    TrashError(
-                        message = error.message,
-                        actionLabel = stringResource(R.string.settings_trash_retry),
-                        onAction = onRetryLoad,
-                    )
-                }
-
                 is TrashErrorUiState.OperationFailed -> {
                     TrashError(
-                        message = error.message,
+                        message = state.error.message,
                         actionLabel = stringResource(R.string.settings_trash_error_dismiss),
                         onAction = onClearError,
                     )
                 }
             }
 
-            when {
-                isLoading -> {
+            when (val entries = state.entries) {
+                TrashEntryListUiState.Loading -> {
                     TrashLoading()
                 }
 
-                isEmptying -> {
+                TrashEntryListUiState.Emptying -> {
                     TrashLoading()
                 }
 
-                error is TrashErrorUiState.LoadFailed -> {
-                    Unit
+                is TrashEntryListUiState.LoadFailed -> {
+                    TrashError(
+                        message = entries.message,
+                        actionLabel = stringResource(R.string.settings_trash_retry),
+                        onAction = onRetryLoad,
+                    )
                 }
 
-                entries.isEmpty() -> {
+                TrashEntryListUiState.Empty -> {
                     TrashEmpty()
                 }
 
-                else -> {
+                is TrashEntryListUiState.Items -> {
                     LazyColumn(
                         modifier =
                             Modifier
@@ -143,8 +134,8 @@ internal fun TrashBottomSheet(
                             ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        items(entries, key = { entry -> entry.id }) { entry ->
-                            if (activeEntryId == entry.id) {
+                        items(entries.entries, key = { entry -> entry.id }) { entry ->
+                            if (entries.activeEntryId == entry.id) {
                                 TrashEntryOperationLoading()
                             } else {
                                 TrashEntryCard(
@@ -207,8 +198,8 @@ internal fun TrashBottomSheet(
                 Text(
                     pluralStringResource(
                         R.plurals.settings_trash_empty_confirm_message,
-                        entries.size,
-                        entries.size,
+                        state.entryCount,
+                        state.entryCount,
                     ),
                 )
             },

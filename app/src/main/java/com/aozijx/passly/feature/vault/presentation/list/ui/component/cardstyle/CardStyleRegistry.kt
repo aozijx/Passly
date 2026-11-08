@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.domain.entry.model.EntryType
 
 object CardStyleRegistry {

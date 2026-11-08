@@ -21,10 +21,9 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchPhase
+import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchAction
+import com.aozijx.passly.feature.vault.presentation.list.ui.search.action
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
-
-private enum class VaultSearchActionType { MORE, CLEAR, NONE }
 
 @Composable
 internal fun VaultSearchAction(
@@ -35,24 +34,10 @@ internal fun VaultSearchAction(
     modifier: Modifier = Modifier,
 ) {
     var moreMenuExpanded by remember { mutableStateOf(false) }
-    val action =
-        when {
-            searchStateHolder.uiState.phase == VaultSearchPhase.BROWSING ||
-                searchStateHolder.uiState.phase == VaultSearchPhase.PULLING -> {
-                VaultSearchActionType.MORE
-            }
-
-            uiState.query.isNotEmpty() -> {
-                VaultSearchActionType.CLEAR
-            }
-
-            else -> {
-                VaultSearchActionType.NONE
-            }
-        }
+    val action = searchStateHolder.uiState.action(uiState.query)
 
     LaunchedEffect(action) {
-        if (action != VaultSearchActionType.MORE) moreMenuExpanded = false
+        if (action != VaultSearchAction.MORE) moreMenuExpanded = false
     }
     LifecycleResumeEffect(Unit) {
         onPauseOrDispose { moreMenuExpanded = false }
@@ -60,7 +45,7 @@ internal fun VaultSearchAction(
 
     Box(modifier = modifier.zIndex(1f)) {
         when (action) {
-            VaultSearchActionType.MORE -> {
+            VaultSearchAction.MORE -> {
                 IconButton(
                     onClick = { moreMenuExpanded = true },
                 ) {
@@ -68,7 +53,7 @@ internal fun VaultSearchAction(
                 }
             }
 
-            VaultSearchActionType.CLEAR -> {
+            VaultSearchAction.CLEAR -> {
                 IconButton(
                     onClick = searchStateHolder::clear,
                 ) {
@@ -79,7 +64,7 @@ internal fun VaultSearchAction(
                 }
             }
 
-            VaultSearchActionType.NONE -> {
+            VaultSearchAction.NONE -> {
                 Spacer(Modifier.size(VaultSearchActionSize))
             }
         }

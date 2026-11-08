@@ -17,7 +17,7 @@ import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
@@ -51,10 +51,6 @@ class VaultViewModel
 
         private val _uiState = MutableStateFlow(VaultUiState())
         val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
-
-        private fun emitError(message: UiErrorMessage) {
-            emitEffect(VaultEffect.ShowError(message))
-        }
 
         private val totp = otpCodeRuntimeFactory.create(viewModelScope)
 
@@ -197,7 +193,11 @@ class VaultViewModel
                     val categories =
                         when (readState) {
                             RecoverableReadState.Loading -> VaultCategoriesState.Loading
-                            is RecoverableReadState.Ready -> VaultCategoriesState.Ready(readState.value)
+                            is RecoverableReadState.Ready ->
+                                readState.value
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.let(VaultCategoriesState::Ready)
+                                    ?: VaultCategoriesState.ReadyEmpty
                             is RecoverableReadState.Failed -> VaultCategoriesState.Failed
                         }
                     mutate(VaultMutation.CategoriesStateChanged(categories))
@@ -212,10 +212,6 @@ class VaultViewModel
         }
 
         fun retryLibrarySettings() = librarySettingsRead.retry()
-
-        private fun emitEffect(effect: VaultEffect) {
-            pageEffects.tryEmit(effect)
-        }
 
         private fun emitError(
             owner: Any,

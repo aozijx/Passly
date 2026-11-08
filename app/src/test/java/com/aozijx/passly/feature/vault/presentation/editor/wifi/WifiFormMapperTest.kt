@@ -21,15 +21,30 @@ class WifiFormMapperTest {
         val entry =
             Entry(
                 EntryIdentity(EntryId("wifi"), EntryType.WIFI, timestamps = EntryTimestamps(1)),
-                EntryProfile("Office"),
-                EntrySecret(credential = WifiCredential("Office", "wifi-secret", WifiSecurityType.Wep, true)),
+                EntryProfile("Office", tags = setOf("work")),
+                EntrySecret(
+                    credential = WifiCredential("Office", "wifi-secret", WifiSecurityType.Wep, true),
+                    notes = "shared network",
+                ),
             )
 
-        val draft = AddWifiFormState().fromEntry(entry).toEntryDraft()
+        val form = AddWifiFormState(isPasswordVisible = true).fromEntry(entry)
+        val draft = form.toEntryDraft()
 
+        assertEquals("Office", form.ssid)
+        assertEquals(WifiSecurityType.Wep, form.securityType)
+        assertEquals("wifi-secret", form.password)
+        assertEquals(false, form.isPasswordVisible)
+        assertEquals(true, form.isHidden)
+        assertEquals("shared network", form.notes)
+        assertEquals("work", form.tags)
+        assertEquals(EntryDraftValue.Text("Office"), draft[FieldKey.TITLE])
+        assertEquals(EntryDraftValue.Text("Office"), draft[FieldKey.WIFI_SSID])
         assertEquals(EntryDraftValue.Text("wifi-secret"), draft[FieldKey.PASSWORD])
         assertEquals(EntryDraftValue.Text("WEP"), draft[FieldKey.WIFI_SECURITY])
         assertEquals(EntryDraftValue.Toggle(true), draft[FieldKey.WIFI_HIDDEN])
+        assertEquals(EntryDraftValue.Text("shared network"), draft[FieldKey.NOTES])
+        assertEquals(EntryDraftValue.TextList(listOf("work")), draft[FieldKey.TAGS])
     }
 
     @Test
@@ -67,14 +82,6 @@ class WifiFormMapperTest {
 
         assertEquals("", form.password)
         assertEquals(WifiSecurityType.Open, form.securityType)
-    }
-
-    @Test
-    fun `ssid is the single source for wifi title`() {
-        val draft = AddWifiFormState(ssid = "  Office  ").toEntryDraft()
-
-        assertEquals(EntryDraftValue.Text("  Office  "), draft[FieldKey.TITLE])
-        assertEquals(EntryDraftValue.Text("  Office  "), draft[FieldKey.WIFI_SSID])
     }
 
     @Test

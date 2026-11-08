@@ -85,7 +85,7 @@ fun FaviconCropScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     AsyncImage(
-                        model = toLocalIconImageModel(stagedPath),
+                        model = toLocalIconImageModel(stagedPath)?.uri,
                         contentDescription = null,
                         onSuccess = { success ->
                             val drawable = success.result.drawable

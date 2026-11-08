@@ -36,8 +36,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpStateProvider
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
 import kotlinx.coroutines.flow.Flow
 
 @Composable

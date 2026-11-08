@@ -217,6 +217,8 @@
   <string name="app_package_picker_search">搜索应用或包名</string>
   <string name="app_package_picker_load_failed">应用列表暂时无法加载，请重试。</string>
   <string name="app_package_picker_retry">重试</string>
+  <string name="app_package_picker_no_apps">没有可关联的应用。</string>
+  <string name="app_package_picker_no_matches">没有匹配的应用。</string>
   <string name="revision_history_title">版本历史</string>
   <string name="revision_history_empty">暂无可用版本</string>
   <string name="revision_version_format">版本 %1$d</string>
@@ -254,4 +256,7 @@
     <string name="auth_kdf_calibrating">正在按设备性能设置密码保护参数…</string>
     <string name="auth_kdf_initialization_failed">无法保存密码保护参数。请重试打开应用；不会自动重置已有数据。</string>
     <string name="auth_kdf_selected">Argon2id 已按设备能力设置并保存：内存 %1$d MiB、迭代 %2$d 次、并行度 %3$d。以后解锁沿用这些参数。</string>
+  <string name="vault_password_card_favorite">已收藏 · 加密保存</string>
+  <string name="vault_password_card_autofill">自动填充凭据</string>
+  <string name="vault_password_card_protected">受保护的登录凭据</string>
 </resources>

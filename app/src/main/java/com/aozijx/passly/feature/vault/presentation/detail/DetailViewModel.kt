@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
@@ -13,9 +12,6 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
-import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
@@ -23,6 +19,7 @@ import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
@@ -33,23 +30,9 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
-import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
-import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCase
-import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
-import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
-import com.aozijx.passly.feature.vault.history.RevisionOperationResult
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionFailure
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRevealStore
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
 import com.aozijx.passly.runtime.session.SessionLockedException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -85,10 +68,7 @@ class DetailViewModel
         private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
         private val faviconImageProcessor: FaviconImageProcessor,
         private val presentationLoader: DetailPresentationLoader,
-        private val observeEntryRevisionMetadata: ObserveEntryRevisionMetadataUseCase,
-        private val compareEntryRevision: CompareEntryRevisionUseCase,
-        private val revealRevisionFields: RevealRevisionFieldsUseCase,
-        private val restoreEntryRevision: RestoreEntryRevisionUseCase,
+        private val revisionWorkflowFactory: DetailRevisionWorkflowFactory,
         private val relatedPasswordLinks: RelatedPasswordLinks,
         private val logger: Logger,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
@@ -106,7 +86,6 @@ class DetailViewModel
         }
 
         private val revealStore = DetailRevealStore()
-        private val revisionRevealStore = DetailRevisionRevealStore()
         private val faviconSession = DetailFaviconSession(faviconImageProcessor, viewModelScope)
         private val otpRuntime = otpCodeRuntimeFactory.create(viewModelScope)
         private val qrSession =
@@ -118,11 +97,8 @@ class DetailViewModel
         private var historyJob: Job? = null
         private var packagePickerLoadJob: Job? = null
         private var tagEditorLoadJob: Job? = null
-        private var revisionObservationJob: Job? = null
-        private var revisionOperationJob: Job? = null
         private var snapshotRefreshJob: Job? = null
         private var historyObservationGeneration = 0L
-        private var revisionObservationGeneration = 0L
         private var loadedEntryId: EntryId? = null
         private var loadedLaunchMode = DetailLaunchMode.VIEW
 
@@ -134,6 +110,14 @@ class DetailViewModel
                 present = presentationLoader::present,
                 onMutation = ::mutate,
                 onReveal = ::setRevealedField,
+            )
+        private val revisionWorkflow =
+            revisionWorkflowFactory.create(
+                scope = viewModelScope,
+                workSession = workSession,
+                currentState = { _uiState.value.revisions },
+                publishMutation = { mutate(DetailMutation.Revision(it)) },
+                onRestoreSucceeded = ::onRevisionRestoreSucceeded,
             )
         private val passwordRelationsWorkflow =
             DetailPasswordRelationsWorkflow(
@@ -189,12 +173,11 @@ class DetailViewModel
 
         private val _otpState = MutableStateFlow<OtpCodeState?>(null)
         val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
-        private val revisionRevealState = MutableStateFlow(emptyMap<SensitiveFieldKey, SensitiveValue>())
         val presentation: StateFlow<DetailPresentationModel?> =
             combine(
                 _uiState,
                 _otpState,
-                revisionRevealState,
+                revisionWorkflow.revealedFields,
             ) { state, otp, revisionReveals ->
                 toDetailPresentationModel(state, otp, revisionReveals)
             }.stateIn(
@@ -266,6 +249,10 @@ class DetailViewModel
 
                 DetailUiAction.LoadPackagePickerApps -> {
                     loadPackagePickerApps()
+                }
+
+                is DetailUiAction.PackagePickerSearchChanged -> {
+                    mutate(DetailMutation.PackagePickerSearchChanged(event.query))
                 }
 
                 DetailUiAction.RetryDetailLoad -> {
@@ -402,7 +389,7 @@ class DetailViewModel
                 }
 
                 is DetailUiAction.SubmitTag -> {
-                    mutate(DetailMutation.TagSubmitted(event.value))
+                    submitTag(event.value)
                 }
 
                 is DetailUiAction.RemoveTag -> {
@@ -458,13 +445,13 @@ class DetailViewModel
                     val editor =
                         _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                             ?: return
-                    val source = event.source.toDetailFaviconSource()
+                    val source = event.source
                     faviconSession.discardReplacedSource(editor, source)
                     mutate(DetailMutation.FaviconSourceChanged(source))
                 }
 
                 is DetailUiAction.SelectFaviconTab -> {
-                    mutate(DetailMutation.FaviconTabChanged(event.tab.toDetailFaviconTab()))
+                    mutate(DetailMutation.FaviconTabChanged(event.tab))
                 }
 
                 is DetailUiAction.UpdateFaviconSearch -> {
@@ -566,51 +553,56 @@ class DetailViewModel
                 }
 
                 DetailUiAction.OpenRevisionHistory -> {
-                    openRevisionHistory()
+                    _uiState.value.entry?.id?.let(revisionWorkflow::open)
                 }
 
                 DetailUiAction.RetryRevisionHistory -> {
-                    retryRevisionHistory()
+                    revisionWorkflow.retry()
                 }
 
                 DetailUiAction.DismissRevisionHistory -> {
-                    closeRevisionHistory()
+                    revisionWorkflow.close()
                 }
 
                 is DetailUiAction.SelectRevision -> {
-                    selectRevision(event.revisionId)
+                    revisionWorkflow.select(event.revisionId)
                 }
 
                 DetailUiAction.RevisionBack -> {
-                    if (DetailRevisionReducer.isRestoreInProgress(_uiState.value.revisions)) return
-                    revisionOperationJob?.cancel()
-                    clearRevisionReveals()
-                    mutate(DetailMutation.Revision(DetailRevisionMutation.BackToList))
+                    revisionWorkflow.back()
                 }
 
                 is DetailUiAction.RevealRevisionField -> {
-                    revealRevisionField(event.key)
+                    revisionWorkflow.reveal(event.key)
                 }
 
                 DetailUiAction.RequestRevisionRestore -> {
-                    mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreRequested))
+                    revisionWorkflow.requestRestore()
                 }
 
                 DetailUiAction.CancelRevisionRestore -> {
-                    mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreCancelled))
+                    revisionWorkflow.cancelRestore()
                 }
 
                 DetailUiAction.ConfirmRevisionRestore -> {
-                    restoreSelectedRevision()
+                    revisionWorkflow.restore()
                 }
 
                 DetailUiAction.RetryActivityHistory -> {
                     retryActivityHistory()
                 }
 
+                is DetailUiAction.ActivityFilterChanged -> {
+                    mutate(DetailMutation.ActivityFilterChanged(event.filter))
+                }
+
                 DetailUiAction.OpenPasswordBinding,
                 DetailUiAction.RetryPasswordBinding,
                 -> openPasswordBinding()
+
+                is DetailUiAction.PasswordBindingSearchChanged -> {
+                    mutate(DetailMutation.PasswordBindingSearchChanged(event.query))
+                }
 
                 DetailUiAction.DismissPasswordBinding -> {
                     passwordRelationsWorkflow.dismiss()
@@ -653,7 +645,7 @@ class DetailViewModel
             }
         }
 
-        private fun revealFieldsFromPresentation(fields: Set<DetailFieldUiModel>) {
+        private fun revealFieldsFromPresentation(fields: Set<DetailField>) {
             val current = _uiState.value.entry ?: return
             val hiddenKeys =
                 fields
@@ -705,12 +697,10 @@ class DetailViewModel
             historyJob?.cancel()
             packagePickerLoadJob?.cancel()
             passwordRelationsWorkflow.close()
-            revisionObservationJob?.cancel()
-            revisionOperationJob?.cancel()
+            revisionWorkflow.reset()
             otpRuntime.clearAllSensitiveState()
             _otpState.value = null
             revealStore.clear()
-            clearRevisionReveals()
             mutate(DetailMutation.StateCleared)
             entryLoadJob =
                 viewModelScope.launch {
@@ -785,6 +775,15 @@ class DetailViewModel
             refreshSnapshotAfterRestore(entryId, token)
         }
 
+        private fun onRevisionRestoreSucceeded(
+            entryId: EntryId,
+            token: DetailWorkSession.Scope.Active,
+        ) {
+            if (!workSession.isCurrent(token) || _uiState.value.entry?.id != entryId) return
+            if (_uiState.value.entry?.type == EntryType.OTP) otpRuntime.entryChanged(entryId.value)
+            refreshSnapshotAfterRestore(entryId, token)
+        }
+
         private fun refreshSnapshotAfterRestore(
             entryId: EntryId,
             token: DetailWorkSession.Scope.Active,
@@ -828,7 +827,7 @@ class DetailViewModel
         private fun retryActivityHistory() {
             val state = _uiState.value
             val entryId = state.entry?.id ?: return
-            if (state.activityHistory != DetailActivityHistoryState.Failed) return
+            if (state.activityHistory !is DetailActivityHistoryState.Failed) return
             val token = workSession.current(entryId) ?: return
             observeActivityHistory(entryId, token)
         }
@@ -896,9 +895,7 @@ class DetailViewModel
             passwordRelationsWorkflow.close()
             qrSession.close()
             revealStore.clear()
-            revisionObservationJob?.cancel()
-            revisionOperationJob?.cancel()
-            clearRevisionReveals()
+            revisionWorkflow.reset()
             otpRuntime.clearAllSensitiveState()
             _otpState.value = null
             mutate(DetailMutation.StateCleared)
@@ -916,221 +913,9 @@ class DetailViewModel
                 }
         }
 
-        private fun openRevisionHistory() {
-            val state = _uiState.value
-            val entryId = state.entry?.id ?: return
-            if ((state.revisions as? DetailRevisionState.Open)?.entryId == entryId) return
-            val token = workSession.current(entryId) ?: return
-            revisionObservationJob?.cancel()
-            revisionOperationJob?.cancel()
-            clearRevisionReveals()
-            mutate(DetailMutation.Revision(DetailRevisionMutation.Opened(entryId)))
-            observeRevisionHistory(entryId, token)
-        }
-
-        private fun retryRevisionHistory() {
-            val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
-            if (state.page != DetailRevisionPage.List || state.revisions !is DetailRevisionListState.Failed) return
-            val token = workSession.current(state.entryId) ?: return
-            revisionObservationJob?.cancel()
-            mutate(DetailMutation.Revision(DetailRevisionMutation.Opened(state.entryId)))
-            observeRevisionHistory(state.entryId, token)
-        }
-
-        private fun observeRevisionHistory(
-            entryId: EntryId,
-            token: DetailWorkSession.Scope.Active,
-        ) {
-            val generation = ++revisionObservationGeneration
-            revisionObservationJob =
-                viewModelScope.launch {
-                    try {
-                        val metadata =
-                            when (val observation = observeEntryRevisionMetadata(entryId)) {
-                                is AppResult.Failure -> {
-                                    if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@launch
-                                    mutateRevisionFailure(
-                                        entryId = entryId,
-                                        revisionId = null,
-                                        result = RevisionOperationResult.Failed(observation.error),
-                                    )
-                                    return@launch
-                                }
-
-                                is AppResult.Success -> observation.data
-                            }
-                        metadata.collect { revisions ->
-                            if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@collect
-                            mutate(
-                                DetailMutation.Revision(
-                                    DetailRevisionMutation.MetadataChanged(entryId.value, revisions),
-                                ),
-                            )
-                        }
-                    } catch (cancelled: CancellationException) {
-                        throw cancelled
-                    } catch (_: SessionLockedException) {
-                        // Session closure invalidates this visit and clears revision state.
-                    } catch (_: Exception) {
-                        if (workSession.isCurrent(token) && generation == revisionObservationGeneration) {
-                            mutate(
-                                DetailMutation.Revision(
-                                    DetailRevisionMutation.Failed(
-                                        entryId.value,
-                                        null,
-                                        DetailRevisionFailure.UNEXPECTED,
-                                    ),
-                                ),
-                            )
-                        }
-                    }
-                }
-        }
-
-        private fun closeRevisionHistory() {
-            if (DetailRevisionReducer.isRestoreInProgress(_uiState.value.revisions)) return
-            revisionObservationJob?.cancel()
-            revisionOperationJob?.cancel()
-            clearRevisionReveals()
-            mutate(DetailMutation.Revision(DetailRevisionMutation.Closed))
-        }
-
-        private fun selectRevision(rawRevisionId: String) {
-            val revisionState = _uiState.value.revisions as? DetailRevisionState.Open ?: return
-            if (DetailRevisionReducer.isRestoreInProgress(revisionState)) return
-            val entryId = revisionState.entryId
-            val token = workSession.current(entryId) ?: return
-            val revisionId = EntryRevisionId(rawRevisionId)
-            revisionOperationJob?.cancel()
-            clearRevisionReveals()
-            mutate(
-                DetailMutation.Revision(
-                    DetailRevisionMutation.ComparisonStarted(entryId.value, rawRevisionId),
-                ),
-            )
-            revisionOperationJob =
-                viewModelScope.launch {
-                    val result = compareEntryRevision(entryId, revisionId)
-                    if (!workSession.isCurrent(token) || !currentCoroutineContext().isActive) return@launch
-                    when (result) {
-                        is RevisionOperationResult.Succeeded -> {
-                            mutate(
-                                DetailMutation.Revision(
-                                    DetailRevisionMutation.ComparisonLoaded(
-                                        entryId.value,
-                                        rawRevisionId,
-                                        result.value,
-                                    ),
-                                ),
-                            )
-                        }
-
-                        else -> {
-                            mutateRevisionFailure(entryId, rawRevisionId, result)
-                        }
-                    }
-                }
-        }
-
-        private fun revealRevisionField(key: SensitiveFieldKey) {
-            val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
-            val comparison = state.page as? DetailRevisionPage.Comparison ?: return
-            val ready = comparison.phase as? DetailRevisionComparisonPhase.Ready ?: return
-            if (ready.restore != DetailRevisionRestorePhase.Idle ||
-                ready.differences.none {
-                    it.field == RevisionFieldId.Sensitive(key) &&
-                        it.kind in setOf(RevisionDifferenceKind.CHANGED, RevisionDifferenceKind.REMOVED)
-                }
-            ) {
-                return
-            }
-            val entryId = state.entryId
-            val token = workSession.current(entryId) ?: return
-            val revisionId = EntryRevisionId(comparison.revisionId)
-            revisionOperationJob?.cancel()
-            revisionOperationJob =
-                viewModelScope.launch {
-                    val result = revealRevisionFields(entryId, revisionId, setOf(key))
-                    val currentPage = (_uiState.value.revisions as? DetailRevisionState.Open)?.page
-                    if (!workSession.isCurrent(token) || currentPage !== comparison || !currentCoroutineContext().isActive) {
-                        if (result is RevisionOperationResult.Succeeded) result.value.forEach { it.value.wipe() }
-                        return@launch
-                    }
-                    when (result) {
-                        is RevisionOperationResult.Succeeded -> {
-                            workSession.publishReveals(token, result.value.map { it.key to it.value }, revisionRevealStore::replace)
-                            if (workSession.isCurrent(token)) revisionRevealState.value = revisionRevealStore.snapshot()
-                        }
-
-                        RevisionOperationResult.Cancelled -> {
-                            Unit
-                        }
-
-                        else -> {
-                            mutateRevisionFailure(entryId, revisionId.value, result)
-                        }
-                    }
-                }
-        }
-
-        private fun restoreSelectedRevision() {
-            val state = _uiState.value.revisions as? DetailRevisionState.Open ?: return
-            val comparison = state.page as? DetailRevisionPage.Comparison ?: return
-            val ready = comparison.phase as? DetailRevisionComparisonPhase.Ready ?: return
-            if (ready.restore != DetailRevisionRestorePhase.Confirming) return
-            val entryId = state.entryId
-            val token = workSession.current(entryId) ?: return
-            val revisionId = EntryRevisionId(comparison.revisionId)
-            revisionOperationJob?.cancel()
-            mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreStarted))
-            revisionOperationJob =
-                viewModelScope.launch {
-                    val result = restoreEntryRevision(entryId, revisionId)
-                    if (!workSession.isCurrent(token) || !currentCoroutineContext().isActive) return@launch
-                    when (result) {
-                        is RevisionOperationResult.Succeeded -> {
-                            clearRevisionReveals()
-                            mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreSucceeded))
-                            if (_uiState.value.entry?.type == EntryType.OTP) {
-                                otpRuntime.entryChanged(entryId.value)
-                            }
-                            refreshSnapshotAfterRestore(entryId, token)
-                        }
-
-                        RevisionOperationResult.Cancelled -> {
-                            mutate(DetailMutation.Revision(DetailRevisionMutation.RestoreAborted))
-                        }
-
-                        else -> {
-                            mutateRevisionFailure(entryId, revisionId.value, result)
-                        }
-                    }
-                }
-        }
-
-        private fun mutateRevisionFailure(
-            entryId: EntryId,
-            revisionId: String?,
-            result: RevisionOperationResult<*>,
-        ) {
-            val failure =
-                when (result) {
-                    RevisionOperationResult.Missing -> DetailRevisionFailure.MISSING
-                    RevisionOperationResult.Stale -> DetailRevisionFailure.STALE
-                    RevisionOperationResult.InvalidSnapshot -> DetailRevisionFailure.INVALID
-                    is RevisionOperationResult.AuthenticationDenied -> DetailRevisionFailure.AUTHENTICATION
-                    else -> DetailRevisionFailure.UNEXPECTED
-                }
-            mutate(
-                DetailMutation.Revision(
-                    DetailRevisionMutation.Failed(entryId.value, revisionId, failure),
-                ),
-            )
-        }
-
-        private fun clearRevisionReveals() {
-            revisionRevealStore.clear()
-            revisionRevealState.value = emptyMap()
+        private fun submitTag(value: String) {
+            if (_uiState.value.saveState is DetailSaveState.Saving || value.isBlank()) return
+            mutate(DetailMutation.TagSubmitted(value))
         }
 
         private suspend fun persistEntryEdit(
@@ -1205,7 +990,19 @@ class DetailViewModel
             val state = _uiState.value
             val entryId = state.entry?.id ?: return
             val token = workSession.current(entryId) ?: return
-            if (state.packagePickerAppsLoaded || packagePickerLoadJob?.isActive == true) return
+            when (state.packagePickerApps) {
+                is AppPackagePickerUiState.Ready -> {
+                    mutate(DetailMutation.PackagePickerSearchChanged(""))
+                    return
+                }
+
+                AppPackagePickerUiState.Loading -> return
+                AppPackagePickerUiState.NotRequested,
+                AppPackagePickerUiState.Failed,
+                -> Unit
+            }
+            if (packagePickerLoadJob?.isActive == true) return
+            mutate(DetailMutation.PackagePickerAppsLoadStarted(entryId))
             packagePickerLoadJob =
                 viewModelScope.launch {
                     try {

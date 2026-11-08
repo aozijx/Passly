@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
 import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import org.junit.Assert.assertEquals
@@ -43,6 +44,7 @@ class DetailReducerTest {
 
         assertEquals(confirming, updated.passwordUnlink)
     }
+
     @Test
     fun relationRefreshUpdatesAllProjectionsOnlyForTheCurrentEntry() {
         val current = entry("current")
@@ -306,8 +308,7 @@ class DetailReducerTest {
             )
 
         assertEquals(listOf(item), associated.associatedApps)
-        assertEquals(emptyList<Any>(), stalePicker.packagePickerApps)
-        assertFalse(stalePicker.packagePickerAppsLoaded)
+        assertEquals(AppPackagePickerUiState.NotRequested, stalePicker.packagePickerApps)
     }
 
     private fun presentation(
@@ -334,8 +335,8 @@ class DetailReducerTest {
                 DetailMutation.PackagePickerAppsChanged(EntryId("entry-1"), listOf(item)),
             )
 
-        assertEquals(listOf(item), actual.packagePickerApps)
-        assertTrue(actual.packagePickerAppsLoaded)
+        val ready = actual.packagePickerApps as AppPackagePickerUiState.Ready
+        assertEquals(listOf(item), ready.apps)
     }
 
     @Test

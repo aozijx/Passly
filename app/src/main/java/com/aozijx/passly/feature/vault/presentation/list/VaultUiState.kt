@@ -17,9 +17,15 @@ data class VaultUiState(
 sealed interface VaultCategoriesState {
     data object Loading : VaultCategoriesState
 
+    data object ReadyEmpty : VaultCategoriesState
+
     data class Ready(
         val values: List<String>,
-    ) : VaultCategoriesState
+    ) : VaultCategoriesState {
+        init {
+            require(values.isNotEmpty()) { "Ready categories must contain at least one value" }
+        }
+    }
 
     data object Failed : VaultCategoriesState
 }

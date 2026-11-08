@@ -14,7 +14,10 @@ internal object TrashUiMapper {
                 version = entry.identity.version.value,
                 title = entry.title,
                 entryType = entry.entryType,
-                username = entry.username,
+                supportingText =
+                    entry.username.takeIf(String::isNotBlank)
+                        ?: entry.associatedDomain?.takeIf(String::isNotBlank)
+                        ?: entry.associatedAppPackage?.takeIf(String::isNotBlank),
                 deletedAtEpochMs = entry.deletedAt,
                 associatedDomain = entry.associatedDomain,
                 associatedAppPackage = entry.associatedAppPackage,

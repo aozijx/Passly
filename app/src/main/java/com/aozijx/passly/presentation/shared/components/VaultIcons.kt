@@ -210,8 +210,6 @@ object VaultIcons {
         }
     }
 
-    fun getIconByName(name: String?): ImageVector = findDefinition(name)?.imageVector ?: Icons.Default.Key
-
     private fun definition(
         key: String,
         @StringRes labelRes: Int,

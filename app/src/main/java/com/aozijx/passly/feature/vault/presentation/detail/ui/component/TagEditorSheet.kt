@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
 import kotlinx.coroutines.launch
@@ -89,38 +90,41 @@ fun TagEditorSheet(
                 style = MaterialTheme.typography.headlineSmall,
             )
 
-            if (state.draftTags.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    state.draftTags.forEach { tag ->
-                        val removeLabel = stringResource(R.string.vault_detail_tag_remove, tag)
-                        InputChip(
-                            enabled = !isSaving,
-                            selected = true,
-                            onClick = { onRemove(tag) },
-                            label = { Text(tag) },
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = removeLabel,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            },
-                            modifier =
-                                Modifier.semantics {
-                                    if (!isSaving) {
-                                        customActions =
-                                            listOf(
-                                                CustomAccessibilityAction(removeLabel) {
-                                                    onRemove(tag)
-                                                    true
-                                                },
-                                            )
-                                    }
+            when (val draftTags = state.draftTags) {
+                DetailTagChipsUiState.Empty -> Unit
+                is DetailTagChipsUiState.Items -> {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        draftTags.tags.forEach { tag ->
+                            val removeLabel = stringResource(R.string.vault_detail_tag_remove, tag)
+                            InputChip(
+                                enabled = !isSaving,
+                                selected = true,
+                                onClick = { onRemove(tag) },
+                                label = { Text(tag) },
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = removeLabel,
+                                        modifier = Modifier.size(18.dp),
+                                    )
                                 },
-                        )
+                                modifier =
+                                    Modifier.semantics {
+                                        if (!isSaving) {
+                                            customActions =
+                                                listOf(
+                                                    CustomAccessibilityAction(removeLabel) {
+                                                        onRemove(tag)
+                                                        true
+                                                    },
+                                                )
+                                        }
+                                    },
+                            )
+                        }
                     }
                 }
             }
@@ -166,21 +170,24 @@ fun TagEditorSheet(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions =
                     KeyboardActions(
-                        onDone = { if (!isSaving && state.input.isNotBlank()) onSubmit(state.input) },
+                        onDone = { onSubmit(state.input) },
                     ),
             )
 
-            if (state.suggestions.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    state.suggestions.forEach { suggestion ->
-                        AssistChip(
-                            enabled = !isSaving,
-                            onClick = { onSubmit(suggestion) },
-                            label = { Text(suggestion) },
-                        )
+            when (val suggestions = state.suggestions) {
+                DetailTagChipsUiState.Empty -> Unit
+                is DetailTagChipsUiState.Items -> {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        suggestions.tags.forEach { suggestion ->
+                            AssistChip(
+                                enabled = !isSaving,
+                                onClick = { onSubmit(suggestion) },
+                                label = { Text(suggestion) },
+                            )
+                        }
                     }
                 }
             }

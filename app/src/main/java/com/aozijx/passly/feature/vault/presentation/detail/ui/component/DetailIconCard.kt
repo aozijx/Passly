@@ -18,7 +18,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIconCardUiModel
-import com.aozijx.passly.presentation.shared.components.VaultIcons
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 @Composable
@@ -27,23 +26,7 @@ fun DetailIconCard(
     onEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val iconDescription =
-        when {
-            !model.iconCustomPath.isNullOrBlank() -> {
-                stringResource(R.string.vault_detail_favicon_custom_image)
-            }
-
-            !model.iconName.isNullOrBlank() -> {
-                VaultIcons
-                    .findDefinition(model.iconName)
-                    ?.let { stringResource(it.labelRes) }
-                    ?: stringResource(R.string.vault_detail_favicon_built_in)
-            }
-
-            else -> {
-                stringResource(R.string.vault_detail_favicon_default)
-            }
-        }
+    val iconDescription = stringResource(model.iconDescriptionRes)
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,
@@ -57,12 +40,9 @@ fun DetailIconCard(
             VaultItemIcon(
                 modifier = Modifier,
                 iconName = model.iconName,
-                iconCustomPath = model.iconCustomPath,
+                customImageModel = model.iconImageModel,
                 associatedAppPackage = model.associatedAppPackage,
-                entryType = model.entryType,
-                title = model.title,
-                username = model.username,
-                associatedDomain = model.associatedDomain,
+                visualCategory = model.visualCategory,
                 iconColor = model.iconColor,
             )
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {

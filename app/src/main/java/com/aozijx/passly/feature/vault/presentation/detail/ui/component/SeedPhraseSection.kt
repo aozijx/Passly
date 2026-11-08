@@ -18,72 +18,95 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSeedPhraseUiModel
 
 @Composable
 fun SeedPhraseSection(
-    hasSeedPhrase: Boolean,
-    revealedSeedPhrase: String?,
+    state: DetailSeedPhraseUiModel,
     onCopy: () -> Unit,
     onReveal: () -> Unit,
 ) {
-    val wordList =
-        remember(revealedSeedPhrase) {
-            revealedSeedPhrase?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
-        }
-
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.seed_phrase_title),
-            value = revealedSeedPhrase?.let { stringResource(R.string.seed_phrase_revealed) },
-            isRevealed = revealedSeedPhrase != null,
+            value = state.revealedTextOrNull(),
+            isRevealed = state.isRevealed,
             onCopy = onCopy,
             onEdit = null,
-            onReveal = onReveal,
+            onReveal =
+                onReveal.takeIf {
+                    state.isRevealed
+                },
         )
 
-        if (wordList.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                shape = MaterialTheme.shapes.large,
+        when (state) {
+            is DetailSeedPhraseUiModel.RevealedWords -> SeedWordsCard(state.words)
+            DetailSeedPhraseUiModel.Absent,
+            DetailSeedPhraseUiModel.Hidden,
+            DetailSeedPhraseUiModel.RevealedWithoutWords,
+            -> Unit
+        }
+
+        if (state.canReveal) {
+            RevealSeedPhraseButton(onReveal)
+        }
+    }
+}
+
+@Composable
+private fun DetailSeedPhraseUiModel.revealedTextOrNull(): String? =
+    when (this) {
+        DetailSeedPhraseUiModel.Absent,
+        DetailSeedPhraseUiModel.Hidden,
+        -> null
+
+        DetailSeedPhraseUiModel.RevealedWithoutWords,
+        is DetailSeedPhraseUiModel.RevealedWords,
+        -> stringResource(R.string.seed_phrase_revealed)
+    }
+
+@Composable
+private fun SeedWordsCard(words: List<String>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.word_index_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.word_index_hint),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(bottom = 12.dp),
-                    )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        itemsIndexed(wordList) { index, word ->
-                            SeedWordChip(index = index + 1, word = word)
-                        }
-                    }
+                itemsIndexed(words) { index, word ->
+                    SeedWordChip(index = index + 1, word = word)
                 }
             }
         }
+    }
+}
 
-        if (hasSeedPhrase && revealedSeedPhrase == null) {
-            Button(
-                onClick = onReveal,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-            ) {
-                Icon(Icons.Default.Visibility, null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.vault_reveal_info))
-            }
-        }
+@Composable
+private fun RevealSeedPhraseButton(onReveal: () -> Unit) {
+    Button(
+        onClick = onReveal,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Icon(Icons.Default.Visibility, null)
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.vault_reveal_info))
     }
 }
 

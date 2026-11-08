@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconEditorTabUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconProcessingErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconWorkUiState
 import org.junit.Assert.assertEquals
@@ -27,10 +25,10 @@ class DetailFaviconPresentationTest {
 
         assertTrue(actual.dirty)
         assertEquals(
-            FaviconDraftSourceUiModel.PrivateImage("/private/icon.webp"),
+            DetailFaviconSource.PrivateImage("/private/icon.webp"),
             actual.source,
         )
-        assertEquals(FaviconEditorTabUiModel.CUSTOM_IMAGE, actual.selectedTab)
+        assertEquals(DetailFaviconTab.CUSTOM_IMAGE, actual.selectedTab)
         assertEquals(
             FaviconWorkUiState.Failed(FaviconProcessingErrorUiModel.INVALID_IMAGE),
             actual.work,

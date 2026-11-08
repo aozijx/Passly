@@ -20,14 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultFilterOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.icon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
 
 @Composable
 fun VaultFilterBar(
     modifier: Modifier = Modifier,
-    filters: List<VaultAddTypeUiModel>,
-    selectedFilters: Set<VaultAddTypeUiModel>,
+    filters: List<VaultFilterOptionUiModel>,
+    allFiltersSelected: Boolean,
     onFilterToggled: (VaultAddTypeUiModel?) -> Unit,
 ) {
     Surface(
@@ -40,14 +41,14 @@ fun VaultFilterBar(
         ) {
             item(key = "all") {
                 FilterChip(
-                    selected = selectedFilters.isEmpty(),
+                    selected = allFiltersSelected,
                     onClick = { onFilterToggled(null) },
                     label = {
                         Text(
                             text = stringResource(R.string.tab_all),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight =
-                                if (selectedFilters.isEmpty()) {
+                                if (allFiltersSelected) {
                                     FontWeight.SemiBold
                                 } else {
                                     FontWeight.Normal
@@ -63,21 +64,21 @@ fun VaultFilterBar(
                     },
                 )
             }
-            items(filters, key = VaultAddTypeUiModel::name) { filter ->
-                val selected = filter in selectedFilters
+            items(filters, key = { it.type.name }) { filter ->
+                val type = filter.type
                 FilterChip(
-                    selected = selected,
-                    onClick = { onFilterToggled(filter) },
+                    selected = filter.selected,
+                    onClick = { onFilterToggled(type) },
                     label = {
                         Text(
-                            text = stringResource(filter.labelRes),
+                            text = stringResource(type.labelRes),
                             style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            fontWeight = if (filter.selected) FontWeight.SemiBold else FontWeight.Normal,
                         )
                     },
                     leadingIcon = {
                         Icon(
-                            imageVector = filter.icon(),
+                            imageVector = type.icon(),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )

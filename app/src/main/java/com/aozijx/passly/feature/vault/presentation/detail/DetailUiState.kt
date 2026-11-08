@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 
@@ -17,17 +18,15 @@ data class DetailUiState(
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<FieldKey, SensitiveValue> = emptyMap(),
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
-    val history: List<EntryActivity> = emptyList(),
-    val activityHistory: DetailActivityHistoryState = DetailActivityHistoryState.Loading,
+    val activityHistory: DetailActivityHistoryState = DetailActivityHistoryState.Loading(emptyList()),
+    val activityFilter: DetailActivityFilter = DetailActivityFilter.ALL,
     val accountGroupEntries: List<Entry> = emptyList(),
     val otherRelatedEntries: List<Entry> = emptyList(),
     val relatedPasswords: List<DetailRelatedPassword> = emptyList(),
     val passwordBinding: RelatedPasswordBindingUiState = RelatedPasswordBindingUiState.Closed,
     val passwordUnlink: RelatedPasswordUnlinkUiState = RelatedPasswordUnlinkUiState.Closed,
     val associatedApps: List<DetailInstalledApp> = emptyList(),
-    val packagePickerApps: List<DetailInstalledApp> = emptyList(),
-    val packagePickerAppsLoaded: Boolean = false,
-    val packagePickerAppsLoadFailed: Boolean = false,
+    val packagePickerApps: AppPackagePickerUiState<DetailInstalledApp> = AppPackagePickerUiState.NotRequested,
     val sections: List<DetailSectionKey> = emptyList(),
     val fieldEdits: DetailFieldEditState = DetailFieldEditState(),
     val saveState: DetailSaveState = DetailSaveState.Idle,
@@ -38,7 +37,17 @@ data class DetailUiState(
     fun revealed(key: FieldKey): SensitiveValue? = revealedFields[key]
 }
 
-enum class DetailActivityHistoryState { Loading, Ready, Failed }
+sealed interface DetailActivityHistoryState {
+    val activities: List<EntryActivity>
+
+    data class Loading(override val activities: List<EntryActivity>) : DetailActivityHistoryState
+
+    data class Ready(override val activities: List<EntryActivity>) : DetailActivityHistoryState
+
+    data class Failed(override val activities: List<EntryActivity>) : DetailActivityHistoryState
+}
+
+enum class DetailActivityFilter { ALL, ACTIONS, AUTOFILL }
 
 enum class DetailSnapshotState { Loading, Ready, NotFound, Failed, RefreshingAfterRestore, RefreshFailedAfterRestore }
 

@@ -9,9 +9,11 @@ class FabVisibilityGestureStateTest {
         val changes = mutableListOf<Boolean>()
         val state = FabVisibilityGestureState(changes::add)
 
+        state.onScroll(-1f)
         state.onScroll(-2f)
         state.onScroll(-4f)
         state.onScroll(0.5f)
+        state.onScroll(1f)
         state.onScroll(3f)
         state.onScroll(5f)
 

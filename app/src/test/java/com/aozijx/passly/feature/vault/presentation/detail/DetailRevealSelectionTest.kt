@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSshUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -33,7 +33,7 @@ class DetailRevealSelectionTest {
             )
 
         assertEquals(
-            setOf(DetailFieldUiModel.CARD_NUMBER),
+            setOf(DetailField.CARD_NUMBER),
             card.fieldsToReveal(),
         )
     }
@@ -54,6 +54,6 @@ class DetailRevealSelectionTest {
                 canRevealMore = true,
             )
 
-        assertEquals(setOf(DetailFieldUiModel.SSH_PASSPHRASE), ssh.fieldsToReveal())
+        assertEquals(setOf(DetailField.SSH_PASSPHRASE), ssh.fieldsToReveal())
     }
 }

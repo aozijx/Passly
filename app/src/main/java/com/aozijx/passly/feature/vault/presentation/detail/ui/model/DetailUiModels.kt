@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 data class DetailHeaderUiModel(
     val title: String,
@@ -12,14 +13,6 @@ data class DetailHeaderUiModel(
     val isEditingTitle: Boolean,
     val canEditFullForm: Boolean,
     val entryType: EntryType,
-)
-
-data class DetailContentUiModel(
-    val accountGroupEntries: List<RelatedEntryUiModel>,
-    val otherRelatedEntries: List<RelatedEntryUiModel>,
-    val relatedPasswords: List<RelatedPasswordUiModel>,
-    val metadata: DetailMetadataUiModel,
-    val activities: List<DetailActivityUiModel>,
 )
 
 data class DetailMetadataUiModel(
@@ -56,8 +49,18 @@ data class RelatedPasswordUiModel(
     val linkId: String,
     val targetEntryId: String,
     val title: String,
-    val username: String,
+    val username: String?,
 )
+
+sealed interface DetailTagChipsUiState {
+    data object Empty : DetailTagChipsUiState
+
+    data class Items(val tags: List<String>) : DetailTagChipsUiState {
+        init {
+            require(tags.isNotEmpty())
+        }
+    }
+}
 
 data class DetailAssociatedInfoUiModel(
     val domain: String?,
@@ -95,7 +98,7 @@ data class DetailBankCardUiModel(
 )
 
 data class DetailCardTextFieldUiModel(
-    val field: DetailFieldUiModel,
+    val field: DetailField,
     @get:StringRes @param:StringRes val labelRes: Int,
     val value: String?,
     val editing: Boolean,

@@ -58,8 +58,9 @@ import coil.compose.AsyncImage
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconEditorTabUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconImageUrlDownloadUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconTab
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconProcessingErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconWorkUiState
@@ -74,9 +75,9 @@ import kotlinx.coroutines.launch
 fun FaviconEditorSheet(
     state: DetailFaviconEditorUiModel.Visible,
     isSaving: Boolean,
-    onTabSelected: (FaviconEditorTabUiModel) -> Unit,
+    onTabSelected: (DetailFaviconTab) -> Unit,
     onSearchChanged: (String) -> Unit,
-    onSourceSelected: (FaviconDraftSourceUiModel) -> Unit,
+    onSourceSelected: (DetailFaviconSource) -> Unit,
     onUploadRequested: () -> Unit,
     onImageUrlChanged: (String) -> Unit,
     onDownloadRequested: () -> Unit,
@@ -120,7 +121,7 @@ fun FaviconEditorSheet(
             ) {
                 FaviconEditorHeader(state.source)
                 PrimaryTabRow(selectedTabIndex = state.selectedTab.ordinal) {
-                    FaviconEditorTabUiModel.entries.forEach { tab ->
+                    DetailFaviconTab.entries.forEach { tab ->
                         Tab(
                             selected = state.selectedTab == tab,
                             onClick = { onTabSelected(tab) },
@@ -128,8 +129,8 @@ fun FaviconEditorSheet(
                             text = {
                                 Text(
                                     when (tab) {
-                                        FaviconEditorTabUiModel.ICON_LIBRARY -> stringResource(R.string.vault_detail_favicon_library)
-                                        FaviconEditorTabUiModel.CUSTOM_IMAGE -> stringResource(R.string.vault_detail_favicon_custom_image)
+                                        DetailFaviconTab.ICON_LIBRARY -> stringResource(R.string.vault_detail_favicon_library)
+                                        DetailFaviconTab.CUSTOM_IMAGE -> stringResource(R.string.vault_detail_favicon_custom_image)
                                     },
                                 )
                             },
@@ -137,7 +138,7 @@ fun FaviconEditorSheet(
                     }
                 }
                 when (state.selectedTab) {
-                    FaviconEditorTabUiModel.ICON_LIBRARY -> {
+                    DetailFaviconTab.ICON_LIBRARY -> {
                         FaviconIconLibrary(
                             state = state,
                             onSearchChanged = onSearchChanged,
@@ -146,7 +147,7 @@ fun FaviconEditorSheet(
                         )
                     }
 
-                    FaviconEditorTabUiModel.CUSTOM_IMAGE -> {
+                    DetailFaviconTab.CUSTOM_IMAGE -> {
                         FaviconCustomImage(
                             state = state,
                             onUploadRequested = onUploadRequested,
@@ -169,7 +170,7 @@ fun FaviconEditorSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
-                    onClick = { onSourceSelected(FaviconDraftSourceUiModel.InferredDefault) },
+                    onClick = { onSourceSelected(DetailFaviconSource.InferredDefault) },
                     enabled = dismissAllowed,
                 ) {
                     Text(stringResource(R.string.vault_detail_favicon_restore_default))
@@ -248,7 +249,7 @@ private fun FaviconCustomImage(
         )
         Button(
             onClick = onDownloadRequested,
-            enabled = state.imageUrl.trim().startsWith("https://") && !processing,
+            enabled = state.imageUrlDownloadState == FaviconImageUrlDownloadUiState.Enabled && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (processing) {
@@ -276,21 +277,21 @@ private fun FaviconProcessingErrorUiModel.messageRes(): Int =
     }
 
 @Composable
-private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
+private fun FaviconEditorHeader(source: DetailFaviconSource) {
     val text =
         when (source) {
-            FaviconDraftSourceUiModel.InferredDefault -> {
+            DetailFaviconSource.InferredDefault -> {
                 stringResource(R.string.vault_detail_favicon_default)
             }
 
-            is FaviconDraftSourceUiModel.BuiltIn -> {
+            is DetailFaviconSource.BuiltIn -> {
                 VaultIcons
                     .findDefinition(source.key)
                     ?.let { stringResource(it.labelRes) }
                     ?: stringResource(R.string.vault_detail_favicon_built_in)
             }
 
-            is FaviconDraftSourceUiModel.PrivateImage -> {
+            is DetailFaviconSource.PrivateImage -> {
                 stringResource(R.string.vault_detail_favicon_custom_image)
             }
         }
@@ -305,16 +306,16 @@ private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (source) {
-                is FaviconDraftSourceUiModel.PrivateImage -> {
+                is DetailFaviconSource.PrivateImage -> {
                     AsyncImage(
-                        model = toLocalIconImageModel(source.localPath),
+                        model = toLocalIconImageModel(source.localPath)?.uri,
                         contentDescription = null,
                         modifier = Modifier.size(44.dp),
                         contentScale = ContentScale.Fit,
                     )
                 }
 
-                is FaviconDraftSourceUiModel.BuiltIn -> {
+                is DetailFaviconSource.BuiltIn -> {
                     VaultIcons.findDefinition(source.key)?.let { definition ->
                         Icon(
                             imageVector = definition.imageVector,
@@ -325,7 +326,7 @@ private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
                     }
                 }
 
-                FaviconDraftSourceUiModel.InferredDefault -> {
+                DetailFaviconSource.InferredDefault -> {
                     Unit
                 }
             }
@@ -348,10 +349,10 @@ private fun FaviconEditorHeader(source: FaviconDraftSourceUiModel) {
 private fun FaviconIconLibrary(
     state: DetailFaviconEditorUiModel.Visible,
     onSearchChanged: (String) -> Unit,
-    onSourceSelected: (FaviconDraftSourceUiModel) -> Unit,
+    onSourceSelected: (DetailFaviconSource) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val selected = state.source as? FaviconDraftSourceUiModel.BuiltIn
+    val selected = state.source as? DetailFaviconSource.BuiltIn
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -369,12 +370,12 @@ private fun FaviconIconLibrary(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            items(VaultIcons.search(state.searchQuery), key = { it.key }) { definition ->
+            items(state.matchingIcons, key = { it.key }) { definition ->
                 val isSelected = selected?.let { VaultIcons.findDefinition(it.key)?.key } == definition.key
                 Surface(
                     onClick = {
                         onSourceSelected(
-                            FaviconDraftSourceUiModel.BuiltIn(definition.key, selected?.colorToken),
+                            DetailFaviconSource.BuiltIn(definition.key, selected?.colorToken),
                         )
                     },
                     modifier = Modifier.size(52.dp),

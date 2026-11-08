@@ -42,7 +42,6 @@ data class AddWifiUiState(
     val fieldErrors: Map<FieldKey, EntryViolationCode> = form.visibleFieldErrors(),
     val savePhase: AddWifiSavePhase = AddWifiSavePhase.Idle,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
-    val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
         get() =

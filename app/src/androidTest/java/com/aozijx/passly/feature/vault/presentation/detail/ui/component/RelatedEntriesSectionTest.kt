@@ -16,6 +16,9 @@ import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedEntrySectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedPasswordSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedSectionsUiModel
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.R
 import androidx.test.platform.app.InstrumentationRegistry
@@ -117,10 +120,19 @@ class RelatedEntriesSectionTest {
         compose.setContent {
             MaterialTheme {
                 RelatedEntriesSection(
-                    accountGroupEntries = accounts,
-                    otherRelatedEntries = other,
-                    relatedPasswords = passwords,
-                    canBindPasswords = true,
+                    state =
+                        DetailRelatedSectionsUiModel(
+                            entries =
+                                (accounts + other)
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.let(DetailRelatedEntrySectionUiState::Items)
+                                    ?: DetailRelatedEntrySectionUiState.Hidden,
+                            passwords =
+                                passwords
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.let { DetailRelatedPasswordSectionUiState.Items(it, canBind = true) }
+                                    ?: DetailRelatedPasswordSectionUiState.EmptyCanBind,
+                        ),
                     unlinkState = unlinkState,
                     onAction = actions::add,
                     onOpenEntry = {},

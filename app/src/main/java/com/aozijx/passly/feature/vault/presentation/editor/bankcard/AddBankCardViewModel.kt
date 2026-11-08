@@ -13,6 +13,8 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
+import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
+import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -164,10 +166,10 @@ class AddBankCardViewModel
             writeSession.save { current.form.toEntryDraft() }
         }
 
-        private fun clearSensitiveContent() {
+        private fun clearSensitiveContent(reason: EditorWriteSessionClearReason) {
             _uiState.value =
                 AddBankCardUiState(
-                    loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,
+                    loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
 
@@ -178,7 +180,6 @@ class AddBankCardViewModel
                 _uiState.value.copy(
                     form = AddBankCardFormState(),
                     loadPhase = EditorLoadPhase.Failed,
-                    loadFailed = true,
                 )
         }
 

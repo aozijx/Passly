@@ -45,7 +45,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhra
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBodyUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 
 @Composable
@@ -138,9 +138,9 @@ fun DetailBody(
                     item {
                         IdCardSection(
                             model = identity,
-                            onIdNumberCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.ID_NUMBER)) },
-                            onIdNumberReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.ID_NUMBER)) },
-                            onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.USERNAME)) },
+                            onIdNumberCopy = { onAction(DetailUiAction.CopyField(DetailField.ID_NUMBER)) },
+                            onIdNumberReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.ID_NUMBER)) },
+                            onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
                         )
                     }
                 }
@@ -150,21 +150,21 @@ fun DetailBody(
                     item {
                         SshKeySection(
                             model = ssh,
-                            onFingerprintCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.USERNAME)) },
-                            onPassphraseCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.SSH_PASSPHRASE)) },
-                            onPassphraseReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.SSH_PASSPHRASE)) },
+                            onFingerprintCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
+                            onPassphraseCopy = { onAction(DetailUiAction.CopyField(DetailField.SSH_PASSPHRASE)) },
+                            onPassphraseReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PASSPHRASE)) },
                             onPassphraseEditStarted = {
-                                onAction(DetailUiAction.StartFieldEdit(DetailFieldUiModel.SSH_PASSPHRASE, ssh.passphrase.orEmpty()))
+                                onAction(DetailUiAction.StartFieldEdit(DetailField.SSH_PASSPHRASE, ssh.passphrase.orEmpty()))
                             },
-                            onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailFieldUiModel.SSH_PASSPHRASE, it)) },
+                            onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
                             onPassphraseSaved = {
-                                if (it != ssh.passphrase) onAction(DetailUiAction.SaveField(DetailFieldUiModel.SSH_PASSPHRASE, it))
+                                if (it != ssh.passphrase) onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it))
                             },
                             onPrivateKeyClick = {
                                 if (ssh.privateKeyRevealed) {
-                                    onAction(DetailUiAction.CopyField(DetailFieldUiModel.SSH_PRIVATE_KEY))
+                                    onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))
                                 } else {
-                                    onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.SSH_PRIVATE_KEY))
+                                    onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PRIVATE_KEY))
                                 }
                             },
                             onRevealAll = { onAction(DetailUiAction.RevealSshFields) },
@@ -176,10 +176,9 @@ fun DetailBody(
                 model.seedPhrase?.let { seed ->
                     item {
                         SeedPhraseSection(
-                            hasSeedPhrase = seed.present,
-                            revealedSeedPhrase = seed.revealedValue,
-                            onCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.SEED_PHRASE)) },
-                            onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.SEED_PHRASE)) },
+                            state = seed,
+                            onCopy = { onAction(DetailUiAction.CopyField(DetailField.SEED_PHRASE)) },
+                            onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SEED_PHRASE)) },
                         )
                     }
                 }
@@ -191,29 +190,20 @@ fun DetailBody(
                             hasPasskeyData = passkey.present,
                             revealedPasskeyData = passkey.revealedValue,
                             hardwareKeyInfo = passkey.hardwareKeyInfo,
-                            onPasskeyCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.PASSKEY_DATA)) },
-                            onPasskeyReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.PASSKEY_DATA)) },
-                            onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.HARDWARE_INFO)) },
+                            onPasskeyCopy = { onAction(DetailUiAction.CopyField(DetailField.PASSKEY_DATA)) },
+                            onPasskeyReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PASSKEY_DATA)) },
+                            onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailField.HARDWARE_INFO)) },
                         )
                     }
                 }
             }
-            if (model.accountGroupEntries.isNotEmpty() ||
-                model.otherRelatedEntries.isNotEmpty() ||
-                model.relatedPasswords.isNotEmpty() ||
-                model.canBindPasswords
-            ) {
-                item {
-                    RelatedEntriesSection(
-                        accountGroupEntries = model.accountGroupEntries,
-                        otherRelatedEntries = model.otherRelatedEntries,
-                        relatedPasswords = model.relatedPasswords,
-                        canBindPasswords = model.canBindPasswords,
-                        onAction = onAction,
-                        unlinkState = model.passwordUnlink,
-                        onOpenEntry = onOpenRelatedEntry,
-                    )
-                }
+            item {
+                RelatedEntriesSection(
+                    state = model.relatedSections,
+                    unlinkState = model.passwordUnlink,
+                    onAction = onAction,
+                    onOpenEntry = onOpenRelatedEntry,
+                )
             }
             item {
                 InfoGroupCard(title = stringResource(R.string.vault_detail_tags_title)) {
@@ -250,8 +240,9 @@ fun DetailBody(
             }
             item {
                 ActivityTimelineSection(
-                    activityList = model.activities,
-                    loadState = model.activityHistory,
+                    selectedFilter = model.activityFilter,
+                    onFilterChanged = { onAction(DetailUiAction.ActivityFilterChanged(it)) },
+                    state = model.activityHistory,
                     onRetry = { onAction(DetailUiAction.RetryActivityHistory) },
                 )
             }
@@ -260,13 +251,8 @@ fun DetailBody(
 
     if (showPackagePicker) {
         AppPackagePickerBottomSheet(
-            apps = model.packagePickerApps,
-            loadErrorMessage =
-                if (model.packagePickerAppsLoadFailed) {
-                    stringResource(R.string.app_package_picker_load_failed)
-                } else {
-                    null
-                },
+            state = model.packagePickerApps,
+            onQueryChanged = { onAction(DetailUiAction.PackagePickerSearchChanged(it)) },
             onRetry = { onAction(DetailUiAction.LoadPackagePickerApps) },
             appIcon = { rememberInstalledAppIconBitmap(it) },
             onSelect = {

@@ -20,6 +20,8 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
+import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
+import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -206,11 +208,11 @@ class AddOtpViewModel
             ).withTypeDefaults(config.type)
         }
 
-        private fun clearSensitiveContent() {
+        private fun clearSensitiveContent(reason: EditorWriteSessionClearReason) {
             feedbackScope = FeedbackScope.Closed
             _uiState.value =
                 AddOtpCodeState(
-                    loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,
+                    loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
 
@@ -222,7 +224,6 @@ class AddOtpViewModel
                 _uiState.value.copy(
                     form = OtpFormState(),
                     loadPhase = EditorLoadPhase.Failed,
-                    loadFailed = true,
                 )
         }
 

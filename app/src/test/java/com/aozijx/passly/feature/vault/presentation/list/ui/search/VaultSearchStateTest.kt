@@ -13,7 +13,7 @@ class VaultSearchStateTest {
                 .initial(isSearchActive = false, query = "")
                 .onPullProgressChanged(0.45f)
 
-        assertEquals(VaultSearchPhase.PULLING, state.phase)
+        assertEquals(VaultSearchState.Pulling(0.45f), state)
         assertEquals(0.45f, state.layoutProgress)
         assertTrue(state.isDirectManipulation)
         assertEquals(1f, state.onPullProgressChanged(1.4f).layoutProgress)
@@ -28,12 +28,12 @@ class VaultSearchStateTest {
 
         state = state.onFocusChanged(focused = false, query = "")
 
-        assertEquals(VaultSearchPhase.EDITING, state.phase)
+        assertEquals(VaultSearchState.Editing(), state)
 
         state = state.onFocusChanged(focused = true, query = "")
         state = state.onFocusChanged(focused = false, query = "mail")
 
-        assertEquals(VaultSearchPhase.RESULTS, state.phase)
+        assertEquals(VaultSearchState.Results, state)
     }
 
     @Test
@@ -43,8 +43,7 @@ class VaultSearchStateTest {
                 .initial(isSearchActive = false, query = "")
                 .onFocusChanged(focused = true, query = "")
 
-        assertEquals(VaultSearchPhase.BROWSING, state.phase)
-        assertFalse(state.focusAcquired)
+        assertEquals(VaultSearchState.Browsing, state)
     }
 
     @Test
@@ -56,7 +55,7 @@ class VaultSearchStateTest {
                 .startEditing()
                 .onPullProgressChanged(0f)
 
-        assertEquals(VaultSearchPhase.EDITING, state.phase)
+        assertEquals(VaultSearchState.Editing(), state)
     }
 
     @Test
@@ -70,8 +69,8 @@ class VaultSearchStateTest {
         val submitted = editing.settle(query = "mail")
         val paused = editing.onScreenPaused(query = "mail")
 
-        assertEquals(VaultSearchPhase.RESULTS, submitted.phase)
-        assertEquals(VaultSearchPhase.RESULTS, paused.phase)
+        assertEquals(VaultSearchState.Results, submitted)
+        assertEquals(VaultSearchState.Results, paused)
         assertFalse(paused.isEditing)
     }
 
@@ -81,8 +80,8 @@ class VaultSearchStateTest {
         val results = browsing.synchronize(isSearchActive = true, query = "mail")
         val exited = results.synchronize(isSearchActive = false, query = "mail")
 
-        assertEquals(VaultSearchPhase.BROWSING, browsing.phase)
-        assertEquals(VaultSearchPhase.RESULTS, results.phase)
-        assertEquals(VaultSearchPhase.BROWSING, exited.phase)
+        assertEquals(VaultSearchState.Browsing, browsing)
+        assertEquals(VaultSearchState.Results, results)
+        assertEquals(VaultSearchState.Browsing, exited)
     }
 }

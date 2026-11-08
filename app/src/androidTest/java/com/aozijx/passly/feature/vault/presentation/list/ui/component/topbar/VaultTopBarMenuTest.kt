@@ -14,12 +14,17 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.query.EntrySort
+import com.aozijx.passly.domain.entry.model.query.EntrySortField
+import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchState
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -30,8 +35,9 @@ class VaultTopBarMenuTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun moreMenuKeepsPopupsMeasurableAndDispatchesRoutes() {
+    fun moreMenuKeepsPopupsMeasurableAndDispatchesRoutesAndSortActions() {
         val requests = mutableListOf<VaultRouteRequest>()
+        val actions = mutableListOf<VaultUiAction>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
         composeRule.setContent {
@@ -40,7 +46,7 @@ class VaultTopBarMenuTest {
                     uiState = topBarState(),
                     searchStateHolder = searchStateHolder(),
                     scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
-                    onAction = {},
+                    onAction = actions::add,
                     onRouteRequest = requests::add,
                 )
             }
@@ -90,7 +96,23 @@ class VaultTopBarMenuTest {
         composeRule.onNodeWithText(context.getString(R.string.vault_menu_sort)).performClick()
         composeRule.waitForIdle()
         composeRule.onNode(isPopup()).assertNonZero()
-        composeRule.onNodeWithText(context.getString(R.string.sort_last_used)).assertIsDisplayed()
+        composeRule
+            .onNodeWithText(context.getString(R.string.sort_last_used))
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.runOnIdle {
+            assertEquals(
+                listOf(
+                    VaultUiAction.SortOptionSelected(
+                        EntrySort(
+                            field = EntrySortField.LAST_USED_AT,
+                            direction = SortDirection.DESC,
+                        ),
+                    ),
+                ),
+                actions,
+            )
+        }
     }
 
     private fun SemanticsNodeInteraction.assertNonZero() {
@@ -107,7 +129,7 @@ class VaultTopBarMenuTest {
                     showTotpCode = false,
                     categorySearchQuery = "",
                     matchingCategories = emptyList(),
-                    categoriesState = VaultCategoriesState.Ready(emptyList()),
+                    categoriesState = VaultCategoriesState.ReadyEmpty,
                     selectedCategory = null,
                     selectedSort =
                         VaultSortUiModel.presets.first {

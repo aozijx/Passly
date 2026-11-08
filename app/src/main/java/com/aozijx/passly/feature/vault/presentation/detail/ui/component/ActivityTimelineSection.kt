@@ -18,10 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,44 +30,19 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
-import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityHistoryUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
 import java.text.DateFormat
 import java.util.Date
 
-enum class ActivityFilter {
-    ALL,
-    ACTIONS,
-    AUTOFILL,
-}
-
 @Composable
 fun ActivityTimelineSection(
-    activityList: List<DetailActivityUiModel>,
-    loadState: DetailActivityHistoryState,
+    selectedFilter: DetailActivityFilter,
+    onFilterChanged: (DetailActivityFilter) -> Unit,
+    state: DetailActivityHistoryUiState,
     onRetry: () -> Unit,
 ) {
-    var currentFilter by remember { mutableStateOf(ActivityFilter.ALL) }
-
-    val filteredList =
-        remember(activityList, currentFilter) {
-            when (currentFilter) {
-                ActivityFilter.ALL -> {
-                    activityList
-                }
-
-                ActivityFilter.ACTIONS -> {
-                    activityList.filter { it.type.isMutation }
-                }
-
-                ActivityFilter.AUTOFILL -> {
-                    activityList.filter {
-                        it.type == ActivityType.AUTOFILL
-                    }
-                }
-            }
-        }
-
     InfoGroupCard(title = stringResource(R.string.vault_detail_history_label)) {
         Column(
             modifier =
@@ -83,33 +55,33 @@ fun ActivityTimelineSection(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 ActivityFilterChip(
-                    selected = currentFilter == ActivityFilter.ALL,
-                    onClick = { currentFilter = ActivityFilter.ALL },
+                    selected = selectedFilter == DetailActivityFilter.ALL,
+                    onClick = { onFilterChanged(DetailActivityFilter.ALL) },
                     label = stringResource(R.string.tab_all),
                 )
                 ActivityFilterChip(
-                    selected = currentFilter == ActivityFilter.ACTIONS,
-                    onClick = { currentFilter = ActivityFilter.ACTIONS },
+                    selected = selectedFilter == DetailActivityFilter.ACTIONS,
+                    onClick = { onFilterChanged(DetailActivityFilter.ACTIONS) },
                     label = stringResource(R.string.vault_detail_history_updates),
                 )
                 ActivityFilterChip(
-                    selected = currentFilter == ActivityFilter.AUTOFILL,
-                    onClick = { currentFilter = ActivityFilter.AUTOFILL },
+                    selected = selectedFilter == DetailActivityFilter.AUTOFILL,
+                    onClick = { onFilterChanged(DetailActivityFilter.AUTOFILL) },
                     label = stringResource(R.string.vault_detail_activity_autofill),
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            when (loadState) {
-                DetailActivityHistoryState.Loading -> {
+            when (state) {
+                DetailActivityHistoryUiState.Loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.padding(vertical = 8.dp).size(20.dp),
                         strokeWidth = 2.dp,
                     )
                 }
 
-                DetailActivityHistoryState.Failed -> {
+                DetailActivityHistoryUiState.FailedEmpty -> {
                     Text(
                         text = stringResource(R.string.vault_detail_history_load_failed),
                         color = MaterialTheme.colorScheme.error,
@@ -117,23 +89,30 @@ fun ActivityTimelineSection(
                     TextButton(onClick = onRetry) {
                         Text(stringResource(R.string.vault_detail_history_retry))
                     }
-                    if (filteredList.isNotEmpty()) {
-                        ActivityItems(filteredList)
+                }
+
+                is DetailActivityHistoryUiState.FailedItems -> {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.vault_detail_history_load_failed),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        TextButton(onClick = onRetry) {
+                            Text(stringResource(R.string.vault_detail_history_retry))
+                        }
+                        ActivityItems(state.activities)
                     }
                 }
 
-                DetailActivityHistoryState.Ready -> {
-                    if (filteredList.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.vault_detail_history_empty_filtered),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                        )
-                    } else {
-                        ActivityItems(filteredList)
-                    }
-                }
+                DetailActivityHistoryUiState.ReadyEmpty ->
+                    Text(
+                        text = stringResource(R.string.vault_detail_history_empty_filtered),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+
+                is DetailActivityHistoryUiState.ReadyItems -> ActivityItems(state.activities)
             }
         }
     }

@@ -19,35 +19,22 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
+import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 
 @Composable
-fun VaultItemIcon(
+internal fun VaultItemIcon(
     modifier: Modifier = Modifier,
     iconName: String?,
-    iconCustomPath: String?,
+    customImageModel: LocalIconImageModel?,
     associatedAppPackage: String?,
-    entryType: EntryType,
-    title: String,
-    username: String,
-    associatedDomain: String?,
+    visualCategory: EntryVisualCategory,
     iconColor: String? = null,
 ) = VaultItemIcon(
     modifier = modifier,
     iconName = iconName,
-    iconCustomPath = iconCustomPath,
     associatedAppPackage = associatedAppPackage,
-    classificationInput =
-        EntryClassificationInput(
-            entryType = entryType,
-            title = title,
-            username = username,
-            urls = setOfNotNull(associatedDomain),
-            domains = setOfNotNull(associatedDomain),
-            packageNames = setOfNotNull(associatedAppPackage),
-            appNames = setOfNotNull(title.takeIf { associatedAppPackage != null && associatedDomain == null }),
-        ),
+    visualCategory = visualCategory,
+    customImageModel = customImageModel,
     iconColor = iconColor,
     tint = MaterialTheme.colorScheme.onSecondaryContainer,
 )
@@ -56,9 +43,9 @@ fun VaultItemIcon(
 private fun VaultItemIcon(
     modifier: Modifier,
     iconName: String?,
-    iconCustomPath: String?,
     associatedAppPackage: String?,
-    classificationInput: EntryClassificationInput,
+    visualCategory: EntryVisualCategory,
+    customImageModel: LocalIconImageModel?,
     iconColor: String?,
     tint: Color,
 ) {
@@ -68,20 +55,12 @@ private fun VaultItemIcon(
             appIconBitmap?.let(::BitmapPainter)
         }
     val explicitIconVector =
-        remember(iconName) {
-            iconName
-                ?.takeIf { it.isNotBlank() }
-                ?.let(VaultIcons::getIconByName)
-        }
-    val visualCategory =
-        remember(classificationInput) {
-            EntryVisualCategoryClassifier.classify(classificationInput)
-        }
+        remember(iconName) { VaultIcons.findDefinition(iconName)?.imageVector }
     val fallbackIconVector = explicitIconVector ?: VaultIcons.getIconByCategory(visualCategory)
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
     val placeholderPainter = appIconPainter ?: fallbackPainter
 
-    val customModel = remember(iconCustomPath) { toLocalIconImageModel(iconCustomPath) }
+    val customModel = customImageModel
     val resolvedTint =
         if (explicitIconVector != null && customModel == null) {
             iconColorForStorageToken(iconColor, tint)
@@ -95,7 +74,7 @@ private fun VaultItemIcon(
         when {
             customModel != null -> {
                 AsyncImage(
-                    model = customModel,
+                    model = customModel.uri,
                     contentDescription = null,
                     modifier =
                         Modifier

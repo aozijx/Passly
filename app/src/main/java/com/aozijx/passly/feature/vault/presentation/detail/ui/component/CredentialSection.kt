@@ -11,7 +11,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 /**
  * A purely stateless UI section for credentials (username and password).
@@ -26,15 +26,15 @@ fun CredentialSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        CredentialField(state.username, DetailFieldUiModel.USERNAME, onAction)
-        CredentialField(state.password, DetailFieldUiModel.PASSWORD, onAction)
+        CredentialField(state.username, DetailField.USERNAME, onAction)
+        CredentialField(state.password, DetailField.PASSWORD, onAction)
     }
 }
 
 @Composable
 private fun CredentialField(
     state: CredentialFieldUiState,
-    field: DetailFieldUiModel,
+    field: DetailField,
     onAction: (DetailUiAction) -> Unit,
 ) {
     if (!state.visible) return
@@ -44,8 +44,8 @@ private fun CredentialField(
         title =
             stringResource(
                 when (field) {
-                    DetailFieldUiModel.USERNAME -> R.string.field_username
-                    DetailFieldUiModel.PASSWORD -> R.string.password_label
+                    DetailField.USERNAME -> R.string.field_username
+                    DetailField.PASSWORD -> R.string.password_label
                     else -> error("Unsupported credential field: $field")
                 },
             ),

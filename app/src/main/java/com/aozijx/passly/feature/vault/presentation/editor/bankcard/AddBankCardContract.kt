@@ -71,7 +71,6 @@ data class AddBankCardUiState(
     val form: AddBankCardFormState = AddBankCardFormState(),
     val savePhase: AddBankCardSavePhase = AddBankCardSavePhase.Idle,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
-    val loadFailed: Boolean = false,
 ) {
     val canSave: Boolean
         get() =

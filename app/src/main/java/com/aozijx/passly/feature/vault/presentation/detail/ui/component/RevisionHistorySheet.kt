@@ -132,31 +132,31 @@ private fun RevisionList(
                 }
             }
 
-            is DetailRevisionListUiState.Ready -> {
-                if (content.revisions.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.revision_history_empty),
-                        modifier = Modifier.padding(24.dp),
-                    )
-                } else {
-                    LazyColumn(Modifier.weight(1f, fill = false).testTag("revision-history-list")) {
-                        items(content.revisions, key = { it.id }) { revision ->
-                            ListItem(
-                                supportingContent = {
-                                    Text(formatter.format(Date(revision.createdAtMs)))
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ListItemDefaults.colors(),
-                                elevation = ListItemDefaults.elevation(),
-                            ) {
-                                Text(stringResource(R.string.revision_version_format, revision.version))
-                            }
-                            TextButton(
-                                onClick = { onAction(DetailUiAction.SelectRevision(revision.id)) },
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                            ) { Text(stringResource(R.string.revision_compare_action)) }
-                            HorizontalDivider()
+            DetailRevisionListUiState.ReadyEmpty -> {
+                Text(
+                    text = stringResource(R.string.revision_history_empty),
+                    modifier = Modifier.padding(24.dp),
+                )
+            }
+
+            is DetailRevisionListUiState.ReadyItems -> {
+                LazyColumn(Modifier.weight(1f, fill = false).testTag("revision-history-list")) {
+                    items(content.revisions, key = { it.id }) { revision ->
+                        ListItem(
+                            supportingContent = {
+                                Text(formatter.format(Date(revision.createdAtMs)))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ListItemDefaults.colors(),
+                            elevation = ListItemDefaults.elevation(),
+                        ) {
+                            Text(stringResource(R.string.revision_version_format, revision.version))
                         }
+                        TextButton(
+                            onClick = { onAction(DetailUiAction.SelectRevision(revision.id)) },
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                        ) { Text(stringResource(R.string.revision_compare_action)) }
+                        HorizontalDivider()
                     }
                 }
             }

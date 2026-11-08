@@ -43,6 +43,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedInfoUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedAppsUiState
 
 @Composable
 fun AssociatedInfoSection(
@@ -51,7 +52,7 @@ fun AssociatedInfoSection(
     onDomainEditStarted: () -> Unit,
     onDomainChanged: (String) -> Unit,
     onDomainSaved: (String) -> Unit,
-    associatedApps: List<AppPackagePickerItemUiModel>,
+    associatedApps: DetailAssociatedAppsUiState,
     appIcon: @Composable (String) -> ImageBitmap?,
     onPackagePickerRequested: () -> Unit,
 ) {
@@ -137,7 +138,7 @@ private fun AssociatedDomainCard(
 
 @Composable
 private fun AssociatedAppsCard(
-    apps: List<AppPackagePickerItemUiModel>,
+    apps: DetailAssociatedAppsUiState,
     appIcon: @Composable (String) -> ImageBitmap?,
     onLongClick: () -> Unit,
 ) {
@@ -150,16 +151,20 @@ private fun AssociatedAppsCard(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (apps.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.not_set),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                )
-            } else {
-                apps.forEach { app ->
-                    key(app.packageName) {
-                        AssociatedAppRow(app, appIcon(app.packageName))
+            when (apps) {
+                DetailAssociatedAppsUiState.Empty -> {
+                    Text(
+                        text = stringResource(R.string.not_set),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+
+                is DetailAssociatedAppsUiState.Items -> {
+                    apps.apps.forEach { app ->
+                        key(app.packageName) {
+                            AssociatedAppRow(app, appIcon(app.packageName))
+                        }
                     }
                 }
             }

@@ -45,7 +45,7 @@ class EntryQrCodeTest {
     fun unicodeNetworkCodeDecodesFromRealBitmapWithIndependentWifiParser() {
         val payload = WifiQrPayload("办公室;West\\Wing", "pa:ss;word,\\\"", WifiSecurityType.WpaPersonal, true)
         val formatted = WifiQrPayloadFormatter.format(payload) as WifiQrFormatResult.Formatted
-        val bitmap = requireNotNull(QrCodeEncoder.encode(formatted.content))
+        val bitmap = requireNotNull(QrCodeEncoder.encode(formatted.content.toCharArray()))
         val pixels = IntArray(bitmap.width * bitmap.height)
         try {
             bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)

@@ -217,17 +217,6 @@ internal class OtpCodeRuntime(
         return remaining.toFloat() / period
     }
 
-    /**
-     * 激活条目：直接从 vault_credentials 查询并解密完整 OtpConfig。
-     * 列表摘要、issuer 和 UI 缓存均不参与生成决策。
-     */
-    suspend fun activate(entryId: String) {
-        activeEntryIds += entryId
-        freshAuthPausedEntryIds.remove(entryId)
-        if (!sessionUnlocked) return
-        activateTrackedEntry(entryId)
-    }
-
     private suspend fun activateTrackedEntry(entryId: String) {
         if (!sessionUnlocked || !isRequested(entryId)) return
         val currentEpoch = entryEpochs[entryId]

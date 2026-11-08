@@ -18,7 +18,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.R
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,11 +28,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
-import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
+import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 fun PasswordStyleVaultItem(
@@ -41,25 +43,26 @@ fun PasswordStyleVaultItem(
     onClick: () -> Unit,
 ) {
     val secondaryText =
-        when {
-            !entry.associatedDomain.isNullOrBlank() -> entry.associatedDomain.orEmpty()
-            !entry.associatedAppPackage.isNullOrBlank() -> entry.associatedAppPackage.orEmpty()
-            else -> entry.categoryOrTemplateLabel()
+        when (val value = entry.passwordCardSecondaryText) {
+            is VaultPasswordCardSecondaryTextUiModel.Value -> value.text
+            is VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel -> stringResource(value.entryType.labelRes)
         }
     val tertiaryText =
-        when {
-            entry.favorite -> "已收藏 · 加密保存"
-            !entry.associatedDomain.isNullOrBlank() || !entry.associatedAppPackage.isNullOrBlank() -> "自动填充凭据"
-            else -> "受保护的登录凭据"
-        }
-    val imageModel = remember(entry.iconCustomPath) { toLocalIconImageModel(entry.iconCustomPath) }
+        stringResource(
+            when (entry.passwordCardSupportingText) {
+                VaultPasswordCardSupportingTextUiModel.FAVORITE -> R.string.vault_password_card_favorite
+                VaultPasswordCardSupportingTextUiModel.AUTOFILL -> R.string.vault_password_card_autofill
+                VaultPasswordCardSupportingTextUiModel.PROTECTED -> R.string.vault_password_card_protected
+            },
+        )
+    val imageModel = entry.iconImageModel
     val corner = MaterialTheme.shapes.extraLarge
-    val paletteColors = rememberImagePaletteColors(imageModel)
+    val paletteColors = rememberImagePaletteColors(imageModel?.uri)
     val accentColor = paletteColors?.accent
     val overlayTop =
         (accentColor ?: MaterialTheme.colorScheme.primary).copy(
             alpha =
-                if (imageModel.isNullOrBlank()) {
+                if (imageModel == null) {
                     CardStyleTokens.Password.NO_IMAGE_TOP_OVERLAY_ALPHA
                 } else {
                     CardStyleTokens.Password.WITH_IMAGE_TOP_OVERLAY_ALPHA
@@ -68,7 +71,7 @@ fun PasswordStyleVaultItem(
     val overlayBottom =
         MaterialTheme.colorScheme.surface.copy(
             alpha =
-                if (imageModel.isNullOrBlank()) {
+                if (imageModel == null) {
                     CardStyleTokens.Password.NO_IMAGE_BOTTOM_OVERLAY_ALPHA
                 } else {
                     CardStyleTokens.Password.WITH_IMAGE_BOTTOM_OVERLAY_ALPHA
@@ -94,9 +97,9 @@ fun PasswordStyleVaultItem(
                     .fillMaxWidth()
                     .clip(corner),
         ) {
-            if (!imageModel.isNullOrBlank()) {
+            if (imageModel != null) {
                 AsyncImage(
-                    model = imageModel,
+                    model = imageModel.uri,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier =

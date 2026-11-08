@@ -1,20 +1,29 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.components.EntryClassificationInput
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategoryClassifier
+import com.aozijx.passly.presentation.shared.components.VaultIcons
+import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
+import com.aozijx.passly.feature.vault.presentation.common.mapItems
 import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionSheetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.CredentialSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityHistoryUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedAppsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailAssociatedInfoUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBodyUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailContentUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailHeaderUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailIconCardUiModel
@@ -22,8 +31,12 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailMetada
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailNotesUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresentationModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedEntrySectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedPasswordSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedSectionsUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
@@ -43,38 +56,6 @@ internal fun detailHeaderUiModel(
     entryType = entry.type,
 )
 
-internal fun detailContentUiModel(
-    entry: Entry,
-    state: DetailUiState,
-) = DetailContentUiModel(
-    accountGroupEntries =
-        state.accountGroupEntries.map {
-            RelatedEntryUiModel(it.id.value, it.title, it.type)
-        },
-    otherRelatedEntries =
-        state.otherRelatedEntries.map {
-            RelatedEntryUiModel(it.id.value, it.title, it.type)
-        },
-    relatedPasswords =
-        state.relatedPasswords.map {
-            RelatedPasswordUiModel(
-                linkId = it.linkId.value,
-                targetEntryId = it.targetEntryId.value,
-                title = it.title,
-                username = it.username,
-            )
-        },
-    metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
-    activities =
-        state.history.map {
-            DetailActivityUiModel(
-                type = it.activityType,
-                context = it.context,
-                createdAt = it.createdAt,
-            )
-        },
-)
-
 internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? =
     when (otp) {
         null -> null
@@ -89,7 +70,32 @@ internal fun toDetailPresentationModel(
     revisionReveals: Map<SensitiveFieldKey, SensitiveValue> = emptyMap(),
 ): DetailPresentationModel? {
     val entry = state.entry ?: return null
-    val shared = detailContentUiModel(entry, state)
+    val accountGroupEntries =
+        state.accountGroupEntries.map {
+            RelatedEntryUiModel(it.id.value, it.title, it.type)
+        }
+    val otherRelatedEntries =
+        state.otherRelatedEntries.map {
+            RelatedEntryUiModel(it.id.value, it.title, it.type)
+        }
+    val relatedPasswords =
+        state.relatedPasswords.map {
+            RelatedPasswordUiModel(
+                linkId = it.linkId.value,
+                targetEntryId = it.targetEntryId.value,
+                title = it.title,
+                username = it.username,
+            )
+        }
+    val metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt)
+    val activities =
+        state.activityHistory.activities.map {
+            DetailActivityUiModel(
+                type = it.activityType,
+                context = it.context,
+                createdAt = it.createdAt,
+            )
+        }
     val fields = DetailFieldProjection(state)
     val revealedUsername = state.revealed(FieldKey.USERNAME)
     val revealedPassword = state.revealed(FieldKey.PASSWORD)
@@ -103,12 +109,38 @@ internal fun toDetailPresentationModel(
                     DetailIconCardUiModel(
                         iconName = entry.icon.name,
                         iconCustomPath = entry.icon.customReference,
+                        iconImageModel = toLocalIconImageModel(entry.icon.customReference),
                         iconColor = entry.icon.color,
                         associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
                         entryType = entry.type,
                         title = entry.detailDisplayTitle,
                         username = entry.username,
                         associatedDomain = entry.associatedDomain,
+                        visualCategory =
+                            EntryVisualCategoryClassifier.classify(
+                                EntryClassificationInput(
+                                    entryType = entry.type,
+                                    title = entry.detailDisplayTitle,
+                                    username = entry.username,
+                                    urls = setOfNotNull(entry.associatedDomain),
+                                    domains = setOfNotNull(entry.associatedDomain),
+                                    packageNames = entry.associations.applicationIds,
+                                    appNames =
+                                        setOfNotNull(
+                                            entry.detailDisplayTitle.takeIf {
+                                                entry.associations.applicationIds.isNotEmpty() && entry.associatedDomain == null
+                                            },
+                                        ),
+                                ),
+                            ),
+                        iconDescriptionRes =
+                            when {
+                                !entry.icon.customReference.isNullOrBlank() -> R.string.vault_detail_favicon_custom_image
+                                !entry.icon.name.isNullOrBlank() ->
+                                    VaultIcons.findDefinition(entry.icon.name)?.labelRes
+                                        ?: R.string.vault_detail_favicon_built_in
+                                else -> R.string.vault_detail_favicon_default
+                            },
                     ),
                 sections = state.sections.mapNotNullTo(linkedSetOf(), DetailSectionKey::toUiModel),
                 credential =
@@ -177,31 +209,45 @@ internal fun toDetailPresentationModel(
                     } else {
                         null
                     },
-                accountGroupEntries = shared.accountGroupEntries,
-                otherRelatedEntries = shared.otherRelatedEntries,
-                relatedPasswords = shared.relatedPasswords,
-                canBindPasswords = entry.type == EntryType.LOGIN && entry.deletedAt == null,
+                relatedSections =
+                    relatedSectionsUiModel(
+                        accountGroupEntries = accountGroupEntries,
+                        otherRelatedEntries = otherRelatedEntries,
+                        relatedPasswords = relatedPasswords,
+                        canBindPasswords = entry.type == EntryType.LOGIN && entry.deletedAt == null,
+                    ),
                 passwordBinding = state.passwordBinding,
                 passwordUnlink = state.passwordUnlink,
-                tags = entry.tags,
+                tags = entry.tags.toTagChipsUiState(),
                 associations =
                     DetailAssociatedInfoUiModel(
                         domain = entry.associatedDomain,
                         editedDomain = state.fieldEdits.draft(DetailDraftKey.Domain),
                         isEditingDomain = state.fieldEdits.isEditing(DetailDraftKey.Domain),
                     ),
-                associatedApps = state.associatedApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
-                packagePickerApps = state.packagePickerApps.map(DetailInstalledApp::toPackagePickerItemUiModel),
-                packagePickerAppsLoadFailed = state.packagePickerAppsLoadFailed,
+                associatedApps =
+                    state.associatedApps
+                        .map(DetailInstalledApp::toPackagePickerItemUiModel)
+                        .takeIf { it.isNotEmpty() }
+                        ?.let(DetailAssociatedAppsUiState::Items)
+                        ?: DetailAssociatedAppsUiState.Empty,
+                packagePickerApps = state.packagePickerApps.toAppPackagePickerUiState(),
                 notes =
                     DetailNotesUiModel(
                         notes = entry.secret.notes,
                         editedNotes = state.fieldEdits.draft(DetailDraftKey.Notes),
                         isEditing = state.fieldEdits.isEditing(DetailDraftKey.Notes),
                     ),
-                metadata = shared.metadata,
-                activities = shared.activities,
-                activityHistory = state.activityHistory,
+                metadata = metadata,
+                activityFilter = state.activityFilter,
+                activityHistory =
+                    state.activityHistory.toUiState(
+                        when (state.activityFilter) {
+                        DetailActivityFilter.ALL -> activities
+                        DetailActivityFilter.ACTIONS -> activities.filter { it.type.isMutation }
+                        DetailActivityFilter.AUTOFILL -> activities.filter { it.type == ActivityType.AUTOFILL }
+                        },
+                    ),
                 snapshotState = state.snapshotState,
             ),
         overlays =
@@ -214,6 +260,56 @@ internal fun toDetailPresentationModel(
             ),
     )
 }
+
+private fun relatedSectionsUiModel(
+    accountGroupEntries: List<RelatedEntryUiModel>,
+    otherRelatedEntries: List<RelatedEntryUiModel>,
+    relatedPasswords: List<RelatedPasswordUiModel>,
+    canBindPasswords: Boolean,
+): DetailRelatedSectionsUiModel {
+    val entries = accountGroupEntries + otherRelatedEntries
+    return DetailRelatedSectionsUiModel(
+        entries =
+            entries
+                .takeIf { it.isNotEmpty() }
+                ?.let(DetailRelatedEntrySectionUiState::Items)
+                ?: DetailRelatedEntrySectionUiState.Hidden,
+        passwords =
+            relatedPasswords
+                .takeIf { it.isNotEmpty() }
+                ?.let { DetailRelatedPasswordSectionUiState.Items(it, canBindPasswords) }
+                ?: canBindPasswords
+                    .takeIf { it }
+                    ?.let { DetailRelatedPasswordSectionUiState.EmptyCanBind }
+                ?: DetailRelatedPasswordSectionUiState.Hidden,
+    )
+}
+
+private fun DetailActivityHistoryState.toUiState(
+    activities: List<DetailActivityUiModel>,
+): DetailActivityHistoryUiState =
+    when (this) {
+        is DetailActivityHistoryState.Loading -> DetailActivityHistoryUiState.Loading
+        is DetailActivityHistoryState.Ready ->
+            activities
+                .takeIf { it.isNotEmpty() }
+                ?.let(DetailActivityHistoryUiState::ReadyItems)
+                ?: DetailActivityHistoryUiState.ReadyEmpty
+        is DetailActivityHistoryState.Failed ->
+            activities
+                .takeIf { it.isNotEmpty() }
+                ?.let(DetailActivityHistoryUiState::FailedItems)
+                ?: DetailActivityHistoryUiState.FailedEmpty
+    }
+
+private fun AppPackagePickerUiState<DetailInstalledApp>.toAppPackagePickerUiState():
+    AppPackagePickerUiState<AppPackagePickerItemUiModel> =
+    when (this) {
+        AppPackagePickerUiState.NotRequested -> AppPackagePickerUiState.NotRequested
+        AppPackagePickerUiState.Loading -> AppPackagePickerUiState.Loading
+        AppPackagePickerUiState.Failed -> AppPackagePickerUiState.Failed
+        is AppPackagePickerUiState.Ready -> mapItems(DetailInstalledApp::toPackagePickerItemUiModel)
+    }
 
 internal fun DetailInstalledApp.toPackagePickerItemUiModel() =
     AppPackagePickerItemUiModel(
@@ -229,20 +325,31 @@ internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel =
 
         is DetailTagEditorState.Open -> {
             DetailTagEditorUiModel.Visible(
-                initialTags = initialTags,
-                draftTags = draftTags,
+                draftTags = draftTags.toTagChipsUiState(),
                 availableTags = availableTags,
                 input = input,
-                suggestions = suggestions,
+                suggestions = suggestions.toTagChipsUiState(),
                 validationError = validationError?.toUiModel(),
                 overlay =
                     when (overlay) {
                         DetailTagEditorOverlay.None -> TagEditorOverlayUiState.None
                         DetailTagEditorOverlay.ConfirmDiscard -> TagEditorOverlayUiState.ConfirmDiscard
                     },
+                dirty = dirty,
             )
         }
     }
+
+private fun Set<String>.toTagChipsUiState(): DetailTagChipsUiState =
+    toList()
+        .takeIf { it.isNotEmpty() }
+        ?.let(DetailTagChipsUiState::Items)
+        ?: DetailTagChipsUiState.Empty
+
+private fun List<String>.toTagChipsUiState(): DetailTagChipsUiState =
+    takeIf { it.isNotEmpty() }
+        ?.let(DetailTagChipsUiState::Items)
+        ?: DetailTagChipsUiState.Empty
 
 internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
     val source = this ?: return ScopedSensitiveText.Empty

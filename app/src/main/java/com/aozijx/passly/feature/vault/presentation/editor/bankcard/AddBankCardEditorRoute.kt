@@ -13,6 +13,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
+import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadFailureEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.ui.bankcard.AddBankCardEditorScreen
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.rememberAddEntryFabTransitionModifier
@@ -37,17 +38,12 @@ fun AddBankCardEditorRoute(
             animatedVisibilityScope = animatedVisibilityScope,
         )
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
+    EditorLoadFailureEffectHandler(uiState.loadPhase, editSeedToken != null, snackbarHostState, loadFailedMessage)
     LaunchedEffect(viewModel, editSeedToken) {
         editSeedToken?.let { token ->
             viewModel.loadExistingEntry(consumeEditSeed?.invoke(token) ?: EntryEditorSeedConsumeResult.Missing)
         }
     }
-    LaunchedEffect(uiState.loadFailed, editSeedToken) {
-        if (editSeedToken != null && uiState.loadFailed) {
-            snackbarHostState.showSnackbar(loadFailedMessage)
-        }
-    }
-
     AddBankCardEditorScreen(
         state = uiState,
         onAction = viewModel::onAction,

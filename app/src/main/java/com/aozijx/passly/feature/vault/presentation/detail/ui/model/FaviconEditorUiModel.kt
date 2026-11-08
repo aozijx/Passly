@@ -1,24 +1,12 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.domain.entry.model.EntryType
-
-sealed interface FaviconDraftSourceUiModel {
-    data object InferredDefault : FaviconDraftSourceUiModel
-
-    data class BuiltIn(
-        val key: String,
-        val colorToken: String?,
-    ) : FaviconDraftSourceUiModel
-
-    data class PrivateImage(
-        val localPath: String,
-    ) : FaviconDraftSourceUiModel
-}
-
-enum class FaviconEditorTabUiModel {
-    ICON_LIBRARY,
-    CUSTOM_IMAGE,
-}
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconTab
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 
 enum class FaviconProcessingErrorUiModel {
     INVALID_URL,
@@ -34,11 +22,13 @@ sealed interface DetailFaviconEditorUiModel {
     data object Hidden : DetailFaviconEditorUiModel
 
     data class Visible(
-        val initialSource: FaviconDraftSourceUiModel,
-        val source: FaviconDraftSourceUiModel,
-        val selectedTab: FaviconEditorTabUiModel,
+        val initialSource: DetailFaviconSource,
+        val source: DetailFaviconSource,
+        val selectedTab: DetailFaviconTab,
         val searchQuery: String,
+        val matchingIcons: List<FaviconIconUiModel>,
         val imageUrl: String,
+        val imageUrlDownloadState: FaviconImageUrlDownloadUiState,
         val work: FaviconWorkUiState,
         val pendingInputPath: String?,
         val promotedCandidatePath: String?,
@@ -46,6 +36,18 @@ sealed interface DetailFaviconEditorUiModel {
     ) : DetailFaviconEditorUiModel {
         val dirty: Boolean get() = source != initialSource || pendingInputPath != null
     }
+}
+
+data class FaviconIconUiModel(
+    val key: String,
+    @param:StringRes val labelRes: Int,
+    val imageVector: ImageVector,
+)
+
+sealed interface FaviconImageUrlDownloadUiState {
+    data object Disabled : FaviconImageUrlDownloadUiState
+
+    data object Enabled : FaviconImageUrlDownloadUiState
 }
 
 sealed interface FaviconWorkUiState {
@@ -67,10 +69,13 @@ sealed interface FaviconOverlayUiState {
 data class DetailIconCardUiModel(
     val iconName: String?,
     val iconCustomPath: String?,
+    val iconImageModel: LocalIconImageModel?,
     val iconColor: String?,
     val associatedAppPackage: String?,
     val entryType: EntryType,
     val title: String,
     val username: String,
     val associatedDomain: String?,
+    val visualCategory: EntryVisualCategory,
+    @param:StringRes val iconDescriptionRes: Int,
 )

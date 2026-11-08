@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedStore
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedCoordinator
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationRequest
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
@@ -26,10 +26,10 @@ class VaultNavigationTest {
 
         val handled =
             mapOf(
-                VaultAddTypeUiModel.PASSWORD to AppRoute.AddPassword.route,
-                VaultAddTypeUiModel.TOTP to AppRoute.AddOtp.route,
-                VaultAddTypeUiModel.BANK_CARD to AppRoute.AddBankCard.route,
-                VaultAddTypeUiModel.WIFI to AppRoute.AddWifi.route,
+                AddType.PASSWORD to AppRoute.AddPassword.route,
+                AddType.TOTP to AppRoute.AddOtp.route,
+                AddType.BANK_CARD to AppRoute.AddBankCard.route,
+                AddType.WIFI to AppRoute.AddWifi.route,
             ).map { (type, expectedRoute) ->
                 navigation.navigate(VaultDestinationRequest.OpenEditor(type)) to expectedRoute
             }
@@ -45,7 +45,7 @@ class VaultNavigationTest {
 
         val handled =
             navigation.navigate(
-                VaultDestinationRequest.OpenEditor(VaultAddTypeUiModel.SSH_KEY),
+                VaultDestinationRequest.OpenEditor(AddType.SSH_KEY),
             )
 
         assertEquals(VaultNavigationResult.UnsupportedDestination, handled)

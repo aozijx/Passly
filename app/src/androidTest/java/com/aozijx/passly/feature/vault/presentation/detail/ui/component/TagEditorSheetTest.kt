@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -27,13 +28,13 @@ class TagEditorSheetTest {
                 TagEditorSheet(
                     state =
                         DetailTagEditorUiModel.Visible(
-                            initialTags = setOf("Work"),
-                            draftTags = setOf("Work"),
+                            draftTags = DetailTagChipsUiState.Items(listOf("Work")),
                             availableTags = setOf("Finance"),
                             input = "",
-                            suggestions = listOf("Finance"),
+                            suggestions = DetailTagChipsUiState.Items(listOf("Finance")),
                             validationError = null,
                             overlay = TagEditorOverlayUiState.None,
+                            dirty = false,
                         ),
                     isSaving = saving.value,
                     onInputChanged = { changes += it },

@@ -54,11 +54,7 @@ internal fun TrashEntryCard(
                         System.currentTimeMillis(),
                         DateUtils.MINUTE_IN_MILLIS,
                     ).toString()
-            }.orEmpty()
-    val supportingText =
-        entry.username.takeIf(String::isNotBlank)
-            ?: entry.associatedDomain?.takeIf(String::isNotBlank)
-            ?: entry.associatedAppPackage?.takeIf(String::isNotBlank)
+            }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -102,7 +98,7 @@ internal fun TrashEntryCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (!supportingText.isNullOrBlank()) {
+                    entry.supportingText?.let { supportingText ->
                         Spacer(modifier = Modifier.size(3.dp))
                         Text(
                             text = supportingText,
@@ -128,13 +124,9 @@ internal fun TrashEntryCard(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                         }
-                        if (deletedLabel.isNotEmpty()) {
+                        deletedLabel?.let { label ->
                             Text(
-                                text =
-                                    stringResource(
-                                        R.string.settings_trash_deleted_at,
-                                        deletedLabel,
-                                    ),
+                                text = stringResource(R.string.settings_trash_deleted_at, label),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

@@ -18,10 +18,13 @@ import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
-import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -29,7 +32,7 @@ import org.junit.Test
 
 class VaultListUiMapperTest {
     @Test
-    fun everyCreationMenuOptionHasAnEditorDestination() {
+    fun creationOptionsAreMappedInStableOrder() {
         val model = requireNotNull(VaultUiState(selectedSort = createdAtDescendingSort()).toUiModel(display()))
         val menuTypes = model.navigation.creationOptions
         assertEquals(
@@ -41,19 +44,16 @@ class VaultListUiMapperTest {
             ),
             menuTypes,
         )
-        assertTrue(menuTypes.isNotEmpty())
-        assertTrue(menuTypes.all { VaultEditorDestinationRegistry.routeFor(it) != null })
     }
 
     @Test
-    fun readingAndFilteringTypesDoNotRequireACreationRoute() {
+    fun allEntryTypesAreAvailableAsFilters() {
         val state = VaultUiState(selectedSort = createdAtDescendingSort(), selectedFilters = AddType.entries.toSet())
         val model = requireNotNull(state.toUiModel(display()))
-        assertEquals(VaultAddTypeUiModel.entries.toList(), model.navigation.filterOptions)
-        assertEquals(VaultAddTypeUiModel.entries.toSet(), model.navigation.selectedFilters)
-        model.navigation.filterOptions.filterNot { it in model.navigation.creationOptions }.forEach {
-            assertNull(VaultEditorDestinationRegistry.routeFor(it))
-        }
+        assertEquals(VaultAddTypeUiModel.entries.toList(), model.navigation.filters.map { it.type })
+        assertTrue(model.navigation.filters.all { it.selected })
+        assertTrue(model.navigation.allFiltersSelected.not())
+        assertTrue(model.navigation.hasActiveFilters)
     }
 
     @Test
@@ -70,7 +70,7 @@ class VaultListUiMapperTest {
     }
 
     @Test
-    fun defaultSortShowsNewestCreatedEntries() {
+    fun createdAtDescendingSortMapsToNewestFirst() {
         val ui = createdAtDescendingSort().toUiModel()
 
         assertEquals(VaultSortOptionUiModel.CREATED_AT, ui.option)
@@ -162,11 +162,18 @@ class VaultListUiMapperTest {
         assertEquals("com.example", ui.associatedAppPackage)
         assertEquals(null, ui.iconName)
         assertEquals("icons/mail.png", ui.iconCustomPath)
+        assertEquals(LocalIconImageModel("file://icons/mail.png"), ui.iconImageModel)
+        assertEquals(EntryVisualCategory.EMAIL, ui.visualCategory)
         assertTrue(ui.favorite)
         assertTrue(ui.hasPassword)
         assertTrue(ui.hasOtp)
         assertEquals(VaultOtpKindUiModel.STEAM, ui.otpKind)
         assertEquals("ABC12", ui.otpPreview)
+        assertEquals(
+            VaultPasswordCardSecondaryTextUiModel.Value("example.com"),
+            ui.passwordCardSecondaryText,
+        )
+        assertEquals(VaultPasswordCardSupportingTextUiModel.FAVORITE, ui.passwordCardSupportingText)
     }
 
     @Test

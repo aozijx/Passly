@@ -3,12 +3,12 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui.model
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
-import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,
@@ -27,28 +27,99 @@ data class DetailBodyUiModel(
     val ssh: DetailSshUiModel?,
     val seedPhrase: DetailSeedPhraseUiModel?,
     val passkey: DetailPasskeyUiModel?,
-    val accountGroupEntries: List<RelatedEntryUiModel>,
-    val otherRelatedEntries: List<RelatedEntryUiModel>,
-    val relatedPasswords: List<RelatedPasswordUiModel>,
-    val canBindPasswords: Boolean,
+    val relatedSections: DetailRelatedSectionsUiModel,
     val passwordBinding: RelatedPasswordBindingUiState,
     val passwordUnlink: RelatedPasswordUnlinkUiState,
-    val tags: Set<String>,
+    val tags: DetailTagChipsUiState,
     val associations: DetailAssociatedInfoUiModel,
-    val associatedApps: List<AppPackagePickerItemUiModel>,
-    val packagePickerApps: List<AppPackagePickerItemUiModel>,
-    val packagePickerAppsLoadFailed: Boolean,
+    val associatedApps: DetailAssociatedAppsUiState,
+    val packagePickerApps: AppPackagePickerUiState<AppPackagePickerItemUiModel>,
     val notes: DetailNotesUiModel,
     val metadata: DetailMetadataUiModel,
-    val activities: List<DetailActivityUiModel>,
-    val activityHistory: DetailActivityHistoryState,
+    val activityFilter: DetailActivityFilter,
+    val activityHistory: DetailActivityHistoryUiState,
     val snapshotState: DetailSnapshotState,
 )
 
-data class DetailSeedPhraseUiModel(
-    val present: Boolean,
-    val revealedValue: String?,
+sealed interface DetailActivityHistoryUiState {
+    data object Loading : DetailActivityHistoryUiState
+
+    data object ReadyEmpty : DetailActivityHistoryUiState
+
+    data class ReadyItems(val activities: List<DetailActivityUiModel>) : DetailActivityHistoryUiState {
+        init {
+            require(activities.isNotEmpty())
+        }
+    }
+
+    data object FailedEmpty : DetailActivityHistoryUiState
+
+    data class FailedItems(val activities: List<DetailActivityUiModel>) : DetailActivityHistoryUiState {
+        init {
+            require(activities.isNotEmpty())
+        }
+    }
+}
+
+data class DetailRelatedSectionsUiModel(
+    val entries: DetailRelatedEntrySectionUiState,
+    val passwords: DetailRelatedPasswordSectionUiState,
 )
+
+sealed interface DetailRelatedEntrySectionUiState {
+    data object Hidden : DetailRelatedEntrySectionUiState
+
+    data class Items(val entries: List<RelatedEntryUiModel>) : DetailRelatedEntrySectionUiState {
+        init {
+            require(entries.isNotEmpty())
+        }
+    }
+}
+
+sealed interface DetailRelatedPasswordSectionUiState {
+    data object Hidden : DetailRelatedPasswordSectionUiState
+
+    data object EmptyCanBind : DetailRelatedPasswordSectionUiState
+
+    data class Items(
+        val entries: List<RelatedPasswordUiModel>,
+        val canBind: Boolean,
+    ) : DetailRelatedPasswordSectionUiState {
+        init {
+            require(entries.isNotEmpty())
+        }
+    }
+}
+
+sealed interface DetailAssociatedAppsUiState {
+    data object Empty : DetailAssociatedAppsUiState
+
+    data class Items(val apps: List<AppPackagePickerItemUiModel>) : DetailAssociatedAppsUiState {
+        init {
+            require(apps.isNotEmpty())
+        }
+    }
+}
+
+sealed interface DetailSeedPhraseUiModel {
+    val isRevealed: Boolean
+        get() = this is RevealedWithoutWords || this is RevealedWords
+
+    val canReveal: Boolean
+        get() = this is Hidden
+
+    data object Absent : DetailSeedPhraseUiModel
+
+    data object Hidden : DetailSeedPhraseUiModel
+
+    data object RevealedWithoutWords : DetailSeedPhraseUiModel
+
+    data class RevealedWords(val words: List<String>) : DetailSeedPhraseUiModel {
+        init {
+            require(words.isNotEmpty())
+        }
+    }
+}
 
 data class DetailPasskeyUiModel(
     val present: Boolean,
@@ -74,10 +145,34 @@ data class DetailRevisionItemUiModel(
 data class DetailRevisionDifferenceUiModel(
     val field: RevisionFieldId,
     val kind: RevisionDifferenceKind,
-    val before: RevisionFieldValue?,
-    val after: RevisionFieldValue?,
+    val before: DetailRevisionValueUiModel,
+    val after: DetailRevisionValueUiModel,
     val revealedValue: ScopedSensitiveText? = null,
 )
+
+sealed interface DetailRevisionValueUiModel {
+    data object Absent : DetailRevisionValueUiModel
+
+    data class Text(val value: String) : DetailRevisionValueUiModel
+
+    data class Flag(val value: Boolean) : DetailRevisionValueUiModel
+
+    data class EpochMillis(val value: Long) : DetailRevisionValueUiModel
+
+    enum class Icon : DetailRevisionValueUiModel { DEFAULT, CUSTOM }
+
+    data class Links(val count: Int) : DetailRevisionValueUiModel {
+        init {
+            require(count >= 0)
+        }
+    }
+
+    data class Attachments(val count: Int) : DetailRevisionValueUiModel {
+        init {
+            require(count >= 0)
+        }
+    }
+}
 
 sealed interface DetailRevisionSheetUiModel {
     data object Hidden : DetailRevisionSheetUiModel
@@ -95,9 +190,15 @@ sealed interface DetailRevisionSheetUiModel {
 sealed interface DetailRevisionListUiState {
     data object Loading : DetailRevisionListUiState
 
-    data class Ready(
+    data object ReadyEmpty : DetailRevisionListUiState
+
+    data class ReadyItems(
         val revisions: List<DetailRevisionItemUiModel>,
-    ) : DetailRevisionListUiState
+    ) : DetailRevisionListUiState {
+        init {
+            require(revisions.isNotEmpty())
+        }
+    }
 
     data object Failed : DetailRevisionListUiState
 }
@@ -127,26 +228,4 @@ enum class DetailSectionUiModel {
     SSH,
     SEED_PHRASE,
     PASSKEY,
-}
-
-enum class DetailFieldUiModel {
-    USERNAME,
-    PASSWORD,
-    CARDHOLDER,
-    CARD_ISSUING_BANK,
-    CARD_BANK_BRANCH,
-    CARD_PRODUCT,
-    CARD_CURRENCY,
-    CARD_BANK_PHONE,
-    BILLING_ADDRESS,
-    CARD_NUMBER,
-    CARD_CVV,
-    PAYMENT_PIN,
-    CARD_EXPIRATION,
-    SSH_PASSPHRASE,
-    SSH_PRIVATE_KEY,
-    SEED_PHRASE,
-    PASSKEY_DATA,
-    HARDWARE_INFO,
-    ID_NUMBER,
 }

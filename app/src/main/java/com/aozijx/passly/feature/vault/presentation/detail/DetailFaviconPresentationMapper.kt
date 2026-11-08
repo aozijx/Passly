@@ -1,11 +1,14 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFaviconEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconDraftSourceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconEditorTabUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconProcessingErrorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconWorkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconImageUrlDownloadUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.FaviconIconUiModel
+import com.aozijx.passly.presentation.shared.components.VaultIcons
+import java.net.URI
+import java.net.URISyntaxException
 
 internal fun DetailFaviconEditorState.toFaviconEditorUiModel(): DetailFaviconEditorUiModel =
     when (this) {
@@ -15,11 +18,13 @@ internal fun DetailFaviconEditorState.toFaviconEditorUiModel(): DetailFaviconEdi
 
         is DetailFaviconEditorState.Open -> {
             DetailFaviconEditorUiModel.Visible(
-                initialSource = initialSource.toUiModel(),
-                source = source.toUiModel(),
-                selectedTab = selectedTab.toUiModel(),
+                initialSource = initialSource,
+                source = source,
+                selectedTab = selectedTab,
                 searchQuery = searchQuery,
+                matchingIcons = VaultIcons.search(searchQuery).map { FaviconIconUiModel(it.key, it.labelRes, it.imageVector) },
                 imageUrl = imageUrl,
+                imageUrlDownloadState = imageUrl.downloadUiState(),
                 work = work.toUiModel(),
                 pendingInputPath = pendingInputPath,
                 promotedCandidatePath = promotedCandidatePath,
@@ -28,31 +33,19 @@ internal fun DetailFaviconEditorState.toFaviconEditorUiModel(): DetailFaviconEdi
         }
     }
 
-internal fun FaviconDraftSourceUiModel.toDetailFaviconSource(): DetailFaviconSource =
-    when (this) {
-        FaviconDraftSourceUiModel.InferredDefault -> DetailFaviconSource.InferredDefault
-        is FaviconDraftSourceUiModel.BuiltIn -> DetailFaviconSource.BuiltIn(key, colorToken)
-        is FaviconDraftSourceUiModel.PrivateImage -> DetailFaviconSource.PrivateImage(localPath)
+private fun String.downloadUiState(): FaviconImageUrlDownloadUiState {
+    val uri =
+        try {
+            URI(trim())
+        } catch (_: URISyntaxException) {
+            return FaviconImageUrlDownloadUiState.Disabled
+        }
+    return if (uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()) {
+        FaviconImageUrlDownloadUiState.Enabled
+    } else {
+        FaviconImageUrlDownloadUiState.Disabled
     }
-
-internal fun FaviconEditorTabUiModel.toDetailFaviconTab(): DetailFaviconTab =
-    when (this) {
-        FaviconEditorTabUiModel.ICON_LIBRARY -> DetailFaviconTab.ICON_LIBRARY
-        FaviconEditorTabUiModel.CUSTOM_IMAGE -> DetailFaviconTab.CUSTOM_IMAGE
-    }
-
-private fun DetailFaviconSource.toUiModel(): FaviconDraftSourceUiModel =
-    when (this) {
-        DetailFaviconSource.InferredDefault -> FaviconDraftSourceUiModel.InferredDefault
-        is DetailFaviconSource.BuiltIn -> FaviconDraftSourceUiModel.BuiltIn(key, colorToken)
-        is DetailFaviconSource.PrivateImage -> FaviconDraftSourceUiModel.PrivateImage(localPath)
-    }
-
-private fun DetailFaviconTab.toUiModel(): FaviconEditorTabUiModel =
-    when (this) {
-        DetailFaviconTab.ICON_LIBRARY -> FaviconEditorTabUiModel.ICON_LIBRARY
-        DetailFaviconTab.CUSTOM_IMAGE -> FaviconEditorTabUiModel.CUSTOM_IMAGE
-    }
+}
 
 private fun DetailFaviconProcessingError.toUiModel(): FaviconProcessingErrorUiModel =
     when (this) {

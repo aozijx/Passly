@@ -12,36 +12,72 @@ import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultFilterOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListLayoutUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListNavigationUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListScreenUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListToolbarUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
+import com.aozijx.passly.presentation.shared.components.EntryClassificationInput
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategoryClassifier
+import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 
-internal fun EntryListItem.toUiModel() =
-    VaultListItemUiModel(
+internal fun EntryListItem.toUiModel(): VaultListItemUiModel {
+    val category = tags.firstOrNull(String::isNotBlank)?.trim()
+    val domain = associatedDomain
+    val appPackage = associatedAppPackage
+    return VaultListItemUiModel(
         id = id.value,
         entryType = entryType,
         title = title,
         username = username,
-        category = tags.firstOrNull { it.isNotBlank() }?.trim(),
+        category = category,
         favorite = favorite,
-        associatedDomain = associatedDomain,
-        associatedAppPackage = associatedAppPackage,
+        associatedDomain = domain,
+        associatedAppPackage = appPackage,
         iconName = icon.name,
         iconCustomPath = iconCustomPath,
+        iconImageModel = toLocalIconImageModel(iconCustomPath),
+        visualCategory =
+            EntryVisualCategoryClassifier.classify(
+                EntryClassificationInput(
+                    entryType = entryType,
+                    title = title,
+                    username = username,
+                    urls = setOfNotNull(domain),
+                    domains = setOfNotNull(domain),
+                    packageNames = setOfNotNull(appPackage),
+                    appNames = setOfNotNull(title.takeIf { appPackage != null && domain == null }),
+                ),
+            ),
         hasPassword = hasPassword,
         hasOtp = hasOtp,
         otpKind = otpType?.let { if (it == OtpType.STEAM) VaultOtpKindUiModel.STEAM else VaultOtpKindUiModel.STANDARD },
         otpPreview = otpPreview,
+        passwordCardSecondaryText =
+            when {
+                !domain.isNullOrBlank() -> VaultPasswordCardSecondaryTextUiModel.Value(domain)
+                !appPackage.isNullOrBlank() -> VaultPasswordCardSecondaryTextUiModel.Value(appPackage)
+                category != null -> VaultPasswordCardSecondaryTextUiModel.Value(category)
+                else -> VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(entryType)
+            },
+        passwordCardSupportingText =
+            when {
+                favorite -> VaultPasswordCardSupportingTextUiModel.FAVORITE
+                !domain.isNullOrBlank() || !appPackage.isNullOrBlank() -> VaultPasswordCardSupportingTextUiModel.AUTOFILL
+                else -> VaultPasswordCardSupportingTextUiModel.PROTECTED
+            },
     )
+}
 
 internal fun OtpCodeState.toUiModel(): VaultOtpUiState =
     when (this) {
@@ -155,9 +191,14 @@ internal fun VaultUiState.toUiModel(display: VaultListDisplayUiModel): VaultList
             ),
         navigation =
             VaultListNavigationUiModel(
-                selectedFilters = selectedFilters.map(AddType::toUiModel).toSet(),
-                filterOptions = AddType.allOptions.map(AddType::toUiModel),
-                creationOptions = VaultEditorDestinationRegistry.creatableTypes,
+                filters =
+                    AddType.allOptions.map { type ->
+                        VaultFilterOptionUiModel(
+                            type = type.toUiModel(),
+                            selected = type in selectedFilters,
+                        )
+                    },
+                creationOptions = VaultEditorDestinationRegistry.creatableTypes.map(AddType::toUiModel),
             ),
         content =
             VaultListContentUiModel(

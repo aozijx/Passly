@@ -39,7 +39,7 @@ class VaultSearchStateHolder internal constructor(
         val nextState = uiState.onFocusChanged(focused, currentQuery())
         uiState = nextState
         if (!focused &&
-            nextState.phase == VaultSearchPhase.BROWSING &&
+            nextState == VaultSearchState.Browsing &&
             currentSearchActive()
         ) {
             onSearchActiveChange(false)
@@ -53,7 +53,7 @@ class VaultSearchStateHolder internal constructor(
 
     fun clear() {
         onQueryChange("")
-        if (uiState.phase == VaultSearchPhase.RESULTS) exit()
+        if (uiState.isResults) exit()
     }
 
     fun request() {

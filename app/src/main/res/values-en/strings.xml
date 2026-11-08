@@ -206,6 +206,8 @@
   <string name="app_package_picker_search">Search apps or package names</string>
   <string name="app_package_picker_load_failed">Apps could not be loaded. Try again.</string>
   <string name="app_package_picker_retry">Retry</string>
+  <string name="app_package_picker_no_apps">No apps are available.</string>
+  <string name="app_package_picker_no_matches">No matching apps.</string>
   <string name="revision_history_title">Version history</string>
   <string name="revision_history_empty">No versions available</string>
   <string name="revision_version_format">Version %1$d</string>
@@ -243,4 +245,7 @@
     <string name="auth_kdf_calibrating">Setting password protection parameters for this device…</string>
     <string name="auth_kdf_initialization_failed">Could not save password protection parameters. Reopen the app to retry; existing data will not be reset automatically.</string>
     <string name="auth_kdf_selected">Argon2id parameters saved for this device: %1$d MiB memory, %2$d iterations, parallelism %3$d. Future unlocks use these values.</string>
+  <string name="vault_password_card_favorite">Favorite · encrypted</string>
+  <string name="vault_password_card_autofill">Autofill credential</string>
+  <string name="vault_password_card_protected">Protected login credential</string>
 </resources>

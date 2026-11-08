@@ -12,6 +12,7 @@ import com.aozijx.passly.runtime.session.SessionLockedException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +26,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertSame
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,7 +44,8 @@ class OtpCodeRuntimeTest {
                         )
                     },
                 )
-            coordinator.activate("exhausted")
+            coordinator.subscribe("exhausted")
+            runCurrent()
             val result = coordinator.generateHotpCode("exhausted")
 
             assertEquals(OtpResult.Failure(OtpGenerationError.CounterExhausted), result)
@@ -65,7 +66,8 @@ class OtpCodeRuntimeTest {
                         OtpResult.Success("code-$usedCounter", nextCounter = counter)
                     },
                 )
-            coordinator.activate("hotp")
+            coordinator.subscribe("hotp")
+            runCurrent()
 
             assertEquals("code-7", coordinator.codeForCopy("hotp"))
             assertEquals("code-8", coordinator.codeForCopy("hotp"))
@@ -87,7 +89,8 @@ class OtpCodeRuntimeTest {
                         finishConsumption.await()
                     },
                 )
-            coordinator.activate("hotp")
+            coordinator.subscribe("hotp")
+            runCurrent()
             val pendingCopy = async { coordinator.codeForCopy("hotp") }
             consumptionStarted.await()
 
@@ -145,7 +148,8 @@ class OtpCodeRuntimeTest {
                     },
                     codeGenerator = { OtpResult.Success("code-$loadCount") },
                 )
-            coordinator.activate("reload-entry")
+            coordinator.subscribe("reload-entry")
+            runCurrent()
             val initialMovingFactor = nowSeconds / 30
 
             coordinator.refreshStates(nowSeconds = (initialMovingFactor + 1) * 30)
@@ -202,7 +206,7 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `ordinary activation read failure does not prevent later activation`() =
+    fun `ordinary subscription activation read failure can be retried`() =
         runTest {
             var loadCount = 0
             val coordinator =
@@ -218,35 +222,44 @@ class OtpCodeRuntimeTest {
 
             coordinator.subscribe("activation-retry")
             runCurrent()
-            coordinator.activate("activation-retry")
+            coordinator.refreshRequestedEntries()
+            runCurrent()
 
             assertEquals(2, loadCount)
             assertEquals("654321", coordinator.codeForCopy("activation-retry"))
         }
 
     @Test
-    fun `activation propagates cancellation and fatal errors`() =
+    fun `subscription activation propagates fatal errors and leaves cancellation unhandled`() =
         runTest {
             val fatal = AssertionError("fatal OTP config failure")
             val cancellation = CancellationException("activation cancelled")
+            val reported = mutableListOf<Throwable>()
+            val activationScope =
+                CoroutineScope(
+                    SupervisorJob() +
+                        Dispatchers.Unconfined +
+                        CoroutineExceptionHandler { _, failure -> reported += failure },
+                )
             val cancelledRuntime =
                 OtpCodeRuntime(
-                    scope = backgroundScope,
+                    scope = activationScope,
                     loadOtpConfig = { throw cancellation },
                     codeGenerator = { OtpResult.Success("unused") },
                 )
             val fatalRuntime =
                 OtpCodeRuntime(
-                    scope = backgroundScope,
+                    scope = activationScope,
                     loadOtpConfig = { throw fatal },
                     codeGenerator = { OtpResult.Success("unused") },
                 )
 
-            val actualCancellation = runCatching { cancelledRuntime.activate("cancelled") }.exceptionOrNull()
-            val actualFatal = runCatching { fatalRuntime.activate("fatal") }.exceptionOrNull()
+            cancelledRuntime.subscribe("cancelled")
+            fatalRuntime.subscribe("fatal")
 
-            assertSame(cancellation, actualCancellation)
-            assertSame(fatal, actualFatal)
+            assertEquals(listOf(fatal), reported)
+            assertEquals(emptyMap<String, OtpCodeState>(), cancelledRuntime.states.value)
+            activationScope.cancel()
         }
 
     @Test
@@ -365,14 +378,15 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `repeated activation while config read is pending does not duplicate the load`() =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+    fun `ticker reactivation while config read is pending does not duplicate the load`() =
+        runTest {
+            val scope = backgroundScope
             val configGate = CompletableDeferred<Unit>()
             var loadCount = 0
             val coordinator =
                 OtpCodeRuntime(
                     scope = scope,
+                    currentTimeMillis = { 0L },
                     loadOtpConfig = {
                         loadCount++
                         configGate.await()
@@ -382,16 +396,16 @@ class OtpCodeRuntimeTest {
                 )
 
             coordinator.subscribe("pending-entry")
-            val repeatedActivation = launch { coordinator.activate("pending-entry") }
-            yield()
+            runCurrent()
+            coordinator.start()
+            advanceTimeBy(1_000)
+            runCurrent()
             val loadsWhilePending = loadCount
             configGate.complete(Unit)
-            repeatedActivation.join()
-            yield()
+            runCurrent()
 
             assertEquals(1, loadsWhilePending)
             assertEquals("123456", coordinator.readyCode("pending-entry"))
-            scope.cancel()
         }
 
     @Test
@@ -521,7 +535,7 @@ class OtpCodeRuntimeTest {
             generationGate.complete(Unit)
             yield()
 
-            assertEquals(emptyMap<String, Any>(), coordinator.states.value)
+            assertEquals(emptyMap<String, OtpCodeState>(), coordinator.states.value)
             scope.cancel()
         }
 
@@ -598,7 +612,7 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `activate loads complete Steam config by entry id`() =
+    fun `subscription loads complete Steam config by entry id`() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val storedConfig =
@@ -625,7 +639,7 @@ class OtpCodeRuntimeTest {
                     },
                 )
 
-            coordinator.activate("steam-entry")
+            coordinator.subscribe("steam-entry")
 
             assertEquals("steam-entry", loadedEntryId)
             assertNotNull(generatedConfig)
@@ -649,9 +663,9 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("123456") },
                 )
 
-            coordinator.activate("locked-entry")
+            coordinator.subscribe("locked-entry")
 
-            assertEquals(emptyMap<String, Any>(), coordinator.states.value)
+            assertEquals(emptyMap<String, OtpCodeState>(), coordinator.states.value)
             scope.cancel()
         }
 
@@ -744,7 +758,7 @@ class OtpCodeRuntimeTest {
                         },
                         codeGenerator = { OtpResult.Success("code-$loadCount") },
                     )
-                coordinator.activate("refresh-entry")
+                coordinator.subscribe("refresh-entry")
                 val nextMovingFactor = (nowSeconds / 30 + 1) * 30
                 val oldRefresh = scope.launch { coordinator.refreshStates(nextMovingFactor) }
                 coordinator.entryChanged("refresh-entry")
@@ -784,7 +798,7 @@ class OtpCodeRuntimeTest {
                             throw failure()
                         },
                     )
-                coordinator.activate("changing-HOTP-entry")
+                coordinator.subscribe("changing-HOTP-entry")
                 val staleCopy = scope.async { coordinator.codeForCopy("changing-HOTP-entry") }
                 consumeStarted.await()
 

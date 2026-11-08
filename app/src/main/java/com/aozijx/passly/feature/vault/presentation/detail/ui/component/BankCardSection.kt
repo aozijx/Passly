@@ -15,7 +15,7 @@ import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.MaskStyle
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBankCardUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 @Composable
 fun BankCardSection(
@@ -24,7 +24,7 @@ fun BankCardSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CardField(
-            DetailFieldUiModel.CARDHOLDER,
+            DetailField.CARDHOLDER,
             stringResource(R.string.cardholder),
             model.cardholder,
             model.cardholderRevealed,
@@ -47,7 +47,7 @@ fun BankCardSection(
         }
         if (model.hasCardNumber) {
             CardField(
-                DetailFieldUiModel.CARD_NUMBER,
+                DetailField.CARD_NUMBER,
                 stringResource(R.string.card_number),
                 model.cardNumber,
                 model.cardNumberRevealed,
@@ -59,7 +59,7 @@ fun BankCardSection(
         }
         if (model.hasCvv) {
             CardField(
-                DetailFieldUiModel.CARD_CVV,
+                DetailField.CARD_CVV,
                 stringResource(R.string.card_cvv),
                 model.cvv,
                 model.cvvRevealed,
@@ -75,7 +75,7 @@ fun BankCardSection(
                 label = stringResource(R.string.card_expiration),
                 value = it,
                 isRevealed = true,
-                onCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.CARD_EXPIRATION)) },
+                onCopy = { onAction(DetailUiAction.CopyField(DetailField.CARD_EXPIRATION)) },
                 onEdit = null,
             )
         }
@@ -84,9 +84,9 @@ fun BankCardSection(
                 label = stringResource(R.string.payment_pin),
                 value = model.paymentPin,
                 isRevealed = model.paymentPinRevealed,
-                onCopy = { onAction(DetailUiAction.CopyField(DetailFieldUiModel.PAYMENT_PIN)) },
+                onCopy = { onAction(DetailUiAction.CopyField(DetailField.PAYMENT_PIN)) },
                 onEdit = null,
-                onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailFieldUiModel.PAYMENT_PIN)) },
+                onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PAYMENT_PIN)) },
             )
         }
         if (model.canRevealMore && !model.editingCardNumber) {
@@ -104,7 +104,7 @@ fun BankCardSection(
 
 @Composable
 private fun CardField(
-    field: DetailFieldUiModel,
+    field: DetailField,
     label: String,
     value: String?,
     revealed: Boolean,

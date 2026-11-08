@@ -18,9 +18,13 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailActivityHistoryUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailOtpUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedEntrySectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedPasswordSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
@@ -71,7 +75,7 @@ class DetailUiMapperTest {
         val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
 
         assertTrue(actual.dirty)
-        assertEquals(setOf("Personal"), actual.draftTags)
+        assertEquals(DetailTagChipsUiState.Items(listOf("Personal")), actual.draftTags)
         assertEquals(TagEditorValidationErrorUiModel.TOO_MANY_TAGS, actual.validationError)
     }
 
@@ -120,9 +124,18 @@ class DetailUiMapperTest {
                 ),
             )
 
-        assertTrue(requireNotNull(toDetailPresentationModel(DetailUiState(entry = login), null)).content.canBindPasswords)
-        assertFalse(requireNotNull(toDetailPresentationModel(DetailUiState(entry = noteEntry()), null)).content.canBindPasswords)
-        assertFalse(requireNotNull(toDetailPresentationModel(DetailUiState(entry = deletedLogin), null)).content.canBindPasswords)
+        assertEquals(
+            DetailRelatedPasswordSectionUiState.EmptyCanBind,
+            requireNotNull(toDetailPresentationModel(DetailUiState(entry = login), null)).content.relatedSections.passwords,
+        )
+        assertEquals(
+            DetailRelatedPasswordSectionUiState.Hidden,
+            requireNotNull(toDetailPresentationModel(DetailUiState(entry = noteEntry()), null)).content.relatedSections.passwords,
+        )
+        assertEquals(
+            DetailRelatedPasswordSectionUiState.Hidden,
+            requireNotNull(toDetailPresentationModel(DetailUiState(entry = deletedLogin), null)).content.relatedSections.passwords,
+        )
     }
 
     @Test
@@ -140,7 +153,7 @@ class DetailUiMapperTest {
     }
 
     @Test
-    fun contentMapperProjectsOnlySharedContentModels() {
+    fun presentationMapperProjectsRelationsMetadataAndActivity() {
         val entry = noteEntry()
         val state =
             DetailUiState(
@@ -156,28 +169,32 @@ class DetailUiMapperTest {
                             username = "person@example.test",
                         ),
                     ),
-                history =
-                    listOf(
-                        EntryActivity(
-                            entryId = entry.id.value,
-                            activityType = ActivityType.AUTOFILL,
-                            createdAt = 3L,
+                activityHistory =
+                    DetailActivityHistoryState.Ready(
+                        listOf(
+                            EntryActivity(
+                                entryId = entry.id.value,
+                                activityType = ActivityType.AUTOFILL,
+                                createdAt = 3L,
+                            ),
                         ),
                     ),
             )
 
-        val ui = detailContentUiModel(entry, state)
+        val content = requireNotNull(toDetailPresentationModel(state, null)).content
+        val relatedEntries = content.relatedSections.entries as DetailRelatedEntrySectionUiState.Items
+        val relatedPasswords = content.relatedSections.passwords as DetailRelatedPasswordSectionUiState.Items
+        val activities = content.activityHistory as DetailActivityHistoryUiState.ReadyItems
 
-        assertEquals("account-member", ui.accountGroupEntries.single().id)
-        assertEquals("other-relation", ui.otherRelatedEntries.single().id)
-        assertEquals("related-link", ui.relatedPasswords.single().linkId)
-        assertEquals("related-password", ui.relatedPasswords.single().targetEntryId)
-        assertEquals("person@example.test", ui.relatedPasswords.single().username)
-        assertEquals(1L, ui.metadata.createdAt)
-        assertEquals(1L, ui.metadata.updatedAt)
-        assertEquals(ActivityType.AUTOFILL, ui.activities.single().type)
-        assertEquals(EntryActivityContext.Usage, ui.activities.single().context)
-        assertEquals(3L, ui.activities.single().createdAt)
+        assertEquals(listOf("account-member", "other-relation"), relatedEntries.entries.map { it.id })
+        assertEquals("related-link", relatedPasswords.entries.single().linkId)
+        assertEquals("related-password", relatedPasswords.entries.single().targetEntryId)
+        assertEquals("person@example.test", relatedPasswords.entries.single().username)
+        assertEquals(1L, content.metadata.createdAt)
+        assertEquals(1L, content.metadata.updatedAt)
+        assertEquals(ActivityType.AUTOFILL, activities.activities.single().type)
+        assertEquals(EntryActivityContext.Usage, activities.activities.single().context)
+        assertEquals(3L, activities.activities.single().createdAt)
     }
 
     @Test
@@ -328,11 +345,11 @@ class DetailUiMapperTest {
 
         assertEquals("Alice", card.cardholder)
         val bankDetails = card.bankDetails.associate { it.field to it.value }
-        assertEquals("Bank", bankDetails[DetailFieldUiModel.CARD_ISSUING_BANK])
-        assertEquals("Branch", bankDetails[DetailFieldUiModel.CARD_BANK_BRANCH])
-        assertEquals("Product", bankDetails[DetailFieldUiModel.CARD_PRODUCT])
-        assertEquals("CNY / USD", bankDetails[DetailFieldUiModel.CARD_CURRENCY])
-        assertEquals("+86 123456", bankDetails[DetailFieldUiModel.CARD_BANK_PHONE])
+        assertEquals("Bank", bankDetails[DetailField.CARD_ISSUING_BANK])
+        assertEquals("Branch", bankDetails[DetailField.CARD_BANK_BRANCH])
+        assertEquals("Product", bankDetails[DetailField.CARD_PRODUCT])
+        assertEquals("CNY / USD", bankDetails[DetailField.CARD_CURRENCY])
+        assertEquals("+86 123456", bankDetails[DetailField.CARD_BANK_PHONE])
         assertTrue(card.cardholderRevealed)
         assertTrue(card.hasCardNumber)
         assertTrue(card.hasCvv)

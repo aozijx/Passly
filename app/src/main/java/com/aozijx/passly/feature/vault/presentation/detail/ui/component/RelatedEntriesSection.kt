@@ -35,81 +35,86 @@ import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedEntrySectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedPasswordSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRelatedSectionsUiModel
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @Composable
 fun RelatedEntriesSection(
-    accountGroupEntries: List<RelatedEntryUiModel>,
-    otherRelatedEntries: List<RelatedEntryUiModel>,
-    relatedPasswords: List<RelatedPasswordUiModel>,
-    canBindPasswords: Boolean,
+    state: DetailRelatedSectionsUiModel,
     unlinkState: RelatedPasswordUnlinkUiState,
     onAction: (DetailUiAction) -> Unit,
     onOpenEntry: (String) -> Unit,
 ) {
-    if (accountGroupEntries.isNotEmpty() || otherRelatedEntries.isNotEmpty()) {
-        InfoGroupCard(title = stringResource(R.string.related_entries)) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                val navigableEntries = accountGroupEntries + otherRelatedEntries
-                navigableEntries.forEachIndexed { index, entry ->
-                    ListItem(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .testTag("related-entry-row-${entry.id}")
-                                .clickable { onOpenEntry(entry.id) }
-                                .padding(horizontal = 4.dp),
-                        trailingContent = {
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
-                        },
-                        supportingContent = { Text(stringResource(entry.entryType.labelRes)) },
-                        colors = ListItemDefaults.colors(),
-                        content = { Text(entry.title) },
-                    )
-                    if (index < navigableEntries.lastIndex) HorizontalDivider()
+    when (val entries = state.entries) {
+        DetailRelatedEntrySectionUiState.Hidden -> Unit
+        is DetailRelatedEntrySectionUiState.Items -> {
+            InfoGroupCard(title = stringResource(R.string.related_entries)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    entries.entries.forEachIndexed { index, entry ->
+                        ListItem(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .testTag("related-entry-row-${entry.id}")
+                                    .clickable { onOpenEntry(entry.id) }
+                                    .padding(horizontal = 4.dp),
+                            trailingContent = {
+                                Icon(Icons.Default.ChevronRight, contentDescription = null)
+                            },
+                            supportingContent = { Text(stringResource(entry.entryType.labelRes)) },
+                            colors = ListItemDefaults.colors(),
+                            content = { Text(entry.title) },
+                        )
+                        if (index < entries.entries.lastIndex) HorizontalDivider()
+                    }
                 }
             }
         }
     }
 
-    if (relatedPasswords.isNotEmpty() || canBindPasswords) {
-        InfoGroupCard(
-            title = stringResource(R.string.vault_detail_related_passwords_title),
-            titleTrailing = {
-                IconButton(onClick = { onAction(DetailUiAction.OpenPasswordBinding) }) {
+    when (val passwords = state.passwords) {
+        DetailRelatedPasswordSectionUiState.Hidden -> Unit
+        DetailRelatedPasswordSectionUiState.EmptyCanBind -> {
+            InfoGroupCard(
+                title = stringResource(R.string.vault_detail_related_passwords_title),
+                titleTrailing = { BindPasswordButton(onClick = { onAction(DetailUiAction.OpenPasswordBinding) }) },
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Icon(
                         imageVector = Icons.Default.Link,
-                        contentDescription = stringResource(R.string.vault_detail_bind_password),
-                        tint = MaterialTheme.colorScheme.primary,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-            },
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                if (relatedPasswords.isEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Link,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.vault_detail_related_passwords_empty),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = { onAction(DetailUiAction.OpenPasswordBinding) }) {
-                            Text(stringResource(R.string.vault_detail_bind_password))
-                        }
+                    Text(
+                        text = stringResource(R.string.vault_detail_related_passwords_empty),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { onAction(DetailUiAction.OpenPasswordBinding) }) {
+                        Text(stringResource(R.string.vault_detail_bind_password))
                     }
-                } else {
-                    relatedPasswords.forEachIndexed { index, related ->
+                }
+            }
+        }
+
+        is DetailRelatedPasswordSectionUiState.Items -> {
+            InfoGroupCard(
+                title = stringResource(R.string.vault_detail_related_passwords_title),
+                titleTrailing =
+                    if (passwords.canBind) {
+                        { BindPasswordButton(onClick = { onAction(DetailUiAction.OpenPasswordBinding) }) }
+                    } else {
+                        null
+                    },
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    passwords.entries.forEachIndexed { index, related ->
                         val removing =
                             (unlinkState as? RelatedPasswordUnlinkUiState.Confirming)
                                 ?.takeIf { it.phase == RelatedPasswordUnlinkUiState.Phase.Removing }
@@ -144,7 +149,7 @@ fun RelatedEntriesSection(
                                     Icon(Icons.Default.ChevronRight, contentDescription = null)
                                 },
                                 supportingContent = {
-                                    related.username.takeIf(String::isNotBlank)?.let { Text(it) }
+                                    related.username?.let { Text(it) }
                                 },
                                 colors = ListItemDefaults.colors(),
                                 content = { Text(related.title) },
@@ -166,7 +171,7 @@ fun RelatedEntriesSection(
                             enabled = !removing,
                             content = row,
                         )
-                        if (index < relatedPasswords.lastIndex) HorizontalDivider()
+                        if (index < passwords.entries.lastIndex) HorizontalDivider()
                     }
                 }
             }
@@ -174,6 +179,17 @@ fun RelatedEntriesSection(
     }
 
     UnlinkConfirmationDialog(state = unlinkState, onAction = onAction)
+}
+
+@Composable
+private fun BindPasswordButton(onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = Icons.Default.Link,
+            contentDescription = stringResource(R.string.vault_detail_bind_password),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 @Composable

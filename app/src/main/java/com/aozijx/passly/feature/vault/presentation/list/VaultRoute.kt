@@ -236,7 +236,7 @@ internal fun VaultRoute(
             }
         },
         onAddTypeSelected = { type ->
-            navigation.navigate(VaultDestinationRequest.OpenEditor(type))
+            navigation.navigate(VaultDestinationRequest.OpenEditor(type.featureType))
         },
     )
 

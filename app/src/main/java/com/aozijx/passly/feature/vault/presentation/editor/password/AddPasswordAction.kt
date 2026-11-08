@@ -31,6 +31,10 @@ sealed interface AddPasswordAction {
 
     data object LoadAssociatedApps : AddPasswordAction
 
+    data class AssociatedAppsSearchChanged(
+        val query: String,
+    ) : AddPasswordAction
+
     data class AssociatedAppSelected(
         val packageName: String,
     ) : AddPasswordAction

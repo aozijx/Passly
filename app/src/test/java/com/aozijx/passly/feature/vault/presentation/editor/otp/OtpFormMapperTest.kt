@@ -42,12 +42,34 @@ class OtpFormMapperTest {
                 EntrySecret(credential = OtpCredential(config), notes = "note"),
             )
 
-        val draft = OtpFormState().fromEntry(entry).toEntryDraft()
+        val form = OtpFormState(uriText = "otpauth://stale").fromEntry(entry)
+        val draft = form.toEntryDraft()
 
+        assertEquals("Token", form.title)
+        assertEquals("Example", form.issuer)
+        assertEquals("ada", form.accountName)
+        assertEquals("JBSWY3DPEHPK3PXP", form.secret)
+        assertEquals("30", form.period)
+        assertEquals("8", form.digits)
+        assertEquals(OtpType.HOTP, form.type)
+        assertEquals(OtpHashAlgorithm.SHA512, form.algorithm)
+        assertEquals(OtpSecretEncoding.BASE32, form.encoding)
+        assertEquals("99", form.counter)
+        assertEquals("", form.uriText)
+        assertEquals("note", form.notes)
+        assertEquals("work", form.tags)
+        assertEquals(EntryDraftValue.Text("Token"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("JBSWY3DPEHPK3PXP"), draft[FieldKey.OTP_SECRET])
         assertEquals(EntryDraftValue.Text(OtpType.HOTP.name), draft[FieldKey.OTP_TYPE])
+        assertEquals(EntryDraftValue.Text(OtpHashAlgorithm.SHA512.name), draft[FieldKey.OTP_ALGORITHM])
+        assertEquals(EntryDraftValue.Number(8), draft[FieldKey.OTP_DIGITS])
+        assertEquals(null, draft[FieldKey.OTP_PERIOD])
         assertEquals(EntryDraftValue.LongNumber(99), draft[FieldKey.OTP_COUNTER])
         assertEquals(EntryDraftValue.Text("Example"), draft[FieldKey.OTP_ISSUER])
+        assertEquals(EntryDraftValue.Text("ada"), draft[FieldKey.OTP_ACCOUNT_NAME])
+        assertEquals(EntryDraftValue.Text(OtpSecretEncoding.BASE32.name), draft[FieldKey.OTP_ENCODING])
+        assertEquals(EntryDraftValue.Text("note"), draft[FieldKey.NOTES])
+        assertEquals(EntryDraftValue.TextList(listOf("work")), draft[FieldKey.TAGS])
     }
 
     @Test

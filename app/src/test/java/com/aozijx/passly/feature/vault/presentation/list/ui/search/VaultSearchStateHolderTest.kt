@@ -23,7 +23,7 @@ class VaultSearchStateHolderTest {
         holder.focusChanged(true)
 
         assertFalse(searchActive)
-        assertEquals(VaultSearchPhase.BROWSING, holder.uiState.phase)
+        assertEquals(VaultSearchState.Browsing, holder.uiState)
     }
 
     @Test
@@ -47,7 +47,7 @@ class VaultSearchStateHolderTest {
         assertEquals("", query)
         assertFalse(searchActive)
         assertTrue(barsExpanded)
-        assertEquals(VaultSearchPhase.BROWSING, holder.uiState.phase)
+        assertEquals(VaultSearchState.Browsing, holder.uiState)
     }
 
     @Test
@@ -69,6 +69,6 @@ class VaultSearchStateHolderTest {
         holder.focusChanged(false)
 
         assertFalse(searchActive)
-        assertEquals(VaultSearchPhase.BROWSING, holder.uiState.phase)
+        assertEquals(VaultSearchState.Browsing, holder.uiState)
     }
 }

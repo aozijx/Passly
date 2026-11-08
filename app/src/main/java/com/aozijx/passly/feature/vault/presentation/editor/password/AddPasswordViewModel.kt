@@ -13,8 +13,13 @@ import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
+import com.aozijx.passly.feature.vault.presentation.common.appPackagePickerReady
+import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
+import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
+import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -109,6 +114,20 @@ class AddPasswordViewModel
                     loadAssociatedApps()
                 }
 
+                is AddPasswordAction.AssociatedAppsSearchChanged -> {
+                    val ready =
+                        _uiState.value.availableApps as? AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel> ?: return
+                    _uiState.value =
+                        _uiState.value.copy(
+                            availableApps =
+                                ready.search(
+                                    action.query,
+                                    AppPackagePickerItemUiModel::label,
+                                    AppPackagePickerItemUiModel::packageName,
+                                ),
+                        )
+                }
+
                 is AddPasswordAction.AssociatedAppSelected -> {
                     mutateForm {
                         it.copy(associatedAppPackage = action.packageName)
@@ -123,13 +142,18 @@ class AddPasswordViewModel
 
         private fun loadAssociatedApps() {
             if (!writeSession.canEdit()) return
-            if (_uiState.value.availableAppsLoaded || associatedAppsLoadJob?.isActive == true) return
+            if (_uiState.value.availableApps is AppPackagePickerUiState.Ready ||
+                _uiState.value.availableApps == AppPackagePickerUiState.Loading ||
+                associatedAppsLoadJob?.isActive == true
+            ) return
             val authentication = secureSessionAccessState.authenticationState.value
+            _uiState.value = _uiState.value.copy(availableApps = AppPackagePickerUiState.Loading)
             associatedAppsLoadJob =
                 viewModelScope.launch {
                     if (!secureSessionAccessState.hasFullSecureSessionAccess() ||
                         secureSessionAccessState.authenticationState.value !== authentication
                     ) {
+                        _uiState.value = _uiState.value.copy(availableApps = AppPackagePickerUiState.NotRequested)
                         return@launch
                     }
                     try {
@@ -145,13 +169,15 @@ class AddPasswordViewModel
                         }
                         _uiState.value =
                             _uiState.value.copy(
-                                availableApps = apps,
-                                availableAppsLoaded = true,
+                                availableApps =
+                                    appPackagePickerReady(apps),
                             )
                     } catch (error: CancellationException) {
                         throw error
                     } catch (_: Exception) {
-                        // Keep the state retryable; reopening the picker triggers another load.
+                        if (secureSessionAccessState.authenticationState.value === authentication) {
+                            _uiState.value = _uiState.value.copy(availableApps = AppPackagePickerUiState.Failed)
+                        }
                     }
                 }
         }
@@ -170,12 +196,12 @@ class AddPasswordViewModel
             writeSession.save { current.form.toEntryDraft() }
         }
 
-        private fun clearSensitiveContent() {
+        private fun clearSensitiveContent(reason: EditorWriteSessionClearReason) {
             associatedAppsLoadJob?.cancel()
             associatedAppsLoadJob = null
             _uiState.value =
                 AddPasswordUiState(
-                    loadPhase = if (editingEntryId == null) EditorLoadPhase.NotRequested else EditorLoadPhase.Failed,
+                    loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
 
@@ -186,7 +212,6 @@ class AddPasswordViewModel
                 _uiState.value.copy(
                     form = AddPasswordFormState(),
                     loadPhase = EditorLoadPhase.Failed,
-                    loadFailed = true,
                 )
         }
 

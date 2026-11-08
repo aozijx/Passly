@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 import com.aozijx.passly.presentation.shared.entry.labelRes
 
@@ -18,10 +18,7 @@ internal fun VaultListItemIcon(
 ) = VaultItemIcon(
     modifier = modifier,
     iconName = item.iconName,
-    iconCustomPath = item.iconCustomPath,
+    customImageModel = item.iconImageModel,
     associatedAppPackage = item.associatedAppPackage,
-    entryType = item.entryType,
-    title = item.title,
-    username = item.username,
-    associatedDomain = item.associatedDomain,
+    visualCategory = item.visualCategory,
 )

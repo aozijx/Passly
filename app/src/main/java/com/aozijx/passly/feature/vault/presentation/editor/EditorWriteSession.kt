@@ -24,7 +24,7 @@ internal class EditorWriteSession(
     private val write: suspend (EntryDraft) -> AppResult<*>,
     private val onSaving: () -> Unit,
     private val onIdle: () -> Unit,
-    private val onClear: () -> Unit,
+    private val onClear: (EditorWriteSessionClearReason) -> Unit,
 ) {
     private sealed interface Phase {
         data object Closed : Phase
@@ -139,7 +139,7 @@ internal class EditorWriteSession(
                 }
                 phase = Phase.Finished(attempt)
                 when (effect) {
-                    EditorSaveEffect.Saved -> onClear()
+                    EditorSaveEffect.Saved -> onClear(EditorWriteSessionClearReason.WriteSucceeded)
                     EditorSaveEffect.Failed -> onIdle()
                 }
                 deliveries.trySend(Delivery(attempt, effect))
@@ -151,7 +151,7 @@ internal class EditorWriteSession(
         phase = Phase.Closed
         saveJob?.cancel()
         saveJob = null
-        onClear()
+        onClear(EditorWriteSessionClearReason.AccessInvalidated)
     }
 
     fun close() {
@@ -161,7 +161,7 @@ internal class EditorWriteSession(
         saveJob?.cancel()
         saveJob = null
         deliveries.close()
-        onClear()
+        onClear(EditorWriteSessionClearReason.OwnerClosed)
     }
 
     private fun isCurrent(attempt: Phase.Saving): Boolean = phase === attempt && authentication() === attempt.authentication
@@ -178,4 +178,13 @@ internal class EditorWriteSession(
         }
 }
 
+internal enum class EditorWriteSessionClearReason { WriteSucceeded, AccessInvalidated, OwnerClosed }
+
 enum class EditorLoadPhase { NotRequested, Loading, Ready, Failed }
+
+internal fun EditorWriteSessionClearReason.toEditorLoadPhase(editingExisting: Boolean): EditorLoadPhase =
+    when {
+        !editingExisting -> EditorLoadPhase.NotRequested
+        this == EditorWriteSessionClearReason.WriteSucceeded -> EditorLoadPhase.Ready
+        else -> EditorLoadPhase.Failed
+    }

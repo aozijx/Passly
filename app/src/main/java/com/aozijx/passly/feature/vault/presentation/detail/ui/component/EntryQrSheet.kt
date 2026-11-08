@@ -134,7 +134,7 @@ private fun EntryQrImage(content: DetailQrPayload) {
             withContext(Dispatchers.Default) {
                 owned =
                     content.useChars { chars ->
-                        if (chars.isEmpty()) null else QrCodeEncoder.encode(String(chars))
+                        QrCodeEncoder.encode(chars)
                     }
             }
             owned?.let { bitmap ->

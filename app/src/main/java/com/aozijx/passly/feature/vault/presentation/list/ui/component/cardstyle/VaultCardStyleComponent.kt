@@ -3,9 +3,13 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 import androidx.compose.runtime.Composable
 import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpKindUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
+import com.aozijx.passly.presentation.shared.components.EntryClassificationInput
+import com.aozijx.passly.presentation.shared.components.EntryVisualCategoryClassifier
 
 /**
  * One selectable appearance for a vault list card.
@@ -90,9 +94,22 @@ internal object CardStylePreviewFixtures {
         associatedAppPackage = null,
         iconName = null,
         iconCustomPath = null,
+        iconImageModel = null,
+        visualCategory =
+            EntryVisualCategoryClassifier.classify(
+                EntryClassificationInput(
+                    entryType = entryType,
+                    title = title,
+                    username = username,
+                    urls = setOfNotNull(associatedDomain),
+                    domains = setOfNotNull(associatedDomain),
+                ),
+            ),
         hasPassword = hasPassword,
         hasOtp = hasOtp,
         otpKind = otpKind,
         otpPreview = null,
+        passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(entryType),
+        passwordCardSupportingText = VaultPasswordCardSupportingTextUiModel.PROTECTED,
     )
 }

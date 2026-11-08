@@ -1,7 +1,6 @@
 package com.aozijx.passly.presentation.shared.components
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -20,7 +19,7 @@ class VaultIconsTest {
     fun stableKeyResolvesItsDefinition() {
         VaultIcons.definitions.forEach { definition ->
             assertEquals(definition, VaultIcons.findDefinition(definition.key))
-            assertEquals(definition.imageVector, VaultIcons.getIconByName(definition.key))
+            assertEquals(definition.imageVector, VaultIcons.findDefinition(definition.key)?.imageVector)
         }
     }
 
@@ -45,8 +44,7 @@ class VaultIconsTest {
     }
 
     @Test
-    fun unknownKeyFallsBackWithoutBecomingAStoredDefinition() {
+    fun unknownKeyIsNotAStoredDefinition() {
         assertEquals(null, VaultIcons.findDefinition("missing.icon"))
-        assertNotNull(VaultIcons.getIconByName("missing.icon"))
     }
 }

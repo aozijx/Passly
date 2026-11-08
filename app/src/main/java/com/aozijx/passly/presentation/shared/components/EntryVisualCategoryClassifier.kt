@@ -6,7 +6,7 @@ import java.text.Normalizer
 
 private const val DEFAULT_MINIMUM_RULE_SCORE = 4
 
-internal enum class EntryVisualCategory {
+enum class EntryVisualCategory {
     PERSONAL,
     BANK,
     PAYMENT,

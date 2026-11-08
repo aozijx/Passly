@@ -1,22 +1,40 @@
 package com.aozijx.passly.presentation.mapping
 
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
 import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
-import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 
 data class PasswordStrengthUiState(
     val progress: Float,
     val color: Color,
     val textResId: Int,
+    val isVisible: Boolean,
 )
 
-internal fun PasswordStrengthResult.toUiState(colorScheme: ColorScheme): PasswordStrengthUiState {
+sealed interface PasswordStrengthState {
+    data object Hidden : PasswordStrengthState
+
+    data class Visible(val result: PasswordStrengthResult) : PasswordStrengthState
+}
+
+internal fun PasswordStrengthState.toUiState(colorScheme: ColorScheme): PasswordStrengthUiState =
+    when (this) {
+        PasswordStrengthState.Hidden ->
+            PasswordStrengthUiState(
+                progress = 0f,
+                color = colorScheme.onSurfaceVariant,
+                textResId = R.string.password_strength_very_weak,
+                isVisible = false,
+            )
+        is PasswordStrengthState.Visible -> result.toUiState(colorScheme, isVisible = true)
+    }
+
+internal fun PasswordStrengthResult.toUiState(
+    colorScheme: ColorScheme,
+    isVisible: Boolean,
+): PasswordStrengthUiState {
     val progress = score / 100f
     val (color, textRes) =
         when (level) {
@@ -26,13 +44,5 @@ internal fun PasswordStrengthResult.toUiState(colorScheme: ColorScheme): Passwor
             PasswordStrengthLevel.GOOD -> colorScheme.secondary to R.string.password_strength_good
             PasswordStrengthLevel.STRONG -> colorScheme.primary to R.string.password_strength_strong
         }
-    return PasswordStrengthUiState(progress, color, textRes)
-}
-
-@Composable
-internal fun rememberPasswordStrength(password: String): PasswordStrengthUiState {
-    val colorScheme = MaterialTheme.colorScheme
-    return remember(password, colorScheme) {
-        PasswordStrengthEvaluator.evaluate(password).toUiState(colorScheme)
-    }
+    return PasswordStrengthUiState(progress, color, textRes, isVisible)
 }

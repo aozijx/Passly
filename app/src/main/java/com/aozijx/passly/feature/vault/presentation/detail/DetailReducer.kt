@@ -5,6 +5,8 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
+import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
@@ -78,9 +80,21 @@ internal sealed interface DetailMutation {
         val entryId: EntryId,
     ) : DetailMutation
 
+    data class ActivityFilterChanged(
+        val filter: DetailActivityFilter,
+    ) : DetailMutation
+
     data class PackagePickerAppsChanged(
         val entryId: EntryId,
         val apps: List<DetailInstalledApp>,
+    ) : DetailMutation
+
+    data class PackagePickerSearchChanged(
+        val query: String,
+    ) : DetailMutation
+
+    data class PackagePickerAppsLoadStarted(
+        val entryId: EntryId,
     ) : DetailMutation
 
     data class PackagePickerAppsFailed(
@@ -93,6 +107,10 @@ internal sealed interface DetailMutation {
 
     data class PasswordUnlinkStateChanged(
         val state: RelatedPasswordUnlinkUiState,
+    ) : DetailMutation
+
+    data class PasswordBindingSearchChanged(
+        val query: String,
     ) : DetailMutation
 
     data class RelationsChanged(
@@ -199,6 +217,14 @@ internal object DetailReducer {
 
             is DetailMutation.PasswordBindingStateChanged -> state.copy(passwordBinding = mutation.state)
             is DetailMutation.PasswordUnlinkStateChanged -> state.copy(passwordUnlink = mutation.state)
+            is DetailMutation.PasswordBindingSearchChanged -> {
+                val picker = state.passwordBinding as? RelatedPasswordBindingUiState.Ready
+                if (picker == null) {
+                    state
+                } else {
+                    state.copy(passwordBinding = picker.copy(query = mutation.query, results = picker.candidates.toSearchResults(mutation.query)))
+                }
+            }
 
             is DetailMutation.RelationsChanged ->
                 if (state.entry?.id == mutation.entryId) {
@@ -214,6 +240,7 @@ internal object DetailReducer {
             is DetailMutation.SessionOpened -> {
                 mutation.snapshot.let { snapshot ->
                     val presentation = snapshot.presentation
+                    val entryChanged = state.entry?.id != presentation.entry.id
                     state.copy(
                         snapshotState = DetailSnapshotState.Ready,
                         entry = presentation.entry,
@@ -224,6 +251,12 @@ internal object DetailReducer {
                         otherRelatedEntries = snapshot.otherRelatedEntries,
                         relatedPasswords = snapshot.relatedPasswords,
                         passwordUnlink = RelatedPasswordUnlinkUiState.Closed,
+                        activityHistory =
+                            if (entryChanged) {
+                                DetailActivityHistoryState.Loading(emptyList())
+                            } else {
+                                state.activityHistory
+                            },
                         isEditingTitle = false,
                         editedTitle = presentation.entry.detailDisplayTitle,
                     )
@@ -254,7 +287,18 @@ internal object DetailReducer {
                         sections = presentation.sections,
                         associatedApps = presentation.associatedApps,
                         sensitiveFieldKeys = presentation.sensitiveFieldKeys,
-                        passwordUnlink = if (entryChanged) RelatedPasswordUnlinkUiState.Closed else state.passwordUnlink,
+                        activityHistory =
+                            if (entryChanged) {
+                                DetailActivityHistoryState.Loading(emptyList())
+                            } else {
+                                state.activityHistory
+                            },
+                        passwordUnlink =
+                            if (entryChanged) {
+                                RelatedPasswordUnlinkUiState.Closed
+                            } else {
+                                state.passwordUnlink
+                            },
                         editedTitle =
                             if (state.isEditingTitle) {
                                 state.editedTitle
@@ -338,7 +382,7 @@ internal object DetailReducer {
 
             is DetailMutation.HistoryChanged -> {
                 if (state.entry?.id == mutation.entryId) {
-                    state.copy(history = mutation.history, activityHistory = DetailActivityHistoryState.Ready)
+                    state.copy(activityHistory = DetailActivityHistoryState.Ready(mutation.history))
                 } else {
                     state
                 }
@@ -346,7 +390,7 @@ internal object DetailReducer {
 
             is DetailMutation.HistoryLoadStarted -> {
                 if (state.entry?.id == mutation.entryId) {
-                    state.copy(activityHistory = DetailActivityHistoryState.Loading)
+                    state.copy(activityHistory = DetailActivityHistoryState.Loading(state.activityHistory.activities))
                 } else {
                     state
                 }
@@ -354,19 +398,42 @@ internal object DetailReducer {
 
             is DetailMutation.HistoryLoadFailed -> {
                 if (state.entry?.id == mutation.entryId) {
-                    state.copy(activityHistory = DetailActivityHistoryState.Failed)
+                    state.copy(activityHistory = DetailActivityHistoryState.Failed(state.activityHistory.activities))
                 } else {
                     state
                 }
             }
 
+            is DetailMutation.ActivityFilterChanged -> state.copy(activityFilter = mutation.filter)
+
             is DetailMutation.PackagePickerAppsChanged -> {
                 if (state.entry?.id == mutation.entryId) {
                     state.copy(
-                        packagePickerApps = mutation.apps,
-                        packagePickerAppsLoaded = true,
-                        packagePickerAppsLoadFailed = false,
+                        packagePickerApps =
+                            com.aozijx.passly.feature.vault.presentation.common.appPackagePickerReady(
+                                mutation.apps,
+                            ),
                     )
+                } else {
+                    state
+                }
+            }
+
+            is DetailMutation.PackagePickerSearchChanged -> {
+                val ready = state.packagePickerApps as? AppPackagePickerUiState.Ready<DetailInstalledApp> ?: return state
+                state.copy(
+                    packagePickerApps =
+                        ready.search(
+                            mutation.query,
+                            DetailInstalledApp::label,
+                            DetailInstalledApp::packageName,
+                        ),
+                )
+            }
+
+            is DetailMutation.PackagePickerAppsLoadStarted -> {
+                if (state.entry?.id == mutation.entryId) {
+                    state.copy(packagePickerApps = AppPackagePickerUiState.Loading)
                 } else {
                     state
                 }
@@ -374,7 +441,7 @@ internal object DetailReducer {
 
             is DetailMutation.PackagePickerAppsFailed -> {
                 if (state.entry?.id == mutation.entryId) {
-                    state.copy(packagePickerAppsLoadFailed = true)
+                    state.copy(packagePickerApps = AppPackagePickerUiState.Failed)
                 } else {
                     state
                 }

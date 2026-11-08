@@ -34,12 +34,22 @@ class PasswordFormMapperTest {
                 EntrySecret(credential = LoginCredential(password = "secret"), notes = "note"),
             )
 
-        val draft = AddPasswordFormState().fromEntry(entry).toEntryDraft()
+        val form = AddPasswordFormState().fromEntry(entry)
+        val draft = form.toEntryDraft()
 
+        assertEquals("Mail", form.title)
+        assertEquals("https://mail.example", form.websiteUrl)
+        assertEquals("work", form.tags)
+        assertEquals("mail.app", form.associatedAppPackage)
+        assertEquals(setOf("browser.app"), form.preservedAssociatedAppPackages)
+        assertEquals(false, form.isPasswordVisible)
+        assertEquals(EntryDraftValue.Text("Mail"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("secret"), draft[FieldKey.PASSWORD])
         assertEquals(EntryDraftValue.Text("ada"), draft[FieldKey.USERNAME])
+        assertEquals(EntryDraftValue.Text("https://mail.example"), draft[FieldKey.PRIMARY_URL])
         assertEquals(EntryDraftValue.TextList(listOf("mail.app", "browser.app")), draft[FieldKey.APPLICATION_IDS])
         assertEquals(EntryDraftValue.Text("note"), draft[FieldKey.NOTES])
+        assertEquals(EntryDraftValue.TextList(listOf("work")), draft[FieldKey.TAGS])
     }
 
     @Test

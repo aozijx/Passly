@@ -14,11 +14,11 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.vault.presentation.common.labelRes
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailRevisionValueUiModel
 import java.text.DateFormat
 import java.util.Date
 
@@ -156,41 +156,39 @@ private fun revisionFieldLabel(field: RevisionFieldId): String =
     }
 
 @Composable
-private fun revisionValue(value: RevisionFieldValue?): String =
+private fun revisionValue(value: DetailRevisionValueUiModel): String =
     when (value) {
-        null -> {
+        DetailRevisionValueUiModel.Absent -> {
             stringResource(R.string.revision_value_absent)
         }
 
-        is RevisionFieldValue.Text -> {
+        is DetailRevisionValueUiModel.Text -> {
             value.value
         }
 
-        is RevisionFieldValue.TextSet -> {
-            value.values.sorted().joinToString()
-        }
-
-        is RevisionFieldValue.Flag -> {
+        is DetailRevisionValueUiModel.Flag -> {
             stringResource(if (value.value) R.string.revision_value_yes else R.string.revision_value_no)
         }
 
-        is RevisionFieldValue.EpochMillis -> {
+        is DetailRevisionValueUiModel.EpochMillis -> {
             val locale = LocalConfiguration.current.locales[0]
             val formatter = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
             formatter.format(Date(value.value))
         }
 
-        is RevisionFieldValue.Icon -> {
-            stringResource(
-                if (value.value.customReference.isNullOrBlank()) R.string.revision_icon_default else R.string.revision_icon_custom,
-            )
+        DetailRevisionValueUiModel.Icon.DEFAULT -> {
+            stringResource(R.string.revision_icon_default)
         }
 
-        is RevisionFieldValue.Links -> {
-            pluralStringResource(R.plurals.revision_link_count, value.values.size, value.values.size)
+        DetailRevisionValueUiModel.Icon.CUSTOM -> {
+            stringResource(R.string.revision_icon_custom)
         }
 
-        is RevisionFieldValue.AttachmentIds -> {
-            pluralStringResource(R.plurals.revision_attachment_count, value.values.size, value.values.size)
+        is DetailRevisionValueUiModel.Links -> {
+            pluralStringResource(R.plurals.revision_link_count, value.count, value.count)
+        }
+
+        is DetailRevisionValueUiModel.Attachments -> {
+            pluralStringResource(R.plurals.revision_attachment_count, value.count, value.count)
         }
     }

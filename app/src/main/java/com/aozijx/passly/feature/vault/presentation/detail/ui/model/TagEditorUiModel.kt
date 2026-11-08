@@ -4,16 +4,14 @@ sealed interface DetailTagEditorUiModel {
     data object Hidden : DetailTagEditorUiModel
 
     data class Visible(
-        val initialTags: Set<String>,
-        val draftTags: Set<String>,
+        val draftTags: DetailTagChipsUiState,
         val availableTags: Set<String>,
         val input: String,
-        val suggestions: List<String>,
+        val suggestions: DetailTagChipsUiState,
         val validationError: TagEditorValidationErrorUiModel?,
         val overlay: TagEditorOverlayUiState,
-    ) : DetailTagEditorUiModel {
-        val dirty: Boolean get() = draftTags != initialTags || input.isNotBlank()
-    }
+        val dirty: Boolean,
+    ) : DetailTagEditorUiModel
 }
 
 sealed interface TagEditorOverlayUiState {

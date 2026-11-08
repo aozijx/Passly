@@ -37,6 +37,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -242,7 +243,7 @@ class AddBankCardViewModelTest {
         }
 
     @Test
-    fun validCardNumberEnablesSaveAndKeepsValidationOutsideMapper() {
+    fun validCardNumberEnablesSaveUntilSavingBeginsAndKeepsValidationOutsideMapper() {
         val viewModel = createViewModel(createEntryUseCase(), AuthenticatedSession)
 
         viewModel.onAction(AddBankCardAction.TitleChanged("Visa"))
@@ -256,22 +257,8 @@ class AddBankCardViewModelTest {
         )
         assertEquals("4111 1111 1111 1111", state.form.cardNumber)
         assertEquals(AddBankCardSavePhase.Idle, state.savePhase)
-    }
-
-    @Test
-    fun saveCapabilityIsDerivedFromValidationAndSavePhase() {
-        val form =
-            AddBankCardFormState(
-                title = "Visa",
-                cardNumber = "4111111111111111",
-            )
-
-        assertTrue(AddBankCardUiState(form = form).canSave)
-        assertTrue(
-            !AddBankCardUiState(
-                form = form,
-                savePhase = AddBankCardSavePhase.Saving,
-            ).canSave,
+        assertFalse(
+            state.copy(savePhase = AddBankCardSavePhase.Saving).canSave,
         )
     }
 

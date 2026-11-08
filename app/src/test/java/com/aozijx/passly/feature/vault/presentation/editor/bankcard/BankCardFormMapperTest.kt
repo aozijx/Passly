@@ -33,18 +33,58 @@ class BankCardFormMapperTest {
                             cardCvv = "123",
                             cardHolder = "Ada",
                             paymentPin = "4567",
+                            billingAddress = "London",
                             issuingBank = "Bank",
+                            bankBranch = "Central",
+                            cardProduct = "Travel",
+                            currency = "GBP",
+                            bankPhone = "+44 123456",
                         ),
                     notes = "note",
                 ),
             )
 
-        val draft = AddBankCardFormState().fromEntry(entry).toEntryDraft()
+        val form =
+            AddBankCardFormState(
+                isCardNumberVisible = true,
+                isCvvVisible = true,
+                isPinVisible = true,
+            ).fromEntry(entry)
+        val draft = form.toEntryDraft()
 
+        assertEquals("Card", form.title)
+        assertEquals(CardTypeSelection.Selected(CardType.CREDIT), form.cardType)
+        assertEquals("Ada", form.cardholder)
+        assertEquals("4111111111111111", form.cardNumber)
+        assertEquals("123", form.cardCvv)
+        assertEquals("4567", form.paymentPin)
+        assertEquals(CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030)), form.cardExpiry)
+        assertEquals("London", form.billingAddress)
+        assertEquals("Bank", form.issuingBank)
+        assertEquals("Central", form.bankBranch)
+        assertEquals("Travel", form.cardProduct)
+        assertEquals("GBP", form.currency)
+        assertEquals("+44 123456", form.bankPhone)
+        assertEquals("work", form.tags)
+        assertEquals("note", form.notes)
+        assertEquals(false, form.isCardNumberVisible)
+        assertEquals(false, form.isCvvVisible)
+        assertEquals(false, form.isPinVisible)
+        assertEquals(EntryDraftValue.Text("Card"), draft[FieldKey.TITLE])
+        assertEquals(EntryDraftValue.Text("CREDIT"), draft[FieldKey.CARD_TYPE])
+        assertEquals(EntryDraftValue.Text("Ada"), draft[FieldKey.CARD_HOLDER])
         assertEquals(EntryDraftValue.Text("4111111111111111"), draft[FieldKey.CARD_NUMBER])
         assertEquals(EntryDraftValue.Text("123"), draft[FieldKey.CARD_CVV])
         assertEquals(EntryDraftValue.Text("4567"), draft[FieldKey.PAYMENT_PIN])
         assertEquals(EntryDraftValue.Text("03/2030"), draft[FieldKey.CARD_EXPIRATION])
+        assertEquals(EntryDraftValue.Text("London"), draft[FieldKey.BILLING_ADDRESS])
+        assertEquals(EntryDraftValue.Text("Bank"), draft[FieldKey.CARD_ISSUING_BANK])
+        assertEquals(EntryDraftValue.Text("Central"), draft[FieldKey.CARD_BANK_BRANCH])
+        assertEquals(EntryDraftValue.Text("Travel"), draft[FieldKey.CARD_PRODUCT])
+        assertEquals(EntryDraftValue.Text("GBP"), draft[FieldKey.CARD_CURRENCY])
+        assertEquals(EntryDraftValue.Text("+44 123456"), draft[FieldKey.CARD_BANK_PHONE])
+        assertEquals(EntryDraftValue.TextList(listOf("work")), draft[FieldKey.TAGS])
+        assertEquals(EntryDraftValue.Text("note"), draft[FieldKey.NOTES])
     }
 
     @Test
