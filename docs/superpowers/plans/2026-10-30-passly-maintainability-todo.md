@@ -439,6 +439,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 **2026-11-07 异步测试等待复核：** `SensitiveDataKeyManagerTest` 的 100ms 等待对应真实 monotonic TTL（配置 20ms），`AuthenticationAttemptSupportTest` 的 1ms delay 运行在 `runTest` 虚拟时钟中，用来让 NonCancellable 恢复跨过挂起点；两者不是墙钟轮询重复。`RoomObservationSessionTest` 的 250ms 是 Room/Paging 负向观察窗口，用于检查 reset 后无额外 emission。`AttachmentResourceGarbageCollectorTest` 的 100ms 则在 SEALED 初始状态后给后台 wakeup worker 调度机会，再验证资源文件仍在；当前类没有可观察的“已处理 SEALED wakeup”同步点，属于较弱但有明确目的的负向边界等待，暂未机械替换。未运行仪器测试。
 
+**2026-11-08 Encrypted log queue overflow fixture correction:** 合并 DEBUG→INFO 和 INFO→WARN 队列淘汰场景后，WARN 样例由无异常的 `sampleRecord()` 直接改 level，违反 `LogRecordCodec` 对 WARN 记录必须携带异常快照的合同；同一 `@Test` 中还复用了加密日志目录，第二个 store 读到了前一个场景写入的记录。改用 `errorRecord()` 生成 WARN 样例，并为每个优先级场景分配独立目录；定向用例和整个 `EncryptedLogRecordStoreTest` 均通过（21/21）。
+
 <a id="task-75"></a>
 
 ### Task 75：统一固定常量的文件位置与 owner，收敛重复合同值
