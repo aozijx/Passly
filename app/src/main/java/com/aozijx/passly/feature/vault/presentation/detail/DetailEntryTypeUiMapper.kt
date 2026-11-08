@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailCardTextFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyDataUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
@@ -152,8 +153,12 @@ internal fun detailPasskeyUiModel(
             SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE,
         ).let {
             DetailPasskeyUiModel(
-                present = it.present,
-                revealedValue = it.value,
+                data =
+                    when {
+                        !it.present -> DetailPasskeyDataUiModel.Absent
+                        it.value == null -> DetailPasskeyDataUiModel.Hidden
+                        else -> DetailPasskeyDataUiModel.Revealed(it.value)
+                    },
                 hardwareKeyInfo = entry.secret.passkey?.hardwareKeyInfo?.takeIf(String::isNotBlank),
             )
         }

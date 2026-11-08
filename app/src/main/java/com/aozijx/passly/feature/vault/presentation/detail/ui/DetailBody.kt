@@ -187,9 +187,7 @@ fun DetailBody(
                 model.passkey?.let { passkey ->
                     item {
                         PasskeySection(
-                            hasPasskeyData = passkey.present,
-                            revealedPasskeyData = passkey.revealedValue,
-                            hardwareKeyInfo = passkey.hardwareKeyInfo,
+                            model = passkey,
                             onPasskeyCopy = { onAction(DetailUiAction.CopyField(DetailField.PASSKEY_DATA)) },
                             onPasskeyReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PASSKEY_DATA)) },
                             onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailField.HARDWARE_INFO)) },
