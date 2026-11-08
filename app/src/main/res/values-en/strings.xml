@@ -147,8 +147,8 @@
   <string name="auth_password_unlock">Unlock with Password</string>
   <string name="auth_app_password_label">App Password</string>
   <string name="auth_set_app_password">Set App Password</string>
-  <string name="auth_error_method_incorrect">Incorrect password. Try again.</string>
-  <string name="auth_error_method_incorrect_attempts" tools:ignore="PluralsCandidate">Incorrect password. %1$d attempts left.</string>
+  <string name="auth_error_credential_incorrect">Incorrect credential. Try again.</string>
+  <string name="auth_error_credential_incorrect_attempts" tools:ignore="PluralsCandidate">Incorrect credential. %1$d attempts left.</string>
   <string name="auth_error_rate_limited" tools:ignore="PluralsCandidate">Try again in %1$d seconds.</string>
   <string name="auth_error_attempt_state_unavailable">Couldn\'t check authentication limits. Try again shortly.</string>
   <string name="auth_error_failed">Verification failed. Try again.</string>

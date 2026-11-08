@@ -382,15 +382,7 @@ class UnlockViewModel
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
-                        mutate(
-                            UnlockMutation.AuthenticationFailed(
-                                method,
-                                AuthenticationFailure(
-                                    code = AuthenticationFailureCode.ATTEMPT_STATE_UNAVAILABLE,
-                                    method = method,
-                                ),
-                            ),
-                        )
+                        // The authentication result already carries the last known attempt state.
                     } finally {
                         if (attemptStatusJobs[method] === job) attemptStatusJobs.remove(method)
                     }

@@ -325,11 +325,11 @@ private fun UnlockFailureMessage.localized(): String =
         is UnlockFailureMessage.IncorrectCredential -> {
             if ((remainingAttempts ?: 0) > 0) {
                 stringResource(
-                    R.string.auth_error_method_incorrect_attempts,
+                    R.string.auth_error_credential_incorrect_attempts,
                     remainingAttempts ?: 0,
                 )
             } else {
-                stringResource(R.string.auth_error_method_incorrect)
+                stringResource(R.string.auth_error_credential_incorrect)
             }
         }
 

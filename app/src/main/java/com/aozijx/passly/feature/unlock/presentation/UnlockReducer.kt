@@ -144,12 +144,32 @@ internal object UnlockReducer {
             }
 
             is UnlockMutation.AuthenticationFailed -> {
+                val failure = mutation.failure
+                val attemptStatuses =
+                    if (mutation.method != AuthenticationMethod.BIOMETRIC &&
+                        failure.code in setOf(
+                            AuthenticationFailureCode.CREDENTIAL_INCORRECT,
+                            AuthenticationFailureCode.RATE_LIMITED,
+                        )
+                    ) {
+                        state.authenticationAttemptStatuses +
+                            (
+                                mutation.method to
+                                    AuthenticationAttemptStatus(
+                                        attempts = failure.attempts,
+                                        retryAfterMs = failure.retryAfterMs,
+                                    )
+                            )
+                    } else {
+                        state.authenticationAttemptStatuses
+                    }
                 state.copy(
+                    authenticationAttemptStatuses = attemptStatuses,
                     verificationPhase =
                         UnlockVerificationPhase.Failed(
                             UnlockVerificationFailure(
                                 method = mutation.method,
-                                message = mutation.failure.toVerificationMessage(mutation.method),
+                                message = failure.toVerificationMessage(mutation.method),
                             ),
                         ),
                 )

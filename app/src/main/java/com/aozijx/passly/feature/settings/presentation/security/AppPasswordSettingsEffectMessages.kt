@@ -67,8 +67,7 @@ private fun AuthenticationFailure.toMessage(context: Context): String =
         AuthenticationFailureCode.CREDENTIAL_INCORRECT -> {
             if ((attempts.remaining ?: 0) > 0) {
                 context.getString(
-                    R.string.auth_error_method_incorrect_attempts,
-                    context.getString(R.string.auth_app_password_label),
+                    R.string.auth_error_credential_incorrect_attempts,
                     attempts.remaining ?: 0,
                 )
             } else {
