@@ -95,7 +95,7 @@ internal class AndroidKeystoreLogKeyWrapper : LogKeyWrapper {
         return (keyStore.getEntry(KEY_ALIAS, null) as KeyStore.SecretKeyEntry).secretKey
     }
 
-    private companion object {
+    internal companion object {
         const val KEY_ALIAS = "com.aozijx.passly.observability.wrap.v1"
     }
 }

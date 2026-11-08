@@ -36,15 +36,6 @@ interface SecretFieldQueryDao {
     )
     suspend fun getKeys(entryId: String): List<String>
 
-    @Query(
-        """
-        SELECT * FROM entry_secret_fields
-        WHERE entryId IN (:entryIds)
-        ORDER BY entryId ASC, fieldKey ASC
-        """,
-    )
-    suspend fun getAllForEntries(entryIds: List<String>): List<EntrySecretFieldEntity>
-
     @Query("SELECT EXISTS(SELECT 1 FROM entry_secret_fields WHERE entryId = :entryId)")
     suspend fun exists(entryId: String): Boolean
 }

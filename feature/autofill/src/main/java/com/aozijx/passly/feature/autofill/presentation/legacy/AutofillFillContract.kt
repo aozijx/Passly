@@ -54,42 +54,6 @@ internal sealed class AutofillFillUiState {
     ) : AutofillFillUiState()
 }
 
-internal sealed interface AutofillFillDisplayState {
-    data object Hidden : AutofillFillDisplayState
-
-    data class Candidates(
-        val candidates: List<AutofillCandidateSummary>,
-    ) : AutofillFillDisplayState
-
-    data class ConfirmWebRecipient(
-        val packageName: String,
-        val webDomain: String,
-    ) : AutofillFillDisplayState
-
-    data class ConfirmWebEntry(
-        val packageName: String,
-        val webDomain: String,
-        val candidate: AutofillCandidateSummary,
-    ) : AutofillFillDisplayState
-}
-
-internal fun AutofillFillUiState.toDisplayState(): AutofillFillDisplayState =
-    when (this) {
-        is AutofillFillUiState.ShowCandidates -> AutofillFillDisplayState.Candidates(candidates)
-
-        is AutofillFillUiState.ConfirmWebRecipient ->
-            AutofillFillDisplayState.ConfirmWebRecipient(packageName, webDomain)
-
-        is AutofillFillUiState.ConfirmWebEntry ->
-            AutofillFillDisplayState.ConfirmWebEntry(packageName, webDomain, candidate)
-
-        AutofillFillUiState.Initial,
-        AutofillFillUiState.Loading,
-        is AutofillFillUiState.Result,
-        is AutofillFillUiState.Error,
-        -> AutofillFillDisplayState.Hidden
-    }
-
 internal data class AutofillFillRequest(
     val interactionId: AutofillInteractionId,
     val uiMode: AutofillPresentation,

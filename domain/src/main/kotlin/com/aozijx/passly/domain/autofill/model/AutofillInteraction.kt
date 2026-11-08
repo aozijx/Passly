@@ -20,7 +20,6 @@ value class AutofillInteractionId(
 
 enum class AutofillInteractionSource {
     LEGACY,
-    LEGACY_SAVE,
     CREDENTIAL_MANAGER,
     ACCESSIBILITY,
 }

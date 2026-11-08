@@ -91,9 +91,10 @@ class AppDatabaseSession
                 block = block,
             )
 
-        internal suspend fun <T> queryForMaintenance(block: suspend AppDatabase.() -> T): T = runtime.read(block)
-
         internal suspend fun <T> transactionForMaintenance(block: suspend AppDatabase.() -> T): T = runtime.write(block)
+
+        /** Direct read seam for Data integration tests that assert persisted maintenance results. */
+        internal suspend fun <T> queryForMaintenance(block: suspend AppDatabase.() -> T): T = runtime.read(block)
 
         private suspend fun <T> queryWithAccess(
             access: SecureSessionAccessState.() -> Boolean,

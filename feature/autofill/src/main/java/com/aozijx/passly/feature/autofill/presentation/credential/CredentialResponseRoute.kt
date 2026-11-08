@@ -31,6 +31,6 @@ internal fun CredentialResponseRoute(
         }
     }
     LaunchedEffect(state) {
-        if (state is CredentialResponseUiState.Unrecoverable) onUnrecoverable()
+        if (state == CredentialResponseState.UNRECOVERABLE) onUnrecoverable()
     }
 }

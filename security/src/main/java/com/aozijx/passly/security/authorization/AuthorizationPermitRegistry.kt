@@ -49,8 +49,6 @@ internal class AuthorizationPermitRegistry
             synchronized(grants) { grants.clear() }
         }
 
-        internal fun activePermitCount(): Int = synchronized(grants) { grants.size }
-
         private class RegistryPermit : AuthorizationPermit
 
         private data class Grant(

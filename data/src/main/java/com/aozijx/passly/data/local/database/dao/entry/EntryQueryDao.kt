@@ -87,9 +87,6 @@ interface EntryQueryDao {
     @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId)")
     suspend fun exists(entryId: String): Boolean
 
-    @Query("SELECT EXISTS(SELECT 1 FROM entries WHERE entryId = :entryId AND deletedAt IS NULL)")
-    suspend fun existsActive(entryId: String): Boolean
-
     @Query("SELECT COUNT(*) FROM entries WHERE iconCustomReference = :path")
     suspend fun countByIconCustomReference(path: String): Int
 }

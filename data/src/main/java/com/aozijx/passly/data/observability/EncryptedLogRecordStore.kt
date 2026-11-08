@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -64,7 +63,7 @@ internal class EncryptedLogRecordStore(
     private val emergencyThreads = ConcurrentHashMap.newKeySet<Thread>()
 
     @Volatile private var acceptingWrites = true
-    private val droppedCounts = AtomicLongArray(LogLevel.entries.size)
+    private val droppedCounts = LogLevel.entries.associateWith { AtomicLong() }
     private val writer =
         ThreadPoolExecutor(
             1,
@@ -258,11 +257,11 @@ internal class EncryptedLogRecordStore(
 
     override fun drainDroppedCounts(): LogDropCounts =
         LogDropCounts(
-            debug = droppedCounts.getAndSet(LogLevel.DEBUG.ordinal, 0),
-            info = droppedCounts.getAndSet(LogLevel.INFO.ordinal, 0),
-            warn = droppedCounts.getAndSet(LogLevel.WARN.ordinal, 0),
-            error = droppedCounts.getAndSet(LogLevel.ERROR.ordinal, 0),
-            fatal = droppedCounts.getAndSet(LogLevel.FATAL.ordinal, 0),
+            debug = droppedCount(LogLevel.DEBUG),
+            info = droppedCount(LogLevel.INFO),
+            warn = droppedCount(LogLevel.WARN),
+            error = droppedCount(LogLevel.ERROR),
+            fatal = droppedCount(LogLevel.FATAL),
         )
 
     override fun crashEmergencyWrite(
@@ -447,7 +446,7 @@ internal class EncryptedLogRecordStore(
     private fun evictQueuedLowerPriority(incoming: LogLevel): LogLevel? {
         val evictableLevels =
             listOf(LogLevel.DEBUG, LogLevel.INFO)
-                .filter { it.ordinal < incoming.ordinal }
+                .filter { it.priority < incoming.priority }
         for (level in evictableLevels) {
             val task =
                 writer.queue.firstOrNull {
@@ -459,8 +458,10 @@ internal class EncryptedLogRecordStore(
     }
 
     private fun recordDrop(level: LogLevel) {
-        droppedCounts.incrementAndGet(level.ordinal)
+        droppedCounts.getValue(level).incrementAndGet()
     }
+
+    private fun droppedCount(level: LogLevel): Long = droppedCounts.getValue(level).getAndSet(0)
 
     private fun emergencyWriteAsync(
         record: SanitizedLogRecord,

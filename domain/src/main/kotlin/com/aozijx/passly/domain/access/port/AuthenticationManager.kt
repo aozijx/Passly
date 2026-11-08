@@ -39,9 +39,6 @@ interface SecureSessionAccessState {
     val isAuthorized: Flow<Boolean>
         get() = authenticationState.map { it is AuthenticationState.Authenticated }
 
-    /** 数据库是否已打开（包括恢复模式） */
-    fun isDatabaseOpen(): Boolean = isUnlocked()
-
     /** 是否有主应用完整数据访问权限。物理存储仍打开不代表认证状态仍可授权。 */
     fun hasFullSecureSessionAccess(): Boolean = authenticationState.value is AuthenticationState.Authenticated && isUnlocked()
 

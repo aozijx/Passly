@@ -96,8 +96,6 @@ data class AuthenticationMethods(
     val available: Set<AuthenticationMethod> = emptySet(),
 ) {
     operator fun contains(method: AuthenticationMethod): Boolean = method in available
-
-    fun restrictTo(methods: Set<AuthenticationMethod>): AuthenticationMethods = AuthenticationMethods(available intersect methods)
 }
 
 sealed interface AuthenticationResult {

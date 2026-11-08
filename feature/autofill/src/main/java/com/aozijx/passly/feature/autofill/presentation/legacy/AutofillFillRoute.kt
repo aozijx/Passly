@@ -21,7 +21,7 @@ internal fun AutofillFillRoute(
     }
     AutofillCompletionEffect(state, onResult)
     AutofillFillContent(
-        displayState = state.toDisplayState(),
+        state = state,
         targetAppPackageName = request.packageName,
         onCandidateSelected = { entryId ->
             viewModel.onAction(AutofillFillUiAction.CandidateSelected(entryId))
@@ -55,41 +55,45 @@ private fun AutofillCompletionEffect(
 
 @Composable
 private fun AutofillFillContent(
-    displayState: AutofillFillDisplayState,
+    state: AutofillFillUiState,
     targetAppPackageName: String,
     onCandidateSelected: (EntryId) -> Unit,
     onConfirmWebRecipient: () -> Unit,
     onConfirmWebEntry: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    when (displayState) {
-        AutofillFillDisplayState.Hidden -> {
+    when (state) {
+        AutofillFillUiState.Initial,
+        AutofillFillUiState.Loading,
+        is AutofillFillUiState.Result,
+        is AutofillFillUiState.Error,
+        -> {
             Unit
         }
 
-        is AutofillFillDisplayState.Candidates -> {
+        is AutofillFillUiState.ShowCandidates -> {
             AutofillCandidateBottomSheet(
-                candidates = displayState.candidates,
+                candidates = state.candidates,
                 targetAppPackageName = targetAppPackageName,
                 onCandidateSelected = onCandidateSelected,
                 onCancel = onCancel,
             )
         }
 
-        is AutofillFillDisplayState.ConfirmWebRecipient -> {
+        is AutofillFillUiState.ConfirmWebRecipient -> {
             AutofillWebConfirmationDialog(
-                packageName = displayState.packageName,
-                webDomain = displayState.webDomain,
+                packageName = state.packageName,
+                webDomain = state.webDomain,
                 onConfirm = onConfirmWebRecipient,
                 onCancel = onCancel,
             )
         }
 
-        is AutofillFillDisplayState.ConfirmWebEntry -> {
+        is AutofillFillUiState.ConfirmWebEntry -> {
             AutofillWebConfirmationDialog(
-                packageName = displayState.packageName,
-                webDomain = displayState.webDomain,
-                candidate = displayState.candidate,
+                packageName = state.packageName,
+                webDomain = state.webDomain,
+                candidate = state.candidate,
                 onConfirm = onConfirmWebEntry,
                 onCancel = onCancel,
             )

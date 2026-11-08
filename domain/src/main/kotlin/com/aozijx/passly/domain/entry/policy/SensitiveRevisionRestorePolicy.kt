@@ -13,12 +13,4 @@ object SensitiveRevisionRestorePolicy {
             addAll(historicalFields)
         }
 
-    fun isExactAuthorization(
-        authorizedFields: Set<SensitiveFieldKey>,
-        currentFields: Set<SensitiveFieldKey>,
-        historicalFields: Set<SensitiveFieldKey>,
-    ): Boolean {
-        val affected = affectedFields(currentFields, historicalFields)
-        return affected.isNotEmpty() && authorizedFields == affected
-    }
 }

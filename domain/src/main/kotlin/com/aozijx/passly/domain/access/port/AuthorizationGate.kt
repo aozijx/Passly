@@ -22,8 +22,8 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
  *
  * [authorize] 负责：
  * 1. 读取 [com.aozijx.passly.domain.access.policy.AuthenticationPolicy] 确定策略
- * 2. 通过 [AuthMethodCatalog] 选择认证器
- * 3. 执行认证并签发内部 [AuthorizationPermit]
+ * 2. 委托 [AuthenticationManager] 按认证目的执行认证编排
+ * 3. 签发内部 [AuthorizationPermit]
  * 4. 在闭包内执行敏感操作
  * 5. 操作完成后使 Permit 失效
  *
