@@ -9,12 +9,12 @@ import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultFilterOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListLayoutUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListNavigationUiModel
@@ -181,7 +181,7 @@ internal fun EntryCardPresentation.toUiModel() =
         showQuickAction = showQuickAction,
     )
 
-internal fun VaultUiState.toUiModel(display: VaultListDisplayUiModel): VaultListScreenUiModel? {
+internal fun VaultUiState.toUiModel(display: VaultDisplayUiState.Ready): VaultListScreenUiModel? {
     val sort = selectedSort ?: return null
     return VaultListScreenUiModel(
         toolbar =
@@ -212,17 +212,18 @@ internal fun VaultUiState.toUiModel(display: VaultListDisplayUiModel): VaultList
             VaultListContentUiModel(
                 showTotpCode = showTOTPCode,
                 isQuickFilterBarAvailable = !isSearchActive && selectedCategory == null,
-                cardPresentations = display.cardPresentations,
-                swipeLeftAction = display.swipeLeftAction,
-                swipeRightAction = display.swipeRightAction,
-                isSwipeEnabled = display.isSwipeEnabled,
-                isPullToSearchEnabled = display.isPullToSearchEnabled,
+                cardPresentations =
+                    display.style.entryCardPresentations.map(EntryCardPresentation::toUiModel),
+                swipeLeftAction = display.interaction.swipeLeftAction,
+                swipeRightAction = display.interaction.swipeRightAction,
+                isSwipeEnabled = display.interaction.isSwipeEnabled,
+                isPullToSearchEnabled = display.interaction.isPullToSearchEnabled,
             ),
         layout =
             VaultListLayoutUiModel(
-                collapseTopBarOnScroll = display.collapseTopBarOnScroll,
-                collapseQuickFilterBarOnScroll = display.collapseQuickFilterBarOnScroll,
-                hideSystemBars = display.hideSystemBars,
+                collapseTopBarOnScroll = display.layout.collapseTopBarOnScroll,
+                collapseQuickFilterBarOnScroll = display.layout.collapseQuickFilterBarOnScroll,
+                hideSystemBars = display.layout.hideSystemBars,
             ),
     )
 }

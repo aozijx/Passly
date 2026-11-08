@@ -92,15 +92,3 @@ data class VaultListLayoutUiModel(
     val collapseQuickFilterBarOnScroll: Boolean,
     val hideSystemBars: Boolean,
 )
-
-@Immutable
-data class VaultListDisplayUiModel(
-    val cardPresentations: List<VaultCardPresentationUiModel>,
-    val swipeLeftAction: SwipeActionType,
-    val swipeRightAction: SwipeActionType,
-    val isSwipeEnabled: Boolean,
-    val isPullToSearchEnabled: Boolean,
-    val collapseTopBarOnScroll: Boolean,
-    val collapseQuickFilterBarOnScroll: Boolean,
-    val hideSystemBars: Boolean,
-)

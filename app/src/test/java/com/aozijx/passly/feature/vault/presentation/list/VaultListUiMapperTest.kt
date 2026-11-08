@@ -16,8 +16,11 @@ import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiState
+import com.aozijx.passly.feature.vault.presentation.list.display.VaultInteractionConfig
+import com.aozijx.passly.feature.vault.presentation.list.display.VaultLayoutConfig
+import com.aozijx.passly.feature.vault.presentation.list.display.VaultStyleConfig
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
@@ -111,15 +114,21 @@ class VaultListUiMapperTest {
     }
 
     private fun display() =
-        VaultListDisplayUiModel(
-            cardPresentations = emptyList(),
-            swipeLeftAction = SwipeActionType.DELETE,
-            swipeRightAction = SwipeActionType.COPY_PASSWORD,
-            isSwipeEnabled = true,
-            isPullToSearchEnabled = false,
-            collapseTopBarOnScroll = false,
-            collapseQuickFilterBarOnScroll = false,
-            hideSystemBars = false,
+        VaultDisplayUiState.Ready(
+            layout =
+                VaultLayoutConfig(
+                    hideSystemBars = false,
+                    collapseTopBarOnScroll = false,
+                    collapseQuickFilterBarOnScroll = false,
+                ),
+            style = VaultStyleConfig(emptyList()),
+            interaction =
+                VaultInteractionConfig(
+                    isSwipeEnabled = true,
+                    isPullToSearchEnabled = false,
+                    swipeLeftAction = SwipeActionType.DELETE,
+                    swipeRightAction = SwipeActionType.COPY_PASSWORD,
+                ),
         )
 
     private fun createdAtDescendingSort() =

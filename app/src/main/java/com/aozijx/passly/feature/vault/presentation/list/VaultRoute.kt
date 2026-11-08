@@ -16,7 +16,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -44,7 +43,6 @@ import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiS
 import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultScreen
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultSystemBarsEffect
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListDisplayUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultDestinationRequest
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultNavigation
@@ -118,24 +116,7 @@ internal fun VaultRoute(
         is RecoverableReadState.Ready -> {}
     }
 
-    val display =
-        remember(vaultDisplayConfig) {
-            VaultListDisplayUiModel(
-                cardPresentations =
-                    vaultDisplayConfig.style.entryCardPresentations.map {
-                        it.toUiModel()
-                    },
-                swipeLeftAction = vaultDisplayConfig.interaction.swipeLeftAction,
-                swipeRightAction = vaultDisplayConfig.interaction.swipeRightAction,
-                isSwipeEnabled = vaultDisplayConfig.interaction.isSwipeEnabled,
-                isPullToSearchEnabled = vaultDisplayConfig.interaction.isPullToSearchEnabled,
-                collapseTopBarOnScroll = vaultDisplayConfig.layout.collapseTopBarOnScroll,
-                collapseQuickFilterBarOnScroll =
-                    vaultDisplayConfig.layout.collapseQuickFilterBarOnScroll,
-                hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
-            )
-        }
-    val renderState = uiState.toUiModel(display) ?: return
+    val renderState = uiState.toUiModel(vaultDisplayConfig) ?: return
     val onItemAction: (VaultListItemAction) -> Unit = { action ->
         when (action) {
             is VaultListItemAction.Clicked -> {
