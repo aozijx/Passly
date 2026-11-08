@@ -445,10 +445,11 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 
 ### Task 75：统一固定常量的文件位置与 owner，收敛重复合同值
 
-- [ ] 把文件私有/单文件常量从类型尾部移到 Kotlin 文件顶部声明区（imports 后、主要类型/函数前），保留 `private` 等最小可见性与原始值；优先复核 `DefaultAuthorizationGate.kt`、`CredentialAttemptLimiter.kt`、`AutofillInboxKeyMaterialCodec.kt`、`AutofillInboxRecordCodec.kt` 等常量集中在类尾部 companion 的文件。仅位置迁移不改算法、超时、上限或协议行为。
+- [ ] 把文件私有/单文件常量从类型尾部移到 Kotlin 文件顶部声明区（imports 后、主要类型/函数前），保留 `private` 等最小可见性与原始值；优先复核 `CredentialAttemptLimiter.kt`、`AutofillInboxKeyMaterialCodec.kt`、`AutofillInboxRecordCodec.kt` 等常量集中在类尾部 companion 的文件。仅位置迁移不改算法、超时、上限或协议行为。
 - [x] `ObservabilityRuntimeController.kt` 的纳秒换算、生命周期 flush、crash flush 和 emergency flush 常量移至 imports 后的文件级 `private const val`；原值与可见范围不变。
 - [x] `ObservabilityExportService.kt` 的单文件导出上限和 flush timeout 移到文件级 `private const val`；删除对 `DiagnosticsExportFileRetention.MAX_AGE_MS` 的本地转接常量，直接引用所属 retention owner。
 - [x] `SessionLeaseGate.kt` 的 lease drain 轮询间隔和纳秒换算从 companion 移至文件级 `private const val`；原值与调用不变。
+- [x] `DefaultAuthorizationGate.kt` 的 permit TTL 移至文件级 `private const val`；10 秒有效期与授权流程不变。
 - [x] Favicon 下载与暂存共享 10 MiB 输入上限；已集中到 `FaviconImageLimits.MAX_INPUT_BYTES`，删除两类重复值。
 - [x] 诊断页 adapter、导出 service 与 `EncryptedLogRecordStore` 对 `LogRecordStore.readPage()` 使用/执行相同的 500 条单页上限；统一到 Core 端口的 `LogRecordStore.MAX_PAGE_RECORDS`。
 - [x] `TaskClearActivityOwner` 与 `AppShell` 都发布 `APP_CLOSE_REMINDER` 并延迟关闭 task 1 秒；时长统一到 App 生命周期策略 `APP_CLOSE_REMINDER_DELAY_MS`，两处 owner 的取消与认证生命周期仍各自管理。
@@ -480,6 +481,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 **2026-11-08 ObservabilityExportService 常量归位：** 将 `MAX_EXPORT_RECORDS` 与 `FLUSH_TIMEOUT_MS` 从类尾 companion 移到文件级 `private const val`，删除 `DELETE_DELAY_MS` 转接并直接读取 `DiagnosticsExportFileRetention.MAX_AGE_MS`。导出数量、flush 时间和清理时间行为不变；定向 `ObservabilityExportServiceTest` 与 `verifyArchitecture` 通过，App Kotlin 编译通过。
 
 **2026-11-08 SessionLeaseGate 常量归位：** 将 `DRAIN_POLL_MS` 与 `NANOS_PER_MILLISECOND` 从类尾 companion 移至文件级 `private const val`，保留 50 ms 轮询与 1,000,000 纳秒换算。`:runtime:session:test`、`verifyArchitecture` 和 `git diff --check` 通过。
+
+**2026-11-08 DefaultAuthorizationGate 常量归位：** 将 `PERMIT_TTL_MS` 从类尾 companion 移到文件级 `private const val`，授权许可的 10 秒有效期与 revoke 时机不变。`:security:testDebugUnitTest` 179 项通过，`verifyArchitecture` 与 `git diff --check` 通过。
 
 **2026-11-08 Task 75 lint 验证：** 运行 Core、Data、Security、App `lintDebug` 与 `verifyArchitecture`；前三个模块 lint 和架构检查完成。App 在 `:app:lintAnalyzeDebug` 分析 `EntryEditorFields.kt` 时触发 Lint/IntelliJ 内部异常 `AsyncExecutionService.getService must not return null`，未产出有效 App lint 结果。该异常不是源码通过证据；Task 75 最终验证保持开放，需在工具异常消除后重跑 App lint。
 

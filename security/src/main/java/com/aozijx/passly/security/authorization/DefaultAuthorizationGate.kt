@@ -11,6 +11,8 @@ import com.aozijx.passly.domain.access.port.AuthorizationGate
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val PERMIT_TTL_MS = 10_000L
+
 @Singleton
 internal class DefaultAuthorizationGate
     @Inject
@@ -45,9 +47,5 @@ internal class DefaultAuthorizationGate
             } finally {
                 permitRegistry.revoke(permit)
             }
-        }
-
-        private companion object {
-            const val PERMIT_TTL_MS = 10_000L
         }
     }
