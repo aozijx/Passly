@@ -2,6 +2,7 @@ package com.aozijx.passly.presentation.mapping
 
 import com.aozijx.passly.core.crypto.MemoryCleaner
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 
@@ -14,7 +15,7 @@ sealed interface PasswordConfirmationUiState {
 data class PasswordSetupDraft(
     val newPassword: SensitiveValue = EmptySensitiveValue,
     val confirmPassword: SensitiveValue = EmptySensitiveValue,
-    val passwordStrength: PasswordStrengthState = PasswordStrengthState.Hidden,
+    val passwordStrength: PasswordStrengthResult? = null,
 ) {
     val confirmationState: PasswordConfirmationUiState
         get() = withPasswordChars { passwordChars, confirmationChars ->

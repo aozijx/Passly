@@ -19,7 +19,6 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiAction
 import com.aozijx.passly.feature.unlock.presentation.UnlockUiState
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -137,8 +136,7 @@ class UnlockViewModel
                     passwordStrength =
                         value
                             .takeIf(String::isNotEmpty)
-                            ?.let { PasswordStrengthState.Visible(PasswordStrengthEvaluator.evaluate(it)) }
-                            ?: PasswordStrengthState.Hidden,
+                            ?.let(PasswordStrengthEvaluator::evaluate),
                 ),
             )
         }

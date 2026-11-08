@@ -15,7 +15,6 @@ import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiAction
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,8 +65,7 @@ class RecoveryModeViewModel
                     passwordStrength =
                         value
                             .takeIf(String::isNotEmpty)
-                            ?.let { PasswordStrengthState.Visible(PasswordStrengthEvaluator.evaluate(it)) }
-                            ?: PasswordStrengthState.Hidden,
+                            ?.let(PasswordStrengthEvaluator::evaluate),
                 ),
             )
         }

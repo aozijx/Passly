@@ -9,7 +9,6 @@ import androidx.compose.runtime.setValue
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 
 internal class AppPasswordDialogCoordinator {
@@ -28,8 +27,7 @@ internal class AppPasswordDialogCoordinator {
                 passwordStrength =
                     newPasswordSnapshot
                         .takeIf(String::isNotEmpty)
-                        ?.let { PasswordStrengthState.Visible(PasswordStrengthEvaluator.evaluate(it)) }
-                        ?: PasswordStrengthState.Hidden,
+                        ?.let(PasswordStrengthEvaluator::evaluate),
                 appPasswordConfirm = confirmPassword.snapshot(),
                 confirmationState = confirmationState(),
                 isSetPasswordConfirmEnabled =

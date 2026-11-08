@@ -9,6 +9,14 @@ import org.junit.Test
 
 class PasswordStrengthUiStateTest {
     @Test
+    fun nullDomainStrengthMapsToHiddenUiState() {
+        val colorScheme = lightColorScheme()
+        val strength: PasswordStrengthResult? = null
+
+        assertEquals(PasswordStrengthUiState.Hidden, strength.toUiState(colorScheme))
+    }
+
+    @Test
     fun mapsEveryDomainStrengthLevelToItsAppLabelAndThemeColor() {
         val colorScheme = lightColorScheme()
         val mappings =

@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.policy.PasswordStrengthEvaluator
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -49,10 +48,7 @@ class AuthenticationReducerTest {
                     UnlockUiState(passwordSetup = UnlockPasswordSetup.Editing(PasswordSetupDraft())),
                     UnlockMutation.NewAppPasswordChanged(
                         value = shortPassword,
-                        passwordStrength =
-                            PasswordStrengthState.Visible(
-                                PasswordStrengthEvaluator.evaluate("short"),
-                            ),
+                        passwordStrength = PasswordStrengthEvaluator.evaluate("short"),
                     ),
                 )
             val withPassword =
@@ -60,10 +56,7 @@ class AuthenticationReducerTest {
                     short,
                     UnlockMutation.NewAppPasswordChanged(
                         value = validPassword,
-                        passwordStrength =
-                            PasswordStrengthState.Visible(
-                                PasswordStrengthEvaluator.evaluate("long-enough-password"),
-                            ),
+                        passwordStrength = PasswordStrengthEvaluator.evaluate("long-enough-password"),
                     ),
                 )
             val matching =

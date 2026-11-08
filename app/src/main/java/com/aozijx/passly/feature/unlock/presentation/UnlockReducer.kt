@@ -6,10 +6,10 @@ import com.aozijx.passly.domain.access.model.AuthenticationAttemptStatus
 import com.aozijx.passly.domain.access.model.AuthenticationKdfParameters
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
 import com.aozijx.passly.domain.access.model.AuthenticationMethods
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.domain.sensitive.EmptySensitiveValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 
 internal sealed interface UnlockMutation {
     data class KdfParametersReady(
@@ -68,7 +68,7 @@ internal sealed interface UnlockMutation {
 
     data class NewAppPasswordChanged(
         val value: SensitiveValue,
-        val passwordStrength: PasswordStrengthState,
+        val passwordStrength: PasswordStrengthResult?,
     ) : UnlockMutation
 
     data class ConfirmAppPasswordChanged(

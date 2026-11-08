@@ -3,15 +3,12 @@ package com.aozijx.passly.feature.recovery.presentation
 import androidx.compose.material3.ColorScheme
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.PasswordStrengthLevel
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 import com.aozijx.passly.presentation.mapping.toUiState
 
-internal fun PasswordStrengthState.toRecoveryPasswordStrengthUiState(colorScheme: ColorScheme): PasswordStrengthUiState =
-    when (this) {
-        PasswordStrengthState.Hidden -> PasswordStrengthUiState.Hidden
-        is PasswordStrengthState.Visible -> result.toUiState(colorScheme, result.level.recoveryLabelRes())
-    }
+internal fun PasswordStrengthResult?.toRecoveryPasswordStrengthUiState(colorScheme: ColorScheme): PasswordStrengthUiState =
+    this?.let { it.toUiState(colorScheme, it.level.recoveryLabelRes()) } ?: PasswordStrengthUiState.Hidden
 
 private fun PasswordStrengthLevel.recoveryLabelRes(): Int =
     when (this) {

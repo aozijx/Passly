@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.security
 
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 
 internal sealed interface AppPasswordDialogState {
     data object None : AppPasswordDialogState
@@ -17,7 +17,7 @@ internal data class AppPasswordDialogsModel(
     val activeAppPasswordDialog: AppPasswordDialogState,
     val appPasswordCurrent: String,
     val appPasswordNew: String,
-    val passwordStrength: PasswordStrengthState,
+    val passwordStrength: PasswordStrengthResult?,
     val appPasswordConfirm: String,
     val confirmationState: PasswordConfirmationUiState,
     val isSetPasswordConfirmEnabled: Boolean,

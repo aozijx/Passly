@@ -17,17 +17,8 @@ sealed interface PasswordStrengthUiState {
     ) : PasswordStrengthUiState
 }
 
-sealed interface PasswordStrengthState {
-    data object Hidden : PasswordStrengthState
-
-    data class Visible(val result: PasswordStrengthResult) : PasswordStrengthState
-}
-
-internal fun PasswordStrengthState.toUiState(colorScheme: ColorScheme): PasswordStrengthUiState =
-    when (this) {
-        PasswordStrengthState.Hidden -> PasswordStrengthUiState.Hidden
-        is PasswordStrengthState.Visible -> result.toUiState(colorScheme)
-    }
+internal fun PasswordStrengthResult?.toUiState(colorScheme: ColorScheme): PasswordStrengthUiState =
+    this?.toUiState(colorScheme) ?: PasswordStrengthUiState.Hidden
 
 internal fun PasswordStrengthResult.toUiState(colorScheme: ColorScheme): PasswordStrengthUiState.Visible =
     toUiState(colorScheme, level.defaultLabelRes())

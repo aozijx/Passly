@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.recovery.presentation
 
+import com.aozijx.passly.domain.entry.model.PasswordStrengthResult
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
-import com.aozijx.passly.presentation.mapping.PasswordStrengthState
 
 internal sealed interface RecoveryModeMutation {
     data object PasswordDialogOpened : RecoveryModeMutation
 
     data class NewPasswordChanged(
         val value: SensitiveValue,
-        val passwordStrength: PasswordStrengthState,
+        val passwordStrength: PasswordStrengthResult?,
     ) : RecoveryModeMutation
 
     data class ConfirmPasswordChanged(
