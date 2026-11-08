@@ -451,7 +451,7 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 - [x] `TaskClearActivityOwner` 与 `AppShell` 都发布 `APP_CLOSE_REMINDER` 并延迟关闭 task 1 秒；时长统一到 App 生命周期策略 `APP_CLOSE_REMINDER_DELAY_MS`，两处 owner 的取消与认证生命周期仍各自管理。
 - [x] `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 共用 RSA algorithm 与 SHA-256 digest 名称；已集中到 Security Inbox 的 `AutofillInboxCryptoAlgorithms`。记录专属 RSA-OAEP transformation 与 MGF1 保留在 RecordCodec。
 - [x] `EnvelopeManager` 与 `VerificationTag` 复用 Core 的 `CryptoConfig.ALGORITHM`，移除重复的 AES/GCM transformation 字符串；各自的 IV/tag 编码合同保留在 Security owner。
-- [ ] 继续核对 Data 日志文件的 transformation、Backup V1 `CIPHER_AES_256_GCM_ID` 与 `BackupRecordCrypto` 的实现，以及 Favicon 裁剪上下限；保持持久化格式和功能边界 owner，不按相同字面量跨协议合并。
+- [x] Backup V1 的 `CIPHER_TRANSFORMATION` 已归属 `BackupContainerV1Spec`，`BackupRecordCrypto` 复用该协议 owner；保留 cipher ID 和序列化格式。继续核对 Data 日志 transformation 与 Favicon 裁剪上下限；保持持久化格式和功能边界 owner，不按相同字面量跨协议合并。
 - [ ] 验证新增/迁移后的可见范围、所有调用点和单一真相源；持久化 key、wire tag、格式版本不得改变，安全限制不得被放宽。补充/迁移对应常量与协议测试；运行受影响模块单测、`verifyArchitecture`、lint 和 `git diff --check`。同步更新 Kotlin 规范中的位置规则；不要建立无 owner 的全局 `Constants.kt`，也不要把资源文本、Gradle 构建值或运行时可调配置复制成 Kotlin 常量。
 
 **约定完成与扫描证据（2026-11-02）：** `docs/development/kotlin-style.md` 新增“常量与固定值归属”规则，`AGENTS.md` 加入简短入口约束；常量按文件私有实现、跨文件同 owner、协议/算法语义、资源/Gradle/运行期配置分别归属。生产源码静态扫描命中 360 个 `const val` 声明，多个声明位于文件尾部 companion；精确字面量聚合发现一批待语义核验的重复（例：observability page size、应用关闭延迟、Favicon 输入上限、Autofill Inbox RSA/SHA 标识）。该扫描同时发现相同数字在不同文件中表达不同策略，故本任务要求核对消费者和行为合同后再集中；本轮只更新规则与 TODO，未移动常量或更改生产代码。
@@ -465,6 +465,8 @@ Autofill 的 7 个旧段落移出本页：9 合入 21、52 合入 33、85 移除
 **2026-11-08 Autofill Inbox 算法标识批次：** `AutofillInboxKeyMaterialCodec` 与 `AutofillInboxRecordCodec` 位于同一 Security Inbox owner；公钥生成/类型校验共用 `RSA` provider 标识，fingerprint 与 OAEP 参数共用 `SHA-256` provider 名称。集中到 `AutofillInboxCryptoAlgorithms` 并删除两个 codec 的重复声明。仅共享重复标识，RecordCodec 使用的 RSA-OAEP transformation 和 MGF1 参数保持本地；测试中的 provider/协议字符串保持独立字面期望。`AutofillInboxKeyMaterialCodecTest`、`AutofillInboxRecordCodecTest` 及 `verifyArchitecture` 通过，协议字节格式不变。
 
 **2026-11-08 Security AES/GCM transformation 去重：** `EnvelopeManager` 和 `VerificationTag` 的 `Cipher.getInstance()` 原读取各自声明的 `AES/GCM/NoPadding`，与 Core `CryptoConfig.ALGORITHM` 完全相同；Security 已依赖 Core。两处改用现有 Core 算法标识并删除局部副本，保留 Envelope/VerificationTag 各自的 IV、tag、AAD 与字节格式合同。Data 日志文件以 `EncryptedLogFileManager` 版本化格式 owner 保留本地值；Backup 的 V1 cipher ID/记录合同另行处理。定向 Envelope、VerificationTag 测试与 `verifyArchitecture` 通过。
+
+**2026-11-08 Backup V1 cipher transformation 去重：** `BackupRecordCrypto.crypt()` 原在 `Cipher.getInstance()` 写死 `AES/GCM/NoPadding`；此算法属于 Backup V1 容器格式，移入 `BackupContainerV1Spec.CIPHER_TRANSFORMATION`，由记录加解密实现引用同一来源。`CIPHER_AES_256_GCM_ID` 仍为 1，header 字段和加密记录格式不变；只合并同协议 owner 内的固定算法标识，不与 Security/Data 的算法格式常量共用。定向 Backup codec/分块流测试及 `verifyArchitecture` 通过。
 
 
 <a id="task-77"></a>

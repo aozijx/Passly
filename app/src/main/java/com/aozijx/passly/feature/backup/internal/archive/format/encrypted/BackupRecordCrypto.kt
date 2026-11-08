@@ -40,7 +40,7 @@ internal object BackupRecordCrypto {
     ): ByteArray {
         val key = SecretKeySpec(keyBytes, "AES")
         try {
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val cipher = Cipher.getInstance(BackupContainerV1Spec.CIPHER_TRANSFORMATION)
             cipher.init(
                 mode,
                 key,

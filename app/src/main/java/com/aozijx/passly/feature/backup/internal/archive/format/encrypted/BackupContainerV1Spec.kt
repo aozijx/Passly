@@ -6,6 +6,7 @@ internal object BackupContainerV1Spec {
     const val CONTAINER_VERSION = 1
     const val KDF_ARGON2ID_ID = 1
     const val CIPHER_AES_256_GCM_ID = 1
+    const val CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
     const val SALT_LENGTH = 16
     const val NONCE_PREFIX_LENGTH = 4
     const val CHUNK_SIZE = 1024 * 1024
