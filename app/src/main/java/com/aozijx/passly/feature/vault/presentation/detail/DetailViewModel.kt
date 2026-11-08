@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
-import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
@@ -35,6 +34,7 @@ import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
+import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
 import com.aozijx.passly.feature.vault.history.RevisionOperationResult
@@ -85,7 +85,7 @@ class DetailViewModel
         private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
         private val faviconImageProcessor: FaviconImageProcessor,
         private val presentationLoader: DetailPresentationLoader,
-        private val entryRevisionRepository: EntryRevisionRepository,
+        private val observeEntryRevisionMetadata: ObserveEntryRevisionMetadataUseCase,
         private val compareEntryRevision: CompareEntryRevisionUseCase,
         private val revealRevisionFields: RevealRevisionFieldsUseCase,
         private val restoreEntryRevision: RestoreEntryRevisionUseCase,
@@ -945,22 +945,21 @@ class DetailViewModel
             revisionObservationJob =
                 viewModelScope.launch {
                     try {
-                        when (val initialization = entryRevisionRepository.initializeHistory()) {
-                            is AppResult.Failure -> {
-                                if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@launch
-                                mutateRevisionFailure(
-                                    entryId = entryId,
-                                    revisionId = null,
-                                    result = RevisionOperationResult.Failed(initialization.error),
-                                )
-                                return@launch
-                            }
+                        val metadata =
+                            when (val observation = observeEntryRevisionMetadata(entryId)) {
+                                is AppResult.Failure -> {
+                                    if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@launch
+                                    mutateRevisionFailure(
+                                        entryId = entryId,
+                                        revisionId = null,
+                                        result = RevisionOperationResult.Failed(observation.error),
+                                    )
+                                    return@launch
+                                }
 
-                            is AppResult.Success -> {
-                                Unit
+                                is AppResult.Success -> observation.data
                             }
-                        }
-                        entryRevisionRepository.observeMetadata(entryId).collect { revisions ->
+                        metadata.collect { revisions ->
                             if (!workSession.isCurrent(token) || generation != revisionObservationGeneration) return@collect
                             mutate(
                                 DetailMutation.Revision(

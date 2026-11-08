@@ -72,6 +72,7 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
+import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
 import com.aozijx.passly.feature.vault.model.OtpCodeState
@@ -556,6 +557,46 @@ class DetailViewModelTest {
                 store.clear()
             }
         }
+    @Test
+    fun revisionHistoryInitializationFailureCanBeRetriedBeforeMetadataSubscription() =
+        runTest {
+            var initializations = 0
+            var subscriptions = 0
+            val fixture =
+                Fixture(
+                    revisionInitialization = {
+                        if (++initializations == 1) AppResult.Failure(Conflict()) else AppResult.Success(Unit)
+                    },
+                    revisionMetadataFlow = {
+                        subscriptions += 1
+                        flowOf(listOf(revisionMetadata()))
+                    },
+                )
+            val model = fixture.viewModel
+            val store = ViewModelStore().apply { put("detail", model) }
+            try {
+                model.load(ENTRY_ID.value)
+                runCurrent()
+                model.onAction(DetailUiAction.OpenRevisionHistory)
+                runCurrent()
+
+                val failed = model.uiState.value.revisions as DetailRevisionState.Open
+                assertTrue(failed.revisions is DetailRevisionListState.Failed)
+                assertEquals(1, initializations)
+                assertEquals(0, subscriptions)
+
+                model.onAction(DetailUiAction.RetryRevisionHistory)
+                runCurrent()
+
+                val ready = model.uiState.value.revisions as DetailRevisionState.Open
+                assertEquals(2, initializations)
+                assertEquals(1, subscriptions)
+                assertTrue(ready.revisions is DetailRevisionListState.Ready)
+            } finally {
+                store.clear()
+            }
+        }
+
 
     @Test
     fun activityHistorySessionLockIsNotReportedAsQueryFailure() =
@@ -1143,6 +1184,7 @@ class DetailViewModelTest {
     private class Fixture(
         installedApps: InstalledAppDirectory = EmptyInstalledAppDirectory,
         activityQueryRepository: ActivityQueryRepository = EmptyActivityQueryRepository,
+        revisionInitialization: () -> AppResult<Unit> = { AppResult.Success(Unit) },
         revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>> = { flowOf(listOf(revisionMetadata())) },
         entryQueryRepository: (MutableEntries) -> EntryQueryRepository = { it },
         sensitiveFieldRepository: SensitiveFieldRepository = EmptySensitiveFieldRepository(),
@@ -1155,7 +1197,7 @@ class DetailViewModelTest {
         val access = AuthenticatedAccess()
         val entries = MutableEntries(initialEntry)
         private val entryQuery = entryQueryRepository(entries)
-        val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow, revisionSnapshot)
+        val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow, revisionSnapshot, revisionInitialization)
         private val sensitive = sensitiveFieldRepository
         private val authGate = UnusedAuthorizationGate
         private val activity = NoOpActivityRecorder
@@ -1191,7 +1233,7 @@ class DetailViewModelTest {
                         DetailSessionQuery(entryQuery, sensitive, entryLinkRepository),
                         installedAppDirectory,
                     ),
-                entryRevisionRepository = revisions,
+                observeEntryRevisionMetadata = ObserveEntryRevisionMetadataUseCase(revisions),
                 compareEntryRevision = CompareEntryRevisionUseCase(revisions),
                 revealRevisionFields = RevealRevisionFieldsUseCase(revisions, authGate),
                 restoreEntryRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
@@ -1294,6 +1336,7 @@ class DetailViewModelTest {
         private val entries: MutableEntries,
         private val revisionMetadataFlow: (EntryId) -> Flow<List<EntryRevisionMetadata>>,
         private val revisionSnapshot: RedactedEntryRevision,
+        private val revisionInitialization: () -> AppResult<Unit>,
     ) : EntryRevisionRepository {
         val restoreEntered = CompletableDeferred<Unit>()
         val releasePostCommitCleanup = CompletableDeferred<Unit>()
@@ -1302,7 +1345,7 @@ class DetailViewModelTest {
         var failRestore = false
         var onRestoreCommitted: () -> Unit = {}
 
-        override suspend fun initializeHistory(): AppResult<Unit> = AppResult.Success(Unit)
+        override suspend fun initializeHistory(): AppResult<Unit> = revisionInitialization()
 
         override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> = revisionMetadataFlow(entryId)
 
