@@ -61,6 +61,7 @@ data class VaultListToolbarUiModel(
 data class VaultListNavigationUiModel(
     val filters: List<VaultFilterOptionUiModel>,
     val creationOptions: List<VaultAddTypeUiModel>,
+    val fabMenuOptions: List<VaultAddTypeUiModel>,
 ) {
     val allFiltersSelected: Boolean
         get() = filters.none(VaultFilterOptionUiModel::selected)

@@ -144,6 +144,7 @@ fun VaultScreen(
         floatingActionButton = {
             VaultFab(
                 creationOptions = state.navigation.creationOptions,
+                fabMenuOptions = state.navigation.fabMenuOptions,
                 onAddTypeSelected = { type ->
                     onAddTypeSelected(type)
                 },

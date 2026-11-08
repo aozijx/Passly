@@ -183,6 +183,7 @@ internal fun EntryCardPresentation.toUiModel() =
 
 internal fun VaultUiState.toUiModel(display: VaultDisplayUiState.Ready): VaultListScreenUiModel? {
     val sort = selectedSort ?: return null
+    val creationOptions = VaultEditorDestinationRegistry.creatableTypes.map(AddType::toUiModel)
     return VaultListScreenUiModel(
         toolbar =
             VaultListToolbarUiModel(
@@ -206,7 +207,8 @@ internal fun VaultUiState.toUiModel(display: VaultDisplayUiState.Ready): VaultLi
                             selected = type in selectedFilters,
                         )
                     },
-                creationOptions = VaultEditorDestinationRegistry.creatableTypes.map(AddType::toUiModel),
+                creationOptions = creationOptions,
+                fabMenuOptions = VaultAddTypeUiModel.fabMenuOptions.filter(creationOptions::contains),
             ),
         content =
             VaultListContentUiModel(

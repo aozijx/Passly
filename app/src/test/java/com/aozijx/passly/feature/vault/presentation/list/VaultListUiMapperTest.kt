@@ -47,6 +47,10 @@ class VaultListUiMapperTest {
             ),
             menuTypes,
         )
+        assertEquals(
+            listOf(VaultAddTypeUiModel.TOTP, VaultAddTypeUiModel.PASSWORD),
+            model.navigation.fabMenuOptions,
+        )
     }
 
     @Test
