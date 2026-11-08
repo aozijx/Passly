@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.main.interaction
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
@@ -35,6 +36,13 @@ class InteractionSettingsViewModelTest {
     fun `preference read failure is visible and explicit retry re-subscribes`() =
         runTest {
             var starts = 0
+            val recoveredSettings =
+                InteractionSettings(
+                    isSwipeEnabled = true,
+                    isPullToSearchEnabled = true,
+                    swipeLeftAction = SwipeActionType.COPY_USERNAME,
+                    swipeRightAction = SwipeActionType.DISABLED,
+                )
             val repository =
                 Repository(
                     save = {},
@@ -42,7 +50,7 @@ class InteractionSettingsViewModelTest {
                         flow {
                             starts++
                             if (starts == 1) throw IOException("read failure")
-                            emit(InteractionSettings())
+                            emit(recoveredSettings)
                             awaitCancellation()
                         },
                 )
@@ -50,18 +58,18 @@ class InteractionSettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, model.uiState.value is RecoverableReadState.Failed)
+            assertEquals(RecoverableReadState.Failed(ReadFailure.IO), model.uiState.value)
             model.onAction(InteractionSettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is RecoverableReadState.Ready<*>)
+            assertEquals(RecoverableReadState.Ready(recoveredSettings), model.uiState.value)
         }
 
     @Test
-    fun `toggle failures are reported while repository remains the state source`() =
+    fun `setting failures use resource feedback while repository remains the state source`() =
         runTest {
-            val repository = Repository { throw IOException("synthetic write failure") }
+            val repository = Repository { throw IOException("synthetic private diagnostic") }
             val model = InteractionSettingsViewModel(repository)
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
@@ -70,9 +78,10 @@ class InteractionSettingsViewModelTest {
             runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeEnabled(true))
             model.onAction(InteractionSettingsAction.SetPullToSearchEnabled(true))
+            model.onAction(InteractionSettingsAction.SetSwipeRightAction(SwipeActionType.COPY_USERNAME))
             runCurrent()
             val error = InteractionSettingsEffect.SaveFailed(UiErrorMessage(R.string.ui_error_file_io))
-            assertEquals(listOf(error, error), effects)
+            assertEquals(listOf(error, error, error), effects)
             val ready = (model.uiState.value as RecoverableReadState.Ready<InteractionSettings>).value
             assertEquals(false, ready.isSwipeEnabled)
             assertEquals(false, ready.isPullToSearchEnabled)
@@ -142,31 +151,21 @@ class InteractionSettingsViewModelTest {
         }
 
     @Test
-    fun `storage failure emits resource key without exception contents`() =
-        runTest {
-            val model = InteractionSettingsViewModel(Repository { throw IOException("synthetic private diagnostic") })
-            model.onPageEntered()
-            val effects = mutableListOf<InteractionSettingsEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
-            backgroundScope.launch { model.uiState.collect {} }
-            runCurrent()
-            model.onAction(InteractionSettingsAction.SetSwipeRightAction(SwipeActionType.DELETE))
-            runCurrent()
-            assertEquals(listOf(InteractionSettingsEffect.SaveFailed(UiErrorMessage(R.string.ui_error_file_io))), effects)
-        }
-
-    @Test
     fun `successful setting write keeps saved feedback`() =
         runTest {
-            val model = InteractionSettingsViewModel(Repository { })
+            val repository = Repository { }
+            val model = InteractionSettingsViewModel(repository)
             model.onPageEntered()
             val effects = mutableListOf<InteractionSettingsEffect>()
             backgroundScope.launch { model.effects.toList(effects) }
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
             model.onAction(InteractionSettingsAction.SetSwipeLeftAction(SwipeActionType.DELETE))
+            model.onAction(InteractionSettingsAction.SetSwipeRightAction(SwipeActionType.COPY_USERNAME))
             runCurrent()
-            assertEquals(listOf(InteractionSettingsEffect.Saved), effects)
+            assertEquals(listOf(InteractionSettingsEffect.Saved, InteractionSettingsEffect.Saved), effects)
+            assertEquals(listOf(SwipeActionType.DELETE), repository.swipeLeftActionWrites)
+            assertEquals(listOf(SwipeActionType.COPY_USERNAME), repository.swipeRightActionWrites)
         }
 
     private class Repository(
@@ -174,11 +173,19 @@ class InteractionSettingsViewModelTest {
         private val save: suspend () -> Unit,
     ) : InteractionSettingsRepository {
         val currentInteraction = MutableStateFlow(InteractionSettings())
+        val swipeLeftActionWrites = mutableListOf<SwipeActionType>()
+        val swipeRightActionWrites = mutableListOf<SwipeActionType>()
         override val interaction: Flow<InteractionSettings> = source ?: currentInteraction
 
-        override suspend fun setSwipeLeftAction(action: SwipeActionType) = save()
+        override suspend fun setSwipeLeftAction(action: SwipeActionType) {
+            save()
+            swipeLeftActionWrites += action
+        }
 
-        override suspend fun setSwipeRightAction(action: SwipeActionType) = save()
+        override suspend fun setSwipeRightAction(action: SwipeActionType) {
+            save()
+            swipeRightActionWrites += action
+        }
 
         override suspend fun setSwipeEnabled(enabled: Boolean) {
             save()

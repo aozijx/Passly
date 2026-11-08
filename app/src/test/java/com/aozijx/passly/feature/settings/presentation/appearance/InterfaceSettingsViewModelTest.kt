@@ -2,14 +2,14 @@ package com.aozijx.passly.feature.settings.presentation.appearance
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
-import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.app.settings.ReadFailure
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
@@ -42,6 +42,14 @@ class InterfaceSettingsViewModelTest {
     fun `read failure is visible and retry re-subscribes the preferences source`() =
         runTest {
             var starts = 0
+            val interfaceSettings =
+                InterfaceSettings(
+                    hideSystemBars = true,
+                    collapseTopBarOnScroll = false,
+                    collapseQuickFilterBarOnScroll = true,
+                    appCornerRadiusDp = 24f,
+                )
+            val cardPresentations = listOf(EntryCardPresentation("login", "password"))
             val repository =
                 Repository(
                     save = {},
@@ -49,9 +57,14 @@ class InterfaceSettingsViewModelTest {
                         flow {
                             starts++
                             if (starts == 1) throw IOException("read failure")
-                            emit(InterfaceSettings())
+                            emit(interfaceSettings)
                             awaitCancellation()
                         },
+                )
+            repository.libraryViewSettings.value =
+                repository.libraryViewSettings.value.copy(
+                    entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+                    entryCardPresentations = cardPresentations,
                 )
             val model = InterfaceSettingsViewModel(repository, repository)
             backgroundScope.launch { model.uiState.collect {} }
@@ -62,7 +75,20 @@ class InterfaceSettingsViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is RecoverableReadState.Ready)
+            assertEquals(
+                RecoverableReadState.Ready(
+                    InterfaceUiModel(
+                        hideSystemBars = true,
+                        collapseTopBarOnScroll = false,
+                        collapseQuickFilterBarOnScroll = true,
+                        appCornerRadiusDp = 24f,
+                        appCornerRadiusRange = 0f..48f,
+                        entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
+                        entryCardPresentations = cardPresentations,
+                    ),
+                ),
+                model.uiState.value,
+            )
         }
 
     @Test
