@@ -410,9 +410,7 @@ internal object DetailReducer {
                 if (state.entry?.id == mutation.entryId) {
                     state.copy(
                         packagePickerApps =
-                            com.aozijx.passly.feature.vault.presentation.common.appPackagePickerReady(
-                                mutation.apps,
-                            ),
+                            AppPackagePickerUiState.fromInstalledApps(mutation.apps),
                     )
                 } else {
                     state
@@ -420,10 +418,9 @@ internal object DetailReducer {
             }
 
             is DetailMutation.PackagePickerSearchChanged -> {
-                val ready = state.packagePickerApps as? AppPackagePickerUiState.Ready<DetailInstalledApp> ?: return state
                 state.copy(
                     packagePickerApps =
-                        ready.search(
+                        state.packagePickerApps.search(
                             mutation.query,
                             DetailInstalledApp::label,
                             DetailInstalledApp::packageName,

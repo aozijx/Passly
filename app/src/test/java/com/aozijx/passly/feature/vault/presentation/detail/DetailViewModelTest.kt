@@ -372,10 +372,10 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(2, queries)
-                val ready = model.uiState.value.packagePickerApps as AppPackagePickerUiState.Ready<DetailInstalledApp>
+                val matches = model.uiState.value.packagePickerApps as AppPackagePickerUiState.Matches<DetailInstalledApp>
                 assertEquals(
                     "com.example.mail",
-                    ready.apps
+                    matches.installedApps
                         .single()
                         .packageName,
                 )

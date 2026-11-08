@@ -335,8 +335,8 @@ class DetailReducerTest {
                 DetailMutation.PackagePickerAppsChanged(EntryId("entry-1"), listOf(item)),
             )
 
-        val ready = actual.packagePickerApps as AppPackagePickerUiState.Ready
-        assertEquals(listOf(item), ready.apps)
+        val matches = actual.packagePickerApps as AppPackagePickerUiState.Matches
+        assertEquals(listOf(item), matches.installedApps)
     }
 
     @Test

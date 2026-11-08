@@ -1,86 +1,104 @@
 package com.aozijx.passly.feature.vault.presentation.common
 
 sealed interface AppPackagePickerUiState<out T> {
+    companion object {
+        fun <T> fromInstalledApps(installedApps: List<T>): AppPackagePickerUiState<T> =
+            installedApps
+                .takeIf { it.isNotEmpty() }
+                ?.let { Matches(it, query = "", matchingApps = it) }
+                ?: NoApps()
+    }
+
+    val query: String
+        get() = ""
+
+    val catalogLoaded: Boolean
+        get() =
+            when (this) {
+                is NoApps,
+                is NoMatches,
+                is Matches,
+                -> true
+
+                NotRequested,
+                Loading,
+                Failed,
+                -> false
+            }
+
     data object NotRequested : AppPackagePickerUiState<Nothing>
 
     data object Loading : AppPackagePickerUiState<Nothing>
 
-    data class Ready<T>(
-        val apps: List<T>,
-        val query: String,
-        val results: AppPackagePickerResults<T>,
+    data object Failed : AppPackagePickerUiState<Nothing>
+
+    data class NoApps(
+        override val query: String = "",
+    ) : AppPackagePickerUiState<Nothing>
+
+    data class NoMatches<T>(
+        val installedApps: List<T>,
+        override val query: String,
     ) : AppPackagePickerUiState<T> {
         init {
-            when (results) {
-                AppPackagePickerResults.NoApps -> require(apps.isEmpty())
-                AppPackagePickerResults.NoMatches -> require(apps.isNotEmpty() && query.isNotBlank())
-                is AppPackagePickerResults.Matches -> {
-                    require(apps.isNotEmpty())
-                    require(results.apps.isNotEmpty() && apps.containsAll(results.apps))
-                }
-            }
+            require(installedApps.isNotEmpty()) { "NoMatches requires a non-empty app catalog" }
+            require(query.isNotBlank()) { "NoMatches requires a non-blank query" }
         }
     }
-
-    data object Failed : AppPackagePickerUiState<Nothing>
-}
-
-sealed interface AppPackagePickerResults<out T> {
-    data object NoApps : AppPackagePickerResults<Nothing>
-
-    data object NoMatches : AppPackagePickerResults<Nothing>
 
     data class Matches<T>(
-        val apps: List<T>,
-    ) : AppPackagePickerResults<T> {
+        val installedApps: List<T>,
+        override val query: String,
+        val matchingApps: List<T>,
+    ) : AppPackagePickerUiState<T> {
         init {
-            require(apps.isNotEmpty())
+            require(installedApps.isNotEmpty()) { "Matches requires a non-empty app catalog" }
+            require(matchingApps.isNotEmpty()) { "Matches requires at least one matching app" }
+            require(installedApps.containsAll(matchingApps)) { "Matching apps must come from the app catalog" }
         }
     }
 }
 
-fun <T> AppPackagePickerUiState.Ready<T>.search(
+fun <T> AppPackagePickerUiState<T>.search(
     query: String,
     label: (T) -> String,
     packageName: (T) -> String,
-): AppPackagePickerUiState.Ready<T> {
-    val normalizedQuery = query.trim()
-    val results =
-        when {
-            apps.isEmpty() -> AppPackagePickerResults.NoApps
-            normalizedQuery.isEmpty() -> AppPackagePickerResults.Matches(apps)
-            else -> {
-                val matches =
-                    apps.filter { app ->
-                        label(app).contains(normalizedQuery, ignoreCase = true) ||
-                            packageName(app).contains(normalizedQuery, ignoreCase = true)
-                    }
-                matches
-                    .takeIf { it.isNotEmpty() }
-                    ?.let { AppPackagePickerResults.Matches(it) }
-                    ?: AppPackagePickerResults.NoMatches
-            }
+): AppPackagePickerUiState<T> {
+    val apps =
+        when (this) {
+            is AppPackagePickerUiState.NoApps -> return copy(query = query)
+            is AppPackagePickerUiState.NoMatches -> installedApps
+            is AppPackagePickerUiState.Matches -> installedApps
+            AppPackagePickerUiState.NotRequested,
+            AppPackagePickerUiState.Loading,
+            AppPackagePickerUiState.Failed,
+            -> return this
         }
-    return copy(query = query, results = results)
+    val normalizedQuery = query.trim()
+    if (normalizedQuery.isEmpty()) return AppPackagePickerUiState.Matches(apps, query, apps)
+
+    val matchingApps =
+        apps.filter { app ->
+            label(app).contains(normalizedQuery, ignoreCase = true) ||
+                packageName(app).contains(normalizedQuery, ignoreCase = true)
+        }
+    return matchingApps
+        .takeIf { it.isNotEmpty() }
+        ?.let { AppPackagePickerUiState.Matches(apps, query, it) }
+        ?: AppPackagePickerUiState.NoMatches(apps, query)
 }
 
-fun <T> appPackagePickerReady(apps: List<T>): AppPackagePickerUiState.Ready<T> {
-    val results =
-        apps
-            .takeIf { it.isNotEmpty() }
-            ?.let { AppPackagePickerResults.Matches(it) }
-            ?: AppPackagePickerResults.NoApps
-    return AppPackagePickerUiState.Ready(apps = apps, query = "", results = results)
-}
-
-fun <T, R> AppPackagePickerUiState.Ready<T>.mapItems(transform: (T) -> R): AppPackagePickerUiState.Ready<R> =
-    AppPackagePickerUiState.Ready(
-        apps = apps.map(transform),
-        query = query,
-        results =
-            when (val currentResults = results) {
-                AppPackagePickerResults.NoApps -> AppPackagePickerResults.NoApps
-                AppPackagePickerResults.NoMatches -> AppPackagePickerResults.NoMatches
-                is AppPackagePickerResults.Matches -> AppPackagePickerResults.Matches(currentResults.apps.map(transform))
-            },
-    )
+fun <T, R> AppPackagePickerUiState<T>.mapItems(transform: (T) -> R): AppPackagePickerUiState<R> =
+    when (this) {
+        AppPackagePickerUiState.NotRequested -> AppPackagePickerUiState.NotRequested
+        AppPackagePickerUiState.Loading -> AppPackagePickerUiState.Loading
+        AppPackagePickerUiState.Failed -> AppPackagePickerUiState.Failed
+        is AppPackagePickerUiState.NoApps -> AppPackagePickerUiState.NoApps(query)
+        is AppPackagePickerUiState.NoMatches -> AppPackagePickerUiState.NoMatches(installedApps.map(transform), query)
+        is AppPackagePickerUiState.Matches ->
+            AppPackagePickerUiState.Matches(
+                installedApps = installedApps.map(transform),
+                query = query,
+                matchingApps = matchingApps.map(transform),
+            )
+    }

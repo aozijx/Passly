@@ -25,6 +25,23 @@ data class AddPasswordUiState(
     val savePhase: AddPasswordSavePhase = AddPasswordSavePhase.Idle,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
+    val associatedApp: AppPackagePickerItemUiModel?
+        get() {
+            val apps =
+                when (val current = availableApps) {
+                    is AppPackagePickerUiState.Matches -> current.installedApps
+                    is AppPackagePickerUiState.NoMatches -> current.installedApps
+                    AppPackagePickerUiState.NotRequested,
+                    AppPackagePickerUiState.Loading,
+                    AppPackagePickerUiState.Failed,
+                    is AppPackagePickerUiState.NoApps,
+                    -> emptyList()
+                }
+            return form.associatedAppPackage?.let { packageName ->
+                apps.firstOrNull { it.packageName == packageName }
+            }
+        }
+
     val canSave: Boolean
         get() =
             form.isValid && savePhase == AddPasswordSavePhase.Idle &&

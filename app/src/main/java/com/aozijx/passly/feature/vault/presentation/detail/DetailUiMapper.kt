@@ -14,7 +14,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
-import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.common.mapItems
 import com.aozijx.passly.feature.vault.presentation.detail.history.toRevisionSheetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
@@ -234,7 +233,7 @@ internal fun toDetailPresentationModel(
                         .takeIf { it.isNotEmpty() }
                         ?.let(DetailAssociatedAppsUiState::Items)
                         ?: DetailAssociatedAppsUiState.Empty,
-                packagePickerApps = state.packagePickerApps.toAppPackagePickerUiState(),
+                packagePickerApps = state.packagePickerApps.mapItems(DetailInstalledApp::toPackagePickerItemUiModel),
                 notes =
                     DetailNotesUiModel(
                         notes = entry.secret.notes,
@@ -303,15 +302,6 @@ private fun DetailActivityHistoryState.toUiState(
                 .takeIf { it.isNotEmpty() }
                 ?.let(DetailActivityHistoryUiState::FailedItems)
                 ?: DetailActivityHistoryUiState.FailedEmpty
-    }
-
-private fun AppPackagePickerUiState<DetailInstalledApp>.toAppPackagePickerUiState():
-    AppPackagePickerUiState<AppPackagePickerItemUiModel> =
-    when (this) {
-        AppPackagePickerUiState.NotRequested -> AppPackagePickerUiState.NotRequested
-        AppPackagePickerUiState.Loading -> AppPackagePickerUiState.Loading
-        AppPackagePickerUiState.Failed -> AppPackagePickerUiState.Failed
-        is AppPackagePickerUiState.Ready -> mapItems(DetailInstalledApp::toPackagePickerItemUiModel)
     }
 
 internal fun DetailInstalledApp.toPackagePickerItemUiModel() =

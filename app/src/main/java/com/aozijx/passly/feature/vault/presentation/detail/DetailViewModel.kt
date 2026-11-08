@@ -990,17 +990,11 @@ class DetailViewModel
             val state = _uiState.value
             val entryId = state.entry?.id ?: return
             val token = workSession.current(entryId) ?: return
-            when (state.packagePickerApps) {
-                is AppPackagePickerUiState.Ready -> {
-                    mutate(DetailMutation.PackagePickerSearchChanged(""))
-                    return
-                }
-
-                AppPackagePickerUiState.Loading -> return
-                AppPackagePickerUiState.NotRequested,
-                AppPackagePickerUiState.Failed,
-                -> Unit
+            if (state.packagePickerApps.catalogLoaded) {
+                mutate(DetailMutation.PackagePickerSearchChanged(""))
+                return
             }
+            if (state.packagePickerApps == AppPackagePickerUiState.Loading) return
             if (packagePickerLoadJob?.isActive == true) return
             mutate(DetailMutation.PackagePickerAppsLoadStarted(entryId))
             packagePickerLoadJob =

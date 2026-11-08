@@ -14,7 +14,6 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
-import com.aozijx.passly.feature.vault.presentation.common.appPackagePickerReady
 import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
@@ -115,12 +114,11 @@ class AddPasswordViewModel
                 }
 
                 is AddPasswordAction.AssociatedAppsSearchChanged -> {
-                    val ready =
-                        _uiState.value.availableApps as? AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel> ?: return
+                    val current = _uiState.value
                     _uiState.value =
-                        _uiState.value.copy(
+                        current.copy(
                             availableApps =
-                                ready.search(
+                                current.availableApps.search(
                                     action.query,
                                     AppPackagePickerItemUiModel::label,
                                     AppPackagePickerItemUiModel::packageName,
@@ -142,8 +140,7 @@ class AddPasswordViewModel
 
         private fun loadAssociatedApps() {
             if (!writeSession.canEdit()) return
-            if (_uiState.value.availableApps is AppPackagePickerUiState.Ready ||
-                _uiState.value.availableApps == AppPackagePickerUiState.Loading ||
+            if (_uiState.value.availableApps.catalogLoaded ||
                 associatedAppsLoadJob?.isActive == true
             ) return
             val authentication = secureSessionAccessState.authenticationState.value
@@ -170,7 +167,7 @@ class AddPasswordViewModel
                         _uiState.value =
                             _uiState.value.copy(
                                 availableApps =
-                                    appPackagePickerReady(apps),
+                                    AppPackagePickerUiState.fromInstalledApps(apps),
                             )
                     } catch (error: CancellationException) {
                         throw error

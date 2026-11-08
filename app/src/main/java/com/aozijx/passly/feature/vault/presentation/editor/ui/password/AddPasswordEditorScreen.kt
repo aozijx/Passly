@@ -28,8 +28,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
-import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordAction
@@ -54,12 +52,7 @@ fun AddPasswordEditorScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val form = state.form
     var showAssociatedAppPicker by rememberSaveable { mutableStateOf(false) }
-    val selectedApp =
-        form.associatedAppPackage?.let { packageName ->
-            (state.availableApps as? AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
-                ?.apps
-                ?.firstOrNull { it.packageName == packageName }
-        }
+    val selectedApp = state.associatedApp
 
     fun save() {
         keyboardController?.hide()

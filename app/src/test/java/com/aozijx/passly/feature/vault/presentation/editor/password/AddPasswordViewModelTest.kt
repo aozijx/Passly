@@ -145,8 +145,8 @@ class AddPasswordViewModelTest {
             assertEquals(2, queries)
             assertEquals(
                 "new.app",
-                (model.uiState.value.availableApps as AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
-                    .apps
+                (model.uiState.value.availableApps as AppPackagePickerUiState.Matches<AppPackagePickerItemUiModel>)
+                    .installedApps
                     .single()
                     .packageName,
             )
@@ -172,7 +172,6 @@ class AddPasswordViewModelTest {
             }
             release.complete(Unit)
             advanceUntilIdle()
-            assertTrue(model.uiState.value.availableApps !is AppPackagePickerUiState.Ready)
             assertTrue(model.uiState.value.availableApps == AppPackagePickerUiState.NotRequested)
         }
 
@@ -240,10 +239,11 @@ class AddPasswordViewModelTest {
             viewModel.onAction(AddPasswordAction.AssociatedAppSelected("com.example.mail"))
 
             assertEquals("com.example.mail", viewModel.uiState.value.form.associatedAppPackage)
+            assertEquals("Mail", viewModel.uiState.value.associatedApp?.label)
             assertEquals(
                 "Mail",
-                (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
-                    .apps
+                (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Matches<AppPackagePickerItemUiModel>)
+                    .installedApps
                     .single()
                     .label,
             )
@@ -283,11 +283,11 @@ class AddPasswordViewModelTest {
             advanceUntilIdle()
 
             assertEquals(2, queries)
-            assertTrue(viewModel.uiState.value.availableApps is AppPackagePickerUiState.Ready)
+            assertTrue(viewModel.uiState.value.availableApps is AppPackagePickerUiState.Matches)
             assertEquals(
                 "com.example.mail",
-                (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Ready<AppPackagePickerItemUiModel>)
-                    .apps
+                (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Matches<AppPackagePickerItemUiModel>)
+                    .installedApps
                     .single()
                     .packageName,
             )
