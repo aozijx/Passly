@@ -1,19 +1,5 @@
 package com.aozijx.passly.feature.settings.presentation.backup
 
-import com.aozijx.passly.app.settings.ReadFailure
-
-sealed interface DataManagementSettingsUiState {
-    data object Loading : DataManagementSettingsUiState
-
-    data class Failed(
-        val failure: ReadFailure,
-    ) : DataManagementSettingsUiState
-
-    data class Ready(
-        val directory: BackupDirectoryUiState,
-    ) : DataManagementSettingsUiState
-}
-
 sealed interface BackupDirectoryUiState {
     data object Unconfigured : BackupDirectoryUiState
 
@@ -23,9 +9,6 @@ sealed interface BackupDirectoryUiState {
         }
     }
 }
-
-val DataManagementSettingsUiState.isReady: Boolean
-    get() = this is DataManagementSettingsUiState.Ready
 
 sealed interface DataManagementSettingsUiAction {
     data object RetryRead : DataManagementSettingsUiAction

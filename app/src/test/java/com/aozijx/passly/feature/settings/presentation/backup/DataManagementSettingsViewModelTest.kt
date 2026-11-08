@@ -1,8 +1,9 @@
 package com.aozijx.passly.feature.settings.presentation.backup
 
-import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryAccess
 import com.aozijx.passly.feature.settings.backup.BackupDirectoryGrantResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
@@ -60,13 +61,13 @@ class DataManagementSettingsViewModelTest {
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, viewModel.uiState.value is DataManagementSettingsUiState.Failed)
+            assertEquals(true, viewModel.uiState.value is RecoverableReadState.Failed)
             viewModel.onAction(DataManagementSettingsUiAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
             assertEquals(
-                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Unconfigured),
+                RecoverableReadState.Ready(BackupDirectoryUiState.Unconfigured),
                 viewModel.uiState.value,
             )
         }
@@ -81,7 +82,7 @@ class DataManagementSettingsViewModelTest {
                     logger = RecordingTestLogger(),
                 )
 
-            assertEquals(DataManagementSettingsUiState.Loading, viewModel.uiState.value)
+            assertEquals(RecoverableReadState.Loading, viewModel.uiState.value)
         }
 
     @Test
@@ -96,6 +97,7 @@ class DataManagementSettingsViewModelTest {
                     logger = RecordingTestLogger(),
                 )
             val oldOwner = viewModel.onPageEntered()
+            backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
             val requestId = viewModel.beginDirectorySelection(oldOwner)
             assertNotNull(requestId)
@@ -147,7 +149,7 @@ class DataManagementSettingsViewModelTest {
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
             assertEquals(
-                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
+                RecoverableReadState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
                 viewModel.uiState.value,
             )
 
@@ -163,7 +165,7 @@ class DataManagementSettingsViewModelTest {
 
             assertEquals(listOf(DataManagementSettingsEffect.BackupDirectoryOperationFailed), effects)
             assertEquals(
-                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
+                RecoverableReadState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
                 viewModel.uiState.value,
             )
             assertEquals(0, access.acquired)
@@ -205,7 +207,7 @@ class DataManagementSettingsViewModelTest {
 
             assertEquals(listOf(DataManagementSettingsEffect.BackupDirectoryOperationFailed), effects)
             assertEquals(
-                DataManagementSettingsUiState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
+                RecoverableReadState.Ready(BackupDirectoryUiState.Configured("content://tree/current")),
                 viewModel.uiState.value,
             )
             assertEquals(1, logger.events.size)

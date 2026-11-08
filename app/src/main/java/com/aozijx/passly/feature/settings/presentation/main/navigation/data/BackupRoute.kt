@@ -19,12 +19,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.core.platform.path.UriDisplayNameFormatter
 import com.aozijx.passly.feature.backup.presentation.BackupOperationRoute
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.backup.BackupDirectoryUiState
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiAction
-import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.backup.DataManagementSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.ui.data.BackupDirectoryClearDialog
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
@@ -50,7 +50,7 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state is DataManagementSettingsUiState.Failed) {
+    if (state is RecoverableReadState.Failed) {
         SettingsSecondaryPage(
             title = stringResource(SettingsGroup.DATA_MANAGEMENT.titleRes),
             onBack = onBack,
@@ -64,10 +64,10 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         return
     }
     val readyState =
-        when (val current = state) {
-            DataManagementSettingsUiState.Loading -> return
-            is DataManagementSettingsUiState.Failed -> return
-            is DataManagementSettingsUiState.Ready -> current
+        when (state) {
+            RecoverableReadState.Loading -> return
+            is RecoverableReadState.Failed -> return
+            is RecoverableReadState.Ready -> state.value
         }
     var showClearDirectoryDialog by rememberSaveable { mutableStateOf(false) }
     var isClearingDirectory by rememberSaveable { mutableStateOf(false) }
@@ -86,7 +86,7 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
         )
     val operationFailedMessage = stringResource(R.string.settings_backup_directory_operation_failed)
     val directoryUri =
-        when (val directory = readyState.directory) {
+        when (val directory = readyState) {
             BackupDirectoryUiState.Unconfigured -> null
             is BackupDirectoryUiState.Configured -> directory.uri
         }
@@ -159,7 +159,7 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
                 directoryUri = directoryUri,
                 directoryLabel = pathLabel,
                 configuredDirectoryLabel =
-                    when (readyState.directory) {
+                    when (readyState) {
                         BackupDirectoryUiState.Unconfigured -> null
                         is BackupDirectoryUiState.Configured -> pathLabel
                     },
@@ -178,7 +178,7 @@ internal fun BackupRoute(onBack: (() -> Unit)?) {
                     }
                 },
                 onClearBackupPath =
-                    when (readyState.directory) {
+                    when (readyState) {
                         BackupDirectoryUiState.Unconfigured -> null
                         is BackupDirectoryUiState.Configured -> ({ showClearDirectoryDialog = true })
                     },

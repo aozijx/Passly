@@ -2,10 +2,10 @@ package com.aozijx.passly.feature.settings.presentation.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aozijx.passly.core.observability.LogStatements
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySelectionResult
 import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteractor
@@ -14,9 +14,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -29,35 +28,21 @@ class DataManagementSettingsViewModel
     ) : ViewModel() {
         private val pageEffects = PageEffects<DataManagementSettingsEffect>()
 
-        private val _uiState =
-            MutableStateFlow<DataManagementSettingsUiState>(
-                DataManagementSettingsUiState.Loading,
-            )
-        val uiState: StateFlow<DataManagementSettingsUiState> = _uiState.asStateFlow()
         val effects = pageEffects.effects
         private var pendingDirectorySelection: PendingDirectorySelection? = null
         private var clearInFlight = false
-        private val directoryRead = RecoverableRead(directorySource.backupDirectoryUri, viewModelScope)
+        private val directoryRead =
+            RecoverableRead(
+                source =
+                    directorySource.backupDirectoryUri.map { uri ->
+                        uri?.takeIf(String::isNotBlank)
+                            ?.let(BackupDirectoryUiState::Configured)
+                            ?: BackupDirectoryUiState.Unconfigured
+                    },
+                scope = viewModelScope,
+            )
 
-        init {
-            viewModelScope.launch {
-                directoryRead.state.collect { read ->
-                    _uiState.value =
-                        when (read) {
-                            RecoverableReadState.Loading -> DataManagementSettingsUiState.Loading
-                            is RecoverableReadState.Ready ->
-                                DataManagementSettingsUiState.Ready(
-                                    directory =
-                                        read.value
-                                            ?.takeIf(String::isNotBlank)
-                                            ?.let(BackupDirectoryUiState::Configured)
-                                            ?: BackupDirectoryUiState.Unconfigured,
-                                )
-                            is RecoverableReadState.Failed -> DataManagementSettingsUiState.Failed(read.failure)
-                        }
-                }
-            }
-        }
+        val uiState: StateFlow<RecoverableReadState<BackupDirectoryUiState>> = directoryRead.state
 
         fun onAction(action: DataManagementSettingsUiAction) {
             val clearOwner =
@@ -83,7 +68,7 @@ class DataManagementSettingsViewModel
 
                     DataManagementSettingsUiAction.ClearBackupDirectory -> {
                         if (clearOwner != null && pageEffects.isActive(clearOwner) && !clearInFlight &&
-                            _uiState.value.isReady
+                            uiState.value is RecoverableReadState.Ready
                         ) {
                             clearInFlight = true
                             try {
@@ -150,7 +135,7 @@ class DataManagementSettingsViewModel
 
         fun beginDirectorySelection(owner: Any): String? {
             if (!pageEffects.isActive(owner) || pendingDirectorySelection != null ||
-                !_uiState.value.isReady
+                uiState.value !is RecoverableReadState.Ready
             ) {
                 return null
             }
