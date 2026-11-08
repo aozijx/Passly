@@ -47,7 +47,7 @@ internal object DetailTagEditorReducer {
                             prefix = mutation.value.substringAfterLast(',').substringAfterLast('\n'),
                             selectedTags = state.draftTags,
                         ),
-                    validationError = null,
+                    validation = DetailTagValidationState.None,
                     showDiscardConfirmation = false,
                 )
             }
@@ -61,13 +61,13 @@ internal object DetailTagEditorReducer {
                             draftTags = normalized.tags,
                             input = "",
                             suggestions = emptyList(),
-                            validationError = null,
+                            validation = DetailTagValidationState.None,
                         )
                     }
 
                     is EntryTagNormalizationResult.Invalid -> {
                         state.copy(
-                            validationError = normalized.error,
+                            validation = DetailTagValidationState.Invalid(normalized.error),
                         )
                     }
                 }
@@ -79,7 +79,7 @@ internal object DetailTagEditorReducer {
                         state.draftTags
                             .filterNot { it.equals(mutation.value, ignoreCase = true) }
                             .toCollection(linkedSetOf()),
-                    validationError = null,
+                    validation = DetailTagValidationState.None,
                 )
             }
 

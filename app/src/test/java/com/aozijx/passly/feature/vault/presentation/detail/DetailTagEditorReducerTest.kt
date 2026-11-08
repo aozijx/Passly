@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -56,7 +55,7 @@ class DetailTagEditorReducerTest {
 
         assertEquals(linkedSetOf("Personal"), removed.draftTags)
         assertTrue(removed.dirty)
-        assertNull(removed.validationError)
+        assertEquals(DetailTagValidationState.None, removed.validation)
     }
 
     @Test
@@ -76,8 +75,8 @@ class DetailTagEditorReducerTest {
         assertEquals(emptySet<String>(), actual.draftTags)
         assertEquals("x".repeat(33), actual.input)
         assertEquals(
-            EntryTagValidationError.TooLong(maximum = 32),
-            actual.validationError,
+            DetailTagValidationState.Invalid(EntryTagValidationError.TooLong(maximum = 32)),
+            actual.validation,
         )
     }
 

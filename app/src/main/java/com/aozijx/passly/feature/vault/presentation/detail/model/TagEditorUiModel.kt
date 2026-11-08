@@ -10,13 +10,17 @@ sealed interface DetailTagEditorUiModel {
         val availableTags: Set<String>,
         val input: String,
         val suggestions: DetailTagChipsUiState,
-        val validationMessage: TagEditorValidationMessageUiModel?,
+        val validation: TagEditorValidationUiState,
         val showDiscardConfirmation: Boolean,
         val dirty: Boolean,
     ) : DetailTagEditorUiModel
 }
 
-data class TagEditorValidationMessageUiModel(
-    @param:PluralsRes @get:PluralsRes val pluralResourceId: Int,
-    val quantity: Int,
-)
+sealed interface TagEditorValidationUiState {
+    data object None : TagEditorValidationUiState
+
+    data class Invalid(
+        @param:PluralsRes @get:PluralsRes val pluralResourceId: Int,
+        val quantity: Int,
+    ) : TagEditorValidationUiState
+}

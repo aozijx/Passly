@@ -43,8 +43,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
@@ -140,19 +141,21 @@ fun TagEditorSheet(
                 label = { Text(stringResource(R.string.vault_detail_tag_input_label)) },
                 placeholder = { Text(stringResource(R.string.vault_detail_tag_input_hint)) },
                 supportingText =
-                    state.validationMessage?.let { message ->
-                        {
-                            Text(
-                                text =
-                                    pluralStringResource(
-                                        message.pluralResourceId,
-                                        message.quantity,
-                                        message.quantity,
-                                    ),
-                            )
+                    {
+                        when (val validation = state.validation) {
+                            TagEditorValidationUiState.None -> Unit
+                            is TagEditorValidationUiState.Invalid ->
+                                Text(
+                                    text =
+                                        pluralStringResource(
+                                            validation.pluralResourceId,
+                                            validation.quantity,
+                                            validation.quantity,
+                                        ),
+                                )
                         }
                     },
-                isError = state.validationMessage != null,
+                isError = state.validation is TagEditorValidationUiState.Invalid,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions =

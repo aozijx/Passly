@@ -11,9 +11,15 @@ sealed interface DetailTagEditorState {
         val availableTags: Set<String> = emptySet(),
         val input: String = "",
         val suggestions: List<String> = emptyList(),
-        val validationError: EntryTagValidationError? = null,
+        val validation: DetailTagValidationState = DetailTagValidationState.None,
         val showDiscardConfirmation: Boolean = false,
     ) : DetailTagEditorState {
         val dirty: Boolean get() = draftTags != initialTags || input.isNotBlank()
     }
+}
+
+sealed interface DetailTagValidationState {
+    data object None : DetailTagValidationState
+
+    data class Invalid(val error: EntryTagValidationError) : DetailTagValidationState
 }

@@ -40,7 +40,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiM
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.ScopedSensitiveText
 import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationMessageUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
@@ -323,7 +323,7 @@ internal fun DetailTagEditorState.toTagEditorUiModel(): DetailTagEditorUiModel =
                 availableTags = availableTags,
                 input = input,
                 suggestions = suggestions.toTagChipsUiState(),
-                validationMessage = validationError?.toMessageUiModel(),
+                validation = validation.toTagEditorValidationUiState(),
                 showDiscardConfirmation = showDiscardConfirmation,
                 dirty = dirty,
             )
@@ -359,16 +359,22 @@ internal fun SensitiveValue?.asScopedSensitiveText(): ScopedSensitiveText {
     }
 }
 
-private fun EntryTagValidationError.toMessageUiModel(): TagEditorValidationMessageUiModel =
+private fun DetailTagValidationState.toTagEditorValidationUiState(): TagEditorValidationUiState =
+    when (this) {
+        DetailTagValidationState.None -> TagEditorValidationUiState.None
+        is DetailTagValidationState.Invalid -> error.toUiState()
+    }
+
+private fun EntryTagValidationError.toUiState(): TagEditorValidationUiState.Invalid =
     when (this) {
         is EntryTagValidationError.TooMany ->
-            TagEditorValidationMessageUiModel(
+            TagEditorValidationUiState.Invalid(
                 pluralResourceId = R.plurals.vault_detail_tag_too_many,
                 quantity = maximum,
             )
 
         is EntryTagValidationError.TooLong ->
-            TagEditorValidationMessageUiModel(
+            TagEditorValidationUiState.Invalid(
                 pluralResourceId = R.plurals.vault_detail_tag_too_long,
                 quantity = maximum,
             )

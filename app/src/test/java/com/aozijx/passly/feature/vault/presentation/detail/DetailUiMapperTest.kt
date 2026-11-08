@@ -29,7 +29,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEn
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationMessageUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -72,12 +72,12 @@ class DetailUiMapperTest {
         val scenarios =
             listOf(
                 EntryTagValidationError.TooMany(maximum = 20) to
-                    TagEditorValidationMessageUiModel(
+                    TagEditorValidationUiState.Invalid(
                         pluralResourceId = R.plurals.vault_detail_tag_too_many,
                         quantity = 20,
                     ),
                 EntryTagValidationError.TooLong(maximum = 32) to
-                    TagEditorValidationMessageUiModel(
+                    TagEditorValidationUiState.Invalid(
                         pluralResourceId = R.plurals.vault_detail_tag_too_long,
                         quantity = 32,
                     ),
@@ -88,14 +88,14 @@ class DetailUiMapperTest {
                 DetailTagEditorState.Open(
                     initialTags = setOf("Work"),
                     draftTags = setOf("Personal"),
-                    validationError = validationError,
+                    validation = DetailTagValidationState.Invalid(validationError),
                 )
 
             val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
 
             assertTrue(actual.dirty)
             assertEquals(DetailTagChipsUiState.Items(listOf("Personal")), actual.draftTags)
-            assertEquals(expectedMessage, actual.validationMessage)
+            assertEquals(expectedMessage, actual.validation)
         }
     }
 
