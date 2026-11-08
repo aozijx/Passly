@@ -31,7 +31,7 @@ class RecoveryModeViewModel
         private val secureSessionAccessState: SecureSessionAccessState,
         private val methodProvisioner: AuthenticationMethodProvisioner,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(RecoveryModeUiState())
+        private val _uiState = MutableStateFlow<RecoveryModeUiState>(RecoveryModeUiState.Closed)
         val uiState: StateFlow<RecoveryModeUiState> = _uiState.asStateFlow()
 
         private val pageEffects = PageEffects<RecoveryModeEffect>()
@@ -85,9 +85,9 @@ class RecoveryModeViewModel
             if (!ensureRecoveryMode()) return
             val owner = pageEffects.currentOwner ?: return
             val draft =
-                when (val setup = state.passwordSetup) {
-                    is RecoveryPasswordSetup.Editing -> setup.draft
-                    is RecoveryPasswordSetup.Failed -> setup.draft
+                when (val setup = state) {
+                    is RecoveryModeUiState.Editing -> setup.draft
+                    is RecoveryModeUiState.Failed -> setup.draft
                     else -> return
                 }
             val password = draft.newPassword.toCharArray()
@@ -193,20 +193,21 @@ class RecoveryModeViewModel
 
         private fun wipePasswords() {
             val draft =
-                when (val setup = _uiState.value.passwordSetup) {
-                    is RecoveryPasswordSetup.Editing -> setup.draft
-                    is RecoveryPasswordSetup.Saving -> setup.draft
-                    is RecoveryPasswordSetup.Failed -> setup.draft
-                    RecoveryPasswordSetup.Closed -> return
+                when (val setup = _uiState.value) {
+                    is RecoveryModeUiState.Editing -> setup.draft
+                    is RecoveryModeUiState.Saving -> setup.draft
+                    is RecoveryModeUiState.Failed -> setup.draft
+                    RecoveryModeUiState.Closed,
+                    -> return
                 }
             draft.newPassword.wipe()
             draft.confirmPassword.wipe()
         }
 
         private fun editableDraft(): PasswordSetupDraft? =
-            when (val setup = _uiState.value.passwordSetup) {
-                is RecoveryPasswordSetup.Editing -> setup.draft
-                is RecoveryPasswordSetup.Failed -> setup.draft
+            when (val setup = _uiState.value) {
+                is RecoveryModeUiState.Editing -> setup.draft
+                is RecoveryModeUiState.Failed -> setup.draft
                 else -> null
             }
 

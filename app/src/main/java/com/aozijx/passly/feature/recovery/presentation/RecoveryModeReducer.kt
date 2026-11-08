@@ -44,8 +44,8 @@ internal object RecoveryModeReducer {
     ): RecoveryModeUiState =
         when (mutation) {
             RecoveryModeMutation.PasswordDialogOpened -> {
-                if (state.passwordSetup is RecoveryPasswordSetup.Saving) return state
-                state.copy(passwordSetup = RecoveryPasswordSetup.Editing(PasswordSetupDraft()))
+                if (state is RecoveryModeUiState.Saving) return state
+                RecoveryModeUiState.Editing(PasswordSetupDraft())
             }
 
             is RecoveryModeMutation.NewPasswordChanged ->
@@ -55,31 +55,31 @@ internal object RecoveryModeReducer {
                 state.updateEditableDraft(mutation.value) { copy(confirmPassword = mutation.value) }
 
             is RecoveryModeMutation.ValidationFailed ->
-                state.updateEditableSetup { draft -> RecoveryPasswordSetup.Failed(draft, mutation.reason) }
+                state.updateEditableSetup { draft -> RecoveryModeUiState.Failed(draft, mutation.reason) }
 
             RecoveryModeMutation.PasswordSetupStarted ->
-                state.updateEditableSetup { RecoveryPasswordSetup.Saving(PasswordSetupDraft()) }
+                state.updateEditableSetup { RecoveryModeUiState.Saving(PasswordSetupDraft()) }
 
             is RecoveryModeMutation.PasswordSetupFailed ->
-                when (val setup = state.passwordSetup) {
-                    is RecoveryPasswordSetup.Saving -> state.copy(passwordSetup = RecoveryPasswordSetup.Failed(setup.draft, mutation.reason))
+                when (state) {
+                    is RecoveryModeUiState.Saving -> RecoveryModeUiState.Failed(state.draft, mutation.reason)
                     else -> state
                 }
 
             RecoveryModeMutation.PasswordSetupStopped ->
-                when (val setup = state.passwordSetup) {
-                    is RecoveryPasswordSetup.Saving -> state.copy(passwordSetup = RecoveryPasswordSetup.Editing(setup.draft))
+                when (state) {
+                    is RecoveryModeUiState.Saving -> RecoveryModeUiState.Editing(state.draft)
                     else -> state
                 }
 
             RecoveryModeMutation.PasswordSetupCompleted,
             RecoveryModeMutation.RecoveryModeRejected,
             RecoveryModeMutation.PasswordDialogDiscarded,
-            -> state.copy(passwordSetup = RecoveryPasswordSetup.Closed)
+            -> RecoveryModeUiState.Closed
 
             RecoveryModeMutation.PasswordDialogDismissed -> {
-                if (state.passwordSetup is RecoveryPasswordSetup.Saving) return state
-                state.copy(passwordSetup = RecoveryPasswordSetup.Closed)
+                if (state is RecoveryModeUiState.Saving) return state
+                RecoveryModeUiState.Closed
             }
         }
 }
@@ -88,25 +88,26 @@ private inline fun RecoveryModeUiState.updateEditableDraft(
     value: SensitiveValue,
     transform: PasswordSetupDraft.() -> PasswordSetupDraft,
 ): RecoveryModeUiState =
-    when (val setup = passwordSetup) {
-        RecoveryPasswordSetup.Closed -> {
+    when (this) {
+        RecoveryModeUiState.Closed -> {
             value.wipe()
             this
         }
-        is RecoveryPasswordSetup.Saving -> {
+        is RecoveryModeUiState.Saving -> {
             value.wipe()
             this
         }
-        is RecoveryPasswordSetup.Editing -> copy(passwordSetup = RecoveryPasswordSetup.Editing(setup.draft.transform()))
-        is RecoveryPasswordSetup.Failed -> copy(passwordSetup = RecoveryPasswordSetup.Editing(setup.draft.transform()))
+        is RecoveryModeUiState.Editing -> RecoveryModeUiState.Editing(draft.transform())
+        is RecoveryModeUiState.Failed -> RecoveryModeUiState.Editing(draft.transform())
     }
 
 private inline fun RecoveryModeUiState.updateEditableSetup(
-    transform: (PasswordSetupDraft) -> RecoveryPasswordSetup,
+    transform: (PasswordSetupDraft) -> RecoveryModeUiState,
 ): RecoveryModeUiState =
-    when (val setup = passwordSetup) {
-        RecoveryPasswordSetup.Closed -> this
-        is RecoveryPasswordSetup.Editing -> copy(passwordSetup = transform(setup.draft))
-        is RecoveryPasswordSetup.Failed -> copy(passwordSetup = transform(setup.draft))
-        is RecoveryPasswordSetup.Saving -> this
+    when (this) {
+        RecoveryModeUiState.Closed,
+        is RecoveryModeUiState.Saving,
+        -> this
+        is RecoveryModeUiState.Editing -> transform(draft)
+        is RecoveryModeUiState.Failed -> transform(draft)
     }

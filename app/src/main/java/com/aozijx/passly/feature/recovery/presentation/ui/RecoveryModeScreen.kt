@@ -8,6 +8,10 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,13 +23,20 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
+import com.aozijx.passly.feature.recovery.presentation.RecoveryModeUiState
 
 @Composable
 fun RecoveryModeScreen(
-    isSettingPassword: Boolean,
+    state: RecoveryModeUiState,
     onSetPassword: () -> Unit,
     onExit: () -> Unit,
+    onNewPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onConfirmPassword: () -> Unit,
+    onDismissPassword: () -> Unit,
 ) {
+    var newPasswordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
     Column(
         modifier =
             Modifier
@@ -53,7 +64,7 @@ fun RecoveryModeScreen(
                 stringResource(R.string.recovery_mode_set_password),
                 stringResource(R.string.app_password_unlock_description),
                 onSetPassword,
-                isSettingPassword,
+                state is RecoveryModeUiState.Saving,
             )
         }
         Spacer(Modifier.height(16.dp))
@@ -66,6 +77,29 @@ fun RecoveryModeScreen(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             )
         }
+    }
+    val draft =
+        when (state) {
+            RecoveryModeUiState.Closed -> null
+            is RecoveryModeUiState.Editing -> state.draft
+            is RecoveryModeUiState.Saving -> state.draft
+            is RecoveryModeUiState.Failed -> state.draft
+        }
+    if (draft != null) {
+        RecoveryPasswordDialog(
+            draft,
+            canSubmit = state.canSubmit,
+            isSaving = state is RecoveryModeUiState.Saving,
+            failure = (state as? RecoveryModeUiState.Failed)?.reason,
+            newPasswordVisible = newPasswordVisible,
+            confirmPasswordVisible = confirmPasswordVisible,
+            onNewPasswordChange = onNewPasswordChange,
+            onConfirmPasswordChange = onConfirmPasswordChange,
+            onConfirm = onConfirmPassword,
+            onDismiss = onDismissPassword,
+            onToggleNewPasswordVisibility = { newPasswordVisible = !newPasswordVisible },
+            onToggleConfirmPasswordVisibility = { confirmPasswordVisible = !confirmPasswordVisible },
+        )
     }
 }
 

@@ -15,32 +15,38 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.dialog.PasslyAlertDialog
 import com.aozijx.passly.core.ui.components.settings.PasswordStrengthIndicator
+import com.aozijx.passly.feature.recovery.presentation.RecoveryPasswordSetupFailure
+import com.aozijx.passly.feature.recovery.presentation.toRecoveryPasswordStrengthUiState
+import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 import com.aozijx.passly.presentation.mapping.PasswordConfirmationUiState
 import com.aozijx.passly.presentation.mapping.PasswordStrengthUiState
 
 @Composable
 fun RecoveryPasswordDialog(
-    newPassword: String,
-    confirmPassword: String,
-    confirmationState: PasswordConfirmationUiState,
-    strength: PasswordStrengthUiState,
-    confirmEnabled: Boolean,
+    draft: PasswordSetupDraft,
+    canSubmit: Boolean,
+    failure: RecoveryPasswordSetupFailure?,
+    isSaving: Boolean,
+    newPasswordVisible: Boolean,
+    confirmPasswordVisible: Boolean,
     onNewPasswordChange: (String) -> Unit,
     onConfirmPasswordChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    isBusy: Boolean,
-    errorMessage: String?,
+    onToggleNewPasswordVisibility: () -> Unit,
+    onToggleConfirmPasswordVisibility: () -> Unit,
 ) {
-    var newVisible by remember { mutableStateOf(false) }
-    var confirmVisible by remember { mutableStateOf(false) }
+    val newPassword = draft.newPassword.toUiString()
+    val confirmPassword = draft.confirmPassword.toUiString()
+    val strength = draft.passwordStrength.toRecoveryPasswordStrengthUiState(MaterialTheme.colorScheme)
+    val errorMessage = failure?.let { stringResource(it.messageResId()) }
     PasslyAlertDialog(
         title = stringResource(R.string.recovery_mode_password_dialog_title),
         confirmText = stringResource(R.string.save),
         dismissText = stringResource(R.string.cancel),
         onConfirm = onConfirm,
-        onDismiss = { if (!isBusy) onDismiss() },
-        confirmEnabled = !isBusy && confirmEnabled,
+        onDismiss = { if (!isSaving) onDismiss() },
+        confirmEnabled = !isSaving && canSubmit,
     ) {
         Column {
             Text(
@@ -49,9 +55,8 @@ fun RecoveryPasswordDialog(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
-            PasswordField(newPassword, onNewPasswordChange, !isBusy, stringResource(R.string.recovery_mode_new_password), newVisible) {
-                newVisible =
-                    !newVisible
+            PasswordField(newPassword, onNewPasswordChange, !isSaving, stringResource(R.string.recovery_mode_new_password), newPasswordVisible) {
+                onToggleNewPasswordVisibility()
             }
             when (val strengthState = strength) {
                 PasswordStrengthUiState.Hidden -> Unit
@@ -68,17 +73,32 @@ fun RecoveryPasswordDialog(
             PasswordField(
                 confirmPassword,
                 onConfirmPasswordChange,
-                !isBusy,
+                !isSaving,
                 stringResource(R.string.recovery_mode_confirm_password),
-                confirmVisible,
+                confirmPasswordVisible,
                 ImeAction.Done,
                 errorMessage,
-                confirmationState,
+                draft.confirmationState,
             ) {
-                confirmVisible =
-                    !confirmVisible
+                onToggleConfirmPasswordVisibility()
             }
         }
+    }
+}
+
+@Composable
+private fun RecoveryPasswordSetupFailure.messageResId(): Int =
+    when (this) {
+        RecoveryPasswordSetupFailure.PasswordMismatchOrEmpty -> R.string.recovery_mode_password_mismatch_or_empty
+        RecoveryPasswordSetupFailure.SetupFailed -> R.string.recovery_mode_password_setup_failed
+    }
+
+private fun com.aozijx.passly.domain.sensitive.SensitiveValue.toUiString(): String {
+    val chars = toCharArray()
+    return try {
+        String(chars)
+    } finally {
+        chars.fill('\u0000')
     }
 }
 @Composable

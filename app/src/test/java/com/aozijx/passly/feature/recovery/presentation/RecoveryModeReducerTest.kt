@@ -15,19 +15,16 @@ class RecoveryModeReducerTest {
         try {
             val result =
                 RecoveryModeReducer.reduce(
-                    RecoveryModeUiState(
-                        passwordSetup =
-                            RecoveryPasswordSetup.Editing(
-                                PasswordSetupDraft(
-                                    newPassword = password,
-                                    confirmPassword = confirm,
-                                ),
-                            ),
+                    RecoveryModeUiState.Editing(
+                        PasswordSetupDraft(
+                            newPassword = password,
+                            confirmPassword = confirm,
+                        ),
                     ),
                     RecoveryModeMutation.PasswordSetupCompleted,
                 )
 
-            assertSame(RecoveryPasswordSetup.Closed, result.passwordSetup)
+            assertSame(RecoveryModeUiState.Closed, result)
         } finally {
             password.wipe()
             confirm.wipe()
@@ -38,25 +35,22 @@ class RecoveryModeReducerTest {
     fun `rejected recovery mode closes setup`() {
         val result =
             RecoveryModeReducer.reduce(
-                RecoveryModeUiState(
-                    passwordSetup =
-                        RecoveryPasswordSetup.Saving(PasswordSetupDraft()),
-                ),
+                RecoveryModeUiState.Saving(PasswordSetupDraft()),
                 RecoveryModeMutation.RecoveryModeRejected,
             )
 
-        assertSame(RecoveryPasswordSetup.Closed, result.passwordSetup)
+        assertSame(RecoveryModeUiState.Closed, result)
     }
 
     @Test
     fun `opening dialog preserves no full access state`() {
         val result =
             RecoveryModeReducer.reduce(
-                RecoveryModeUiState(),
+                RecoveryModeUiState.Closed,
                 RecoveryModeMutation.PasswordDialogOpened,
             )
 
-        val setup = result.passwordSetup as RecoveryPasswordSetup.Editing
+        val setup = result as RecoveryModeUiState.Editing
         assertSame(EmptySensitiveValue, setup.draft.newPassword)
         assertSame(EmptySensitiveValue, setup.draft.confirmPassword)
     }

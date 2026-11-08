@@ -2,21 +2,28 @@ package com.aozijx.passly.feature.recovery.presentation
 
 import com.aozijx.passly.presentation.mapping.PasswordSetupDraft
 
-data class RecoveryModeUiState(
-    val passwordSetup: RecoveryPasswordSetup = RecoveryPasswordSetup.Closed,
-)
+sealed interface RecoveryModeUiState {
+    val canSubmit: Boolean
 
-sealed interface RecoveryPasswordSetup {
-    data object Closed : RecoveryPasswordSetup
+    data object Closed : RecoveryModeUiState {
+        override val canSubmit = false
+    }
 
-    data class Editing(val draft: PasswordSetupDraft) : RecoveryPasswordSetup
+    data class Editing(
+        val draft: PasswordSetupDraft,
+        override val canSubmit: Boolean = draft.canSubmit(),
+    ) : RecoveryModeUiState
 
-    data class Saving(val draft: PasswordSetupDraft) : RecoveryPasswordSetup
+    data class Saving(
+        val draft: PasswordSetupDraft,
+        override val canSubmit: Boolean = false,
+    ) : RecoveryModeUiState
 
     data class Failed(
         val draft: PasswordSetupDraft,
         val reason: RecoveryPasswordSetupFailure,
-    ) : RecoveryPasswordSetup
+        override val canSubmit: Boolean = draft.canSubmit(),
+    ) : RecoveryModeUiState
 }
 
 enum class RecoveryPasswordSetupFailure {
