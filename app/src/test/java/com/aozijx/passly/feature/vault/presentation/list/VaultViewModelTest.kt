@@ -4,6 +4,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
@@ -201,6 +202,39 @@ class VaultViewModelTest {
                 assertEquals(listOf(ENTRY_ID), movedEntries)
             } finally {
                 gate.resume.complete(Unit)
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun deleteFailureCompletingAfterPageExitDoesNotEmitStalePageEffect() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val gate = PausingAuthorizationGate()
+            val viewModel =
+                createViewModel(
+                    gate,
+                    mutableListOf(),
+                    moveToTrashResult = AppResult.Failure(NotFound()),
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val effects = Channel<VaultEffect>(Channel.UNLIMITED)
+            val effectCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.effects.collect { effects.send(it) }
+                }
+
+            try {
+                viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
+                gate.started.await()
+                viewModel.onPageExited(owner)
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertNull("a departed page must not receive its delete failure", effects.tryReceive().getOrNull())
+            } finally {
+                gate.resume.complete(Unit)
+                effectCollector.cancel()
                 viewModelStore.clear()
             }
         }
@@ -480,9 +514,10 @@ class VaultViewModelTest {
         librarySettings: Flow<LibraryViewSettings> = flowOf(defaultLibrarySettings()),
         onPageQuery: (EntryListQuery) -> Unit = {},
         setSort: suspend (EntrySort) -> Unit = {},
+        moveToTrashResult: AppResult<Unit> = AppResult.Success(Unit),
     ): VaultViewModel {
         val access = TestAccessState()
-        val entries = TestEntries(onMoveToTrash)
+        val entries = TestEntries(onMoveToTrash, moveToTrashResult)
         val clipboard = SensitiveClipboardWriter { clipboardValues += it }
         val activity = TestActivityRecorder
         val sensitiveFields = EmptySensitiveFields
@@ -548,6 +583,7 @@ class VaultViewModelTest {
 
     private class TestEntries(
         private val onMoveToTrash: (EntryId) -> Unit,
+        private val moveToTrashResult: AppResult<Unit>,
     ) : EntryQueryRepository, EntryCommandRepository {
         override suspend fun getById(entryId: EntryId): Entry? = entry.takeIf { it.id == entryId }
 
@@ -566,7 +602,7 @@ class VaultViewModelTest {
             expectedVersion: EntryVersion,
         ): AppResult<Unit> {
             onMoveToTrash(id)
-            return AppResult.Success(Unit)
+            return moveToTrashResult
         }
 
         override suspend fun restoreEntry(
