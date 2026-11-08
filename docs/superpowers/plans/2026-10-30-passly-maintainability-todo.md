@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 1 / P1 | [安全 Task 6](2026-11-06-passly-security-scan-followups.md#task-6)、[Session 与 DEK 审查记录](../../reviews/2026-11-07-session-close-and-dek-wipe.md)，本页 37→26、59 | 接收方身份、lease 关闭、撤权与提交事实；先完成 Data admission 与撤权线性化，再闭合 Runtime/reset 跨层终态 |
 | 2 / P1 | 本页 42、40、32；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | seed/流资源、目录操作终态、分类查询与 flush；先固定失败结果再改 owner |
-| 3 / P2 | 本页 46、51；[安全 Tasks 3、7、9](2026-11-06-passly-security-scan-followups.md)、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；备份端到端流式重构已完成；Autofill 设置策略待办由专题清单维护 |
+| 3 / P2 | 本页 46、51；[安全 Tasks 3、7、9](2026-11-06-passly-security-scan-followups.md)、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；Autofill 设置策略待办由专题清单维护 |
 | 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
 | 5 / P3 | 本页 83 → 84/80，35、34、36、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；77 先稳定诊断可靠性 |
 
@@ -26,17 +26,6 @@
 | Vault / OTP | [搜索 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP TODO](2026-11-06-passly-otp-review-followups.md) | 27、32、34–36、42 |
 | Backup / 诊断 | [Backup 格式说明](../../features/backup/passly-archive-v1.md)、[数据端口迁移审查记录](../../reviews/2026-11-07-backup-data-port-migration.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 40、73、74、77 |
 | 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 26、37、44–46、59、64；非合作 lease 关闭验收归档在安全审查记录 |
-
-## Autofill 重构后的清理
-
-Autofill 的旧段落已从本页移出：宿主验收合并到 Task 21，系统状态观察合同已从完成计划清除，85 的形式改造也已移除。当前专题清单只保留 Task 21、82；其余当前合同见 Autofill 主题页。下方扫描数量与失败统计是历史采样记录。
-
-## 此前扫描与验证记录
-
-- 历次源码数量和失败数是并行工作区的时间点快照，已移除；当前验收以各 Task 未完成项为准。
-- 旧 App/Autofill 单测与 lint 历史失败已关闭，不再作为当前待办。
-- Autofill/Room/Auth/UI 合同修正已放入对应专题或功能文档；Domain 端口迁移证据见[迁移审查记录](../../reviews/2026-11-07-domain-cohesion-migration.md)。
-- 真实设备、APK Analyzer、KDF/低内存基准和强杀持久性未由 JVM/静态验证替代，仍由相关 Task 跟踪。
 
 <a id="task-37"></a>
 
@@ -345,5 +334,5 @@ Autofill 的旧段落已从本页移出：宿主验收合并到 Task 21，系统
 
 - 范围覆盖所有模块的 `src/test`、`src/androidTest` 和 `src/testFixtures`。审查标准是生产 owner、行为合同和断言实际证明的结果；同名、同主题或文件短小本身都不是合并依据。
 - 已在多个模块完成候选交叉核对和部分测试逻辑修正，但全项目审查未完成，尤其 App/Feature 仍需继续逐 owner 检查。此前逐轮源码数量会随并行改动变化，已从本计划删除，不再作为完成证据。
-- 本轮 Detail mapper 复核为 identity、SSH、seed phrase、passkey 增加直接状态投影断言，并将 Wi-Fi 凭据断言迁到当前可空行模型；新增/调整测试尚未执行。相同文件名候选也按 owner 对照：AppBackup unit/androidTest 分别验证 restore 与 read，三个模块的 `TestLogger`、两个模块的 `IsolatedTestContext` 是源集/模块隔离的测试支撑，未发现可安全合并的重复行为测试。Data `SettingsDataStoreReadTest` 补了 fatal `Error` 原样传播断言（与 corruption 包装、I/O、取消保持不同合同）；本轮未运行测试。Unlock 的新“启动不读 attempt status”测试只覆盖无启动查询；静态追踪确认认证失败在 `finally` 清凭据时触发 `AppPasswordChanged`/`RecoveryCodeChanged`，reducer 随即清除失败态，需补 owner 行为覆盖并修正错误反馈交付。未关闭事项仍包括 Task 74 的全仓逐例复核与 Detail ViewModel 测试拆分评估、Task 42 的银行卡 `paymentPlatform` 编辑保留核实，以及 Data `InitializeEntryRevisionHistory` 的 generation 标记、事务失败重试和提交后清理 owner 测试。历史记录中 `CompareEntryRevisionUseCase` 的“无直接测试”说法已过时，当前 `EntryRevisionUseCasesTest` 已覆盖其版本选择及加载失败映射。
+- 本轮 Detail mapper 复核为 identity、SSH、seed phrase、passkey 增加直接状态投影断言，并将 Wi-Fi 凭据断言迁到当前可空行模型；新增/调整测试尚未执行。相同文件名候选也按 owner 对照：AppBackup unit/androidTest 分别验证 restore 与 read，三个模块的 `TestLogger`、两个模块的 `IsolatedTestContext` 是源集/模块隔离的测试支撑，未发现可安全合并的重复行为测试。Data `SettingsDataStoreReadTest` 补了 fatal `Error` 原样传播断言（与 corruption 包装、I/O、取消保持不同合同）；本轮未运行测试。Unlock 的新“启动不读 attempt status”测试只覆盖无启动查询；静态追踪确认认证失败在 `finally` 清凭据时触发 `AppPasswordChanged`/`RecoveryCodeChanged`，reducer 随即清除失败态，需补 owner 行为覆盖并修正错误反馈交付。未关闭事项仍包括 Task 74 的全仓逐例复核与 Detail ViewModel 测试拆分评估、Task 42 的银行卡 `paymentPlatform` 编辑保留核实，以及 Data `InitializeEntryRevisionHistory` 的 generation 标记、事务失败重试和提交后清理 owner 测试；现有 `EntryRevisionHistoryRebuilderTest` 只覆盖重建出的 active/deleted baseline 与敏感快照，不能代替 initializer 的一次性标记、失败重试和 durable commit 后清理合同，后续只补 orchestration 覆盖以免复制重建器测试。历史记录中 `CompareEntryRevisionUseCase` 的“无直接测试”说法已过时，当前 `EntryRevisionUseCasesTest` 已覆盖其版本选择及加载失败映射。
 - 本轮没有运行测试；完成度须以尚未审查的测试 owner 与未关闭事项为准，`git diff --check` 只验证文本空白，不代表测试通过。

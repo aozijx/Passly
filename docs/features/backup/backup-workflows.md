@@ -1,6 +1,6 @@
 # Backup 工作流总览
 
-状态：当前实现（代码核对：2026-11-07）。
+状态：当前实现（代码核对：2026-11-08）。
 
 Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位于 `feature/backup/presentation`；Presentation 和执行器共享的格式选择、导入选项、操作请求/结果及 `BackupOperationGateway` 位于 `feature/backup/contract`。稳定 wire format ID 只在内部映射，协议、加密和归档文件 I/O 位于 `feature/backup/internal`；稳定键映射位于 `archive/mapper`。Domain 声明持久化中立的 `VaultBackupStore`；App `AppBackupSnapshotGateway` 把 archive DTO 与 Domain snapshot 相互映射，Data `RoomVaultBackupStore` 独占 Room、秘密字段、附件 GC 和图标/附件文件事务。旧 App `RoomBackupSnapshotReader` / `RoomBackupSnapshotRestorer` 与 App 文件 journal/resource helper 已删除；页面和 archive 格式适配器不直接导入 Data 实现。
 
@@ -21,3 +21,14 @@ Backup 归档 Vault 业务数据，不是 Room 数据库镜像。UI 与流程位
 - [导入规划、事务与文件恢复](import.md)
 - [Passly Archive v1 协议](passly-archive-v1.md)
 - [验证要求与测试映射](verification.md)
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 页面操作状态与命令 | `BackupViewModel.onAction(action)` | [`BackupViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/presentation/BackupViewModel.kt) |
+| 导入/导出流程编排 | `BackupArchiveServiceImpl.export(request)`、`import(request)` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt) |
+| 格式选择与自动导入识别 | `BackupFormatRegistry.exporter(formatId)`、`selectImporter(requestedFormat, source)` | [`BackupFormatRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatRegistry.kt) |
+| Archive 与 Domain 快照转换 | `AppBackupSnapshotGateway.read(options)`、`restore(bundle, mode)` | [`AppBackupSnapshotGateway.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGateway.kt) |
+| Room 快照及资源持久化 | `RoomVaultBackupStore.read(options)`、`restore(snapshot, mode)` | [`RoomVaultBackupStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStore.kt) |
+| 持久化中立的 Domain 合同 | `VaultBackupStore.read(options)`、`restore(snapshot, mode)` | [`VaultBackupStore.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/backup/port/VaultBackupStore.kt) |

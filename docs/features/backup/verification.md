@@ -1,6 +1,6 @@
 # Backup 验证要求
 
-状态：当前实现合同（代码核对：2026-11-07）。
+状态：当前实现合同（代码核对：2026-11-08）。
 
 协议或流程变化至少验证：
 
@@ -45,3 +45,13 @@ URI/格式/密码/策略/导入模式的流向、结果摘要合并，以及 ser
 异常映射、密码传递和资源清理都已覆盖。修改 Adapter 时还需分别核对 `PasslyJsonFormatAdapter.decode()`、
 `PasslyEncryptedFormatAdapter.decode()`、`BitwardenJsonImportAdapter.decode()` 的格式测试；修改文件事务时核对
 Restore journal 测试，而非只运行纯归档 codec 测试。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| Strict/compatible 条目校验与处置规划 | `BackupImportPlanner.plan(bundle, strategy)` | [`BackupImportPlanner.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlanner.kt) |
+| 归档导入导出编排、资源与错误收尾 | `BackupArchiveServiceImpl.export(request)`、`import(request)` | [`BackupArchiveServiceImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImpl.kt) |
+| 格式 Adapter 注册与导入格式选择 | `BackupFormatRegistry.exporter(formatId)`、`selectImporter(requestedFormat, source)` | [`BackupFormatRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/format/BackupFormatRegistry.kt) |
+| URI 文件访问与操作层补偿 | `BackupFileStore.openInput(uri)`、`openOutput(uri)`、`DefaultBackupOperationGateway.performExport(...)` | [`BackupFileStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/io/BackupFileStore.kt)、[`DefaultBackupOperationGateway.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt) |
+| Room 快照、恢复事务和资源合同 | `RoomVaultBackupStore.read(options)`、`restore(snapshot, mode)` | [`RoomVaultBackupStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStore.kt) |
