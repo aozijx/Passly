@@ -72,12 +72,12 @@ fun AuthenticationScreen(
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.APP_PASSWORD }
             ?.message
-            ?.localized()
+            ?.localized(appPasswordLabel)
     val recoveryCodeFailureMessage =
         verificationFailure
             ?.takeIf { it.method == AuthenticationMethod.RECOVERY_CODE }
             ?.message
-            ?.localized()
+            ?.localized(recoveryCodeLabel)
 
     Column(
         modifier =
@@ -320,16 +320,17 @@ private fun SensitiveValue.toUiString(): String {
 }
 
 @Composable
-private fun UnlockFailureMessage.localized(): String =
+private fun UnlockFailureMessage.localized(methodLabel: String? = null): String =
     when (this) {
         is UnlockFailureMessage.IncorrectCredential -> {
             if ((remainingAttempts ?: 0) > 0) {
                 stringResource(
                     R.string.auth_error_credential_incorrect_attempts,
+                    methodLabel.orEmpty(),
                     remainingAttempts ?: 0,
                 )
             } else {
-                stringResource(R.string.auth_error_credential_incorrect)
+                stringResource(R.string.auth_error_credential_incorrect, methodLabel.orEmpty())
             }
         }
 

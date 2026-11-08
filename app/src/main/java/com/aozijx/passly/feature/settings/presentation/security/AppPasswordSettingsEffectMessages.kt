@@ -68,6 +68,7 @@ private fun AuthenticationFailure.toMessage(context: Context): String =
             if ((attempts.remaining ?: 0) > 0) {
                 context.getString(
                     R.string.auth_error_credential_incorrect_attempts,
+                    context.getString(R.string.auth_app_password_label),
                     attempts.remaining ?: 0,
                 )
             } else {
