@@ -14,4 +14,13 @@ message SecurityPreferences {
     optional bool reauthenticate_sensitive_copies = 7 [default = true];
     optional bool clipboard_clear_enabled = 8 [default = true];
     optional int32 clipboard_clear_delay_seconds = 9 [default = 30];
+    repeated AuthenticationAttemptRecord credential_attempts = 10;
+}
+
+message AuthenticationAttemptRecord {
+    optional string method_key = 1;
+    optional int32 failed_attempts = 2 [default = 0];
+    optional int64 locked_until_epoch_ms = 3 [default = 0];
+    optional int64 locked_until_elapsed_realtime_ms = 4 [default = 0];
+    optional int32 boot_count = 5 [default = -1];
 }

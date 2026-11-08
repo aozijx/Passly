@@ -125,6 +125,7 @@ enum class CancellationReason { USER, CALLER, SESSION_LOCKED }
 
 enum class AuthenticationFailureCode {
     BUSY,
+    ATTEMPT_STATE_UNAVAILABLE,
     HOST_UNAVAILABLE,
     METHOD_UNAVAILABLE,
     KEY_MISSING,
