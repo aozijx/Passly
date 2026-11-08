@@ -16,30 +16,14 @@ enum class CardType(
     CREDIT(R.string.card_type_credit),
 }
 
-sealed interface CardTypeSelection {
-    data object Unselected : CardTypeSelection
-
-    data class Selected(
-        val type: CardType,
-    ) : CardTypeSelection
-}
-
-sealed interface CardExpirySelection {
-    data object NotSet : CardExpirySelection
-
-    data class Selected(
-        val value: CardExpiry,
-    ) : CardExpirySelection
-}
-
 data class AddBankCardFormState(
     val title: String = "",
-    val cardType: CardTypeSelection = CardTypeSelection.Unselected,
+    val cardType: CardType? = null,
     val cardholder: String = "",
     val cardNumber: String = "",
     val cardCvv: String = "",
     val paymentPin: String = "",
-    val cardExpiry: CardExpirySelection = CardExpirySelection.NotSet,
+    val cardExpiry: CardExpiry? = null,
     val billingAddress: String = "",
     val issuingBank: String = "",
     val bankBranch: String = "",

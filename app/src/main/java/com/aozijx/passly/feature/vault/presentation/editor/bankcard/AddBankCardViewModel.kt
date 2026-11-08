@@ -77,7 +77,7 @@ class AddBankCardViewModel
 
                 is AddBankCardAction.CardTypeChanged -> {
                     mutateForm {
-                        it.copy(cardType = CardTypeSelection.Selected(action.value))
+                        it.copy(cardType = action.value)
                     }
                 }
 

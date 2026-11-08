@@ -53,12 +53,12 @@ class BankCardFormMapperTest {
         val draft = form.toEntryDraft()
 
         assertEquals("Card", form.title)
-        assertEquals(CardTypeSelection.Selected(CardType.CREDIT), form.cardType)
+        assertEquals(CardType.CREDIT, form.cardType)
         assertEquals("Ada", form.cardholder)
         assertEquals("4111111111111111", form.cardNumber)
         assertEquals("123", form.cardCvv)
         assertEquals("4567", form.paymentPin)
-        assertEquals(CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030)), form.cardExpiry)
+        assertEquals(CardExpiry(month = 3, year = 2030), form.cardExpiry)
         assertEquals("London", form.billingAddress)
         assertEquals("Bank", form.issuingBank)
         assertEquals("Central", form.bankBranch)
@@ -92,12 +92,12 @@ class BankCardFormMapperTest {
         val draft =
             AddBankCardFormState(
                 title = " Personal Visa ",
-                cardType = CardTypeSelection.Selected(CardType.CREDIT),
+                cardType = CardType.CREDIT,
                 cardholder = " Ada Lovelace ",
                 cardNumber = " 4111 1111 1111 1111 ",
                 cardCvv = " 1 23 ",
                 paymentPin = " 1 2 3 4 ",
-                cardExpiry = CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030)),
+                cardExpiry = CardExpiry(month = 3, year = 2030),
                 billingAddress = " London ",
                 issuingBank = " Example Bank ",
                 bankBranch = " Central Branch ",
@@ -132,10 +132,11 @@ class BankCardFormMapperTest {
             AddBankCardFormState(
                 title = "Card",
                 cardNumber = "4111",
-                cardExpiry = CardExpirySelection.NotSet,
+                cardExpiry = null,
             ).toEntryDraft()
 
         assertNull(draft[FieldKey.CARD_EXPIRATION])
+        assertNull(draft[FieldKey.CARD_TYPE])
         assertNull(draft[FieldKey.CARD_CVV])
         assertNull(draft[FieldKey.PAYMENT_PIN])
         assertNull(draft[FieldKey.BILLING_ADDRESS])

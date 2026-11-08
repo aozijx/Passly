@@ -33,7 +33,6 @@ import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
-import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
@@ -224,7 +223,7 @@ fun AddBankCardEditorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTypeDropdown(
-    selected: CardTypeSelection,
+    selected: CardType?,
     onSelected: (CardType) -> Unit,
     label: String,
 ) {
@@ -234,11 +233,7 @@ private fun CardTypeDropdown(
         onExpandedChange = { expanded = it },
     ) {
         OutlinedTextField(
-            value =
-                when (selected) {
-                    CardTypeSelection.Unselected -> ""
-                    is CardTypeSelection.Selected -> selected.type.label()
-                },
+            value = selected?.label().orEmpty(),
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,

@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 
+import com.aozijx.passly.domain.entry.model.credential.CardExpiry
+
 sealed interface AddBankCardAction {
     data class TitleChanged(
         val value: String,
@@ -38,7 +40,7 @@ sealed interface AddBankCardAction {
     ) : AddBankCardAction
 
     data class ExpiryChanged(
-        val value: CardExpirySelection,
+        val value: CardExpiry?,
     ) : AddBankCardAction
 
     data class TagsChanged(

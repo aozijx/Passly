@@ -192,7 +192,7 @@ class AddBankCardViewModelTest {
             viewModel.onAction(AddBankCardAction.CardProductChanged("Travel Platinum"))
             viewModel.onAction(AddBankCardAction.CurrencyChanged("CNY / USD"))
             viewModel.onAction(AddBankCardAction.BankPhoneChanged("+86 123456"))
-            viewModel.onAction(AddBankCardAction.ExpiryChanged(CardExpirySelection.Selected(CardExpiry(month = 3, year = 2030))))
+            viewModel.onAction(AddBankCardAction.ExpiryChanged(CardExpiry(month = 3, year = 2030)))
 
             viewModel.onAction(AddBankCardAction.Save)
 

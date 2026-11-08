@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.editor.bankcard
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class CardExpirySelectionTest {
+class CardExpiryPickerTest {
     @Test
     fun yearRangeIncludesCurrentYearAndTwentyFutureYearsOnly() {
         val years = cardExpiryYearRange(currentYear = 2026)
