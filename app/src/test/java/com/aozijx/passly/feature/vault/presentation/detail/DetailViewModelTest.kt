@@ -137,7 +137,7 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(EntryRelationType.RELATED_TO, links.saved.single().relationType)
-                assertEquals(listOf(OTHER_ENTRY_ID), fixture.viewModel.uiState.value.relatedEntries.map { it.id })
+                assertEquals(listOf(OTHER_ENTRY_ID), fixture.viewModel.uiState.value.relatedPasswords.map { it.targetEntryId })
                 assertEquals(RelatedPasswordBindingUiState.Closed, fixture.viewModel.uiState.value.passwordBinding)
             } finally {
                 store.clear()

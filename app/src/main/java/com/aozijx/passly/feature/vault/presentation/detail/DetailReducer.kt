@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
@@ -91,9 +92,9 @@ internal sealed interface DetailMutation {
         val state: RelatedPasswordBindingUiState,
     ) : DetailMutation
 
-    data class RelatedEntriesChanged(
+    data class RelationsChanged(
         val entryId: EntryId,
-        val relatedEntries: List<Entry>,
+        val relations: DetailRelationsSnapshot,
     ) : DetailMutation
 
     data class SaveStarted(
@@ -195,8 +196,16 @@ internal object DetailReducer {
 
             is DetailMutation.PasswordBindingStateChanged -> state.copy(passwordBinding = mutation.state)
 
-            is DetailMutation.RelatedEntriesChanged ->
-                if (state.entry?.id == mutation.entryId) state.copy(relatedEntries = mutation.relatedEntries) else state
+            is DetailMutation.RelationsChanged ->
+                if (state.entry?.id == mutation.entryId) {
+                    state.copy(
+                        accountGroupEntries = mutation.relations.accountGroupEntries,
+                        otherRelatedEntries = mutation.relations.otherRelatedEntries,
+                        relatedPasswords = mutation.relations.relatedPasswords,
+                    )
+                } else {
+                    state
+                }
 
             is DetailMutation.SessionOpened -> {
                 mutation.snapshot.let { snapshot ->
@@ -207,7 +216,9 @@ internal object DetailReducer {
                         sections = presentation.sections,
                         associatedApps = presentation.associatedApps,
                         sensitiveFieldKeys = presentation.sensitiveFieldKeys,
-                        relatedEntries = snapshot.relatedEntries,
+                        accountGroupEntries = snapshot.accountGroupEntries,
+                        otherRelatedEntries = snapshot.otherRelatedEntries,
+                        relatedPasswords = snapshot.relatedPasswords,
                         isEditingTitle = false,
                         editedTitle = presentation.entry.detailDisplayTitle,
                     )

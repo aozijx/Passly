@@ -25,7 +25,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailPresen
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedPasswordUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.ScopedSensitiveText
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorOverlayUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.TagEditorValidationErrorUiModel
@@ -47,9 +47,22 @@ internal fun detailContentUiModel(
     entry: Entry,
     state: DetailUiState,
 ) = DetailContentUiModel(
-    relatedEntries =
-        state.relatedEntries.map {
+    accountGroupEntries =
+        state.accountGroupEntries.map {
             RelatedEntryUiModel(it.id.value, it.title, it.type)
+        },
+    otherRelatedEntries =
+        state.otherRelatedEntries.map {
+            RelatedEntryUiModel(it.id.value, it.title, it.type)
+        },
+    relatedPasswords =
+        state.relatedPasswords.map {
+            RelatedPasswordUiModel(
+                linkId = it.linkId.value,
+                targetEntryId = it.targetEntryId.value,
+                title = it.title,
+                username = it.username,
+            )
         },
     metadata = DetailMetadataUiModel(entry.createdAt, entry.updatedAt),
     activities =
@@ -164,7 +177,9 @@ internal fun toDetailPresentationModel(
                     } else {
                         null
                     },
-                relatedEntries = shared.relatedEntries,
+                accountGroupEntries = shared.accountGroupEntries,
+                otherRelatedEntries = shared.otherRelatedEntries,
+                relatedPasswords = shared.relatedPasswords,
                 canBindPasswords = entry.type == EntryType.LOGIN && entry.deletedAt == null,
                 passwordBinding = state.passwordBinding,
                 tags = entry.tags,

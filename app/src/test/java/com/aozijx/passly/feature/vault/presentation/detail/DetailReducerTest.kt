@@ -11,8 +11,11 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
+import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import org.junit.Assert.assertEquals
@@ -22,6 +25,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailReducerTest {
+    @Test
+    fun relationRefreshUpdatesAllProjectionsOnlyForTheCurrentEntry() {
+        val current = entry("current")
+        val accountEntry = entry("account")
+        val otherEntry = entry("other")
+        val relatedPassword = DetailRelatedPassword(EntryLinkId("link"), EntryId("target"), "Target", "user")
+        val relations = DetailRelationsSnapshot(listOf(accountEntry), listOf(otherEntry), listOf(relatedPassword))
+        val initial = DetailUiState(entry = current)
+
+        val updated =
+            DetailReducer.reduce(
+                initial,
+                DetailMutation.RelationsChanged(current.id, relations),
+            )
+        val stale =
+            DetailReducer.reduce(
+                updated,
+                DetailMutation.RelationsChanged(EntryId("replacement"), DetailRelationsSnapshot(emptyList(), emptyList(), emptyList())),
+            )
+
+        assertEquals(listOf(accountEntry), updated.accountGroupEntries)
+        assertEquals(listOf(otherEntry), updated.otherRelatedEntries)
+        assertEquals(listOf(relatedPassword), updated.relatedPasswords)
+        assertEquals(updated, stale)
+    }
+
     @Test
     fun unchangedTitleCompletionUsesTheStoredDisplayTitle() {
         val latest = entry("Canonical")

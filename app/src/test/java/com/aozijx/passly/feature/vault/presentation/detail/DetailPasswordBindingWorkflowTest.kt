@@ -105,7 +105,7 @@ class DetailPasswordBindingWorkflowTest {
             runCurrent()
 
             assertTrue(fixture.links.upserts.isEmpty())
-            assertEquals(0, fixture.relatedEntriesUpdates)
+            assertEquals(0, fixture.relationUpdates)
         }
 
     @Test
@@ -119,8 +119,8 @@ class DetailPasswordBindingWorkflowTest {
             runCurrent()
 
             assertEquals(RelatedPasswordBindingUiState.Closed, fixture.bindingState)
-            assertEquals(1, fixture.relatedEntriesUpdates)
-            assertEquals(listOf(EntryId("target")), fixture.refreshedRelatedIds)
+            assertEquals(1, fixture.relationUpdates)
+            assertEquals(listOf(EntryId("target")), fixture.refreshedRelationIds)
         }
 
     @Test
@@ -136,7 +136,7 @@ class DetailPasswordBindingWorkflowTest {
             val ready = fixture.bindingState as RelatedPasswordBindingUiState.Ready
             assertEquals(true, ready.bindFailed)
             assertEquals(null, ready.savingEntryId)
-            assertEquals(0, fixture.relatedEntriesUpdates)
+            assertEquals(0, fixture.relationUpdates)
         }
 
     @Test
@@ -184,8 +184,8 @@ class DetailPasswordBindingWorkflowTest {
         var currentEntry = entry("source")
         val links = TestLinks(linkWriteGate, failLinkWrite)
         val entries = TestEntries(candidateGate)
-        var relatedEntriesUpdates = 0
-        var refreshedRelatedIds: List<EntryId> = emptyList()
+        var relationUpdates = 0
+        var refreshedRelationIds: List<EntryId> = emptyList()
         val workSession =
             DetailWorkSession(
                 hasAccess = { access.hasFullSecureSessionAccess() },
@@ -204,11 +204,11 @@ class DetailPasswordBindingWorkflowTest {
                 workSession = workSession,
                 currentEntry = { currentEntry },
                 currentBindingState = { bindingState },
-                presentationLoader = presentationLoader(links) { refreshedRelatedIds = it },
+                presentationLoader = presentationLoader(links) { refreshedRelationIds = it },
                 publish = { mutation ->
                     when (mutation) {
                         is DetailMutation.PasswordBindingStateChanged -> bindingState = mutation.state
-                        is DetailMutation.RelatedEntriesChanged -> relatedEntriesUpdates++
+                        is DetailMutation.RelationsChanged -> relationUpdates++
                         else -> Unit
                     }
                 },
@@ -266,7 +266,7 @@ class DetailPasswordBindingWorkflowTest {
     private companion object {
         fun presentationLoader(
             links: TestLinks,
-            onRelatedEntriesLoaded: (List<EntryId>) -> Unit,
+            onRelationEntryIdsRequested: (List<EntryId>) -> Unit,
         ): DetailPresentationLoader =
             DetailPresentationLoader(
                 sessionQuery =
@@ -281,7 +281,7 @@ class DetailPasswordBindingWorkflowTest {
                                     }
 
                                 override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> {
-                                    onRelatedEntriesLoaded(entryIds)
+                                    onRelationEntryIdsRequested(entryIds)
                                     return entryIds.mapNotNull { id ->
                                         when (id) {
                                             EntryId("source") -> entry("source")

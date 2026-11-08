@@ -86,9 +86,9 @@ internal class DetailPasswordBindingWorkflow(
                         }
                         return@launch
                     }
-                    val relatedEntries = presentationLoader.reloadRelatedEntries(entry.id) ?: return@launch
+                    val relations = presentationLoader.reloadRelations(entry.id) ?: return@launch
                     if (!isCurrent(entry.id, token, authentication)) return@launch
-                    publish(DetailMutation.RelatedEntriesChanged(entry.id, relatedEntries))
+                    publish(DetailMutation.RelationsChanged(entry.id, relations))
                     if (currentBindingState() != RelatedPasswordBindingUiState.Closed) {
                         publish(state(RelatedPasswordBindingUiState.Closed))
                     }

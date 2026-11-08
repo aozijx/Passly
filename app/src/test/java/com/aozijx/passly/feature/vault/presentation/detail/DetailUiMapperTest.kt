@@ -13,8 +13,10 @@ import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
@@ -143,7 +145,17 @@ class DetailUiMapperTest {
         val state =
             DetailUiState(
                 entry = entry,
-                relatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("related")))),
+                accountGroupEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("account-member")))),
+                otherRelatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("other-relation")))),
+                relatedPasswords =
+                    listOf(
+                        DetailRelatedPassword(
+                            linkId = EntryLinkId("related-link"),
+                            targetEntryId = EntryId("related-password"),
+                            title = "Related password",
+                            username = "person@example.test",
+                        ),
+                    ),
                 history =
                     listOf(
                         EntryActivity(
@@ -156,7 +168,11 @@ class DetailUiMapperTest {
 
         val ui = detailContentUiModel(entry, state)
 
-        assertEquals("related", ui.relatedEntries.single().id)
+        assertEquals("account-member", ui.accountGroupEntries.single().id)
+        assertEquals("other-relation", ui.otherRelatedEntries.single().id)
+        assertEquals("related-link", ui.relatedPasswords.single().linkId)
+        assertEquals("related-password", ui.relatedPasswords.single().targetEntryId)
+        assertEquals("person@example.test", ui.relatedPasswords.single().username)
         assertEquals(1L, ui.metadata.createdAt)
         assertEquals(1L, ui.metadata.updatedAt)
         assertEquals(ActivityType.AUTOFILL, ui.activities.single().type)

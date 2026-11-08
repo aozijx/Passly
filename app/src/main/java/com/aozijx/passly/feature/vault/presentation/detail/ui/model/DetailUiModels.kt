@@ -15,7 +15,9 @@ data class DetailHeaderUiModel(
 )
 
 data class DetailContentUiModel(
-    val relatedEntries: List<RelatedEntryUiModel>,
+    val accountGroupEntries: List<RelatedEntryUiModel>,
+    val otherRelatedEntries: List<RelatedEntryUiModel>,
+    val relatedPasswords: List<RelatedPasswordUiModel>,
     val metadata: DetailMetadataUiModel,
     val activities: List<DetailActivityUiModel>,
 )
@@ -48,6 +50,13 @@ data class RelatedEntryUiModel(
     val id: String,
     val title: String,
     val entryType: EntryType,
+)
+
+data class RelatedPasswordUiModel(
+    val linkId: String,
+    val targetEntryId: String,
+    val title: String,
+    val username: String,
 )
 
 data class DetailAssociatedInfoUiModel(

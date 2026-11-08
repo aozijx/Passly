@@ -48,9 +48,12 @@
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailReducer.kt`
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiState.kt`
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiMapper.kt`
+- Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordBindingWorkflow.kt`
+- Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/DetailBody.kt`
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/model/DetailUiModels.kt`
 - Modify `app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/model/DetailPresentationModels.kt`
 - Modify `app/src/test/java/com/aozijx/passly/feature/vault/detail/DetailSessionQueryTest.kt`
+- Modify `app/src/test/java/com/aozijx/passly/feature/vault/presentation/detail/DetailReducerTest.kt`
 - Modify `app/src/test/java/com/aozijx/passly/feature/vault/presentation/detail/DetailUiMapperTest.kt`
 - Replace `app/src/test/java/com/aozijx/passly/feature/vault/detail/DetailRelatedEntryIdsTest.kt` with coverage in `DetailSessionQueryTest.kt`
 
@@ -59,14 +62,14 @@
 - Change `DetailSessionData` and `DetailSessionSnapshot` to expose `accountGroupEntries: List<Entry>`, `otherRelatedEntries: List<Entry>`, and `relatedPasswords: List<DetailRelatedPassword>`; retain `detail` / `presentation` as they are.
 - Replace `resolveRelatedEntryIds(...)` with `resolveAccountGroupEntryIds(...)`; direct `RELATED_TO` neighbors no longer enter the account-group list.
 - Add `resolveOtherRelatedEntryIds(...)` for direct `RELATED_TO` neighbors not represented by an eligible active Login-to-Login password link, preserving existing rows for non-Login or inactive endpoints.
-- Add `DetailRelationsSnapshot(accountGroupEntries: List<Entry>, relatedPasswords: List<DetailRelatedPassword>)` in `DetailPresentationLoader.kt`; `reloadRelations(entryId)` returns this snapshot.
+- Define one `DetailRelationsSnapshot(accountGroupEntries: List<Entry>, otherRelatedEntries: List<Entry>, relatedPasswords: List<DetailRelatedPassword>)` beside the query projection in `DetailSessionQuery.kt`; `DetailPresentationLoader.reloadRelations(entryId)` returns it directly without copying the snapshot model.
 - Add `resolveDirectPasswordLinks(source: Entry, links: List<EntryLink>): List<EntryLink>`; it returns only incident `RELATED_TO` links when `source` is an active LOGIN. Filter loaded targets to active LOGIN entries before creating `DetailRelatedPassword` values.
 
-- [ ] **Step 1: Add failing query tests.** In `DetailSessionQueryTest`, add `accountGroupAndDirectPasswordRelationsLoadInOneBatch` (assert distinct projections, retained link ID/username, one ID batch) and `directPasswordProjectionIncludesOnlyActiveLoginRelatedToLinks` (assert reversed links resolve; deleted/non-LOGIN source or target and other relation types are excluded). Assert non-eligible existing `RELATED_TO` rows remain in the navigable other-relations projection.
-- [ ] **Step 2: Run the focused query tests and confirm they fail** because the split projection does not yet exist.
-- [ ] **Step 3: Implement the split projection** from the existing single `getAll()` link snapshot. Build the union of account-group IDs, other relation IDs, and direct-link target IDs for one batch read; filter removable direct rows to active LOGIN endpoints while retaining other existing `RELATED_TO` rows. Rename the old merged-ID helper and replace obsolete mixed-projection tests.
-- [ ] **Step 4: Carry both projections through Detail loading and state.** Update loader snapshots, mutations, reducer, `DetailUiState`, and UI mapping; keep existing account-group behavior and ordering.
-- [ ] **Step 5: Run `:app:testDebugUnitTest --tests "com.aozijx.passly.feature.vault.detail.DetailSessionQueryTest" --tests "com.aozijx.passly.feature.vault.presentation.detail.DetailUiMapperTest"` and commit** as `refactor(vault): separate account and password relations`.
+- [x] **Step 1: Add failing tests.** `DetailSessionQueryTest` covers distinct one-batch projections, retained link ID/username, a target that is both an account member and direct password, reversed link endpoints, deleted/non-LOGIN source or target, unrelated relation kinds, and navigable ineligible direct relations. `DetailReducerTest` verifies all three projections update only for the current entry.
+- [x] **Step 2: Run the focused query tests and confirm they fail** because the split projection does not yet exist.
+- [x] **Step 3: Implement the split projection** from the existing single `getAll()` link snapshot. Build the union of account-group IDs and direct relation IDs for one batch read; filter removable direct rows to active LOGIN endpoints while retaining other existing `RELATED_TO` rows. Rename the old merged-ID helper and replace obsolete mixed-projection tests.
+- [x] **Step 4: Carry the projections through Detail loading and state.** Update loader snapshots, mutations, reducer, `DetailUiState`, existing binding refresh, and UI mapping; keep existing account-group behavior and ordering.
+- [x] **Step 5: Run the focused query, loader, mapper, reducer, binding workflow, and Detail ViewModel tests plus `git diff --check`; then commit** as `refactor(vault): separate account and password relations`.
 
 ### Task 2: Make the related-password service own binding and unlinking
 

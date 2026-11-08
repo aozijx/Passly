@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
@@ -47,6 +48,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSect
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailBodyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.model.DetailSectionUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.model.RelatedEntryUiModel
 
 @Composable
 fun DetailBody(
@@ -56,6 +58,20 @@ fun DetailBody(
     modifier: Modifier = Modifier,
 ) {
     var showPackagePicker by remember { mutableStateOf(false) }
+    val relatedEntries =
+        buildList {
+            addAll(model.accountGroupEntries)
+            addAll(model.otherRelatedEntries)
+            model.relatedPasswords.forEach { relatedPassword ->
+                add(
+                    RelatedEntryUiModel(
+                        id = relatedPassword.targetEntryId,
+                        title = relatedPassword.title,
+                        entryType = EntryType.LOGIN,
+                    ),
+                )
+            }
+        }
 
     Column(modifier = modifier.fillMaxSize()) {
         when (model.snapshotState) {
@@ -199,10 +215,10 @@ fun DetailBody(
                     }
                 }
             }
-            if (model.relatedEntries.isNotEmpty() || model.canBindPasswords) {
+            if (relatedEntries.isNotEmpty() || model.canBindPasswords) {
                 item {
                     RelatedEntriesSection(
-                        entries = model.relatedEntries,
+                        entries = relatedEntries,
                         canBindPasswords = model.canBindPasswords,
                         onAction = onAction,
                         onOpenEntry = onOpenRelatedEntry,

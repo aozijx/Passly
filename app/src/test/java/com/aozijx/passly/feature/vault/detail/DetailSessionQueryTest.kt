@@ -30,12 +30,12 @@ import org.junit.Test
 
 class DetailSessionQueryTest {
     @Test
-    fun `related account group and password links load through one batch`() = runTest {
+    fun `account group and direct password projections stay distinct and load in one batch`() = runTest {
         val current = entry("login", EntryType.LOGIN)
         val related = listOf(
             entry("account", EntryType.ACCOUNT),
             entry("otp", EntryType.OTP),
-            entry("sibling", EntryType.LOGIN),
+            entry("sibling", EntryType.LOGIN, username = "member@example.test"),
         )
         val query = RecordingEntryQuery(current, related)
         val sessionQuery =
@@ -46,6 +46,7 @@ class DetailSessionQueryTest {
                     listOf(
                         link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
                         link("otp", "otp", "login", EntryRelationType.OTP_FOR),
+                        link("sibling-member", "sibling", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
                         link("related", "login", "sibling", EntryRelationType.RELATED_TO),
                     ),
                 ),
@@ -53,9 +54,105 @@ class DetailSessionQueryTest {
 
         val result = sessionQuery.open(current.id)
 
-        assertEquals(listOf(EntryId("account"), EntryId("otp"), EntryId("sibling")), query.batchRequests.single())
-        assertEquals(listOf("account", "otp", "sibling"), result?.relatedEntries?.map { it.id.value })
+        assertEquals(listOf(EntryId("account"), EntryId("sibling"), EntryId("otp")), query.batchRequests.single())
+        assertEquals(listOf("account", "sibling", "otp"), result?.accountGroupEntries?.map { it.id.value })
+        assertEquals(emptyList<Entry>(), result?.otherRelatedEntries)
+        assertEquals(
+            listOf(DetailRelatedPassword(EntryLinkId("related"), EntryId("sibling"), "sibling", "member@example.test")),
+            result?.relatedPasswords,
+        )
         assertEquals(1, query.singleReads)
+    }
+
+    @Test
+    fun `direct password projection excludes ineligible relation targets`() = runTest {
+        val current = entry("login", EntryType.LOGIN)
+        val activeLogin = entry("sibling", EntryType.LOGIN)
+        val deletedLogin = entry("deleted", EntryType.LOGIN, deletedAt = 2L)
+        val nonLogin = entry("otp", EntryType.OTP)
+        val query = RecordingEntryQuery(current, listOf(activeLogin, nonLogin, deletedLogin))
+        val sessionQuery =
+            DetailSessionQuery(
+                entryQueryRepository = query,
+                sensitiveFieldRepository = EmptySensitiveFieldRepository,
+                entryLinkRepository = TestLinks(
+                    listOf(
+                        link("valid", "sibling", "login", EntryRelationType.RELATED_TO),
+                        link("ineligible", "login", "otp", EntryRelationType.RELATED_TO),
+                        link("deleted", "login", "deleted", EntryRelationType.RELATED_TO),
+                        link("other-kind", "otp", "login", EntryRelationType.OTP_FOR),
+                    ),
+                ),
+            )
+
+        val result = sessionQuery.open(current.id)
+
+        assertEquals(listOf("sibling"), result?.relatedPasswords?.map { it.targetEntryId.value })
+        assertEquals(listOf("otp", "deleted"), result?.otherRelatedEntries?.map { it.id.value })
+        assertEquals(1, query.batchRequests.size)
+    }
+
+    @Test
+    fun `non login source keeps direct login relation navigable without exposing unlink`() = runTest {
+        val current = entry("otp", EntryType.OTP)
+        val relatedLogin = entry("login", EntryType.LOGIN)
+        val query = RecordingEntryQuery(current, listOf(relatedLogin))
+        val sessionQuery =
+            DetailSessionQuery(
+                entryQueryRepository = query,
+                sensitiveFieldRepository = EmptySensitiveFieldRepository,
+                entryLinkRepository = TestLinks(
+                    listOf(link("related", "otp", "login", EntryRelationType.RELATED_TO)),
+                ),
+            )
+
+        val result = sessionQuery.open(current.id)
+
+        assertEquals(emptyList<DetailRelatedPassword>(), result?.relatedPasswords)
+        assertEquals(listOf("login"), result?.otherRelatedEntries?.map { it.id.value })
+    }
+
+    @Test
+    fun `deleted login source keeps direct login relation navigable without exposing unlink`() = runTest {
+        val current = entry("deleted-source", EntryType.LOGIN, deletedAt = 2L)
+        val relatedLogin = entry("login", EntryType.LOGIN)
+        val query = RecordingEntryQuery(current, listOf(relatedLogin))
+        val sessionQuery =
+            DetailSessionQuery(
+                entryQueryRepository = query,
+                sensitiveFieldRepository = EmptySensitiveFieldRepository,
+                entryLinkRepository = TestLinks(
+                    listOf(link("related", "deleted-source", "login", EntryRelationType.RELATED_TO)),
+                ),
+            )
+
+        val result = sessionQuery.open(current.id)
+
+        assertEquals(emptyList<DetailRelatedPassword>(), result?.relatedPasswords)
+        assertEquals(listOf("login"), result?.otherRelatedEntries?.map { it.id.value })
+    }
+
+    @Test
+    fun `account group id projection retains graph semantics`() {
+        val links =
+            listOf(
+                link("member", "login", "account", EntryRelationType.MEMBER_OF_ACCOUNT),
+                link("otp", "otp", "login", EntryRelationType.OTP_FOR),
+                link("recovery", "recovery", "account", EntryRelationType.RECOVERY_FOR),
+            )
+
+        assertEquals(
+            linkedSetOf(EntryId("login"), EntryId("recovery"), EntryId("otp")),
+            resolveAccountGroupEntryIds(EntryId("account"), EntryType.ACCOUNT, links),
+        )
+        assertEquals(
+            linkedSetOf(EntryId("account"), EntryId("recovery"), EntryId("otp")),
+            resolveAccountGroupEntryIds(EntryId("login"), EntryType.LOGIN, links),
+        )
+        assertEquals(
+            emptySet<EntryId>(),
+            resolveAccountGroupEntryIds(EntryId("note"), EntryType.NOTE, links),
+        )
     }
 
     private class RecordingEntryQuery(
@@ -107,10 +204,15 @@ class DetailSessionQueryTest {
         override suspend fun readBundle(entryId: EntryId): EntrySecret = EntrySecret()
     }
 
-    private fun entry(id: String, type: EntryType) =
+    private fun entry(
+        id: String,
+        type: EntryType,
+        username: String = "",
+        deletedAt: Long? = null,
+    ) =
         Entry(
-            identity = EntryIdentity(EntryId(id), type, timestamps = EntryTimestamps(1L)),
-            profile = EntryProfile(title = id),
+            identity = EntryIdentity(EntryId(id), type, timestamps = EntryTimestamps(1L, deletedAtMs = deletedAt)),
+            profile = EntryProfile(title = id, username = username),
             secret =
                 when (type) {
                     EntryType.LOGIN -> EntrySecret(LoginCredential())

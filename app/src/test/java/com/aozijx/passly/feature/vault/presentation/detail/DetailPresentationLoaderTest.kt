@@ -24,6 +24,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionResolver
 import kotlinx.coroutines.flow.Flow
@@ -62,7 +63,9 @@ class DetailPresentationLoaderTest {
                 session.presentation.associatedApps,
             )
             assertEquals(setOf(SensitiveFieldKey.PASSWORD), session.presentation.sensitiveFieldKeys)
-            assertEquals(listOf(member), session.relatedEntries)
+            assertEquals(listOf(member), session.accountGroupEntries)
+            assertEquals(emptyList<Entry>(), session.otherRelatedEntries)
+            assertEquals(emptyList<DetailRelatedPassword>(), session.relatedPasswords)
             assertEquals(listOf(account.id), sensitiveFields.presenceRequests)
         }
 

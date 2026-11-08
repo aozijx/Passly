@@ -5,6 +5,8 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.vault.detail.DetailEntryData
+import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
+import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
 import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionResolver
@@ -21,7 +23,9 @@ internal data class DetailEntryPresentation(
 
 internal data class DetailSessionSnapshot(
     val presentation: DetailEntryPresentation,
-    val relatedEntries: List<Entry>,
+    val accountGroupEntries: List<Entry>,
+    val otherRelatedEntries: List<Entry>,
+    val relatedPasswords: List<DetailRelatedPassword>,
 )
 
 internal class DetailPresentationLoader
@@ -34,14 +38,16 @@ internal class DetailPresentationLoader
             val session = sessionQuery.open(entryId) ?: return null
             return DetailSessionSnapshot(
                 presentation = present(session.detail),
-                relatedEntries = session.relatedEntries,
+                accountGroupEntries = session.accountGroupEntries,
+                otherRelatedEntries = session.otherRelatedEntries,
+                relatedPasswords = session.relatedPasswords,
             )
         }
 
         suspend fun present(entry: Entry): DetailEntryPresentation = present(sessionQuery.snapshot(entry))
 
-        suspend fun reloadRelatedEntries(entryId: EntryId): List<Entry>? =
-            sessionQuery.reloadRelatedEntries(entryId)
+        suspend fun reloadRelations(entryId: EntryId): DetailRelationsSnapshot? =
+            sessionQuery.reloadRelations(entryId)
 
         suspend fun launchableApps(): List<DetailInstalledApp> =
             installedAppDirectory.launchableApps().map { metadata ->
@@ -67,4 +73,4 @@ internal class DetailPresentationLoader
                     packageName = packageName,
                 )
             }
-    }
+}
