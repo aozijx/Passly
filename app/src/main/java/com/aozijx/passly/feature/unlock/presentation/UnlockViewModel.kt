@@ -372,17 +372,29 @@ class UnlockViewModel
             job =
                 viewModelScope.launch(start = CoroutineStart.LAZY) {
                     try {
-                        var status = attemptStatusProvider.status(method)
-                        mutate(UnlockMutation.AuthenticationAttemptStatusChanged(method, status))
-                        while (status.retryAfterMs != null) {
-                            delay(1_000L)
+                        var status = _uiState.value.authenticationAttemptStatuses[method]
+                        try {
                             status = attemptStatusProvider.status(method)
+                            mutate(UnlockMutation.AuthenticationAttemptStatusChanged(method, status))
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            if (status?.retryAfterMs == null) return@launch
+                        }
+                        while (status?.retryAfterMs != null) {
+                            delay(1_000L)
+                            status =
+                                try {
+                                    attemptStatusProvider.status(method)
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (_: Exception) {
+                                    continue
+                                }
                             mutate(UnlockMutation.AuthenticationAttemptStatusChanged(method, status))
                         }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
-                    } catch (_: Exception) {
-                        // The authentication result already carries the last known attempt state.
                     } finally {
                         if (attemptStatusJobs[method] === job) attemptStatusJobs.remove(method)
                     }
