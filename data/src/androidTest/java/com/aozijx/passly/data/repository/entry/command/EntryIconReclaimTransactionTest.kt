@@ -8,6 +8,7 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.TestDatabaseFactory
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
+import com.aozijx.passly.data.testing.IsolatedTestContext
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -15,17 +16,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class EntryIconReclaimTransactionTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private lateinit var database: AppDatabase
     private lateinit var root: File
 
     @Before
     fun setUp() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
+        val context = IsolatedTestContext(ApplicationProvider.getApplicationContext(), temporaryFolder.root)
         root = File(context.cacheDir, "icon-reclaim-test").apply { mkdirs() }
         database = TestDatabaseFactory.inMemoryDatabaseBuilder(context).build()
     }

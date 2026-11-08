@@ -17,20 +17,30 @@ import com.aozijx.passly.core.observability.TraceResumeResult
 import com.aozijx.passly.core.observability.TraceScope
 import com.aozijx.passly.core.observability.trace.TraceToken
 import com.aozijx.passly.data.local.database.entity.EntryEntity
+import com.aozijx.passly.data.testing.IsolatedTestContext
 import kotlinx.coroutines.runBlocking
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class DatabaseSchemaCompatibilityTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     @Test
     fun schemaMismatchFailsOpenAndPreservesExistingEntryAndLegacyAttachmentSchema() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context =
+                IsolatedTestContext(
+                    ApplicationProvider.getApplicationContext(),
+                    temporaryFolder.root,
+                )
             val databaseName = "legacy_attachment_schema_test.db"
             context.deleteDatabase(databaseName)
             val provider = DatabaseProvider(context, NoOpLogger)

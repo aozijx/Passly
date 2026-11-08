@@ -31,6 +31,7 @@ import com.aozijx.passly.data.local.database.session.AppDatabaseSessionResource
 import com.aozijx.passly.data.local.database.session.DatabaseSessionEventLogger
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
+import com.aozijx.passly.data.testing.IsolatedTestContext
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.backup.model.VaultBackupReadOptions
@@ -56,14 +57,18 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class RoomVaultBackupStoreTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     private lateinit var context: Context
     private lateinit var session: AppDatabaseSession
     private lateinit var access: SecureSessionAccessState
@@ -73,7 +78,7 @@ class RoomVaultBackupStoreTest {
     @Before
     fun setUp() {
         System.loadLibrary("sqlcipher")
-        context = ApplicationProvider.getApplicationContext()
+        context = IsolatedTestContext(ApplicationProvider.getApplicationContext(), temporaryFolder.root)
         context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
         val logger = NoOpLogger
         access = TestSessionAccess()
@@ -285,7 +290,7 @@ class RoomVaultBackupStoreTest {
                     TestAttachmentContentProtector.failEncrypt = false
                 }
 
-            assertNotNull(failure)
+            assertEquals("Injected attachment encryption failure", failure?.message)
             assertTrue(session.queryForMaintenance { entryQueryDao().exists("existing") })
             assertFalse(session.queryForMaintenance { entryQueryDao().exists("entry-rollback") })
             assertTrue(

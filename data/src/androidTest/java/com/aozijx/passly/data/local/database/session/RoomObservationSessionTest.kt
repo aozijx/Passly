@@ -28,6 +28,7 @@ import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.entity.EntryRevisionEntity
 import com.aozijx.passly.data.local.database.port.VaultDatabaseResetController
 import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
+import com.aozijx.passly.data.testing.IsolatedTestContext
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -74,16 +75,21 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class RoomObservationSessionTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     @Test
     fun databaseCommandsRecheckAuthorizationAfterLeaseAcquisition() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = AccessAfterFirstCheck()
@@ -126,7 +132,7 @@ class RoomObservationSessionTest {
     fun revokedAccessRejectsNewRoomCommandsWhileAdmittedTransactionFinishes() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = MutableAuthenticatedAccess()
@@ -195,7 +201,7 @@ class RoomObservationSessionTest {
     fun activePagingRestartsOnceAfterDatabaseResetAndKeepsQueryFilters() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = FixedAuthenticatedAccess()
@@ -340,7 +346,7 @@ class RoomObservationSessionTest {
     fun sealingWaitsForActiveRoomTransactionBeforeClosingDatabase() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = FixedAuthenticatedAccess()
@@ -393,7 +399,7 @@ class RoomObservationSessionTest {
     fun sealingTimeoutCancelsRoomTransactionBeforeClosingDatabase() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val session =
@@ -437,7 +443,7 @@ class RoomObservationSessionTest {
     fun activeRoomCollectorsEmitEmptyOnDatabaseOnlySealAndResubscribeAfterReopen() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = FixedAuthenticatedAccess()
@@ -543,7 +549,7 @@ class RoomObservationSessionTest {
     fun roomObservationCancelsBlockedDaoEmissionAndResubscribesAfterSoftLockAndSeal() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = FixedAuthenticatedAccess()
@@ -609,7 +615,7 @@ class RoomObservationSessionTest {
     fun roomObservationContainsSessionLockedRaceAndResubscribesAfterReopen() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = testContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val access = FixedAuthenticatedAccess()
@@ -860,4 +866,10 @@ class RoomObservationSessionTest {
     private companion object {
         val DATABASE_KEY = "Room observation session test database key".toByteArray()
     }
+
+    private fun testContext(): Context =
+        IsolatedTestContext(
+            ApplicationProvider.getApplicationContext(),
+            temporaryFolder.root,
+        )
 }

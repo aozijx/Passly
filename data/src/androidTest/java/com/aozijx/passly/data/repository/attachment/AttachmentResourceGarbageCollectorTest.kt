@@ -22,6 +22,7 @@ import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.local.database.session.AppDatabaseSessionResource
 import com.aozijx.passly.data.local.database.session.DatabaseSessionEventLogger
+import com.aozijx.passly.data.testing.IsolatedTestContext
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.runtime.session.SecureSessionState
@@ -35,16 +36,21 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AttachmentResourceGarbageCollectorTest {
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
     @Test
     fun unlockDrainsMoreThanOnePendingBatch() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = isolatedContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val (session, access) = createSession(context, logger)
@@ -91,7 +97,7 @@ class AttachmentResourceGarbageCollectorTest {
     fun failedFileDeletionRetriesWithoutAnotherSessionWakeup() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = isolatedContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val logger = NoOpLogger
             val (session, access) = createSession(context, logger)
@@ -144,7 +150,7 @@ class AttachmentResourceGarbageCollectorTest {
     fun unlockAutomaticallyResumesDurablePendingGarbageCollection() =
         runBlocking {
             System.loadLibrary("sqlcipher")
-            val context = ApplicationProvider.getApplicationContext<Context>()
+            val context = isolatedContext()
             context.deleteDatabase(DatabaseSchema.DATABASE_NAME)
             val resourceId = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
             val resourceFile =
@@ -316,4 +322,10 @@ class AttachmentResourceGarbageCollectorTest {
     private companion object {
         val DATABASE_KEY = "Attachment GC restart test database key".toByteArray()
     }
+
+    private fun isolatedContext(): Context =
+        IsolatedTestContext(
+            ApplicationProvider.getApplicationContext(),
+            temporaryFolder.root,
+        )
 }
