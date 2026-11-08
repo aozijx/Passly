@@ -1,31 +1,14 @@
 package com.aozijx.passly.security.session
-import com.aozijx.passly.core.observability.ErrorCode
-import com.aozijx.passly.core.observability.EventKey
+
 import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.LogFields
-import com.aozijx.passly.core.observability.Logger
-import com.aozijx.passly.core.observability.OperationCode
-import com.aozijx.passly.core.observability.ReasonCode
-import com.aozijx.passly.core.observability.SpanId
-import com.aozijx.passly.core.observability.TraceId
-import com.aozijx.passly.core.observability.TraceResumeResult
-import com.aozijx.passly.core.observability.TraceScope
-import com.aozijx.passly.core.observability.trace.TraceToken
-import com.aozijx.passly.domain.access.model.AuthenticationCredentialSnapshot
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthenticationState
-import com.aozijx.passly.domain.access.model.BiometricBinding
-import com.aozijx.passly.domain.access.model.BiometricBootstrapState
-import com.aozijx.passly.domain.access.model.BiometricRotationJournal
 import com.aozijx.passly.domain.access.model.EnvelopeType
-import com.aozijx.passly.domain.access.model.KeyEnvelope
 import com.aozijx.passly.domain.access.model.LockReason
 import com.aozijx.passly.domain.access.model.LockTrigger
 import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.DatabaseSessionRetryResult
-import com.aozijx.passly.domain.access.port.VaultBootstrapStore
 import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
-import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.dek.DekManager
@@ -38,26 +21,13 @@ import com.aozijx.passly.security.lock.LockStateManager
 import java.security.SecureRandom
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -71,9 +41,9 @@ class VaultSessionControllerLifecycleTest {
         runMainTest { dispatcher ->
             val clearStarted = CompletableDeferred<Unit>()
             val finishClear = CompletableDeferred<Unit>()
-            val databaseSession = YieldingDatabaseSession(pauseSoftLock = true)
+            val databaseSession = VaultSessionTestDatabaseSession(pauseSoftLock = true)
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = databaseSession,
                     timeout = MutableStateFlow(1_000L),
@@ -118,9 +88,9 @@ class VaultSessionControllerLifecycleTest {
     fun `fatal reset result is propagated after locking the session`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("fatal reset result")
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -145,9 +115,9 @@ class VaultSessionControllerLifecycleTest {
     fun `fatal authorization revocation still clears keys seals and locks`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("permit revoke fatal")
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -173,9 +143,9 @@ class VaultSessionControllerLifecycleTest {
     fun `fatal sensitive key clear still seals and locks`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("sensitive key clear fatal")
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -202,10 +172,10 @@ class VaultSessionControllerLifecycleTest {
     fun `fatal sensitive key clear during reset locks before propagating`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("sensitive key clear fatal")
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             var revoked = 0
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -238,11 +208,11 @@ class VaultSessionControllerLifecycleTest {
             val fatal = AssertionError("database close fatal")
             var revoked = 0
             val session =
-                YieldingDatabaseSession(
+                VaultSessionTestDatabaseSession(
                     sealResult = Result.failure(fatal),
                 )
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -269,9 +239,9 @@ class VaultSessionControllerLifecycleTest {
     fun `fatal authorization revocation still locks and propagates`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("permit revoke fatal")
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -299,14 +269,14 @@ class VaultSessionControllerLifecycleTest {
     @Test
     fun `close failure during security lock is reported after fail closed cleanup`() =
         runMainTest { dispatcher ->
-            val logger = RecordingLogger()
+            val logger = VaultSessionTestLogger()
             val closeFailure = IllegalStateException("database close failed")
             val session =
-                YieldingDatabaseSession(
+                VaultSessionTestDatabaseSession(
                     sealResult = Result.failure(closeFailure),
                 )
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -328,11 +298,11 @@ class VaultSessionControllerLifecycleTest {
             var revoked = 0
             val closeFailure = IllegalStateException("database close failed")
             val session =
-                YieldingDatabaseSession(
+                VaultSessionTestDatabaseSession(
                     sealResult = Result.failure(closeFailure),
                 )
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -360,9 +330,9 @@ class VaultSessionControllerLifecycleTest {
     @Test
     fun `failed reset reopen publishes locked state and supports retry`() =
         runMainTest { dispatcher ->
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -392,9 +362,9 @@ class VaultSessionControllerLifecycleTest {
     @Test
     fun `security lock waits for database reset to finish reopening`() =
         runMainTest { dispatcher ->
-            val session = YieldingDatabaseSession()
+            val session = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = session,
                     timeout = MutableStateFlow(1_000L),
@@ -432,9 +402,9 @@ class VaultSessionControllerLifecycleTest {
     @Test
     fun `database-only seal immediately revokes secure session access`() =
         runMainTest { dispatcher ->
-            val databaseSession = YieldingDatabaseSession()
+            val databaseSession = VaultSessionTestDatabaseSession()
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = databaseSession,
                     timeout = MutableStateFlow(1_000L),
@@ -452,9 +422,9 @@ class VaultSessionControllerLifecycleTest {
     @Test
     fun `cancelled fresh unlock seals staged session and propagates cancellation`() =
         runMainTest { dispatcher ->
-            val bootstrap = EmptyVaultBootstrapStore()
-            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
-            val session = YieldingDatabaseSession(pauseUnlock = true)
+            val bootstrap = VaultSessionTestBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), VaultSessionTestLogger())
+            val session = VaultSessionTestDatabaseSession(pauseUnlock = true)
             val lockState = LockStateManager()
             val controller =
                 VaultSessionController(
@@ -464,7 +434,7 @@ class VaultSessionControllerLifecycleTest {
                     sessionManager = session,
                     vaultBootstrapStore = bootstrap,
                     lockStateManager = lockState,
-                    securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                    securityEvents = SecuritySessionEventLogger(VaultSessionTestLogger()),
                     idleTimeoutSettings =
                         object : IdleTimeoutSettings {
                             override val isLockOnBackground = MutableStateFlow(false)
@@ -499,11 +469,11 @@ class VaultSessionControllerLifecycleTest {
     fun `cancelled soft lock resume preserves existing dek and soft lock`() =
         runMainTest { dispatcher ->
             val cancelled = CancellationException("soft lock resume cancelled")
-            val bootstrap = EmptyVaultBootstrapStore()
-            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
+            val bootstrap = VaultSessionTestBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), VaultSessionTestLogger())
             dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 6 })
             val session =
-                YieldingDatabaseSession(
+                VaultSessionTestDatabaseSession(
                     initialLockState = SecureSessionState.SOFT_LOCKED,
                     unlockFailure = cancelled,
                 )
@@ -516,7 +486,7 @@ class VaultSessionControllerLifecycleTest {
                     sessionManager = session,
                     vaultBootstrapStore = bootstrap,
                     lockStateManager = lockState,
-                    securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                    securityEvents = SecuritySessionEventLogger(VaultSessionTestLogger()),
                     idleTimeoutSettings =
                         object : IdleTimeoutSettings {
                             override val isLockOnBackground = MutableStateFlow(false)
@@ -538,7 +508,7 @@ class VaultSessionControllerLifecycleTest {
                     failure
                 }
 
-            assertEquals(cancelled.message, thrown?.message)
+            assertVaultSessionCancellation(thrown, cancelled)
             assertTrue(dekManager.isUnlocked.value)
             assertEquals(SecureSessionState.SOFT_LOCKED, lockState.state)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
@@ -549,9 +519,9 @@ class VaultSessionControllerLifecycleTest {
     fun `cancelled recovery unlock seals staged recovery session and propagates cancellation`() =
         runMainTest { dispatcher ->
             val cancelled = CancellationException("recovery database unlock cancelled")
-            val bootstrap = EmptyVaultBootstrapStore()
-            val dekManager = DekManager(bootstrap, FieldKeyManager(), RecordingLogger())
-            val session = YieldingDatabaseSession(unlockFailure = cancelled)
+            val bootstrap = VaultSessionTestBootstrapStore()
+            val dekManager = DekManager(bootstrap, FieldKeyManager(), VaultSessionTestLogger())
+            val session = VaultSessionTestDatabaseSession(unlockFailure = cancelled)
             val lockState = LockStateManager()
             val controller =
                 VaultSessionController(
@@ -561,7 +531,7 @@ class VaultSessionControllerLifecycleTest {
                     sessionManager = session,
                     vaultBootstrapStore = bootstrap,
                     lockStateManager = lockState,
-                    securityEvents = SecuritySessionEventLogger(RecordingLogger()),
+                    securityEvents = SecuritySessionEventLogger(VaultSessionTestLogger()),
                     idleTimeoutSettings =
                         object : IdleTimeoutSettings {
                             override val isLockOnBackground = MutableStateFlow(false)
@@ -578,7 +548,7 @@ class VaultSessionControllerLifecycleTest {
                     failure
                 }
 
-            assertEquals(cancelled.message, thrown?.message)
+            assertVaultSessionCancellation(thrown, cancelled)
             assertTrue(dekManager.state is DekState.Locked)
             assertEquals(SecureSessionState.SEALED, lockState.state)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
@@ -588,11 +558,11 @@ class VaultSessionControllerLifecycleTest {
     @Test
     fun `cancelling a sealed lock completes key cleanup and reports cancellation`() =
         runMainTest { dispatcher ->
-            val logger = RecordingLogger()
-            val bootstrap = EmptyVaultBootstrapStore()
+            val logger = VaultSessionTestLogger()
+            val bootstrap = VaultSessionTestBootstrapStore()
             val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
             dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 })
-            val databaseSession = YieldingDatabaseSession(pauseSeal = true)
+            val databaseSession = VaultSessionTestDatabaseSession(pauseSeal = true)
             val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
             val controller =
                 VaultSessionController(
@@ -642,11 +612,11 @@ class VaultSessionControllerLifecycleTest {
     fun `seal cancellation completes lock cleanup then propagates cancellation`() =
         runMainTest { dispatcher ->
             val cancelled = CancellationException("database seal cancelled")
-            val logger = RecordingLogger()
-            val bootstrap = EmptyVaultBootstrapStore()
+            val logger = VaultSessionTestLogger()
+            val bootstrap = VaultSessionTestBootstrapStore()
             val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
             dekManager.setDek(EnvelopeType.APP_PASSWORD, ByteArray(32) { 7 })
-            val databaseSession = YieldingDatabaseSession(sealFailure = cancelled)
+            val databaseSession = VaultSessionTestDatabaseSession(sealFailure = cancelled)
             val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
             val controller =
                 VaultSessionController(
@@ -680,8 +650,7 @@ class VaultSessionControllerLifecycleTest {
                     failure
                 }
 
-            assertTrue(thrown is CancellationException)
-            assertEquals(cancelled.message, thrown?.message)
+            assertVaultSessionCancellation(thrown, cancelled)
             assertEquals(1, databaseSession.sealCount)
             assertTrue(dekManager.state is DekState.Locked)
             assertEquals(SecureSessionState.SEALED, lockState.state)
@@ -694,10 +663,10 @@ class VaultSessionControllerLifecycleTest {
     fun `soft lock cancellation completes state transition then propagates cancellation`() =
         runMainTest { dispatcher ->
             val cancelled = CancellationException("database soft lock cancelled")
-            val logger = RecordingLogger()
-            val databaseSession = YieldingDatabaseSession(softLockFailure = cancelled)
+            val logger = VaultSessionTestLogger()
+            val databaseSession = VaultSessionTestDatabaseSession(softLockFailure = cancelled)
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = databaseSession,
                     timeout = MutableStateFlow(1_000L),
@@ -715,8 +684,7 @@ class VaultSessionControllerLifecycleTest {
                     failure
                 }
 
-            assertTrue(thrown is CancellationException)
-            assertEquals(cancelled.message, thrown?.message)
+            assertVaultSessionCancellation(thrown, cancelled)
             assertTrue(databaseSession.softLockCompleted)
             assertEquals(SecureSessionState.SOFT_LOCKED, databaseSession.lockState)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
@@ -725,135 +693,12 @@ class VaultSessionControllerLifecycleTest {
         }
 
     @Test
-    fun `disabling background lock preserves the existing idle timeout`() =
-        runMainTest { dispatcher ->
-            val databaseSession = YieldingDatabaseSession()
-            val controller =
-                createController(
-                    dispatcher = dispatcher,
-                    databaseSession = databaseSession,
-                    timeout = MutableStateFlow(1_000L),
-                    lockOnBackground = MutableStateFlow(false),
-                )
-
-            runCurrent()
-            controller.transition(AuthenticationState.Authenticated(0L))
-            controller.onAppForeground()
-            advanceTimeBy(500L)
-            controller.onAppBackground()
-            advanceTimeBy(500L)
-            runCurrent()
-
-            assertTrue(databaseSession.softLockCompleted)
-            assertEquals(0, databaseSession.sealCount)
-        }
-
-    @Test
-    fun `background lock waits for configured timeout and is cancelled on foreground return`() =
-        runMainTest { dispatcher ->
-            val databaseSession = YieldingDatabaseSession()
-            val controller =
-                createController(
-                    dispatcher = dispatcher,
-                    databaseSession = databaseSession,
-                    timeout = MutableStateFlow(1_000L),
-                    lockOnBackground = MutableStateFlow(true),
-                )
-
-            runCurrent()
-            controller.transition(AuthenticationState.Authenticated(0L))
-            controller.onAppBackground()
-            advanceTimeBy(999L)
-            runCurrent()
-
-            assertEquals(0, databaseSession.sealCount)
-
-            controller.onAppForeground()
-            advanceTimeBy(1L)
-            runCurrent()
-
-            assertEquals(0, databaseSession.sealCount)
-            advanceUntilIdle()
-        }
-
-    @Test
-    fun `foreground return cannot cancel a background seal after timeout elapsed`() =
-        runMainTest { dispatcher ->
-            val logger = RecordingLogger()
-            val databaseSession = YieldingDatabaseSession(pauseSeal = true)
-            val controller =
-                createController(
-                    dispatcher = dispatcher,
-                    databaseSession = databaseSession,
-                    timeout = MutableStateFlow(1_000L),
-                    lockOnBackground = MutableStateFlow(true),
-                    logger = logger,
-                )
-
-            runCurrent()
-            controller.transition(AuthenticationState.Authenticated(0L))
-            controller.onAppBackground()
-            advanceTimeBy(1_000L)
-            runCurrent()
-            databaseSession.sealStarted.await()
-
-            controller.onAppForeground()
-            databaseSession.allowSealToFinish.complete(Unit)
-            runCurrent()
-
-            assertEquals(1, databaseSession.sealCount)
-            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
-            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
-            advanceUntilIdle()
-        }
-
-    @Test
-    fun `idle timeout does not cancel its own lock operation or report a false failure`() =
-        runMainTest { dispatcher ->
-            val logger = RecordingLogger()
-            val bootstrap = EmptyVaultBootstrapStore()
-            val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
-            val sensitiveKeyManager = SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom())
-            val databaseSession = YieldingDatabaseSession()
-            val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
-            val timeout = MutableStateFlow(1L)
-            val controller =
-                VaultSessionController(
-                    dekManager = dekManager,
-                    sensitiveDataKeyClearer = sensitiveKeyManager,
-                    authorizationPermitRevoker = { },
-                    sessionManager = databaseSession,
-                    vaultBootstrapStore = bootstrap,
-                    lockStateManager = lockState,
-                    securityEvents = SecuritySessionEventLogger(logger),
-                    idleTimeoutSettings =
-                        object : IdleTimeoutSettings {
-                            override val isLockOnBackground = MutableStateFlow(false)
-                            override val lockTimeout = timeout
-                        },
-                    autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning { },
-                )
-
-            runCurrent()
-            controller.transition(AuthenticationState.Authenticated(0L))
-            controller.onAppForeground()
-            controller.onUserInteraction()
-            advanceTimeBy(1L)
-            runCurrent()
-
-            assertTrue(databaseSession.softLockCompleted)
-            assertEquals(SecureSessionState.SOFT_LOCKED, lockState.state)
-            assertEquals(0, logger.errorEvents.count { it == Events.Security.LockFailed })
-            assertEquals(1, logger.infoEvents.count { it == Events.Security.LockCompleted })
-        }
-
-    @Test
     fun `fatal soft lock failure escalates to sealed cleanup before propagating`() =
         runMainTest { dispatcher ->
             val fatal = AssertionError("database soft lock fatal")
-            val databaseSession = YieldingDatabaseSession(softLockFailure = fatal)
+            val databaseSession = VaultSessionTestDatabaseSession(softLockFailure = fatal)
             val controller =
-                createController(
+                createVaultSessionTestController(
                     dispatcher = dispatcher,
                     databaseSession = databaseSession,
                     timeout = MutableStateFlow(1_000L),
@@ -875,242 +720,4 @@ class VaultSessionControllerLifecycleTest {
             assertEquals(SecureSessionState.SEALED, databaseSession.lockState)
             assertEquals(AuthenticationState.Locked, controller.authenticationState.value)
         }
-
-    private fun createController(
-        dispatcher: CoroutineDispatcher,
-        databaseSession: DatabaseSessionLifecycle,
-        timeout: MutableStateFlow<Long>,
-        lockOnBackground: MutableStateFlow<Boolean>,
-        logger: RecordingLogger = RecordingLogger(),
-        provisionInboxKey: suspend () -> Unit = {},
-        revokeAuthorization: () -> Unit = {},
-        clearSensitiveKey: SensitiveDataKeyClearer? = null,
-    ): VaultSessionController {
-        val bootstrap = EmptyVaultBootstrapStore()
-        val dekManager = DekManager(bootstrap, FieldKeyManager(), logger)
-        val sensitiveDataKeyClearer =
-            clearSensitiveKey
-                ?: SensitiveDataKeyManager(bootstrap, dekManager, CoroutineScope(dispatcher), SecureRandom())
-        val lockState = LockStateManager().apply { mark(SecureSessionState.UNLOCKED) }
-        return VaultSessionController(
-            dekManager = dekManager,
-            sensitiveDataKeyClearer = sensitiveDataKeyClearer,
-            authorizationPermitRevoker = revokeAuthorization,
-            sessionManager = databaseSession,
-            vaultBootstrapStore = bootstrap,
-            lockStateManager = lockState,
-            securityEvents = SecuritySessionEventLogger(logger),
-            idleTimeoutSettings =
-                object : IdleTimeoutSettings {
-                    override val isLockOnBackground = lockOnBackground
-                    override val lockTimeout = timeout
-                },
-            autofillInboxKeyProvisioning = AutofillInboxKeyProvisioning(provisionInboxKey),
-        )
-    }
-
-    @Test
-    fun `only a full Vault unlock provisions the Autofill Inbox key`() =
-        runMainTest { dispatcher ->
-            var provisionCount = 0
-            val fullUnlockController =
-                createController(
-                    dispatcher = dispatcher,
-                    databaseSession = YieldingDatabaseSession(),
-                    timeout = MutableStateFlow(1_000L),
-                    lockOnBackground = MutableStateFlow(false),
-                    provisionInboxKey = { provisionCount++ },
-                )
-            val autofillController =
-                createController(
-                    dispatcher = dispatcher,
-                    databaseSession = YieldingDatabaseSession(),
-                    timeout = MutableStateFlow(1_000L),
-                    lockOnBackground = MutableStateFlow(false),
-                    provisionInboxKey = { provisionCount++ },
-                )
-
-            assertTrue(fullUnlockController.markAuthenticated(AuthenticationPurpose.UNLOCK_VAULT))
-            assertEquals(1, provisionCount)
-            assertTrue(autofillController.markAuthenticated(AuthenticationPurpose.AUTOFILL))
-            assertEquals(1, provisionCount)
-        }
-
-    private class YieldingDatabaseSession(
-        private val pauseSeal: Boolean = false,
-        private val sealFailure: Throwable? = null,
-        private val softLockFailure: Throwable? = null,
-        private val pauseSoftLock: Boolean = false,
-        private val pauseUnlock: Boolean = false,
-        private val unlockFailure: Throwable? = null,
-        private val sealResult: Result<Unit> = Result.success(Unit),
-        initialLockState: SecureSessionState = SecureSessionState.UNLOCKED,
-    ) : DatabaseSessionLifecycle {
-        override var lockState: SecureSessionState = initialLockState
-        var unlockResultError: Throwable? = null
-        var softLockCompleted = false
-        var sealCount = 0
-        var unlockCalls = 0
-        val sealStarted = CompletableDeferred<Unit>()
-        val allowSealToFinish = CompletableDeferred<Unit>()
-        val softLockStarted = CompletableDeferred<Unit>()
-        val allowSoftLockToFinish = CompletableDeferred<Unit>()
-        val unlockStarted = CompletableDeferred<Unit>()
-        val allowUnlockToFinish = CompletableDeferred<Unit>()
-
-        override suspend fun unlock(): Throwable? {
-            unlockCalls += 1
-            unlockStarted.complete(Unit)
-            if (pauseUnlock) allowUnlockToFinish.await()
-            unlockFailure?.let { throw it }
-            unlockResultError?.let { return it }
-            lockState = SecureSessionState.UNLOCKED
-            return null
-        }
-
-        override suspend fun softLock() {
-            lockState = SecureSessionState.SOFT_LOCKED
-            softLockStarted.complete(Unit)
-            if (pauseSoftLock) allowSoftLockToFinish.await()
-            yield()
-            softLockCompleted = true
-            softLockFailure?.let { throw it }
-        }
-
-        override suspend fun seal(): Result<Unit> {
-            sealStarted.complete(Unit)
-            if (pauseSeal) allowSealToFinish.await()
-            sealCount += 1
-            lockState = SecureSessionState.SEALED
-            sealFailure?.let { throw it }
-            return sealResult
-        }
-    }
-
-    private class RecordingLogger : Logger {
-        val infoEvents = mutableListOf<EventKey>()
-        val errorEvents = mutableListOf<EventKey>()
-
-        override fun debug(
-            event: EventKey,
-            fields: LogFields,
-        ) = Unit
-
-        override fun info(
-            event: EventKey,
-            fields: LogFields,
-        ) {
-            infoEvents += event
-        }
-
-        override fun degraded(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            fields: LogFields,
-        ) = Unit
-
-        override fun warn(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ) = Unit
-
-        override fun error(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ) {
-            errorEvents += event
-        }
-
-        override fun fatal(
-            event: EventKey,
-            errorCode: ErrorCode,
-            reason: ReasonCode,
-            throwable: Throwable,
-            fields: LogFields,
-        ) = Unit
-
-        override suspend fun <T> withRootTrace(
-            operation: OperationCode,
-            block: suspend TraceScope.() -> T,
-        ): T = TestTraceScope.block()
-
-        override suspend fun <T> inSpan(
-            operation: OperationCode,
-            block: suspend TraceScope.() -> T,
-        ): T =
-            withContext(CoroutineName("test-span")) {
-                TestTraceScope.block()
-            }
-
-        override fun captureTraceToken(singleUse: Boolean): TraceToken = error("not used")
-
-        override suspend fun <T> resumeTrace(
-            token: TraceToken,
-            operation: OperationCode,
-            block: suspend TraceScope.() -> T,
-        ): TraceResumeResult<T> = error("not used")
-    }
-
-    private object TestTraceScope : TraceScope {
-        override val traceId = TraceId("test_trace")
-        override val spanId = SpanId("test_span")
-        override val parentSpanId: SpanId? = null
-    }
-
-    private class EmptyVaultBootstrapStore : VaultBootstrapStore {
-        override suspend fun save(envelope: KeyEnvelope) = Unit
-
-        override suspend fun load(type: EnvelopeType): KeyEnvelope? = null
-
-        override suspend fun loadAll(): List<KeyEnvelope> = emptyList()
-
-        override suspend fun loadAuthenticationCredentialSnapshot() = AuthenticationCredentialSnapshot()
-
-        override suspend fun delete(type: EnvelopeType) = Unit
-
-        override suspend fun saveVerificationTag(tag: ByteArray) = Unit
-
-        override suspend fun loadVerificationTag(): ByteArray? = null
-
-        override suspend fun saveSensitiveKeyEnvelope(envelope: ByteArray) = Unit
-
-        override suspend fun loadSensitiveKeyEnvelope(): ByteArray? = null
-
-        override suspend fun saveAttachmentKeyEnvelope(envelope: ByteArray) = Unit
-
-        override suspend fun loadAttachmentKeyEnvelope(): ByteArray? = null
-
-        override suspend fun loadBiometricState() = BiometricBootstrapState(null, null, emptySet())
-
-        override suspend fun prepareBiometricRotation(journal: BiometricRotationJournal) = Unit
-
-        override suspend fun commitBiometricRotation(
-            envelope: KeyEnvelope,
-            binding: BiometricBinding,
-            obsoleteAlias: String?,
-        ) = Unit
-
-        override suspend fun clearBiometricCleanupAlias(alias: String) = Unit
-
-        override suspend fun disableBiometric(activeAlias: String) = Unit
-
-        override suspend fun clearBiometricRotationJournal() = Unit
-    }
-}
-
-private fun runMainTest(block: suspend TestScope.(TestDispatcher) -> Unit) = runTest {
-    val dispatcher = StandardTestDispatcher(testScheduler)
-    Dispatchers.setMain(dispatcher)
-    try {
-        block(dispatcher)
-    } finally {
-        Dispatchers.resetMain()
-    }
 }
