@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.main.interaction
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
@@ -49,12 +50,12 @@ class InteractionSettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, model.uiState.value is InteractionSettingsUiState.Failed)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Failed)
             model.onAction(InteractionSettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is InteractionSettingsUiState.Ready)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Ready<*>)
         }
 
     @Test
@@ -72,7 +73,7 @@ class InteractionSettingsViewModelTest {
             runCurrent()
             val error = InteractionSettingsEffect.SaveFailed(UiErrorMessage(R.string.ui_error_file_io))
             assertEquals(listOf(error, error), effects)
-            val ready = model.uiState.value as InteractionSettingsUiState.Ready
+            val ready = (model.uiState.value as RecoverableReadState.Ready<InteractionSettings>).value
             assertEquals(false, ready.isSwipeEnabled)
             assertEquals(false, ready.isPullToSearchEnabled)
         }
@@ -90,13 +91,16 @@ class InteractionSettingsViewModelTest {
             model.onAction(InteractionSettingsAction.SetSwipeEnabled(true))
             model.onAction(InteractionSettingsAction.SetPullToSearchEnabled(true))
             runCurrent()
-            val ready = model.uiState.value as InteractionSettingsUiState.Ready
+            val ready = (model.uiState.value as RecoverableReadState.Ready<InteractionSettings>).value
             assertEquals(true, ready.isSwipeEnabled)
             assertEquals(true, ready.isPullToSearchEnabled)
             assertEquals(emptyList<InteractionSettingsEffect>(), effects)
             repository.currentInteraction.value = InteractionSettings()
             runCurrent()
-            assertEquals(false, (model.uiState.value as InteractionSettingsUiState.Ready).isSwipeEnabled)
+            assertEquals(
+                false,
+                (model.uiState.value as RecoverableReadState.Ready<InteractionSettings>).value.isSwipeEnabled,
+            )
         }
 
     @Test

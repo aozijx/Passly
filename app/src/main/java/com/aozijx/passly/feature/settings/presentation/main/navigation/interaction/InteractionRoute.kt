@@ -16,9 +16,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsAction
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsEffect
-import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.main.interaction.InteractionSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.ui.interaction.InteractionDetail
 import com.aozijx.passly.feature.settings.presentation.ui.interaction.SwipeActionSelectDialog
@@ -59,19 +59,19 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.INTERACTION.titleRes),
         onBack = onBack,
     ) {
-        when (val readyState = state) {
-            InteractionSettingsUiState.Loading -> {
+        when (state) {
+            RecoverableReadState.Loading -> {
                 Unit
             }
 
-            is InteractionSettingsUiState.Failed -> {
+            is RecoverableReadState.Failed -> {
                 item { SettingsReadFailureContent(onRetry = { viewModel.onAction(InteractionSettingsAction.RetryRead) }) }
             }
 
-            is InteractionSettingsUiState.Ready -> {
+            is RecoverableReadState.Ready -> {
                 item {
                     InteractionDetail(
-                        state = readyState,
+                        state = state.value,
                         onSwipeEnabledChange = {
                             viewModel.onAction(InteractionSettingsAction.SetSwipeEnabled(it))
                         },
@@ -86,8 +86,7 @@ internal fun InteractionRoute(onBack: (() -> Unit)?) {
         }
     }
 
-    val readyState = state
-    if (readyState is InteractionSettingsUiState.Ready) {
+    (state as? RecoverableReadState.Ready)?.value?.let { readyState ->
         when (activeDialog) {
             SwipeActionDialog.Left -> {
                 SwipeActionSelectDialog(

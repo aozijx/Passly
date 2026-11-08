@@ -1,23 +1,7 @@
 package com.aozijx.passly.feature.settings.presentation.main.interaction
 
-import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
-
-sealed interface InteractionSettingsUiState {
-    data object Loading : InteractionSettingsUiState
-
-    data class Failed(
-        val failure: ReadFailure,
-    ) : InteractionSettingsUiState
-
-    data class Ready(
-        val isSwipeEnabled: Boolean,
-        val isPullToSearchEnabled: Boolean,
-        val swipeLeftAction: SwipeActionType,
-        val swipeRightAction: SwipeActionType,
-    ) : InteractionSettingsUiState
-}
 
 sealed interface InteractionSettingsAction {
     data object RetryRead : InteractionSettingsAction
