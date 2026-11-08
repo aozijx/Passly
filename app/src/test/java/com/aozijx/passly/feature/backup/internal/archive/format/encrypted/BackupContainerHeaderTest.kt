@@ -83,6 +83,7 @@ class BackupContainerHeaderTest {
             listOf(
                 "magic" to validHeader.clone().also { it[0] = 'X'.code.toByte() },
                 "container version" to withInt(validHeader, 8, 2),
+                "header length" to withInt(validHeader, 12, 88),
                 "KDF identifier" to withInt(validHeader, 16, 2),
                 "cipher identifier" to withInt(validHeader, 20, 2),
                 "Argon2 version" to withInt(validHeader, 24, 0x10),

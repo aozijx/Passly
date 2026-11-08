@@ -1,5 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
+import com.aozijx.passly.core.crypto.KeyDerivation
+import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
@@ -11,6 +13,9 @@ import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupExportAdapter
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupFormatRegistry
 import com.aozijx.passly.feature.backup.internal.archive.format.BackupImportAdapter
+import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.BackupContainerV1Spec
+import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.EncryptedBackupExporter
+import com.aozijx.passly.feature.backup.internal.archive.format.encrypted.EncryptedBackupImporter
 import com.aozijx.passly.feature.backup.internal.archive.io.BackupFileStore
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupDocument
@@ -327,6 +332,84 @@ class BackupArchiveServiceImplTest {
             assertTrue(result is AppResult.Failure)
             assertEquals(1, reporter.reports.size)
             assertEquals("backup_import", reporter.reports.single().second.operation.value)
+        }
+
+    @Test
+    fun importDoesNotStartRestoreWhenEncryptedTerminalIsMissing() =
+        runTest {
+            val password = "restore-gate".toCharArray()
+            var completeBackup = ByteArray(0)
+            var missingTerminal = ByteArray(0)
+            try {
+                val deriveKey: (CharArray, ByteArray, KeyDerivation.Argon2idParameters) -> ByteArray = { secret, salt, parameters ->
+                    ByteArray(parameters.keyLengthBits / Byte.SIZE_BITS) { index ->
+                        (secret[index % secret.size].code + salt[index % salt.size]).toByte()
+                    }
+                }
+                val encoded = ByteArrayOutputStream()
+                val exportBundle =
+                    BackupBundle(
+                        document =
+                            BackupDocument(
+                                format = BackupDocument.FORMAT,
+                                version = BackupDocument.CURRENT_VERSION,
+                                exportedAt = 1,
+                                entries = emptyList(),
+                            ),
+                        resourceData = emptyMap(),
+                    )
+                EncryptedBackupExporter().export(exportBundle, password, encoded, deriveKey)
+                completeBackup = encoded.toByteArray()
+                val terminalRecordSize =
+                    BackupContainerV1Spec.RECORD_HEADER_LENGTH +
+                        BackupContainerV1Spec.TERMINAL_PLAINTEXT_LENGTH +
+                        BackupContainerV1Spec.TAG_LENGTH
+                missingTerminal = completeBackup.copyOf(completeBackup.size - terminalRecordSize)
+                val importer =
+                    object : BackupImportAdapter {
+                        override val formatId = BackupFormats.PASSLY_ENCRYPTED
+                        override val requiresPassword = true
+
+                        override fun decode(
+                            input: InputStream,
+                            password: CharArray?,
+                            strategy: BackupImportStrategy,
+                        ) = EncryptedBackupImporter().import(input, requireNotNull(password), strategy, deriveKey)
+                    }
+                val snapshotGateway = FakeSnapshotGateway()
+                val reporter = RecordingErrorReporter()
+                val service =
+                    service(
+                        snapshotGateway,
+                        FakeBackupFileStore(readBytes = missingTerminal),
+                        reporter,
+                        FakeExportAdapter(),
+                        setOf(importer),
+                        UnconfinedTestDispatcher(testScheduler),
+                    )
+
+                val result =
+                    service.import(
+                        BackupImportRequest(
+                            sourceUri = "content://backup/missing-terminal",
+                            mode = ImportMode.OVERWRITE,
+                            format = BackupFormats.PASSLY_ENCRYPTED,
+                            password = password,
+                        ),
+                    )
+
+                assertTrue(result is AppResult.Failure)
+                assertEquals(null, snapshotGateway.restoredBundle)
+                val failure = (result as AppResult.Failure).error
+                assertTrue(failure is BackupFailed)
+                assertEquals("EOFException", failure.throwableType)
+                assertEquals(1, reporter.reports.size)
+                assertEquals("backup_import", reporter.reports.single().second.operation.value)
+            } finally {
+                password.fill('\u0000')
+                completeBackup.fill(0)
+                missingTerminal.fill(0)
+            }
         }
 
     @Test
