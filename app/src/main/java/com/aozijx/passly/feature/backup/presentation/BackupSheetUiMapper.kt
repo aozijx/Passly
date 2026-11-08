@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.backup.presentation
 
+import androidx.annotation.StringRes
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
 
 internal fun BackupUiState.toSheetUiState(configuredDirectoryLabel: String?): BackupRestoreSheetUiState =
@@ -22,7 +25,11 @@ private fun BackupExportOptions.toUiState(configuredDirectoryLabel: String?) =
     BackupRestoreSheetUiState.ExportOptions(
         configuredDirectoryLabel = configuredDirectoryLabel,
         password = password.copyToString(),
-        format = format,
+        titleResource = format.optionsTitleResource(),
+        securityNoticeResource = format.securityNoticeResource(),
+        securityNoticeIsWarning = format.securityNoticeIsWarning(),
+        requiresPassword = format.requiresPassword,
+        supportsResources = format.supportsResources,
         includeIcons = includeIcons,
         includeAttachments = includeAttachments,
         includeDeleted = includeDeleted,
@@ -31,6 +38,30 @@ private fun BackupExportOptions.toUiState(configuredDirectoryLabel: String?) =
         needsEntryTypeSelection = needsEntryTypeSelection,
         canSubmit = canSubmit,
     )
+
+@StringRes
+private fun BackupExportFormat.optionsTitleResource(): Int =
+    when (this) {
+        BackupExportFormat.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
+        BackupExportFormat.JSON -> R.string.settings_backup_json_options_title
+        BackupExportFormat.TEXT -> R.string.settings_backup_text_options_title
+    }
+
+@StringRes
+private fun BackupExportFormat.securityNoticeResource(): Int =
+    when (this) {
+        BackupExportFormat.ENCRYPTED -> R.string.settings_backup_encrypted_security_notice
+        BackupExportFormat.JSON -> R.string.settings_backup_json_security_notice
+        BackupExportFormat.TEXT -> R.string.settings_backup_text_security_notice
+    }
+
+private fun BackupExportFormat.securityNoticeIsWarning(): Boolean =
+    when (this) {
+        BackupExportFormat.ENCRYPTED -> false
+        BackupExportFormat.JSON,
+        BackupExportFormat.TEXT,
+        -> true
+    }
 
 private fun BackupImportOptions.toUiState() =
     BackupRestoreSheetUiState.ImportOptions(

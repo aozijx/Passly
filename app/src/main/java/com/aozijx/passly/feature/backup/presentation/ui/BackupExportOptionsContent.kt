@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.backup.contract.BackupExportFormat
 import com.aozijx.passly.feature.backup.presentation.BackupUiAction
 import com.aozijx.passly.feature.backup.presentation.ui.model.BackupRestoreSheetUiState
 import com.aozijx.passly.presentation.shared.entry.labelRes
@@ -41,13 +40,13 @@ internal fun BackupExportOptionsContent(
 ) {
     BackupSheetColumn(scrollable = true) {
         Text(
-            text = stringResource(exportTitleResource(state.format)),
+            text = stringResource(state.titleResource),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
-        ExportSecurityNotice(state.format)
+        ExportSecurityNotice(state.securityNoticeResource, state.securityNoticeIsWarning)
 
-        if (state.format.requiresPassword) {
+        if (state.requiresPassword) {
             OutlinedTextField(
                 value = state.password,
                 onValueChange = { onAction(BackupUiAction.UpdatePassword(it)) },
@@ -65,7 +64,7 @@ internal fun BackupExportOptionsContent(
         }
 
         Text(stringResource(R.string.settings_backup_content_scope), style = MaterialTheme.typography.titleMedium)
-        if (state.format.supportsResources) {
+        if (state.supportsResources) {
             BackupSwitchRow(
                 stringResource(R.string.settings_backup_include_icons),
                 stringResource(R.string.settings_backup_include_icons_description),
@@ -158,22 +157,15 @@ internal fun BackupExportOptionsContent(
 }
 
 @Composable
-private fun ExportSecurityNotice(format: BackupExportFormat) {
-    val text =
-        when (format) {
-            BackupExportFormat.ENCRYPTED -> stringResource(R.string.settings_backup_encrypted_security_notice)
-            BackupExportFormat.JSON -> stringResource(R.string.settings_backup_json_security_notice)
-            BackupExportFormat.TEXT -> stringResource(R.string.settings_backup_text_security_notice)
-        }
+private fun ExportSecurityNotice(
+    @StringRes messageResource: Int,
+    isWarning: Boolean,
+) {
     Text(
-        text = text,
+        text = stringResource(messageResource),
         style = MaterialTheme.typography.bodyMedium,
         color =
-            if (format == BackupExportFormat.ENCRYPTED) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.error
-            },
+            if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -197,11 +189,3 @@ private fun BackupSwitchRow(
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
-
-@StringRes
-private fun exportTitleResource(format: BackupExportFormat): Int =
-    when (format) {
-        BackupExportFormat.ENCRYPTED -> R.string.settings_backup_encrypted_options_title
-        BackupExportFormat.JSON -> R.string.settings_backup_json_options_title
-        BackupExportFormat.TEXT -> R.string.settings_backup_text_options_title
-    }
