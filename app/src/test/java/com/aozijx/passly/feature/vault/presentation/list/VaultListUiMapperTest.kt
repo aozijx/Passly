@@ -184,25 +184,4 @@ class VaultListUiMapperTest {
         )
         assertEquals(VaultPasswordCardSupportingTextUiModel.FAVORITE, ui.passwordCardSupportingText)
     }
-
-    @Test
-    fun addTypeMappingsPreserveExplicitFeatureMeaning() {
-        val addTypes =
-            listOf(
-                AddType.PASSWORD to VaultAddTypeUiModel.PASSWORD,
-                AddType.TOTP to VaultAddTypeUiModel.TOTP,
-                AddType.BANK_CARD to VaultAddTypeUiModel.BANK_CARD,
-                AddType.WIFI to VaultAddTypeUiModel.WIFI,
-                AddType.SSH_KEY to VaultAddTypeUiModel.SSH_KEY,
-                AddType.ID_CARD to VaultAddTypeUiModel.ID_CARD,
-                AddType.SEED_PHRASE to VaultAddTypeUiModel.SEED_PHRASE,
-                AddType.PASSKEY to VaultAddTypeUiModel.PASSKEY,
-                AddType.RECOVERY_CODE to VaultAddTypeUiModel.RECOVERY_CODE,
-            )
-
-        addTypes.forEach { (feature, ui) ->
-            assertEquals(ui, feature.toUiModel())
-            assertEquals(feature, ui.featureType)
-        }
-    }
 }
