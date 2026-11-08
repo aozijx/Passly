@@ -122,11 +122,11 @@ Security Route 每次离开 Composition 都会清空应用密码设置/修改对
 
 应用密码和恢复码分别维护持久化尝试状态；Biometric 由 Android 平台管理，不纳入该计数。Domain 提供原子更新端口与状态查询合同，Data 通过现有 Security Preferences Proto DataStore 的 `updateData` 按稳定方法键更新，Security 解释策略与时间。凭据本身不会被保存。
 
-每种凭据最多累计 5 次失败；第 5 次错误输入开始 30 秒锁定。`CredentialMethodExecutor.execute()` 先检查现存锁定，再在运行 KDF 前持久化预留本次提交的凭据尝试。认证成功清零计数；普通密码学异常释放预留次数；提交后取消或 fatal `Error` 不会回滚已持久化的预留次数。锁定期间和未锁定时的剩余次数通过 `AuthenticationFailure` / `AuthenticationAttemptStatus` 提供给页面，页面不自行判断密码是否正确。
+每种凭据最多累计 5 次失败；第 5 次错误输入开始 30 秒锁定。`CredentialMethodExecutor.execute()` 先检查现存锁定，再在运行 KDF 前持久化预留本次提交的凭据尝试。认证成功清零计数；普通密码学异常释放预留次数；提交后取消或 fatal `Error` 不会回滚已持久化的预留次数。失败结果可携带剩余次数；持久状态查询负责同步 cooldown，页面不自行判断密码是否正确。
 
 状态保存剩余失败计数、墙上时钟截止时间、单调 `elapsedRealtime` 截止时间和设备 boot count。同一开机周期用单调时间计算倒计时；检测到重启时退回到持久化墙上时钟。倒计时到期后归零并清除锁定截止值。认证次数读写或时钟获取失败会返回 `ATTEMPT_STATE_UNAVAILABLE`；凭据验证在预留无法持久化时不会继续进入 KDF。Proto 使用显式 `app_password` / `recovery_code` 稳定键，不依赖 Kotlin enum 名称或序号。
 
-Unlock 页面进入时读取每种凭据方式的持久化状态；认证结果更新状态，锁定倒计时期间每秒重新读取状态。持久化状态不可用时显示明确失败，不伪装成“尚未尝试”或“未锁定”。
+Unlock 不在页面进入时读取尝试状态，也不在成功认证后为显示计数而查询。密码或恢复码认证失败后，`UnlockViewModel` 才读取持久状态；若仍处于 cooldown，则每秒刷新剩余时间直至解锁。查询失败会映射为 `ATTEMPT_STATE_UNAVAILABLE`。当前 UI 不显示闲置状态下的尝试计数；失败结果携带的剩余次数只在失败状态仍被保留时用于错误文案。认证失败后的 `finally` 会清空凭据并派发输入变更，Reducer 同时清除失败态，因此当前失败反馈可能在页面呈现前丢失。该 owner 行为与错误反馈仍待验证和修正，见[维护 TODO Task 74](../superpowers/plans/2026-10-30-passly-maintainability-todo.md#task-74)。
 
 ## 恢复码草稿
 
