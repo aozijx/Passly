@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-11-07。
+代码核对日期：2026-11-08。
 
 ## 契约与状态机
 
@@ -120,9 +120,13 @@ owner 级验收，见[维护 TODO Task 59](../superpowers/plans/2026-10-30-passl
 
 Security Route 每次离开 Composition 都会清空应用密码设置/修改对话框的当前、新密码和确认输入，并关闭活动对话框；Activity 配置重建也会走此清理，重建后的 Route 从空草稿开始。Coordinator 用可擦除 `CharArray` 保存其所有草稿，字段替换、提交、关闭和 Route dispose 会覆盖其拥有的数组；提交时另建请求副本并立即清理 Coordinator 草稿，ViewModel/Interactor 仍各自负责已提交请求缓冲区的最终清理。Compose 文本输入 API 和渲染模型仍使用 `String`，其不可变副本只能等待回收，因此这项清理不代表 JVM/Compose 内存已完全擦除。
 
-应用密码和恢复码的连续错误次数由认证中心记录。当前策略是每种凭据方式最多连续错误 5 次；第 5 次起返回
-`RATE_LIMITED`，30 秒后允许再次尝试。成功认证会清除该方式的计数。计数只保存在进程内存中，不写入
-DataStore、数据库或日志；页面只展示 `AuthenticationFailure` 中的剩余次数或等待时间，不能自行判断密码是否正确。
+应用密码和恢复码分别维护持久化尝试状态；Biometric 由 Android 平台管理，不纳入该计数。Domain 提供原子更新端口与状态查询合同，Data 通过现有 Security Preferences Proto DataStore 的 `updateData` 按稳定方法键更新，Security 解释策略与时间。凭据本身不会被保存。
+
+每种凭据最多累计 5 次失败；第 5 次错误输入开始 30 秒锁定。`CredentialMethodExecutor.execute()` 先检查现存锁定，再在运行 KDF 前持久化预留本次提交的凭据尝试。认证成功清零计数；普通密码学异常释放预留次数；提交后取消或 fatal `Error` 不会回滚已持久化的预留次数。锁定期间和未锁定时的剩余次数通过 `AuthenticationFailure` / `AuthenticationAttemptStatus` 提供给页面，页面不自行判断密码是否正确。
+
+状态保存剩余失败计数、墙上时钟截止时间、单调 `elapsedRealtime` 截止时间和设备 boot count。同一开机周期用单调时间计算倒计时；检测到重启时退回到持久化墙上时钟。倒计时到期后归零并清除锁定截止值。认证次数读写或时钟获取失败会返回 `ATTEMPT_STATE_UNAVAILABLE`；凭据验证在预留无法持久化时不会继续进入 KDF。Proto 使用显式 `app_password` / `recovery_code` 稳定键，不依赖 Kotlin enum 名称或序号。
+
+Unlock 页面进入时读取每种凭据方式的持久化状态；认证结果更新状态，锁定倒计时期间每秒重新读取状态。持久化状态不可用时显示明确失败，不伪装成“尚未尝试”或“未锁定”。
 
 ## 恢复码草稿
 
@@ -237,3 +241,7 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 | 区分应用密码 Envelope 提交与会话协调结果 | `runAppPasswordProvisioning()`、`DefaultAuthenticationMethodProvisioner.setAppPassword()` | [`AppPasswordProvisioningCommit.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/AppPasswordProvisioningCommit.kt)、[`DefaultAuthenticationMethodProvisioner.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultAuthenticationMethodProvisioner.kt) |
 | 生成并提交 Recovery Code 草稿 | `DefaultRecoveryCredentialGenerator`、`SecureRecoveryCodeDraft`、`RecoveryCodeDraftInteractor`、`RecoveryCodeSettingsViewModel` | [`DefaultRecoveryCodeDraftFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultRecoveryCodeDraftFactory.kt)、[`RecoveryCodeDraftInteractor.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt)、[`RecoveryCodeSettingsViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt) |
 | 执行生物识别密钥轮换 | `RotateBiometricKeyUseCase`、`BiometricCryptoFactory` | [`RotateBiometricKeyUseCase.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/RotateBiometricKeyUseCase.kt)、[`BiometricCryptoFactory.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/BiometricCryptoFactory.kt) |
+| 认证尝试状态、计数与锁定剩余时间合同 | `AuthenticationAttemptState`、`AuthenticationAttemptStatus`、`AuthenticationAttemptStore.update()`、`AuthenticationAttemptStatusProvider.status()` | [`AuthenticationAttempt.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/access/model/AuthenticationAttempt.kt)、[`AuthenticationAttemptStore.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/access/port/AuthenticationAttemptStore.kt)、[`AuthenticationAttemptStatusProvider.kt`](../../domain/src/main/kotlin/com/aozijx/passly/domain/access/port/AuthenticationAttemptStatusProvider.kt) |
+| 原子持久化各凭据方式的失败状态 | `ProtoAuthenticationAttemptStore.update()` | [`ProtoAuthenticationAttemptStore.kt`](../../data/src/main/java/com/aozijx/passly/data/repository/access/ProtoAuthenticationAttemptStore.kt)、[`security_preferences.proto`](../../data/src/main/proto/security_preferences.proto) |
+| 预留尝试、检查锁定、处理成功/错误和恢复倒计时 | `CredentialMethodExecutor.execute()`、`CredentialAttemptLimiter.reserveAttempt()`、`recordIncorrect()`、`status()` | [`CredentialMethodExecutor.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/CredentialMethodExecutor.kt)、[`CredentialAttemptLimiter.kt`](../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/CredentialAttemptLimiter.kt) |
+| 恢复 Unlock 页面状态并刷新倒计时 | `UnlockViewModel.refreshAttemptStatus()`、`AuthenticationScreen` | [`UnlockViewModel.kt`](../../app/src/main/java/com/aozijx/passly/feature/unlock/presentation/UnlockViewModel.kt)、[`AuthenticationScreen.kt`](../../app/src/main/java/com/aozijx/passly/feature/unlock/presentation/ui/AuthenticationScreen.kt) |

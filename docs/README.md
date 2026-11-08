@@ -139,54 +139,42 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [测试与质量门禁](development/testing.md)
 - [共享元素转场](development/shared-element-transitions.md)
 
-### 正在推进的设计、迁移与待办
+### 活动设计与待办
 
-以下待办同时承接此前审查中仍有效的旧逻辑、桥接和待调整项，以及本轮扫描新增发现；每项只在对应专题或主维护清单保留一份详细记录。已完成或被新实现替代的事项转入下方审查记录，或在原 owner 中注明关闭依据，不继续作为活动待办重复出现。
+活动文档按 `YYYY-MM` 分组；每项开放工作只在一个计划中维护。当前实现合同留在上方的主题页，完成后从活动计划移除；仅需长期保留的验收依据归入审查记录。
 
-#### 设计与实施
+#### 2026-11
+
+##### 设计
 
 - [Typed Diagnostic Events 设计](superpowers/specs/2026-11-04-typed-diagnostic-events-design.md)
-- [Autofill Feature Module 设计](superpowers/specs/2026-11-06-autofill-feature-module-design.md)
 - [Scanner 入口与 Framing 设计](superpowers/specs/2026-11-06-scanner-entry-and-framing-design.md)
-- [Backup Data Port 设计](superpowers/specs/2026-11-07-backup-data-port-design.md)
-- [Security 模块边界设计](superpowers/specs/2026-11-07-security-boundaries-design.md)
-- [Vault 卡片样式设置设计](superpowers/specs/2026-11-07-vault-card-style-settings-design.md)
 
-#### 实施计划
-
-- [Autofill BottomSheet 认证合同实施计划](superpowers/plans/2026-11-06-autofill-bottom-sheet-auth-contract.md)
-- [Autofill Feature Module 实施计划](superpowers/plans/2026-11-06-autofill-feature-module.md)
-- [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
-- [Backup 端到端流式重构实施记录](superpowers/plans/2026-11-07-backup-streaming-implementation.md)
-
-#### 待办按开发流程归档
-
-##### 架构、模块边界与并发
+##### 实施与待办
 
 - [应用架构与并发设计 TODO](superpowers/plans/2026-11-06-app-architecture-concurrency-todo.md)
-- [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
-
-##### 功能调用链与数据迁移
-
-- [Autofill 后续清单](superpowers/plans/2026-11-07-passly-autofill-followups.md)
+- [Diagnostics 写入与 flush 可靠性跟进](superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)
+- [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
 - [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
 - [OTP 审查待办](superpowers/plans/2026-11-06-passly-otp-review-followups.md)
-- [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
-
-##### 安全、可靠性与验证
-
 - [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
-- [Diagnostics 写入与 flush 可靠性跟进](superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)
+- [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)
+- [Autofill 后续清单](superpowers/plans/2026-11-07-passly-autofill-followups.md)
+- [Vault App Picker 状态切换](superpowers/plans/2026-11-08-vault-app-picker-state-cutover.md)
+- [详情页密码关系设备验收](superpowers/plans/2026-11-08-related-password-management.md)
+- [兼容与冗余清理审计](superpowers/plans/2026-11-08-compatibility-deprecated-redundancy-cleanup.md)
 
-#### 2026-11 验收依据
+##### 验收记录
 
 - [硬件 Keystore 真机验收](reviews/2026-11-03-hardware-keystore-verification.md)
 - [Domain 边界与 Entry 标签策略审查](reviews/2026-11-07-domain-boundary-scan.md)
 - [Backup Data Port 迁移审查记录](reviews/2026-11-07-backup-data-port-migration.md)
 - [Security 模块边界迁移审查记录](reviews/2026-11-07-security-boundaries-migration.md)
-- [Domain 职责凝聚设计背景与迁移审查记录](superpowers/specs/2026-11-07-domain-cohesion-design.md) · [验收记录](reviews/2026-11-07-domain-cohesion-migration.md)
+- [Domain 职责凝聚迁移审查记录](reviews/2026-11-07-domain-cohesion-migration.md)
 - [Vault 卡片样式设置实施审查](reviews/2026-11-07-vault-card-style-settings.md)
+- [Vault Presentation 边界审查](reviews/2026-11-08-vault-presentation-boundaries.md)
 
-#### 2026-10 验收依据
+#### 2026-10
 
+- [深度维护 TODO](superpowers/plans/2026-10-30-passly-maintainability-todo.md)
 - [历史、界面与输入边界交付记录](reviews/2026-10-27-history-ui-delivery.md)

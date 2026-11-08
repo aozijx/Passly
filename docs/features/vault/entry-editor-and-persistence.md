@@ -120,7 +120,13 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 
 取消确认不改变关系。删除失败会保留关系和可重试确认框；每次尝试后刷新当前详情关系投影。关联写入与解绑由当前详情页和安全会话持有，页面替换或会话撤销会取消旧任务并抑制迟到结果。普通操作异常由所属服务记录；关系投影刷新失败由详情工作流记录。
 
-实现与验证计划见[详情页密码关系计划](../../superpowers/plans/2026-11-08-related-password-management.md)，设计边界见[密码关系设计稿](../../superpowers/specs/2026-11-08-related-password-management-design.md)。
+唯一未完成的设备验收见[详情页密码关系计划](../../superpowers/plans/2026-11-08-related-password-management.md)。
+
+## 应用关联选择器
+
+详情编辑与 Password 创建页各自持有已安装应用目录请求和搜索状态，共用不可变的 `AppPackagePickerUiState<T>` 结果合同及无状态 `AppPackagePickerBottomSheet`。选择器状态互斥为 `NotRequested`、`Loading`、`Ready` 和 `Failed`；`Ready` 同时保存完整目录、原始查询文本与搜索结果，并区分 `NoApps`、`NoMatches` 和 `Matches`。搜索按应用标签或包名忽略大小写，去除查询首尾空白用于匹配，但保留原输入以供界面显示。
+
+普通目录读取异常进入 `Failed` 并提供重试；取消继续传播，fatal `Error` 不降级。Detail 请求以当前条目 `DetailWorkSession` token 约束，Password 请求以当前认证状态约束；条目、认证 owner 替换或 ViewModel 清除后，旧结果不能覆盖新状态。BottomSheet 只渲染传入状态并回传查询、重试和选择事件，不保存第二份搜索查询。
 
 ## 四类完整表单编辑
 
@@ -174,3 +180,10 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 | 编辑认证后的一次性表单交接 | `EntryEditorSeedStore`、`EntryEditorSeedCoordinator` | [`EntryEditorSeedStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EntryEditorSeedStore.kt) |
 | 按条目类型选择创建/完整编辑目标 | `VaultEditorDestinationRegistry.routeFor()`、`editRouteFor()` | [`VaultEditorDestinationRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt) |
 | 注册详情与四个编辑目的地 | `registerVaultGraph()`、`registerEditorEditDestination()` | [`VaultGraphRegistration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultGraphRegistration.kt) |
+| 从单一 link 快照投影账户组、其他关系与可解绑密码关系 | `DetailSessionQuery.getAll()`、`resolveDirectPasswordLinks()` | [`DetailSessionQuery.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/DetailSessionQuery.kt) |
+| 查找候选并校验绑定/解绑的活动 Login 与关系 ID | `RelatedPasswordLinks.candidates()`、`bind()`、`unlink()` | [`RelatedPasswordLinks.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/RelatedPasswordLinks.kt) |
+| 持有确认状态、页面/会话取消和解绑后刷新 | `DetailPasswordRelationsWorkflow.requestUnlink()`、`confirmUnlink()` | [`DetailPasswordRelationsWorkflow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordRelationsWorkflow.kt) |
+| 展示关系分组、绑定选择器和解绑确认 | `RelatedEntriesSection()`、`RelatedPasswordPickerSheet()` | [`RelatedEntriesSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedEntriesSection.kt)、[`RelatedPasswordPickerSheet.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedPasswordPickerSheet.kt) |
+| 共享应用目录状态与搜索投影 | `AppPackagePickerUiState`、`Ready.search()`、`appPackagePickerReady()` | [`AppPackagePickerUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/AppPackagePickerUiState.kt) |
+| Detail 与 Password 各自持有目录加载/失败/重试 | `DetailViewModel.loadPackagePickerApps()`、`AddPasswordViewModel.loadAssociatedApps()` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`AddPasswordViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/password/AddPasswordViewModel.kt) |
+| 渲染互斥 picker 状态并转发查询/重试/选择事件 | `AppPackagePickerBottomSheet()` | [`AppPackagePickerBottomSheet.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/ui/AppPackagePickerBottomSheet.kt) |

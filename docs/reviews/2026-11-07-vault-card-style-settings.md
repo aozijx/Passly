@@ -4,7 +4,7 @@
 
 ## 范围
 
-审查按条目类型选择 Vault 列表样式的 Interface 设置、Proto DataStore 持久化、稳定键映射、兼容筛选和运行时回退。当前实现合同见[Vault 卡片样式](../features/vault/card-styles.md)，设计决策见[设计规格](../superpowers/specs/2026-11-07-vault-card-style-settings-design.md)。
+审查按条目类型选择 Vault 列表样式的 Interface 设置、Proto DataStore 持久化、稳定键映射、兼容筛选和运行时回退。当前实现合同见[Vault 卡片样式](../features/vault/card-styles.md)。
 
 ## 完成内容
 
