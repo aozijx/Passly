@@ -1,6 +1,6 @@
 # Passly Archive v1
 
-状态：当前实现（代码核对：2026-11-07）。
+状态：当前实现（代码核对：2026-11-08）。
 
 ## 文档身份
 
@@ -55,7 +55,7 @@ JSON 使用 Base64；加密 ZIP 使用 `resources/<resource-id>`。路径穿越�
 
 - Header 使用 ASCII magic `PSLYBKP1`、container version `1`、80-byte canonical header 和 big-endian 整数。头字段依次为 KDF/cipher id、Argon2 参数、salt/prefix 长度、chunk size 与 tag 长度，之后是 16-byte salt 和 4-byte nonce prefix。
 - Argon2id 参数由 `Argon2idParameters` 保存并原样编码；Argon2 v1.3 的参数版本为 `0x13`，当前导出默认 iterations 3、memory 65536 KiB、parallelism 4、key 256 bit。容器版本与 KDF 子版本是不同字段，不互相代替。
-- 导入在派生密钥前拒绝不安全参数：iterations `1..10`、memory `8192..262144 KiB`、parallelism `1..8`、key 256 bit。认证系统的设备 KDF 设置不参与文件格式。
+- 导入在派生密钥前拒绝不安全参数：iterations `1..10`、memory `8192..262144 KiB`、parallelism `1..8`、key 256 bit。该范围限制不可信 header 请求的资源上限，但最低支持设备上的耗时、内存与并发预算尚待实测，见[安全跟进 Task 3](../../superpowers/plans/2026-11-06-passly-security-scan-followups.md#task-3)。认证系统的设备 KDF 设置不参与文件格式。
 - 每条记录头为 `type:u8 | sequence:u64be | plaintextLength:u32be`。Data type 为 1，明文最多 1 MiB；terminal type 为 2，明文固定 16 bytes，包含 data record 数与总明文字节数。每条记录使用独立 AES-256-GCM 操作和 16-byte tag。
 - Nonce 是 4-byte 每文件随机 prefix 加 8-byte big-endian 连续序号；完整原始 Header 与 record header 拼接为 AAD。Data sequence 从 0 开始；terminal 使用下一个序号。即使 ZIP reader 已读完中央目录，也必须继续排空容器，验证 terminal 统计、terminal tag 和物理 EOF，之后才能规划或恢复。
 - 每个 chunk 的 tag 通过后才向 ZIP reader 释放明文；错误密码、损坏记录、缺失 terminal、错误统计和尾随字节均失败。导出和导入均为流接口，外部文件上限为 256 MiB。

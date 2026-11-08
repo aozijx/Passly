@@ -22,11 +22,9 @@
 ## Task 3：限制未认证备份头触发的 Argon2 资源消耗
 
 - [ ] 根据最低支持 Android 设备可承受的资源预算，确定导入专用的 Argon2 memory、iteration、parallelism 上限。导出强度合同与导入防滥用合同分开裁定；不要把用户已确认保留的 256 MiB 文件上限当作 KDF 资源依据。
-- [ ] 在昂贵派生开始前拒绝超限参数；header 在认证前均视为不可信。评估 KDF 自身资源成本和设备可用性，不再把已删除的完整文件/ciphertext 缓冲列为现有实现路径。
-- [ ] 用注入的 KDF 派生函数验证每个超限参数都在派生前失败；覆盖允许的边界值、畸形 header、错误口令/认证失败和导出路径，保护当前分块 AEAD 数字版本 1 的有效合同。旧单块布局不提供兼容导入。
-- [ ] 更新备份安全/格式文档，区分导出参数、导入上限、用户选择文件这一前置条件和设备资源假设；记录容器版本号 1 当前对应分块布局。
+- [ ] 补齐当前测试缺口：以注入派生器验证最高合法参数可被接受、错误口令/认证失败不进入恢复，以及导出参数和导入上限保持独立；保留超上限与畸形 Header 在派生前拒绝的现有断言。
 
-**当前证据（2026-11-07）：** 容器已改为分块 AEAD 输入流；每个 data record 的 tag 通过后才向 ZIP reader 交付该块，terminal 与物理 EOF 完整验证前不调用 restore。文件仍限制为 256 MiB，但 Android FileStore 不再整体读入内存。KDF 上限仍是 iterations 10、memory 262144 KiB、parallelism 8，导入前按 `BackupContainerV1Spec` 拒绝范围外参数；最低支持设备的 KDF 资源预算仍需独立评估。旧单块容器路径已删除，数值容器版本 1 当前指向分块布局。
+**当前证据（2026-11-08）：** 容器使用分块 AEAD 输入流；每个 data record 的 tag 通过后才向 ZIP reader 交付该块，terminal 与物理 EOF 完整验证前不调用 restore。文件上限为 256 MiB，Android FileStore 不整体读入内存。`BackupContainerV1Spec` 将导入上限固定为 iterations 10、memory 262144 KiB、parallelism 8；`BackupContainerHeader.read()` 在 `ChunkedBackupInputStream` 调用派生器前拒绝超限参数。`BackupContainerHeaderTest` 覆盖超限字段及畸形/截断 Header 在派生前失败；`ChunkedBackupStreamsTest` 使用最低合法 KDF 参数覆盖加密流往返。最高合法参数、错误口令和导出参数路径的专项覆盖仍缺；最低支持设备资源预算未实测。当前协议与代码 owner 见[Archive v1](../../features/backup/passly-archive-v1.md)，测试映射见[Backup 验证要求](../../features/backup/verification.md)。旧单块容器路径已删除，数字版本 1 对应分块布局。
 
 **验收：** 分块备份容器测试通过；KDF 超限用例证明派生函数未调用；当前分块格式参数往返和畸形输入拒绝通过；明确旧单块布局停止导入；Room/备份格式版本不变；`git diff --check` 通过。
 
