@@ -23,7 +23,7 @@ data class DetailBodyUiModel(
     val icon: DetailIconCardUiModel,
     val sections: Set<DetailSectionKey>,
     val credential: CredentialSectionUiState?,
-    val otp: DetailOtpUiModel?,
+    val otp: DetailOtpUiModel,
     val canShowWifiQr: Boolean,
     val bankCard: DetailBankCardUiModel?,
     val identity: DetailIdentityUiModel?,

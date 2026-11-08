@@ -130,12 +130,29 @@ data class DetailSshUiModel(
 }
 
 sealed interface DetailOtpUiModel {
+    val displayCode: String
+        get() =
+            when (this) {
+                NotRequested, Pending, Failed -> NOT_REQUESTED_CODE
+
+                is Ready -> code.chunked(CODE_GROUP_SIZE).joinToString(" ")
+            }
+
+    val progress: Float get() = 0f
+
+    data object NotRequested : DetailOtpUiModel
+
     data object Pending : DetailOtpUiModel
 
     data class Ready(
         val code: String,
-        val progress: Float,
+        override val progress: Float,
     ) : DetailOtpUiModel
 
     data object Failed : DetailOtpUiModel
+
+    companion object {
+        private const val CODE_GROUP_SIZE = 3
+        private const val NOT_REQUESTED_CODE = "------"
+    }
 }

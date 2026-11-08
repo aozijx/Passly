@@ -10,7 +10,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiMode
 @Composable
 fun TotpSection(
     modifier: Modifier = Modifier,
-    currentState: DetailOtpUiModel?,
+    currentState: DetailOtpUiModel,
     showProgress: Boolean = true,
     onQrClick: () -> Unit,
     onCodeClick: () -> Unit,

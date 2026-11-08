@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,10 +36,10 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiMode
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TotpCard(
-    currentState: DetailOtpUiModel?,
+    currentState: DetailOtpUiModel,
     showProgress: Boolean = true,
     onQrClick: () -> Unit,
-    onCodeClick: (() -> Unit)? = null,
+    onCodeClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -71,9 +70,8 @@ fun TotpCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         Card(
-            onClick = { onCodeClick?.invoke() },
+            onClick = onCodeClick,
             modifier = Modifier.fillMaxWidth(),
-            enabled = onCodeClick != null,
             colors =
                 CardDefaults.cardColors(
                     containerColor =
@@ -84,14 +82,7 @@ fun TotpCard(
             shape = MaterialTheme.shapes.large,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
         ) {
-            val readyState = currentState as? DetailOtpUiModel.Ready
-            val code = readyState?.code
-            val progress = readyState?.progress ?: 0f
-
-            val displayText =
-                remember(code) {
-                    code?.chunked(3)?.joinToString(" ") ?: "------"
-                }
+            val progress = currentState.progress
 
             val animatedProgress by animateFloatAsState(
                 targetValue = progress,
@@ -122,7 +113,7 @@ fun TotpCard(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = displayText,
+                    text = currentState.displayCode,
                     style = codeStyle,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.wrapContentWidth(),

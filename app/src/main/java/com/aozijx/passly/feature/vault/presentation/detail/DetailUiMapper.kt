@@ -54,9 +54,9 @@ internal fun detailHeaderUiModel(
     entryType = entry.type,
 )
 
-internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel? =
+internal fun detailOtpUiModel(otp: OtpCodeState?): DetailOtpUiModel =
     when (otp) {
-        null -> null
+        null -> DetailOtpUiModel.NotRequested
         OtpCodeState.Pending -> DetailOtpUiModel.Pending
         is OtpCodeState.Ready -> DetailOtpUiModel.Ready(otp.code, otp.progress)
         is OtpCodeState.Failed -> DetailOtpUiModel.Failed

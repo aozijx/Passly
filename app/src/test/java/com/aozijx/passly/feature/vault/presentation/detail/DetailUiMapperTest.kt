@@ -226,7 +226,17 @@ class DetailUiMapperTest {
 
         require(ui is DetailOtpUiModel.Ready)
         assertEquals("123456", ui.code)
+        assertEquals("123 456", ui.displayCode)
         assertEquals(0.25f, ui.progress)
+    }
+
+    @Test
+    fun otpNotRequestedStateProvidesExplicitPlaceholderAndInactiveProgress() {
+        val ui = detailOtpUiModel(null)
+
+        assertEquals(DetailOtpUiModel.NotRequested, ui)
+        assertEquals("------", ui.displayCode)
+        assertEquals(0f, ui.progress)
     }
 
     @Test
@@ -326,6 +336,7 @@ class DetailUiMapperTest {
         val presentation = requireNotNull(toDetailPresentationModel(state, null))
 
         assertEquals("Office", presentation.header.title)
+        assertEquals(DetailOtpUiModel.NotRequested, presentation.content.otp)
         assertTrue(presentation.content.canShowWifiQr)
         val credential = requireNotNull(presentation.content.credential)
         assertNull(credential.username)
