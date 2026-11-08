@@ -27,12 +27,15 @@ abstract class VerifyErrorCatalogTask : DefaultTask() {
         require(markdownFile.get().asFile.readText() == expectedMarkdown) {
             "docs/architecture/observability/error-codes.md is stale; run generateErrorCodes"
         }
-        val resourcesByFile = stringResourceFiles.files.associateWith(::readStringNames)
+        val resourcesByLocale =
+            stringResourceFiles.files
+                .groupBy(File::getParentFile)
+                .mapValues { (_, files) -> files.flatMap(::readStringNames).toSet() }
         catalog.errors.filter { it.exposure == "USER_ACTIONABLE" }.forEach { error ->
             val key = requireNotNull(error.messageKey)
-            val missingFrom = resourcesByFile.filterValues { key !in it }.keys
+            val missingFrom = resourcesByLocale.filterValues { key !in it }.keys
             require(missingFrom.isEmpty()) {
-                "Missing string resource $key in ${missingFrom.joinToString { it.path }}"
+                "Missing string resource $key in locales ${missingFrom.joinToString { it.name }}"
             }
         }
     }

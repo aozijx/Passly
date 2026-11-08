@@ -52,8 +52,8 @@ class ModuleBoundariesPlugin : Plugin<Project> {
                 this.catalogFile.set(catalogFile)
                 markdownFile.set(target.layout.projectDirectory.file("docs/architecture/observability/error-codes.md"))
                 stringResourceFiles.from(
-                    target.layout.projectDirectory.file("app/src/main/res/values/strings.xml"),
-                    target.layout.projectDirectory.file("app/src/main/res/values-en/strings.xml"),
+                    target.fileTree("app/src/main/res/values") { include("strings*.xml") },
+                    target.fileTree("app/src/main/res/values-en") { include("strings*.xml") },
                 )
                 mustRunAfter(generateErrorCodes)
             }

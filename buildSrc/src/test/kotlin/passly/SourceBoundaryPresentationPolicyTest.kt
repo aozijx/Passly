@@ -282,12 +282,12 @@ class SourceBoundaryPresentationPolicyTest {
         cases.forEach { case ->
             val violations = SourceBoundaryVerifier.verify(case.sources, SourceBoundaryPolicy.generalRules)
             assertEquals(
-                case.name,
                 case.expectedRuleIds,
                 violations.map { it.ruleId }.toSet(),
+                case.name,
             )
             case.expectedViolationCount?.let { expectedCount ->
-                assertEquals(case.name, expectedCount, violations.size)
+                assertEquals(expectedCount, violations.size, case.name)
             }
         }
     }
