@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -21,16 +22,25 @@ class RelatedPasswordPickerSheetTest {
 
     @Test
     fun emptyCandidatesAndNoSearchMatchesHaveDifferentMessages() {
-        show(RelatedPasswordBindingUiState.Ready(emptyList()))
+        val state =
+            mutableStateOf<RelatedPasswordBindingUiState>(
+                RelatedPasswordBindingUiState.Ready(emptyList()),
+            )
+        compose.setContent {
+            MaterialTheme {
+                RelatedPasswordPickerSheet(state = state.value, onAction = {})
+            }
+        }
         compose.onNodeWithText(text(R.string.vault_detail_bind_password_empty)).assertIsDisplayed()
 
-        show(
-            RelatedPasswordBindingUiState.Ready(
-                candidates = listOf(RelatedPasswordCandidateUiModel("id", "Portal", null)),
-                query = "missing",
-                results = RelatedPasswordCandidateSearchResults.NoMatches,
-            ),
-        )
+        compose.runOnIdle {
+            state.value =
+                RelatedPasswordBindingUiState.Ready(
+                    candidates = listOf(RelatedPasswordCandidateUiModel("id", "Portal", null)),
+                    query = "missing",
+                    results = RelatedPasswordCandidateSearchResults.NoMatches,
+                )
+        }
         compose.onNodeWithText(text(R.string.vault_detail_bind_password_no_matches)).assertIsDisplayed()
     }
 
