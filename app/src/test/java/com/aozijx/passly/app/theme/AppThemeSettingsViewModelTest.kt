@@ -2,8 +2,11 @@ package com.aozijx.passly.app.theme
 
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
+import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.CorruptSettingsDataException
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
@@ -17,7 +20,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -30,6 +32,13 @@ class AppThemeSettingsViewModelTest {
     fun `corrupt theme settings can be retried without defaulting`() =
         runTest {
             var starts = 0
+            val appearance =
+                AppearanceSettings(
+                    themeMode = ThemeMode.DARK,
+                    isDynamicColor = false,
+                    language = AppLanguage.EN,
+                    fontFamily = FontFamilyMode.SYSTEM,
+                )
             val viewModel =
                 AppThemeSettingsViewModel(
                     appearanceSettingsRepository =
@@ -38,23 +47,24 @@ class AppThemeSettingsViewModelTest {
                                 flow {
                                     starts++
                                     if (starts == 1) throw CorruptSettingsDataException(IllegalStateException())
-                                    emit(AppearanceSettings())
+                                    emit(appearance)
                                     awaitCancellation()
                                 }
 
-                            override suspend fun setThemeMode(mode: com.aozijx.passly.domain.settings.model.ThemeMode) = Unit
+                            override suspend fun setThemeMode(mode: ThemeMode) = Unit
 
                             override suspend fun setDynamicColor(enabled: Boolean) = Unit
 
                             override suspend fun setThemeKey(key: String) = Unit
 
-                            override suspend fun setLanguage(language: com.aozijx.passly.domain.settings.model.AppLanguage) = Unit
+                            override suspend fun setLanguage(language: AppLanguage) = Unit
 
-                            override suspend fun setFontFamily(mode: com.aozijx.passly.domain.settings.model.FontFamilyMode) = Unit
+                            override suspend fun setFontFamily(mode: FontFamilyMode) = Unit
                         },
                     interfaceSettingsRepository =
                         object : InterfaceSettingsRepository {
-                            override val interfaceSettings = MutableStateFlow(InterfaceSettings())
+                            override val interfaceSettings =
+                                MutableStateFlow(InterfaceSettings(appCornerRadiusDp = 30f))
 
                             override suspend fun setHideSystemBars(enabled: Boolean) = Unit
 
@@ -73,6 +83,9 @@ class AppThemeSettingsViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertTrue(viewModel.state.value is RecoverableReadState.Ready)
+            assertEquals(
+                RecoverableReadState.Ready(AppThemeSettings(appearance, appCornerRadiusDp = 30f)),
+                viewModel.state.value,
+            )
         }
 }

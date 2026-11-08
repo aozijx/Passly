@@ -49,6 +49,13 @@ class AppShellViewModelTest {
     fun `settings corruption is visible and retry recollects the cold source`() =
         runTest {
             var starts = 0
+            val appearance =
+                AppearanceSettings(
+                    themeMode = ThemeMode.DARK,
+                    isDynamicColor = false,
+                    language = AppLanguage.EN,
+                    fontFamily = FontFamilyMode.SYSTEM,
+                )
             val fixture =
                 Fixture(
                     retry = { DatabaseSessionRetryResult.Unavailable },
@@ -56,11 +63,17 @@ class AppShellViewModelTest {
                         flow {
                             starts++
                             if (starts == 1) throw CorruptSettingsDataException(IllegalStateException())
-                            emit(AppearanceSettings())
+                            emit(appearance)
                             awaitCancellation()
                         },
-                    interfaceSettings = MutableStateFlow(InterfaceSettings()),
-                    securitySettings = MutableStateFlow(SecuritySettings()),
+                    interfaceSettings =
+                        MutableStateFlow(
+                            InterfaceSettings(
+                                hideSystemBars = true,
+                                appCornerRadiusDp = 29f,
+                            ),
+                        ),
+                    securitySettings = MutableStateFlow(SecuritySettings(isSecureContentEnabled = false)),
                 )
             runCurrent()
 
@@ -72,7 +85,20 @@ class AppShellViewModelTest {
             runCurrent()
 
             assertEquals(2, starts)
-            assertTrue(fixture.model.uiState.value.settings is RecoverableReadState.Ready)
+            assertEquals(
+                RecoverableReadState.Ready(
+                    AppShellSettings(
+                        appearance = appearance,
+                        appCornerRadiusDp = 29f,
+                        windowPolicy =
+                            AppWindowPolicy(
+                                isSecureContentEnabled = false,
+                                isStatusBarAutoHide = true,
+                            ),
+                    ),
+                ),
+                fixture.model.uiState.value.settings,
+            )
             fixture.close()
         }
 
