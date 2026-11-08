@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.settings.presentation.common.ObserveSettingsWriteErrors
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordDialogCoordinatorOwner
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsAction
@@ -17,7 +18,6 @@ import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSetti
 import com.aozijx.passly.feature.settings.presentation.security.AppPasswordSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsAction
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsNotice
-import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsUiState
 import com.aozijx.passly.feature.settings.presentation.security.SecuritySettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.security.rememberAppPasswordDialogCoordinator
 import com.aozijx.passly.feature.settings.presentation.security.toAppPasswordMessage
@@ -97,19 +97,19 @@ internal fun SecurityRoute(onBack: (() -> Unit)?) {
         onBack = onBack,
     ) {
         when (val state = securityState) {
-            SecuritySettingsUiState.Loading -> {
+            RecoverableReadState.Loading -> {
                 Unit
             }
 
-            is SecuritySettingsUiState.Failed -> {
+            is RecoverableReadState.Failed -> {
                 item { SettingsReadFailureContent(onRetry = { securityViewModel.onAction(SecuritySettingsAction.RetryRead) }) }
             }
 
-            is SecuritySettingsUiState.Ready -> {
+            is RecoverableReadState.Ready -> {
                 item {
                     SecurityDetail(
                         state =
-                            state.toSecuritySettingsUiModel(
+                            state.value.toSecuritySettingsUiModel(
                                 isAppPasswordEnabled = appPasswordState.isAppPasswordEnabled,
                             ),
                         onLockTimeoutChange = {

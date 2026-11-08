@@ -10,14 +10,13 @@ class SecuritySettingsUiMapperTest {
     @Test
     fun mapsSecurityStateAndLockConstraintsToPassiveUiModel() {
         val model =
-            SecuritySettingsUiState
-                .Ready(
-                    lockTimeout = 45_000L,
-                    isInvalidateKeyOnBioChange = false,
-                    isLockOnBackground = true,
-                    isBiometricEnabled = true,
-                    isAuthenticationChangeInProgress = true,
-                ).toSecuritySettingsUiModel(isAppPasswordEnabled = true)
+            SecuritySettingsValues(
+                lockTimeout = 45_000L,
+                isInvalidateKeyOnBioChange = false,
+                isLockOnBackground = true,
+                isBiometricEnabled = true,
+                isAuthenticationChangeInProgress = true,
+            ).toSecuritySettingsUiModel(isAppPasswordEnabled = true)
 
         assertEquals(45_000L, model.lockTimeoutMs)
         assertEquals(LockTimeoutConstraints.SLIDER_MIN_MS / 1000f, model.sliderMinSeconds)

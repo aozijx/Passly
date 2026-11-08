@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.settings.presentation.security
 import com.aozijx.passly.domain.settings.model.LockTimeoutConstraints
 import com.aozijx.passly.feature.settings.presentation.ui.security.model.SecuritySettingsUiModel
 
-fun SecuritySettingsUiState.Ready.toSecuritySettingsUiModel(isAppPasswordEnabled: Boolean): SecuritySettingsUiModel =
+fun SecuritySettingsValues.toSecuritySettingsUiModel(isAppPasswordEnabled: Boolean): SecuritySettingsUiModel =
     SecuritySettingsUiModel(
         lockTimeoutMs = lockTimeout,
         sliderMinSeconds = LockTimeoutConstraints.SLIDER_MIN_MS / 1000f,

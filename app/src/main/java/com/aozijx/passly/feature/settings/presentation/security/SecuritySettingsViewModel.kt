@@ -22,12 +22,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -54,7 +52,7 @@ class SecuritySettingsViewModel
                         authenticationWork,
                         biometricConfigurationSource.biometricConfiguration,
                     ) { security, isBiometricEnabled, work, configuration ->
-                        SecuritySettingsUiState.Ready(
+                        SecuritySettingsValues(
                             lockTimeout = security.lockTimeout,
                             isInvalidateKeyOnBioChange = configuration.invalidateOnEnrollmentForNextKey,
                             isLockOnBackground = security.isLockOnBackground,
@@ -65,19 +63,7 @@ class SecuritySettingsViewModel
                 scope = viewModelScope,
             )
 
-        val uiState: StateFlow<SecuritySettingsUiState> =
-            settingsRead.state
-                .map { state ->
-                    when (state) {
-                        RecoverableReadState.Loading -> SecuritySettingsUiState.Loading
-                        is RecoverableReadState.Ready -> state.value
-                        is RecoverableReadState.Failed -> SecuritySettingsUiState.Failed(state.failure)
-                    }
-                }.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5_000L),
-                    initialValue = SecuritySettingsUiState.Loading,
-                )
+        val uiState: StateFlow<RecoverableReadState<SecuritySettingsValues>> = settingsRead.state
 
         fun onAction(action: SecuritySettingsAction) {
             when (action) {
@@ -108,7 +94,7 @@ class SecuritySettingsViewModel
         }
 
         private fun setKeyInvalidationPolicy(enabled: Boolean) {
-            val settings = uiState.value as? SecuritySettingsUiState.Ready ?: return
+            val settings = (uiState.value as? RecoverableReadState.Ready)?.value ?: return
             if (!settings.isBiometricEnabled) return
             changeAuthentication {
                 authenticationSettings.setKeyInvalidationPolicy(enabled)
@@ -116,7 +102,7 @@ class SecuritySettingsViewModel
         }
 
         private fun setBiometricEnabled(enabled: Boolean) {
-            if (uiState.value !is SecuritySettingsUiState.Ready) return
+            if (uiState.value !is RecoverableReadState.Ready) return
             changeAuthentication {
                 authenticationSettings.setBiometricEnabled(
                     enabled = enabled,
@@ -182,7 +168,7 @@ class SecuritySettingsViewModel
         private fun saveSetting(write: suspend () -> Unit) {
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
-                if (uiState.value !is SecuritySettingsUiState.Ready) return@launch
+                if (uiState.value !is RecoverableReadState.Ready) return@launch
                 writePreferenceWithFeedback(
                     failureRes = R.string.settings_security_save_failed,
                     onFailure = { emitError(owner, it) },

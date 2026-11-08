@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.settings.presentation.security
 
 import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
+import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
 import com.aozijx.passly.domain.access.model.AuthenticationMethod
@@ -60,12 +61,12 @@ class SecuritySettingsViewModelTest {
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
 
-            assertEquals(true, model.uiState.value is SecuritySettingsUiState.Failed)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Failed)
             model.onAction(SecuritySettingsAction.RetryRead)
             runCurrent()
 
             assertEquals(2, starts)
-            assertEquals(true, model.uiState.value is SecuritySettingsUiState.Ready)
+            assertEquals(true, model.uiState.value is RecoverableReadState.Ready)
         }
 
     @Test
@@ -104,10 +105,18 @@ class SecuritySettingsViewModelTest {
             model.onAction(SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(false))
             runCurrent()
             assertEquals(1, fixture.provisioner.calls)
-            assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isAuthenticationChangeInProgress)
+            assertEquals(
+                true,
+                (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>)
+                    .value.isAuthenticationChangeInProgress,
+            )
             release.complete(Unit)
             runCurrent()
-            assertEquals(false, (model.uiState.value as SecuritySettingsUiState.Ready).isAuthenticationChangeInProgress)
+            assertEquals(
+                false,
+                (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>)
+                    .value.isAuthenticationChangeInProgress,
+            )
             model.onAction(SecuritySettingsAction.SetInvalidateKeyOnBiometricChange(false))
             runCurrent()
             assertEquals(2, fixture.provisioner.calls)
@@ -137,7 +146,11 @@ class SecuritySettingsViewModelTest {
                         listOf(UiErrorMessage(R.string.settings_auth_last_method_required))
                     }
                 assertEquals(expected, errors)
-                assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
+                assertEquals(
+                    true,
+                    (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>)
+                        .value.isBiometricEnabled,
+                )
             }
         }
 
@@ -182,7 +195,10 @@ class SecuritySettingsViewModelTest {
             runCurrent()
 
             assertEquals(listOf(SecuritySettingsNotice.BiometricRotationCleanupPending), notices)
-            assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
+            assertEquals(
+                true,
+                (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>).value.isBiometricEnabled,
+            )
         }
 
     @Test
@@ -215,7 +231,10 @@ class SecuritySettingsViewModelTest {
                 ),
                 notices,
             )
-            assertEquals(true, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
+            assertEquals(
+                true,
+                (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>).value.isBiometricEnabled,
+            )
         }
 
     @Test
@@ -264,10 +283,18 @@ class SecuritySettingsViewModelTest {
             runCurrent()
             fixture.configuration.value = BiometricConfiguration.Configured(false)
             runCurrent()
-            assertEquals(false, (model.uiState.value as SecuritySettingsUiState.Ready).isInvalidateKeyOnBioChange)
+            assertEquals(
+                false,
+                (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>)
+                    .value.isInvalidateKeyOnBioChange,
+            )
             fixture.configuration.value = BiometricConfiguration.NotConfigured
             runCurrent()
-            assertEquals(false, (model.uiState.value as SecuritySettingsUiState.Ready).isBiometricEnabled)
+            assertEquals(
+                false,
+                (model.uiState.value as RecoverableReadState.Ready<SecuritySettingsValues>)
+                    .value.isBiometricEnabled,
+            )
         }
 
     @Test
