@@ -12,10 +12,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -30,38 +30,46 @@ class VaultQueryStateTest {
     @Test
     fun `settings failure invalidates query until recovered settings arrive`() =
         runTest {
-            val uiState = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
+            val uiState = MutableStateFlow(VaultUiState(searchQuery = "mail"))
             val settings =
                 MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
                     RecoverableReadState.Ready(
                         LibraryViewSettings(
                             sort = createdAtDescendingSort,
+                            entryCardPresentations = emptyList(),
                             entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
                         ),
                     ),
                 )
-            val observed = mutableListOf<VaultQueryState?>()
+            val observed = mutableListOf<VaultQueryGeneration>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 buildRecoverableVaultQueryStates(uiState, settings).collect(observed::add)
             }
             runCurrent()
             advanceTimeBy(250L)
             runCurrent()
-            assertEquals(EntryHierarchyDisplayMode.COLLAPSED, observed.last()?.hierarchyMode)
+            assertEquals(
+                EntryHierarchyDisplayMode.COLLAPSED,
+                (observed.last() as VaultQueryGeneration.Available).query.hierarchyMode,
+            )
 
             settings.value = RecoverableReadState.Failed(ReadFailure.CORRUPT_DATA)
             runCurrent()
-            assertNull(observed.last())
+            assertEquals(VaultQueryGeneration.Unavailable, observed.last())
 
             settings.value =
                 RecoverableReadState.Ready(
                     LibraryViewSettings(
                         sort = createdAtDescendingSort,
+                        entryCardPresentations = emptyList(),
                         entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED,
                     ),
                 )
             runCurrent()
-            assertEquals(EntryHierarchyDisplayMode.EXPANDED, observed.last()?.hierarchyMode)
+            assertEquals(
+                EntryHierarchyDisplayMode.EXPANDED,
+                (observed.last() as VaultQueryGeneration.Available).query.hierarchyMode,
+            )
         }
 
     @Test
@@ -98,8 +106,8 @@ class VaultQueryStateTest {
                     entryTypes = emptySet(),
                     hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
                 )
-            val states = MutableSharedFlow<VaultQueryState?>(replay = 1, extraBufferCapacity = 2)
-            states.tryEmit(initial)
+            val states = MutableSharedFlow<VaultQueryGeneration>(replay = 1, extraBufferCapacity = 2)
+            states.tryEmit(VaultQueryGeneration.Available(initial))
             val loadedQueries = mutableListOf<String>()
             val collection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -111,7 +119,7 @@ class VaultQueryStateTest {
                 }
             runCurrent()
 
-            states.emit(initial.copy())
+            states.emit(VaultQueryGeneration.Available(initial.copy()))
             runCurrent()
             assertEquals(listOf("mail"), loadedQueries)
 
@@ -130,8 +138,8 @@ class VaultQueryStateTest {
                     entryTypes = emptySet(),
                     hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
                 )
-            val states = MutableSharedFlow<VaultQueryState?>(replay = 1)
-            states.emit(initial)
+            val states = MutableSharedFlow<VaultQueryGeneration>(replay = 1)
+            states.emit(VaultQueryGeneration.Available(initial))
             val allLoads = mutableListOf<EntryHierarchyDisplayMode?>()
             val passwordLoads = mutableListOf<EntryHierarchyDisplayMode?>()
 
@@ -146,7 +154,13 @@ class VaultQueryStateTest {
             val passwordCollection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                     states
-                        .map { it?.copy(entryTypes = setOf(EntryType.LOGIN)) }
+                        .map { generation ->
+                            when (generation) {
+                                VaultQueryGeneration.Unavailable -> generation
+                                is VaultQueryGeneration.Available ->
+                                    generation.copy(query = generation.query.copy(entryTypes = setOf(EntryType.LOGIN)))
+                            }
+                        }
                         .switchRecoverableQueryGenerations(unavailable = flowOf(Unit)) { query ->
                             passwordLoads += query.hierarchyMode
                             flowOf(Unit)
@@ -154,7 +168,9 @@ class VaultQueryStateTest {
                 }
             runCurrent()
 
-            states.emit(initial.copy(hierarchyMode = EntryHierarchyDisplayMode.EXPANDED))
+            states.emit(
+                VaultQueryGeneration.Available(initial.copy(hierarchyMode = EntryHierarchyDisplayMode.EXPANDED)),
+            )
             runCurrent()
 
             assertEquals(
@@ -178,8 +194,8 @@ class VaultQueryStateTest {
                     entryTypes = emptySet(),
                     hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
                 )
-            val states = MutableSharedFlow<VaultQueryState?>(replay = 1)
-            states.emit(initial)
+            val states = MutableSharedFlow<VaultQueryGeneration>(replay = 1)
+            states.emit(VaultQueryGeneration.Available(initial))
             val started = mutableListOf<String>()
             val cancelled = mutableListOf<String>()
 
@@ -199,7 +215,7 @@ class VaultQueryStateTest {
                 }
             runCurrent()
 
-            states.emit(initial.copy(searchText = "work"))
+            states.emit(VaultQueryGeneration.Available(initial.copy(searchText = "work")))
             runCurrent()
 
             assertEquals(listOf("mail", "work"), started)
@@ -211,11 +227,11 @@ class VaultQueryStateTest {
     @Test
     fun `unrelated ui updates cannot postpone the initial search deadline`() =
         runTest {
-            val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
+            val states = MutableStateFlow(VaultUiState(searchQuery = "mail"))
             val observed = mutableListOf<VaultQueryState>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 buildRecoverableVaultQueryStates(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
-                    .filterNotNull()
+                    .availableQueries()
                     .collect(observed::add)
             }
             runCurrent()
@@ -235,11 +251,11 @@ class VaultQueryStateTest {
     @Test
     fun `equivalent search text keeps its deadline while category changes immediately`() =
         runTest {
-            val states = MutableStateFlow(VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort))
+            val states = MutableStateFlow(VaultUiState(searchQuery = "mail"))
             val observed = mutableListOf<VaultQueryState>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                 buildRecoverableVaultQueryStates(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
-                    .filterNotNull()
+                    .availableQueries()
                     .collect(observed::add)
             }
             runCurrent()
@@ -264,7 +280,7 @@ class VaultQueryStateTest {
         runTest {
             val uiStates =
                 MutableStateFlow(
-                    VaultUiState(searchQuery = "mail", selectedSort = createdAtDescendingSort),
+                    VaultUiState(searchQuery = "mail"),
                 )
             val settings =
                 MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
@@ -274,7 +290,7 @@ class VaultQueryStateTest {
 
             val collection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    buildRecoverableVaultQueryStates(uiStates, settings).filterNotNull().collect(observed::add)
+                    buildRecoverableVaultQueryStates(uiStates, settings).availableQueries().collect(observed::add)
                 }
             runCurrent()
             assertEquals(emptyList<VaultQueryState>(), observed)
@@ -290,7 +306,11 @@ class VaultQueryStateTest {
             runCurrent()
             assertEquals("Work", observed.last().category)
 
-            uiStates.value = uiStates.value.copy(selectedSort = createdAtDescendingSort.toggled())
+            settings.value =
+                readyLibrarySettingsState(
+                    EntryHierarchyDisplayMode.COLLAPSED,
+                    createdAtDescendingSort.toggled(),
+                )
             runCurrent()
             assertEquals(createdAtDescendingSort.toggled(), observed.last().sort)
 
@@ -315,13 +335,22 @@ private val createdAtDescendingSort =
         direction = SortDirection.DESC,
     )
 
+private fun Flow<VaultQueryGeneration>.availableQueries(): Flow<VaultQueryState> =
+    mapNotNull { generation ->
+        (generation as? VaultQueryGeneration.Available)?.query
+    }
+
 private fun readyLibrarySettings(mode: EntryHierarchyDisplayMode) =
     flowOf(readyLibrarySettingsState(mode))
 
-private fun readyLibrarySettingsState(mode: EntryHierarchyDisplayMode) =
+private fun readyLibrarySettingsState(
+    mode: EntryHierarchyDisplayMode,
+    sort: EntrySort = createdAtDescendingSort,
+) =
     RecoverableReadState.Ready(
         LibraryViewSettings(
-            sort = createdAtDescendingSort,
+            sort = sort,
+            entryCardPresentations = emptyList(),
             entryHierarchyDisplayMode = mode,
         ),
     )

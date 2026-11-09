@@ -181,8 +181,10 @@ internal fun EntryCardPresentation.toUiModel() =
         showQuickAction = showQuickAction,
     )
 
-internal fun VaultUiState.toUiModel(display: VaultDisplayUiState.Ready): VaultListScreenUiModel? {
-    val sort = selectedSort ?: return null
+internal fun VaultUiState.toUiModel(
+    display: VaultDisplayUiState.Ready,
+    sort: EntrySort,
+): VaultListScreenUiModel {
     val creationOptions = VaultEditorDestinationRegistry.creatableTypes.map(AddType::toUiModel)
     return VaultListScreenUiModel(
         toolbar =

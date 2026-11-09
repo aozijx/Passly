@@ -4,6 +4,7 @@ import com.aozijx.passly.core.platform.clipboard.ClipboardClearResult
 import com.aozijx.passly.core.platform.clipboard.SecureClipboard
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -104,7 +105,7 @@ class ClipboardCopyControllerTest {
     private fun policy(
         enabled: Boolean,
         delay: Int,
-    ) = SecuritySettings(
+    ) = sampleSecuritySettings().copy(
         clipboardClearPolicy = ClipboardClearPolicy(enabled, delay),
     )
 

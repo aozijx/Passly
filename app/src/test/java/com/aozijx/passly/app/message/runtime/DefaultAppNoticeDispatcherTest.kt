@@ -22,6 +22,7 @@ import com.aozijx.passly.app.message.model.DeliveryPolicy
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.testing.sampleMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -118,7 +119,7 @@ class DefaultAppNoticeDispatcherTest {
                             MessageSettingsSnapshot.Ready(
                                 version = 4,
                                 value =
-                                    MessageSettings(
+                                    sampleMessageSettings(
                                         optionalMessagesEnabled = false,
                                         systemNotificationsEnabled = false,
                                     ),
@@ -200,7 +201,7 @@ class DefaultAppNoticeDispatcherTest {
             )
             assertTrue(mandatoryDelivered.await(5, TimeUnit.SECONDS))
 
-            snapshot.set(MessageSettingsSnapshot.Ready(3, MessageSettings()))
+            snapshot.set(MessageSettingsSnapshot.Ready(3, sampleMessageSettings()))
             assertEquals(
                 NoticeEnqueueResult.Accepted,
                 dispatcher.publish(newAppNotice(NoticeCode.CLIPBOARD_CLEARED, eventId = "queue-barrier")),
@@ -227,7 +228,7 @@ class DefaultAppNoticeDispatcherTest {
                                     if (attempts.getAndIncrement() == 0) throw IOException("settings unavailable")
                                     retryStarted.countDown()
                                     check(allowRecovery.await(5, TimeUnit.SECONDS))
-                                    emit(MessageSettings())
+                                    emit(sampleMessageSettings())
                                     recovered.countDown()
                                     awaitCancellation()
                                 }
@@ -385,7 +386,7 @@ class DefaultAppNoticeDispatcherTest {
                     settingsProvider =
                         MessageSettingsSnapshotProvider {
                             settingsReads++
-                            MessageSettingsSnapshot.Ready(9, MessageSettings())
+                            MessageSettingsSnapshot.Ready(9, sampleMessageSettings())
                         },
                     visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
                     systemStateProvider = availableSystemState(),
@@ -423,7 +424,7 @@ class DefaultAppNoticeDispatcherTest {
                     codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
                     settingsProvider =
                         MessageSettingsSnapshotProvider {
-                            MessageSettingsSnapshot.Ready(1, MessageSettings())
+                            MessageSettingsSnapshot.Ready(1, sampleMessageSettings())
                         },
                     visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
                     systemStateProvider = availableSystemState(),
@@ -460,7 +461,7 @@ class DefaultAppNoticeDispatcherTest {
                     codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
                     settingsProvider =
                         MessageSettingsSnapshotProvider {
-                            MessageSettingsSnapshot.Ready(1, MessageSettings())
+                            MessageSettingsSnapshot.Ready(1, sampleMessageSettings())
                         },
                     visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
                     systemStateProvider = availableSystemState(),
@@ -501,7 +502,7 @@ class DefaultAppNoticeDispatcherTest {
                         },
                     settingsProvider =
                         MessageSettingsSnapshotProvider {
-                            MessageSettingsSnapshot.Ready(1, MessageSettings())
+                            MessageSettingsSnapshot.Ready(1, sampleMessageSettings())
                         },
                     visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
                     systemStateProvider = availableSystemState(),
@@ -543,7 +544,7 @@ class DefaultAppNoticeDispatcherTest {
                         MessageSettingsSnapshotProvider {
                             MessageSettingsSnapshot.Ready(
                                 3,
-                                MessageSettings(systemNotificationsEnabled = false),
+                                sampleMessageSettings(systemNotificationsEnabled = false),
                             )
                         },
                     visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
@@ -582,7 +583,7 @@ class DefaultAppNoticeDispatcherTest {
 
     private fun readySettings() =
         MessageSettingsSnapshotProvider {
-            MessageSettingsSnapshot.Ready(1, MessageSettings())
+            MessageSettingsSnapshot.Ready(1, sampleMessageSettings())
         }
 
     private fun sink(

@@ -52,7 +52,8 @@ Proto 只保存已经存在读写入口、确实需要跨启动保留的用户�
 Proto2 的 `optional` 与 `[default = ...]` 定义首次安装和新文件的持久化偏好。Serializer 的 `defaultValue` 使用根消息
 `getDefaultInstance()`；DataStore 文件不存在时直接发出该实例。Proto mapper 不写 `?: 60000` 或字符串 `else`
 等持久化回退。需要持久化偏好的运行时状态在 DataStore 首次发值前保持未就绪，不用 Domain 或 Presentation
-常量伪造一个已加载值。Domain 可以保留与持久化无关的构造默认值，但不得重新声明 Proto 偏好的默认选择。
+常量伪造一个已加载值。Domain 持久化设置模型要求调用方提供完整字段；每个 Data mapper 从 Proto getter
+读取 schema 默认值并构造完整快照。Domain 保留的范围约束、校验回退和查询排序策略属于业务规则，不代表已加载的持久化偏好。
 
 固定选择使用以 `Preference` 结尾的 Proto enum，例如 `SwipeActionPreference`，避免与 Domain 类型重名和 `as`
 别名导入。每个 enum 的 0 值为 `*_UNSPECIFIED`，字段显式指定合法默认值；Mapper 收到显式
@@ -113,8 +114,10 @@ flowchart LR
 `setTopBarCollapsible(enabled)`、`setQuickFilterBarCollapsible(enabled)`、`setAppCornerRadius(radiusDp)` 或
 `setEntryHierarchyDisplayMode(mode)` 进入对应 helper；圆角在写 Proto 前调用 `AppCornerRadiusConstraints.normalize(radiusDp)`。
 
-读取一侧，`ProtoAppPreferencesStore.preferences` 是 `dataStore.data.tagCorruptSettingsData()`；属性 Flow 再通过 `map`
-解码成 Domain 设置。`InterfaceSettingsViewModel` 将 `settingsRepository.interfaceSettings` 与
+读取一侧，`ProtoAppPreferencesStore.preferences` 是 `dataStore.data.tagCorruptSettingsData()`；属性 Flow 再通过对应的
+`*ProtoMappings` 解码成完整 Domain 设置。普通设置共享一个 Proto 读取 owner，安全设置由独立的安全 Proto owner 读取；
+各 Repository Flow 只投影自己拥有的设置类型，不再由 Domain 构造器补齐持久化默认值。映射保持按设置子消息拆分，
+避免把不相关偏好合并为一个 Domain 聚合后，单个字段的无效枚举使所有设置消费者一起失败。`InterfaceSettingsViewModel` 将 `settingsRepository.interfaceSettings` 与
 `librarySettingsRepository.libraryViewSettings` 传给 `combine`，转成 `InterfaceSettingsUiState.Ready`，再交给
 `RecoverableRead(source, viewModelScope)`。其 `state` 的 `Loading / Ready / Failed` 映射为页面状态；读取异常后由
 `RecoverableRead.retryWhen` 管理 owner 和重新订阅：`IOException` 显示 `Failed(IO)` 后按退避自动重试，损坏数据和其他普通

@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
-import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiState
 
@@ -19,10 +18,6 @@ internal sealed interface VaultMutation {
 
     data class FilterToggled(
         val filter: AddType?,
-    ) : VaultMutation
-
-    data class SortChanged(
-        val sort: EntrySort,
     ) : VaultMutation
 
     data class SearchVisibilityChanged(
@@ -65,10 +60,6 @@ internal object VaultReducer {
                                 }
                             }.orEmpty(),
                 )
-            }
-
-            is VaultMutation.SortChanged -> {
-                state.copy(selectedSort = mutation.sort)
             }
 
             is VaultMutation.SearchVisibilityChanged -> {

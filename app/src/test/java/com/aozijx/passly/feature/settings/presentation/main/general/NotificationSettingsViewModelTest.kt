@@ -8,6 +8,7 @@ import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.testing.sampleMessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
@@ -51,7 +52,7 @@ class NotificationSettingsViewModelTest {
                             starts++
                             if (starts == 1) throw IOException("read failure")
                             emit(
-                                MessageSettings(
+                                sampleMessageSettings(
                                     optionalMessagesEnabled = false,
                                     systemNotificationsEnabled = false,
                                     topicSettings =
@@ -430,7 +431,7 @@ class NotificationSettingsViewModelTest {
         )
 
     private class RecordingMessageSettingsRepository(
-        override val messages: Flow<MessageSettings> = MutableStateFlow(MessageSettings()),
+        override val messages: Flow<MessageSettings> = MutableStateFlow(sampleMessageSettings()),
         private val save: suspend () -> Unit = {},
     ) : MessageSettingsRepository {
         val systemNotificationWrites = mutableListOf<Boolean>()

@@ -29,10 +29,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -75,7 +73,7 @@ class VaultViewModel
                 scope = viewModelScope,
             )
 
-        private val queryState: Flow<VaultQueryState?> =
+        private val queryState: Flow<VaultQueryGeneration> =
             buildRecoverableVaultQueryStates(
                 uiStates = uiState,
                 librarySettings = librarySettingsState,
@@ -177,17 +175,6 @@ class VaultViewModel
         }
 
         init {
-            viewModelScope.launch {
-                librarySettingsState
-                    .mapNotNull { state ->
-                        when (state) {
-                            is RecoverableReadState.Ready -> state.value.sort
-                            else -> null
-                        }
-                    }.distinctUntilChanged()
-                    .collect { mutate(VaultMutation.SortChanged(it)) }
-            }
-
             viewModelScope.launch {
                 categoriesRead.state.collect { readState ->
                     val categories =

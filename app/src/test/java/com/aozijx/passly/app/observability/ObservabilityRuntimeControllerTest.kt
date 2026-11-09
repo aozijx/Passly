@@ -293,7 +293,7 @@ class ObservabilityRuntimeControllerTest {
         store: RecordingStore,
         previous: PreviousExitSource,
         registry: RecordingCrashHandlerRegistry,
-        recordingMode: Flow<DiagnosticsLogRecordingMode> = flowOf(DiagnosticsLogRecordingMode.DEFAULT),
+        recordingMode: Flow<DiagnosticsLogRecordingMode> = flowOf(DiagnosticsLogRecordingMode.DISABLED),
         recordingPolicy: DiagnosticsLogRecordingPolicy = DiagnosticsLogRecordingPolicy(),
         beforeController: (Logger) -> Unit = {},
     ): ObservabilityRuntimeController {

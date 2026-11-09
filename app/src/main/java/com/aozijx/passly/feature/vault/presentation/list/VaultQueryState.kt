@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 
 /** Stable inputs used to derive the vault's single Paging generation. */
 internal data class VaultQueryState(
@@ -51,36 +50,46 @@ internal data class VaultQueryState(
     }
 }
 
+internal sealed interface VaultQueryGeneration {
+    data object Unavailable : VaultQueryGeneration
+
+    data class Available(val query: VaultQueryState) : VaultQueryGeneration
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
-internal fun <T> Flow<VaultQueryState?>.switchRecoverableQueryGenerations(
+internal fun <T> Flow<VaultQueryGeneration>.switchRecoverableQueryGenerations(
     unavailable: Flow<T>,
     load: (EntryListQuery) -> Flow<T>,
 ): Flow<T> =
-    map { state -> state?.toEntryListQuery() }
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
-            query?.let(load) ?: unavailable
+    distinctUntilChanged()
+        .flatMapLatest { generation ->
+            when (generation) {
+                VaultQueryGeneration.Unavailable -> unavailable
+                is VaultQueryGeneration.Available -> load(generation.query.toEntryListQuery())
+            }
         }
 
 @OptIn(FlowPreview::class)
 internal fun buildRecoverableVaultQueryStates(
     uiStates: Flow<VaultUiState>,
     librarySettings: Flow<RecoverableReadState<LibraryViewSettings>>,
-): Flow<VaultQueryState?> {
+): Flow<VaultQueryGeneration> {
     val (effectiveSearch, selection) = uiStates.queryInputs()
 
     return combine(effectiveSearch, selection, librarySettings.distinctUntilChanged()) { search, currentSelection, read ->
         val settings =
             when (read) {
                 is RecoverableReadState.Ready -> read.value
-                else -> return@combine null
+                else -> return@combine VaultQueryGeneration.Unavailable
             }
-        VaultQueryState.create(
-            searchText = search,
-            category = currentSelection.category,
-            sort = currentSelection.sort,
-            entryTypes = currentSelection.entryTypes,
-            hierarchyMode = settings.entryHierarchyDisplayMode,
+        VaultQueryGeneration.Available(
+            VaultQueryState.create(
+                searchText = search,
+                category = currentSelection.category,
+                sort = settings.sort,
+                entryTypes = currentSelection.entryTypes,
+                hierarchyMode = settings.entryHierarchyDisplayMode,
+            ),
         )
     }.distinctUntilChanged()
 }
@@ -93,11 +102,9 @@ private fun Flow<VaultUiState>.queryInputs(): Pair<Flow<String>, Flow<VaultQuery
             .debounce(SEARCH_DEBOUNCE_MILLIS)
             .distinctUntilChanged()
     val selection =
-        mapNotNull { state ->
-            val sort = state.selectedSort ?: return@mapNotNull null
+        map { state ->
             VaultQuerySelection(
                 state.selectedCategory,
-                sort,
                 state.selectedFilters.flatMap { it.entryTypes }.toSet(),
             )
         }.distinctUntilChanged()
@@ -106,7 +113,6 @@ private fun Flow<VaultUiState>.queryInputs(): Pair<Flow<String>, Flow<VaultQuery
 
 private data class VaultQuerySelection(
     val category: String?,
-    val sort: EntrySort,
     val entryTypes: Set<EntryType>,
 )
 

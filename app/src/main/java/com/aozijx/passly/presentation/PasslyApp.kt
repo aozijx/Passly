@@ -16,7 +16,10 @@ import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.app.theme.AppTheme
 import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
+import com.aozijx.passly.domain.settings.model.AppLanguage
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
+import com.aozijx.passly.domain.settings.model.FontFamilyMode
+import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
 import com.aozijx.passly.feature.shell.presentation.AppShell
 import com.aozijx.passly.feature.shell.presentation.AppShellUiAction
@@ -45,7 +48,14 @@ internal fun PasslyApp(
 
             is RecoverableReadState.Failed -> {
                 AppTheme(
-                    appearance = AppearanceSettings(),
+                    appearance =
+                        AppearanceSettings(
+                            themeMode = ThemeMode.SYSTEM,
+                            isDynamicColor = true,
+                            themeKey = "default",
+                            language = AppLanguage.SYSTEM,
+                            fontFamily = FontFamilyMode.APP_BUNDLED,
+                        ),
                     appCornerRadiusDp = AppCornerRadiusConstraints.DEFAULT_DP,
                 ) {
                     SettingsReadFailureContent(

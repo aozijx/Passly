@@ -45,15 +45,29 @@ class LibraryProtoMappingsTest {
 
     @Test
     fun `upserting card presentation replaces same type and keeps other types`() {
-        val other = EntryCardPresentation("otp", "totp")
-        val oldLogin = EntryCardPresentation("login", "default")
-        val selectedLogin = EntryCardPresentation("login", "password")
+        val other = presentation("otp", "totp")
+        val oldLogin = presentation("login", "default")
+        val selectedLogin = presentation("login", "password")
 
         assertEquals(
             listOf(selectedLogin, other),
             listOf(oldLogin, other).upsert(selectedLogin),
         )
     }
+
+    private fun presentation(
+        entryTypeKey: String,
+        variantKey: String,
+    ) =
+        EntryCardPresentation(
+            entryTypeKey = entryTypeKey,
+            variantKey = variantKey,
+            density = CardDensity.STANDARD,
+            showIcon = true,
+            showFavorite = true,
+            showSecondaryText = true,
+            showQuickAction = true,
+        )
 
     @Test
     fun `unspecified hierarchy is rejected instead of becoming collapsed`() {

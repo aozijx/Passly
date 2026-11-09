@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.testing.sampleCardPresentation
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
@@ -49,7 +50,7 @@ class InterfaceSettingsViewModelTest {
                     collapseQuickFilterBarOnScroll = true,
                     appCornerRadiusDp = 24f,
                 )
-            val cardPresentations = listOf(EntryCardPresentation("login", "password"))
+            val cardPresentations = listOf(sampleCardPresentation("login", "password"))
             val repository =
                 Repository(
                     save = {},
@@ -109,7 +110,7 @@ class InterfaceSettingsViewModelTest {
                     InterfaceSettingsAction.SetQuickFilterBarCollapsible(true),
                     InterfaceSettingsAction.SetAppCornerRadius(24f),
                     InterfaceSettingsAction.SetEntryHierarchyDisplayMode(EntryHierarchyDisplayMode.EXPANDED),
-                    InterfaceSettingsAction.SetEntryCardPresentation(EntryCardPresentation("login", "password")),
+                    InterfaceSettingsAction.SetEntryCardPresentation(sampleCardPresentation("login", "password")),
                 )
             actions.forEach(model::onAction)
             runCurrent()
@@ -155,7 +156,7 @@ class InterfaceSettingsViewModelTest {
             model.onPageEntered()
             backgroundScope.launch { model.uiState.collect {} }
             runCurrent()
-            val presentation = EntryCardPresentation("login", "password")
+            val presentation = sampleCardPresentation("login", "password")
 
             model.onAction(InterfaceSettingsAction.SetEntryCardPresentation(presentation))
             runCurrent()
@@ -211,7 +212,11 @@ class InterfaceSettingsViewModelTest {
 
         override val libraryViewSettings =
             MutableStateFlow(
-                LibraryViewSettings(EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)),
+                LibraryViewSettings(
+                    sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                    entryCardPresentations = emptyList(),
+                    entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
+                ),
             )
 
         override suspend fun setHideSystemBars(enabled: Boolean) = save()

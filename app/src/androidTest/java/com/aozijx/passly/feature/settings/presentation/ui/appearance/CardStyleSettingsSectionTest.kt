@@ -16,6 +16,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
 import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
@@ -95,7 +96,15 @@ class CardStyleSettingsSectionTest {
         assertEquals(
             listOf(
                 InterfaceSettingsAction.SetEntryCardPresentation(
-                    EntryCardPresentation(entryTypeKey = "login", variantKey = "password"),
+                    EntryCardPresentation(
+                        entryTypeKey = "login",
+                        variantKey = "password",
+                        density = CardDensity.STANDARD,
+                        showIcon = true,
+                        showFavorite = true,
+                        showSecondaryText = true,
+                        showQuickAction = true,
+                    ),
                 ),
             ),
             actions,

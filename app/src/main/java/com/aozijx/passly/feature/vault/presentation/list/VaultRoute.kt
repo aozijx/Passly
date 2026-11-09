@@ -99,26 +99,27 @@ internal fun VaultRoute(
                 state
             }
         }
-    when (librarySettingsState) {
-        RecoverableReadState.Loading -> {
-            VaultPageLoading()
-            return
+    val librarySettings =
+        when (val state = librarySettingsState) {
+            RecoverableReadState.Loading -> {
+                VaultPageLoading()
+                return
+            }
+
+            is RecoverableReadState.Failed -> {
+                SettingsReadFailureContent(
+                    onRetry = {
+                        vaultDisplayViewModel.retry()
+                        vaultViewModel.retryLibrarySettings()
+                    },
+                )
+                return
+            }
+
+            is RecoverableReadState.Ready -> state.value
         }
 
-        is RecoverableReadState.Failed -> {
-            SettingsReadFailureContent(
-                onRetry = {
-                    vaultDisplayViewModel.retry()
-                    vaultViewModel.retryLibrarySettings()
-                },
-            )
-            return
-        }
-
-        is RecoverableReadState.Ready -> {}
-    }
-
-    val renderState = uiState.toUiModel(vaultDisplayConfig) ?: return
+    val renderState = uiState.toUiModel(vaultDisplayConfig, librarySettings.sort)
     val onItemAction: (VaultListItemAction) -> Unit = { action ->
         when (action) {
             is VaultListItemAction.Clicked -> {

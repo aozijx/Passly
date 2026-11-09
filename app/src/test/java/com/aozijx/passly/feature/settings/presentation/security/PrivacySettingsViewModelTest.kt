@@ -5,6 +5,7 @@ import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.ClipboardClearPolicy
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.feature.settings.presentation.ui.security.model.PrivacySettingsUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
@@ -34,7 +35,7 @@ class PrivacySettingsViewModelTest {
         runTest {
             var starts = 0
             val restoredSettings =
-                SecuritySettings(
+                sampleSecuritySettings().copy(
                     isSecureContentEnabled = false,
                     isFlipToLockEnabled = false,
                     isFlipExitAndClearStackEnabled = true,
@@ -95,7 +96,7 @@ class PrivacySettingsViewModelTest {
             var clearCalls = 0
             val repository =
                 object : SecuritySettingsRepository by EmptySecuritySettingsRepository {
-                    override val security = MutableStateFlow(SecuritySettings())
+                    override val security = MutableStateFlow(sampleSecuritySettings().copy())
                 }
             val model =
                 PrivacySettingsViewModel(repository) {
@@ -131,7 +132,7 @@ class PrivacySettingsViewModelTest {
         runTest {
             val repository =
                 object : SecuritySettingsRepository by EmptySecuritySettingsRepository {
-                    override val security = MutableStateFlow(SecuritySettings())
+                    override val security = MutableStateFlow(sampleSecuritySettings().copy())
 
                     private fun fail(): Nothing = throw IOException("synthetic private diagnostic")
 

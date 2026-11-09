@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.settings.presentation.main.general
 
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
-import com.aozijx.passly.domain.settings.model.TopicMessageSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
 internal data class NotificationSettingsUiModel(
@@ -24,7 +23,7 @@ internal fun MessageSettings.toUiModel() =
             MessageTopic.entries.map { topic ->
                 NotificationTopicUiModel(
                     topic = topic,
-                    enabled = (topicSettings[topic] ?: TopicMessageSettings()).enabled,
+                    enabled = topicSettings.getValue(topic).enabled,
                 )
             },
     )

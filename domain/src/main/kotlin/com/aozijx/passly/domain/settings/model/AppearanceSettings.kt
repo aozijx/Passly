@@ -3,11 +3,11 @@ package com.aozijx.passly.domain.settings.model
 import java.util.Locale
 
 data class AppearanceSettings(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val isDynamicColor: Boolean = true,
-    val themeKey: String = "default",
-    val language: AppLanguage = AppLanguage.SYSTEM,
-    val fontFamily: FontFamilyMode = FontFamilyMode.APP_BUNDLED,
+    val themeMode: ThemeMode,
+    val isDynamicColor: Boolean,
+    val themeKey: String,
+    val language: AppLanguage,
+    val fontFamily: FontFamilyMode,
 )
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }

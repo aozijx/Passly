@@ -42,6 +42,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.settings.presentation.appearance.InterfaceSettingsAction
@@ -88,7 +89,15 @@ internal object CardStyleSettingsProjection {
                             titleRes = style.titleRes,
                             selected = style.key == selectedStyle.key,
                             selection =
-                                (storedPresentation ?: EntryCardPresentation(entryTypeKey = entryTypeKey))
+                                (storedPresentation ?: EntryCardPresentation(
+                                    entryTypeKey = entryTypeKey,
+                                    variantKey = "",
+                                    density = CardDensity.STANDARD,
+                                    showIcon = true,
+                                    showFavorite = true,
+                                    showSecondaryText = true,
+                                    showQuickAction = true,
+                                ))
                                     .copy(variantKey = style.key),
                         )
                     },

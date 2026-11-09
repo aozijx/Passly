@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.settings.model.MessageLevel
 import com.aozijx.passly.domain.settings.model.MessageSettings
 import com.aozijx.passly.domain.settings.model.MessageTopic
 import com.aozijx.passly.domain.settings.model.TopicMessageSettings
+import com.aozijx.passly.testing.sampleMessageSettings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,7 +26,7 @@ class DefaultNoticeRouterTest {
         val notice = newAppNotice(NoticeCode.CLIPBOARD_CLEARED)
         val masterOff =
             context(
-                settings = MessageSettings(optionalMessagesEnabled = false),
+                settings = sampleMessageSettings(optionalMessagesEnabled = false),
             )
         assertEquals(
             RouteReason.MASTER_DISABLED,
@@ -35,10 +36,14 @@ class DefaultNoticeRouterTest {
         val topicOff =
             context(
                 settings =
-                    MessageSettings(
+                    sampleMessageSettings(
                         topicSettings =
                             mapOf(
-                                MessageTopic.CLIPBOARD to TopicMessageSettings(enabled = false),
+                                MessageTopic.CLIPBOARD to
+                                    TopicMessageSettings(
+                                        enabled = false,
+                                        minimumLevel = MessageLevel.INFO,
+                                    ),
                             ),
                     ),
             )
@@ -50,11 +55,12 @@ class DefaultNoticeRouterTest {
         val levelFiltered =
             context(
                 settings =
-                    MessageSettings(
+                    sampleMessageSettings(
                         topicSettings =
                             mapOf(
                                 MessageTopic.CLIPBOARD to
                                     TopicMessageSettings(
+                                        enabled = true,
                                         minimumLevel = MessageLevel.ERROR,
                                     ),
                             ),
@@ -74,13 +80,27 @@ class DefaultNoticeRouterTest {
                 notice,
                 defaultNoticeCodePolicy(notice.code),
                 context(
-                    settings = MessageSettings(optionalMessagesEnabled = false),
+                    settings = sampleMessageSettings(optionalMessagesEnabled = false),
                     systemAvailable = false,
                 ),
             )
 
         assertEquals(RouteReason.FALLBACK_TO_IN_APP, plan.reason)
         assertEquals(setOf(NoticeTarget.IN_APP), plan.targets)
+    }
+
+    @Test
+    fun optionalMessageIsSuppressedWhenSettingsAreUnavailable() {
+        val notice = newAppNotice(NoticeCode.BACKUP_EXPORT_COMPLETED)
+        val plan =
+            router.route(
+                notice,
+                defaultNoticeCodePolicy(notice.code),
+                context(settings = null),
+            )
+
+        assertTrue(plan.targets.isEmpty())
+        assertEquals(RouteReason.SETTINGS_UNAVAILABLE, plan.reason)
     }
 
     @Test
@@ -128,7 +148,7 @@ class DefaultNoticeRouterTest {
     }
 
     private fun context(
-        settings: MessageSettings = MessageSettings(),
+        settings: MessageSettings? = sampleMessageSettings(),
         visibility: AppVisibility = AppVisibility.FOREGROUND,
         systemAvailable: Boolean = true,
     ) = NoticeRoutingContext(

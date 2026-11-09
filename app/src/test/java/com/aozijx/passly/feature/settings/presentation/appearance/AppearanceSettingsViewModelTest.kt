@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
+import com.aozijx.passly.testing.sampleAppearanceSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
@@ -113,7 +114,7 @@ class AppearanceSettingsViewModelTest {
     private class Repository(
         private val save: suspend () -> Unit,
     ) : AppearanceSettingsRepository {
-        override val appearance = MutableStateFlow(AppearanceSettings())
+        override val appearance = MutableStateFlow(sampleAppearanceSettings())
         val writes = mutableListOf<String>()
 
         override suspend fun setThemeMode(mode: ThemeMode) = write("theme")

@@ -8,7 +8,8 @@ import com.aozijx.passly.domain.settings.model.MessageSettings
  * 保证同一条 [AppNotice] 在整个路由判断中使用一致的上下文。
  */
 data class NoticeRoutingContext(
-    val settings: MessageSettings,
+    /** Null when the settings read failed; mandatory notice routing does not depend on preferences. */
+    val settings: MessageSettings?,
     val settingsVersion: Long,
     val appVisibility: AppVisibility,
     val systemNotificationState: SystemNotificationState,

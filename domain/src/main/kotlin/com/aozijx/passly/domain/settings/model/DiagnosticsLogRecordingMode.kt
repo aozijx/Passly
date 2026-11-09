@@ -6,8 +6,4 @@ enum class DiagnosticsLogRecordingMode {
     INFO_AND_ABOVE,
     DEBUG_AND_ABOVE,
     ;
-
-    companion object {
-        val DEFAULT = INFO_AND_ABOVE
-    }
 }

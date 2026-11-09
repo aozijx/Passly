@@ -1,8 +1,8 @@
 package com.aozijx.passly.domain.settings.model
 
 data class ClipboardClearPolicy(
-    val enabled: Boolean = true,
-    val delaySeconds: Int = DEFAULT_DELAY_SECONDS,
+    val enabled: Boolean,
+    val delaySeconds: Int,
 ) {
     companion object {
         const val DEFAULT_DELAY_SECONDS: Int = 30

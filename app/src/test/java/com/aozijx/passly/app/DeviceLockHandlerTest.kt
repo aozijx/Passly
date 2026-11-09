@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.testing.RecordingTestLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -91,7 +92,7 @@ class DeviceLockHandlerTest {
                 handler(
                     lockController = lockController,
                     security =
-                        SecuritySettings(
+                        sampleSecuritySettings().copy(
                             isFlipToLockEnabled = false,
                             isFlipExitAndClearStackEnabled = true,
                         ),
@@ -111,7 +112,7 @@ class DeviceLockHandlerTest {
                 handler(
                     lockController = RecordingLockController(),
                     security =
-                        SecuritySettings(
+                        sampleSecuritySettings().copy(
                             isFlipToLockEnabled = true,
                             isFlipExitAndClearStackEnabled = true,
                         ),
@@ -129,7 +130,7 @@ class DeviceLockHandlerTest {
             val handler =
                 handler(
                     lockController = lockController,
-                    security = SecuritySettings(),
+                    security = sampleSecuritySettings().copy(),
                     initialState = AuthenticationState.Locked,
                 )
 
@@ -147,7 +148,7 @@ class DeviceLockHandlerTest {
             val handler =
                 handler(
                     lockController = lockController,
-                    security = SecuritySettings(isFlipToLockEnabled = false),
+                    security = sampleSecuritySettings().copy(isFlipToLockEnabled = false),
                 )
 
             val result = handler.handle(DeviceLockTrigger.FLIP)
@@ -173,7 +174,7 @@ class DeviceLockHandlerTest {
             runCurrent()
             assertNull(lockController.reason)
 
-            settings.value = RecoverableReadState.Ready(SecuritySettings(isFlipToLockEnabled = true))
+            settings.value = RecoverableReadState.Ready(sampleSecuritySettings().copy(isFlipToLockEnabled = true))
 
             assertEquals(DeviceLockResult.Locked(shouldClearTask = false), result.await())
             assertEquals(LockTrigger.DEVICE_FLIP, lockController.trigger)
@@ -220,7 +221,7 @@ class DeviceLockHandlerTest {
                 handler(
                     lockController = lockController,
                     security =
-                        SecuritySettings(
+                        sampleSecuritySettings().copy(
                             isFlipToLockEnabled = true,
                             isFlipExitAndClearStackEnabled = true,
                         ),

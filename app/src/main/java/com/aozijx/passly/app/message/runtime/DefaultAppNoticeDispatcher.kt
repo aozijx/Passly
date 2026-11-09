@@ -20,7 +20,6 @@ import com.aozijx.passly.app.message.contract.RouteReason
 import com.aozijx.passly.app.message.contract.SinkResult
 import com.aozijx.passly.app.message.contract.SystemNotificationStateProvider
 import com.aozijx.passly.app.message.model.AppNotice
-import com.aozijx.passly.domain.settings.model.MessageSettings
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -67,7 +66,7 @@ class DefaultAppNoticeDispatcher
 
         private suspend fun dispatchSerial(notice: AppNotice): NoticeDispatchReceipt {
             val policy = codeRegistry.policyFor(notice.code)
-            val settings =
+            val readySettings =
                 when (val snapshot = settingsProvider.current()) {
                     MessageSettingsSnapshot.Loading,
                     is MessageSettingsSnapshot.Failed,
@@ -81,24 +80,21 @@ class DefaultAppNoticeDispatcher
                                 status = NoticeDispatchStatus.SUPPRESSED,
                             )
                         }
-                        MessageSettingsSnapshot.Ready(
-                            version = 0,
-                            value = MessageSettings(systemNotificationsEnabled = true),
-                        )
+                        null
                     }
 
-                    is MessageSettingsSnapshot.Ready -> {
-                        snapshot
-                    }
+                    is MessageSettingsSnapshot.Ready -> snapshot
                 }
+            val settings = readySettings?.value
+            val settingsVersion = readySettings?.version ?: 0L
             val systemState =
                 systemStateProvider.current().copy(
-                    userSettingEnabled = policy.mandatory || settings.value.systemNotificationsEnabled,
+                    userSettingEnabled = policy.mandatory || settings?.systemNotificationsEnabled == true,
                 )
             val context =
                 NoticeRoutingContext(
-                    settings = settings.value,
-                    settingsVersion = settings.version,
+                    settings = settings,
+                    settingsVersion = settingsVersion,
                     appVisibility = visibilityProvider.current(),
                     systemNotificationState = systemState,
                 )
@@ -106,7 +102,7 @@ class DefaultAppNoticeDispatcher
                 when (val result = deduplicator.begin(notice.eventId, policy.eventIdTtlMs)) {
                     DeduplicationClaim.Duplicate -> return receipt(
                         notice,
-                        settings.version,
+                        settingsVersion,
                         NoticeRoutePlan.suppressed(RouteReason.SUPPRESSED_BY_DEDUP),
                         emptyMap(),
                         NoticeDispatchStatus.DUPLICATE,
@@ -121,7 +117,7 @@ class DefaultAppNoticeDispatcher
                     deduplicator.complete(claim)
                     return receipt(
                         notice,
-                        settings.version,
+                        settingsVersion,
                         plan,
                         emptyMap(),
                         NoticeDispatchStatus.SUPPRESSED,
@@ -148,7 +144,7 @@ class DefaultAppNoticeDispatcher
                         delivered > 0 -> NoticeDispatchStatus.PARTIALLY_DELIVERED
                         else -> NoticeDispatchStatus.FAILED
                     }
-                return receipt(notice, settings.version, plan, results, status)
+                return receipt(notice, settingsVersion, plan, results, status)
             } catch (cancelled: CancellationException) {
                 deduplicator.release(claim)
                 throw cancelled
@@ -159,7 +155,7 @@ class DefaultAppNoticeDispatcher
                 deduplicator.release(claim)
                 return receipt(
                     notice,
-                    settings.version,
+                    settingsVersion,
                     NoticeRoutePlan.suppressed(RouteReason.NO_AVAILABLE_TARGET),
                     emptyMap(),
                     NoticeDispatchStatus.FAILED,

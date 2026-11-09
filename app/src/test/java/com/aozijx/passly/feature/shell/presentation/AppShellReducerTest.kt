@@ -107,6 +107,7 @@ class AppShellReducerTest {
             AppearanceSettings(
                 themeMode = ThemeMode.DARK,
                 isDynamicColor = false,
+                themeKey = "default",
                 language = AppLanguage.EN,
                 fontFamily = FontFamilyMode.SYSTEM,
             )

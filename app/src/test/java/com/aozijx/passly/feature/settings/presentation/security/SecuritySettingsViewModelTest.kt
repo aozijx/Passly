@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.BiometricConfigurationSource
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.feature.settings.security.SecurityAuthenticationSettingsInteractor
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
@@ -48,7 +49,7 @@ class SecuritySettingsViewModelTest {
     fun `security settings read failure is visible and retry restarts source`() =
         runTest {
             var starts = 0
-            val restoredSettings = SecuritySettings(isLockOnBackground = true, lockTimeout = 90_000L)
+            val restoredSettings = sampleSecuritySettings().copy(isLockOnBackground = true, lockTimeout = 90_000L)
             val fixture =
                 Fixture(
                     source =
@@ -340,7 +341,7 @@ class SecuritySettingsViewModelTest {
 
     private class Fixture(
         save: suspend () -> Unit = {},
-        source: Flow<SecuritySettings> = MutableStateFlow(SecuritySettings()),
+        source: Flow<SecuritySettings> = MutableStateFlow(sampleSecuritySettings().copy()),
         operation: suspend () -> AuthenticationResult,
     ) {
         val repository = Repository(save, source)
@@ -409,7 +410,7 @@ class SecuritySettingsViewModelTest {
 
     private class Repository(
         private val save: suspend () -> Unit,
-        override val security: Flow<SecuritySettings> = MutableStateFlow(SecuritySettings()),
+        override val security: Flow<SecuritySettings> = MutableStateFlow(sampleSecuritySettings().copy()),
     ) : SecuritySettingsRepository {
         override suspend fun setSecureContentEnabled(enabled: Boolean) = Unit
 

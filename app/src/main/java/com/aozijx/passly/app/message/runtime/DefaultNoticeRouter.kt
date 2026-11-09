@@ -22,10 +22,11 @@ class DefaultNoticeRouter
             context: NoticeRoutingContext,
         ): NoticeRoutePlan {
             if (!policy.mandatory) {
-                if (!context.settings.optionalMessagesEnabled) {
+                val settings = context.settings ?: return NoticeRoutePlan.suppressed(RouteReason.SETTINGS_UNAVAILABLE)
+                if (!settings.optionalMessagesEnabled) {
                     return NoticeRoutePlan.suppressed(RouteReason.MASTER_DISABLED)
                 }
-                val topic = context.settings.topic(policy.topic.toMessageTopic())
+                val topic = settings.topic(policy.topic.toMessageTopic())
                 if (!topic.enabled) {
                     return NoticeRoutePlan.suppressed(RouteReason.TOPIC_DISABLED)
                 }

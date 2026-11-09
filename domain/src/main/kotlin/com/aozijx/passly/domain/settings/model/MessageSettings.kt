@@ -8,16 +8,22 @@ package com.aozijx.passly.domain.settings.model
  * serializes to proto and the app notification router consumes.
  */
 data class MessageSettings(
-    val optionalMessagesEnabled: Boolean = true,
-    val systemNotificationsEnabled: Boolean = true,
-    val topicSettings: Map<MessageTopic, TopicMessageSettings> = defaultMessageTopicSettings(),
+    val optionalMessagesEnabled: Boolean,
+    val systemNotificationsEnabled: Boolean,
+    val topicSettings: Map<MessageTopic, TopicMessageSettings>,
 ) {
-    fun topic(topic: MessageTopic): TopicMessageSettings = topicSettings[topic] ?: TopicMessageSettings()
+    init {
+        require(topicSettings.keys == MessageTopic.entries.toSet()) {
+            "Message settings must define every topic exactly once"
+        }
+    }
+
+    fun topic(topic: MessageTopic): TopicMessageSettings = topicSettings.getValue(topic)
 }
 
 data class TopicMessageSettings(
-    val enabled: Boolean = true,
-    val minimumLevel: MessageLevel = MessageLevel.INFO,
+    val enabled: Boolean,
+    val minimumLevel: MessageLevel,
 )
 
 enum class MessageTopic {
@@ -40,12 +46,3 @@ enum class MessageLevel(
 
     fun meetsMinimum(minimum: MessageLevel): Boolean = severity >= minimum.severity
 }
-
-fun defaultMessageTopicSettings(): Map<MessageTopic, TopicMessageSettings> =
-    mapOf(
-        MessageTopic.CLIPBOARD to TopicMessageSettings(),
-        MessageTopic.APP_LIFECYCLE to TopicMessageSettings(),
-        MessageTopic.BACKUP to TopicMessageSettings(),
-        MessageTopic.SECURITY to TopicMessageSettings(minimumLevel = MessageLevel.WARNING),
-        MessageTopic.DATABASE to TopicMessageSettings(minimumLevel = MessageLevel.ERROR),
-    )

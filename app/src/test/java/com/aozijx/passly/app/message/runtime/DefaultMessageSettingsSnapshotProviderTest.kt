@@ -3,6 +3,7 @@ package com.aozijx.passly.app.message.runtime
 import com.aozijx.passly.app.message.contract.MessageSettingsSnapshot
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.domain.settings.model.MessageSettings
+import com.aozijx.passly.testing.sampleMessageSettings
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +31,7 @@ class DefaultMessageSettingsSnapshotProviderTest {
                         flow<MessageSettings> {
                             attempts++
                             if (attempts == 1) throw IOException("temporary read failure")
-                            emit(MessageSettings(systemNotificationsEnabled = true))
+                            emit(sampleMessageSettings(systemNotificationsEnabled = true))
                             kotlinx.coroutines.awaitCancellation()
                         }
                 }
@@ -74,10 +75,10 @@ class DefaultMessageSettingsSnapshotProviderTest {
                         flow<MessageSettings> {
                             attempts++
                             if (attempts == 1) {
-                                emit(MessageSettings(systemNotificationsEnabled = false))
+                                emit(sampleMessageSettings(systemNotificationsEnabled = false))
                                 throw IOException("temporary read failure")
                             }
-                            emit(MessageSettings(systemNotificationsEnabled = true))
+                            emit(sampleMessageSettings(systemNotificationsEnabled = true))
                             kotlinx.coroutines.awaitCancellation()
                         }
                 }

@@ -7,6 +7,7 @@ import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.InteractionSettings
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
+import com.aozijx.passly.testing.sampleInteractionSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
@@ -104,7 +105,7 @@ class InteractionSettingsViewModelTest {
             assertEquals(true, ready.isSwipeEnabled)
             assertEquals(true, ready.isPullToSearchEnabled)
             assertEquals(emptyList<InteractionSettingsEffect>(), effects)
-            repository.currentInteraction.value = InteractionSettings()
+            repository.currentInteraction.value = sampleInteractionSettings()
             runCurrent()
             assertEquals(
                 false,
@@ -172,7 +173,7 @@ class InteractionSettingsViewModelTest {
         source: Flow<InteractionSettings>? = null,
         private val save: suspend () -> Unit,
     ) : InteractionSettingsRepository {
-        val currentInteraction = MutableStateFlow(InteractionSettings())
+        val currentInteraction = MutableStateFlow(sampleInteractionSettings())
         val swipeLeftActionWrites = mutableListOf<SwipeActionType>()
         val swipeRightActionWrites = mutableListOf<SwipeActionType>()
         override val interaction: Flow<InteractionSettings> = source ?: currentInteraction

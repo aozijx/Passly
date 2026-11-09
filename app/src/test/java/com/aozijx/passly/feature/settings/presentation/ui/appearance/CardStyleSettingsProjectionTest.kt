@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.settings.presentation.ui.appearance
 
+import com.aozijx.passly.domain.settings.model.CardDensity
 import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -9,7 +10,7 @@ class CardStyleSettingsProjectionTest {
     fun persistedStyleSelectsItsChoiceAndEachChoiceProducesItsDomainValue() {
         val groups =
             CardStyleSettingsProjection.from(
-                listOf(EntryCardPresentation(entryTypeKey = "login", variantKey = "password")),
+                listOf(cardPresentation("login", "password")),
             )
         val login = groups.single { it.entryTypeKey == "login" }
 
@@ -17,8 +18,8 @@ class CardStyleSettingsProjectionTest {
         assertEquals("password", login.options.single { it.selected }.styleKey)
         assertEquals(
             listOf(
-                EntryCardPresentation("login", "default"),
-                EntryCardPresentation("login", "password"),
+                cardPresentation("login", "default"),
+                cardPresentation("login", "password"),
             ),
             login.options.map { it.selection },
         )
@@ -28,11 +29,22 @@ class CardStyleSettingsProjectionTest {
     fun unsupportedPersistedStyleSelectsFirstStyleSupportedByThatEntryType() {
         val groups =
             CardStyleSettingsProjection.from(
-                listOf(EntryCardPresentation(entryTypeKey = "otp", variantKey = "password")),
+                listOf(cardPresentation("otp", "password")),
             )
         val otp = groups.single { it.entryTypeKey == "otp" }
 
         assertEquals(listOf("default", "totp"), otp.options.map { it.styleKey })
         assertEquals("default", otp.options.single { it.selected }.styleKey)
     }
+
+    private fun cardPresentation(entryTypeKey: String, variantKey: String) =
+        EntryCardPresentation(
+            entryTypeKey = entryTypeKey,
+            variantKey = variantKey,
+            density = CardDensity.STANDARD,
+            showIcon = true,
+            showFavorite = true,
+            showSecondaryText = true,
+            showQuickAction = true,
+        )
 }

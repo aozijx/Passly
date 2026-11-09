@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.settings.model.AppearanceSettings
 import com.aozijx.passly.domain.settings.model.FontFamilyMode
 import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.SecuritySettings
+import com.aozijx.passly.testing.sampleSecuritySettings
 import com.aozijx.passly.domain.settings.model.ThemeMode
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
 import com.aozijx.passly.domain.settings.port.CorruptSettingsDataException
@@ -53,6 +54,7 @@ class AppShellViewModelTest {
                 AppearanceSettings(
                     themeMode = ThemeMode.DARK,
                     isDynamicColor = false,
+                    themeKey = "default",
                     language = AppLanguage.EN,
                     fontFamily = FontFamilyMode.SYSTEM,
                 )
@@ -75,7 +77,7 @@ class AppShellViewModelTest {
                                 appCornerRadiusDp = 29f,
                             ),
                         ),
-                    securitySettings = MutableStateFlow(SecuritySettings(isSecureContentEnabled = false)),
+                    securitySettings = MutableStateFlow(sampleSecuritySettings().copy(isSecureContentEnabled = false)),
                 )
             runCurrent()
 

@@ -14,6 +14,8 @@ import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsSource
 import com.aozijx.passly.testing.MainDispatcherRule
+import com.aozijx.passly.testing.sampleCardPresentation
+import com.aozijx.passly.testing.sampleInteractionSettings
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,7 +50,7 @@ class VaultDisplayViewModelTest {
     fun `settings failure is visible and retry recollects persisted preferences`() =
         runTest {
             var starts = 0
-            val cardPresentations = listOf(EntryCardPresentation("login", "password"))
+            val cardPresentations = listOf(sampleCardPresentation("login", "password"))
             val librarySettings =
                 flow {
                     starts++
@@ -57,6 +59,7 @@ class VaultDisplayViewModelTest {
                         LibraryViewSettings(
                             sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
                             entryCardPresentations = cardPresentations,
+                            entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
                         ),
                     )
                     awaitCancellation()
@@ -139,10 +142,11 @@ class VaultDisplayViewModelTest {
                 MutableStateFlow(
                     LibraryViewSettings(
                         sort = EntrySort(EntrySortField.TITLE, SortDirection.ASC),
+                        entryCardPresentations = emptyList(),
                         entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
                     ),
                 )
-            val interactionSettings = MutableStateFlow(InteractionSettings())
+            val interactionSettings = MutableStateFlow(sampleInteractionSettings())
             val viewModel =
                 VaultDisplayViewModel(
                     interfaceSettingsRepository = TestInterfaceSettingsRepository(interfaceSettings),

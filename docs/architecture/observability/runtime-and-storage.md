@@ -23,8 +23,8 @@ handler；首次 DataStore 采集策略加载后才读取并记录 `ApplicationE
 普通 I/O 错误按有界退避重试，损坏数据等待显式 Retry；取消向上传播。诊断策略在 Ready 前或读取失败期间 fail closed，
 读取恢复后再应用新策略；上次退出记录只有在策略 Ready 后才读取，且每个 owner 生命周期最多消费一次。设备锁设置尚未首发时
 仍等待健康读取；若读取失败，SCREEN_OFF 直接安全锁定并确保 `goAsync()` 的 `PendingResult.finish()` 在 finally 执行，
-FLIP 则跳过。前台设置读取 owner 可显式重试。消息设置快照保留 Loading/Failed/Ready，失败不伪装成默认值；通知 dispatch
-对 Failed 与 Loading 使用相同的既有抑制语义，设置冷源恢复后继续更新快照。
+FLIP 则跳过。前台设置读取 owner 可显式重试。消息设置快照保留 Loading/Failed/Ready，失败不伪装成默认值；
+Loading/Failed 时可选通知被抑制，强制通知按其独立投递策略继续路由，不合成一份默认 MessageSettings。设置冷源恢复后继续更新快照。
 
 `LogcatSink.kt` 是 observability 生产代码中唯一允许导入 `android.util.Log` 的文件。它只接收已脱敏记录，
 输出有限 Tag 和有界单行摘要，并保留 `event_id/trace_id/span_id`；异常帧逐行输出。Release 默认关闭 Logcat；Debug 在格式化前

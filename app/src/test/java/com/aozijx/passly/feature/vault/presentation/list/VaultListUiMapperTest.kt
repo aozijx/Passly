@@ -36,7 +36,7 @@ import org.junit.Test
 class VaultListUiMapperTest {
     @Test
     fun creationOptionsAreMappedInStableOrder() {
-        val model = requireNotNull(VaultUiState(selectedSort = createdAtDescendingSort()).toUiModel(display()))
+        val model = VaultUiState().toUiModel(display(), createdAtDescendingSort())
         val menuTypes = model.navigation.creationOptions
         assertEquals(
             listOf(
@@ -55,8 +55,8 @@ class VaultListUiMapperTest {
 
     @Test
     fun allEntryTypesAreAvailableAsFilters() {
-        val state = VaultUiState(selectedSort = createdAtDescendingSort(), selectedFilters = AddType.entries.toSet())
-        val model = requireNotNull(state.toUiModel(display()))
+        val state = VaultUiState(selectedFilters = AddType.entries.toSet())
+        val model = state.toUiModel(display(), createdAtDescendingSort())
         assertEquals(VaultAddTypeUiModel.entries.toList(), model.navigation.filters.map { it.type })
         assertTrue(model.navigation.filters.all { it.selected })
         assertTrue(model.navigation.allFiltersSelected.not())
@@ -64,8 +64,11 @@ class VaultListUiMapperTest {
     }
 
     @Test
-    fun vaultDoesNotRenderBeforePersistedSortLoads() {
-        assertNull(VaultUiState().toUiModel(display()))
+    fun selectedSortIsProjectedFromThePersistedSettingsOwner() {
+        val model = VaultUiState().toUiModel(display(), createdAtDescendingSort())
+
+        assertEquals(VaultSortOptionUiModel.CREATED_AT, model.toolbar.selectedSort.option)
+        assertTrue(model.toolbar.selectedSort.descending)
     }
 
     @Test
@@ -87,13 +90,10 @@ class VaultListUiMapperTest {
     @Test
     fun categorySearchMapsTrimmedCaseInsensitiveMatchesAndPreservesQuery() {
         val model =
-            requireNotNull(
-                VaultUiState(
-                    selectedSort = createdAtDescendingSort(),
+            VaultUiState(
                     categories = VaultCategoriesState.Ready(listOf("Personal", "Work", "Work Account", "social")),
                     categorySearchQuery = " WORk ",
-                ).toUiModel(display()),
-            )
+                ).toUiModel(display(), createdAtDescendingSort())
 
         assertEquals(" WORk ", model.toolbar.categorySearchQuery)
         assertEquals(listOf("Work", "Work Account"), model.toolbar.matchingCategories)
@@ -106,12 +106,9 @@ class VaultListUiMapperTest {
     @Test
     fun categoryFailureStateIsPreservedForRetryPresentation() {
         val model =
-            requireNotNull(
-                VaultUiState(
-                    selectedSort = createdAtDescendingSort(),
+            VaultUiState(
                     categories = VaultCategoriesState.Failed,
-                ).toUiModel(display()),
-            )
+                ).toUiModel(display(), createdAtDescendingSort())
 
         assertEquals(VaultCategoriesState.Failed, model.toolbar.categoriesState)
         assertTrue(model.toolbar.matchingCategories.isEmpty())

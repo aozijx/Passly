@@ -27,12 +27,12 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
@@ -430,7 +430,11 @@ class VaultViewModelTest {
             val updatedSort = EntrySort(EntrySortField.TITLE, SortDirection.ASC)
             val settings =
                 MutableStateFlow(
-                    LibraryViewSettings(sort = initialSort),
+                    LibraryViewSettings(
+                        sort = initialSort,
+                        entryCardPresentations = emptyList(),
+                        entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
+                    ),
                 )
             val pageQueries = mutableListOf<EntryListQuery>()
             val viewModel =
@@ -453,13 +457,17 @@ class VaultViewModelTest {
 
                 assertEquals(listOf(initialSort), pageQueries.map(EntryListQuery::sort))
 
-                settings.value = LibraryViewSettings(sort = updatedSort)
+                settings.value =
+                    LibraryViewSettings(
+                        sort = updatedSort,
+                        entryCardPresentations = emptyList(),
+                        entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
+                    )
                 runCurrent()
                 advanceTimeBy(250L)
                 runCurrent()
 
                 assertEquals(listOf(initialSort, updatedSort), pageQueries.map(EntryListQuery::sort))
-                assertEquals(updatedSort, viewModel.uiState.value.selectedSort)
             } finally {
                 entriesCollector.cancel()
                 viewModelStore.clear()
@@ -471,11 +479,19 @@ class VaultViewModelTest {
         runTest(mainDispatcherRule.testDispatcher) {
             val currentSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)
             val requestedSort = EntrySort(EntrySortField.TITLE, SortDirection.ASC)
+            val settings =
+                MutableStateFlow(
+                    LibraryViewSettings(
+                        sort = currentSort,
+                        entryCardPresentations = emptyList(),
+                        entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
+                    ),
+                )
             val viewModel =
                 createViewModel(
                     PausingAuthorizationGate(),
                     mutableListOf(),
-                    librarySettings = MutableStateFlow(LibraryViewSettings(sort = currentSort)),
+                    librarySettings = settings,
                     setSort = { throw IllegalStateException("settings write failed") },
                 )
             val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
@@ -493,7 +509,7 @@ class VaultViewModelTest {
 
                 val effect = effects.receive() as VaultEffect.ShowError
                 assertEquals(R.string.vault_error_sort_failed, effect.message.resourceId)
-                assertEquals(currentSort, viewModel.uiState.value.selectedSort)
+                assertEquals(currentSort, settings.value.sort)
                 assertNull(effects.tryReceive().getOrNull())
             } finally {
                 viewModel.onPageExited(owner)
@@ -548,7 +564,7 @@ class VaultViewModelTest {
         otpConfigRepository: OtpConfigRepository = EmptyOtpConfigRepository,
         onMoveToTrash: (EntryId) -> Unit = {},
         availableCategories: Flow<List<String>> = flowOf(emptyList()),
-        librarySettings: Flow<LibraryViewSettings> = flowOf(defaultLibrarySettings()),
+        librarySettings: Flow<LibraryViewSettings> = flowOf(sampleLibrarySettings()),
         onPageQuery: (EntryListQuery) -> Unit = {},
         setSort: suspend (EntrySort) -> Unit = {},
         moveToTrashResult: AppResult<Unit> = AppResult.Success(Unit),
@@ -740,9 +756,11 @@ class VaultViewModelTest {
     private companion object {
         val ENTRY_ID = EntryId("entry-1")
 
-        fun defaultLibrarySettings() =
+        fun sampleLibrarySettings() =
             LibraryViewSettings(
                 sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                entryCardPresentations = emptyList(),
+                entryHierarchyDisplayMode = EntryHierarchyDisplayMode.COLLAPSED,
             )
     }
 }
