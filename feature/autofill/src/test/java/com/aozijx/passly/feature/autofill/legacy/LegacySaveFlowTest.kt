@@ -7,6 +7,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillSaveDraft
 import com.aozijx.passly.domain.autofill.model.AutofillSaveOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillSource
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.feature.autofill.core.AutofillSaveDraftExtraction
@@ -61,7 +62,14 @@ class LegacySaveFlowTest {
     fun disabledAutofillDoesNotQueueOrPersist() =
         runBlocking {
             val fixture = fixture()
-            fixture.settings.value = AutofillSettings(enabled = false)
+            fixture.settings.value =
+                AutofillSettings(
+                    enabled = false,
+                    presentation = AutofillPresentation.FLOATING,
+                    credentialManagerEnabled = true,
+                    requireAuthentication = true,
+                    strictDomainMatching = true,
+                )
 
             assertEquals(LegacySavePreparation.Disabled, fixture.flow.prepare(request()))
             assertEquals(0, fixture.queueCalls)
@@ -149,7 +157,14 @@ class LegacySaveFlowTest {
         return Fixture(flow, settings, { queueCalls }, { saveCalls })
     }
 
-    private fun settings() = AutofillSettings(enabled = true)
+    private fun settings() =
+        AutofillSettings(
+            enabled = true,
+            presentation = AutofillPresentation.FLOATING,
+            credentialManagerEnabled = true,
+            requireAuthentication = true,
+            strictDomainMatching = true,
+        )
 
     private fun request() =
         AutofillRequest(

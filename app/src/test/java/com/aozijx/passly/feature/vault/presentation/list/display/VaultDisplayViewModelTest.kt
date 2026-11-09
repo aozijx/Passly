@@ -70,6 +70,7 @@ class VaultDisplayViewModelTest {
                                     hideSystemBars = true,
                                     collapseTopBarOnScroll = false,
                                     collapseQuickFilterBarOnScroll = true,
+                                    appCornerRadiusDp = 16f,
                                 ),
                             ),
                         ),
@@ -125,7 +126,15 @@ class VaultDisplayViewModelTest {
     @Test
     fun `hierarchy mode changes do not alter the display projection`() =
         runTest {
-            val interfaceSettings = MutableStateFlow(InterfaceSettings())
+            val interfaceSettings =
+                MutableStateFlow(
+                    InterfaceSettings(
+                        hideSystemBars = false,
+                        collapseTopBarOnScroll = false,
+                        collapseQuickFilterBarOnScroll = true,
+                        appCornerRadiusDp = 16f,
+                    ),
+                )
             val librarySettings =
                 MutableStateFlow(
                     LibraryViewSettings(

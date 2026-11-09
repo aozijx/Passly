@@ -70,6 +70,8 @@ class AppShellViewModelTest {
                         MutableStateFlow(
                             InterfaceSettings(
                                 hideSystemBars = true,
+                                collapseTopBarOnScroll = false,
+                                collapseQuickFilterBarOnScroll = false,
                                 appCornerRadiusDp = 29f,
                             ),
                         ),

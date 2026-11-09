@@ -47,7 +47,7 @@ class AutofillSettingsViewModelTest {
     @Test
     fun `preference failure does not expose stale settings and does not fail system status`() =
         runTest {
-            val lastSettings = AutofillSettings(enabled = false)
+            val lastSettings = autofillSettings(enabled = false)
             val repository =
                 RecordingAutofillSettingsRepository(
                     autofillSettings =
@@ -84,7 +84,7 @@ class AutofillSettingsViewModelTest {
             runCurrent()
 
             assertEquals(
-                AutofillSourceState.Ready(AutofillSettings()),
+                AutofillSourceState.Ready(autofillSettings()),
                 viewModel.uiState.value.preferences,
             )
             assertEquals(
@@ -104,7 +104,7 @@ class AutofillSettingsViewModelTest {
                     autofillSettings =
                         flow {
                             preferenceStarts++
-                            emit(AutofillSettings())
+                            emit(autofillSettings())
                             kotlinx.coroutines.awaitCancellation()
                         },
                 )
@@ -153,7 +153,7 @@ class AutofillSettingsViewModelTest {
                         flow {
                             preferenceStarts++
                             if (preferenceStarts == 1) throw IOException("preferences unavailable")
-                            emit(AutofillSettings(enabled = false))
+                            emit(autofillSettings(enabled = false))
                             kotlinx.coroutines.awaitCancellation()
                         },
                 )
@@ -178,7 +178,7 @@ class AutofillSettingsViewModelTest {
             assertEquals(2, preferenceStarts)
             assertEquals(1, systemStarts)
             assertEquals(
-                AutofillSourceState.Ready(AutofillSettings(enabled = false)),
+                AutofillSourceState.Ready(autofillSettings(enabled = false)),
                 viewModel.uiState.value.preferences,
             )
             assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
@@ -266,7 +266,7 @@ class AutofillSettingsViewModelTest {
 
     private class RecordingAutofillSettingsRepository(
         override val autofillSettings: kotlinx.coroutines.flow.Flow<AutofillSettings> =
-            MutableStateFlow(AutofillSettings()),
+            MutableStateFlow(autofillSettings()),
         private val save: suspend () -> Unit = {},
     ) : AutofillSettingsRepository {
         var credentialManagerWrites = 0
@@ -292,5 +292,16 @@ class AutofillSettingsViewModelTest {
 
         override suspend fun setAutofillAuthenticationRequired(required: Boolean) = save()
 
+    }
+
+    private companion object {
+        fun autofillSettings(enabled: Boolean = true) =
+            AutofillSettings(
+                enabled = enabled,
+                presentation = AutofillPresentation.FLOATING,
+                credentialManagerEnabled = true,
+                requireAuthentication = true,
+                strictDomainMatching = true,
+            )
     }
 }

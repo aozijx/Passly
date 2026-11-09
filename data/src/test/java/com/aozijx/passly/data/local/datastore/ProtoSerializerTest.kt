@@ -25,6 +25,7 @@ class ProtoSerializerTest {
         val defaults = AppPreferences.getDefaultInstance()
 
         assertTrue(defaults.appearance.dynamicColorEnabled)
+        assertTrue(defaults.interfacePrefs.collapseQuickFilterBarOnScroll)
         assertFalse(defaults.interaction.swipeActionsEnabled)
         assertFalse(defaults.interaction.pullToSearchEnabled)
         assertEquals(
@@ -34,7 +35,7 @@ class ProtoSerializerTest {
         assertEquals(SwipeActionPreference.SWIPE_ACTION_DELETE, defaults.interaction.swipeRightAction)
         assertTrue(defaults.interaction.autofill.enabled)
         assertEquals(
-            AutofillPresentationPreference.AUTOFILL_PRESENTATION_SYSTEM_INLINE,
+            AutofillPresentationPreference.AUTOFILL_PRESENTATION_FLOATING,
             defaults.interaction.autofill.presentation,
         )
         assertEquals(

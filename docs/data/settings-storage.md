@@ -88,6 +88,8 @@ flowchart LR
 创建时间降序、收藏置顶。下拉搜索和滑动操作默认关闭，启用滑动后左滑复制密码、右滑删除。这些值都来自
 `app_preferences.proto`。
 
+快捷筛选栏默认随滚动折叠；传统 Autofill 的展示模式默认是悬浮。Proto 中缺失这些字段时使用上述默认值，已显式保存的用户选择保持不变。
+
 界面设置的系统栏、顶部栏折叠、快捷筛选栏折叠、圆角和条目层级写入共用 `writePreferenceWithFeedback`。
 `InterfaceSettingsViewModel` 只从界面与列表偏好的 Flow 组合页面状态，不提前修改选择；写入成功保持静默，
 失败经只读 `errors` Flow 发布 `UiErrorMessage`，不暴露内部异常文本。取消继续传播，页面销毁后的迟到失败不再通知。

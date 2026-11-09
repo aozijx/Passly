@@ -15,8 +15,8 @@ import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
 import com.aozijx.passly.app.theme.AppTheme
+import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.model.AppearanceSettings
-import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.feature.recovery.presentation.RecoveryModeRoute
 import com.aozijx.passly.feature.shell.presentation.AppShell
 import com.aozijx.passly.feature.shell.presentation.AppShellUiAction
@@ -46,7 +46,7 @@ internal fun PasslyApp(
             is RecoverableReadState.Failed -> {
                 AppTheme(
                     appearance = AppearanceSettings(),
-                    appCornerRadiusDp = InterfaceSettings().appCornerRadiusDp,
+                    appCornerRadiusDp = AppCornerRadiusConstraints.DEFAULT_DP,
                 ) {
                     SettingsReadFailureContent(
                         onRetry = { shellViewModel.onAction(AppShellUiAction.RetrySettings) },

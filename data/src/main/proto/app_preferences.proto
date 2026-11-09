@@ -52,7 +52,7 @@ enum FontFamilyPreference {
 message InterfacePreferences {
     optional bool hide_system_bars = 1 [default = false];
     optional bool collapse_top_bar_on_scroll = 2 [default = false];
-    optional bool collapse_quick_filter_bar_on_scroll = 3 [default = false];
+    optional bool collapse_quick_filter_bar_on_scroll = 3 [default = true];
     optional float app_corner_radius_dp = 4 [default = 16];
 }
 
@@ -74,7 +74,7 @@ enum SwipeActionPreference {
 
 message AutofillPreferences {
     optional bool enabled = 1 [default = true];
-    optional AutofillPresentationPreference presentation = 2 [default = AUTOFILL_PRESENTATION_SYSTEM_INLINE];
+    optional AutofillPresentationPreference presentation = 2 [default = AUTOFILL_PRESENTATION_FLOATING];
     optional bool credential_manager_enabled = 3 [default = true];
     optional bool require_authentication = 4 [default = true];
     reserved 5 to 8;

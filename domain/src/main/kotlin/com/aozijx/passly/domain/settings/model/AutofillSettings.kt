@@ -12,11 +12,11 @@ package com.aozijx.passly.domain.settings.model
  * Manager password requests do not support OTP credentials.
  */
 data class AutofillSettings(
-    val enabled: Boolean = true,
-    val presentation: AutofillPresentation = AutofillPresentation.SYSTEM_INLINE,
-    val credentialManagerEnabled: Boolean = true,
-    val requireAuthentication: Boolean = true,
-    val strictDomainMatching: Boolean = true,
+    val enabled: Boolean,
+    val presentation: AutofillPresentation,
+    val credentialManagerEnabled: Boolean,
+    val requireAuthentication: Boolean,
+    val strictDomainMatching: Boolean,
 )
 
 enum class AutofillPresentation(

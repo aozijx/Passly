@@ -40,6 +40,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.autofill.port.AutofillEntryCreation
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
@@ -206,8 +207,20 @@ class CredentialManagerFlowTest {
     fun `create rechecks credential manager policy before persistence`() =
         runBlocking {
             listOf(
-                AutofillSettings(enabled = false, credentialManagerEnabled = true),
-                AutofillSettings(enabled = true, credentialManagerEnabled = false),
+                AutofillSettings(
+                    enabled = false,
+                    presentation = AutofillPresentation.FLOATING,
+                    credentialManagerEnabled = true,
+                    requireAuthentication = true,
+                    strictDomainMatching = true,
+                ),
+                AutofillSettings(
+                    enabled = true,
+                    presentation = AutofillPresentation.FLOATING,
+                    credentialManagerEnabled = false,
+                    requireAuthentication = true,
+                    strictDomainMatching = true,
+                ),
             ).forEach { policy ->
                 val fixture = fixture(AuthenticationState.Authenticated(1L), policy)
                 val interaction = fixture.flow.beginCreate(scope())
@@ -230,8 +243,10 @@ class CredentialManagerFlowTest {
         policy: AutofillSettings =
             AutofillSettings(
                 enabled = true,
+                presentation = AutofillPresentation.FLOATING,
                 credentialManagerEnabled = true,
                 requireAuthentication = false,
+                strictDomainMatching = true,
             ),
         inboxOutcome: AutofillInboxEnqueueOutcome = AutofillInboxEnqueueOutcome.NotProvisioned,
     ): Fixture {

@@ -30,6 +30,7 @@ import com.aozijx.passly.domain.entry.model.query.CredentialMatch
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.settings.model.AutofillSettings
+import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
@@ -47,7 +48,17 @@ class DiscoverAutofillCandidatesTest {
     @Test
     fun disabledSourceDoesNotCreateOrQueryInteraction() =
         runBlocking {
-            val fixture = fixture(settings = AutofillSettings(enabled = false))
+            val fixture =
+                fixture(
+                    settings =
+                        AutofillSettings(
+                            enabled = false,
+                            presentation = AutofillPresentation.FLOATING,
+                            credentialManagerEnabled = true,
+                            requireAuthentication = true,
+                            strictDomainMatching = true,
+                        ),
+                )
 
             val outcome = fixture.discoverAfterWebConfirmation(request())
 
@@ -117,7 +128,17 @@ class DiscoverAutofillCandidatesTest {
     @Test
     fun relaxedDomainMatchingIsPassedToCandidateSearchWithoutWideningInteractionScope() =
         runBlocking {
-            val fixture = fixture(settings = AutofillSettings(requireAuthentication = false, strictDomainMatching = false))
+            val fixture =
+                fixture(
+                    settings =
+                        AutofillSettings(
+                            presentation = AutofillPresentation.FLOATING,
+                            enabled = true,
+                            credentialManagerEnabled = true,
+                            requireAuthentication = false,
+                            strictDomainMatching = false,
+                        ),
+                )
 
             val outcome =
                 fixture.discoverAfterWebConfirmation(
@@ -133,7 +154,17 @@ class DiscoverAutofillCandidatesTest {
     @Test
     fun relaxedCandidatePolicyDoesNotResumeAnInteractionOnAnotherHost() =
         runBlocking {
-            val fixture = fixture(settings = AutofillSettings(requireAuthentication = false, strictDomainMatching = false))
+            val fixture =
+                fixture(
+                    settings =
+                        AutofillSettings(
+                            presentation = AutofillPresentation.FLOATING,
+                            enabled = true,
+                            credentialManagerEnabled = true,
+                            requireAuthentication = false,
+                            strictDomainMatching = false,
+                        ),
+                )
             val first =
                 fixture.discoverAfterWebConfirmation(
                     request().copy(domain = "login.example.com"),
@@ -225,7 +256,14 @@ class DiscoverAutofillCandidatesTest {
         }
 
     private fun fixture(
-        settings: AutofillSettings = AutofillSettings(requireAuthentication = false),
+        settings: AutofillSettings =
+            AutofillSettings(
+                presentation = AutofillPresentation.FLOATING,
+                enabled = true,
+                credentialManagerEnabled = true,
+                requireAuthentication = false,
+                strictDomainMatching = true,
+            ),
         hasCredentials: Boolean = true,
         vaultState: AuthenticationState = AuthenticationState.Authenticated(1L),
         candidates: List<AutofillCandidateSummary> = emptyList(),

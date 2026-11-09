@@ -195,7 +195,15 @@ class InterfaceSettingsViewModelTest {
         }
 
     private class Repository(
-        override val interfaceSettings: Flow<InterfaceSettings> = MutableStateFlow(InterfaceSettings()),
+        override val interfaceSettings: Flow<InterfaceSettings> =
+            MutableStateFlow(
+                InterfaceSettings(
+                    hideSystemBars = false,
+                    collapseTopBarOnScroll = false,
+                    collapseQuickFilterBarOnScroll = true,
+                    appCornerRadiusDp = 16f,
+                ),
+            ),
         private val save: suspend () -> Unit,
     ) : InterfaceSettingsRepository,
         LibraryViewSettingsRepository {

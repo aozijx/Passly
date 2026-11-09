@@ -64,7 +64,14 @@ class AppThemeSettingsViewModelTest {
                     interfaceSettingsRepository =
                         object : InterfaceSettingsRepository {
                             override val interfaceSettings =
-                                MutableStateFlow(InterfaceSettings(appCornerRadiusDp = 30f))
+                                MutableStateFlow(
+                                    InterfaceSettings(
+                                        hideSystemBars = false,
+                                        collapseTopBarOnScroll = false,
+                                        collapseQuickFilterBarOnScroll = true,
+                                        appCornerRadiusDp = 30f,
+                                    ),
+                                )
 
                             override suspend fun setHideSystemBars(enabled: Boolean) = Unit
 

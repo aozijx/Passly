@@ -25,7 +25,14 @@ class AutofillSettingsSectionTest {
     @Test
     fun presentationOptionsRemainAvailableAndEmitSelectedValueWithoutCredentialManagerSupport() {
         val actions = mutableListOf<AutofillSettingsAction>()
-        val settings = AutofillSettings(credentialManagerEnabled = false)
+        val settings =
+            AutofillSettings(
+                enabled = true,
+                presentation = AutofillPresentation.FLOATING,
+                credentialManagerEnabled = false,
+                requireAuthentication = true,
+                strictDomainMatching = true,
+            )
         composeRule.setContent {
             MaterialTheme {
                 AutofillSettingsSection(
@@ -119,5 +126,12 @@ class AutofillSettingsSectionTest {
         assertEquals(listOf(AutofillSettingsAction.SetStrictDomainMatching(false)), actions)
     }
 
-    private fun settings() = AutofillSettings(credentialManagerEnabled = false)
+    private fun settings() =
+        AutofillSettings(
+            enabled = true,
+            presentation = AutofillPresentation.FLOATING,
+            credentialManagerEnabled = false,
+            requireAuthentication = true,
+            strictDomainMatching = true,
+        )
 }
