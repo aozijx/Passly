@@ -8,6 +8,7 @@ import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 internal data class TrashEntryUiModel(
     val id: String,
     val version: Int,
+    val operation: TrashEntryRowOperation,
     val title: String,
     val entryType: EntryType,
     val supportingText: String?,
@@ -19,6 +20,8 @@ internal data class TrashEntryUiModel(
     val iconImageModel: LocalIconImageModel?,
     val visualCategory: EntryVisualCategory,
 )
+
+internal enum class TrashEntryRowOperation { Idle, Running }
 
 internal sealed interface TrashErrorUiState {
     data object Hidden : TrashErrorUiState
@@ -37,7 +40,6 @@ internal sealed interface TrashEntryListUiState {
 
     data class Items(
         val entries: List<TrashEntryUiModel>,
-        val activeEntryId: String?,
     ) : TrashEntryListUiState {
         init {
             require(entries.isNotEmpty())

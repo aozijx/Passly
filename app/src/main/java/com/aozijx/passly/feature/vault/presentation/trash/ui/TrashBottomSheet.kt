@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashBottomSheetUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryListUiState
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryRowOperation
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashErrorUiState
 
@@ -135,15 +136,16 @@ internal fun TrashBottomSheet(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(entries.entries, key = { entry -> entry.id }) { entry ->
-                            if (entries.activeEntryId == entry.id) {
-                                TrashEntryOperationLoading()
-                            } else {
-                                TrashEntryCard(
-                                    entry = entry,
-                                    busy = isBusy,
-                                    onRestore = { onRestore(entry) },
-                                    onDelete = { pendingDelete = entry },
-                                )
+                            when (entry.operation) {
+                                TrashEntryRowOperation.Running -> TrashEntryOperationLoading()
+                                TrashEntryRowOperation.Idle -> {
+                                    TrashEntryCard(
+                                        entry = entry,
+                                        busy = isBusy,
+                                        onRestore = { onRestore(entry) },
+                                        onDelete = { pendingDelete = entry },
+                                    )
+                                }
                             }
                         }
                     }

@@ -150,8 +150,7 @@ internal class TrashViewModel
         }
 
         private fun emptyTrash() {
-            val entries = (_uiState.value.content as? TrashContentState.Loaded)?.entries.orEmpty()
-            if (_uiState.value.isBusy || entries.isEmpty()) return
+            if (_uiState.value.isBusy || _uiState.value.content !is TrashContentState.Items) return
             runOperation(
                 started = TrashMutation.EmptyStarted,
                 finished = TrashMutation.EmptyFinished,

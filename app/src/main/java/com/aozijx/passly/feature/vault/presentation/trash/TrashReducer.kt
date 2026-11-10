@@ -42,7 +42,13 @@ internal object TrashReducer {
             }
 
             is TrashMutation.Loaded -> {
-                state.copy(content = TrashContentState.Loaded(mutation.entries))
+                state.copy(
+                    content =
+                        mutation.entries
+                            .takeIf(List<EntryListItem>::isNotEmpty)
+                            ?.let(TrashContentState::Items)
+                            ?: TrashContentState.Empty,
+                )
             }
 
             is TrashMutation.LoadFailed -> {

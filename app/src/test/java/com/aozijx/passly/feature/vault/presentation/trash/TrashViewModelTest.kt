@@ -276,10 +276,10 @@ class TrashViewModelTest {
             model.onAction(TrashUiAction.RetryLoad)
             runCurrent()
             assertEquals(2, subscriptions)
-            assertEquals(TrashContentState.Loaded(listOf(entry)), model.uiState.value.content)
+            assertEquals(TrashContentState.Items(listOf(entry)), model.uiState.value.content)
             updates.emit(emptyList())
             runCurrent()
-            assertEquals(TrashContentState.Loaded(emptyList()), model.uiState.value.content)
+            assertEquals(TrashContentState.Empty, model.uiState.value.content)
         }
 
     @Test
@@ -300,7 +300,7 @@ class TrashViewModelTest {
             model.onAction(TrashUiAction.RetryLoad)
             runCurrent()
             assertEquals(3, subscriptions)
-            assertEquals(TrashContentState.Loaded(emptyList()), model.uiState.value.content)
+            assertEquals(TrashContentState.Empty, model.uiState.value.content)
         }
 
     @Test
@@ -334,7 +334,7 @@ class TrashViewModelTest {
                 )
             runCurrent()
 
-            assertEquals(TrashContentState.Loaded(listOf(entry)), model.uiState.value.content)
+            assertEquals(TrashContentState.Items(listOf(entry)), model.uiState.value.content)
             clear(model)
         }
 

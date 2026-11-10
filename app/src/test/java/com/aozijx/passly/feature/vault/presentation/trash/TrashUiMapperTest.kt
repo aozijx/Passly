@@ -9,6 +9,8 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryListUiState
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryRowOperation
 import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
 import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 import org.junit.Assert.assertEquals
@@ -40,10 +42,13 @@ class TrashUiMapperTest {
                     ),
             )
 
-        val result = TrashUiMapper.map(listOf(entry)).single()
+        val screenState = TrashUiMapper.map(TrashUiState(content = TrashContentState.Items(listOf(entry))))
+        val entries = screenState.entries as TrashEntryListUiState.Items
+        val result = entries.entries.single()
 
         assertEquals("entry-1", result.id)
         assertEquals(3, result.version)
+        assertEquals(TrashEntryRowOperation.Idle, result.operation)
         assertEquals("Mail", result.title)
         assertEquals(EntryType.LOGIN, result.entryType)
         assertEquals("person@example.com", result.supportingText)

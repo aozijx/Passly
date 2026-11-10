@@ -16,9 +16,15 @@ data class TrashUiState(
 sealed interface TrashContentState {
     data object Loading : TrashContentState
 
-    data class Loaded(
+    data object Empty : TrashContentState
+
+    data class Items(
         val entries: List<EntryListItem>,
-    ) : TrashContentState
+    ) : TrashContentState {
+        init {
+            require(entries.isNotEmpty())
+        }
+    }
 
     data class Failed(
         val message: UiErrorMessage,
