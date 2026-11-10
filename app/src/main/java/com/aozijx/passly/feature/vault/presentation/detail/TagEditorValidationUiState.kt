@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.vault.presentation.detail.model
+package com.aozijx.passly.feature.vault.presentation.detail
 
 import androidx.annotation.PluralsRes
 

@@ -2,7 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 
 internal object DetailTagEditorReducer {
     fun reduce(

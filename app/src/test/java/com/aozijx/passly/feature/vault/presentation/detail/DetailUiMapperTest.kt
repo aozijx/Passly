@@ -29,8 +29,8 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiSta
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.TagEditorValidationUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

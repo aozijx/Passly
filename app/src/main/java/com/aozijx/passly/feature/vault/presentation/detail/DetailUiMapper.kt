@@ -31,8 +31,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEn
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedSectionsUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.toDetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel

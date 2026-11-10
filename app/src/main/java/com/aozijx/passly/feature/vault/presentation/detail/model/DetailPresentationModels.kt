@@ -7,6 +7,7 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemU
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState

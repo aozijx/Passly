@@ -2,9 +2,6 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.toDetailTagChipsUiState
 
 sealed interface DetailTagEditorState {
     data object Closed : DetailTagEditorState
