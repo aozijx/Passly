@@ -31,13 +31,7 @@ class AddWifiViewModel
         private val secureSessionAccessState: SecureSessionAccessState,
         private val editEntry: EditEntryUseCase,
     ) : ViewModel() {
-        private sealed interface InitializationPhase {
-            data object Pending : InitializationPhase
-
-            data object AwaitingContent : InitializationPhase
-
-            data object Complete : InitializationPhase
-        }
+        private enum class InitializationPhase { Pending, AwaitingContent, Complete }
 
         private var initializationPhase: InitializationPhase = InitializationPhase.Pending
         private var editingEntryId: EntryId? = null
@@ -58,7 +52,7 @@ class AddWifiViewModel
                 onSaving = { _uiState.value = _uiState.value.copy(isSaving = true) },
                 onIdle = {
                     val current = _uiState.value
-                    _uiState.value = current.withForm(current.form).copy(isSaving = false)
+                    _uiState.value = current.copy(isSaving = false)
                 },
                 onClear = ::clearSensitiveContent,
             )
@@ -159,7 +153,7 @@ class AddWifiViewModel
         private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState): Boolean {
             if (!writeSession.canEdit() || !canEditForm()) return false
             val current = _uiState.value
-            _uiState.value = current.withForm(transform(current.form))
+            _uiState.value = current.copy(form = transform(current.form))
             return true
         }
 

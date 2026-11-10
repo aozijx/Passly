@@ -17,7 +17,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
-import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpSecretInputState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
@@ -28,7 +27,6 @@ fun OtpConfigForm(
     onAction: (AddOtpAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val secretInvalid = state.secretInputState == OtpSecretInputState.Invalid
     val invalidFields = state.invalidFields
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -45,8 +43,13 @@ fun OtpConfigForm(
             value = state.secret,
             onValueChange = { onAction(AddOtpAction.FormChanged(state.copy(secret = it))) },
             label = stringResource(R.string.totp_secret),
-            isError = secretInvalid,
-            supportingText = if (secretInvalid) ({ Text(stringResource(R.string.otp_secret_invalid)) }) else null,
+            isError = state.secretHasInputError,
+            supportingText =
+                if (state.secretHasInputError) {
+                    { Text(stringResource(R.string.otp_secret_invalid)) }
+                } else {
+                    null
+                },
         )
         NextFocusTextField(
             value = state.issuer,
@@ -65,14 +68,14 @@ fun OtpConfigForm(
             },
             options = OtpHashAlgorithm.entries,
             label = stringResource(R.string.totp_algorithm),
-            enabled = state.type != OtpType.STEAM,
+            enabled = state.allowsParameterEditing,
             optionToString = { it.name },
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (state.type == OtpType.HOTP) {
+            if (state.usesCounterField) {
                 NextFocusTextField(
                     value = state.counter,
                     onValueChange = {
@@ -98,7 +101,7 @@ fun OtpConfigForm(
                         onAction(AddOtpAction.FormChanged(state.copy(period = it)))
                     },
                     label = stringResource(R.string.totp_period),
-                    enabled = state.type != OtpType.STEAM,
+                    enabled = state.allowsParameterEditing,
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
                     isError = FieldKey.OTP_PERIOD in invalidFields,
@@ -120,7 +123,7 @@ fun OtpConfigForm(
                 label = stringResource(R.string.totp_digits),
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Number,
-                enabled = state.type != OtpType.STEAM,
+                enabled = state.allowsParameterEditing,
                 isError = FieldKey.OTP_DIGITS in invalidFields,
                 supportingText =
                     if (FieldKey.OTP_DIGITS in

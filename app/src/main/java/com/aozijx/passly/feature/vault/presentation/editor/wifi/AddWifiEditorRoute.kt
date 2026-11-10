@@ -16,11 +16,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.policy.WifiQrParseResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadParser
-import com.aozijx.passly.feature.scanner.presentation.AnimatedScannerOverlay
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
-import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.route.AnimatedScannerOverlay
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadFailureEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
@@ -48,7 +49,7 @@ fun AddWifiEditorRoute(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
-    var isScannerVisible by remember { mutableStateOf(false) }
+    var scannerOverlayState by remember { mutableStateOf<ScannerOverlayState>(ScannerOverlayState.Hidden) }
 
     EditorSaveEffectHandler(viewModel.effects, snackbarHostState, saveFailedMessage, onSaved)
     EditorLoadFailureEffectHandler(uiState.loadPhase, editSeedToken != null, snackbarHostState, loadFailedMessage)
@@ -78,14 +79,14 @@ fun AddWifiEditorRoute(
         state = uiState,
         onAction = viewModel::onAction,
         onBack = onBack,
-        onScan = { isScannerVisible = true },
+        onScan = { scannerOverlayState = ScannerOverlayState.Visible },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
         isEditingExisting = editSeedToken != null,
     )
 
     AnimatedScannerOverlay(
-        visible = isScannerVisible,
+        state = scannerOverlayState,
         resolveResult = { rawValue ->
             val payload = (WifiQrPayloadParser.parse(rawValue) as? WifiQrParseResult.Parsed)?.payload
             val presentation =
@@ -105,6 +106,6 @@ fun AddWifiEditorRoute(
                 },
             )
         },
-        onDismiss = { isScannerVisible = false },
+        onDismiss = { scannerOverlayState = ScannerOverlayState.Hidden },
     )
 }

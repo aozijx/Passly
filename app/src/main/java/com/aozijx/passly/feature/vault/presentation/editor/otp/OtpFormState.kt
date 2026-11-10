@@ -39,19 +39,16 @@ data class OtpFormState(
 
     val isValid: Boolean get() = title.isNotBlank() && configInput.parse() is OtpConfigInputResult.Valid
 
+    val usesCounterField: Boolean get() = type == OtpType.HOTP
+
+    val allowsParameterEditing: Boolean get() = type != OtpType.STEAM
+
     val invalidFields: Set<FieldKey>
         get() = configInput.parse().invalidFields()
 
-    val secretInputState: OtpSecretInputState
-        get() =
-            when {
-                secret.isEmpty() -> OtpSecretInputState.Empty
-                configInput.parse().invalidFields().contains(FieldKey.OTP_SECRET) -> OtpSecretInputState.Invalid
-                else -> OtpSecretInputState.Valid
-            }
+    val secretHasInputError: Boolean
+        get() = secret.isNotEmpty() && FieldKey.OTP_SECRET in invalidFields
 }
-
-enum class OtpSecretInputState { Empty, Valid, Invalid }
 
 private fun OtpConfigInputResult.invalidFields(): Set<FieldKey> =
     when (this) {

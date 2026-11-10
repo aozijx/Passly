@@ -33,10 +33,12 @@ enum class AddWifiInitializationGate { NeedsInitialContent, Unavailable, Already
 
 data class AddWifiUiState(
     val form: AddWifiFormState = AddWifiFormState(),
-    val fieldErrors: Map<FieldKey, EntryViolationCode> = form.visibleFieldErrors(),
     val isSaving: Boolean = false,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
+    val fieldErrors: Map<FieldKey, EntryViolationCode>
+        get() = form.visibleFieldErrors()
+
     val canSave: Boolean
         get() =
             form.fieldErrors().isEmpty() && !isSaving && loadPhase.allowsSaving
@@ -54,9 +56,3 @@ internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> =
 
 private fun AddWifiFormState.visibleFieldErrors(): Map<FieldKey, EntryViolationCode> =
     fieldErrors().filterValues { it != EntryViolationCode.REQUIRED }
-
-internal fun AddWifiUiState.withForm(form: AddWifiFormState): AddWifiUiState =
-    copy(
-        form = form,
-        fieldErrors = form.visibleFieldErrors(),
-    )
