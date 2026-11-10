@@ -24,10 +24,10 @@ fun BankCardSection(
     onAction: (DetailUiAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        CardField(
+        BankCardField(
             DetailField.CARDHOLDER,
             stringResource(R.string.cardholder),
-            model.cardholder,
+            model.cardholder.orEmpty(),
             true,
             model.editingCardholder,
             model.editedCardholder,
@@ -35,10 +35,10 @@ fun BankCardSection(
             false,
         )
         model.bankDetails.forEach { detail ->
-            CardField(
+            BankCardField(
                 detail.field,
                 stringResource(detail.labelRes),
-                detail.value,
+                detail.value.orEmpty(),
                 true,
                 detail.editing,
                 detail.editedValue,
@@ -46,38 +46,29 @@ fun BankCardSection(
                 false,
             )
         }
-        when (val cardNumber = model.cardNumber) {
-            ProtectedDetailFieldUiState.Absent -> Unit
-            ProtectedDetailFieldUiState.Hidden ->
-                CardField(
-                    DetailField.CARD_NUMBER,
-                    stringResource(R.string.card_number),
-                    null,
-                    false,
-                    model.editingCardNumber,
-                    model.editedCardNumber,
-                    onAction,
-                    true,
-                )
-            is ProtectedDetailFieldUiState.Revealed ->
-                CardField(
-                    DetailField.CARD_NUMBER,
-                    stringResource(R.string.card_number),
-                    cardNumber.value,
-                    true,
-                    model.editingCardNumber,
-                    model.editedCardNumber,
-                    onAction,
-                    true,
-                )
+        model.cardNumber.takeUnless { it is ProtectedDetailFieldUiState.Absent }?.let { cardNumber ->
+            BankCardField(
+                field = DetailField.CARD_NUMBER,
+                label = stringResource(R.string.card_number),
+                value =
+                    when (cardNumber) {
+                        ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> ""
+                        is ProtectedDetailFieldUiState.Revealed -> cardNumber.value
+                    },
+                revealed = cardNumber is ProtectedDetailFieldUiState.Revealed,
+                editing = model.editingCardNumber,
+                editedValue = model.editedCardNumber,
+                onAction = onAction,
+                canReveal = true,
+            )
         }
         if (model.hasCvv) {
             val cvvValue =
                 when (val cvv = model.cvv) {
-                    ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> null
+                    ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> ""
                     is ProtectedDetailFieldUiState.Revealed -> cvv.value
                 }
-            CardField(
+            BankCardField(
                 DetailField.CARD_CVV,
                 stringResource(R.string.card_cvv),
                 cvvValue,
@@ -90,34 +81,25 @@ fun BankCardSection(
             )
         }
         model.expiration?.let {
-            DetailItem(
-                label = stringResource(R.string.card_expiration),
+            DetailValueCard(
+                title = stringResource(R.string.card_expiration),
                 value = it,
                 isRevealed = true,
                 onCopy = { onAction(DetailUiAction.CopyField(DetailField.CARD_EXPIRATION)) },
-                onEdit = null,
             )
         }
-        when (val paymentPin = model.paymentPin) {
-            ProtectedDetailFieldUiState.Absent -> Unit
-            ProtectedDetailFieldUiState.Hidden ->
-                DetailItem(
-                    label = stringResource(R.string.payment_pin),
-                    value = null,
-                    isRevealed = false,
-                    onCopy = { onAction(DetailUiAction.CopyField(DetailField.PAYMENT_PIN)) },
-                    onEdit = null,
-                    onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PAYMENT_PIN)) },
-                )
-            is ProtectedDetailFieldUiState.Revealed ->
-                DetailItem(
-                    label = stringResource(R.string.payment_pin),
-                    value = paymentPin.value,
-                    isRevealed = true,
-                    onCopy = { onAction(DetailUiAction.CopyField(DetailField.PAYMENT_PIN)) },
-                    onEdit = null,
-                    onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PAYMENT_PIN)) },
-                )
+        model.paymentPin.takeUnless { it is ProtectedDetailFieldUiState.Absent }?.let { paymentPin ->
+            DetailValueCard(
+                title = stringResource(R.string.payment_pin),
+                value =
+                    when (paymentPin) {
+                        ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> ""
+                        is ProtectedDetailFieldUiState.Revealed -> paymentPin.value
+                    },
+                isRevealed = paymentPin is ProtectedDetailFieldUiState.Revealed,
+                onCopy = { onAction(DetailUiAction.CopyField(DetailField.PAYMENT_PIN)) },
+                onRevealClick = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.PAYMENT_PIN)) },
+            )
         }
         if (model.canRevealMore && !model.editingCardNumber) {
             Button(
@@ -133,10 +115,10 @@ fun BankCardSection(
 }
 
 @Composable
-private fun CardField(
+private fun BankCardField(
     field: DetailField,
     label: String,
-    value: String?,
+    value: String,
     revealed: Boolean,
     editing: Boolean,
     editedValue: String,
@@ -158,14 +140,14 @@ private fun CardField(
             singleLine = true,
         )
     } else {
-        DetailItem(
-            label = label,
+        DetailValueCard(
+            title = label,
             value = value,
             isRevealed = revealed,
             maskStyle = maskStyle,
             onCopy = { onAction(DetailUiAction.CopyField(field)) },
-            onEdit = { onAction(DetailUiAction.StartFieldEdit(field, value.orEmpty())) },
-            onReveal =
+            onLongPress = { onAction(DetailUiAction.StartFieldEdit(field, value)) },
+            onRevealClick =
                 if (canReveal) {
                     { onAction(DetailUiAction.ToggleFieldVisibility(field)) }
                 } else {
