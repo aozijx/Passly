@@ -19,15 +19,16 @@ fun IdCardSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        val idNumberValue =
+            when (val idNumber = model.idNumber) {
+                ProtectedDetailFieldUiState.Absent -> stringResource(R.string.not_set)
+                ProtectedDetailFieldUiState.Hidden -> null
+                is ProtectedDetailFieldUiState.Revealed -> idNumber.value
+            }
         DetailItem(
             label = stringResource(R.string.id_number),
-            value =
-                when (val idNumber = model.idNumber) {
-                    ProtectedDetailFieldUiState.Absent -> stringResource(R.string.not_set)
-                    ProtectedDetailFieldUiState.Hidden -> null
-                    is ProtectedDetailFieldUiState.Revealed -> idNumber.value
-                },
-            isRevealed = model.idNumber.isRevealed || !model.idNumber.isPresent,
+            value = idNumberValue,
+            isRevealed = model.idNumber !is ProtectedDetailFieldUiState.Hidden,
             onCopy = onIdNumberCopy,
             onEdit = null,
             onReveal = onIdNumberReveal,

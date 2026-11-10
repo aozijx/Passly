@@ -275,7 +275,7 @@ private fun detailBodySectionsUiModels(
                                 ?.password
                                 .isNullOrBlank()
                         } else {
-                            password.isPresent || entry.type != EntryType.LOGIN
+                            password !is ProtectedDetailFieldUiState.Absent || entry.type != EntryType.LOGIN
                         }
                     if (shouldShowPassword) {
                         add(

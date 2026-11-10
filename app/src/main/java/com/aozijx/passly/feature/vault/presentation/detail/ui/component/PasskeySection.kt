@@ -21,17 +21,17 @@ fun PasskeySection(
     val passkeyDataLabel = stringResource(R.string.passkey_data)
     val hardwareKeyInfoLabel = stringResource(R.string.hardware_key_info)
     val notSet = stringResource(R.string.not_set)
-    val (passkeyData, isPasskeyDataRevealed) =
+    val passkeyData =
         when (val data = model.data) {
-            ProtectedDetailFieldUiState.Absent -> notSet to true
-            ProtectedDetailFieldUiState.Hidden -> null to false
-            is ProtectedDetailFieldUiState.Revealed -> data.value to true
+            ProtectedDetailFieldUiState.Absent -> notSet
+            ProtectedDetailFieldUiState.Hidden -> null
+            is ProtectedDetailFieldUiState.Revealed -> data.value
         }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = passkeyDataLabel,
             value = passkeyData,
-            isRevealed = isPasskeyDataRevealed,
+            isRevealed = model.data !is ProtectedDetailFieldUiState.Hidden,
             onCopy = onPasskeyCopy,
             onEdit = null,
             onReveal = onPasskeyReveal,

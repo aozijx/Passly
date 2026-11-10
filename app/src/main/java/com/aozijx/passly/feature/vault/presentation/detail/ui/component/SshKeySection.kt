@@ -17,6 +17,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskedText
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshFingerprintUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 
 @Composable
 fun SshKeySection(
@@ -51,15 +52,25 @@ fun SshKeySection(
                 onPassphraseSaved(model.editedPassphrase)
             }
         } else {
+            val passphraseValue =
+                when (val passphrase = model.passphrase) {
+                    ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> null
+                    is ProtectedDetailFieldUiState.Revealed -> passphrase.value
+                }
             DetailItem(
                 label = stringResource(R.string.passphrase),
-                value = model.passphrase.revealedValue,
-                isRevealed = model.passphrase.isRevealed,
+                value = passphraseValue,
+                isRevealed = model.passphrase is ProtectedDetailFieldUiState.Revealed,
                 onCopy = onPassphraseCopy,
                 onEdit = onPassphraseEditStarted,
                 onReveal = onPassphraseReveal,
             )
         }
+        val privateKeyPreview =
+            when (val privateKey = model.privateKey) {
+                ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> null
+                is ProtectedDetailFieldUiState.Revealed -> privateKey.value.take(60).plus("...")
+            }
         Surface(
             onClick = onPrivateKeyClick,
             shape = MaterialTheme.shapes.large,
@@ -73,8 +84,8 @@ fun SshKeySection(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 MaskedText(
-                    model.privateKey.revealedValue?.take(60)?.plus("..."),
-                    model.privateKey.isRevealed,
+                    privateKeyPreview,
+                    model.privateKey is ProtectedDetailFieldUiState.Revealed,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start,
                     fontWeight = FontWeight.Normal,
@@ -82,11 +93,14 @@ fun SshKeySection(
                 )
             }
         }
-        model.privateKey.revealedValue?.let { key ->
-            Card(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.ssh_private_key_full), color = MaterialTheme.colorScheme.primary)
-                    Text(key, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+        when (val privateKey = model.privateKey) {
+            ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> Unit
+            is ProtectedDetailFieldUiState.Revealed -> {
+                Card(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.ssh_private_key_full), color = MaterialTheme.colorScheme.primary)
+                        Text(privateKey.value, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                    }
                 }
             }
         }

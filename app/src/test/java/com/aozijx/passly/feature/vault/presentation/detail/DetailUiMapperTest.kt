@@ -29,6 +29,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiSta
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.TagEditorValidationUiState
 import org.junit.Assert.assertEquals
@@ -415,9 +416,9 @@ class DetailUiMapperTest {
         assertEquals("Product", bankDetails[DetailField.CARD_PRODUCT])
         assertEquals("CNY / USD", bankDetails[DetailField.CARD_CURRENCY])
         assertEquals("+86 123456", bankDetails[DetailField.CARD_BANK_PHONE])
-        assertTrue(card.cardNumber.isPresent)
+        assertTrue(card.cardNumber !is ProtectedDetailFieldUiState.Absent)
         assertTrue(card.hasCvv)
-        assertTrue(card.paymentPin.isPresent)
+        assertTrue(card.paymentPin !is ProtectedDetailFieldUiState.Absent)
         assertTrue(card.canRevealMore)
     }
 

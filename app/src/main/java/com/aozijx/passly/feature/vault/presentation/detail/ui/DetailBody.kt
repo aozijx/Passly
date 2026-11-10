@@ -34,6 +34,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.ActivityTimelineSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.AssociatedInfoSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.BankCardSection
@@ -162,14 +163,18 @@ fun DetailBody(
                                     onAction(
                                         DetailUiAction.StartFieldEdit(
                                             DetailField.SSH_PASSPHRASE,
-                                            ssh.passphrase.revealedValue.orEmpty(),
+                                            when (val passphrase = ssh.passphrase) {
+                                                ProtectedDetailFieldUiState.Absent,
+                                                ProtectedDetailFieldUiState.Hidden -> ""
+                                                is ProtectedDetailFieldUiState.Revealed -> passphrase.value
+                                            },
                                         ),
                                     )
                                 },
                                 onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
                                 onPassphraseSaved = { onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it)) },
                                 onPrivateKeyClick = {
-                                    if (ssh.privateKey.isRevealed) {
+                                    if (ssh.privateKey is ProtectedDetailFieldUiState.Revealed) {
                                         onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))
                                     } else {
                                         onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PRIVATE_KEY))

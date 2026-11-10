@@ -74,17 +74,15 @@ data class DetailBankCardUiModel(
     val editedCvv: String,
     val bankDetails: List<DetailCardTextFieldUiModel> = emptyList(),
 ) {
-    val hasCvv: Boolean get() = cvv.isPresent || editingCvv
-    val canRevealMore: Boolean get() = cardNumber.isHidden || cvv.isHidden || paymentPin.isHidden
+    val hasCvv: Boolean get() = cvv !is ProtectedDetailFieldUiState.Absent || editingCvv
+    val canRevealMore: Boolean
+        get() =
+            cardNumber is ProtectedDetailFieldUiState.Hidden ||
+                cvv is ProtectedDetailFieldUiState.Hidden ||
+                paymentPin is ProtectedDetailFieldUiState.Hidden
 }
 
 sealed interface ProtectedDetailFieldUiState {
-    val isPresent: Boolean get() = this !is Absent
-    val isHidden: Boolean get() = this is Hidden
-    val isRevealed: Boolean get() = this is Revealed
-    val revealedValue: String?
-        get() = (this as? Revealed)?.value
-
     data object Absent : ProtectedDetailFieldUiState
 
     data object Hidden : ProtectedDetailFieldUiState
@@ -118,7 +116,8 @@ data class DetailSshUiModel(
     val isEditingPassphrase: Boolean,
     val editedPassphrase: String,
 ) {
-    val canRevealMore: Boolean get() = passphrase.isHidden || privateKey.isHidden
+    val canRevealMore: Boolean
+        get() = passphrase is ProtectedDetailFieldUiState.Hidden || privateKey is ProtectedDetailFieldUiState.Hidden
 }
 
 sealed interface DetailOtpUiModel {
