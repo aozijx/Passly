@@ -61,8 +61,8 @@ internal class AccessibilityFillViewModel
         private val traceContinuations: TraceContinuationStore,
         private val logger: Logger,
     ) : ViewModel() {
-        private val mutableState = MutableStateFlow<AccessibilityFillUiState>(AccessibilityFillUiState.Loading)
-        internal val uiState: StateFlow<AccessibilityFillUiState> = mutableState.asStateFlow()
+        private val mutableUiState = MutableStateFlow<AccessibilityFillUiState>(AccessibilityFillUiState.Loading)
+        internal val uiState: StateFlow<AccessibilityFillUiState> = mutableUiState.asStateFlow()
 
         private var active: ActiveSelection? = null
         private var resolving: ActiveSelection? = null
@@ -81,7 +81,7 @@ internal class AccessibilityFillViewModel
         internal fun start() {
             val captured = sessions.pendingCapture()
             if (captured !is AccessibilityCapture.Ready) {
-                mutableState.value = AccessibilityFillUiState.Done
+                mutableUiState.value = AccessibilityFillUiState.Done
                 return
             }
             val token = captured.token
@@ -123,7 +123,7 @@ internal class AccessibilityFillViewModel
                                     )
                                     finishInteraction.cancel(interactionId)
                                     sessions.clearCaptured(token)
-                                    mutableState.value = AccessibilityFillUiState.Done
+                                    mutableUiState.value = AccessibilityFillUiState.Done
                                     return@continueOrRoot
                                 }
                             }
@@ -150,7 +150,7 @@ internal class AccessibilityFillViewModel
                                     logFields,
                                 ),
                             )
-                            mutableState.value =
+                            mutableUiState.value =
                                 AccessibilityFillUiState.Candidates(
                                     targetAppPackageName = request.packageName,
                                     values = outcome.candidates,
@@ -170,7 +170,7 @@ internal class AccessibilityFillViewModel
                             )
                             interactionId?.let { finishInteraction.cancel(it) }
                             sessions.clearCaptured(token)
-                            mutableState.value = AccessibilityFillUiState.Done
+                            mutableUiState.value = AccessibilityFillUiState.Done
                         }
                     } catch (cancelled: CancellationException) {
                         withContext(NonCancellable) {
@@ -182,7 +182,7 @@ internal class AccessibilityFillViewModel
                         logger.log(LogStatements.Autofill.fallbackFailed(error, logFields))
                         interactionId?.let { finishInteraction.cancel(it) }
                         sessions.clearCaptured(token)
-                        mutableState.value = AccessibilityFillUiState.Done
+                        mutableUiState.value = AccessibilityFillUiState.Done
                     }
                 }
             }
@@ -192,7 +192,7 @@ internal class AccessibilityFillViewModel
             val selection = active ?: return
             active = null
             resolving = selection
-            mutableState.value = AccessibilityFillUiState.Loading
+            mutableUiState.value = AccessibilityFillUiState.Loading
             viewModelScope.launch {
                 traceContinuations.continueOrRoot(
                     selection.interactionId.value,
@@ -259,7 +259,7 @@ internal class AccessibilityFillViewModel
                         resolving = null
                         sessions.clearCaptured(selection.token)
                         if (!prepared) traceContinuations.discard(selection.interactionId.value)
-                        mutableState.value = AccessibilityFillUiState.Done
+                        mutableUiState.value = AccessibilityFillUiState.Done
                     }
                 }
             }
@@ -280,7 +280,7 @@ internal class AccessibilityFillViewModel
                         selection?.let { finishInteraction.cancel(it.interactionId) }
                     } finally {
                         selection?.let { traceContinuations.discard(it.interactionId.value) }
-                        mutableState.value = AccessibilityFillUiState.Done
+                        mutableUiState.value = AccessibilityFillUiState.Done
                     }
                 }
             }

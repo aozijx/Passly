@@ -17,7 +17,8 @@ internal sealed interface CredentialResponseCompletion {
 }
 
 /** The Android protocol payload must never be persisted in UI state or SavedState. */
-internal enum class CredentialResponseState {
-    LOADING,
-    UNRECOVERABLE,
+internal sealed interface CredentialResponseUiState {
+    data object Loading : CredentialResponseUiState
+
+    data object Unrecoverable : CredentialResponseUiState
 }

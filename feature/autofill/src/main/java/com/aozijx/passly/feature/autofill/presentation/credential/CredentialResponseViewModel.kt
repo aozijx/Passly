@@ -55,11 +55,11 @@ internal class CredentialResponseViewModel
         private val logger: Logger,
         private val traceContinuations: TraceContinuationStore,
     ) : ViewModel() {
-        private val mutableState =
+        private val mutableUiState =
             MutableStateFlow(
-                CredentialResponseState.LOADING,
+                CredentialResponseUiState.Loading,
             )
-        internal val state: StateFlow<CredentialResponseState> = mutableState.asStateFlow()
+        internal val uiState: StateFlow<CredentialResponseUiState> = mutableUiState.asStateFlow()
         private val resultEvents = CredentialResponseResultEvents()
         internal val completions = resultEvents.completions
 
@@ -323,7 +323,7 @@ internal class CredentialResponseViewModel
 
         private fun rejectUnknownAction() {
             if (requestStarted.compareAndSet(false, true)) {
-                mutableState.value = CredentialResponseState.UNRECOVERABLE
+                mutableUiState.value = CredentialResponseUiState.Unrecoverable
             }
         }
 

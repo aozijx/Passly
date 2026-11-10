@@ -19,7 +19,7 @@ internal fun CredentialResponseRoute(
     onComplete: (CredentialResponseCompletion) -> Unit,
     onUnrecoverable: () -> Unit,
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(action, viewModel) {
@@ -31,6 +31,6 @@ internal fun CredentialResponseRoute(
         }
     }
     LaunchedEffect(state) {
-        if (state == CredentialResponseState.UNRECOVERABLE) onUnrecoverable()
+        if (state == CredentialResponseUiState.Unrecoverable) onUnrecoverable()
     }
 }
