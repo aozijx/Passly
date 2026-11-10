@@ -24,26 +24,24 @@ fun PasskeySection(
     val passkeyData =
         when (val data = model.data) {
             ProtectedDetailFieldUiState.Absent -> notSet
-            ProtectedDetailFieldUiState.Hidden -> null
+            ProtectedDetailFieldUiState.Hidden -> ""
             is ProtectedDetailFieldUiState.Revealed -> data.value
         }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        DetailItem(
-            label = passkeyDataLabel,
+        DetailValueCard(
+            title = passkeyDataLabel,
             value = passkeyData,
             isRevealed = model.data !is ProtectedDetailFieldUiState.Hidden,
             onCopy = onPasskeyCopy,
-            onEdit = null,
-            onReveal = onPasskeyReveal,
+            onRevealClick = onPasskeyReveal,
         )
 
         model.hardwareKeyInfo?.let { info ->
-            DetailItem(
-                label = hardwareKeyInfoLabel,
+            DetailValueCard(
+                title = hardwareKeyInfoLabel,
                 value = info,
                 isRevealed = true,
                 onCopy = onHardwareKeyCopy,
-                onEdit = null,
             )
         }
     }

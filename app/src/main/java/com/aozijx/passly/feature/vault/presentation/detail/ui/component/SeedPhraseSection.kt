@@ -33,16 +33,12 @@ fun SeedPhraseSection(
     onReveal: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        DetailItem(
-            label = stringResource(R.string.seed_phrase_title),
-            value = state.revealedTextOrNull(),
+        DetailValueCard(
+            title = stringResource(R.string.seed_phrase_title),
+            value = state.revealedTextOrNull().orEmpty(),
             isRevealed = state.isRevealed,
             onCopy = onCopy,
-            onEdit = null,
-            onReveal =
-                onReveal.takeIf {
-                    state.isRevealed
-                },
+            onRevealClick = onReveal.takeIf { state.isRevealed },
         )
 
         when (state) {

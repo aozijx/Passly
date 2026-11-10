@@ -30,7 +30,7 @@ fun DetailValueCard(
     title: String,
     value: String,
     isRevealed: Boolean,
-    onCopy: () -> Unit,
+    onCopy: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     maskStyle: MaskStyle = MaskStyle.DEFAULT,
     onActivate: (() -> Unit)? = null,
@@ -72,13 +72,15 @@ fun DetailValueCard(
                 textAlign = TextAlign.Start,
                 fontWeight = FontWeight.Medium,
             )
-            IconButton(onClick = onCopy, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Default.ContentCopy,
-                    contentDescription = stringResource(R.string.copy),
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.outline,
-                )
+            onCopy?.let { copy ->
+                IconButton(onClick = copy, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = stringResource(R.string.copy),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.outline,
+                    )
+                }
             }
             onRevealClick?.let { reveal ->
                 IconButton(onClick = reveal, modifier = Modifier.size(36.dp)) {

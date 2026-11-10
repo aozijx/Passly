@@ -22,23 +22,21 @@ fun IdCardSection(
         val idNumberValue =
             when (val idNumber = model.idNumber) {
                 ProtectedDetailFieldUiState.Absent -> stringResource(R.string.not_set)
-                ProtectedDetailFieldUiState.Hidden -> null
+                ProtectedDetailFieldUiState.Hidden -> ""
                 is ProtectedDetailFieldUiState.Revealed -> idNumber.value
             }
-        DetailItem(
-            label = stringResource(R.string.id_number),
+        DetailValueCard(
+            title = stringResource(R.string.id_number),
             value = idNumberValue,
             isRevealed = model.idNumber !is ProtectedDetailFieldUiState.Hidden,
             onCopy = onIdNumberCopy,
-            onEdit = null,
-            onReveal = onIdNumberReveal,
+            onRevealClick = onIdNumberReveal,
         )
-        DetailItem(
-            label = stringResource(R.string.vault_detail_username),
+        DetailValueCard(
+            title = stringResource(R.string.vault_detail_username),
             value = model.username,
             isRevealed = true,
             onCopy = onUsernameCopy,
-            onEdit = null,
         )
     }
 }

@@ -24,6 +24,7 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
@@ -1656,7 +1657,7 @@ class DetailViewModelTest {
 
         fun sshEntry() =
             Entry(
-                identity = EntryIdentity(ENTRY_ID, EntryType.SSH, EntryVersion(2), EntryTimestamps(1L)),
+                identity = EntryIdentity(ENTRY_ID, EntryType.SSH_KEY, EntryVersion(2), EntryTimestamps(1L)),
                 profile = EntryProfile("Current SSH"),
                 secret = EntrySecret(SshCredential()),
             )
