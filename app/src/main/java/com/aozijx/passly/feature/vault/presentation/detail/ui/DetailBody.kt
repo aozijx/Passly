@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,8 +29,11 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
-import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.ActivityTimelineSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.AssociatedInfoSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.BankCardSection
@@ -49,9 +52,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.Revision
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -63,8 +63,12 @@ fun DetailBody(
 ) {
     var showPackagePicker by remember { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxSize()) {
-        when (model.snapshotState) {
-            DetailSnapshotState.RefreshingAfterRestore -> {
+        when (model.snapshotRefreshState) {
+            DetailSnapshotRefreshUiState.Current -> {
+                Unit
+            }
+
+            DetailSnapshotRefreshUiState.Refreshing -> {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -78,7 +82,7 @@ fun DetailBody(
                 }
             }
 
-            DetailSnapshotState.RefreshFailedAfterRestore -> {
+            DetailSnapshotRefreshUiState.Failed -> {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
@@ -91,10 +95,6 @@ fun DetailBody(
                     }
                 }
             }
-
-            else -> {
-                Unit
-            }
         }
 
         DetailScrollableContent(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -106,12 +106,13 @@ fun DetailBody(
             }
             model.sections.forEach { section ->
                 when (section) {
-                    is DetailBodySectionUiModel.Credential ->
+                    is DetailBodySectionUiModel.Credential -> {
                         item {
                             CredentialSection(fields = section.fields, onAction = onAction)
                         }
+                    }
 
-                    DetailBodySectionUiModel.WifiQr ->
+                    DetailBodySectionUiModel.WifiQr -> {
                         item {
                             OutlinedButton(
                                 onClick = { onAction(DetailUiAction.ShowEntryQr) },
@@ -122,8 +123,9 @@ fun DetailBody(
                                 Text(stringResource(R.string.vault_show_wifi_qr))
                             }
                         }
+                    }
 
-                    is DetailBodySectionUiModel.Otp ->
+                    is DetailBodySectionUiModel.Otp -> {
                         item {
                             TotpSection(
                                 currentState = section.state,
@@ -131,11 +133,13 @@ fun DetailBody(
                                 onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
                             )
                         }
+                    }
 
-                    is DetailBodySectionUiModel.BankCard ->
+                    is DetailBodySectionUiModel.BankCard -> {
                         item { BankCardSection(model = section.state, onAction = onAction) }
+                    }
 
-                    is DetailBodySectionUiModel.Identity ->
+                    is DetailBodySectionUiModel.Identity -> {
                         item {
                             IdCardSection(
                                 model = section.state,
@@ -144,8 +148,9 @@ fun DetailBody(
                                 onUsernameCopy = { onAction(DetailUiAction.CopyField(DetailField.USERNAME)) },
                             )
                         }
+                    }
 
-                    is DetailBodySectionUiModel.Ssh ->
+                    is DetailBodySectionUiModel.Ssh -> {
                         item {
                             val ssh = section.state
                             SshKeySection(
@@ -173,8 +178,9 @@ fun DetailBody(
                                 onRevealAll = { onAction(DetailUiAction.RevealSshFields) },
                             )
                         }
+                    }
 
-                    is DetailBodySectionUiModel.SeedPhrase ->
+                    is DetailBodySectionUiModel.SeedPhrase -> {
                         item {
                             SeedPhraseSection(
                                 state = section.state,
@@ -182,8 +188,9 @@ fun DetailBody(
                                 onReveal = { onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SEED_PHRASE)) },
                             )
                         }
+                    }
 
-                    is DetailBodySectionUiModel.Passkey ->
+                    is DetailBodySectionUiModel.Passkey -> {
                         item {
                             PasskeySection(
                                 model = section.state,
@@ -192,6 +199,7 @@ fun DetailBody(
                                 onHardwareKeyCopy = { onAction(DetailUiAction.CopyField(DetailField.HARDWARE_INFO)) },
                             )
                         }
+                    }
                 }
             }
             item {

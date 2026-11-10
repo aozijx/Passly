@@ -84,7 +84,7 @@ fun RelatedPasswordPickerSheet(
                                             ) {
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(candidate.title)
-                                                    candidate.username?.let { Text(it) }
+                                                    Text(candidate.username)
                                                 }
                                                 if (
                                                     current.operation ==

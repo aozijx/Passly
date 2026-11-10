@@ -11,11 +11,10 @@ class DetailSaveStateTest {
     fun repeatedInputWithTheSameValueDoesNotCreateANewDraft() {
         val title =
             DetailUiState(
-                isEditingTitle = true,
-                editedTitle = "submitted",
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "submitted"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
-        val repeatedTitle = DetailReducer.reduce(title, DetailMutation.EditedTitleChanged("submitted"))
+        val repeatedTitle = DetailReducer.reduce(title, DetailMutation.FieldDraftChanged(DetailDraftKey.Title, "submitted"))
         assertEquals(title, repeatedTitle)
         val notes =
             DetailUiState(
@@ -62,30 +61,28 @@ class DetailSaveStateTest {
     fun cancelledAndReopenedTitleIsANewDraftEvenWithTheSameText() {
         val saving =
             DetailUiState(
-                isEditingTitle = true,
-                editedTitle = "submitted",
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "submitted"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
-        val cancelled = DetailReducer.reduce(saving, DetailMutation.TitleEditingCancelled)
-        val reopened = DetailReducer.reduce(cancelled, DetailMutation.TitleEditingStarted)
-        val changed = DetailReducer.reduce(reopened, DetailMutation.EditedTitleChanged("submitted"))
+        val cancelled = DetailReducer.reduce(saving, DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
+        val reopened = DetailReducer.reduce(cancelled, DetailMutation.FieldEditingStarted(DetailDraftKey.Title, "submitted"))
+        val changed = DetailReducer.reduce(reopened, DetailMutation.FieldDraftChanged(DetailDraftKey.Title, "submitted"))
         val saved = DetailReducer.reduce(changed, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
-        assertTrue(saved.isEditingTitle)
-        assertEquals("submitted", saved.editedTitle)
+        assertTrue(saved.fieldEdits.isEditing(DetailDraftKey.Title))
+        assertEquals("submitted", saved.fieldEdits.draft(DetailDraftKey.Title))
     }
 
     @Test
     fun titleChangedDuringSaveRemainsOpenAfterTheEarlierWriteCompletes() {
         val saving =
             DetailUiState(
-                isEditingTitle = true,
-                editedTitle = "submitted",
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "submitted"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
-        val changed = DetailReducer.reduce(saving, DetailMutation.EditedTitleChanged("new draft"))
+        val changed = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(DetailDraftKey.Title, "new draft"))
         val saved = DetailReducer.reduce(changed, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
-        assertTrue(saved.isEditingTitle)
-        assertEquals("new draft", saved.editedTitle)
+        assertTrue(saved.fieldEdits.isEditing(DetailDraftKey.Title))
+        assertEquals("new draft", saved.fieldEdits.draft(DetailDraftKey.Title))
         assertEquals(DetailSaveState.Idle, saved.saveState)
     }
 
@@ -173,8 +170,7 @@ class DetailSaveStateTest {
     fun failedTitleSaveKeepsEditorAndDraftOpen() {
         val state =
             DetailUiState(
-                isEditingTitle = true,
-                editedTitle = "Draft title",
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Draft title"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
 
@@ -186,8 +182,8 @@ class DetailSaveStateTest {
                 ),
             )
 
-        assertTrue(actual.isEditingTitle)
-        assertEquals("Draft title", actual.editedTitle)
+        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Title))
+        assertEquals("Draft title", actual.fieldEdits.draft(DetailDraftKey.Title))
         assertEquals(
             DetailSaveState.Idle,
             actual.saveState,
@@ -198,8 +194,7 @@ class DetailSaveStateTest {
     fun confirmedTitleSaveClosesEditor() {
         val state =
             DetailUiState(
-                isEditingTitle = true,
-                editedTitle = "Draft title",
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Draft title"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
 
@@ -209,7 +204,7 @@ class DetailSaveStateTest {
                 DetailMutation.SaveSucceeded(DetailEditCompletion.Title),
             )
 
-        assertFalse(actual.isEditingTitle)
+        assertFalse(actual.fieldEdits.isEditing(DetailDraftKey.Title))
         assertEquals(DetailSaveState.Idle, actual.saveState)
     }
 
@@ -217,8 +212,7 @@ class DetailSaveStateTest {
     fun confirmedNotesSaveDoesNotCloseTitleEditor() {
         val state =
             DetailUiState(
-                isEditingTitle = true,
-                editedTitle = "Draft title",
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Draft title"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
             )
 
@@ -228,8 +222,8 @@ class DetailSaveStateTest {
                 DetailMutation.SaveSucceeded(DetailEditCompletion.Notes),
             )
 
-        assertTrue(actual.isEditingTitle)
-        assertEquals("Draft title", actual.editedTitle)
+        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Title))
+        assertEquals("Draft title", actual.fieldEdits.draft(DetailDraftKey.Title))
     }
 
     @Test

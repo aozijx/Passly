@@ -18,17 +18,18 @@ import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailActivityHistoryUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailOtpUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,6 +39,11 @@ import org.junit.Test
 
 class DetailUiMapperTest {
     @Test
+    fun loadingSnapshotMapsToAnExplicitPageState() {
+        assertEquals(DetailPageUiState.Loading, toDetailPageUiState(DetailUiState(), OtpCodeState.NotRequested))
+    }
+
+    @Test
     fun bankCardDoesNotUseProfileUsernameAsCardholder() {
         val entry =
             Entry(
@@ -45,9 +51,9 @@ class DetailUiMapperTest {
                 profile = EntryProfile(title = "Card", username = "profile-user"),
                 secret = EntrySecret(credential = CardCredential()),
             )
-        val state = DetailUiState(entry = entry, sections = listOf(DetailSectionKey.BANK_CARD))
+        val state = readyState(entry).copy(sections = listOf(DetailSectionKey.BANK_CARD))
         val card =
-            requireNotNull(toDetailPresentationModel(state, null))
+            content(state)
                 .content.sections.filterIsInstance<DetailBodySectionUiModel.BankCard>().single().state
 
         assertNull(card.cardholder)
@@ -68,7 +74,7 @@ class DetailUiMapperTest {
     }
 
     @Test
-    fun `tag editor mapping carries dirty draft and both validation limits`() {
+    fun `tag editor state exposes display chips and both validation limits`() {
         val scenarios =
             listOf(
                 EntryTagValidationError.TooMany(maximum = 20) to
@@ -88,14 +94,12 @@ class DetailUiMapperTest {
                 DetailTagEditorState.Open(
                     initialTags = setOf("Work"),
                     draftTags = setOf("Personal"),
-                    validation = DetailTagValidationState.Invalid(validationError),
+                    validation = validationError.toTagEditorValidationUiState(),
                 )
 
-            val actual = state.toTagEditorUiModel() as DetailTagEditorUiModel.Visible
-
-            assertTrue(actual.dirty)
-            assertEquals(DetailTagChipsUiState.Items(listOf("Personal")), actual.draftTags)
-            assertEquals(expectedMessage, actual.validation)
+            assertTrue(state.dirty)
+            assertEquals(DetailTagChipsUiState.Items(listOf("Personal")), state.draftTagsUiState)
+            assertEquals(expectedMessage, state.validation)
         }
     }
 
@@ -103,10 +107,8 @@ class DetailUiMapperTest {
     fun headerMapperKeepsOnlyHeaderState() {
         val entry = noteEntry()
         val state =
-            DetailUiState(
-                entry = entry,
-                editedTitle = "Edited",
-                isEditingTitle = true,
+            readyState(entry).copy(
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Edited"),
             )
 
         val ui = detailHeaderUiModel(entry, state)
@@ -126,8 +128,8 @@ class DetailUiMapperTest {
                 secret = EntrySecret(credential = LoginCredential()),
             )
 
-        assertFalse(detailHeaderUiModel(note, DetailUiState(entry = note)).canEditFullForm)
-        assertTrue(detailHeaderUiModel(login, DetailUiState(entry = login)).canEditFullForm)
+        assertFalse(detailHeaderUiModel(note, readyState(note)).canEditFullForm)
+        assertTrue(detailHeaderUiModel(login, readyState(login)).canEditFullForm)
     }
 
     @Test
@@ -146,29 +148,26 @@ class DetailUiMapperTest {
 
         assertEquals(
             DetailRelatedPasswordSectionUiState.EmptyCanBind,
-            requireNotNull(toDetailPresentationModel(DetailUiState(entry = login), null)).content.relatedSections.passwords,
+            content(readyState(login)).content.relatedSections.passwords,
         )
         assertEquals(
             DetailRelatedPasswordSectionUiState.Hidden,
-            requireNotNull(toDetailPresentationModel(DetailUiState(entry = noteEntry()), null)).content.relatedSections.passwords,
+            content(readyState(noteEntry())).content.relatedSections.passwords,
         )
         assertEquals(
             DetailRelatedPasswordSectionUiState.Hidden,
-            requireNotNull(toDetailPresentationModel(DetailUiState(entry = deletedLogin), null)).content.relatedSections.passwords,
+            content(readyState(deletedLogin)).content.relatedSections.passwords,
         )
     }
 
     @Test
     fun snapshotRefreshStateReachesDetailContent() {
         val state =
-            DetailUiState(
-                entry = noteEntry(),
-                snapshotState = DetailSnapshotState.RefreshFailedAfterRestore,
-            )
+            DetailUiState(snapshotState = DetailSnapshotState.RefreshFailedAfterRestore(noteEntry()))
 
         assertEquals(
-            DetailSnapshotState.RefreshFailedAfterRestore,
-            toDetailPresentationModel(state, null)?.content?.snapshotState,
+            DetailSnapshotRefreshUiState.Failed,
+            content(state).content.snapshotRefreshState,
         )
     }
 
@@ -176,13 +175,12 @@ class DetailUiMapperTest {
     fun presentationMapperProjectsRelationsMetadataAndActivity() {
         val entry = noteEntry()
         val state =
-            DetailUiState(
-                entry = entry,
+            readyState(entry).copy(
                 accountGroupEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("account-member")))),
                 otherRelatedEntries = listOf(entry.copy(identity = entry.identity.copy(id = EntryId("other-relation")))),
                 relatedPasswords =
                     listOf(
-                        DetailRelatedPassword(
+                        RelatedPasswordEntry(
                             linkId = EntryLinkId("related-link"),
                             targetEntryId = EntryId("related-password"),
                             title = "Related password",
@@ -201,7 +199,7 @@ class DetailUiMapperTest {
                     ),
             )
 
-        val content = requireNotNull(toDetailPresentationModel(state, null)).content
+        val content = content(state).content
         val relatedEntries = content.relatedSections.entries as DetailRelatedEntrySectionUiState.Items
         val relatedPasswords = content.relatedSections.passwords as DetailRelatedPasswordSectionUiState.Items
         val activities = content.activityHistory as DetailActivityHistoryUiState.ReadyItems
@@ -235,7 +233,7 @@ class DetailUiMapperTest {
 
     @Test
     fun otpNotRequestedStateProvidesExplicitPlaceholderAndInactiveProgress() {
-        val ui = detailOtpUiModel(null)
+        val ui = detailOtpUiModel(OtpCodeState.NotRequested)
 
         assertEquals(DetailOtpUiModel.NotRequested, ui)
         assertEquals("------", ui.displayCode)
@@ -266,16 +264,12 @@ class DetailUiMapperTest {
     fun presentationMapperProjectsEditorOwnershipAndSaveProgress() {
         val entry = noteEntry()
         val state =
-            DetailUiState(
-                entry = entry,
+            readyState(entry).copy(
                 fieldEdits = DetailFieldEditState().start(DetailDraftKey.Notes, "draft"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Tags),
             )
 
-        val presentation =
-            requireNotNull(
-                toDetailPresentationModel(state, null),
-            )
+        val presentation = content(state)
 
         assertTrue(presentation.content.notes.isEditing)
         assertEquals("draft", presentation.content.notes.editedNotes)
@@ -286,8 +280,7 @@ class DetailUiMapperTest {
     @Test
     fun presentationMapperProjectsRenderableSectionsInResolvedOrder() {
         val state =
-            DetailUiState(
-                entry = noteEntry(),
+            readyState(noteEntry()).copy(
                 sections =
                     listOf(
                         DetailSectionKey.CREDENTIAL,
@@ -299,7 +292,7 @@ class DetailUiMapperTest {
                     ),
             )
 
-        val presentation = requireNotNull(toDetailPresentationModel(state, null))
+        val presentation = content(state)
 
         assertEquals(
             listOf(DetailBodySectionUiModel.Credential::class),
@@ -310,8 +303,7 @@ class DetailUiMapperTest {
     @Test
     fun presentationMapperEmitsEveryResolvedSectionAsExplicitPayload() {
         val state =
-            DetailUiState(
-                entry = noteEntry(),
+            readyState(noteEntry()).copy(
                 sections =
                     listOf(
                         DetailSectionKey.CREDENTIAL,
@@ -324,7 +316,7 @@ class DetailUiMapperTest {
                     ),
             )
 
-        val sections = requireNotNull(toDetailPresentationModel(state, null)).content.sections
+        val sections = content(state).content.sections
 
         assertEquals(
             listOf(
@@ -358,12 +350,11 @@ class DetailUiMapperTest {
                     ),
             )
         val state =
-            DetailUiState(
-                entry = entry,
+            readyState(entry).copy(
                 sections = listOf(DetailSectionKey.CREDENTIAL),
             )
 
-        val presentation = requireNotNull(toDetailPresentationModel(state, null))
+        val presentation = content(state)
 
         assertEquals("Office", presentation.header.title)
         val sections = presentation.content.sections
@@ -403,8 +394,7 @@ class DetailUiMapperTest {
                     ),
             )
         val state =
-            DetailUiState(
-                entry = entry,
+            readyState(entry).copy(
                 sections = listOf(DetailSectionKey.BANK_CARD),
                 sensitiveFieldKeys =
                     setOf(
@@ -415,7 +405,7 @@ class DetailUiMapperTest {
             )
 
         val card =
-            requireNotNull(toDetailPresentationModel(state, null))
+            content(state)
                 .content.sections.filterIsInstance<DetailBodySectionUiModel.BankCard>().single().state
 
         assertEquals("Alice", card.cardholder)
@@ -442,4 +432,9 @@ class DetailUiMapperTest {
             profile = EntryProfile(title = "Example", username = "user", favorite = true),
             secret = EntrySecret(notes = "note"),
         )
+
+    private fun readyState(entry: Entry) = DetailUiState(snapshotState = DetailSnapshotState.Ready(entry))
+
+    private fun content(state: DetailUiState) =
+        (toDetailPageUiState(state, OtpCodeState.NotRequested) as DetailPageUiState.Content).presentation
 }

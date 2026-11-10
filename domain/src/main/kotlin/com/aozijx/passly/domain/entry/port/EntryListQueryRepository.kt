@@ -8,5 +8,6 @@ interface EntryListQueryRepository {
     val availableCategories: Flow<List<String>>
     val deletedEntries: Flow<List<EntryListItem>>
 
+    /** Returns only non-deleted entries of [entryType]. */
     suspend fun getActiveByType(entryType: EntryType): List<EntryListItem>
 }

@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.detail.DetailRelationsSnapshot
+import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
@@ -35,14 +35,6 @@ internal sealed interface DetailMutation {
 
     data class EntryPresented(
         val presentation: DetailEntryPresentation,
-    ) : DetailMutation
-
-    data object TitleEditingStarted : DetailMutation
-
-    data object TitleEditingCancelled : DetailMutation
-
-    data class EditedTitleChanged(
-        val value: String,
     ) : DetailMutation
 
     data class FieldEditingStarted(
@@ -114,7 +106,7 @@ internal sealed interface DetailMutation {
 
     data class RelationsChanged(
         val entryId: EntryId,
-        val relations: DetailRelationsSnapshot,
+        val relations: EntryRelationsSnapshot,
     ) : DetailMutation
 
     data class SaveStarted(
@@ -216,19 +208,27 @@ internal object DetailReducer {
                 state.copy(isAccessHistoryEnabled = mutation.enabled)
             }
 
-            is DetailMutation.PasswordBindingStateChanged -> state.copy(passwordBinding = mutation.state)
-            is DetailMutation.PasswordUnlinkStateChanged -> state.copy(passwordUnlink = mutation.state)
+            is DetailMutation.PasswordBindingStateChanged -> {
+                state.copy(passwordBinding = mutation.state)
+            }
+
+            is DetailMutation.PasswordUnlinkStateChanged -> {
+                state.copy(passwordUnlink = mutation.state)
+            }
+
             is DetailMutation.PasswordBindingSearchChanged -> {
                 val picker = state.passwordBinding as? RelatedPasswordBindingUiState.Ready
                 if (picker == null) {
                     state
                 } else {
-                    state.copy(passwordBinding = picker.copy(query = mutation.query, results = picker.candidates.toSearchResults(mutation.query)))
+                    state.copy(
+                        passwordBinding = picker.copy(query = mutation.query),
+                    )
                 }
             }
 
-            is DetailMutation.RelationsChanged ->
-                if (state.entry?.id == mutation.entryId) {
+            is DetailMutation.RelationsChanged -> {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(
                         accountGroupEntries = mutation.relations.accountGroupEntries,
                         otherRelatedEntries = mutation.relations.otherRelatedEntries,
@@ -237,20 +237,20 @@ internal object DetailReducer {
                 } else {
                     state
                 }
+            }
 
             is DetailMutation.SessionOpened -> {
                 mutation.snapshot.let { snapshot ->
                     val presentation = snapshot.presentation
-                    val entryChanged = state.entry?.id != presentation.entry.id
+                    val entryChanged = state.snapshotState.entryOrNull()?.id != presentation.entry.id
                     state.copy(
-                        snapshotState = DetailSnapshotState.Ready,
-                        entry = presentation.entry,
+                        snapshotState = DetailSnapshotState.Ready(presentation.entry),
                         sections = presentation.sections,
                         associatedApps = presentation.associatedApps,
                         sensitiveFieldKeys = presentation.sensitiveFieldKeys,
-                        accountGroupEntries = snapshot.accountGroupEntries,
-                        otherRelatedEntries = snapshot.otherRelatedEntries,
-                        relatedPasswords = snapshot.relatedPasswords,
+                        accountGroupEntries = snapshot.relations.accountGroupEntries,
+                        otherRelatedEntries = snapshot.relations.otherRelatedEntries,
+                        relatedPasswords = snapshot.relations.relatedPasswords,
                         passwordUnlink = RelatedPasswordUnlinkUiState.Closed,
                         activityHistory =
                             if (entryChanged) {
@@ -258,8 +258,7 @@ internal object DetailReducer {
                             } else {
                                 state.activityHistory
                             },
-                        isEditingTitle = false,
-                        editedTitle = presentation.entry.detailDisplayTitle,
+                        fieldEdits = state.fieldEdits.finish(DetailDraftKey.Title),
                     )
                 }
             }
@@ -273,69 +272,32 @@ internal object DetailReducer {
             }
 
             DetailMutation.SnapshotRefreshStarted -> {
-                state.copy(snapshotState = DetailSnapshotState.RefreshingAfterRestore)
+                state.copy(snapshotState = state.snapshotState.refreshStarted())
             }
 
             DetailMutation.SnapshotRefreshFailed -> {
-                state.copy(snapshotState = DetailSnapshotState.RefreshFailedAfterRestore)
+                state.copy(snapshotState = state.snapshotState.refreshFailed())
             }
 
             is DetailMutation.EntryPresented -> {
-                mutation.presentation.let { presentation ->
-                    val entryChanged = state.entry?.id != presentation.entry.id
-                    state.copy(
-                        entry = presentation.entry,
-                        sections = presentation.sections,
-                        associatedApps = presentation.associatedApps,
-                        sensitiveFieldKeys = presentation.sensitiveFieldKeys,
-                        activityHistory =
-                            if (entryChanged) {
-                                DetailActivityHistoryState.Loading(emptyList())
-                            } else {
-                                state.activityHistory
-                            },
-                        passwordUnlink =
-                            if (entryChanged) {
-                                RelatedPasswordUnlinkUiState.Closed
-                            } else {
-                                state.passwordUnlink
-                            },
-                        editedTitle =
-                            if (state.isEditingTitle) {
-                                state.editedTitle
-                            } else {
-                                presentation.entry.detailDisplayTitle
-                            },
-                    )
-                }
-            }
-
-            DetailMutation.TitleEditingStarted -> {
+                val presentation = mutation.presentation
+                val entryChanged = state.snapshotState.entryOrNull()?.id != presentation.entry.id
                 state.copy(
-                    saveState = state.saveState.draftChanged(DetailEditCompletion.Title),
-                    isEditingTitle = true,
-                    editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
-                )
-            }
-
-            DetailMutation.TitleEditingCancelled -> {
-                state.copy(
-                    saveState = state.saveState.draftChanged(DetailEditCompletion.Title),
-                    isEditingTitle = false,
-                    editedTitle = state.entry?.detailDisplayTitle.orEmpty(),
-                )
-            }
-
-            is DetailMutation.EditedTitleChanged -> {
-                state.copy(
-                    editedTitle = mutation.value,
-                    saveState =
-                        if (mutation.value ==
-                            state.editedTitle
-                        ) {
-                            state.saveState
+                    snapshotState = state.snapshotState.withEntry(presentation.entry),
+                    sections = presentation.sections,
+                    associatedApps = presentation.associatedApps,
+                    sensitiveFieldKeys = presentation.sensitiveFieldKeys,
+                    activityHistory =
+                        if (entryChanged) {
+                            DetailActivityHistoryState.Loading(emptyList())
                         } else {
-                            state.saveState.draftChanged(DetailEditCompletion.Title)
+                            state.activityHistory
+                        },
+                    passwordUnlink =
+                        if (entryChanged) {
+                            RelatedPasswordUnlinkUiState.Closed
+                        } else {
+                            state.passwordUnlink
                         },
                 )
             }
@@ -382,7 +344,7 @@ internal object DetailReducer {
             }
 
             is DetailMutation.HistoryChanged -> {
-                if (state.entry?.id == mutation.entryId) {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(activityHistory = DetailActivityHistoryState.Ready(mutation.history))
                 } else {
                     state
@@ -390,7 +352,7 @@ internal object DetailReducer {
             }
 
             is DetailMutation.HistoryLoadStarted -> {
-                if (state.entry?.id == mutation.entryId) {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(activityHistory = DetailActivityHistoryState.Loading(state.activityHistory.activities))
                 } else {
                     state
@@ -398,17 +360,19 @@ internal object DetailReducer {
             }
 
             is DetailMutation.HistoryLoadFailed -> {
-                if (state.entry?.id == mutation.entryId) {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(activityHistory = DetailActivityHistoryState.Failed(state.activityHistory.activities))
                 } else {
                     state
                 }
             }
 
-            is DetailMutation.ActivityFilterChanged -> state.copy(activityFilter = mutation.filter)
+            is DetailMutation.ActivityFilterChanged -> {
+                state.copy(activityFilter = mutation.filter)
+            }
 
             is DetailMutation.PackagePickerAppsChanged -> {
-                if (state.entry?.id == mutation.entryId) {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(
                         packagePickerApps =
                             AppPackagePickerUiState.fromInstalledApps(mutation.apps),
@@ -430,7 +394,7 @@ internal object DetailReducer {
             }
 
             is DetailMutation.PackagePickerAppsLoadStarted -> {
-                if (state.entry?.id == mutation.entryId) {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(packagePickerApps = AppPackagePickerUiState.Loading)
                 } else {
                     state
@@ -438,7 +402,7 @@ internal object DetailReducer {
             }
 
             is DetailMutation.PackagePickerAppsFailed -> {
-                if (state.entry?.id == mutation.entryId) {
+                if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
                     state.copy(packagePickerApps = AppPackagePickerUiState.Failed)
                 } else {
                     state
@@ -482,14 +446,15 @@ internal object DetailReducer {
                     state
                 } else {
                     val finishDraft = !saving.draftChanged
-                    val finishTitle = finishDraft && mutation.completion == DetailEditCompletion.Title
                     state.copy(
-                        isEditingTitle = state.isEditingTitle && !finishTitle,
-                        editedTitle = if (finishTitle) state.entry?.detailDisplayTitle ?: state.editedTitle else state.editedTitle,
                         saveState = DetailSaveState.Idle,
                         fieldEdits =
                             if (finishDraft) {
                                 when (mutation.completion) {
+                                    DetailEditCompletion.Title -> {
+                                        state.fieldEdits.finish(DetailDraftKey.Title)
+                                    }
+
                                     is DetailEditCompletion.Field -> {
                                         state.fieldEdits.finish(DetailDraftKey.EntryField(mutation.completion.key))
                                     }
@@ -502,7 +467,11 @@ internal object DetailReducer {
                                         state.fieldEdits.finish(DetailDraftKey.Domain)
                                     }
 
-                                    else -> {
+                                    DetailEditCompletion.Favorite,
+                                    DetailEditCompletion.Applications,
+                                    DetailEditCompletion.Tags,
+                                    DetailEditCompletion.Icon,
+                                    -> {
                                         state.fieldEdits
                                     }
                                 }
@@ -512,6 +481,10 @@ internal object DetailReducer {
                                         DetailDraftKey.EntryField(mutation.completion.key),
                                         savedValue,
                                     )
+                                } ?: state.fieldEdits
+                            } else if (mutation.completion == DetailEditCompletion.Title) {
+                                mutation.savedFieldValue?.let { savedValue ->
+                                    state.fieldEdits.rebase(DetailDraftKey.Title, savedValue)
                                 } ?: state.fieldEdits
                             } else {
                                 state.fieldEdits
@@ -595,17 +568,22 @@ internal object DetailReducer {
 
     private fun DetailSaveState.draftChanged(completion: DetailEditCompletion): DetailSaveState =
         when (this) {
-            DetailSaveState.Idle -> DetailSaveState.Idle
-            is DetailSaveState.Saving ->
+            DetailSaveState.Idle -> {
+                DetailSaveState.Idle
+            }
+
+            is DetailSaveState.Saving -> {
                 if (this.completion != completion) {
                     this
                 } else {
                     copy(draftChanged = true)
                 }
+            }
         }
 
     private fun DetailDraftKey.completion(): DetailEditCompletion =
         when (this) {
+            DetailDraftKey.Title -> DetailEditCompletion.Title
             DetailDraftKey.Notes -> DetailEditCompletion.Notes
             DetailDraftKey.Domain -> DetailEditCompletion.Domain
             is DetailDraftKey.EntryField -> DetailEditCompletion.Field(fieldKey)

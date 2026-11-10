@@ -7,16 +7,30 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemU
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
-import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,
     val content: DetailBodyUiModel,
     val overlays: DetailEditorOverlaysUiModel,
 )
+
+sealed interface DetailPageUiState {
+    data object Loading : DetailPageUiState
+
+    data object NotFound : DetailPageUiState
+
+    data object Failed : DetailPageUiState
+
+    data class Content(
+        val presentation: DetailPresentationModel,
+    ) : DetailPageUiState
+}
+
+enum class DetailSnapshotRefreshUiState { Current, Refreshing, Failed }
 
 data class DetailBodyUiModel(
     val icon: DetailIconCardUiModel,
@@ -32,11 +46,13 @@ data class DetailBodyUiModel(
     val metadata: DetailMetadataUiModel,
     val activityFilter: DetailActivityFilter,
     val activityHistory: DetailActivityHistoryUiState,
-    val snapshotState: DetailSnapshotState,
+    val snapshotRefreshState: DetailSnapshotRefreshUiState,
 )
 
 sealed interface DetailBodySectionUiModel {
-    data class Credential(val fields: List<CredentialFieldUiState>) : DetailBodySectionUiModel {
+    data class Credential(
+        val fields: List<CredentialFieldUiState>,
+    ) : DetailBodySectionUiModel {
         init {
             require(fields.isNotEmpty())
         }
@@ -44,17 +60,29 @@ sealed interface DetailBodySectionUiModel {
 
     data object WifiQr : DetailBodySectionUiModel
 
-    data class Otp(val state: DetailOtpUiModel) : DetailBodySectionUiModel
+    data class Otp(
+        val state: DetailOtpUiModel,
+    ) : DetailBodySectionUiModel
 
-    data class BankCard(val state: DetailBankCardUiModel) : DetailBodySectionUiModel
+    data class BankCard(
+        val state: DetailBankCardUiModel,
+    ) : DetailBodySectionUiModel
 
-    data class Identity(val state: DetailIdentityUiModel) : DetailBodySectionUiModel
+    data class Identity(
+        val state: DetailIdentityUiModel,
+    ) : DetailBodySectionUiModel
 
-    data class Ssh(val state: DetailSshUiModel) : DetailBodySectionUiModel
+    data class Ssh(
+        val state: DetailSshUiModel,
+    ) : DetailBodySectionUiModel
 
-    data class SeedPhrase(val state: DetailSeedPhraseUiModel) : DetailBodySectionUiModel
+    data class SeedPhrase(
+        val state: DetailSeedPhraseUiModel,
+    ) : DetailBodySectionUiModel
 
-    data class Passkey(val state: DetailPasskeyUiModel) : DetailBodySectionUiModel
+    data class Passkey(
+        val state: DetailPasskeyUiModel,
+    ) : DetailBodySectionUiModel
 }
 
 sealed interface DetailActivityHistoryUiState {
@@ -62,7 +90,9 @@ sealed interface DetailActivityHistoryUiState {
 
     data object ReadyEmpty : DetailActivityHistoryUiState
 
-    data class ReadyItems(val activities: List<DetailActivityUiModel>) : DetailActivityHistoryUiState {
+    data class ReadyItems(
+        val activities: List<DetailActivityUiModel>,
+    ) : DetailActivityHistoryUiState {
         init {
             require(activities.isNotEmpty())
         }
@@ -70,7 +100,9 @@ sealed interface DetailActivityHistoryUiState {
 
     data object FailedEmpty : DetailActivityHistoryUiState
 
-    data class FailedItems(val activities: List<DetailActivityUiModel>) : DetailActivityHistoryUiState {
+    data class FailedItems(
+        val activities: List<DetailActivityUiModel>,
+    ) : DetailActivityHistoryUiState {
         init {
             require(activities.isNotEmpty())
         }
@@ -85,7 +117,9 @@ data class DetailRelatedSectionsUiModel(
 sealed interface DetailRelatedEntrySectionUiState {
     data object Hidden : DetailRelatedEntrySectionUiState
 
-    data class Items(val entries: List<RelatedEntryUiModel>) : DetailRelatedEntrySectionUiState {
+    data class Items(
+        val entries: List<RelatedEntryUiModel>,
+    ) : DetailRelatedEntrySectionUiState {
         init {
             require(entries.isNotEmpty())
         }
@@ -110,7 +144,9 @@ sealed interface DetailRelatedPasswordSectionUiState {
 sealed interface DetailAssociatedAppsUiState {
     data object Empty : DetailAssociatedAppsUiState
 
-    data class Items(val apps: List<AppPackagePickerItemUiModel>) : DetailAssociatedAppsUiState {
+    data class Items(
+        val apps: List<AppPackagePickerItemUiModel>,
+    ) : DetailAssociatedAppsUiState {
         init {
             require(apps.isNotEmpty())
         }
@@ -130,7 +166,9 @@ sealed interface DetailSeedPhraseUiModel {
 
     data object RevealedWithoutWords : DetailSeedPhraseUiModel
 
-    data class RevealedWords(val words: List<String>) : DetailSeedPhraseUiModel {
+    data class RevealedWords(
+        val words: List<String>,
+    ) : DetailSeedPhraseUiModel {
         init {
             require(words.isNotEmpty())
         }
@@ -143,7 +181,7 @@ data class DetailPasskeyUiModel(
 )
 
 data class DetailEditorOverlaysUiModel(
-    val tagEditor: DetailTagEditorUiModel,
+    val tagEditor: DetailTagEditorState,
     val faviconEditor: DetailFaviconEditorUiModel,
     val savingTags: Boolean,
     val savingIcon: Boolean,
@@ -168,21 +206,31 @@ data class DetailRevisionDifferenceUiModel(
 sealed interface DetailRevisionValueUiModel {
     data object Absent : DetailRevisionValueUiModel
 
-    data class Text(val value: String) : DetailRevisionValueUiModel
+    data class Text(
+        val value: String,
+    ) : DetailRevisionValueUiModel
 
-    data class Flag(val value: Boolean) : DetailRevisionValueUiModel
+    data class Flag(
+        val value: Boolean,
+    ) : DetailRevisionValueUiModel
 
-    data class EpochMillis(val value: Long) : DetailRevisionValueUiModel
+    data class EpochMillis(
+        val value: Long,
+    ) : DetailRevisionValueUiModel
 
     enum class Icon : DetailRevisionValueUiModel { DEFAULT, CUSTOM }
 
-    data class Links(val count: Int) : DetailRevisionValueUiModel {
+    data class Links(
+        val count: Int,
+    ) : DetailRevisionValueUiModel {
         init {
             require(count >= 0)
         }
     }
 
-    data class Attachments(val count: Int) : DetailRevisionValueUiModel {
+    data class Attachments(
+        val count: Int,
+    ) : DetailRevisionValueUiModel {
         init {
             require(count >= 0)
         }

@@ -21,10 +21,13 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrFormatResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadFormatter
+import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
-import com.aozijx.passly.feature.vault.presentation.detail.toDetailPresentationModel
+import com.aozijx.passly.feature.vault.presentation.detail.toDetailPageUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailBody
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
@@ -75,12 +78,13 @@ class EntryQrCodeTest {
                 secret = EntrySecret(credential = WifiCredential("Office", "password")),
             )
         val model =
-            requireNotNull(
-                toDetailPresentationModel(
-                    DetailUiState(entry = entry, sections = listOf(DetailSectionKey.CREDENTIAL)),
-                    null,
+            (toDetailPageUiState(
+                DetailUiState(
+                    snapshotState = DetailSnapshotState.Ready(entry),
+                    sections = listOf(DetailSectionKey.CREDENTIAL),
                 ),
-            )
+                OtpCodeState.NotRequested,
+            ) as DetailPageUiState.Content).presentation
         val actions = mutableListOf<DetailUiAction>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         composeRule.setContent {

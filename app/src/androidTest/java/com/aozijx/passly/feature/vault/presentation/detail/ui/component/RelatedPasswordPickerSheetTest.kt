@@ -10,7 +10,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingOperationState
-import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateSearchResults
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordCandidateUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -37,9 +36,8 @@ class RelatedPasswordPickerSheetTest {
         compose.runOnIdle {
             state.value =
                 RelatedPasswordBindingUiState.Ready(
-                    candidates = listOf(RelatedPasswordCandidateUiModel("id", "Portal", null)),
+                    candidates = listOf(RelatedPasswordCandidateUiModel("id", "Portal", "")),
                     query = "missing",
-                    results = RelatedPasswordCandidateSearchResults.NoMatches,
                 )
         }
         compose.onNodeWithText(text(R.string.vault_detail_bind_password_no_matches)).assertIsDisplayed()

@@ -11,8 +11,8 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
+import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,12 +21,12 @@ import kotlinx.coroutines.launch
 /** Owns related-password loading and mutations for the current Detail page. */
 internal class DetailPasswordRelationsWorkflow(
     private val scope: CoroutineScope,
-    private val links: RelatedPasswordLinks,
+    private val operations: RelatedPasswordOperations,
     private val access: SecureSessionAccessState,
     private val workSession: DetailWorkSession,
     private val currentEntry: () -> Entry?,
     private val currentBindingState: () -> RelatedPasswordBindingUiState,
-    private val currentRelatedPasswords: () -> List<DetailRelatedPassword>,
+    private val currentRelatedPasswords: () -> List<RelatedPasswordEntry>,
     private val currentUnlinkState: () -> RelatedPasswordUnlinkUiState,
     private val presentationLoader: DetailPresentationLoader,
     private val logger: Logger,
@@ -45,7 +45,7 @@ internal class DetailPasswordRelationsWorkflow(
         candidateJob =
             scope.launch {
                 try {
-                    val candidates = links.candidates(entry.id)
+                    val candidates = operations.candidates(entry.id)
                     if (isCurrent(entry.id, token, authentication) &&
                         currentBindingState() == RelatedPasswordBindingUiState.Loading
                     ) {
@@ -56,7 +56,7 @@ internal class DetailPasswordRelationsWorkflow(
                                         RelatedPasswordCandidateUiModel(
                                             it.id.value,
                                             it.title,
-                                            it.username.takeIf(String::isNotBlank),
+                                            it.username,
                                         )
                                     },
                                 ),
@@ -96,7 +96,7 @@ internal class DetailPasswordRelationsWorkflow(
         linkMutationJob =
             scope.launch {
                 try {
-                    val result = links.bind(entry.id, targetEntryId)
+                    val result = operations.bind(entry.id, targetEntryId)
                     if (!isCurrent(entry.id, token, authentication)) return@launch
                     if (result is AppResult.Failure) {
                         if (currentBindingState() != RelatedPasswordBindingUiState.Closed) {
@@ -187,7 +187,7 @@ internal class DetailPasswordRelationsWorkflow(
             scope.launch {
                 var succeeded = false
                 try {
-                    succeeded = links.unlink(entry.id, targetEntryId, linkId) is AppResult.Success
+                    succeeded = operations.unlink(entry.id, targetEntryId, linkId) is AppResult.Success
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {

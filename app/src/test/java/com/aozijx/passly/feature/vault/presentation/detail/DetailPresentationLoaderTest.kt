@@ -1,10 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
-import com.aozijx.passly.domain.access.model.AuthorizationPermit
-import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -15,20 +12,13 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.model.relation.EntryLink
-import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
-import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
+import com.aozijx.passly.domain.entry.model.query.EntryDetailData
+import com.aozijx.passly.domain.entry.model.query.EntryDetailSnapshot
+import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.port.EntryLinkRepository
-import com.aozijx.passly.domain.entry.port.EntryQueryRepository
-import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
-import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
-import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
+import com.aozijx.passly.domain.entry.port.EntryDetailQuery
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionResolver
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -40,17 +30,12 @@ class DetailPresentationLoaderTest {
         runTest {
             val account = entry("account", EntryType.ACCOUNT, setOf("com.unknown", "com.named"))
             val member = entry("member", EntryType.LOGIN)
-            val sensitiveFields =
-                FakeSensitiveFieldRepository(
-                    SensitiveFieldPresence(account.id, setOf(SensitiveFieldKey.PASSWORD)),
+            val query =
+                FakeEntryDetailQuery(
+                    details = mapOf(account.id to EntryDetailData(account, setOf(SensitiveFieldKey.PASSWORD))),
+                    relations = EntryRelationsSnapshot(listOf(member), emptyList(), emptyList()),
                 )
-            val loader =
-                loader(
-                    entries = mapOf(account.id to account, member.id to member),
-                    sensitiveFields = sensitiveFields,
-                    links = listOf(link("member", "account")),
-                )
-
+            val loader = loader(query)
             val session = requireNotNull(loader.open(account.id))
 
             assertEquals(account, session.presentation.entry)
@@ -63,29 +48,27 @@ class DetailPresentationLoaderTest {
                 session.presentation.associatedApps,
             )
             assertEquals(setOf(SensitiveFieldKey.PASSWORD), session.presentation.sensitiveFieldKeys)
-            assertEquals(listOf(member), session.accountGroupEntries)
-            assertEquals(emptyList<Entry>(), session.otherRelatedEntries)
-            assertEquals(emptyList<DetailRelatedPassword>(), session.relatedPasswords)
-            assertEquals(listOf(account.id), sensitiveFields.presenceRequests)
+            assertEquals(listOf(member), session.relations.accountGroupEntries)
+            assertEquals(emptyList<Entry>(), session.relations.otherRelatedEntries)
+            assertEquals(emptyList<RelatedPasswordEntry>(), session.relations.relatedPasswords)
+            assertEquals(listOf(account.id), query.openRequests)
         }
 
     @Test
     fun missingEntryStopsBeforeLoadingDependentSessionData() =
         runTest {
-            val sensitiveFields =
-                FakeSensitiveFieldRepository(
-                    SensitiveFieldPresence(EntryId("unused"), emptySet()),
-                )
-            val loader = loader(entries = emptyMap(), sensitiveFields = sensitiveFields)
+            val query = FakeEntryDetailQuery()
+            val loader = loader(query)
 
             assertNull(loader.open(EntryId("missing")))
-            assertEquals(emptyList<EntryId>(), sensitiveFields.presenceRequests)
+            assertEquals(listOf(EntryId("missing")), query.openRequests)
+            assertEquals(emptyList<EntryId>(), query.snapshotRequests)
         }
 
     @Test
     fun presentRebuildsAnalysisAndAssociatedAppsAfterAnEdit() =
         runTest {
-            val loader = loader(entries = emptyMap())
+            val loader = loader()
             val updated = entry("entry", EntryType.LOGIN, setOf("com.named"))
 
             val presentation = loader.present(updated)
@@ -106,24 +89,12 @@ class DetailPresentationLoaderTest {
                     DetailInstalledApp("First", "com.first"),
                     DetailInstalledApp("Second", "com.second"),
                 ),
-                loader(entries = emptyMap()).launchableApps(),
+                loader().launchableApps(),
             )
         }
 
-    private fun loader(
-        entries: Map<EntryId, Entry>,
-        sensitiveFields: FakeSensitiveFieldRepository =
-            FakeSensitiveFieldRepository(
-                SensitiveFieldPresence(EntryId("unused"), emptySet()),
-            ),
-        links: List<EntryLink> = emptyList(),
-    ) = DetailPresentationLoader(
-        sessionQuery =
-            DetailSessionQuery(
-                entryQueryRepository = FakeEntryQueryRepository(entries),
-                sensitiveFieldRepository = sensitiveFields,
-                entryLinkRepository = FakeEntryLinkRepository(links),
-            ),
+    private fun loader(query: EntryDetailQuery = FakeEntryDetailQuery()) = DetailPresentationLoader(
+        sessionQuery = query,
         installedAppDirectory = FakeInstalledAppDirectory(),
     )
 
@@ -151,50 +122,24 @@ class DetailPresentationLoaderTest {
             },
     )
 
-    private fun link(
-        source: String,
-        target: String,
-    ) = EntryLink.create(
-        id = EntryLinkId("link"),
-        sourceEntryId = EntryId(source),
-        targetEntryId = EntryId(target),
-        relationType = EntryRelationType.MEMBER_OF_ACCOUNT,
-        createdAt = 1L,
-    )
+    private class FakeEntryDetailQuery(
+        private val details: Map<EntryId, EntryDetailData> = emptyMap(),
+        private val relations: EntryRelationsSnapshot = EntryRelationsSnapshot(emptyList(), emptyList(), emptyList()),
+    ) : EntryDetailQuery {
+        val openRequests = mutableListOf<EntryId>()
+        val snapshotRequests = mutableListOf<EntryId>()
 
-    private class FakeEntryQueryRepository(
-        private val entries: Map<EntryId, Entry>,
-    ) : EntryQueryRepository {
-        override suspend fun getById(entryId: EntryId): Entry? = entries[entryId]
-
-        override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entryIds.mapNotNull(entries::get)
-    }
-
-    private class FakeSensitiveFieldRepository(
-        private val presence: SensitiveFieldPresence,
-    ) : SensitiveFieldRepository {
-        val presenceRequests = mutableListOf<EntryId>()
-
-        override suspend fun getPresence(entryId: EntryId): SensitiveFieldPresence {
-            presenceRequests += entryId
-            return presence
+        override suspend fun open(entryId: EntryId): EntryDetailSnapshot? {
+            openRequests += entryId
+            return details[entryId]?.let { EntryDetailSnapshot(it, relations) }
         }
 
-        override suspend fun reveal(
-            entryId: EntryId,
-            key: SensitiveFieldKey,
-            action: SensitiveAccessAction,
-            permit: AuthorizationPermit,
-        ): RevealedSensitiveField? = error("Not used")
+        override suspend fun snapshot(entry: Entry): EntryDetailData {
+            snapshotRequests += entry.id
+            return details[entry.id] ?: EntryDetailData(entry, emptySet())
+        }
 
-        override suspend fun revealMany(
-            entryId: EntryId,
-            keys: Set<SensitiveFieldKey>,
-            action: SensitiveAccessAction,
-            permit: AuthorizationPermit,
-        ): List<RevealedSensitiveField> = error("Not used")
-
-        override suspend fun readBundle(entryId: EntryId): EntrySecret = error("Not used")
+        override suspend fun reloadRelations(entryId: EntryId): EntryRelationsSnapshot? = relations
     }
 
     private class FakeInstalledAppDirectory : InstalledAppDirectory {
@@ -208,19 +153,4 @@ class DetailPresentationLoaderTest {
             )
     }
 
-    private class FakeEntryLinkRepository(
-        private val links: List<EntryLink>,
-    ) : EntryLinkRepository {
-        override fun observeAll(): Flow<List<EntryLink>> = flowOf(links)
-
-        override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = flowOf(links)
-
-        override suspend fun getAll(): List<EntryLink> = links
-
-        override suspend fun getLinks(entryId: EntryId): List<EntryLink> = links
-
-        override suspend fun upsert(link: EntryLink) = AppResult.Success(Unit)
-
-        override suspend fun delete(linkId: EntryLinkId) = AppResult.Success(Unit)
-    }
 }

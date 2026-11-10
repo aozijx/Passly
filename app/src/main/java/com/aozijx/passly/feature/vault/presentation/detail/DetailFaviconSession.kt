@@ -15,30 +15,24 @@ internal class DetailFaviconSession(
     private val files: FaviconDraftFiles,
     private val scope: CoroutineScope,
 ) {
-    sealed interface Preparation {
-        data object Closed : Preparation
-
-        class Active internal constructor() : Preparation
-    }
-
     enum class PreparedImageUse { CROP_INPUT, SOURCE }
 
-    private var preparation: Preparation = Preparation.Closed
     private var preparationJob: Job? = null
     private var saveJob: Job? = null
 
     val isSaving: Boolean
         get() = saveJob?.isCompleted == false
 
-    fun launchPreparation(block: suspend (Preparation.Active) -> Unit) {
+    fun launchPreparation(block: suspend (Job) -> Unit) {
         if (isSaving || preparationJob?.isActive == true) return
-        val token = Preparation.Active()
-        preparation = token
-        preparationJob = scope.launch { block(token) }
+        lateinit var job: Job
+        job = scope.launch(start = CoroutineStart.LAZY) { block(job) }
+        preparationJob = job
+        job.start()
     }
 
     suspend fun publishPreparation(
-        token: Preparation.Active,
+        token: Job,
         result: Result<String>,
         editor: DetailFaviconEditorState.Open,
         use: PreparedImageUse,
@@ -47,7 +41,7 @@ internal class DetailFaviconSession(
     ) {
         result.exceptionOrNull()?.let { if (it is CancellationException) throw it }
         val path = result.getOrNull()
-        if (preparation !== token || !currentCoroutineContext().isActive) {
+        if (preparationJob !== token || !currentCoroutineContext().isActive) {
             if (path != null) files.discardEditorResources(path, null, null)
             return
         }
@@ -125,7 +119,6 @@ internal class DetailFaviconSession(
     }
 
     private fun cancelPreparation() {
-        preparation = Preparation.Closed
         preparationJob?.cancel()
         preparationJob = null
     }

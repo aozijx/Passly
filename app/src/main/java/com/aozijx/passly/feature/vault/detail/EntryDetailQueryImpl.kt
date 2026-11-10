@@ -6,8 +6,12 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
+import com.aozijx.passly.domain.entry.model.query.EntryDetailData
+import com.aozijx.passly.domain.entry.model.query.EntryDetailSnapshot
+import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
+import com.aozijx.passly.domain.entry.port.EntryDetailQuery
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -15,65 +19,37 @@ import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
-internal data class DetailEntryData(
-    val entry: Entry,
-    val sensitiveFieldKeys: Set<SensitiveFieldKey>,
-)
-
-data class DetailRelatedPassword(
-    val linkId: EntryLinkId,
-    val targetEntryId: EntryId,
-    val title: String,
-    val username: String,
-)
-
-internal data class DetailSessionData(
-    val detail: DetailEntryData,
-    val accountGroupEntries: List<Entry>,
-    val otherRelatedEntries: List<Entry>,
-    val relatedPasswords: List<DetailRelatedPassword>,
-)
-
-internal data class DetailRelationsSnapshot(
-    val accountGroupEntries: List<Entry>,
-    val otherRelatedEntries: List<Entry>,
-    val relatedPasswords: List<DetailRelatedPassword>,
-)
-
-internal class DetailSessionQuery
+internal class EntryDetailQueryImpl
     @Inject
     constructor(
         private val entryQueryRepository: EntryQueryRepository,
         private val sensitiveFieldRepository: SensitiveFieldRepository,
         private val entryLinkRepository: EntryLinkRepository,
-    ) {
-        suspend fun open(entryId: EntryId): DetailSessionData? {
+    ) : EntryDetailQuery {
+        override suspend fun open(entryId: EntryId): EntryDetailSnapshot? {
             val entry = entryQueryRepository.getById(entryId) ?: return null
             return coroutineScope {
                 val detail = async { snapshot(entry) }
                 val relations = async { loadRelations(entry) }
-                val relationData = relations.await()
-                DetailSessionData(
+                EntryDetailSnapshot(
                     detail = detail.await(),
-                    accountGroupEntries = relationData.accountGroupEntries,
-                    otherRelatedEntries = relationData.otherRelatedEntries,
-                    relatedPasswords = relationData.relatedPasswords,
+                    relations = relations.await(),
                 )
             }
         }
 
-        suspend fun reloadRelations(entryId: EntryId): DetailRelationsSnapshot? {
+        override suspend fun reloadRelations(entryId: EntryId): EntryRelationsSnapshot? {
             val entry = entryQueryRepository.getById(entryId) ?: return null
             return loadRelations(entry)
         }
 
-        suspend fun snapshot(entry: Entry): DetailEntryData =
-            DetailEntryData(
+        override suspend fun snapshot(entry: Entry): EntryDetailData =
+            EntryDetailData(
                 entry = entry,
                 sensitiveFieldKeys = sensitiveFieldRepository.getPresence(entry.id).keys,
             )
 
-        private suspend fun loadRelations(entry: Entry): DetailRelationsSnapshot {
+        private suspend fun loadRelations(entry: Entry): EntryRelationsSnapshot {
             val links = entryLinkRepository.getAll()
             val accountGroupIds = resolveAccountGroupEntryIds(entry.id, entry.type, links)
             val directPasswordLinks = resolveDirectPasswordLinks(entry, links)
@@ -85,7 +61,7 @@ internal class DetailSessionQuery
                     val targetEntryId = link.otherEndpoint(entry.id) ?: return@mapNotNull null
                     val target = entriesById[targetEntryId] ?: return@mapNotNull null
                     if (target.type != EntryType.LOGIN || target.deletedAt != null) return@mapNotNull null
-                    DetailRelatedPassword(
+                    RelatedPasswordEntry(
                         linkId = link.id,
                         targetEntryId = target.id,
                         title = target.title,
@@ -94,7 +70,7 @@ internal class DetailSessionQuery
                 }
             val otherRelatedIds = resolveOtherRelatedEntryIds(entry.id, links, relatedPasswords.mapTo(hashSetOf()) { it.targetEntryId })
 
-            return DetailRelationsSnapshot(
+            return EntryRelationsSnapshot(
                 accountGroupEntries = accountGroupIds.mapNotNull(entriesById::get),
                 otherRelatedEntries = otherRelatedIds.mapNotNull(entriesById::get),
                 relatedPasswords = relatedPasswords,

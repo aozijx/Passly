@@ -25,7 +25,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class RelatedPasswordLinksTest {
+class RelatedPasswordOperationsImplTest {
     @Test
     fun unlinkDeletesSelectedSymmetricRelatedToLink() =
         runTest {
@@ -33,7 +33,7 @@ class RelatedPasswordLinksTest {
             val selected = relatedLink("z-source", "a-target")
             val untouched = relatedLink("a-target", "other")
             val links = TestLinks(listOf(selected, untouched))
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val result = binding.unlink(EntryId("z-source"), EntryId("a-target"), selected.id)
 
@@ -47,7 +47,7 @@ class RelatedPasswordLinksTest {
         runTest {
             val repository = TestEntries(listOf(password("source"), password("target")))
             val links = TestLinks()
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val result = binding.unlink(EntryId("source"), EntryId("target"), EntryLinkId("missing"))
 
@@ -62,7 +62,7 @@ class RelatedPasswordLinksTest {
             val correctEdge = relatedLink("source", "target")
             val mismatchedEndpoint = relatedLink("source", "other")
             val links = TestLinks(listOf(correctEdge, mismatchedEndpoint))
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val wrongId = binding.unlink(EntryId("source"), EntryId("target"), EntryLinkId("unknown"))
             val wrongEndpoint = binding.unlink(EntryId("source"), EntryId("target"), mismatchedEndpoint.id)
@@ -88,7 +88,7 @@ class RelatedPasswordLinksTest {
             val nonLoginLink = relatedLink("source", "card")
             val repository = TestEntries(listOf(source, password("target"), inactive, nonLogin))
             val links = TestLinks(listOf(inactiveLink, nonLoginLink))
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val inactiveResult = binding.unlink(EntryId("source"), EntryId("inactive"), inactiveLink.id)
             val nonLoginResult = binding.unlink(EntryId("source"), EntryId("card"), nonLoginLink.id)
@@ -111,7 +111,7 @@ class RelatedPasswordLinksTest {
                     createdAt = 1L,
                 )
             val links = TestLinks(listOf(unrelated))
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val result = binding.unlink(EntryId("source"), EntryId("target"), unrelated.id)
 
@@ -128,7 +128,7 @@ class RelatedPasswordLinksTest {
             val repositoryFailure = IllegalStateException("delete failed")
             val logger = RecordingTestLogger()
             val links = TestLinks(listOf(edge), deleteResult = AppResult.Failure(com.aozijx.passly.core.error.model.ValidationError()))
-            val binding = RelatedPasswordLinks(repository, links, logger)
+            val binding = RelatedPasswordOperationsImpl(repository, links, logger)
 
             val result = binding.unlink(EntryId("source"), EntryId("target"), edge.id)
 
@@ -139,7 +139,7 @@ class RelatedPasswordLinksTest {
 
             val cancellationFailure = CancellationException("cancelled")
             val cancellingLinks = TestLinks(listOf(edge), deleteFailure = cancellationFailure)
-            val cancellingBinding = RelatedPasswordLinks(repository, cancellingLinks, logger)
+            val cancellingBinding = RelatedPasswordOperationsImpl(repository, cancellingLinks, logger)
             val cancellation = runCatching {
                 cancellingBinding.unlink(EntryId("source"), EntryId("target"), edge.id)
             }.exceptionOrNull()
@@ -156,7 +156,7 @@ class RelatedPasswordLinksTest {
             val available = password("available")
             val repository = TestEntries(listOf(current, linked, available))
             val links = TestLinks(listOf(relatedLink("current", "linked")))
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val candidates = binding.candidates(EntryId("current"))
 
@@ -168,7 +168,7 @@ class RelatedPasswordLinksTest {
         runTest {
             val repository = TestEntries(listOf(password("z-current"), password("a-target")))
             val links = TestLinks()
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val result = binding.bind(EntryId("z-current"), EntryId("a-target"))
 
@@ -184,7 +184,7 @@ class RelatedPasswordLinksTest {
         runTest {
             val repository = TestEntries(listOf(password("current")))
             val links = TestLinks()
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val result = binding.bind(EntryId("current"), EntryId("draft"))
 
@@ -197,7 +197,7 @@ class RelatedPasswordLinksTest {
         runTest {
             val repository = TestEntries(listOf(password("current"), password("target")))
             val links = TestLinks(listOf(relatedLink("target", "current")))
-            val binding = RelatedPasswordLinks(repository, links, testLogger())
+            val binding = RelatedPasswordOperationsImpl(repository, links, testLogger())
 
             val result = binding.bind(EntryId("current"), EntryId("target"))
 

@@ -63,12 +63,12 @@ import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
+import com.aozijx.passly.feature.vault.detail.EntryDetailQueryImpl
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordOperationsImpl
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
@@ -123,13 +123,13 @@ class DetailViewModelTest {
             try {
                 fixture.viewModel.load(ENTRY_ID.value)
                 runCurrent()
-                val version = fixture.viewModel.uiState.value.entry?.version
+                val version = fixture.viewModel.uiState.value.snapshotState.entryOrNull()?.version
 
                 fixture.viewModel.onAction(DetailUiAction.StartFieldEdit(DetailField.USERNAME, "latest-user"))
                 fixture.viewModel.onAction(DetailUiAction.SaveField(DetailField.USERNAME, "latest-user"))
                 runCurrent()
 
-                assertEquals(version, fixture.viewModel.uiState.value.entry?.version)
+                assertEquals(version, fixture.viewModel.uiState.value.snapshotState.entryOrNull()?.version)
                 assertEquals(DetailSaveState.Idle, fixture.viewModel.uiState.value.saveState)
                 assertEquals(
                     "latest-user",
@@ -277,7 +277,7 @@ class DetailViewModelTest {
                 fixture.viewModel.refreshOtpConfiguration()
                 runCurrent()
 
-                assertEquals(null, fixture.viewModel.otpState.value)
+                assertEquals(OtpCodeState.NotRequested, fixture.viewModel.otpState.value)
                 assertEquals(2, repository.readCount)
 
                 reloadGate.complete(Unit)
@@ -324,7 +324,7 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertTrue(fixture.revisions.restoreCompleted)
-                assertEquals(null, fixture.viewModel.otpState.value)
+                assertEquals(OtpCodeState.NotRequested, fixture.viewModel.otpState.value)
                 assertEquals(2, repository.readCount)
 
                 reloadGate.complete(Unit)
@@ -439,7 +439,7 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    model.uiState.value.entry
+                    model.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
                 assertFalse(model.uiState.value.packagePickerApps is AppPackagePickerUiState.Failed)
@@ -680,7 +680,7 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    model.uiState.value.entry
+                    model.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
                 assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Ready)
@@ -788,15 +788,14 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(DetailSnapshotState.Failed, model.uiState.value.snapshotState)
-                assertEquals(null, model.uiState.value.entry)
 
                 model.onAction(DetailUiAction.RetryDetailLoad)
                 runCurrent()
 
-                assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
                 assertEquals(
                     "Current title",
-                    model.uiState.value.entry
+                    model.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
             } finally {
@@ -823,7 +822,6 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(DetailSnapshotState.NotFound, model.uiState.value.snapshotState)
-                assertEquals(null, model.uiState.value.entry)
             } finally {
                 store.clear()
             }
@@ -907,7 +905,6 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(DetailSnapshotState.Loading, model.uiState.value.snapshotState)
-                assertEquals(null, model.uiState.value.entry)
             } finally {
                 store.clear()
             }
@@ -978,10 +975,10 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    model.uiState.value.entry
+                    model.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
-                assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
             } finally {
                 releaseOldQuery.complete(Unit)
                 store.clear()
@@ -1018,10 +1015,10 @@ class DetailViewModelTest {
 
                 assertTrue(fixture.revisions.restoreCompleted)
                 assertEquals(1, fixture.revisions.restoreCalls)
-                assertEquals(DetailSnapshotState.RefreshFailedAfterRestore, model.uiState.value.snapshotState)
+                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.RefreshFailedAfterRestore)
                 assertEquals(
                     "Current title",
-                    model.uiState.value.entry
+                    model.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
                 val revisions = model.uiState.value.revisions as DetailRevisionState.Open
@@ -1030,10 +1027,10 @@ class DetailViewModelTest {
                 model.onAction(DetailUiAction.RetrySnapshotRefresh)
                 runCurrent()
 
-                assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
                 assertEquals(
                     "Restored title",
-                    model.uiState.value.entry
+                    model.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
                 assertEquals(1, fixture.revisions.restoreCalls)
@@ -1079,7 +1076,7 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Restored title",
-                    viewModel.uiState.value.entry
+                    viewModel.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
                 assertTrue(fixture.revisions.restoreCompleted)
@@ -1116,7 +1113,7 @@ class DetailViewModelTest {
                 assertTrue(fixture.revisions.restoreCompleted)
                 assertEquals(
                     "Restored title",
-                    viewModel.uiState.value.entry
+                    viewModel.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
             } finally {
@@ -1141,7 +1138,7 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    viewModel.uiState.value.entry
+                    viewModel.uiState.value.snapshotState.entryOrNull()
                         ?.title,
                 )
                 assertTrue(fixture.revisions.restoreCompleted)
@@ -1164,7 +1161,7 @@ class DetailViewModelTest {
                 fixture.revisions.releasePostCommitCleanup.complete(Unit)
                 runCurrent()
 
-                assertEquals(null, viewModel.uiState.value.entry)
+                assertEquals(DetailSnapshotState.Loading, viewModel.uiState.value.snapshotState)
                 assertTrue(fixture.revisions.restoreCompleted)
             } finally {
                 store.clear()
@@ -1190,15 +1187,14 @@ class DetailViewModelTest {
             model.load(ENTRY_ID.value)
             runCurrent()
             assertEquals(DetailSnapshotState.Failed, model.uiState.value.snapshotState)
-            assertEquals(null, model.uiState.value.entry)
 
             model.onAction(DetailUiAction.RetryDetailLoad)
             runCurrent()
 
-            assertEquals(DetailSnapshotState.Ready, model.uiState.value.snapshotState)
+            assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
             assertEquals(
                 "Current title",
-                model.uiState.value.entry
+                model.uiState.value.snapshotState.entryOrNull()
                     ?.title,
             )
         } finally {
@@ -1256,7 +1252,7 @@ class DetailViewModelTest {
                 faviconImageProcessor = favicon,
                 presentationLoader =
                     DetailPresentationLoader(
-                        DetailSessionQuery(entryQuery, sensitive, entryLinkRepository),
+                        EntryDetailQueryImpl(entryQuery, sensitive, entryLinkRepository),
                         installedAppDirectory,
                     ),
                 revisionWorkflowFactory =
@@ -1266,7 +1262,7 @@ class DetailViewModelTest {
                         revealFields = RevealRevisionFieldsUseCase(revisions, authGate),
                         restoreRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
                     ),
-                relatedPasswordLinks = RelatedPasswordLinks(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
+                relatedPasswordOperations = RelatedPasswordOperationsImpl(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
                 logger = testLogger(),
                 otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),
             )

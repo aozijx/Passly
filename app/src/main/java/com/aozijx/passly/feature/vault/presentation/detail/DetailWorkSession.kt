@@ -107,8 +107,13 @@ internal class DetailWorkSession(
                         DetailMutation.SaveSucceeded(
                             completion = completion,
                             savedFieldValue =
-                                (edit as? EntryEdit.SetFieldValue)?.let { fieldEdit ->
-                                    fieldReader.getFieldValue(result.data, fieldEdit.fieldKey).orEmpty()
+                                when {
+                                    edit is EntryEdit.SetFieldValue -> {
+                                        fieldReader.getFieldValue(result.data, edit.fieldKey).orEmpty()
+                                    }
+
+                                    completion == DetailEditCompletion.Title -> result.data.detailDisplayTitle
+                                    else -> null
                                 },
                         ),
                     )

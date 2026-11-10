@@ -29,9 +29,10 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
-import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedNavigationResult
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailScreen
+import com.aozijx.passly.feature.vault.presentation.navigation.EntryEditorSeedNavigationResult
 import com.aozijx.passly.presentation.shared.event.collectPageEffects
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
@@ -56,7 +57,6 @@ fun DetailRoute(
     val editScope = rememberCoroutineScope()
     var editPreparationJob by remember(viewModel) { mutableStateOf<Job?>(null) }
     val presentationState by viewModel.presentation.collectAsStateWithLifecycle()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val qrState by viewModel.qrState.collectAsStateWithLifecycle()
     val copiedMessageFormat = stringResource(R.string.field_copy_success_message)
     val otpLabel = stringResource(R.string.vault_detail_totp_label)
@@ -72,13 +72,20 @@ fun DetailRoute(
         collectPageEffects(lifecycle, viewModel.effects) { effect ->
             val message =
                 when (effect) {
-                    is DetailEffect.ContentCopied ->
+                    is DetailEffect.ContentCopied -> {
                         copiedMessageFormat.format(resources.getString(effect.fieldKey.copyLabelRes()))
-                    DetailEffect.OtpCopied -> copiedMessageFormat.format(otpLabel)
-                    is DetailEffect.EditPreparationFailed ->
-                        resources.getString(R.string.vault_detail_load_failed)
+                    }
+
+                    DetailEffect.OtpCopied -> {
+                        copiedMessageFormat.format(otpLabel)
+                    }
+
+                    is DetailEffect.EditPreparationFailed -> {
+                        resources
+                            .getString(R.string.vault_detail_load_failed)
                             .takeIf { effect.entryId.value == entryId }
                     }
+                }
             if (message != null) {
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
@@ -96,77 +103,70 @@ fun DetailRoute(
         viewModel.refreshOtpConfiguration()
     }
 
-    val presentation = presentationState
-    if (presentation == null) {
-        when (uiState.snapshotState) {
-            DetailSnapshotState.Loading,
-            DetailSnapshotState.Ready,
-            DetailSnapshotState.RefreshingAfterRestore,
-            -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    LoadingIndicator()
-                }
-            }
-
-            DetailSnapshotState.NotFound -> {
-                DetailLoadMessage(
-                    message = stringResource(R.string.vault_detail_entry_not_found),
-                    action = stringResource(R.string.back),
-                    onAction = onBack,
-                )
-            }
-
-            DetailSnapshotState.Failed -> {
-                DetailLoadMessage(
-                    message = stringResource(R.string.vault_detail_load_failed),
-                    action = stringResource(R.string.retry),
-                    onAction = { viewModel.onAction(DetailUiAction.RetryDetailLoad) },
-                )
-            }
-
-            DetailSnapshotState.RefreshFailedAfterRestore -> {
-                DetailLoadMessage(
-                    message = stringResource(R.string.vault_detail_refresh_failed_after_restore),
-                    action = stringResource(R.string.retry),
-                    onAction = { viewModel.onAction(DetailUiAction.RetrySnapshotRefresh) },
-                )
+    when (val page = presentationState) {
+        DetailPageUiState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingIndicator()
             }
         }
-        return
-    }
-    DetailScreen(
-        model = presentation,
-        qrState = qrState,
-        onBack = onBack,
-        onAction = viewModel::onAction,
-        onOpenRelatedEntry = onOpenRelatedEntry,
-        onEditFullForm = {
-            if (editPreparationJob?.isActive != true) {
-                editPreparationJob =
-                    editScope.launch {
-                        val editable = viewModel.prepareEntryForEdit() ?: return@launch
-                        currentCoroutineContext().ensureActive()
-                        when (onEditFullForm(editable)) {
-                            EntryEditorSeedNavigationResult.Navigated,
-                            EntryEditorSeedNavigationResult.AccessDenied,
-                            -> Unit
 
-                            EntryEditorSeedNavigationResult.UnsupportedDestination,
-                            is EntryEditorSeedNavigationResult.NavigationFailed,
-                            -> Toast.makeText(
-                                context,
-                                R.string.vault_editor_open_failed,
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                        }
+        DetailPageUiState.NotFound -> {
+            DetailLoadMessage(
+                message = stringResource(R.string.vault_detail_entry_not_found),
+                action = stringResource(R.string.back),
+                onAction = onBack,
+            )
+        }
+
+        DetailPageUiState.Failed -> {
+            DetailLoadMessage(
+                message = stringResource(R.string.vault_detail_load_failed),
+                action = stringResource(R.string.retry),
+                onAction = { viewModel.onAction(DetailUiAction.RetryDetailLoad) },
+            )
+        }
+
+        is DetailPageUiState.Content -> {
+            DetailScreen(
+                model = page.presentation,
+                qrState = qrState,
+                onBack = onBack,
+                onAction = viewModel::onAction,
+                onOpenRelatedEntry = onOpenRelatedEntry,
+                onEditFullForm = {
+                    if (editPreparationJob?.isActive != true) {
+                        editPreparationJob =
+                            editScope.launch {
+                                val editable = viewModel.prepareEntryForEdit() ?: return@launch
+                                currentCoroutineContext().ensureActive()
+                                when (onEditFullForm(editable)) {
+                                    EntryEditorSeedNavigationResult.Navigated,
+                                    EntryEditorSeedNavigationResult.AccessDenied,
+                                    -> {
+                                        Unit
+                                    }
+
+                                    EntryEditorSeedNavigationResult.UnsupportedDestination,
+                                    is EntryEditorSeedNavigationResult.NavigationFailed,
+                                    -> {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                R.string.vault_editor_open_failed,
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                    }
+                                }
+                            }
                     }
-            }
-        },
-        onFaviconUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
-    )
+                },
+                onFaviconUploadRequested = { pickFaviconImage(ImageType.SCREEN) },
+            )
+        }
+    }
 }
 
 @Composable

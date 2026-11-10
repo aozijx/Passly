@@ -10,9 +10,11 @@ sealed interface RelatedPasswordBindingUiState {
     data class Ready(
         val candidates: List<RelatedPasswordCandidateUiModel>,
         val query: String = "",
-        val results: RelatedPasswordCandidateSearchResults = candidates.toSearchResults(""),
         val operation: RelatedPasswordBindingOperationState = RelatedPasswordBindingOperationState.Idle,
-    ) : RelatedPasswordBindingUiState
+    ) : RelatedPasswordBindingUiState {
+        val results: RelatedPasswordCandidateSearchResults
+            get() = candidates.toSearchResults(query)
+    }
 }
 
 sealed interface RelatedPasswordBindingOperationState {
@@ -41,7 +43,7 @@ internal fun List<RelatedPasswordCandidateUiModel>.toSearchResults(query: String
         } else {
             filter { candidate ->
                 candidate.title.contains(query, ignoreCase = true) ||
-                    candidate.username?.contains(query, ignoreCase = true) == true
+                    candidate.username.contains(query, ignoreCase = true)
             }
         }
     return if (matches.isEmpty()) {
@@ -54,7 +56,7 @@ internal fun List<RelatedPasswordCandidateUiModel>.toSearchResults(query: String
 data class RelatedPasswordCandidateUiModel(
     val id: String,
     val title: String,
-    val username: String?,
+    val username: String,
 )
 
 sealed interface RelatedPasswordUnlinkUiState {

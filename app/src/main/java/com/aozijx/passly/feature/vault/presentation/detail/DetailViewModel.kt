@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
@@ -19,22 +19,22 @@ import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
+import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
 import com.aozijx.passly.domain.sensitive.SensitiveValue
-import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
-import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentationModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.runtime.session.SessionLockedException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -71,7 +71,7 @@ class DetailViewModel
         private val faviconImageProcessor: FaviconImageProcessor,
         private val presentationLoader: DetailPresentationLoader,
         private val revisionWorkflowFactory: DetailRevisionWorkflowFactory,
-        private val relatedPasswordLinks: RelatedPasswordLinks,
+        private val relatedPasswordOperations: RelatedPasswordOperations,
         private val logger: Logger,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
     ) : ViewModel() {
@@ -125,10 +125,10 @@ class DetailViewModel
         private val passwordRelationsWorkflow =
             DetailPasswordRelationsWorkflow(
                 scope = viewModelScope,
-                links = relatedPasswordLinks,
+                operations = relatedPasswordOperations,
                 access = secureSessionAccessState,
                 workSession = workSession,
-                currentEntry = { _uiState.value.entry },
+                currentEntry = { _uiState.value.snapshotState.entryOrNull() },
                 currentBindingState = { _uiState.value.passwordBinding },
                 currentRelatedPasswords = { _uiState.value.relatedPasswords },
                 currentUnlinkState = { _uiState.value.passwordUnlink },
@@ -141,7 +141,7 @@ class DetailViewModel
         val effects = _effects.receiveAsFlow()
 
         suspend fun prepareEntryForEdit(): EntryEditorSeed.Editable? {
-            val sourceEntry = _uiState.value.entry ?: return null
+            val sourceEntry = _uiState.value.snapshotState.entryOrNull() ?: return null
             if (!secureSessionAccessState.hasFullSecureSessionAccess()) return null
             val authentication = secureSessionAccessState.authenticationState.value
             val result =
@@ -159,7 +159,9 @@ class DetailViewModel
             if (result.entry.id != sourceEntry.id || result.entry.type != sourceEntry.type ||
                 secureSessionAccessState.authenticationState.value !== result.authentication ||
                 !secureSessionAccessState.hasFullSecureSessionAccess() ||
-                _uiState.value.entry?.id != sourceEntry.id
+                _uiState.value.snapshotState
+                    .entryOrNull()
+                    ?.id != sourceEntry.id
             ) {
                 return null
             }
@@ -170,23 +172,25 @@ class DetailViewModel
             entryId: EntryId,
             authentication: AuthenticationState,
         ): Boolean =
-            _uiState.value.entry?.id == entryId &&
+            _uiState.value.snapshotState
+                .entryOrNull()
+                ?.id == entryId &&
                 secureSessionAccessState.authenticationState.value === authentication &&
                 secureSessionAccessState.hasFullSecureSessionAccess()
 
-        private val _otpState = MutableStateFlow<OtpCodeState?>(null)
-        val otpState: StateFlow<OtpCodeState?> = _otpState.asStateFlow()
-        val presentation: StateFlow<DetailPresentationModel?> =
+        private val _otpState = MutableStateFlow<OtpCodeState>(OtpCodeState.NotRequested)
+        val otpState: StateFlow<OtpCodeState> = _otpState.asStateFlow()
+        val presentation: StateFlow<DetailPageUiState> =
             combine(
                 _uiState,
                 _otpState,
                 revisionWorkflow.revealedFields,
             ) { state, otp, revisionReveals ->
-                toDetailPresentationModel(state, otp, revisionReveals)
+                toDetailPageUiState(state, otp, revisionReveals)
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = null,
+                initialValue = DetailPageUiState.Loading,
             )
 
         init {
@@ -198,7 +202,12 @@ class DetailViewModel
             viewModelScope.launch {
                 otpRuntime.states.collect { states ->
                     val token = loadedEntryId?.let(workSession::current)
-                    _otpState.value = if (token != null && workSession.isCurrent(token)) states[token.entryId.value] else null
+                    _otpState.value =
+                        if (token != null && workSession.isCurrent(token)) {
+                            states[token.entryId.value] ?: OtpCodeState.NotRequested
+                        } else {
+                            OtpCodeState.NotRequested
+                        }
                 }
             }
         }
@@ -210,23 +219,25 @@ class DetailViewModel
             }
             when (event) {
                 DetailUiAction.StartTitleEdit -> {
-                    mutate(DetailMutation.TitleEditingStarted)
+                    _uiState.value.snapshotState.entryOrNull()?.let { entry ->
+                        mutate(DetailMutation.FieldEditingStarted(DetailDraftKey.Title, entry.detailDisplayTitle))
+                    }
                 }
 
                 DetailUiAction.CancelTitleEdit -> {
-                    mutate(DetailMutation.TitleEditingCancelled)
+                    mutate(DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
                 }
 
                 is DetailUiAction.UpdateEditedTitle -> {
-                    mutate(DetailMutation.EditedTitleChanged(event.value))
+                    mutate(DetailMutation.FieldDraftChanged(DetailDraftKey.Title, event.value))
                 }
 
                 DetailUiAction.SaveTitle -> {
                     val state = _uiState.value
-                    val current = state.entry ?: return
-                    when (val plan = current.planDetailTitleEdit(state.editedTitle)) {
+                    val current = state.snapshotState.entryOrNull() ?: return
+                    when (val plan = current.planDetailTitleEdit(state.fieldEdits.draft(DetailDraftKey.Title))) {
                         DetailTitleEditPlan.Cancel -> {
-                            mutate(DetailMutation.TitleEditingCancelled)
+                            mutate(DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
                         }
 
                         is DetailTitleEditPlan.Save -> {
@@ -241,7 +252,7 @@ class DetailViewModel
                 }
 
                 DetailUiAction.ToggleFavorite -> {
-                    if (_uiState.value.entry == null) return
+                    if (_uiState.value.snapshotState.entryOrNull() == null) return
                     viewModelScope.launch {
                         persistEntryEdit(
                             edit = EntryEdit.ToggleFavorite,
@@ -267,7 +278,7 @@ class DetailViewModel
                 }
 
                 is DetailUiAction.SelectAssociatedPackage -> {
-                    if (_uiState.value.entry == null) return
+                    if (_uiState.value.snapshotState.entryOrNull() == null) return
                     viewModelScope.launch {
                         persistEntryEdit(
                             EntryEdit.SetApplicationIds(setOf(event.packageName)),
@@ -278,7 +289,8 @@ class DetailViewModel
 
                 DetailUiAction.StartNotesEdit -> {
                     val notes =
-                        _uiState.value.entry
+                        _uiState.value.snapshotState
+                            .entryOrNull()
                             ?.secret
                             ?.notes
                             .orEmpty()
@@ -301,7 +313,8 @@ class DetailViewModel
 
                 DetailUiAction.StartDomainEdit -> {
                     val domain =
-                        _uiState.value.entry
+                        _uiState.value.snapshotState
+                            .entryOrNull()
                             ?.associations
                             ?.primaryUrl
                             .orEmpty()
@@ -314,7 +327,7 @@ class DetailViewModel
 
                 DetailUiAction.SaveDomain -> {
                     val state = _uiState.value
-                    if (state.entry == null) return
+                    if (state.snapshotState.entryOrNull() == null) return
                     val domain = state.fieldEdits.draft(DetailDraftKey.Domain)
                     viewModelScope.launch {
                         persistEntryEdit(
@@ -337,7 +350,7 @@ class DetailViewModel
                 }
 
                 is DetailUiAction.ToggleFieldVisibility -> {
-                    val current = _uiState.value.entry ?: return
+                    val current = _uiState.value.snapshotState.entryOrNull() ?: return
                     val key = event.field.fieldKey
                     if (_uiState.value.revealed(key) != null) {
                         setRevealedField(key, null)
@@ -358,7 +371,7 @@ class DetailViewModel
 
                 is DetailUiAction.SaveField -> {
                     val state = _uiState.value
-                    if (state.entry == null) return
+                    if (state.snapshotState.entryOrNull() == null) return
                     if (
                         state.fieldEdits.initialValue(event.field.draftKey)?.takeIf(String::isNotEmpty) == event.newValue
                     ) {
@@ -432,7 +445,10 @@ class DetailViewModel
 
                 DetailUiAction.OpenFaviconEditor -> {
                     if (faviconSession.isSaving) return
-                    val icon = _uiState.value.entry?.icon ?: return
+                    val icon =
+                        _uiState.value.snapshotState
+                            .entryOrNull()
+                            ?.icon ?: return
                     (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
                     mutate(DetailMutation.FaviconEditorOpened(icon.toDetailFaviconSource()))
                 }
@@ -534,7 +550,9 @@ class DetailViewModel
                 }
 
                 DetailUiAction.ShowEntryQr -> {
-                    _uiState.value.entry?.let(qrSession::request)
+                    _uiState.value.snapshotState
+                        .entryOrNull()
+                        ?.let(qrSession::request)
                 }
 
                 DetailUiAction.DismissEntryQr -> {
@@ -550,7 +568,10 @@ class DetailViewModel
                 }
 
                 DetailUiAction.OpenRevisionHistory -> {
-                    _uiState.value.entry?.id?.let(revisionWorkflow::open)
+                    _uiState.value.snapshotState
+                        .entryOrNull()
+                        ?.id
+                        ?.let(revisionWorkflow::open)
                 }
 
                 DetailUiAction.RetryRevisionHistory -> {
@@ -595,7 +616,9 @@ class DetailViewModel
 
                 DetailUiAction.OpenPasswordBinding,
                 DetailUiAction.RetryPasswordBinding,
-                -> openPasswordBinding()
+                -> {
+                    openPasswordBinding()
+                }
 
                 is DetailUiAction.PasswordBindingSearchChanged -> {
                     mutate(DetailMutation.PasswordBindingSearchChanged(event.query))
@@ -617,14 +640,16 @@ class DetailViewModel
                     passwordRelationsWorkflow.confirmUnlink()
                 }
 
-                is DetailUiAction.BindPassword -> passwordRelationsWorkflow.bind(EntryId(event.targetEntryId))
+                is DetailUiAction.BindPassword -> {
+                    passwordRelationsWorkflow.bind(EntryId(event.targetEntryId))
+                }
             }
         }
 
         private fun openPasswordBinding() = passwordRelationsWorkflow.open()
 
         private fun copyField(fieldKey: FieldKey) {
-            val entry = _uiState.value.entry ?: return
+            val entry = _uiState.value.snapshotState.entryOrNull() ?: return
             val token = workSession.current(entry.id) ?: return
             viewModelScope.launch {
                 if (copyEntryFieldUseCase(
@@ -643,7 +668,7 @@ class DetailViewModel
         }
 
         private fun revealFieldsFromState(fields: Set<DetailField>) {
-            val current = _uiState.value.entry ?: return
+            val current = _uiState.value.snapshotState.entryOrNull() ?: return
             val hiddenKeys =
                 fields
                     .mapTo(linkedSetOf()) { it.fieldKey }
@@ -653,7 +678,7 @@ class DetailViewModel
         }
 
         private fun copyOtpCode() {
-            val entry = _uiState.value.entry ?: return
+            val entry = _uiState.value.snapshotState.entryOrNull() ?: return
             val token = workSession.current(entry.id) ?: return
             viewModelScope.launch {
                 if (
@@ -682,7 +707,7 @@ class DetailViewModel
             launchMode: DetailLaunchMode = DetailLaunchMode.VIEW,
         ) {
             val entryId = EntryId(rawEntryId)
-            if (loadedEntryId == entryId && _uiState.value.entry != null) return
+            if (loadedEntryId == entryId && _uiState.value.snapshotState.entryOrNull() != null) return
             val token = workSession.open(entryId)
             tagEditorLoadJob?.cancel()
             (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
@@ -696,7 +721,7 @@ class DetailViewModel
             passwordRelationsWorkflow.close()
             revisionWorkflow.reset()
             otpRuntime.clearAllSensitiveState()
-            _otpState.value = null
+            _otpState.value = OtpCodeState.NotRequested
             revealStore.clear()
             mutate(DetailMutation.StateCleared)
             entryLoadJob =
@@ -752,13 +777,13 @@ class DetailViewModel
         }
 
         private fun retryDetailLoad() {
-            if (_uiState.value.snapshotState != DetailSnapshotState.Failed) return
+            if (_uiState.value.snapshotState !is DetailSnapshotState.Failed) return
             val entryId = loadedEntryId ?: return
             load(entryId.value, loadedLaunchMode)
         }
 
         internal fun refreshOtpConfiguration() {
-            val entry = _uiState.value.entry ?: return
+            val entry = _uiState.value.snapshotState.entryOrNull() ?: return
             if (entry.type != EntryType.OTP) return
             val token = workSession.current(entry.id) ?: return
             if (!workSession.isCurrent(token)) return
@@ -766,8 +791,11 @@ class DetailViewModel
         }
 
         private fun retrySnapshotRefresh() {
-            if (_uiState.value.snapshotState != DetailSnapshotState.RefreshFailedAfterRestore) return
-            val entryId = _uiState.value.entry?.id ?: return
+            if (_uiState.value.snapshotState !is DetailSnapshotState.RefreshFailedAfterRestore) return
+            val entryId =
+                _uiState.value.snapshotState
+                    .entryOrNull()
+                    ?.id ?: return
             val token = workSession.current(entryId) ?: return
             refreshSnapshotAfterRestore(entryId, token)
         }
@@ -776,8 +804,18 @@ class DetailViewModel
             entryId: EntryId,
             token: DetailWorkSession.Scope.Active,
         ) {
-            if (!workSession.isCurrent(token) || _uiState.value.entry?.id != entryId) return
-            if (_uiState.value.entry?.type == EntryType.OTP) otpRuntime.entryChanged(entryId.value)
+            if (!workSession.isCurrent(token) || _uiState.value.snapshotState
+                    .entryOrNull()
+                    ?.id != entryId
+            ) {
+                return
+            }
+            if (_uiState.value.snapshotState
+                    .entryOrNull()
+                    ?.type == EntryType.OTP
+            ) {
+                otpRuntime.entryChanged(entryId.value)
+            }
             refreshSnapshotAfterRestore(entryId, token)
         }
 
@@ -823,7 +861,7 @@ class DetailViewModel
 
         private fun retryActivityHistory() {
             val state = _uiState.value
-            val entryId = state.entry?.id ?: return
+            val entryId = state.snapshotState.entryOrNull()?.id ?: return
             if (state.activityHistory !is DetailActivityHistoryState.Failed) return
             val token = workSession.current(entryId) ?: return
             observeActivityHistory(entryId, token)
@@ -894,19 +932,19 @@ class DetailViewModel
             revealStore.clear()
             revisionWorkflow.reset()
             otpRuntime.clearAllSensitiveState()
-            _otpState.value = null
+            _otpState.value = OtpCodeState.NotRequested
             mutate(DetailMutation.StateCleared)
         }
 
         private fun openTagEditor() {
             val state = _uiState.value
             if (state.tagEditor is DetailTagEditorState.Open) return
-            val entryId = state.entry?.id ?: return
+            val entryId = state.snapshotState.entryOrNull()?.id ?: return
             val token = workSession.current(entryId) ?: return
             tagEditorLoadJob?.cancel()
             tagEditorLoadJob =
                 viewModelScope.launch {
-                    workSession.openTagEditor(token, entryTagQuery::findAllTags) { _uiState.value.entry }
+                    workSession.openTagEditor(token, entryTagQuery::findAllTags) { _uiState.value.snapshotState.entryOrNull() }
                 }
         }
 
@@ -919,7 +957,10 @@ class DetailViewModel
             edit: EntryEdit,
             completion: DetailEditCompletion,
         ) {
-            val entryId = _uiState.value.entry?.id ?: return
+            val entryId =
+                _uiState.value.snapshotState
+                    .entryOrNull()
+                    ?.id ?: return
             if (_uiState.value.saveState != DetailSaveState.Idle) return
             val token = workSession.current(entryId) ?: return
             mutate(DetailMutation.SaveStarted(completion))
@@ -929,7 +970,7 @@ class DetailViewModel
         private fun saveFavicon() {
             val state = _uiState.value
             val editor = state.faviconEditor as? DetailFaviconEditorState.Open ?: return
-            val entryId = state.entry?.id ?: return
+            val entryId = state.snapshotState.entryOrNull()?.id ?: return
             val token = workSession.current(entryId) ?: return
             if (
                 editor.work == DetailFaviconWorkState.Processing ||
@@ -984,7 +1025,7 @@ class DetailViewModel
 
         private fun loadPackagePickerApps() {
             val state = _uiState.value
-            val entryId = state.entry?.id ?: return
+            val entryId = state.snapshotState.entryOrNull()?.id ?: return
             val token = workSession.current(entryId) ?: return
             if (state.packagePickerApps.catalogLoaded) {
                 mutate(DetailMutation.PackagePickerSearchChanged(""))
@@ -1019,7 +1060,7 @@ class DetailViewModel
         }
 
         private suspend fun stageFaviconInput(
-            token: DetailFaviconSession.Preparation.Active,
+            token: Job,
             stage: suspend () -> Result<String>,
         ) {
             val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return
@@ -1036,7 +1077,7 @@ class DetailViewModel
         }
 
         private suspend fun processPendingFavicon(
-            token: DetailFaviconSession.Preparation.Active,
+            token: Job,
             crop: FaviconCropRequest?,
         ) {
             val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return

@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
@@ -28,7 +29,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class DetailSessionQueryTest {
+class EntryDetailQueryImplTest {
     @Test
     fun `account group and direct password projections stay distinct and load in one batch`() = runTest {
         val current = entry("login", EntryType.LOGIN)
@@ -39,7 +40,7 @@ class DetailSessionQueryTest {
         )
         val query = RecordingEntryQuery(current, related)
         val sessionQuery =
-            DetailSessionQuery(
+            EntryDetailQueryImpl(
                 entryQueryRepository = query,
                 sensitiveFieldRepository = EmptySensitiveFieldRepository,
                 entryLinkRepository = TestLinks(
@@ -55,11 +56,11 @@ class DetailSessionQueryTest {
         val result = sessionQuery.open(current.id)
 
         assertEquals(listOf(EntryId("account"), EntryId("sibling"), EntryId("otp")), query.batchRequests.single())
-        assertEquals(listOf("account", "sibling", "otp"), result?.accountGroupEntries?.map { it.id.value })
-        assertEquals(emptyList<Entry>(), result?.otherRelatedEntries)
+        assertEquals(listOf("account", "sibling", "otp"), result?.relations?.accountGroupEntries?.map { it.id.value })
+        assertEquals(emptyList<Entry>(), result?.relations?.otherRelatedEntries)
         assertEquals(
-            listOf(DetailRelatedPassword(EntryLinkId("related"), EntryId("sibling"), "sibling", "member@example.test")),
-            result?.relatedPasswords,
+            listOf(RelatedPasswordEntry(EntryLinkId("related"), EntryId("sibling"), "sibling", "member@example.test")),
+            result?.relations?.relatedPasswords,
         )
         assertEquals(1, query.singleReads)
     }
@@ -72,7 +73,7 @@ class DetailSessionQueryTest {
         val nonLogin = entry("otp", EntryType.OTP)
         val query = RecordingEntryQuery(current, listOf(activeLogin, nonLogin, deletedLogin))
         val sessionQuery =
-            DetailSessionQuery(
+            EntryDetailQueryImpl(
                 entryQueryRepository = query,
                 sensitiveFieldRepository = EmptySensitiveFieldRepository,
                 entryLinkRepository = TestLinks(
@@ -87,8 +88,8 @@ class DetailSessionQueryTest {
 
         val result = sessionQuery.open(current.id)
 
-        assertEquals(listOf("sibling"), result?.relatedPasswords?.map { it.targetEntryId.value })
-        assertEquals(listOf("otp", "deleted"), result?.otherRelatedEntries?.map { it.id.value })
+        assertEquals(listOf("sibling"), result?.relations?.relatedPasswords?.map { it.targetEntryId.value })
+        assertEquals(listOf("otp", "deleted"), result?.relations?.otherRelatedEntries?.map { it.id.value })
         assertEquals(1, query.batchRequests.size)
     }
 
@@ -98,7 +99,7 @@ class DetailSessionQueryTest {
         val relatedLogin = entry("login", EntryType.LOGIN)
         val query = RecordingEntryQuery(current, listOf(relatedLogin))
         val sessionQuery =
-            DetailSessionQuery(
+            EntryDetailQueryImpl(
                 entryQueryRepository = query,
                 sensitiveFieldRepository = EmptySensitiveFieldRepository,
                 entryLinkRepository = TestLinks(
@@ -108,8 +109,8 @@ class DetailSessionQueryTest {
 
         val result = sessionQuery.open(current.id)
 
-        assertEquals(emptyList<DetailRelatedPassword>(), result?.relatedPasswords)
-        assertEquals(listOf("login"), result?.otherRelatedEntries?.map { it.id.value })
+        assertEquals(emptyList<RelatedPasswordEntry>(), result?.relations?.relatedPasswords)
+        assertEquals(listOf("login"), result?.relations?.otherRelatedEntries?.map { it.id.value })
     }
 
     @Test
@@ -118,7 +119,7 @@ class DetailSessionQueryTest {
         val relatedLogin = entry("login", EntryType.LOGIN)
         val query = RecordingEntryQuery(current, listOf(relatedLogin))
         val sessionQuery =
-            DetailSessionQuery(
+            EntryDetailQueryImpl(
                 entryQueryRepository = query,
                 sensitiveFieldRepository = EmptySensitiveFieldRepository,
                 entryLinkRepository = TestLinks(
@@ -128,8 +129,8 @@ class DetailSessionQueryTest {
 
         val result = sessionQuery.open(current.id)
 
-        assertEquals(emptyList<DetailRelatedPassword>(), result?.relatedPasswords)
-        assertEquals(listOf("login"), result?.otherRelatedEntries?.map { it.id.value })
+        assertEquals(emptyList<RelatedPasswordEntry>(), result?.relations?.relatedPasswords)
+        assertEquals(listOf("login"), result?.relations?.otherRelatedEntries?.map { it.id.value })
     }
 
     @Test

@@ -85,7 +85,7 @@ internal fun detailIdentityUiModel(
     val idNumber = fields.protected(FieldKey.ID_NUMBER, SensitiveFieldKey.IDENTITY_NUMBER)
     return DetailIdentityUiModel(
         idNumber = idNumber,
-        username = entry.username.takeIf(String::isNotBlank),
+        username = entry.username,
     )
 }
 

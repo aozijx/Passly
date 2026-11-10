@@ -18,7 +18,7 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.feature.vault.detail.DetailRelatedPassword
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
@@ -28,8 +28,8 @@ import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
-import com.aozijx.passly.feature.vault.detail.DetailSessionQuery
-import com.aozijx.passly.feature.vault.detail.RelatedPasswordLinks
+import com.aozijx.passly.feature.vault.detail.EntryDetailQueryImpl
+import com.aozijx.passly.feature.vault.detail.RelatedPasswordOperationsImpl
 import com.aozijx.passly.testing.RecordingTestLogger
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
@@ -126,7 +126,7 @@ class DetailPasswordRelationsWorkflowTest {
             )
             assertEquals(1, fixture.links.deleteAttempts)
             assertEquals(1, fixture.relationUpdates)
-            assertEquals(listOf(DetailRelatedPassword(EntryLinkId("source-target"), EntryId("target"), "target", "")), fixture.currentRelatedPasswords)
+            assertEquals(listOf(RelatedPasswordEntry(EntryLinkId("source-target"), EntryId("target"), "target", "")), fixture.currentRelatedPasswords)
 
             fixture.links.failDelete = false
             fixture.workflow.confirmUnlink()
@@ -361,7 +361,7 @@ class DetailPasswordRelationsWorkflowTest {
         val logger = RecordingTestLogger()
         var relationUpdates = 0
         var refreshedRelationIds: List<EntryId> = emptyList()
-        var currentRelatedPasswords: List<DetailRelatedPassword> = emptyList()
+        var currentRelatedPasswords: List<RelatedPasswordEntry> = emptyList()
         var missingEntryIds: Set<EntryId> = emptySet()
         var failRelationRefresh = false
         val workSession =
@@ -380,7 +380,7 @@ class DetailPasswordRelationsWorkflowTest {
         val workflow =
             DetailPasswordRelationsWorkflow(
                 scope = scope,
-                links = RelatedPasswordLinks(entries, links, testLogger()),
+                operations = RelatedPasswordOperationsImpl(entries, links, testLogger()),
                 access = access,
                 workSession = workSession,
                 currentEntry = { currentEntry },
@@ -496,7 +496,7 @@ class DetailPasswordRelationsWorkflowTest {
                 deleteFailure = deleteFailure,
             ).apply {
                 currentRelatedPasswords =
-                    listOf(DetailRelatedPassword(link.id, EntryId("target"), "target", ""))
+                    listOf(RelatedPasswordEntry(link.id, EntryId("target"), "target", ""))
             }
         }
 
@@ -507,7 +507,7 @@ class DetailPasswordRelationsWorkflowTest {
         ): DetailPresentationLoader =
             DetailPresentationLoader(
                 sessionQuery =
-                    DetailSessionQuery(
+                    EntryDetailQueryImpl(
                         entryQueryRepository =
                             object : EntryQueryRepository {
                                 override suspend fun getById(entryId: EntryId): Entry? =

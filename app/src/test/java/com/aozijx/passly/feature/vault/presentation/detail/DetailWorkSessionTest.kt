@@ -37,11 +37,11 @@ class DetailWorkSessionTest {
             fixture.session.persist(token, EntryEdit.SetTitle("submitted"), DetailEditCompletion.Title)
             val presented =
                 DetailReducer.reduce(
-                    DetailUiState(isEditingTitle = true, editedTitle = "new draft"),
+                    DetailUiState(fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "new draft")),
                     fixture.mutations.first() as DetailMutation.EntryPresented,
                 )
-            assertTrue(presented.isEditingTitle)
-            assertEquals("new draft", presented.editedTitle)
+            assertTrue(presented.fieldEdits.isEditing(DetailDraftKey.Title))
+            assertEquals("new draft", presented.fieldEdits.draft(DetailDraftKey.Title))
         }
 
     @Test

@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 
 internal object DetailTagEditorReducer {
     fun reduce(
@@ -47,7 +48,7 @@ internal object DetailTagEditorReducer {
                             prefix = mutation.value.substringAfterLast(',').substringAfterLast('\n'),
                             selectedTags = state.draftTags,
                         ),
-                    validation = DetailTagValidationState.None,
+                    validation = TagEditorValidationUiState.None,
                     showDiscardConfirmation = false,
                 )
             }
@@ -61,13 +62,13 @@ internal object DetailTagEditorReducer {
                             draftTags = normalized.tags,
                             input = "",
                             suggestions = emptyList(),
-                            validation = DetailTagValidationState.None,
+                            validation = TagEditorValidationUiState.None,
                         )
                     }
 
                     is EntryTagNormalizationResult.Invalid -> {
                         state.copy(
-                            validation = DetailTagValidationState.Invalid(normalized.error),
+                            validation = normalized.error.toTagEditorValidationUiState(),
                         )
                     }
                 }
@@ -79,7 +80,7 @@ internal object DetailTagEditorReducer {
                         state.draftTags
                             .filterNot { it.equals(mutation.value, ignoreCase = true) }
                             .toCollection(linkedSetOf()),
-                    validation = DetailTagValidationState.None,
+                    validation = TagEditorValidationUiState.None,
                 )
             }
 

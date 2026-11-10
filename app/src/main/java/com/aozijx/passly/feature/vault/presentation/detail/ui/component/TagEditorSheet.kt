@@ -44,14 +44,14 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagChipsUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTagEditorUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun TagEditorSheet(
-    state: DetailTagEditorUiModel.Visible,
+    state: DetailTagEditorState.Open,
     isSaving: Boolean,
     onInputChanged: (String) -> Unit,
     onSubmit: (String) -> Unit,
@@ -90,7 +90,7 @@ fun TagEditorSheet(
                 style = MaterialTheme.typography.headlineSmall,
             )
 
-            when (val draftTags = state.draftTags) {
+            when (val draftTags = state.draftTagsUiState) {
                 DetailTagChipsUiState.Empty -> Unit
                 is DetailTagChipsUiState.Items -> {
                     FlowRow(
@@ -164,7 +164,7 @@ fun TagEditorSheet(
                     ),
             )
 
-            when (val suggestions = state.suggestions) {
+            when (val suggestions = state.suggestionsUiState) {
                 DetailTagChipsUiState.Empty -> Unit
                 is DetailTagChipsUiState.Items -> {
                     FlowRow(

@@ -45,7 +45,7 @@ data class RelatedPasswordUiModel(
     val linkId: String,
     val targetEntryId: String,
     val title: String,
-    val username: String?,
+    val username: String,
 )
 
 sealed interface DetailTagChipsUiState {
@@ -57,6 +57,12 @@ sealed interface DetailTagChipsUiState {
         }
     }
 }
+
+internal fun Collection<String>.toDetailTagChipsUiState(): DetailTagChipsUiState =
+    takeIf(Collection<String>::isNotEmpty)
+        ?.toList()
+        ?.let(DetailTagChipsUiState::Items)
+        ?: DetailTagChipsUiState.Empty
 
 data class DetailAssociatedInfoUiModel(
     val domain: String?,

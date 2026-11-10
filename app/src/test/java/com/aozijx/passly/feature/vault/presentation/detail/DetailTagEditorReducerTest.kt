@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
+import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.detail.model.TagEditorValidationUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -55,7 +56,7 @@ class DetailTagEditorReducerTest {
 
         assertEquals(linkedSetOf("Personal"), removed.draftTags)
         assertTrue(removed.dirty)
-        assertEquals(DetailTagValidationState.None, removed.validation)
+        assertEquals(TagEditorValidationUiState.None, removed.validation)
     }
 
     @Test
@@ -75,7 +76,10 @@ class DetailTagEditorReducerTest {
         assertEquals(emptySet<String>(), actual.draftTags)
         assertEquals("x".repeat(33), actual.input)
         assertEquals(
-            DetailTagValidationState.Invalid(EntryTagValidationError.TooLong(maximum = 32)),
+            TagEditorValidationUiState.Invalid(
+                pluralResourceId = R.plurals.vault_detail_tag_too_long,
+                quantity = 32,
+            ),
             actual.validation,
         )
     }

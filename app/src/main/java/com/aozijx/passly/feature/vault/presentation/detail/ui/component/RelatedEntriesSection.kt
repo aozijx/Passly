@@ -152,7 +152,7 @@ fun RelatedEntriesSection(
                                     Icon(Icons.Default.ChevronRight, contentDescription = null)
                                 },
                                 supportingContent = {
-                                    related.username?.let { Text(it) }
+                                    Text(related.username)
                                 },
                                 colors = ListItemDefaults.colors(),
                                 content = { Text(related.title) },
