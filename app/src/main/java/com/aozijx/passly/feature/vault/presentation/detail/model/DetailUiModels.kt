@@ -102,7 +102,7 @@ data class DetailCardTextFieldUiModel(
 
 data class DetailIdentityUiModel(
     val idNumber: ProtectedDetailFieldUiState,
-    val username: String?,
+    val username: String,
 )
 
 sealed interface DetailSshFingerprintUiState {

@@ -32,14 +32,12 @@ fun IdCardSection(
             onEdit = null,
             onReveal = onIdNumberReveal,
         )
-        model.username?.let {
-            DetailItem(
-                label = stringResource(R.string.vault_detail_username),
-                value = it,
-                isRevealed = true,
-                onCopy = onUsernameCopy,
-                onEdit = null,
-            )
-        }
+        DetailItem(
+            label = stringResource(R.string.vault_detail_username),
+            value = model.username,
+            isRevealed = true,
+            onCopy = onUsernameCopy,
+            onEdit = null,
+        )
     }
 }
