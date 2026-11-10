@@ -19,18 +19,20 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
             .withValue(definition, FieldKey.CARD_NUMBER, EntryDraftValue.Text(cardNumber.trim()))
 
     draft =
-        cardType?.let { type ->
-            draft.withValue(
-                definition,
-                FieldKey.CARD_TYPE,
-                EntryDraftValue.Text(
-                    when (type) {
-                        CardType.DEBIT -> "DEBIT"
-                        CardType.CREDIT -> "CREDIT"
-                    },
-                ),
-            )
-        } ?: draft
+        when (val selection = cardTypeSelection) {
+            CardTypeSelection.Unselected -> draft
+            is CardTypeSelection.Selected ->
+                draft.withValue(
+                    definition,
+                    FieldKey.CARD_TYPE,
+                    EntryDraftValue.Text(
+                        when (selection.type) {
+                            CardType.DEBIT -> "DEBIT"
+                            CardType.CREDIT -> "CREDIT"
+                        },
+                    ),
+                )
+        }
     draft = draft.withOptionalText(definition, FieldKey.CARD_HOLDER, cardholder)
     draft = draft.withOptionalText(definition, FieldKey.CARD_CVV, cardCvv)
     draft = draft.withOptionalText(definition, FieldKey.PAYMENT_PIN, paymentPin)
@@ -41,14 +43,16 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
     draft = draft.withOptionalText(definition, FieldKey.CARD_CURRENCY, currency)
     draft = draft.withOptionalText(definition, FieldKey.CARD_BANK_PHONE, bankPhone)
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
-    cardExpiry?.let { expiry ->
-        draft =
-            draft.withValue(
-                definition,
-                FieldKey.CARD_EXPIRATION,
-                EntryDraftValue.Text(expiry.storageValue),
-            )
-    }
+    draft =
+        when (val selection = cardExpirySelection) {
+            CardExpirySelection.NotSet -> draft
+            is CardExpirySelection.Selected ->
+                draft.withValue(
+                    definition,
+                    FieldKey.CARD_EXPIRATION,
+                    EntryDraftValue.Text(selection.expiry.storageValue),
+                )
+        }
     return draft.withTags(definition, tags)
 }
 
@@ -63,12 +67,16 @@ internal fun AddBankCardFormState.fromEntry(entry: Entry): AddBankCardFormState 
     val expiry = card?.cardExpiry?.let(CardExpiry::parse)
     return copy(
         title = entry.title,
-        cardType = type,
+        cardTypeSelection = type?.let(CardTypeSelection::Selected) ?: CardTypeSelection.Unselected,
         cardholder = card?.cardHolder.orEmpty(),
         cardNumber = card?.cardNumber.orEmpty(),
         cardCvv = card?.cardCvv.orEmpty(),
         paymentPin = card?.paymentPin.orEmpty(),
-        cardExpiry = (expiry as? CardExpiryParseResult.Parsed)?.value,
+        cardExpirySelection =
+            (expiry as? CardExpiryParseResult.Parsed)
+                ?.value
+                ?.let(CardExpirySelection::Selected)
+                ?: CardExpirySelection.NotSet,
         billingAddress = card?.billingAddress.orEmpty(),
         issuingBank = card?.issuingBank.orEmpty(),
         bankBranch = card?.bankBranch.orEmpty(),

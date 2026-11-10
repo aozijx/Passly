@@ -33,6 +33,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
@@ -76,7 +77,7 @@ fun AddBankCardEditorScreen(
                 label = stringResource(R.string.field_title),
             )
             CardTypeDropdown(
-                selected = form.cardType,
+                selected = form.cardTypeSelection,
                 onSelected = { onAction(AddBankCardAction.CardTypeChanged(it)) },
                 label = stringResource(R.string.card_type),
             )
@@ -180,7 +181,7 @@ fun AddBankCardEditorScreen(
                 },
             )
             CardExpiryField(
-                selection = form.cardExpiry,
+                selection = form.cardExpirySelection,
                 onExpiryChanged = { selection ->
                     onAction(AddBankCardAction.ExpiryChanged(selection))
                 },
@@ -223,7 +224,7 @@ fun AddBankCardEditorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardTypeDropdown(
-    selected: CardType?,
+    selected: CardTypeSelection,
     onSelected: (CardType) -> Unit,
     label: String,
 ) {
@@ -233,7 +234,11 @@ private fun CardTypeDropdown(
         onExpandedChange = { expanded = it },
     ) {
         OutlinedTextField(
-            value = selected?.label().orEmpty(),
+            value =
+                when (selected) {
+                    CardTypeSelection.Unselected -> ""
+                    is CardTypeSelection.Selected -> selected.type.label()
+                },
             onValueChange = {},
             label = { Text(label) },
             readOnly = true,

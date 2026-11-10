@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.credential.CardExpiry
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardExpirySelection
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.cardExpiryYearRange
 import java.time.LocalDate
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -49,12 +50,16 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CardExpiryField(
-    selection: CardExpiry?,
-    onExpiryChanged: (CardExpiry?) -> Unit,
+    selection: CardExpirySelection,
+    onExpiryChanged: (CardExpirySelection) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showPicker by remember { mutableStateOf(false) }
-    val value = selection?.storageValue ?: stringResource(R.string.card_expiry_not_set)
+    val value =
+        when (selection) {
+            CardExpirySelection.NotSet -> stringResource(R.string.card_expiry_not_set)
+            is CardExpirySelection.Selected -> selection.expiry.storageValue
+        }
 
     OutlinedCard(onClick = { showPicker = true }, modifier = modifier.fillMaxWidth()) {
         Row(
@@ -77,11 +82,11 @@ internal fun CardExpiryField(
         CardExpiryPickerSheet(
             selection = selection,
             onSelected = { month, year ->
-                onExpiryChanged(CardExpiry(month, year))
+                onExpiryChanged(CardExpirySelection.Selected(CardExpiry(month, year)))
                 showPicker = false
             },
             onClear = {
-                onExpiryChanged(null)
+                onExpiryChanged(CardExpirySelection.NotSet)
                 showPicker = false
             },
             onDismiss = { showPicker = false },
@@ -92,18 +97,19 @@ internal fun CardExpiryField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardExpiryPickerSheet(
-    selection: CardExpiry?,
+    selection: CardExpirySelection,
     onSelected: (month: Int, year: Int) -> Unit,
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val today = remember { LocalDate.now() }
     val years = remember(today.year) { cardExpiryYearRange(today.year).toList() }
+    val initialExpiry = selection.initialExpiry(today, years)
     var workingMonth by remember(selection, today) {
-        mutableIntStateOf(selection?.month ?: today.monthValue)
+        mutableIntStateOf(initialExpiry.month)
     }
     var workingYear by remember(selection, today) {
-        mutableIntStateOf(selection?.year?.takeIf(years::contains) ?: today.year)
+        mutableIntStateOf(initialExpiry.year)
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -117,7 +123,7 @@ private fun CardExpiryPickerSheet(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                if (selection != null) {
+                if (selection is CardExpirySelection.Selected) {
                     TextButton(onClick = onClear) {
                         Text(stringResource(R.string.clear))
                     }
@@ -153,6 +159,16 @@ private fun CardExpiryPickerSheet(
         }
     }
 }
+
+private fun CardExpirySelection.initialExpiry(
+    today: LocalDate,
+    years: List<Int>,
+): CardExpiry =
+    when (this) {
+        CardExpirySelection.NotSet -> CardExpiry(today.monthValue, today.year)
+        is CardExpirySelection.Selected ->
+            if (expiry.year in years) expiry else CardExpiry(today.monthValue, today.year)
+    }
 
 @Composable
 private fun <T> WheelColumn(
