@@ -6,8 +6,14 @@ internal enum class ScannerPrimaryActionLabel {
     Use,
 }
 
+internal sealed interface ScannerResultTextInteraction {
+    data object CopyOnTap : ScannerResultTextInteraction
+
+    data object ReadOnly : ScannerResultTextInteraction
+}
+
 internal data class ScannerResultPresentation(
-    val showCopyAction: Boolean = true,
+    val resultTextInteraction: ScannerResultTextInteraction = ScannerResultTextInteraction.CopyOnTap,
     val primaryActionLabel: ScannerPrimaryActionLabel = ScannerPrimaryActionLabel.Continue,
 ) {
     companion object {

@@ -33,6 +33,7 @@ import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActio
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultHandling
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultTextInteraction
 import com.aozijx.passly.feature.scanner.presentation.route.AnimatedScannerOverlay
 import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
@@ -234,7 +235,7 @@ internal fun VaultRoute(
                     ScannerResultPlan(
                         presentation =
                             ScannerResultPresentation(
-                                showCopyAction = false,
+                                resultTextInteraction = ScannerResultTextInteraction.ReadOnly,
                                 primaryActionLabel = ScannerPrimaryActionLabel.Save,
                             ),
                         confirm = {

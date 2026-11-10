@@ -24,6 +24,7 @@ import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActio
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultHandling
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultTextInteraction
 import com.aozijx.passly.feature.scanner.presentation.route.AnimatedScannerOverlay
 import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
@@ -96,7 +97,7 @@ fun AddOtpEditorRoute(
             val presentation =
                 if (config != null) {
                     ScannerResultPresentation(
-                        showCopyAction = false,
+                        resultTextInteraction = ScannerResultTextInteraction.ReadOnly,
                         primaryActionLabel = ScannerPrimaryActionLabel.Use,
                     )
                 } else {

@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.scanner.presentation.ui
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -18,19 +18,20 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.action.ScannerScreenAction
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultTextInteraction
 import com.aozijx.passly.feature.scanner.presentation.state.ScannerResultActionState
 
 @Composable
@@ -72,6 +73,15 @@ internal fun ScannerResultCard(
                     )
                     Text(
                         text = rawValue,
+                        modifier =
+                            Modifier.clickable(
+                                enabled =
+                                    presentation.resultTextInteraction is ScannerResultTextInteraction.CopyOnTap &&
+                                        actions is ScannerResultActionState.Available,
+                                onClickLabel = stringResource(R.string.scanner_copy_text),
+                                role = Role.Button,
+                                onClick = { onAction(ScannerScreenAction.CopyResult) },
+                            ),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
@@ -85,17 +95,6 @@ internal fun ScannerResultCard(
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.scanner_scan_again))
-                }
-                if (presentation.showCopyAction) {
-                    IconButton(
-                        enabled = actions is ScannerResultActionState.Available,
-                        onClick = { onAction(ScannerScreenAction.CopyResult) },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = stringResource(R.string.scanner_copy_text),
-                        )
-                    }
                 }
                 Button(
                     enabled = actions is ScannerResultActionState.Available,
