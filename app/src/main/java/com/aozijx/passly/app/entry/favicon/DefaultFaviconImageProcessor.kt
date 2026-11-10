@@ -3,6 +3,7 @@ package com.aozijx.passly.app.entry.favicon
 import android.content.Context
 import android.net.Uri
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
+import com.aozijx.passly.core.platform.media.FaviconEditorResource
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.core.platform.media.FaviconProcessingException
 import com.aozijx.passly.core.platform.media.FaviconProcessingFailure
@@ -101,31 +102,30 @@ class DefaultFaviconImageProcessor
             }
         }
 
-        override suspend fun discard(path: String?) =
+        override suspend fun discard(resource: FaviconEditorResource) {
             withContext(Dispatchers.IO) {
-                path ?: return@withContext
-                imageStore.discard(path)
+                discardResource(resource)
             }
-
-        override suspend fun discardPromotedCandidate(path: String?) {
-            path?.let(iconResourceCleaner::discardUnreferencedIcon)
         }
 
         override fun isStaged(path: String): Boolean = imageStore.isStaged(path)
 
-        override fun discardEditorResources(
-            stagedPath: String?,
-            pendingInputPath: String?,
-            promotedCandidatePath: String?,
-        ) {
-            imageStore.discard(stagedPath)
-            imageStore.discard(pendingInputPath)
-            promotedCandidatePath?.let(iconResourceCleaner::discardUnreferencedIcon)
+        override fun discardEditorResources(resources: Set<FaviconEditorResource>) {
+            resources.forEach(::discardResource)
+        }
+
+        private fun discardResource(resource: FaviconEditorResource) {
+            when (resource) {
+                is FaviconEditorResource.StagedImage -> imageStore.discard(resource.path)
+                is FaviconEditorResource.PromotedCandidate -> iconResourceCleaner.discardUnreferencedIcon(resource.path)
+            }
         }
 
         private suspend fun discardAfterCancellation(path: String?) {
-            withContext(NonCancellable + Dispatchers.IO) {
-                imageStore.discard(path)
+            path?.let {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    imageStore.discard(it)
+                }
             }
         }
     }

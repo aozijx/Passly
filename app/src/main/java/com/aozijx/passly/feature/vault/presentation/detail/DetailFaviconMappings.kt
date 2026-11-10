@@ -21,17 +21,6 @@ internal fun DetailFaviconSource.toEntryIcon(): EntryIcon =
         is DetailFaviconSource.PrivateImage -> EntryIcon(customReference = localPath)
     }
 
-internal fun DetailFaviconEditorState.privateImagePath(): String? =
-    when (this) {
-        DetailFaviconEditorState.Closed -> {
-            null
-        }
-
-        is DetailFaviconEditorState.Open -> {
-            (source as? DetailFaviconSource.PrivateImage)?.localPath
-        }
-    }
-
 internal fun Throwable.toFaviconProcessingError(): DetailFaviconProcessingError =
     when ((this as? FaviconProcessingException)?.failure) {
         FaviconProcessingFailure.INVALID_URL -> {

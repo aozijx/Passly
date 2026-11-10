@@ -7,6 +7,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconE
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TagEditorSheet
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconCropInput
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
 
@@ -56,16 +57,19 @@ fun DetailEditorOverlays(
                 onConfirmDiscard = { onAction(DetailUiAction.ConfirmDiscardFavicon) },
                 onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
             )
-            faviconEditor.pendingInputPath?.let { path ->
-                FaviconCropScreen(
-                    stagedPath = path,
-                    processing = faviconEditor.work == DetailFaviconWorkState.Processing,
-                    onCrop = { zoom, x, y ->
-                        onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
-                    },
-                    onUseWithoutCrop = { onAction(DetailUiAction.UseFaviconWithoutCrop) },
-                    onCancel = { onAction(DetailUiAction.CancelFaviconCrop) },
-                )
+            when (val input = faviconEditor.cropInput) {
+                DetailFaviconCropInput.None -> Unit
+                is DetailFaviconCropInput.Ready -> {
+                    FaviconCropScreen(
+                        stagedPath = input.path,
+                        processing = faviconEditor.work == DetailFaviconWorkState.Processing,
+                        onCrop = { zoom, x, y ->
+                            onAction(DetailUiAction.CropFaviconImage(zoom, x, y))
+                        },
+                        onUseWithoutCrop = { onAction(DetailUiAction.UseFaviconWithoutCrop) },
+                        onCancel = { onAction(DetailUiAction.CancelFaviconCrop) },
+                    )
+                }
             }
         }
     }

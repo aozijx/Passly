@@ -449,7 +449,7 @@ class DetailViewModel
                         _uiState.value.snapshotState
                             .entryOrNull()
                             ?.icon ?: return
-                    (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
+                    (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let { faviconSession.close() }
                     mutate(DetailMutation.FaviconEditorOpened(icon.toDetailFaviconSource()))
                 }
 
@@ -459,7 +459,7 @@ class DetailViewModel
                         _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                             ?: return
                     val source = event.source
-                    faviconSession.discardReplacedSource(editor, source)
+                    faviconSession.discardReplacedSource(source)
                     mutate(DetailMutation.FaviconSourceChanged(source))
                 }
 
@@ -510,7 +510,7 @@ class DetailViewModel
                         _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                             ?: return
                     if (editor.work == DetailFaviconWorkState.Processing) return
-                    faviconSession.cancelCrop(editor.pendingInputPath)
+                    faviconSession.cancelCrop(editor.cropInput)
                     mutate(DetailMutation.FaviconCropCancelled)
                 }
 
@@ -525,7 +525,7 @@ class DetailViewModel
                     if (editor.work == DetailFaviconWorkState.Processing) return
                     mutate(DetailMutation.FaviconEditorDismissRequested)
                     if (_uiState.value.faviconEditor == DetailFaviconEditorState.Closed) {
-                        faviconSession.close(editor)
+                        faviconSession.close()
                     }
                 }
 
@@ -533,7 +533,7 @@ class DetailViewModel
                     val editor =
                         _uiState.value.faviconEditor as? DetailFaviconEditorState.Open
                             ?: return
-                    faviconSession.close(editor)
+                    faviconSession.close()
                     mutate(DetailMutation.FaviconEditorDiscardConfirmed)
                 }
 
@@ -710,7 +710,7 @@ class DetailViewModel
             if (loadedEntryId == entryId && _uiState.value.snapshotState.entryOrNull() != null) return
             val token = workSession.open(entryId)
             tagEditorLoadJob?.cancel()
-            (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
+            (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let { faviconSession.close() }
             qrSession.close()
             loadedEntryId = entryId
             loadedLaunchMode = launchMode
@@ -921,7 +921,7 @@ class DetailViewModel
 
         private fun clearSensitiveState() {
             tagEditorLoadJob?.cancel()
-            (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let(faviconSession::close)
+            (_uiState.value.faviconEditor as? DetailFaviconEditorState.Open)?.let { faviconSession.close() }
             workSession.close()
             entryLoadJob?.cancel()
             snapshotRefreshJob?.cancel()
@@ -1006,10 +1006,12 @@ class DetailViewModel
                                     return@launchSave
                                 }
                         if (!workSession.isCurrent(token)) {
-                            withContext(NonCancellable) { faviconImageProcessor.discardPromotedCandidate(promoted) }
+                            faviconSession.stagedImagePromoted(source.localPath, promoted)
+                            withContext(NonCancellable) { faviconSession.discardPromotedCandidate(promoted) }
                             return@launchSave
                         }
                         DetailFaviconSource.PrivateImage(promoted).also {
+                            faviconSession.stagedImagePromoted(source.localPath, promoted)
                             mutate(DetailMutation.FaviconSourcePromoted(promoted))
                         }
                     } else {
@@ -1019,6 +1021,10 @@ class DetailViewModel
                     token = token,
                     edit = EntryEdit.SetIcon(persistedSource.toEntryIcon()),
                     completion = DetailEditCompletion.Icon,
+                    onCommitted = {
+                        (persistedSource as? DetailFaviconSource.PrivateImage)
+                            ?.let { faviconSession.promotedCandidateCommitted(it.localPath) }
+                    },
                 )
             }
         }
@@ -1081,7 +1087,11 @@ class DetailViewModel
             crop: FaviconCropRequest?,
         ) {
             val editor = _uiState.value.faviconEditor as? DetailFaviconEditorState.Open ?: return
-            val path = editor.pendingInputPath ?: return
+            val path =
+                when (val input = editor.cropInput) {
+                    DetailFaviconCropInput.None -> return
+                    is DetailFaviconCropInput.Ready -> input.path
+                }
             if (editor.work == DetailFaviconWorkState.Processing) return
             mutate(DetailMutation.FaviconProcessingStarted)
             faviconSession.publishPreparation(

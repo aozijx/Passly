@@ -28,16 +28,18 @@ class FaviconProcessingException(
     cause: Throwable? = null,
 ) : IllegalStateException(failure.name, cause)
 
+sealed interface FaviconEditorResource {
+    val path: String
+
+    data class StagedImage(override val path: String) : FaviconEditorResource
+
+    data class PromotedCandidate(override val path: String) : FaviconEditorResource
+}
+
 interface FaviconDraftFiles {
-    suspend fun discard(path: String?)
+    suspend fun discard(resource: FaviconEditorResource)
 
-    suspend fun discardPromotedCandidate(path: String?)
-
-    fun discardEditorResources(
-        stagedPath: String?,
-        pendingInputPath: String?,
-        promotedCandidatePath: String?,
-    )
+    fun discardEditorResources(resources: Set<FaviconEditorResource>)
 }
 
 interface FaviconImageProcessor : FaviconDraftFiles {

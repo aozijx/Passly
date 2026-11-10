@@ -43,11 +43,7 @@ internal object DetailFaviconEditorReducer {
                 state.copy(
                     source = mutation.source,
                     work = DetailFaviconWorkState.Idle,
-                    pendingInputPath = null,
-                    promotedCandidatePath =
-                        state.promotedCandidatePath?.takeIf {
-                            mutation.source == DetailFaviconSource.PrivateImage(it)
-                        },
+                    cropInput = DetailFaviconCropInput.None,
                     showDiscardConfirmation = false,
                 )
             }
@@ -75,7 +71,7 @@ internal object DetailFaviconEditorReducer {
             is DetailMutation.FaviconInputStaged -> {
                 state.copy(
                     work = DetailFaviconWorkState.Idle,
-                    pendingInputPath = mutation.path,
+                    cropInput = DetailFaviconCropInput.Ready(mutation.path),
                 )
             }
 
@@ -83,8 +79,7 @@ internal object DetailFaviconEditorReducer {
                 state.copy(
                     source = DetailFaviconSource.PrivateImage(mutation.path),
                     work = DetailFaviconWorkState.Idle,
-                    pendingInputPath = null,
-                    promotedCandidatePath = mutation.path,
+                    cropInput = DetailFaviconCropInput.None,
                     showDiscardConfirmation = false,
                 )
             }
@@ -96,7 +91,7 @@ internal object DetailFaviconEditorReducer {
             }
 
             DetailMutation.FaviconCropCancelled -> {
-                state.copy(pendingInputPath = null)
+                state.copy(cropInput = DetailFaviconCropInput.None)
             }
 
             DetailMutation.FaviconEditorDismissRequested -> {

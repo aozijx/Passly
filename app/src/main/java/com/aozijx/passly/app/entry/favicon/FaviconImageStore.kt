@@ -104,8 +104,7 @@ class FaviconImageStore
             return target.absolutePath
         }
 
-        fun discard(path: String?) {
-            path ?: return
+        fun discard(path: String) {
             runCatching { requireStaged(path).delete() }
         }
 

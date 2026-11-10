@@ -17,19 +17,6 @@ class DetailFaviconReducerTest {
     }
 
     @Test
-    fun `selecting the same promoted image preserves candidate ownership`() {
-        val source = DetailFaviconSource.PrivateImage("promoted")
-        val editor =
-            DetailFaviconEditorState.Open(
-                initialSource = DetailFaviconSource.InferredDefault,
-                source = source,
-                promotedCandidatePath = "promoted",
-            )
-        val updated = DetailFaviconEditorReducer.reduce(editor, DetailMutation.FaviconSourceChanged(source))
-        assertEquals("promoted", (updated as DetailFaviconEditorState.Open).promotedCandidatePath)
-    }
-
-    @Test
     fun `changing url does not mark a running image operation idle`() {
         val editor =
             DetailFaviconEditorState.Open(
@@ -63,7 +50,7 @@ class DetailFaviconReducerTest {
             DetailFaviconEditorState.Open(
                 initialSource = DetailFaviconSource.InferredDefault,
                 work = DetailFaviconWorkState.Processing,
-                pendingInputPath = "/private/staging/input",
+                cropInput = DetailFaviconCropInput.Ready("/private/staging/input"),
             )
 
         val actual =
@@ -72,7 +59,7 @@ class DetailFaviconReducerTest {
                 DetailMutation.FaviconProcessingFailed(DetailFaviconProcessingError.INVALID_IMAGE),
             ) as DetailFaviconEditorState.Open
 
-        assertEquals("/private/staging/input", actual.pendingInputPath)
+        assertEquals(DetailFaviconCropInput.Ready("/private/staging/input"), actual.cropInput)
         assertEquals(
             DetailFaviconWorkState.Failed(DetailFaviconProcessingError.INVALID_IMAGE),
             actual.work,

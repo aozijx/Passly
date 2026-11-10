@@ -33,6 +33,12 @@ enum class DetailFaviconProcessingError {
     SAVE_FAILED,
 }
 
+sealed interface DetailFaviconCropInput {
+    data object None : DetailFaviconCropInput
+
+    data class Ready(val path: String) : DetailFaviconCropInput
+}
+
 sealed interface DetailFaviconEditorState {
     data object Closed : DetailFaviconEditorState
 
@@ -43,11 +49,10 @@ sealed interface DetailFaviconEditorState {
         val searchQuery: String = "",
         val imageUrl: String = "",
         val work: DetailFaviconWorkState = DetailFaviconWorkState.Idle,
-        val pendingInputPath: String? = null,
-        val promotedCandidatePath: String? = null,
+        val cropInput: DetailFaviconCropInput = DetailFaviconCropInput.None,
         val showDiscardConfirmation: Boolean = false,
     ) : DetailFaviconEditorState {
-        val dirty: Boolean get() = source != initialSource || pendingInputPath != null
+        val dirty: Boolean get() = source != initialSource || cropInput != DetailFaviconCropInput.None
         val matchingIcons: List<FaviconIconUiModel>
             get() =
                 VaultIcons.search(searchQuery).map { icon ->

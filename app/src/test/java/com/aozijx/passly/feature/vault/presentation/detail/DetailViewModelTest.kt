@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.platform.media.FaviconCropRequest
+import com.aozijx.passly.core.platform.media.FaviconEditorResource
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
@@ -1551,15 +1552,9 @@ class DetailViewModelTest {
     }
 
     private object UnusedFaviconImageProcessor : FaviconImageProcessor {
-        override suspend fun discard(path: String?) = Unit
+        override suspend fun discard(resource: FaviconEditorResource) = Unit
 
-        override suspend fun discardPromotedCandidate(path: String?) = Unit
-
-        override fun discardEditorResources(
-            stagedPath: String?,
-            pendingInputPath: String?,
-            promotedCandidatePath: String?,
-        ) = Unit
+        override fun discardEditorResources(resources: Set<FaviconEditorResource>) = Unit
 
         override suspend fun stageUpload(uri: Uri): Result<String> = error("Not used")
 

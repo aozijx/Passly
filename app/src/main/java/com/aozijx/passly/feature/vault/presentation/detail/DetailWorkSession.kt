@@ -73,6 +73,7 @@ internal class DetailWorkSession(
         token: Scope.Active,
         edit: EntryEdit,
         completion: DetailEditCompletion,
+        onCommitted: () -> Unit = {},
     ) {
         if (!isCurrent(token) || !currentCoroutineContext().isActive) return
         val result =
@@ -84,6 +85,7 @@ internal class DetailWorkSession(
                 failIfCurrent(token, completion)
                 return
             }
+        if (result is AppResult.Success) onCommitted()
         if (!isCurrent(token) || !currentCoroutineContext().isActive) return
         when (result) {
             is AppResult.Success -> {

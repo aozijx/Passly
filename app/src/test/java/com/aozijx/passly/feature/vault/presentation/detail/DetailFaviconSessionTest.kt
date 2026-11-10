@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 import com.aozijx.passly.core.platform.media.FaviconDraftFiles
+import com.aozijx.passly.core.platform.media.FaviconEditorResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -33,13 +34,13 @@ class DetailFaviconSessionTest {
             val ownerScope = CoroutineScope(ownerJob + StandardTestDispatcher(testScheduler))
             val session = DetailFaviconSession(files, ownerScope)
 
-            session.cancelCrop("pending-input")
+            session.cancelCrop(DetailFaviconCropInput.Ready("pending-input"))
             deletionStarted.await()
             ownerJob.cancel()
             releaseDeletion.complete(Unit)
             runCurrent()
 
-            assertEquals(listOf("pending-input"), files.discardedPaths)
+            assertEquals(listOf(FaviconEditorResource.StagedImage("pending-input")), files.discardedResources)
         }
 
     @Test
@@ -47,12 +48,13 @@ class DetailFaviconSessionTest {
         runTest {
             val files = FakeFiles()
             val session = DetailFaviconSession(files, backgroundScope)
+            session.trackOwnedResource(FaviconEditorResource.StagedImage("old-input"))
+            session.trackOwnedResource(FaviconEditorResource.PromotedCandidate("candidate"))
             val editor =
                 DetailFaviconEditorState.Open(
                     initialSource = DetailFaviconSource.InferredDefault,
                     source = DetailFaviconSource.PrivateImage("current-source"),
-                    pendingInputPath = "old-input",
-                    promotedCandidatePath = "candidate",
+                    cropInput = DetailFaviconCropInput.Ready("old-input"),
                 )
             session.launchPreparation { token ->
                 session.publishPreparation(
@@ -65,7 +67,7 @@ class DetailFaviconSessionTest {
                 )
             }
             runCurrent()
-            assertEquals(listOf(null, "old-input", null), files.closedPaths)
+            assertEquals(setOf(FaviconEditorResource.StagedImage("old-input")), files.closedResources.toSet())
         }
 
     @Test
@@ -112,11 +114,11 @@ class DetailFaviconSessionTest {
                 )
             }
             runCurrent()
-            session.discardReplacedSource(editor, DetailFaviconSource.InferredDefault)
+            session.discardReplacedSource(DetailFaviconSource.InferredDefault)
             gate.complete(Unit)
             runCurrent()
             assertEquals(false, published)
-            assertTrue("late-image" in files.closedPaths)
+            assertTrue(FaviconEditorResource.StagedImage("late-image") in files.closedResources)
         }
 
     @Test
@@ -139,7 +141,7 @@ class DetailFaviconSessionTest {
                 )
             }
             runCurrent()
-            session.close(editor)
+            session.close()
             var published = false
             session.launchPreparation { token ->
                 session.publishPreparation(
@@ -156,7 +158,7 @@ class DetailFaviconSessionTest {
             runCurrent()
             assertTrue(published)
             assertEquals(false, failed)
-            assertTrue("current-image" !in files.closedPaths)
+            assertTrue(FaviconEditorResource.StagedImage("current-image") !in files.closedResources)
         }
 
     @Test
@@ -164,12 +166,14 @@ class DetailFaviconSessionTest {
         runTest {
             val files = FakeFiles()
             val session = DetailFaviconSession(files, backgroundScope)
+            session.trackOwnedResource(FaviconEditorResource.StagedImage("old-image"))
+            session.trackOwnedResource(FaviconEditorResource.StagedImage("old-input"))
+            session.trackOwnedResource(FaviconEditorResource.PromotedCandidate("old-candidate"))
             val editor =
                 DetailFaviconEditorState.Open(
                     initialSource = DetailFaviconSource.InferredDefault,
                     source = DetailFaviconSource.PrivateImage("old-image"),
-                    pendingInputPath = "old-input",
-                    promotedCandidatePath = "old-candidate",
+                    cropInput = DetailFaviconCropInput.Ready("old-input"),
                 )
             session.launchPreparation { token ->
                 session.publishPreparation(
@@ -182,7 +186,14 @@ class DetailFaviconSessionTest {
                 )
             }
             runCurrent()
-            assertEquals(listOf("old-image", "old-input", "old-candidate"), files.closedPaths)
+            assertEquals(
+                setOf(
+                    FaviconEditorResource.StagedImage("old-image"),
+                    FaviconEditorResource.StagedImage("old-input"),
+                    FaviconEditorResource.PromotedCandidate("old-candidate"),
+                ),
+                files.closedResources.toSet(),
+            )
         }
 
     @Test
@@ -190,6 +201,7 @@ class DetailFaviconSessionTest {
         runTest {
             val files = FakeFiles()
             val session = DetailFaviconSession(files, backgroundScope)
+            session.trackOwnedResource(FaviconEditorResource.StagedImage("crop-input"))
             var cancelled = false
             session.launchPreparation {
                 try {
@@ -199,16 +211,10 @@ class DetailFaviconSessionTest {
                 }
             }
             runCurrent()
-            session.discardReplacedSource(
-                DetailFaviconEditorState.Open(
-                    initialSource = DetailFaviconSource.InferredDefault,
-                    pendingInputPath = "crop-input",
-                ),
-                DetailFaviconSource.InferredDefault,
-            )
+            session.discardReplacedSource(DetailFaviconSource.InferredDefault)
             runCurrent()
             assertTrue(cancelled)
-            assertTrue("crop-input" in files.closedPaths)
+            assertTrue(FaviconEditorResource.StagedImage("crop-input") in files.closedResources)
         }
 
     @Test
@@ -217,6 +223,7 @@ class DetailFaviconSessionTest {
             val files = FakeFiles()
             val releaseSave = CompletableDeferred<Unit>()
             val session = DetailFaviconSession(files, backgroundScope)
+            session.trackOwnedResource(FaviconEditorResource.PromotedCandidate("promoted"))
             session.launchSave {
                 try {
                     awaitCancellation()
@@ -225,17 +232,12 @@ class DetailFaviconSessionTest {
                 }
             }
             runCurrent()
-            session.close(
-                DetailFaviconEditorState.Open(
-                    initialSource = DetailFaviconSource.InferredDefault,
-                    promotedCandidatePath = "promoted",
-                ),
-            )
+            session.close()
             runCurrent()
-            assertTrue(files.closedPaths.isEmpty())
+            assertTrue(files.closedResources.isEmpty())
             releaseSave.complete(Unit)
             runCurrent()
-            assertEquals(listOf(null, null, "promoted"), files.closedPaths)
+            assertEquals(setOf(FaviconEditorResource.PromotedCandidate("promoted")), files.closedResources.toSet())
         }
 
     @Test
@@ -307,42 +309,38 @@ class DetailFaviconSessionTest {
         }
 
     @Test
-    fun `closing editor cancels work and discards every owned path`() =
+    fun `closing editor releases remaining resources after commit transfer`() =
         runTest {
             val files = FakeFiles()
             val session = DetailFaviconSession(files, backgroundScope)
-            val editor =
-                DetailFaviconEditorState.Open(
-                    initialSource = DetailFaviconSource.InferredDefault,
-                    source = DetailFaviconSource.PrivateImage("staged"),
-                    pendingInputPath = "pending",
-                    promotedCandidatePath = "promoted",
-                )
+            session.trackOwnedResource(FaviconEditorResource.StagedImage("staged"))
+            session.trackOwnedResource(FaviconEditorResource.StagedImage("pending"))
+            session.trackOwnedResource(FaviconEditorResource.PromotedCandidate("promoted"))
+            session.promotedCandidateCommitted("promoted")
 
-            session.close(editor)
+            session.close()
 
-            assertEquals(listOf("staged", "pending", "promoted"), files.closedPaths)
+            assertEquals(
+                setOf(
+                    FaviconEditorResource.StagedImage("staged"),
+                    FaviconEditorResource.StagedImage("pending"),
+                ),
+                files.closedResources.toSet(),
+            )
         }
 
     private class FakeFiles : FaviconDraftFiles {
-        val closedPaths = mutableListOf<String?>()
-        val discardedPaths = mutableListOf<String?>()
-        var onDiscard: suspend (String?) -> Unit = {}
+        val closedResources = mutableListOf<FaviconEditorResource>()
+        val discardedResources = mutableListOf<FaviconEditorResource>()
+        var onDiscard: suspend (FaviconEditorResource) -> Unit = {}
 
-        override suspend fun discard(path: String?) {
-            if (path == null) return
-            onDiscard(path)
-            discardedPaths += path
+        override suspend fun discard(resource: FaviconEditorResource) {
+            onDiscard(resource)
+            discardedResources += resource
         }
 
-        override suspend fun discardPromotedCandidate(path: String?) = Unit
-
-        override fun discardEditorResources(
-            stagedPath: String?,
-            pendingInputPath: String?,
-            promotedCandidatePath: String?,
-        ) {
-            closedPaths += listOf(stagedPath, pendingInputPath, promotedCandidatePath)
+        override fun discardEditorResources(resources: Set<FaviconEditorResource>) {
+            closedResources += resources
         }
     }
 }

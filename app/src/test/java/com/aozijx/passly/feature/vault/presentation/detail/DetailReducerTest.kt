@@ -406,7 +406,7 @@ class DetailReducerTest {
     }
 
     @Test
-    fun promotedPrivateImageKeepsCandidatePathUntilSaveCompletes() {
+    fun promotedPrivateImageBecomesCurrentSourceAndSaveClosesEditor() {
         val state =
             DetailFaviconEditorState.Open(
                 initialSource = DetailFaviconSource.InferredDefault,
@@ -419,7 +419,7 @@ class DetailReducerTest {
                 DetailMutation.FaviconSourcePromoted("/private/images/favicon.webp"),
             ) as DetailFaviconEditorState.Open
         assertEquals(DetailFaviconSource.PrivateImage("/private/images/favicon.webp"), promoted.source)
-        assertEquals("/private/images/favicon.webp", promoted.promotedCandidatePath)
+        assertEquals(DetailFaviconCropInput.None, promoted.cropInput)
 
         val saved =
             DetailReducer.reduce(
