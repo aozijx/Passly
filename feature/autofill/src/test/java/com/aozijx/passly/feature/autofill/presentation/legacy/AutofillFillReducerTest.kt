@@ -14,7 +14,7 @@ class AutofillFillReducerTest {
     fun `loading replaces a previous terminal state`() {
         val result =
             AutofillFillReducer.reduce(
-                AutofillFillUiState.Error("old"),
+                AutofillFillUiState.Error,
                 AutofillFillMutation.Loading,
             )
 
@@ -38,7 +38,7 @@ class AutofillFillReducerTest {
         val terminalStates =
             listOf(
                 "result" to AutofillFillUiState.Result(AutofillFillResult.Cancelled),
-                "error" to AutofillFillUiState.Error("failed"),
+                "error" to AutofillFillUiState.Error,
             )
         val actual =
             terminalStates.map { (name, state) ->
@@ -82,9 +82,9 @@ class AutofillFillReducerTest {
         val result =
             AutofillFillReducer.reduce(
                 AutofillFillUiState.Loading,
-                AutofillFillMutation.Failed("Entry not found"),
+                AutofillFillMutation.Failed,
             )
 
-        assertEquals("Entry not found", (result as AutofillFillUiState.Error).message)
+        assertEquals(AutofillFillUiState.Error, result)
     }
 }

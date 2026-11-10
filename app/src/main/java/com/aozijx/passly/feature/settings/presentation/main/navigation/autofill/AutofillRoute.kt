@@ -25,11 +25,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.settings.SettingsSection
+import com.aozijx.passly.feature.settings.presentation.autofill.AutofillPreferencesState
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsEffect
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsViewModel
-import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
 import com.aozijx.passly.feature.settings.presentation.ui.autofill.AutofillSettingsSection
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
@@ -82,32 +82,34 @@ internal fun AutofillRoute(onBack: (() -> Unit)?) {
         title = stringResource(SettingsGroup.AUTOFILL.titleRes),
         onBack = onBack,
     ) {
-        val preferenceState = state.preferences
-        val preferences = preferenceState.availableValue
-        if (preferences == null && state.systemService is AutofillSourceState.Failed) {
-            item {
-                AutofillSystemStatusFailure {
-                    viewModel.onAction(AutofillSettingsAction.RetrySystemService)
+        when (val preferences = state.preferences) {
+            is AutofillPreferencesState.Unavailable -> {
+                if (state.systemServiceStatus.canRetry) {
+                    item {
+                        AutofillSystemStatusFailure {
+                            viewModel.onAction(AutofillSettingsAction.RetrySystemService)
+                        }
+                    }
+                }
+                item {
+                    AutofillSettingsUnavailable(
+                        statusTextRes = preferences.statusTextRes,
+                        onRetry = { viewModel.onAction(AutofillSettingsAction.RetryPreferences) },
+                        showRetry = preferences.canRetry,
+                    )
                 }
             }
-        }
-        if (preferences == null) {
-            item {
-                AutofillSettingsUnavailable(
-                    loading = preferenceState is AutofillSourceState.Loading,
-                    onRetry = { viewModel.onAction(AutofillSettingsAction.RetryPreferences) },
-                    showRetry = preferenceState is AutofillSourceState.Failed,
-                )
-            }
-        } else {
-            item {
-                SettingsSection {
-                    AutofillSettingsSection(
-                        settings = preferences,
-                        supportsCredentialManager = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                        systemService = state.systemService,
-                        onAction = viewModel::onAction,
-                    )
+
+            is AutofillPreferencesState.Ready -> {
+                item {
+                    SettingsSection {
+                        AutofillSettingsSection(
+                            settings = preferences.settings,
+                            supportsCredentialManager = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            systemServiceStatus = state.systemServiceStatus,
+                            onAction = viewModel::onAction,
+                        )
+                    }
                 }
             }
         }
@@ -116,20 +118,12 @@ internal fun AutofillRoute(onBack: (() -> Unit)?) {
 
 @Composable
 private fun AutofillSettingsUnavailable(
-    loading: Boolean,
+    statusTextRes: Int,
     showRetry: Boolean,
     onRetry: () -> Unit,
 ) {
     SettingsSection(modifier = Modifier.padding(vertical = 16.dp)) {
-        Text(
-            stringResource(
-                if (loading) {
-                    R.string.settings_autofill_preferences_loading
-                } else {
-                    R.string.settings_autofill_preferences_load_failed
-                },
-            ),
-        )
+        Text(stringResource(statusTextRes))
         if (showRetry) {
             TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
         }

@@ -8,6 +8,7 @@ import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.autofill.model.AutofillWebConsent
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.core.CompleteAutofillSelection
 import com.aozijx.passly.feature.autofill.core.autofillSessionGeneration
@@ -70,7 +71,9 @@ internal class AutofillResultDelivery internal constructor(
                         ?: error("Legacy web Autofill session is no longer authorized")
                 webDeliverySessionAtMs = sessionAtMs
                 val interaction = runBlocking { interactionStore.snapshot(receipt.interactionId) }
-                check(interaction?.scope == webScope && interaction.webConsentSessionAtMs == sessionAtMs) {
+                check(interaction?.scope == webScope &&
+                    (interaction.webConsent as? AutofillWebConsent.Confirmed)?.sessionAtMs == sessionAtMs
+                ) {
                     "Legacy web Autofill interaction scope changed before delivery"
                 }
                 check(

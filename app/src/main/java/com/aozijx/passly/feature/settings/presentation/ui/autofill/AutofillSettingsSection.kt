@@ -14,7 +14,7 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSectionTitle
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
-import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
+import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSystemServiceStatus
 import com.aozijx.passly.presentation.shared.components.group.SegmentedSettingsGroup
 import com.aozijx.passly.presentation.shared.components.group.anchoredSelectionSettingsItem
 import com.aozijx.passly.presentation.shared.components.group.navigationSettingsGroupItem
@@ -24,14 +24,14 @@ import com.aozijx.passly.presentation.shared.components.group.switchSettingsGrou
 internal fun AutofillSettingsSection(
     settings: AutofillSettings,
     supportsCredentialManager: Boolean,
-    systemService: AutofillSourceState<Boolean>,
+    systemServiceStatus: AutofillSystemServiceStatus,
     onAction: (AutofillSettingsAction) -> Unit,
 ) {
     var showPresentationMenu by remember { mutableStateOf(false) }
 
     val enabled = settings.enabled
     SettingsSectionTitle(text = stringResource(R.string.settings_page_autofill))
-    if (systemService is AutofillSourceState.Failed) {
+    if (systemServiceStatus.canRetry) {
         Row {
             Text(stringResource(R.string.settings_autofill_system_status_unavailable))
             TextButton(onClick = { onAction(AutofillSettingsAction.RetrySystemService) }) {
@@ -47,7 +47,7 @@ internal fun AutofillSettingsSection(
                         key = "autofill.system_settings",
                         title = stringResource(R.string.settings_autofill_system_service),
                         subtitle = stringResource(R.string.settings_autofill_system_service_summary),
-                        value = stringResource(systemService.toDisplayString()),
+                        value = stringResource(systemServiceStatus.statusTextRes),
                         onClick = { onAction(AutofillSettingsAction.OpenSystemAutofillSettings) },
                     ),
                 )
@@ -136,25 +136,3 @@ private val AutofillPresentation.labelRes: Int
             AutofillPresentation.SYSTEM_INLINE -> R.string.settings_autofill_mode_inline
             AutofillPresentation.BOTTOM_SHEET -> R.string.settings_autofill_mode_bottom_sheet
         }
-
-private fun AutofillSourceState<Boolean>.toDisplayString(): Int =
-    when (this) {
-        is AutofillSourceState.Loading -> {
-            previous?.toDisplayString() ?: R.string.settings_autofill_system_status_loading
-        }
-
-        is AutofillSourceState.Ready -> {
-            value.toDisplayString()
-        }
-
-        is AutofillSourceState.Failed -> {
-            R.string.settings_autofill_system_status_unavailable
-        }
-    }
-
-private fun Boolean.toDisplayString(): Int =
-    if (this) {
-        R.string.settings_autofill_system_enabled
-    } else {
-        R.string.settings_autofill_system_disabled
-    }

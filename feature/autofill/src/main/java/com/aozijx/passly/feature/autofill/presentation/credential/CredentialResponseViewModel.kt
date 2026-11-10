@@ -35,7 +35,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,6 +65,7 @@ internal class CredentialResponseViewModel
 
         private val requestStarted = AtomicBoolean(false)
         private var activeInteractionId: AutofillInteractionId? = null
+        @Volatile private var abandoned = false
 
         internal fun onAction(action: CredentialResponseUiAction) {
             when (action) {
@@ -72,13 +76,20 @@ internal class CredentialResponseViewModel
             }
         }
 
-        fun cancelActiveInteraction() {
-            val interactionId = activeInteractionId ?: return
+        fun cancelActiveInteraction(fallbackInteractionId: AutofillInteractionId? = null) {
+            if (abandoned) return
+            abandoned = true
+            resultEvents.discard()
+            viewModelScope.coroutineContext.cancelChildren()
+            val interactionId = activeInteractionId ?: fallbackInteractionId ?: return
             activeInteractionId = null
-            viewModelScope.launch {
-                withContext(NonCancellable) {
-                    flow.cancel(interactionId)
-                    traceContinuations.discard(interactionId.value)
+            viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    try {
+                        flow.cancel(interactionId)
+                    } finally {
+                        traceContinuations.discard(interactionId.value)
+                    }
                 }
             }
         }
@@ -292,6 +303,7 @@ internal class CredentialResponseViewModel
             failureIntent: (Exception) -> Intent,
             block: suspend () -> Unit,
         ) {
+            if (abandoned) return
             if (!requestStarted.compareAndSet(false, true)) return
             activeInteractionId = CredentialRequestParser.parseInteractionId(sourceIntent)
             viewModelScope.launch {

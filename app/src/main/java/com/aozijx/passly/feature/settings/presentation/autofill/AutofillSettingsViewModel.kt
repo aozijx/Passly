@@ -3,11 +3,11 @@ package com.aozijx.passly.feature.settings.presentation.autofill
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
+import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
-import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -37,7 +38,16 @@ internal class AutofillSettingsViewModel
         val effects = pageEffects.effects
 
         private val retrySystemService = MutableStateFlow(0)
-        private val lastSystemServiceEnabled = MutableStateFlow<Boolean?>(null)
+
+        private sealed interface SystemServiceObservation {
+            data object Checking : SystemServiceObservation
+
+            data class EnabledChanged(
+                val isEnabled: Boolean,
+            ) : SystemServiceObservation
+
+            data object Unavailable : SystemServiceObservation
+        }
 
         private val preferencesRead =
             RecoverableRead(
@@ -47,24 +57,19 @@ internal class AutofillSettingsViewModel
         private val preferences =
             preferencesRead.state.map { state ->
                 when (state) {
-                    RecoverableReadState.Loading -> AutofillSourceState.Loading()
-                    is RecoverableReadState.Ready -> AutofillSourceState.Ready(state.value)
-                    is RecoverableReadState.Failed -> AutofillSourceState.Failed(null)
+                    RecoverableReadState.Loading -> AutofillPreferencesState.Loading
+                    is RecoverableReadState.Ready -> AutofillPreferencesState.Ready(state.value)
+                    is RecoverableReadState.Failed -> AutofillPreferencesState.Failed
                 }
             }
-        private val systemService =
-            observeSource(
-                retry = retrySystemService,
-                lastValue = lastSystemServiceEnabled,
-                source = { autofillServiceStatusSource.observeServiceEnabled() },
-            )
+        private val systemServiceStatus = observeSystemService(retrySystemService)
 
         val uiState: StateFlow<AutofillSettingsUiState> =
             combine(
                 preferences,
-                systemService,
-            ) { preferences, systemService ->
-                AutofillSettingsUiState(preferences, systemService)
+                systemServiceStatus,
+            ) { preferences, systemServiceStatus ->
+                AutofillSettingsUiState(preferences, systemServiceStatus)
             }.stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5_000L),
@@ -122,7 +127,7 @@ internal class AutofillSettingsViewModel
         }
 
         private fun saveSetting(write: suspend () -> Unit) {
-            if (uiState.value.preferences !is AutofillSourceState.Ready) return
+            if (uiState.value.preferences !is AutofillPreferencesState.Ready) return
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 writePreferenceWithFeedback(
@@ -151,24 +156,38 @@ internal class AutofillSettingsViewModel
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
-        private fun <T : Any> observeSource(
-            retry: MutableStateFlow<Int>,
-            lastValue: MutableStateFlow<T?>,
-            source: () -> Flow<T>,
-        ): Flow<AutofillSourceState<T>> =
+        private fun observeSystemService(retry: MutableStateFlow<Int>): Flow<AutofillSystemServiceStatus> =
             retry.flatMapLatest {
-                flow {
-                    emit(AutofillSourceState.Loading(lastValue.value))
-                    source().collect { value ->
-                        lastValue.value = value
-                        emit(AutofillSourceState.Ready(value))
+                flow<SystemServiceObservation> {
+                    emit(SystemServiceObservation.Checking)
+                    autofillServiceStatusSource.observeServiceEnabled().collect { isEnabled ->
+                        emit(SystemServiceObservation.EnabledChanged(isEnabled))
                     }
                 }.catch { error ->
                     when (error) {
                         is CancellationException -> throw error
-                        is Exception -> emit(AutofillSourceState.Failed(lastValue.value))
+                        is Exception -> emit(SystemServiceObservation.Unavailable)
                         else -> throw error
                     }
                 }
+            }.runningFold<SystemServiceObservation, AutofillSystemServiceStatus>(
+                AutofillSystemServiceStatus.Checking,
+                ::reduceSystemServiceStatus,
+            )
+
+        private fun reduceSystemServiceStatus(
+            previous: AutofillSystemServiceStatus,
+            observation: SystemServiceObservation,
+        ): AutofillSystemServiceStatus =
+            when (observation) {
+                SystemServiceObservation.Checking ->
+                    previous.lastKnownEnabled?.let { AutofillSystemServiceStatus.Refreshing(it) }
+                        ?: AutofillSystemServiceStatus.Checking
+
+                is SystemServiceObservation.EnabledChanged ->
+                    AutofillSystemServiceStatus.Available(observation.isEnabled)
+
+                SystemServiceObservation.Unavailable ->
+                    AutofillSystemServiceStatus.Unavailable(previous.lastKnownEnabled)
             }
     }

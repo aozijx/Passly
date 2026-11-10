@@ -5,7 +5,7 @@
   <string name="accessibility_fill_button_description">Manually fill current fields with Passly</string>
   <string name="accessibility_fill_service_description">Reads the current input fields and fills your chosen credential only after you tap the floating button.</string>
   <string name="autofill_prompt_title">Autofill with %1$s</string>
-  <string name="autofill_select_account_hint">Tap an account to fill. Close this sheet to cancel.</string>
+  <string name="autofill_candidates_title">Choose an account</string>
   <string name="autofill_cancel">Cancel</string>
   <string name="autofill_review_web_request">Review website autofill request</string>
   <string name="autofill_web_confirmation_title">Confirm website request</string>

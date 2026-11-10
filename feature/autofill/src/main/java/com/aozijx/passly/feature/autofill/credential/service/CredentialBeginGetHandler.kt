@@ -18,9 +18,13 @@ import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerFlow
 import com.aozijx.passly.feature.autofill.credential.CredentialManagerUnlockResult
+import com.aozijx.passly.feature.autofill.core.interactionIdOrNull
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /**
  * Shared Credential Manager phase-one handler.
@@ -37,29 +41,50 @@ internal class CredentialBeginGetHandler
         private val traceContinuations: TraceContinuationStore,
         @param:ApplicationContext private val context: Context,
     ) {
-        suspend fun resolve(request: BeginGetCredentialRequest): BeginGetCredentialResponse {
+        suspend fun resolve(request: BeginGetCredentialRequest): CredentialBeginGetResult {
             val discoveryStartedAt = monotonicTimeMs()
             val passwordOptions =
                 request.beginGetCredentialOptions
                     .filterIsInstance<BeginGetPasswordOption>()
             if (passwordOptions.isEmpty()) {
                 logUnavailable(Reasons.NoFillableFields)
-                return BeginGetCredentialResponse()
+                return CredentialBeginGetResult(BeginGetCredentialResponse())
             }
 
             val packageName =
                 CredentialCallingAppResolver.resolveNativePackage(request.callingAppInfo)
                     ?: run {
                         logUnavailable(Reasons.NoFillableFields)
-                        return BeginGetCredentialResponse()
+                        return CredentialBeginGetResult(BeginGetCredentialResponse())
                     }
-            return buildResponse(
-                discovery = flow.beginGet(adapter.buildRequest(packageName)),
-                passwordOptions = passwordOptions,
-                context = context,
-                includeUnlockAction = true,
-                discoveryStartedAt = discoveryStartedAt,
-            )
+            val discovery = flow.beginGet(adapter.buildRequest(packageName))
+            val interactionId = discovery.interactionIdOrNull()
+            return try {
+                CredentialBeginGetResult(
+                    response = buildResponse(
+                        discovery = discovery,
+                        passwordOptions = passwordOptions,
+                        context = context,
+                        includeUnlockAction = true,
+                        discoveryStartedAt = discoveryStartedAt,
+                    ),
+                    interactionId = interactionId,
+                )
+            } catch (cancelled: CancellationException) {
+                try {
+                    withContext(NonCancellable) { interactionId?.let { flow.cancel(it) } }
+                } catch (cleanupFailure: Exception) {
+                    cancelled.addSuppressed(cleanupFailure)
+                }
+                throw cancelled
+            } catch (failure: Exception) {
+                try {
+                    withContext(NonCancellable) { interactionId?.let { flow.cancel(it) } }
+                } catch (cleanupFailure: Exception) {
+                    failure.addSuppressed(cleanupFailure)
+                }
+                throw failure
+            }
         }
 
         suspend fun resolveAfterUnlock(
@@ -199,6 +224,11 @@ internal class CredentialBeginGetHandler
             logger.log(LogStatements.Autofill.discoveryUnavailable(reason))
         }
     }
+
+internal data class CredentialBeginGetResult(
+    val response: BeginGetCredentialResponse,
+    val interactionId: AutofillInteractionId? = null,
+)
 
 internal sealed interface CredentialUnlockResponse {
     data class Ready(

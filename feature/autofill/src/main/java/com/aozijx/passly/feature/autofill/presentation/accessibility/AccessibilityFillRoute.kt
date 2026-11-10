@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet
+import com.aozijx.passly.feature.autofill.presentation.rememberTargetAppIcon
 
 @Composable
 internal fun AccessibilityFillRoute(
@@ -21,7 +22,7 @@ internal fun AccessibilityFillRoute(
     val candidateState = state as? AccessibilityFillUiState.Candidates ?: return
     AutofillCandidateBottomSheet(
         candidates = candidateState.values,
-        targetAppPackageName = candidateState.targetAppPackageName,
+        targetAppIcon = rememberTargetAppIcon(candidateState.targetAppPackageName),
         onCandidateSelected = viewModel::select,
         onCancel = viewModel::cancel,
     )

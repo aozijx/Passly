@@ -308,6 +308,22 @@ class LegacyResponseFactoryInstrumentedTest {
     }
 
     @Test
+    fun unlockWithoutAutofillIdsDoesNotKeepAnAdvertisedInteraction() {
+        val result =
+            factory.buildResult(
+                context,
+                AutofillDiscoveryOutcome.RequiresUnlock(
+                    snapshot().copy(state = AutofillInteractionState.RequiresUnlock),
+                    discoveryContext(emptyMap()),
+                ),
+                ParsedStructure(),
+            )
+
+        assertNull(result.response)
+        assertEquals(LegacyDiscoveryObservation.Unavailable(Reasons.NoFillableFields), result.observation)
+    }
+
+    @Test
     fun unavailableOutcomesCarryTheirOwnReasonWithoutAdvertising() {
         val parsed = ParsedStructure()
         val cases =

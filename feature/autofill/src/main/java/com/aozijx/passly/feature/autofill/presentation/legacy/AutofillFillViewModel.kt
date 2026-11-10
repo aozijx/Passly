@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
@@ -25,7 +26,10 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,10 +56,11 @@ internal class AutofillFillViewModel
             get() = resultClaim.isClaimed
 
         private var currentRequest: AutofillFillRequest? = null
+        @Volatile private var abandoned = false
 
         fun commitPlatformResult(deliver: (markPlatformCommitted: () -> Unit) -> Unit): Boolean {
             val state = mutableUiState.value
-            if (state !is AutofillFillUiState.Result && state !is AutofillFillUiState.Error) return false
+            if (state !is AutofillFillUiState.Result && state != AutofillFillUiState.Error) return false
             val committed = resultClaim.commit(deliver)
             if (committed) mutate(AutofillFillMutation.ResultDelivered)
             return committed
@@ -71,19 +76,8 @@ internal class AutofillFillViewModel
             }
         }
 
-        /** Abandon an open picker when its host leaves the foreground without a selection. */
-        fun cancelIfWaitingForSelection() {
-            when (mutableUiState.value) {
-                is AutofillFillUiState.ShowCandidates,
-                is AutofillFillUiState.ConfirmWebRecipient,
-                is AutofillFillUiState.ConfirmWebEntry,
-                -> cancel()
-
-                else -> Unit
-            }
-        }
-
         private fun initialize(request: AutofillFillRequest) {
+            if (abandoned) return
             if (currentRequest == request && mutableUiState.value != AutofillFillUiState.Initial) return
             currentRequest = request
             viewModelScope.launch {
@@ -118,7 +112,7 @@ internal class AutofillFillViewModel
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (error: Exception) {
-                        fail(request, "legacy.fill_authorization_failed", error)
+                        fail(request, error = error)
                     }
                 }
             }
@@ -148,7 +142,7 @@ internal class AutofillFillViewModel
                         directEntryId != null && request.webDomain != null -> {
                             val candidate = discovery.candidates.firstOrNull { it.entry.id == directEntryId }
                             if (candidate == null) {
-                                fail(request, "legacy.selection_unavailable")
+                                fail(request)
                             } else {
                                 showWebEntryConfirmation(request, candidate)
                             }
@@ -179,7 +173,6 @@ internal class AutofillFillViewModel
                 is AutofillDiscoveryOutcome.Failed -> {
                     fail(
                         request,
-                        "legacy.discovery_unavailable",
                         failureKind = discovery.failure,
                     )
                 }
@@ -192,7 +185,7 @@ internal class AutofillFillViewModel
                 AutofillDiscoveryOutcome.UnsupportedFields,
                 is AutofillDiscoveryOutcome.RequiresUnlock,
                 -> {
-                    fail(request, "legacy.discovery_unavailable")
+                    fail(request)
                 }
             }
         }
@@ -216,7 +209,7 @@ internal class AutofillFillViewModel
         private suspend fun showWebRecipientConfirmation(request: AutofillFillRequest) {
             val domain = AutofillGrantContext(request.packageName, request.webDomain).normalized()?.webDomain
             if (domain == null) {
-                fail(request, "legacy.discovery_unavailable")
+                fail(request)
                 return
             }
             traceContinuations.capture(request.interactionId.value)
@@ -229,7 +222,7 @@ internal class AutofillFillViewModel
         ) {
             val domain = AutofillGrantContext(request.packageName, request.webDomain).normalized()?.webDomain
             if (domain == null) {
-                fail(request, "legacy.selection_unavailable")
+                fail(request)
                 return
             }
             traceContinuations.capture(request.interactionId.value)
@@ -250,14 +243,14 @@ internal class AutofillFillViewModel
                     try {
                         val scope = AutofillGrantContext(request.packageName, request.webDomain)
                         if (!confirmWebAutofill.confirmRecipient(request.interactionId, scope)) {
-                            fail(request, "legacy.web_recipient_confirmation_rejected")
+                            fail(request)
                         } else {
                             continueAuthorized(request)
                         }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (error: Exception) {
-                        fail(request, "legacy.web_recipient_confirmation_failed", error)
+                        fail(request, error = error)
                     }
                 }
             }
@@ -273,14 +266,14 @@ internal class AutofillFillViewModel
                         val scope = AutofillGrantContext(request.packageName, request.webDomain)
                         val entryId = confirmation.candidate.entry.id
                         if (!confirmWebAutofill.confirmEntry(request.interactionId, scope, entryId)) {
-                            fail(request, "legacy.web_entry_confirmation_rejected")
+                            fail(request)
                         } else {
                             resolve(request, entryId, request.otpIds.isNotEmpty())
                         }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (error: Exception) {
-                        fail(request, "legacy.web_entry_confirmation_failed", error)
+                        fail(request, error = error)
                     }
                 }
             }
@@ -306,7 +299,7 @@ internal class AutofillFillViewModel
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (error: Exception) {
-                        fail(request, "legacy.selection_failed", error)
+                        fail(request, error = error)
                     }
                 }
             }
@@ -337,7 +330,6 @@ internal class AutofillFillViewModel
                 -> {
                     fail(
                         request,
-                        "legacy.selection_unavailable",
                         failureKind = outcome.failureKind(),
                     )
                 }
@@ -365,19 +357,21 @@ internal class AutofillFillViewModel
             mutate(AutofillFillMutation.Completed(result))
         }
 
-        fun cancel() {
+        fun cancel(fallbackInteractionId: AutofillInteractionId? = null) {
+            if (abandoned) return
+            abandoned = true
             val request = currentRequest
-            viewModelScope.launch {
-                withContext(NonCancellable) {
-                    request?.let {
-                        try {
-                            finishInteraction.cancel(it.interactionId)
-                        } finally {
-                            traceContinuations.discard(it.interactionId.value)
+            val interactionId = request?.interactionId ?: fallbackInteractionId
+            viewModelScope.coroutineContext.cancelChildren()
+            viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                withContext(NonCancellable + Dispatchers.IO) {
+                    try {
+                        interactionId?.let { finishInteraction.cancel(it) }
+                    } finally {
+                        interactionId?.let { traceContinuations.discard(it.value) }
+                        if (!resultClaim.isClaimed) {
+                            mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
                         }
-                    }
-                    if (!resultClaim.isClaimed) {
-                        mutate(AutofillFillMutation.Completed(AutofillFillResult.Cancelled))
                     }
                 }
             }
@@ -385,7 +379,6 @@ internal class AutofillFillViewModel
 
         private suspend fun fail(
             request: AutofillFillRequest,
-            event: String,
             error: Exception? = null,
             failureKind: Enum<*>? = null,
         ) {
@@ -401,10 +394,11 @@ internal class AutofillFillViewModel
             } else {
                 logger.log(LogStatements.Autofill.discoveryFailed(error))
             }
-            mutate(AutofillFillMutation.Failed(event))
+            mutate(AutofillFillMutation.Failed)
         }
 
         private fun mutate(mutation: AutofillFillMutation) {
+            if (abandoned && mutation != AutofillFillMutation.Completed(AutofillFillResult.Cancelled)) return
             mutableUiState.value = AutofillFillReducer.reduce(mutableUiState.value, mutation)
         }
 

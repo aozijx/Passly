@@ -19,6 +19,7 @@ import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.runtime.launchAutofillServiceCleanup
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,9 +27,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Modern CredentialProviderService 薄适配器（API 34+）。
@@ -67,14 +70,36 @@ class ModernCredentialService : CredentialProviderService() {
             scope.launch {
                 logger.withRootTrace(Operations.AutofillCredentialRequest) {
                     logger.log(LogStatements.Autofill.discoveryStarted())
+                    var pendingInteractionId: AutofillInteractionId? = null
                     try {
-                        val response = beginGetHandler.resolve(request)
+                        val result = beginGetHandler.resolve(request)
+                        pendingInteractionId = result.interactionId
                         if (!cancellationSignal.isCanceled) {
-                            callback.onResult(response)
+                            callback.onResult(result.response)
+                            pendingInteractionId = null
+                        } else {
+                            pendingInteractionId?.let { finishInteraction.cancel(it) }
+                            pendingInteractionId = null
+                            logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.CREDENTIAL_MANAGER))
                         }
                     } catch (e: CancellationException) {
+                        try {
+                            withContext(NonCancellable) {
+                                pendingInteractionId?.let { finishInteraction.cancel(it) }
+                            }
+                        } catch (cleanupFailure: Exception) {
+                            e.addSuppressed(cleanupFailure)
+                        }
+                        logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.CREDENTIAL_MANAGER))
                         throw e
                     } catch (e: Exception) {
+                        try {
+                            withContext(NonCancellable) {
+                                pendingInteractionId?.let { finishInteraction.cancel(it) }
+                            }
+                        } catch (cleanupFailure: Exception) {
+                            e.addSuppressed(cleanupFailure)
+                        }
                         logger.log(LogStatements.Autofill.discoveryFailed(e))
                         if (!cancellationSignal.isCanceled) {
                             callback.onError(GetCredentialUnknownException("Credential discovery failed"))
@@ -100,6 +125,7 @@ class ModernCredentialService : CredentialProviderService() {
                             callback.onResult(response)
                         }
                     } catch (e: CancellationException) {
+                        logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.CREDENTIAL_MANAGER))
                         throw e
                     } catch (e: CreateCredentialException) {
                         logger.log(LogStatements.Autofill.saveFailed(e, Reasons.NoFillableFields))

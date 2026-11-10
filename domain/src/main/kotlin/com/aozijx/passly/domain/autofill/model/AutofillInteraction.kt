@@ -48,20 +48,32 @@ sealed interface AutofillInteractionState {
     ) : AutofillInteractionState
 }
 
+sealed interface AutofillWebConsent {
+    data object Unconfirmed : AutofillWebConsent
+
+    sealed interface Confirmed : AutofillWebConsent {
+        val sessionAtMs: Long
+    }
+
+    data class RecipientConfirmed(
+        override val sessionAtMs: Long,
+    ) : Confirmed
+
+    data class EntryConfirmed(
+        override val sessionAtMs: Long,
+        val entryId: EntryId,
+        val deliveryClaimed: Boolean = false,
+    ) : Confirmed
+}
+
 data class AutofillInteractionSnapshot(
     val id: AutofillInteractionId,
     val source: AutofillInteractionSource,
     val scope: AutofillGrantContext,
     val state: AutofillInteractionState,
     val presentedCandidateIds: Set<EntryId> = emptySet(),
-    /** Process-local consent before publishing web candidates to the Android Autofill UI. */
-    val webRecipientConfirmed: Boolean = false,
-    /** Authentication session in which the recipient was explicitly confirmed. */
-    val webConsentSessionAtMs: Long? = null,
-    /** Process-local consent for the one web credential whose secret may be resolved. */
-    val confirmedWebEntryId: EntryId? = null,
-    /** Prevents cancellation or expiry from replacing an in-flight web result callback. */
-    val webResultDeliveryClaimed: Boolean = false,
+    /** Process-local web consent, bound to an authentication session and optionally one entry. */
+    val webConsent: AutofillWebConsent = AutofillWebConsent.Unconfirmed,
 )
 
 enum class AutofillInteractionRejection {

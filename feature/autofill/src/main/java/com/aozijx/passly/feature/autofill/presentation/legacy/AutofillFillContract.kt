@@ -49,9 +49,7 @@ internal sealed class AutofillFillUiState {
         val result: AutofillFillResult,
     ) : AutofillFillUiState()
 
-    data class Error(
-        val message: String,
-    ) : AutofillFillUiState()
+    data object Error : AutofillFillUiState()
 }
 
 internal data class AutofillFillRequest(

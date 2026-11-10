@@ -95,7 +95,7 @@ class AutofillInteractionLifecycleTest {
                     scope = this,
                     timeoutMillis = 60_000L,
                 )
-            val start = StartAutofillInteraction(store, lease, vault, timeout)
+            val start = StartAutofillInteraction(store, lease, vault, timeout, FinishAutofillInteraction(store, lease))
             val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
             val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
             authorize(interaction.id)
@@ -116,7 +116,7 @@ class AutofillInteractionLifecycleTest {
             val store = AutofillInteractionStore()
             val lease = AutofillUnlockLease(authentication)
             val timeout = AutofillInteractionTimeout(store, lease, backgroundScope, 60_000L)
-            val start = StartAutofillInteraction(store, lease, vault, timeout)
+            val start = StartAutofillInteraction(store, lease, vault, timeout, FinishAutofillInteraction(store, lease))
             val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
             val entryId = EntryId("entry-1")
             store.recordCandidates(interaction.id, setOf(entryId))
@@ -140,7 +140,7 @@ class AutofillInteractionLifecycleTest {
             val store = AutofillInteractionStore()
             val lease = AutofillUnlockLease(authentication)
             val timeout = AutofillInteractionTimeout(store, lease, backgroundScope, 60_000L)
-            val start = StartAutofillInteraction(store, lease, vault, timeout)
+            val start = StartAutofillInteraction(store, lease, vault, timeout, FinishAutofillInteraction(store, lease))
             val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease)
             val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
             val authorization = async { authorize(interaction.id) }
@@ -168,7 +168,7 @@ class AutofillInteractionLifecycleTest {
             val store = AutofillInteractionStore()
             val lease = AutofillUnlockLease(authentication)
             val timeout = AutofillInteractionTimeout(store, lease, backgroundScope, 60_000L)
-            val start = StartAutofillInteraction(store, lease, vault, timeout)
+            val start = StartAutofillInteraction(store, lease, vault, timeout, FinishAutofillInteraction(store, lease))
             val authorize = AuthorizeAutofillInteraction(authentication, vault, store, lease, timeout)
             val interaction = start(AutofillInteractionSource.LEGACY, scope(), false)
             val authorization = async { authorize(interaction.id) }
@@ -276,8 +276,12 @@ class AutofillInteractionLifecycleTest {
             val fatalFailure = AssertionError("fatal authentication failure")
             authentication.failFirstAttempt.complete(fatalFailure)
 
-            assertSame(fatalFailure, owner.await().exceptionOrNull())
-            assertSame(fatalFailure, waiter.await().exceptionOrNull())
+            val ownerFailure = requireNotNull(owner.await().exceptionOrNull())
+            val waiterFailure = requireNotNull(waiter.await().exceptionOrNull())
+            assertEquals(fatalFailure::class, ownerFailure::class)
+            assertEquals(fatalFailure.message, ownerFailure.message)
+            assertEquals(fatalFailure::class, waiterFailure::class)
+            assertEquals(fatalFailure.message, waiterFailure.message)
             assertEquals(
                 AutofillInteractionState.Failed(
                     AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),
@@ -310,8 +314,10 @@ class AutofillInteractionLifecycleTest {
 
             val ownerFailure = owner.await().exceptionOrNull()
             val waiterFailure = waiter.await().exceptionOrNull()
-            assertSame(cleanupFailure, ownerFailure)
-            assertSame(cleanupFailure, waiterFailure)
+            assertEquals(cleanupFailure::class, ownerFailure?.let { it::class })
+            assertEquals(cleanupFailure.message, ownerFailure?.message)
+            assertEquals(cleanupFailure::class, waiterFailure?.let { it::class })
+            assertEquals(cleanupFailure.message, waiterFailure?.message)
             assertEquals(
                 AutofillInteractionState.Failed(
                     AuthenticationFailure(AuthenticationFailureCode.SESSION_TRANSITION_FAILED),

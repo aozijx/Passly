@@ -1,6 +1,6 @@
 # Autofill 共享填充流程
 
-状态：当前实现（代码核对：2026-11-06）。
+状态：当前实现（代码核对：2026-11-10）。
 
 ## 应用内部输入边界
 
@@ -58,6 +58,18 @@ username/password/OTP 语义。`LegacyPlatformAdapter` 将结果映射为平台�
 再规范化目标作用域、创建/恢复 interaction，并只查询
 `AutofillCandidateSummary` 元数据。候选阶段不读取 Entry 聚合、密码或 OTP secret。
 
+### 设置项与生效阶段
+
+| 设置 | 生效位置 | 当前效果 |
+| --- | --- | --- |
+| `enabled` | 每次 `DiscoverAutofillCandidates.invoke()`；Legacy 保存回调与 Credential Manager create 入口也分别检查 | 关闭后拒绝新的发现/保存操作。 |
+| `credentialManagerEnabled` | Credential Manager 候选发现、begin-create 与最终 create 保存 | 只关闭 Credential Manager 流程，不控制 Legacy 或 Accessibility。Create 保存时会再次读取。 |
+| `requireAuthentication` | 新建 get/fill interaction 时传给 `StartAutofillInteraction` | 控制新交互的授权要求；Credential Manager create 由系统显式创建动作和 Vault session 状态处理，不使用该开关。 |
+| `strictDomainMatching` | 发现候选时传入 `AutofillCandidateQuery` | 控制网页候选的主机匹配严格度；不改变 interaction 绑定的精确 host。 |
+| `presentation` | Legacy Autofill response 构造 | 选择 Legacy 的 FLOATING、SYSTEM_INLINE 或 BOTTOM_SHEET 展示；Credential Manager 与 Accessibility 使用各自的平台展示流程。 |
+
+设置在 discovery 时读取；解锁后重新发现会重新读取策略。候选展示后的 `ResolveAutofillSelection` 不重读这些设置，Credential Manager create 则在最终保存时再次检查两个开关。因而关闭开关后已展示候选是否仍可完成，当前调用路径已有明确差异，但整体产品策略仍待裁定，见 [Task 82](../../superpowers/plans/2026-11-07-passly-autofill-followups.md#task-82)。
+
 包名和网页域名由 Domain `AutofillScope` 统一规范化。包名 trim 后按 Locale.ROOT 小写，空值拒绝；网页域名缺失
 表示原生应用 scope，畸形域名返回 `INVALID_SCOPE`，不会降级为包名搜索。网页 scope 使用精确 host：忽略 scheme、
 port、path，保留 `www` 子域，去掉一个末尾 DNS 根点；Unicode IDN 由 `java.net.IDN` 转为小写 ASCII，RFC 3490
@@ -94,11 +106,9 @@ Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInter
 
 ## 解析秘密
 
-`DiscoverAutofillCandidates` 读取本次发现时的 Autofill 设置，并检查对应入口是否启用；`ResolveAutofillSelection`
-本身不重读设置。它验证 interaction 存在、scope 相同且已授权，再通过状态机确认 Entry ID 确实展示过。
+`ResolveAutofillSelection` 不重读发现时的设置。它验证 interaction 存在、scope 相同且已授权，再通过状态机确认 Entry ID 确实展示过。
 Credential Manager 的 `allowedUserIds` 在 `CredentialManagerFlow.selectPassword()` 收到解析结果后独立校验，Legacy 不使用该限制。
 `AutofillCredentialResolver` 只读取选中条目的密码；请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
-已展示候选对应的设置若在交付前关闭，最终选择是否仍有效目前没有重读设置或撤销 interaction 的步骤；合同待裁定，见[Autofill 后续 Task 82](../../superpowers/plans/2026-11-07-passly-autofill-followups.md#task-82)。
 Base32 secret 的字符、补位和尾部位由 Domain 的 `OtpSecretCodec` 统一校验；`OtpGenerator` 遇到损坏密钥时
 返回 `InvalidSecret`，不生成或填充 OTP 码。
 
@@ -129,17 +139,25 @@ Credential Manager 同样用 `Immediate` 与 `CommittedSelection` 区分普通�
 Compose 路由将工作流状态映射为显式的 `Hidden` 或 `Candidates` 显示状态；终态提交属于独立副作用，不再通过
 nullable 候选列表或组合函数提前返回表达“当前不显示 UI”。
 
-BottomSheet 明示“点按账号以填充”和取消入口；返回键、点按外部区域或取消按钮都会取消 interaction。Legacy picker
-Activity 在候选列表仍待选择时离开前台，也会取消并释放本轮 Autofill lease（配置变更除外），避免留在后台等待用户
-点击一个已过期候选。60 秒 process-local interaction timeout 仍作为 Activity/进程异常退出的兜底。主动取消只向 Android
+BottomSheet 显示选择账号标题和候选数量；返回键或点按外部区域会取消 interaction。Legacy picker
+Activity 在结果尚未提交给 Android 时离开前台，会取消认证、发现或选择任务并释放本轮 Autofill lease（配置变更除外），避免后台任务继续占用临时会话。
+Credential Manager 和手动无障碍选择页同样在宿主停止时放弃未提交工作；即使页面任务尚未开始，也按启动请求或待处理捕获清理。
+这一边界依据 Android 的 [Activity 生命周期](https://developer.android.com/guide/components/activities/activity-lifecycle)：`ON_STOP` 表示宿主已不可见；配置变更期间保留 ViewModel 工作。
+60 秒 process-local interaction timeout 仍作为 Activity/进程异常退出的兜底。主动取消只向 Android
 返回 `RESULT_CANCELED`；当前没有“每个空结果都必须弹 Toast”的合同，避免把用户主动关闭误报为失败。Activity 内认证
 被拒绝时记录结构化诊断并取消结果；服务入口异常走 `FillCallback.onFailure()`，Android 是否显示提示由系统 Autofill UI
 决定。
 
+Legacy、Credential Manager 与无障碍宿主在未提交结果时退出，记录 `autofill.host.abandoned`；系统取消填充请求记录
+`autofill.request.cancelled`。平台结果提交异常使用 `autofill.result.delivery_failed` 并标记来源；候选查询异常在
+`autofill.discovery.unavailable` 中保留异常类型与原因。日志只使用来源枚举、经哈希处理的目标标识及安全的计数/原因，
+不记录候选标题、用户名、密码、OTP 或异常原始消息。取消在候选查询返回和结果发布前显式检查，并释放已创建的 interaction；
+Credential Manager 服务在已构造响应但系统取消回调时，也立即取消对应 interaction。
+
 平台 Activity 在 `AutofillResultDelivery.commitResult(receipt, commitToPlatform)` 的回调内连续执行 `setResult`
 和 `finish`；仅调用 `setResult` 只是保存待返回值，不表示 Android 已收到结果。Legacy 的 receipt 由
 `AutofillFillViewModel.returnDataset(request, outcome)` 以 `request.interactionId` 和 `outcome.payload.entryId`
-创建，平台结果按 `request.resultTarget` 选 `Dataset` 或 `FillResponse`，再通过 `onComplete(RESULT_OK, resultIntent)`
+创建，平台结果按 `request.resultTarget` 选 `Dataset` 或 `FillResponse`，再通过宿主的 `AutofillHostCompletion.ActivityResult` 交付
 交付；Credential Manager 的 receipt 使用当前 `interactionId` 与 `payload.entryId`，`resultIntent` 经相同提交回调
 交付。提交开始即关闭本轮 lease 的借用窗口；callback 返回后，delivery 才标记平台已提交，并异步调用
 `CompleteAutofillSelection(interactionId, entryId)`。该用例在 `NonCancellable` 中调用
@@ -176,6 +194,12 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 
 每个 interaction 有 60 秒 process-local 超时。进程死亡后 extras 不能恢复授权；系统必须重新发起请求。主 App
 完成普通解锁后会话提升为 `Authenticated`，迟到的 Autofill 释放不得锁掉它。
+
+## 状态字段归属
+
+- `AutofillInteractionSnapshot.state` 表达发现、授权、选择和终态；网页授权另由 `webConsent` 表达未确认、已确认接收方、已确认单条凭据。授权分支携带认证会话标识，单条确认分支才允许持有平台交付 claim。交付 claim 是该分支内的短期占用标记，提交失败时释放；普通来源不携带网页授权。
+- 设置页的持久偏好与 Android 系统服务状态来自不同来源，分别投影为 `AutofillPreferencesState` 和 `AutofillSystemServiceStatus`。偏好读取失败不展示旧值作为可编辑设置；系统服务重查可展示上一次观察值，失败时提供重试。
+- Legacy 选择页、Credential Manager 响应页和 Accessibility 选择页的加载、可操作、失败阶段分别由各自页面状态持有。宿主完成结果区分 Android Activity result 与 Accessibility 流程完成；解析字段、候选摘要和请求中的可选值仍按来源事实保留 nullable，不把缺少的平台字段当成页面加载态。
 
 平台依据：[Autofill 与 IME Inline 集成](https://developer.android.com/identity/autofill/ime-autofill)、
 [AccessibilityService](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)、

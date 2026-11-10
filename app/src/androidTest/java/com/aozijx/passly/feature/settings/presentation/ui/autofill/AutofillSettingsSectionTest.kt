@@ -13,7 +13,7 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
-import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSourceState
+import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSystemServiceStatus
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -38,7 +38,7 @@ class AutofillSettingsSectionTest {
                 AutofillSettingsSection(
                     settings = settings,
                     supportsCredentialManager = false,
-                    systemService = AutofillSourceState.Ready(true),
+                    systemServiceStatus = AutofillSystemServiceStatus.Available(true),
                     onAction = actions::add,
                 )
             }
@@ -71,13 +71,13 @@ class AutofillSettingsSectionTest {
     @Test
     fun systemStatusFailureIsUnknownAndCanBeRetried() {
         val actions = mutableListOf<AutofillSettingsAction>()
-        val systemService = AutofillSourceState.Failed(false)
+        val systemServiceStatus = AutofillSystemServiceStatus.Unavailable(null)
         composeRule.setContent {
             MaterialTheme {
                 AutofillSettingsSection(
                     settings = settings(),
                     supportsCredentialManager = false,
-                    systemService = systemService,
+                    systemServiceStatus = systemServiceStatus,
                     onAction = actions::add,
                 )
             }
@@ -106,7 +106,7 @@ class AutofillSettingsSectionTest {
                 AutofillSettingsSection(
                     settings = settings(),
                     supportsCredentialManager = false,
-                    systemService = AutofillSourceState.Ready(true),
+                    systemServiceStatus = AutofillSystemServiceStatus.Available(true),
                     onAction = actions::add,
                 )
             }

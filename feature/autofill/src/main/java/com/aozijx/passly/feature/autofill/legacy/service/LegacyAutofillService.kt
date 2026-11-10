@@ -8,15 +8,18 @@ import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.observability.AutofillLogSnapshot
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
+import com.aozijx.passly.feature.autofill.core.interactionIdOrNull
 import com.aozijx.passly.feature.autofill.legacy.LegacySaveFlow
 import com.aozijx.passly.feature.autofill.legacy.LegacySavePreparation
 import com.aozijx.passly.feature.autofill.legacy.service.adapter.LegacyPlatformAdapter
@@ -30,9 +33,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Legacy AutofillService Thin Adapter (API 31-33 fallback).
@@ -71,6 +76,7 @@ class LegacyAutofillService : AutofillService() {
             serviceScope.launch {
                 logger.withRootTrace(Operations.AutofillLegacyRequest) {
                     var discovery: LegacyAutofillDiagnostics.Discovery? = null
+                    var pendingInteractionId: AutofillInteractionId? = null
                     try {
                         diagnostics.fillRequestReceived(request)
                         val parsed = AutofillStructureParser.parse(request.fillContexts)
@@ -84,6 +90,7 @@ class LegacyAutofillService : AutofillService() {
                         val discoveryLog = diagnostics.beginDiscovery(internalRequest.packageName)
                         discovery = discoveryLog
                         val outcome = discoverCandidates(internalRequest)
+                        pendingInteractionId = outcome.interactionIdOrNull()
                         outcome.presentation?.let { mode ->
                             val inline = request.inlineSuggestionsRequest
                             diagnostics.presentationSelected(
@@ -107,13 +114,30 @@ class LegacyAutofillService : AutofillService() {
                             }
 
                             is LegacyDiscoveryObservation.Unavailable -> {
+                                pendingInteractionId?.let { finishInteraction.cancel(it) }
+                                pendingInteractionId = null
                                 discoveryLog.unavailable(observation.reason)
                             }
                         }
                         callback.onSuccess(result.response)
                     } catch (e: CancellationException) {
+                        try {
+                            withContext(NonCancellable) {
+                                pendingInteractionId?.let { finishInteraction.cancel(it) }
+                            }
+                        } catch (cleanupFailure: Exception) {
+                            e.addSuppressed(cleanupFailure)
+                        }
+                        logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.LEGACY))
                         throw e
                     } catch (e: Exception) {
+                        pendingInteractionId?.let { interactionId ->
+                            try {
+                                withContext(NonCancellable) { finishInteraction.cancel(interactionId) }
+                            } catch (cleanupFailure: Exception) {
+                                e.addSuppressed(cleanupFailure)
+                            }
+                        }
                         diagnostics.discoveryFailed(e, discovery)
                         callback.onFailure("Fill request failed")
                     }

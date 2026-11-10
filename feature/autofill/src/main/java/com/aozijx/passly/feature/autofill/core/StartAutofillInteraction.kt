@@ -10,6 +10,8 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionTimeout
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import javax.inject.Inject
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 internal class StartAutofillInteraction
     @Inject
@@ -18,6 +20,7 @@ internal class StartAutofillInteraction
         private val unlockLease: AutofillUnlockLease,
         private val vaultAccessState: SecureSessionAccessState,
         private val interactionTimeout: AutofillInteractionTimeout,
+        private val finishInteraction: FinishAutofillInteraction,
     ) {
         internal constructor(
             store: AutofillInteractionStore,
@@ -28,6 +31,7 @@ internal class StartAutofillInteraction
             unlockLease,
             vaultAccessState,
             AutofillInteractionTimeout.disabled(store, unlockLease),
+            FinishAutofillInteraction(store, unlockLease),
         )
 
         suspend operator fun invoke(
@@ -49,27 +53,43 @@ internal class StartAutofillInteraction
                             AutofillInteractionState.RequiresUnlock
                         },
                 )
-            val authorized =
-                if (
-                    !requireAuthentication &&
-                    !hasFullAccess &&
-                    vaultAccessState.hasAutofillSessionAccess() &&
-                    unlockLease.borrowIfOwned(snapshot.id)
-                ) {
-                    when (val update = store.authorizeFromExistingSession(snapshot.id)) {
-                        is AutofillInteractionUpdate.Updated -> {
-                            update.snapshot
+            try {
+                val authorized =
+                    if (
+                        !requireAuthentication &&
+                        !hasFullAccess &&
+                        vaultAccessState.hasAutofillSessionAccess() &&
+                        unlockLease.borrowIfOwned(snapshot.id)
+                    ) {
+                        when (val update = store.authorizeFromExistingSession(snapshot.id)) {
+                            is AutofillInteractionUpdate.Updated -> update.snapshot
+                            is AutofillInteractionUpdate.Rejected -> {
+                                unlockLease.release(snapshot.id)
+                                snapshot
+                            }
                         }
-
-                        is AutofillInteractionUpdate.Rejected -> {
-                            unlockLease.release(snapshot.id)
-                            snapshot
-                        }
+                    } else {
+                        snapshot
                     }
-                } else {
-                    snapshot
+                interactionTimeout.schedule(snapshot.id)
+                return authorized
+            } catch (failure: Throwable) {
+                withContext(NonCancellable) {
+                    try {
+                        try {
+                            finishInteraction.cancel(snapshot.id)
+                        } finally {
+                            store.removeTerminal(snapshot.id)
+                        }
+                    } catch (cleanupFailure: Throwable) {
+                        if (cleanupFailure is Error && failure !is Error) {
+                            cleanupFailure.addSuppressed(failure)
+                            throw cleanupFailure
+                        }
+                        failure.addSuppressed(cleanupFailure)
+                    }
                 }
-            interactionTimeout.schedule(snapshot.id)
-            return authorized
+                throw failure
+            }
         }
     }

@@ -181,6 +181,8 @@ object Events {
         val SaveCompleted = EventKey("autofill.save.completed")
         val SaveFailed = EventKey("autofill.save.failed")
         val ActionIgnored = EventKey("autofill.action.ignored")
+        val HostAbandoned = EventKey("autofill.host.abandoned")
+        val RequestCancelled = EventKey("autofill.request.cancelled")
         val PresentationSelected = EventKey("autofill.presentation.selected")
         val FallbackStarted = EventKey("autofill.accessibility.started")
         val FallbackUnavailable = EventKey("autofill.accessibility.unavailable")
@@ -279,6 +281,8 @@ object Events {
             Autofill.SaveCompleted,
             Autofill.SaveFailed,
             Autofill.ActionIgnored,
+            Autofill.HostAbandoned,
+            Autofill.RequestCancelled,
             Autofill.PresentationSelected,
             Autofill.FallbackStarted,
             Autofill.FallbackUnavailable,

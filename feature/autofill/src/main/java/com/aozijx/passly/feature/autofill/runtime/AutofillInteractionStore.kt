@@ -8,6 +8,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionSnapshot
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
+import com.aozijx.passly.domain.autofill.model.AutofillWebConsent
 import com.aozijx.passly.domain.entry.model.EntryId
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -87,9 +88,7 @@ internal class AutofillInteractionStore
                 }
                 AutofillInteractionUpdate.Updated(
                     snapshot.copy(
-                        webRecipientConfirmed = true,
-                        webConsentSessionAtMs = sessionAtMs,
-                        confirmedWebEntryId = null,
+                        webConsent = AutofillWebConsent.RecipientConfirmed(sessionAtMs),
                     ),
                 )
             }
@@ -107,12 +106,13 @@ internal class AutofillInteractionStore
                 if (snapshot.source != AutofillInteractionSource.LEGACY || snapshot.scope.webDomain == null) {
                     return@update AutofillInteractionUpdate.Rejected(AutofillInteractionRejection.INVALID_STATE)
                 }
-                if (!snapshot.webRecipientConfirmed) {
+                val consent = snapshot.webConsent as? AutofillWebConsent.Confirmed
+                if (consent == null) {
                     return@update AutofillInteractionUpdate.Rejected(
                         AutofillInteractionRejection.WEB_ORIGIN_NOT_CONFIRMED,
                     )
                 }
-                if (snapshot.webConsentSessionAtMs != sessionAtMs) {
+                if (consent.sessionAtMs != sessionAtMs) {
                     return@update AutofillInteractionUpdate.Rejected(
                         AutofillInteractionRejection.WEB_CONFIRMATION_EXPIRED,
                     )
@@ -125,7 +125,9 @@ internal class AutofillInteractionStore
                         AutofillInteractionRejection.CANDIDATE_NOT_PRESENTED,
                     )
                 }
-                AutofillInteractionUpdate.Updated(snapshot.copy(confirmedWebEntryId = entryId))
+                AutofillInteractionUpdate.Updated(
+                    snapshot.copy(webConsent = AutofillWebConsent.EntryConfirmed(sessionAtMs, entryId)),
+                )
             }
 
         suspend fun isConfirmedWebSelectionReady(
@@ -139,9 +141,9 @@ internal class AutofillInteractionStore
                 snapshot.scope == scope.normalized() &&
                     snapshot.source == AutofillInteractionSource.LEGACY &&
                     snapshot.scope.webDomain != null &&
-                    snapshot.webRecipientConfirmed &&
-                    snapshot.webConsentSessionAtMs == sessionAtMs &&
-                    snapshot.confirmedWebEntryId == entryId &&
+                    (snapshot.webConsent as? AutofillWebConsent.EntryConfirmed)?.let {
+                        it.sessionAtMs == sessionAtMs && it.entryId == entryId
+                    } == true &&
                     snapshot.state == AutofillInteractionState.ResolvingSelection(entryId)
             }
 
@@ -156,15 +158,15 @@ internal class AutofillInteractionStore
                 if (snapshot.source != AutofillInteractionSource.LEGACY || snapshot.scope.webDomain == null) {
                     return@withLock false
                 }
+                val consent = snapshot.webConsent as? AutofillWebConsent.EntryConfirmed
                 if (snapshot.scope != scope.normalized() ||
-                    !snapshot.webRecipientConfirmed || snapshot.confirmedWebEntryId != entryId ||
-                    snapshot.webConsentSessionAtMs != sessionAtMs ||
+                    consent == null || consent.sessionAtMs != sessionAtMs || consent.entryId != entryId ||
                     snapshot.state != AutofillInteractionState.ResolvingSelection(entryId) ||
-                    snapshot.webResultDeliveryClaimed
+                    consent.deliveryClaimed
                 ) {
                     return@withLock false
                 }
-                interactions[id] = snapshot.copy(webResultDeliveryClaimed = true)
+                interactions[id] = snapshot.copy(webConsent = consent.copy(deliveryClaimed = true))
                 true
             }
 
@@ -176,11 +178,13 @@ internal class AutofillInteractionStore
         ) {
             mutex.withLock {
                 val snapshot = interactions[id] ?: return@withLock
-                if (snapshot.scope == scope.normalized() && snapshot.webConsentSessionAtMs == sessionAtMs &&
+                val consent = snapshot.webConsent as? AutofillWebConsent.EntryConfirmed
+                if (snapshot.scope == scope.normalized() &&
                     snapshot.state == AutofillInteractionState.ResolvingSelection(entryId) &&
-                    snapshot.confirmedWebEntryId == entryId && snapshot.webResultDeliveryClaimed
+                    consent != null && consent.sessionAtMs == sessionAtMs && consent.entryId == entryId &&
+                    consent.deliveryClaimed
                 ) {
-                    interactions[id] = snapshot.copy(webResultDeliveryClaimed = false)
+                    interactions[id] = snapshot.copy(webConsent = consent.copy(deliveryClaimed = false))
                 }
             }
         }
@@ -191,6 +195,7 @@ internal class AutofillInteractionStore
             sessionAtMs: Long? = null,
         ): AutofillInteractionUpdate =
             update(id) { snapshot ->
+                val consent = snapshot.webConsent
                 if (snapshot.state != AutofillInteractionState.Authorized &&
                     snapshot.state != AutofillInteractionState.CandidatesReady
                 ) {
@@ -200,10 +205,10 @@ internal class AutofillInteractionStore
                 }
                 if (snapshot.source == AutofillInteractionSource.LEGACY &&
                     snapshot.scope.webDomain != null &&
-                    (!snapshot.webRecipientConfirmed || snapshot.webConsentSessionAtMs != sessionAtMs)
+                    (consent !is AutofillWebConsent.Confirmed || consent.sessionAtMs != sessionAtMs)
                 ) {
                     return@update AutofillInteractionUpdate.Rejected(
-                        if (snapshot.webRecipientConfirmed) {
+                        if (consent is AutofillWebConsent.Confirmed) {
                             AutofillInteractionRejection.WEB_CONFIRMATION_EXPIRED
                         } else {
                             AutofillInteractionRejection.WEB_ORIGIN_NOT_CONFIRMED
@@ -224,6 +229,7 @@ internal class AutofillInteractionStore
             sessionAtMs: Long? = null,
         ): AutofillInteractionUpdate =
             update(id) { snapshot ->
+                val consent = snapshot.webConsent
                 if (snapshot.state != AutofillInteractionState.CandidatesReady) {
                     return@update AutofillInteractionUpdate.Rejected(
                         AutofillInteractionRejection.INVALID_STATE,
@@ -236,10 +242,10 @@ internal class AutofillInteractionStore
                 }
                 if (snapshot.source == AutofillInteractionSource.LEGACY &&
                     snapshot.scope.webDomain != null &&
-                    (!snapshot.webRecipientConfirmed || snapshot.webConsentSessionAtMs != sessionAtMs)
+                    (consent !is AutofillWebConsent.Confirmed || consent.sessionAtMs != sessionAtMs)
                 ) {
                     return@update AutofillInteractionUpdate.Rejected(
-                        if (snapshot.webRecipientConfirmed) {
+                        if (consent is AutofillWebConsent.Confirmed) {
                             AutofillInteractionRejection.WEB_CONFIRMATION_EXPIRED
                         } else {
                             AutofillInteractionRejection.WEB_ORIGIN_NOT_CONFIRMED
@@ -248,7 +254,7 @@ internal class AutofillInteractionStore
                 }
                 if (snapshot.source == AutofillInteractionSource.LEGACY &&
                     snapshot.scope.webDomain != null &&
-                    snapshot.confirmedWebEntryId != entryId
+                    (snapshot.webConsent as? AutofillWebConsent.EntryConfirmed)?.entryId != entryId
                 ) {
                     return@update AutofillInteractionUpdate.Rejected(
                         AutofillInteractionRejection.WEB_ENTRY_NOT_CONFIRMED,
@@ -297,7 +303,9 @@ internal class AutofillInteractionStore
         suspend fun expireIfIdle(id: AutofillInteractionId): AutofillFinishResult? =
             mutex.withLock {
                 val snapshot = interactions[id]
-                if (snapshot?.webResultDeliveryClaimed == true) return@withLock null
+                if ((snapshot?.webConsent as? AutofillWebConsent.EntryConfirmed)?.deliveryClaimed == true) {
+                    return@withLock null
+                }
                 when (snapshot?.state) {
                     AutofillInteractionState.Authenticating,
                     is AutofillInteractionState.ResolvingSelection,
@@ -325,7 +333,9 @@ internal class AutofillInteractionStore
                     transitioned = false,
                 )
             }
-            if (snapshot.webResultDeliveryClaimed && terminalState != AutofillInteractionState.Completed) {
+            if ((snapshot.webConsent as? AutofillWebConsent.EntryConfirmed)?.deliveryClaimed == true &&
+                terminalState != AutofillInteractionState.Completed
+            ) {
                 return AutofillFinishResult(
                     AutofillInteractionUpdate.Rejected(AutofillInteractionRejection.INVALID_STATE),
                     transitioned = false,

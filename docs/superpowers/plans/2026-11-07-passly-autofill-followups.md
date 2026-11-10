@@ -1,6 +1,6 @@
 # Autofill 重构后待办与验收
 
-**复核：2026-11-07。** 本页是 Autofill 维护后续的唯一执行清单；保留仍有效的原 Task ID。模块切换、统一宿主、framework result 迁出 ViewModel、direct-entry resume 归用例、设置端口拆分均已接入，不再作为待实现项。生产合同见[共享填充](../../features/autofill/fill-flow.md)、[Legacy 平台](../../features/autofill/legacy-service.md)与[验证矩阵](../../features/autofill/verification.md)。
+**复核：2026-11-08。** 本页是 Autofill 维护后续的唯一执行清单；保留仍有效的原 Task ID。模块切换、统一宿主、framework result 迁出 ViewModel、direct-entry resume 归用例、设置端口拆分均已接入，不再作为待实现项。生产合同见[共享填充](../../features/autofill/fill-flow.md)、[Legacy 平台](../../features/autofill/legacy-service.md)与[验证矩阵](../../features/autofill/verification.md)；已完成的宿主/AVD 验收证据见[审查记录](../../reviews/2026-11-08-autofill-host-validation.md)。
 
 | 顺序 | 剩余事项 | 性质 |
 | --- | --- | --- |
@@ -16,32 +16,24 @@
 
 - [ ] 以真实 App Activity + Feature entry 覆盖 Legacy discovery/selection 的配置重建、回调失败及重试、成功后终态释放。验证 Feature delivery claim 与 Activity result claim 只在各自显式 commit marker 后终结；当前 App completion callback 返回后才调用 marker，因此还需覆盖 callback 在 `setResult` 等部分副作用后抛错的恢复语义。断言平台提交先于 interaction/lease 收尾、callback 恰好一次且记录不重复。SelectedCredential 是为重建/重试暂存的语义结果；不能把“VM 不持有 Dataset”改写成“VM 不得暂存任何结果”。
 - [ ] 覆盖 Accessibility finish/destroy 与 session lock 互斥阻塞交错，断言主线程 teardown 返回且最终清理完成；覆盖 Credential Manager 支持 API 上的取消、交付及宿主替换。复用已有 lease/claim 单测，不重新实现其已具备的取消等待和重试机制。
+- [ ] 以真实宿主覆盖认证、候选查询、选择和 Route 尚未启动时的非配置 `ON_STOP`；确认旧结果不再交付、interaction/lease 终结且下一次填充立即可用。本轮源码审查、模块编译及 `:feature:autofill:testDebugUnitTest` 已通过；两项 fatal 路径测试改为比较异常类型与消息，避免协程边界复制堆栈时的错误身份断言。`adb devices` 未发现设备，宿主整链路仍待设备验收。
 - [ ] 按[验证矩阵](../../features/autofill/verification.md)补齐尚缺的真实字段验收：BottomSheet 选择后直接填入目标控件；提供 InlinePresentation 的请求下验证 Inline 专属候选与认证结果。SYSTEM_INLINE 下系统下拉候选认证后真实填值已在 Pixel_8_Pro API 36 验证；不能把该结果扩大为 Inline 专属界面证明，也不能将 result.delivered 单独当成成功填值。设备、测试应用与测试凭据按执行时现状记录，不沿用历史 AVD/reset 条件。
-**2026-11-07 ResultDelivery 回归：** `AutofillResultDeliveryTest.fatal trace capture failure after platform delivery still completes selection and releases lease` 在 callback 返回后注入 fatal trace capture `AssertionError`，验证 callback 恰好一次、原错误 identity 传播、interaction 转为 Completed 且 Autofill lease 关闭；Feature Autofill 全量单测 151 项通过，`verifyArchitecture` 通过。此为 runtime 单测，不替代本 Task 要求的 Activity + Feature entry claim/重建/销毁交错验收。
-**2026-11-07 Activity claim 回归：** `AutofillActivityResultClaimTest.fatal failure after platform commit marker keeps the claim terminal` 验证调用显式 commit marker 后，即使 delivery callback 随后抛 fatal `Error`，已提交 claim 仍不能被取消结果重新认领。当前 Feature callback 均显式调用 marker；全量 `:feature:autofill:testDebugUnitTest` 复跑 152 项通过，`verifyArchitecture` 与 `:feature:autofill:compileDebugAndroidTestKotlin` 通过。单测只覆盖 claim/delivery owner，不替代 Task 21 的真实 Activity 部分副作用、配置重建和销毁交错验收。
+Task 21 的已完成单测、Activity entry 检查和 API 36 AVD 验收证据集中保存在上述审查记录；本 Task 只保留未执行的整链路与设备验收，不重复列实现 owner 或历史环境清理步骤。
 
-**当前 owner：** App `AutofillAuthActivity.completeAutofill()` 只负责 setResult/hide IME/finish；Feature `AutofillFeatureEntry` 解析并分派 launch；独立的 Legacy、Accessibility、Credential mode host 各自获取对应 Activity-scoped VM、处理生命周期取消和平台结果交付；Security 提供 AuthenticationHost。Legacy VM 不注入 Context/factory/store，direct-entry resume 在 DiscoverAutofillCandidates。原 Task 9 的宿主收尾验证合入此处，旧三 Activity、Activity 内建 Dataset、VM 直接读 store 的描述删除。
+### 2026-11-10 从头复核与日志进度
 
-**2026-11-07 部分验证：** Feature entry 按 Legacy、Accessibility、Credential 分派到独立的 mode host；每个 host 只创建对应 ViewModel，并在同一边界管理该模式的销毁/取消与结果交付。App Activity 仍只组合 Security 的 `AuthenticationHost` 与 Feature 入口。`AndroidAutofillLaunchTargetTest.accessibilityHostCreatesOnlyItsModeViewModel` 在 Pixel_8_Pro API 36 仪器运行通过，确认 Accessibility 宿主创建自己的 ViewModel，且不创建 Legacy/Credential ViewModel。此项不覆盖 Task 21 的结果交付、配置重建、并发收尾或真实字段填充验收。
-
-**2026-11-07 宿主完成回归：** `AndroidAutofillLaunchTargetTest.accessibilityHostFinishesWhenNoCaptureIsAvailable` 通过真实 App Activity + Feature entry 验证 Feature 完成后宿主销毁一次；该类在 Pixel_8_Pro API 36 为 3/3 通过。它验证宿主完成/结束通路，不覆盖 Android resultCode/data、配置重建、Legacy/Credential 交付、锁定交错或目标字段实际填充；Task 21 其余项仍待完成。
-
-**2026-11-07 AVD 验证：** 设备原有 `com.aozijx.passly` 是 versionCode 8 / versionName 0.3.3 的旧安装包，Manifest 仍注册已从当前源码移除的 `AutofillFillActivity`；实际验收使用重新构建并安装的 Debug 包 `com.aozijx.passly.debug`（versionCode 8 / versionName 0.3.3-debug），Manifest 注册 App 的 `AutofillAuthActivity` 和 Feature 的三个 Autofill 服务。Pixel_8_Pro API 36 上以虚构条目关联 `com.example.androidproject`。首次 Legacy discovery 解析了 3 个可编辑字段、2 个聚焦字段，识别 username/password 各 1 个；锁定响应 `hasAuthentication=true` 且 `dataset_count=0`。在 Android 系统候选中选择 “Passly is locked” 后，统一 `AutofillAuthActivity` 实际显示 App Password 认证 UI；认证成功后候选 “Synthetic test” 出现。选择候选后返回目标页面，UI hierarchy 确认 username=`autofilltest` 且 password 字段已填；系统 logcat 记录两个 target ID 的 `AutofillManager.autofill()` 和成功的 `notifyValueChanged`，Passly 记录 `autofill.result.delivered`，捕获区间未见应用 fatal exception。本次选择的展示策略为 `SYSTEM_INLINE`，但请求没有 InlinePresentation support，Android 显示系统下拉候选，因此只证明该策略下认证后真实字段填值，不证明 Inline 专属界面。临时 `secure/autofill_service` 已恢复原始 `null`，临时 Debug Vault 数据已清理。BottomSheet、Inline 专属展示、配置重建、callback 失败/重试及其他模式宿主收尾仍未验收。
-
-**本轮构建证据：** `:app:compileDebugKotlin`、`:feature:autofill:compileDebugKotlin` 和 `verifyArchitecture` 通过；随后安装的 APK 也包含当前三个模式专属 entry 与唯一 `AutofillAuthActivity`。本轮未运行测试任务。
-
-**2026-11-07 认证/候选调用链核实：** `AutofillLogSnapshot.Classification.hasCredentials` 由识别出的 username/password/OTP 字段数计算，不代表保险库存在匹配条目。`DiscoverAutofillCandidates` 在 interaction 为 `RequiresUnlock` 时先返回，不查询候选；`RoomAutofillCandidateRepository` 也要求 `hasAutofillSessionAccess()`。该门禁不能按“候选只有 metadata”直接删除：Room session 使用 DEK 打开 SQLCipher 数据库，title/username 列在 Vault 锁定时仍不可读取。`AutofillFillViewModel.initialize` 先授权再重新发现，`ResolveAutofillSelection` 才在经过 interaction/scope/candidate 校验后读取所选 secret。当前代码没有“未认证先解密”路径。锁定 Legacy 响应无 dataset 是预期协议形态；Pixel_8_Pro API 36 实机交互已验证系统下拉候选可启动统一认证宿主，认证成功后才展示真实 Vault 候选并交付字段值。本次没有 InlinePresentation support，因此不算 Inline UI 验收。
-
-**已有证据的边界：** AutofillActivityResultClaimTest 与 AutofillUnlockLeaseTest 已覆盖基础 claim/lease 行为；原模块实施记录中的 response-factory 仪器结果只证明协议构造，不能证明目标字段填值。这里不新增“再次抽取模块/移出 framework 对象”的实现任务。
+- 已沿 Legacy、Credential Manager、Accessibility 入口复核发现、认证、选择、结果交付和宿主退出路径；给三类宿主的未提交退出、Legacy/Credential Manager 系统请求取消、Legacy/Credential Manager 平台结果提交异常增加结构化事件。候选查询异常保留异常类型和来源，不记录凭据或原始请求值。
+- 定向测试复现查询正常返回后协程已取消但 interaction 仍活动：无竞争的状态写入不会必然检查取消。`DiscoverAutofillCandidates` 现于查询返回和发布结果前显式检查取消，并在创建 interaction 后的取消路径终结它；新增回归测试通过。
+- Credential Manager begin-get 现在把构造出的响应与 interaction ID 一并返回 Service。系统取消信号在回调前到达、响应构造中取消或抛普通异常时，立即结束该 interaction；Legacy 与 Credential Manager 复用同一发现结果 ID 映射。
+- `:core:test`、`:feature:autofill:testDebugUnitTest` 与 AndroidTest Kotlin 编译通过。`:app:compileDebugKotlin` 被 Vault `BankCardSection.kt:95` 的既有 `String?`/`String` 类型不匹配阻断，无法据此证明宿主模块编译通过。仍需覆盖真实 Activity/Service 取消交错、配置重建与设备交付。
 
 <a id="task-82"></a>
 
 ## Task 82：裁定已展示交互的设置快照合同
 
 - [ ] 明确总开关或 Credential Manager 开关关闭后，既有 interaction/系统 PendingIntent 是可在原有效期内完成，还是立即撤销；再按所选合同覆盖候选展示、选择/交付、来源隔离、过期与 lease 收尾，不预设必须增加设置重读。
-- [ ] 记录当前仍存在的 enabled/credentialManagerEnabled、requireAuthentication、strictDomainMatching、presentation 分别在何阶段生效；已删除的 OTP-inclusion、save-prompt、unmatched fallback、候选数量选项不进入后续任务。
 
-**当前证据：** DiscoverAutofillCandidates 从专属 AutofillSettingsSource 读取策略并检查 enabled/supports；ResolveAutofillSelection 只验证既有 scope、state、已展示候选及读取结果。缺少“关闭即撤销”或“原请求继续”的明确产品合同，不能仅凭不重读设置认定漏洞。
+**当前证据：** 设置项及其现有生效阶段见[共享填充设置表](../../features/autofill/fill-flow.md#设置项与生效阶段)。`DiscoverAutofillCandidates` 每次发现读取最新设置，候选展示后的 `ResolveAutofillSelection` 不重读；Credential Manager create 最终保存时会重读开关。缺少“关闭即撤销”或“原请求继续”的明确产品合同，不能仅凭某一阶段不重读设置认定漏洞。
 
 ## 本次清理决定
 

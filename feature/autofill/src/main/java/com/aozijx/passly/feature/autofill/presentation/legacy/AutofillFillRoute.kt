@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillCandidateBottomSheet
+import com.aozijx.passly.feature.autofill.presentation.rememberTargetAppIcon
 import com.aozijx.passly.feature.autofill.presentation.legacy.ui.AutofillWebConfirmationDialog
 
 @Composable
@@ -41,7 +42,7 @@ private fun AutofillCompletionEffect(
         when (state) {
             is AutofillFillUiState.Result -> onResult(state.result)
 
-            is AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
+            AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
 
             AutofillFillUiState.Initial,
             AutofillFillUiState.Loading,
@@ -66,7 +67,7 @@ private fun AutofillFillContent(
         AutofillFillUiState.Initial,
         AutofillFillUiState.Loading,
         is AutofillFillUiState.Result,
-        is AutofillFillUiState.Error,
+        AutofillFillUiState.Error,
         -> {
             Unit
         }
@@ -74,7 +75,7 @@ private fun AutofillFillContent(
         is AutofillFillUiState.ShowCandidates -> {
             AutofillCandidateBottomSheet(
                 candidates = state.candidates,
-                targetAppPackageName = targetAppPackageName,
+                targetAppIcon = rememberTargetAppIcon(targetAppPackageName),
                 onCandidateSelected = onCandidateSelected,
                 onCancel = onCancel,
             )

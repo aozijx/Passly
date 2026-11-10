@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionRejection
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
+import com.aozijx.passly.domain.autofill.model.AutofillWebConsent
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillSelectionOutcome
@@ -57,10 +58,10 @@ internal class ResolveAutofillSelection
             if (snapshot.source == com.aozijx.passly.domain.autofill.model.AutofillInteractionSource.LEGACY &&
                 snapshot.scope.webDomain != null
             ) {
-                if (!snapshot.webRecipientConfirmed || snapshot.webConsentSessionAtMs != sessionGeneration) {
+                if ((snapshot.webConsent as? AutofillWebConsent.Confirmed)?.sessionAtMs != sessionGeneration) {
                     return AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.WEB_CONFIRMATION_EXPIRED)
                 }
-                if (snapshot.confirmedWebEntryId != entryId) {
+                if ((snapshot.webConsent as? AutofillWebConsent.EntryConfirmed)?.entryId != entryId) {
                     return AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.WEB_ENTRY_NOT_CONFIRMED)
                 }
             }

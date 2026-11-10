@@ -32,6 +32,24 @@ import org.junit.Test
 
 class AutofillObservabilityTest {
     @Test
+    fun `host exit and framework cancellation log only source metadata`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+
+            logger.withRootTrace(Operations.AutofillLegacyRequest) {
+                logger.log(LogStatements.Autofill.hostAbandoned(AutofillInteractionSource.LEGACY))
+                logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.LEGACY))
+            }
+
+            assertEquals(
+                listOf(Events.Autofill.HostAbandoned, Events.Autofill.RequestCancelled),
+                records.map { it.event },
+            )
+            assertTrue(records.all { it.fields.values.keys == setOf(LogFieldKeys.Source) })
+        }
+
+    @Test
     fun `typed autofill statements hash target package and retain specific unavailable reason`() =
         runTest {
             val records = mutableListOf<SanitizedLogRecord>()
@@ -194,6 +212,27 @@ class AutofillObservabilityTest {
             )
             assertFalse(record.toString().contains("password=secret"))
             assertFalse(record.toString().contains("com.private.app"))
+        }
+
+    @Test
+    fun `platform commit failure records source without throwable text`() =
+        runTest {
+            val records = mutableListOf<SanitizedLogRecord>()
+            val logger = logger(records)
+
+            logger.withRootTrace(Operations.AutofillCredentialRequest) {
+                logger.log(
+                    LogStatements.Autofill.platformResultCommitFailed(
+                        AutofillInteractionSource.CREDENTIAL_MANAGER,
+                        IllegalStateException("password=secret"),
+                    ),
+                )
+            }
+
+            val record = records.single()
+            assertEquals(Events.Autofill.ResultDeliveryFailed, record.event)
+            assertEquals("CREDENTIAL_MANAGER", (record.fields.values[LogFieldKeys.Source] as LogValue.EnumValue).value.value)
+            assertFalse(record.toString().contains("password=secret"))
         }
 
     private fun logger(records: MutableList<SanitizedLogRecord>) =

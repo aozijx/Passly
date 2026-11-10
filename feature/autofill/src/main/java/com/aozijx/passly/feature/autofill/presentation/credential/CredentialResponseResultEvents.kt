@@ -15,4 +15,8 @@ internal class CredentialResponseResultEvents {
     fun close() {
         channel.close()
     }
+
+    fun discard() {
+        channel.cancel()
+    }
 }

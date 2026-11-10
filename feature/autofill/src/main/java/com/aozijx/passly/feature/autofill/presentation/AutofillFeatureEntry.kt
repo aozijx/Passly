@@ -23,11 +23,14 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.components.ActivityComponent
 
 /** Minimal platform boundary returned to the App-owned Activity. */
-data class AutofillHostCompletion(
-    val resultCode: Int? = null,
-    val data: Intent? = null,
-    val hideIme: Boolean = true,
-)
+sealed interface AutofillHostCompletion {
+    data class ActivityResult(
+        val resultCode: Int,
+        val data: Intent? = null,
+    ) : AutofillHostCompletion
+
+    data object AccessibilityFinished : AutofillHostCompletion
+}
 
 /** Parses one launch and dispatches it to the matching Autofill workflow. */
 @Composable
@@ -44,7 +47,7 @@ fun AutofillFeatureEntry(
     when (val current = launch) {
         null -> {
             LaunchedEffect(sourceIntent) {
-                onComplete(AutofillHostCompletion(resultCode = android.app.Activity.RESULT_CANCELED))
+                onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
             }
         }
 

@@ -31,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -265,22 +266,24 @@ internal class AccessibilityFillViewModel
         }
 
         fun cancel() {
+            if (abandoned) return
+            abandoned = true
+            viewModelScope.coroutineContext.cancelChildren()
             viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) {
-                withContext(NonCancellable + Dispatchers.IO) { abandon() }
-            }
-        }
-
-        suspend fun abandon() =
-            withContext(NonCancellable) {
-                abandoned = true
-                val selection = active ?: resolving
-                active = null
-                resolving = null
-                startedToken?.let(sessions::clearCaptured)
-                selection?.let {
-                    finishInteraction.cancel(it.interactionId)
-                    traceContinuations.discard(it.interactionId.value)
+                withContext(NonCancellable + Dispatchers.IO) {
+                    val selection = active ?: resolving
+                    active = null
+                    resolving = null
+                    val token = startedToken ?: (sessions.pendingCapture() as? AccessibilityCapture.Ready)?.token
+                    token?.let(sessions::clearCaptured)
+                    try {
+                        selection?.let { finishInteraction.cancel(it.interactionId) }
+                    } finally {
+                        selection?.let { traceContinuations.discard(it.interactionId.value) }
+                        mutableState.value = AccessibilityFillUiState.Done
+                    }
                 }
-                mutableState.value = AccessibilityFillUiState.Done
             }
+            logger.log(LogStatements.Autofill.hostAbandoned(AutofillInteractionSource.ACCESSIBILITY))
+        }
     }

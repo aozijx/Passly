@@ -1,6 +1,6 @@
 # Legacy Autofill Service
 
-状态：当前实现（API 31+，代码核对：2026-11-06）。
+状态：当前实现（API 31+，代码核对：2026-11-10）。
 
 `LegacyAutofillService` 解析 `AssistStructure`、处理取消信号并构造 Legacy `FillResponse`/`Dataset`。它不构造
 Credential Manager response。
@@ -30,13 +30,14 @@ LegacyAutofillService.onFillRequest(request, cancellationSignal, callback)
   -> callback.onSuccess(result.response)
 ```
 
-首次请求不给 Domain use case 预分类字段或已存在的 interaction，因此 `DiscoverAutofillCandidates.invoke()` 使用请求来源对应的 matcher，并创建新 interaction；认证后续接由 `AutofillFillViewModel` 另行传入 `interactionId`、`request.roleMap()` 和 `request.directEntryId`，详见[共享填充流程](fill-flow.md)。`cancellationSignal.setOnCancelListener { job.cancel() }` 取消这次服务协程；`CancellationException` 原样传播，普通 `Exception` 经诊断后以 `callback.onFailure("Fill request failed")` 返回，fatal `Error` 不由该普通失败分支吸收。
+首次请求不给 Domain use case 预分类字段或已存在的 interaction，因此 `DiscoverAutofillCandidates.invoke()` 使用请求来源对应的 matcher，并创建新 interaction；认证后续接由 `AutofillFillViewModel` 另行传入 `interactionId`、`request.roleMap()` 和 `request.directEntryId`，详见[共享填充流程](fill-flow.md)。`cancellationSignal.setOnCancelListener { job.cancel() }` 取消这次服务协程；若 discovery 已返回 interaction 且尚未交给系统，取消或构造失败会立即终结它。`CancellationException` 原样传播，普通 `Exception` 经诊断后以 `callback.onFailure("Fill request failed")` 返回，fatal `Error` 不由该普通失败分支吸收。
 
 ## Fill 和 SaveInfo
 
 `LegacyResponseFactory` 从已分类角色创建 `SaveInfo`：密码 IDs 为 required，用户名 IDs 为 optional；没有密码
 字段时不广告保存。SaveInfo 使用 password data type，有用户名时增加 username type，并设置
 `FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE`。即使没有候选，也可以返回只含 SaveInfo 的 FillResponse。
+只含 SaveInfo 或没有 response 的结果没有后续候选选择入口，Service 会在返回前结束本轮 interaction；SaveRequest 自行重新解析最新表单。
 
 发现结果只在 `LegacyResponseFactory` 映射一次，同时生成 `FillResponse` 和供 Service 记录日志、继承 interaction
 trace 的 `LegacyDiscoveryObservation`。Service 不再重复解释 `Candidates`、`RequiresUnlock` 等 domain outcome。

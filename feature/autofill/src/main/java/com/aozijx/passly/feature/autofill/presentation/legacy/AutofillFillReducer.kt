@@ -24,9 +24,7 @@ internal sealed interface AutofillFillMutation {
         val result: AutofillFillResult,
     ) : AutofillFillMutation
 
-    data class Failed(
-        val message: String,
-    ) : AutofillFillMutation
+    data object Failed : AutofillFillMutation
 
     data object ResultDelivered : AutofillFillMutation
 }
@@ -57,14 +55,14 @@ internal object AutofillFillReducer {
                 AutofillFillUiState.Result(mutation.result)
             }
 
-            is AutofillFillMutation.Failed -> {
-                AutofillFillUiState.Error(mutation.message)
+            AutofillFillMutation.Failed -> {
+                AutofillFillUiState.Error
             }
 
             AutofillFillMutation.ResultDelivered -> {
                 when (state) {
                     is AutofillFillUiState.Result,
-                    is AutofillFillUiState.Error,
+                    AutofillFillUiState.Error,
                     -> AutofillFillUiState.Initial
 
                     AutofillFillUiState.Initial,

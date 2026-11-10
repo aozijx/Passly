@@ -8,6 +8,7 @@ import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.testing.MainDispatcherRule
 import java.io.IOException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -39,7 +40,7 @@ class AutofillSettingsViewModelTest {
             viewModel.onPageEntered()
 
             assertEquals(
-                AutofillSourceState.Loading<AutofillSettings>(),
+                AutofillPreferencesState.Loading,
                 viewModel.uiState.value.preferences,
             )
         }
@@ -65,10 +66,10 @@ class AutofillSettingsViewModelTest {
             runCurrent()
 
             assertEquals(
-                AutofillSourceState.Failed(null),
+                AutofillPreferencesState.Failed,
                 viewModel.uiState.value.preferences,
             )
-            assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
+            assertEquals(AutofillSystemServiceStatus.Available(true), viewModel.uiState.value.systemServiceStatus)
         }
 
     @Test
@@ -84,12 +85,12 @@ class AutofillSettingsViewModelTest {
             runCurrent()
 
             assertEquals(
-                AutofillSourceState.Ready(autofillSettings()),
+                AutofillPreferencesState.Ready(autofillSettings()),
                 viewModel.uiState.value.preferences,
             )
             assertEquals(
-                AutofillSourceState.Failed<Boolean>(null),
-                viewModel.uiState.value.systemService,
+                AutofillSystemServiceStatus.Unavailable(null),
+                viewModel.uiState.value.systemServiceStatus,
             )
         }
 
@@ -99,6 +100,7 @@ class AutofillSettingsViewModelTest {
             var preferenceStarts = 0
             var systemStarts = 0
             var cancelledSystemCollectors = 0
+            val retryGate = CompletableDeferred<Boolean>()
             val repository =
                 RecordingAutofillSettingsRepository(
                     autofillSettings =
@@ -119,7 +121,7 @@ class AutofillSettingsViewModelTest {
                                     emit(false)
                                     throw IOException("status unavailable")
                                 }
-                                emit(true)
+                                emit(retryGate.await())
                                 kotlinx.coroutines.awaitCancellation()
                             } finally {
                                 cancelledSystemCollectors++
@@ -131,7 +133,7 @@ class AutofillSettingsViewModelTest {
             runCurrent()
             assertEquals(1, preferenceStarts)
             assertEquals(1, systemStarts)
-            assertEquals(AutofillSourceState.Failed(false), viewModel.uiState.value.systemService)
+            assertEquals(AutofillSystemServiceStatus.Unavailable(false), viewModel.uiState.value.systemServiceStatus)
 
             viewModel.onAction(AutofillSettingsAction.RetrySystemService)
             runCurrent()
@@ -139,7 +141,15 @@ class AutofillSettingsViewModelTest {
             assertEquals(1, preferenceStarts)
             assertEquals(2, systemStarts)
             assertEquals(1, cancelledSystemCollectors)
-            assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
+            assertEquals(
+                AutofillSystemServiceStatus.Refreshing(false),
+                viewModel.uiState.value.systemServiceStatus,
+            )
+
+            retryGate.complete(true)
+            runCurrent()
+
+            assertEquals(AutofillSystemServiceStatus.Available(true), viewModel.uiState.value.systemServiceStatus)
         }
 
     @Test
@@ -170,7 +180,7 @@ class AutofillSettingsViewModelTest {
                 )
             backgroundScope.launch { viewModel.uiState.collect {} }
             runCurrent()
-            assertEquals(AutofillSourceState.Failed<AutofillSettings>(null), viewModel.uiState.value.preferences)
+            assertEquals(AutofillPreferencesState.Failed, viewModel.uiState.value.preferences)
             assertEquals(1, systemStarts)
             viewModel.onAction(AutofillSettingsAction.RetryPreferences)
             runCurrent()
@@ -178,10 +188,10 @@ class AutofillSettingsViewModelTest {
             assertEquals(2, preferenceStarts)
             assertEquals(1, systemStarts)
             assertEquals(
-                AutofillSourceState.Ready(autofillSettings(enabled = false)),
+                AutofillPreferencesState.Ready(autofillSettings(enabled = false)),
                 viewModel.uiState.value.preferences,
             )
-            assertEquals(AutofillSourceState.Ready(true), viewModel.uiState.value.systemService)
+            assertEquals(AutofillSystemServiceStatus.Available(true), viewModel.uiState.value.systemServiceStatus)
         }
 
     @Test

@@ -1,34 +1,69 @@
 package com.aozijx.passly.feature.settings.presentation.autofill
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.settings.model.AutofillPresentation
 import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 
-sealed interface AutofillSourceState<out T> {
-    val availableValue: T?
-        get() =
-            when (this) {
-                is Loading -> previous
-                is Ready -> value
-                is Failed -> previous
-            }
+sealed interface AutofillPreferencesState {
+    sealed interface Unavailable : AutofillPreferencesState {
+        val statusTextRes: Int
+        val canRetry: Boolean
+    }
 
-    data class Loading<T>(
-        val previous: T? = null,
-    ) : AutofillSourceState<T>
+    data object Loading : Unavailable {
+        override val statusTextRes = R.string.settings_autofill_preferences_loading
+        override val canRetry = false
+    }
 
-    data class Ready<T>(
-        val value: T,
-    ) : AutofillSourceState<T>
+    data class Ready(
+        val settings: AutofillSettings,
+    ) : AutofillPreferencesState
 
-    data class Failed<T>(
-        val previous: T?,
-    ) : AutofillSourceState<T>
+    data object Failed : Unavailable {
+        override val statusTextRes = R.string.settings_autofill_preferences_load_failed
+        override val canRetry = true
+    }
 }
 
+sealed interface AutofillSystemServiceStatus {
+    val statusTextRes: Int
+    val canRetry: Boolean
+        get() = false
+    val lastKnownEnabled: Boolean?
+
+    data object Checking : AutofillSystemServiceStatus {
+        override val statusTextRes = R.string.settings_autofill_system_status_loading
+        override val lastKnownEnabled: Boolean? = null
+    }
+
+    data class Refreshing(
+        override val lastKnownEnabled: Boolean,
+    ) : AutofillSystemServiceStatus {
+        override val statusTextRes = lastKnownEnabled.toAutofillStatusTextRes()
+    }
+
+    data class Available(
+        val isEnabled: Boolean,
+    ) : AutofillSystemServiceStatus {
+        override val statusTextRes = isEnabled.toAutofillStatusTextRes()
+        override val lastKnownEnabled: Boolean = isEnabled
+    }
+
+    data class Unavailable(
+        override val lastKnownEnabled: Boolean?,
+    ) : AutofillSystemServiceStatus {
+        override val statusTextRes = R.string.settings_autofill_system_status_unavailable
+        override val canRetry = true
+    }
+}
+
+private fun Boolean.toAutofillStatusTextRes(): Int =
+    if (this) R.string.settings_autofill_system_enabled else R.string.settings_autofill_system_disabled
+
 data class AutofillSettingsUiState(
-    val preferences: AutofillSourceState<AutofillSettings> = AutofillSourceState.Loading(),
-    val systemService: AutofillSourceState<Boolean> = AutofillSourceState.Loading(),
+    val preferences: AutofillPreferencesState = AutofillPreferencesState.Loading,
+    val systemServiceStatus: AutofillSystemServiceStatus = AutofillSystemServiceStatus.Checking,
 )
 
 sealed interface AutofillSettingsAction {

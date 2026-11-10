@@ -21,7 +21,11 @@ internal fun AccessibilityAutofillEntry(onComplete: (AutofillHostCompletion) -> 
     DisposableEffect(activity, lifecycleOwner, viewModel) {
         val observer =
             LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_DESTROY && activity.isFinishing) viewModel.cancel()
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> if (!activity.isChangingConfigurations) viewModel.cancel()
+                    Lifecycle.Event.ON_DESTROY -> if (activity.isFinishing) viewModel.cancel()
+                    else -> Unit
+                }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -29,6 +33,6 @@ internal fun AccessibilityAutofillEntry(onComplete: (AutofillHostCompletion) -> 
 
     AccessibilityFillRoute(
         viewModel = viewModel,
-        onComplete = { onComplete(AutofillHostCompletion(resultCode = null, hideIme = false)) },
+        onComplete = { onComplete(AutofillHostCompletion.AccessibilityFinished) },
     )
 }

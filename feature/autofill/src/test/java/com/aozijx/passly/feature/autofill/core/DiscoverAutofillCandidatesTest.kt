@@ -35,6 +35,10 @@ import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
 import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import com.aozijx.passly.feature.autofill.runtime.AutofillUnlockLease
 import com.aozijx.passly.testing.testLogger
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,9 +46,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class DiscoverAutofillCandidatesTest {
+    @Test
+    fun cancellationAfterCandidateQueryClosesInteraction() =
+        runBlocking {
+            val fixture = fixture(afterSearch = { currentCoroutineContext().cancel() })
+            val discovery = async { fixture.operation(request().copy(domain = null)) }
+
+            try {
+                discovery.await()
+                fail("Discovery should propagate cancellation")
+            } catch (_: CancellationException) {
+                assertTrue(fixture.store.activeIds().isEmpty())
+            }
+        }
+
     @Test
     fun disabledSourceDoesNotCreateOrQueryInteraction() =
         runBlocking {
@@ -267,12 +286,13 @@ class DiscoverAutofillCandidatesTest {
         hasCredentials: Boolean = true,
         vaultState: AuthenticationState = AuthenticationState.Authenticated(1L),
         candidates: List<AutofillCandidateSummary> = emptyList(),
+        afterSearch: suspend () -> Unit = {},
     ): Fixture {
         val vault = FakeVault(vaultState)
         val authentication = NoOpAuthentication(vault)
         val store = AutofillInteractionStore()
         val lease = AutofillUnlockLease(authentication)
-        val repository = RecordingCandidateRepository(candidates)
+        val repository = RecordingCandidateRepository(candidates, afterSearch)
         val fieldMatchStrategy =
             object : FieldMatchStrategy {
                 override fun match(request: AutofillRequest) =
@@ -355,6 +375,7 @@ class DiscoverAutofillCandidatesTest {
 
     private class RecordingCandidateRepository(
         private val candidates: List<AutofillCandidateSummary>,
+        private val afterSearch: suspend () -> Unit,
     ) : AutofillCandidateRepository {
         var searchCalls = 0
         var lastQuery: AutofillCandidateQuery? = null
@@ -362,6 +383,7 @@ class DiscoverAutofillCandidatesTest {
         override suspend fun search(query: AutofillCandidateQuery): List<AutofillCandidateSummary> {
             searchCalls++
             lastQuery = query
+            afterSearch()
             return candidates
         }
     }

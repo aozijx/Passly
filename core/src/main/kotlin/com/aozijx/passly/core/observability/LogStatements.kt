@@ -702,6 +702,18 @@ object LogStatements {
                 LogFields.Empty.withElapsed(elapsedMs),
             )
 
+        fun platformResultCommitFailed(
+            source: Enum<*>,
+            throwable: Throwable,
+        ): LogStatement =
+            ErrorStatement(
+                Events.Autofill.ResultDeliveryFailed,
+                ErrorCodes.Autofill.AutofillResultDeliveryFailed,
+                Reasons.PlatformCallbackFailed,
+                throwable,
+                fields { enum(LogFieldKeys.Source, source) },
+            )
+
         fun sessionCloseStarted(): LogStatement = InfoStatement(Events.Autofill.SessionCloseStarted, LogFields.Empty)
 
         fun sessionClosed(elapsedMs: Long): LogStatement =
@@ -749,6 +761,12 @@ object LogStatements {
             )
 
         fun actionIgnored(): LogStatement = DebugStatement(Events.Autofill.ActionIgnored, LogFields.Empty)
+
+        fun hostAbandoned(source: Enum<*>): LogStatement =
+            InfoStatement(Events.Autofill.HostAbandoned, fields { enum(LogFieldKeys.Source, source) })
+
+        fun requestCancelled(source: Enum<*>): LogStatement =
+            InfoStatement(Events.Autofill.RequestCancelled, fields { enum(LogFieldKeys.Source, source) })
     }
 
     object Backup {

@@ -390,7 +390,15 @@ internal class LegacyResponseFactory
         private fun completed(
             interactionId: AutofillInteractionId,
             built: BuiltResponse,
-        ) = result(built, LegacyDiscoveryObservation.Completed(interactionId))
+        ) =
+            result(
+                built,
+                if (built.response == null) {
+                    LegacyDiscoveryObservation.Unavailable(Reasons.NoFillableFields)
+                } else {
+                    LegacyDiscoveryObservation.Completed(interactionId)
+                },
+            )
 
         private fun result(
             built: BuiltResponse,

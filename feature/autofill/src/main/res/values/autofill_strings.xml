@@ -6,7 +6,7 @@
   <string name="app_name" translatable="false">Passly</string>
   <string name="accessibility_fill_service_label">Passly 手动填充</string>
   <string name="autofill_prompt_title">使用 %1$s 自动填充</string>
-  <string name="autofill_select_account_hint">点按账号以填充。关闭此页将取消。</string>
+  <string name="autofill_candidates_title">选择要填充的账号</string>
   <string name="autofill_cancel">取消</string>
   <string name="autofill_review_web_request">核对网页填充请求</string>
   <string name="autofill_web_confirmation_title">确认网页请求来源</string>

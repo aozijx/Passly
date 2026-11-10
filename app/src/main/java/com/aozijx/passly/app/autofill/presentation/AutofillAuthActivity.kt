@@ -65,8 +65,14 @@ class AutofillAuthActivity : AppCompatActivity() {
         }
 
     private fun completeAutofill(completion: AutofillHostCompletion) {
-        completion.resultCode?.let { setResult(it, completion.data) }
-        if (completion.hideIme) hideIme()
+        when (completion) {
+            is AutofillHostCompletion.ActivityResult -> {
+                setResult(completion.resultCode, completion.data)
+                hideIme()
+            }
+
+            AutofillHostCompletion.AccessibilityFinished -> Unit
+        }
         finish()
     }
 

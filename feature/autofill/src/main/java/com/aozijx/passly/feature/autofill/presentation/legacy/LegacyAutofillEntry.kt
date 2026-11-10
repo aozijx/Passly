@@ -10,6 +10,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.aozijx.passly.core.observability.LogStatements
+import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.feature.autofill.legacy.LegacyAutofillResultTarget
 import com.aozijx.passly.feature.autofill.legacy.service.builder.LegacyResponseFactory
 import com.aozijx.passly.feature.autofill.presentation.AutofillEntryPoint
@@ -26,13 +29,21 @@ internal fun LegacyAutofillEntry(
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val viewModel: AutofillFillViewModel = hiltViewModel(activity)
+    val logger = dependencies.logger()
 
     DisposableEffect(activity, lifecycleOwner, launch) {
+        var hostAbandoned = false
+        fun abandonPendingResult() {
+            if (hostAbandoned || viewModel.hasClaimedPlatformResult) return
+            hostAbandoned = true
+            viewModel.cancel(launch.request.interactionId)
+            logger.log(LogStatements.Autofill.hostAbandoned(AutofillInteractionSource.LEGACY))
+        }
         val observer =
             LifecycleEventObserver { _, event ->
                 when (event) {
-                    Lifecycle.Event.ON_STOP -> if (!activity.isChangingConfigurations) viewModel.cancelIfWaitingForSelection()
-                    Lifecycle.Event.ON_DESTROY -> if (activity.isFinishing && !viewModel.hasClaimedPlatformResult) viewModel.cancel()
+                    Lifecycle.Event.ON_STOP -> if (!activity.isChangingConfigurations) abandonPendingResult()
+                    Lifecycle.Event.ON_DESTROY -> if (activity.isFinishing) abandonPendingResult()
                     else -> Unit
                 }
             }
@@ -51,6 +62,7 @@ internal fun LegacyAutofillEntry(
                 viewModel,
                 dependencies.responseFactory(),
                 dependencies.resultDelivery(),
+                logger,
                 onComplete,
             )
         },
@@ -64,6 +76,7 @@ private fun deliverLegacyResult(
     viewModel: AutofillFillViewModel,
     responseFactory: LegacyResponseFactory,
     resultDelivery: AutofillResultDelivery,
+    logger: Logger,
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     try {
@@ -79,11 +92,11 @@ private fun deliverLegacyResult(
                         )
                     if (response == null) {
                         viewModel.cancel()
-                        onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                        onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
                         markPlatformCommitted()
                     } else {
                         onComplete(
-                            AutofillHostCompletion(
+                            AutofillHostCompletion.ActivityResult(
                                 android.app.Activity.RESULT_OK,
                                 Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response),
                             ),
@@ -96,7 +109,7 @@ private fun deliverLegacyResult(
                     val dataset = responseFactory.buildDataset(result.payload, request.usernameIds, request.passwordIds, request.otpIds)
                     if (dataset == null) {
                         viewModel.cancel()
-                        onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                        onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
                         markPlatformCommitted()
                     } else {
                         val platformResult =
@@ -109,7 +122,7 @@ private fun deliverLegacyResult(
                             if (result.target == LegacyAutofillResultTarget.DATASET) {
                                 resultIntent.putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT_EPHEMERAL_DATASET, true)
                             }
-                            onComplete(AutofillHostCompletion(android.app.Activity.RESULT_OK, resultIntent))
+                            onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_OK, resultIntent))
                             markDeliveryCommitted()
                             markPlatformCommitted()
                         }
@@ -117,20 +130,21 @@ private fun deliverLegacyResult(
                 }
 
                 AutofillFillResult.Cancelled -> {
-                    onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                    onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
                     markPlatformCommitted()
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (error: Exception) {
         viewModel.cancel()
+        logger.log(LogStatements.Autofill.platformResultCommitFailed(AutofillInteractionSource.LEGACY, error))
         try {
             viewModel.commitPlatformResult { markPlatformCommitted ->
-                onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
                 markPlatformCommitted()
             }
         } catch (_: Exception) {
-            onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+            onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
         }
     }
 }

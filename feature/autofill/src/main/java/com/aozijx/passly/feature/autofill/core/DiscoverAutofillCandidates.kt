@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.autofill.core
 import com.aozijx.passly.core.observability.AutofillLogSnapshot
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AUTOFILL_CANDIDATE_LIMIT
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateQuery
@@ -13,6 +14,7 @@ import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSnapshot
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionState
+import com.aozijx.passly.domain.autofill.model.AutofillWebConsent
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionUpdate
 import com.aozijx.passly.domain.autofill.model.AutofillOperationFailure
 import com.aozijx.passly.domain.autofill.model.AutofillRequest
@@ -30,7 +32,11 @@ import com.aozijx.passly.feature.autofill.runtime.AutofillInteractionStore
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 @Singleton
 internal class DiscoverAutofillCandidates
@@ -94,90 +100,108 @@ internal class DiscoverAutofillCandidates
             val snapshot =
                 resolveInteraction(request, scope, policy, interactionId)
                     ?: return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INTERACTION_NOT_FOUND)
-            if (snapshot.scope != scope) {
-                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.SCOPE_MISMATCH)
-            }
-            val context =
-                AutofillDiscoveryContext(
-                    roleMap = match.roleMap,
-                    presentation = policy.presentation,
-                    requireAuthentication = policy.requireAuthentication,
-                )
-            if (snapshot.state == AutofillInteractionState.RequiresUnlock) {
-                return AutofillDiscoveryOutcome.RequiresUnlock(snapshot, context)
-            }
-            if (snapshot.state != AutofillInteractionState.Authorized &&
-                snapshot.state != AutofillInteractionState.CandidatesReady
-            ) {
-                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
-            }
-            if (request.source == AutofillSource.AUTOFILL_SERVICE &&
-                scope.webDomain != null &&
-                !snapshot.webRecipientConfirmed
-            ) {
-                return AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation(snapshot, context)
-            }
-            val sessionGeneration = secureSessionAccessState.autofillSessionGeneration()
-            if (request.source == AutofillSource.AUTOFILL_SERVICE &&
-                scope.webDomain != null &&
-                snapshot.webConsentSessionAtMs != sessionGeneration
-            ) {
-                finishInteraction.cancel(snapshot.id)
-                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
-            }
-            if (directEntryId != null &&
-                snapshot.state == AutofillInteractionState.CandidatesReady &&
-                scope.webDomain == null
-            ) {
-                return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId)
-            }
-
-            val candidates =
-                try {
-                    candidateRepository.search(
-                        AutofillCandidateQuery(
-                            packageName = scope.packageName.takeIf { scope.webDomain == null },
-                            webDomain = scope.webDomain,
-                            limit = AUTOFILL_CANDIDATE_LIMIT,
-                            strictDomainMatching = policy.strictDomainMatching,
-                        ),
+            try {
+                currentCoroutineContext().ensureActive()
+                if (snapshot.scope != scope) {
+                    return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.SCOPE_MISMATCH)
+                }
+                val context =
+                    AutofillDiscoveryContext(
+                        roleMap = match.roleMap,
+                        presentation = policy.presentation,
+                        requireAuthentication = policy.requireAuthentication,
                     )
-                } catch (cancelled: CancellationException) {
+                if (snapshot.state == AutofillInteractionState.RequiresUnlock) {
+                    return AutofillDiscoveryOutcome.RequiresUnlock(snapshot, context)
+                }
+                if (snapshot.state != AutofillInteractionState.Authorized &&
+                    snapshot.state != AutofillInteractionState.CandidatesReady
+                ) {
+                    return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
+                }
+                if (request.source == AutofillSource.AUTOFILL_SERVICE &&
+                    scope.webDomain != null &&
+                    snapshot.webConsent is AutofillWebConsent.Unconfirmed
+                ) {
+                    return AutofillDiscoveryOutcome.RequiresWebRecipientConfirmation(snapshot, context)
+                }
+                val sessionGeneration = secureSessionAccessState.autofillSessionGeneration()
+                if (request.source == AutofillSource.AUTOFILL_SERVICE &&
+                    scope.webDomain != null &&
+                    (snapshot.webConsent as? AutofillWebConsent.Confirmed)?.sessionAtMs != sessionGeneration
+                ) {
                     finishInteraction.cancel(snapshot.id)
-                    throw cancelled
-                } catch (_: Exception) {
-                    finishInteraction.cancel(snapshot.id)
-                    return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED)
+                    return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
+                }
+                if (directEntryId != null &&
+                    snapshot.state == AutofillInteractionState.CandidatesReady &&
+                    scope.webDomain == null
+                ) {
+                    return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId)
                 }
 
-            val activeSessionGeneration = secureSessionAccessState.autofillSessionGeneration()
-            if (scope.webDomain != null && activeSessionGeneration != sessionGeneration) {
-                finishInteraction.cancel(snapshot.id)
-                return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
-            }
-
-            val recorded =
-                interactionStore.recordCandidates(
-                    snapshot.id,
-                    candidates.mapTo(linkedSetOf()) { it.entry.id },
-                    sessionAtMs = activeSessionGeneration,
-                )
-            val recordedSnapshot =
-                when (recorded) {
-                    is AutofillInteractionUpdate.Updated -> {
-                        recorded.snapshot
-                    }
-
-                    is AutofillInteractionUpdate.Rejected -> {
-                        return AutofillDiscoveryOutcome.Failed(
-                            AutofillOperationFailure.INVALID_INTERACTION_STATE,
+                val candidates =
+                    try {
+                        candidateRepository.search(
+                            AutofillCandidateQuery(
+                                packageName = scope.packageName.takeIf { scope.webDomain == null },
+                                webDomain = scope.webDomain,
+                                limit = AUTOFILL_CANDIDATE_LIMIT,
+                                strictDomainMatching = policy.strictDomainMatching,
+                            ),
                         )
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (error: Exception) {
+                        finishInteraction.cancel(snapshot.id)
+                        logger.log(
+                            LogStatements.Autofill.discoveryFailed(
+                                error,
+                                Reasons.DatabaseUnavailable,
+                                LogStatements.Autofill.context(request.source, request.packageName),
+                            ),
+                        )
+                        return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.CANDIDATE_QUERY_FAILED)
                     }
+
+                currentCoroutineContext().ensureActive()
+                val activeSessionGeneration = secureSessionAccessState.autofillSessionGeneration()
+                if (scope.webDomain != null && activeSessionGeneration != sessionGeneration) {
+                    finishInteraction.cancel(snapshot.id)
+                    return AutofillDiscoveryOutcome.Failed(AutofillOperationFailure.INVALID_INTERACTION_STATE)
                 }
-            return if (candidates.isEmpty()) {
-                AutofillDiscoveryOutcome.NoCandidates(recordedSnapshot, context)
-            } else {
-                AutofillDiscoveryOutcome.Candidates(recordedSnapshot, candidates, context)
+
+                val recorded =
+                    interactionStore.recordCandidates(
+                        snapshot.id,
+                        candidates.mapTo(linkedSetOf()) { it.entry.id },
+                        sessionAtMs = activeSessionGeneration,
+                    )
+                val recordedSnapshot =
+                    when (recorded) {
+                        is AutofillInteractionUpdate.Updated -> {
+                            recorded.snapshot
+                        }
+
+                        is AutofillInteractionUpdate.Rejected -> {
+                            return AutofillDiscoveryOutcome.Failed(
+                                AutofillOperationFailure.INVALID_INTERACTION_STATE,
+                            )
+                        }
+                    }
+                currentCoroutineContext().ensureActive()
+                return if (candidates.isEmpty()) {
+                    AutofillDiscoveryOutcome.NoCandidates(recordedSnapshot, context)
+                } else {
+                    AutofillDiscoveryOutcome.Candidates(recordedSnapshot, candidates, context)
+                }
+            } catch (cancelled: CancellationException) {
+                try {
+                    withContext(NonCancellable) { finishInteraction.cancel(snapshot.id) }
+                } catch (cleanupFailure: Exception) {
+                    cancelled.addSuppressed(cleanupFailure)
+                }
+                throw cancelled
             }
         }
 

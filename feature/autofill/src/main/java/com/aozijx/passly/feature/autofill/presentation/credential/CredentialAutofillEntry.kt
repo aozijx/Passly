@@ -15,6 +15,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
+import com.aozijx.passly.domain.autofill.model.AutofillInteractionSource
+import com.aozijx.passly.feature.autofill.credential.CredentialRequestParser
 import com.aozijx.passly.feature.autofill.presentation.AutofillEntryPoint
 import com.aozijx.passly.feature.autofill.presentation.AutofillHostCompletion
 import com.aozijx.passly.feature.autofill.presentation.AutofillLaunch
@@ -28,7 +31,7 @@ internal fun CredentialAutofillEntry(
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        LaunchedEffect(launch) { onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED)) }
+        LaunchedEffect(launch) { onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED)) }
         return
     }
 
@@ -50,6 +53,7 @@ private fun CredentialAutofillEntryApi34(
     val resultDelivery = dependencies.resultDelivery()
     val viewModel: CredentialResponseViewModel = hiltViewModel(activity)
     val resultClaim = remember { AutofillActivityResultClaim() }
+    val interactionId = remember(launch) { launch.action.pendingInteractionId() }
 
     LaunchedEffect(launch) {
         if (launch.action == CredentialResponseUiAction.UnknownAction) {
@@ -59,11 +63,20 @@ private fun CredentialAutofillEntryApi34(
         }
     }
 
-    DisposableEffect(activity, lifecycleOwner, resultClaim) {
+    DisposableEffect(activity, lifecycleOwner, resultClaim, interactionId) {
+        var hostAbandoned = false
+        fun abandonPendingResult() {
+            if (hostAbandoned || resultClaim.isClaimed) return
+            hostAbandoned = true
+            viewModel.cancelActiveInteraction(interactionId)
+            logger.log(LogStatements.Autofill.hostAbandoned(AutofillInteractionSource.CREDENTIAL_MANAGER))
+        }
         val observer =
             LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_DESTROY && activity.isFinishing && !resultClaim.isClaimed) {
-                    viewModel.cancelActiveInteraction()
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> if (!activity.isChangingConfigurations) abandonPendingResult()
+                    Lifecycle.Event.ON_DESTROY -> if (activity.isFinishing) abandonPendingResult()
+                    else -> Unit
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -73,10 +86,18 @@ private fun CredentialAutofillEntryApi34(
     CredentialResponseRoute(
         action = launch.action,
         viewModel = viewModel,
-        onComplete = { completion -> deliverCredentialResult(completion, viewModel, resultDelivery, resultClaim, onComplete) },
+        onComplete = { completion -> deliverCredentialResult(completion, viewModel, resultDelivery, resultClaim, logger, onComplete) },
         onUnrecoverable = { cancelCredential(viewModel, resultClaim, onComplete) },
     )
 }
+
+private fun CredentialResponseUiAction.pendingInteractionId(): AutofillInteractionId? =
+    when (this) {
+        is CredentialResponseUiAction.PasswordGet -> CredentialRequestParser.parseInteractionId(sourceIntent)
+        is CredentialResponseUiAction.Unlock -> CredentialRequestParser.parseInteractionId(sourceIntent)
+        is CredentialResponseUiAction.PasswordCreate -> CredentialRequestParser.parseInteractionId(sourceIntent)
+        CredentialResponseUiAction.UnknownAction -> null
+    }
 
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 private fun deliverCredentialResult(
@@ -84,6 +105,7 @@ private fun deliverCredentialResult(
     viewModel: CredentialResponseViewModel,
     resultDelivery: AutofillResultDelivery,
     resultClaim: AutofillActivityResultClaim,
+    logger: Logger,
     onComplete: (AutofillHostCompletion) -> Unit,
 ) {
     try {
@@ -91,13 +113,13 @@ private fun deliverCredentialResult(
             resultClaim.commit { markPlatformCommitted ->
                 when (completion) {
                     is CredentialResponseCompletion.Immediate -> {
-                        onComplete(AutofillHostCompletion(android.app.Activity.RESULT_OK, completion.resultIntent))
+                        onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_OK, completion.resultIntent))
                         markPlatformCommitted()
                     }
 
                     is CredentialResponseCompletion.CommittedSelection -> {
                         resultDelivery.commitResult(completion.receipt) { markDeliveryCommitted ->
-                            onComplete(AutofillHostCompletion(android.app.Activity.RESULT_OK, completion.resultIntent))
+                            onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_OK, completion.resultIntent))
                             markDeliveryCommitted()
                             markPlatformCommitted()
                         }
@@ -105,7 +127,8 @@ private fun deliverCredentialResult(
                 }
             }
         if (committed) viewModel.onPlatformResultDelivered(completion)
-    } catch (_: Exception) {
+    } catch (error: Exception) {
+        logger.log(LogStatements.Autofill.platformResultCommitFailed(AutofillInteractionSource.CREDENTIAL_MANAGER, error))
         cancelCredential(viewModel, resultClaim, onComplete)
     }
 }
@@ -118,7 +141,7 @@ private fun cancelCredential(
 ) {
     try {
         if (resultClaim.commit { markPlatformCommitted ->
-                onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+                onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
                 markPlatformCommitted()
             }
         ) {
@@ -126,6 +149,6 @@ private fun cancelCredential(
         }
     } catch (_: Exception) {
         viewModel.cancelActiveInteraction()
-        onComplete(AutofillHostCompletion(android.app.Activity.RESULT_CANCELED))
+        onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
     }
 }
