@@ -4,6 +4,20 @@ import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemU
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 
+sealed interface AssociatedAppSelection {
+    data object NotSelected : AssociatedAppSelection
+
+    data class Selected(val packageName: String) : AssociatedAppSelection
+}
+
+sealed interface AssociatedAppDisplayState {
+    data object NotSelected : AssociatedAppDisplayState
+
+    data class Installed(val app: AppPackagePickerItemUiModel) : AssociatedAppDisplayState
+
+    data class Unresolved(val packageName: String) : AssociatedAppDisplayState
+}
+
 data class AddPasswordFormState(
     val title: String = "",
     val username: String = "",
@@ -11,7 +25,7 @@ data class AddPasswordFormState(
     val websiteUrl: String = "",
     val notes: String = "",
     val tags: String = "",
-    val associatedAppPackage: String? = null,
+    val associatedAppSelection: AssociatedAppSelection = AssociatedAppSelection.NotSelected,
     val preservedAssociatedAppPackages: Set<String> = emptySet(),
     val isPasswordVisible: Boolean = false,
 ) {
@@ -25,20 +39,25 @@ data class AddPasswordUiState(
     val isSaving: Boolean = false,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
-    val associatedApp: AppPackagePickerItemUiModel?
+    val associatedAppDisplayState: AssociatedAppDisplayState
         get() {
-            val apps =
-                when (val current = availableApps) {
-                    is AppPackagePickerUiState.Matches -> current.installedApps
-                    is AppPackagePickerUiState.NoMatches -> current.installedApps
-                    AppPackagePickerUiState.NotRequested,
-                    AppPackagePickerUiState.Loading,
-                    AppPackagePickerUiState.Failed,
-                    is AppPackagePickerUiState.NoApps,
-                    -> emptyList()
+            return when (val selection = form.associatedAppSelection) {
+                AssociatedAppSelection.NotSelected -> AssociatedAppDisplayState.NotSelected
+                is AssociatedAppSelection.Selected -> {
+                    val apps =
+                        when (val current = availableApps) {
+                            is AppPackagePickerUiState.Matches -> current.installedApps
+                            is AppPackagePickerUiState.NoMatches -> current.installedApps
+                            AppPackagePickerUiState.NotRequested,
+                            AppPackagePickerUiState.Loading,
+                            AppPackagePickerUiState.Failed,
+                            is AppPackagePickerUiState.NoApps,
+                            -> emptyList()
+                        }
+                    apps.firstOrNull { it.packageName == selection.packageName }
+                        ?.let(AssociatedAppDisplayState::Installed)
+                        ?: AssociatedAppDisplayState.Unresolved(selection.packageName)
                 }
-            return form.associatedAppPackage?.let { packageName ->
-                apps.firstOrNull { it.packageName == packageName }
             }
         }
 

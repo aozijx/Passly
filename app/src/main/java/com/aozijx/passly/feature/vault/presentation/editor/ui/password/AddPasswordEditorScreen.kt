@@ -32,6 +32,7 @@ import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBo
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordAction
 import com.aozijx.passly.feature.vault.presentation.editor.password.AddPasswordUiState
+import com.aozijx.passly.feature.vault.presentation.editor.password.AssociatedAppDisplayState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
@@ -51,7 +52,7 @@ fun AddPasswordEditorScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val form = state.form
     var showAssociatedAppPicker by rememberSaveable { mutableStateOf(false) }
-    val selectedApp = state.associatedApp
+    val associatedAppDisplay = state.associatedAppDisplayState
 
     fun save() {
         keyboardController?.hide()
@@ -127,18 +128,23 @@ fun AddPasswordEditorScreen(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Text(
-                        text =
-                            selectedApp?.label
-                                ?: form.associatedAppPackage
-                                ?: stringResource(R.string.not_set),
-                    )
-                    selectedApp?.packageName?.let { packageName ->
-                        Text(
-                            text = packageName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    when (val display = associatedAppDisplay) {
+                        AssociatedAppDisplayState.NotSelected -> {
+                            Text(stringResource(R.string.not_set))
+                        }
+
+                        is AssociatedAppDisplayState.Installed -> {
+                            Text(display.app.label)
+                            Text(
+                                text = display.app.packageName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        is AssociatedAppDisplayState.Unresolved -> {
+                            Text(display.packageName)
+                        }
                     }
                 }
             }

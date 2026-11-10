@@ -128,7 +128,7 @@ class AddPasswordViewModel
 
                 is AddPasswordAction.AssociatedAppSelected -> {
                     mutateForm {
-                        it.copy(associatedAppPackage = action.packageName)
+                        it.copy(associatedAppSelection = AssociatedAppSelection.Selected(action.packageName))
                     }
                 }
 

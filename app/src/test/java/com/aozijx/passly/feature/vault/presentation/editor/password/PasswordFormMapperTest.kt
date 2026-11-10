@@ -40,7 +40,7 @@ class PasswordFormMapperTest {
         assertEquals("Mail", form.title)
         assertEquals("https://mail.example", form.websiteUrl)
         assertEquals("work", form.tags)
-        assertEquals("mail.app", form.associatedAppPackage)
+        assertEquals(AssociatedAppSelection.Selected("mail.app"), form.associatedAppSelection)
         assertEquals(setOf("browser.app"), form.preservedAssociatedAppPackages)
         assertEquals(false, form.isPasswordVisible)
         assertEquals(EntryDraftValue.Text("Mail"), draft[FieldKey.TITLE])
@@ -62,7 +62,7 @@ class PasswordFormMapperTest {
                 websiteUrl = " https://example.com ",
                 notes = " personal ",
                 tags = " work, , mail, work ",
-                associatedAppPackage = "com.example.mail",
+                associatedAppSelection = AssociatedAppSelection.Selected("com.example.mail"),
             ).toEntryDraft()
 
         assertEquals(EntryType.LOGIN, draft.type)
@@ -89,7 +89,7 @@ class PasswordFormMapperTest {
                 websiteUrl = " ",
                 notes = " ",
                 tags = " , ",
-                associatedAppPackage = null,
+                associatedAppSelection = AssociatedAppSelection.NotSelected,
             ).toEntryDraft()
 
         assertEquals(null, draft[FieldKey.USERNAME])

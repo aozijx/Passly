@@ -239,8 +239,14 @@ class AddPasswordViewModelTest {
             advanceUntilIdle()
             viewModel.onAction(AddPasswordAction.AssociatedAppSelected("com.example.mail"))
 
-            assertEquals("com.example.mail", viewModel.uiState.value.form.associatedAppPackage)
-            assertEquals("Mail", viewModel.uiState.value.associatedApp?.label)
+            assertEquals(
+                AssociatedAppSelection.Selected("com.example.mail"),
+                viewModel.uiState.value.form.associatedAppSelection,
+            )
+            assertEquals(
+                "Mail",
+                (viewModel.uiState.value.associatedAppDisplayState as AssociatedAppDisplayState.Installed).app.label,
+            )
             assertEquals(
                 "Mail",
                 (viewModel.uiState.value.availableApps as AppPackagePickerUiState.Matches<AppPackagePickerItemUiModel>)

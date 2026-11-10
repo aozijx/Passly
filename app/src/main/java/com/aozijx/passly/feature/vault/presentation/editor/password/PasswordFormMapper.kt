@@ -18,9 +18,14 @@ fun AddPasswordFormState.toEntryDraft(): EntryDraft {
     draft = draft.withOptionalText(definition, FieldKey.USERNAME, username)
     draft = draft.withOptionalText(definition, FieldKey.PRIMARY_URL, websiteUrl)
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
+    val selectedPackages =
+        when (val selection = associatedAppSelection) {
+            AssociatedAppSelection.NotSelected -> emptyList()
+            is AssociatedAppSelection.Selected -> listOf(selection.packageName)
+        }
     val applicationIds =
-        listOfNotNull(associatedAppPackage?.takeIf(String::isNotBlank)) +
-            preservedAssociatedAppPackages.filterNot { it == associatedAppPackage }
+        selectedPackages.filter(String::isNotBlank) +
+            preservedAssociatedAppPackages.filterNot { it in selectedPackages }
     if (applicationIds.isNotEmpty()) {
         draft =
             draft.withValue(
@@ -43,7 +48,10 @@ internal fun AddPasswordFormState.fromEntry(entry: Entry): AddPasswordFormState 
         websiteUrl = entry.associations.primaryUrl.orEmpty(),
         notes = entry.secret.notes.orEmpty(),
         tags = entry.tags.joinToString(", "),
-        associatedAppPackage = entry.associations.applicationIds.firstOrNull(),
+        associatedAppSelection =
+            entry.associations.applicationIds.firstOrNull()
+                ?.let(AssociatedAppSelection::Selected)
+                ?: AssociatedAppSelection.NotSelected,
         preservedAssociatedAppPackages =
             entry.associations.applicationIds
                 .drop(1)

@@ -58,7 +58,7 @@ Bank Card、Wi-Fi 四类，其余类型明确拒绝。新增类型时分别更�
 
 | 类型 | 状态与映射 | 专属规则 |
 | --- | --- | --- |
-| Login | `AddPasswordFormState` / `AddPasswordUiState`、`PasswordFormMapper.kt` | 网站写入 `PRIMARY_URL`，应用写入 `APPLICATION_IDS`；密码保留原值 |
+| Login | `AddPasswordFormState` / `AddPasswordUiState`、`PasswordFormMapper.kt` | 应用选择用 `AssociatedAppSelection.NotSelected/Selected` 显式表示；展示投影区分未选、已安装与未解析包名，Domain draft 映射负责省略未选 ID；网站写入 `PRIMARY_URL`，密码保留原值 |
 | OTP | `OtpFormState` / `AddOtpEditorUiState`、`OtpFormMapper.kt` | `OtpConfigInput` 与扫码配置共用 Domain 校验；编辑状态由 `uiState` 显式暴露，URI 反馈只表达成功应用 |
 | Bank Card | `AddBankCardFormState` / `AddBankCardUiState`、`BankCardFormMapper.kt` | 卡类型与有效期选择用 `Unselected/Selected`、`NotSet/Selected` 显式建模；仅在映射到 Domain draft 时省略未设置值 |
 | Wi-Fi | `AddWifiFormState` / `AddWifiUiState`、`WifiFormMapper.kt` | 网络名原样保留并同时作为初始标题，安全类型、密码及隐藏标记一起转换；扫码种子只初始化一次 |
