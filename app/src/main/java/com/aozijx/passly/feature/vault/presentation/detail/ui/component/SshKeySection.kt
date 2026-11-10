@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.components.MaskedText
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshFingerprintUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
 
 @Composable
@@ -32,7 +33,11 @@ fun SshKeySection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailItem(
             label = stringResource(R.string.ssh_fingerprint),
-            value = model.fingerprint.ifEmpty { stringResource(R.string.not_set) },
+            value =
+                when (val fingerprint = model.fingerprint) {
+                    DetailSshFingerprintUiState.NotSet -> stringResource(R.string.not_set)
+                    is DetailSshFingerprintUiState.Available -> fingerprint.value
+                },
             isRevealed = true,
             onCopy = onFingerprintCopy,
             onEdit = null,

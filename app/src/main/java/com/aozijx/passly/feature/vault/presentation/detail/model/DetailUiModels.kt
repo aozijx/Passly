@@ -105,8 +105,14 @@ data class DetailIdentityUiModel(
     val username: String?,
 )
 
+sealed interface DetailSshFingerprintUiState {
+    data object NotSet : DetailSshFingerprintUiState
+
+    data class Available(val value: String) : DetailSshFingerprintUiState
+}
+
 data class DetailSshUiModel(
-    val fingerprint: String,
+    val fingerprint: DetailSshFingerprintUiState,
     val passphrase: ProtectedDetailFieldUiState,
     val privateKey: ProtectedDetailFieldUiState,
     val isEditingPassphrase: Boolean,

@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSeedPhraseUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshFingerprintUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -63,7 +64,7 @@ class DetailEntryTypeUiMapperTest {
 
         val actual = detailSshUiModel(entry, state, DetailFieldProjection(state))
 
-        assertEquals("fingerprint", actual.fingerprint)
+        assertEquals(DetailSshFingerprintUiState.Available("fingerprint"), actual.fingerprint)
         assertEquals(ProtectedDetailFieldUiState.Hidden, actual.passphrase)
         assertEquals(ProtectedDetailFieldUiState.Revealed("private-key"), actual.privateKey)
     }

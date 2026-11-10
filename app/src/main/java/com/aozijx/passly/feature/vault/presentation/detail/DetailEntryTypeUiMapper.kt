@@ -10,6 +10,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBankCardU
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailCardTextFieldUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshFingerprintUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
@@ -97,7 +98,10 @@ internal fun detailSshUiModel(
     val passphrase = fields.protected(FieldKey.SSH_PASSPHRASE, SensitiveFieldKey.SSH_PASSPHRASE)
     val privateKey = fields.protected(FieldKey.SSH_KEY, SensitiveFieldKey.SSH_PRIVATE_KEY)
     return DetailSshUiModel(
-        fingerprint = entry.username,
+        fingerprint =
+            entry.username.takeIf(String::isNotEmpty)
+                ?.let(DetailSshFingerprintUiState::Available)
+                ?: DetailSshFingerprintUiState.NotSet,
         passphrase = passphrase,
         privateKey = privateKey,
         isEditingPassphrase = state.fieldEdits.isEditing(FieldKey.SSH_PASSPHRASE),
