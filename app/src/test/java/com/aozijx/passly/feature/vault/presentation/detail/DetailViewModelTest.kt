@@ -180,14 +180,14 @@ class DetailViewModelTest {
     @Test
     fun `saving an unchanged field draft does not start an edit`() =
         runTest {
-            val fixture = Fixture()
+            val fixture = Fixture(initialEntry = currentEntry(username = "latest-user"))
             val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
             try {
                 fixture.viewModel.load(ENTRY_ID.value)
                 runCurrent()
                 val version = fixture.viewModel.uiState.value.snapshotState.entryOrNull()?.version
 
-                fixture.viewModel.onAction(DetailUiAction.StartFieldEdit(DetailField.USERNAME, "latest-user"))
+                fixture.viewModel.onAction(DetailUiAction.StartFieldEdit(DetailField.USERNAME))
                 fixture.viewModel.onAction(DetailUiAction.SaveField(DetailField.USERNAME, "latest-user"))
                 runCurrent()
 
@@ -1649,9 +1649,10 @@ class DetailViewModelTest {
         fun currentEntry(
             id: EntryId = ENTRY_ID,
             title: String = "Current title",
+            username: String = "",
         ) = Entry(
             identity = EntryIdentity(id, EntryType.LOGIN, EntryVersion(2), EntryTimestamps(1L)),
-            profile = EntryProfile(title),
+            profile = EntryProfile(title, username),
             secret = EntrySecret(LoginCredential()),
         )
 

@@ -146,7 +146,7 @@ private fun BankCardField(
             isRevealed = revealed,
             maskStyle = maskStyle,
             onCopy = { onAction(DetailUiAction.CopyField(field)) },
-            onLongPress = { onAction(DetailUiAction.StartFieldEdit(field, value)) },
+            onLongPress = { onAction(DetailUiAction.StartFieldEdit(field)) },
             onRevealClick =
                 if (canReveal) {
                     { onAction(DetailUiAction.ToggleFieldVisibility(field)) }

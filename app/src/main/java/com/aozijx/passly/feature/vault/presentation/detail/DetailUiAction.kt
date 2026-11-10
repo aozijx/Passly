@@ -48,7 +48,6 @@ sealed interface DetailUiAction {
 
     data class StartFieldEdit(
         val field: DetailField,
-        val initialValue: String,
     ) : DetailUiAction
 
     data class UpdateFieldDraft(

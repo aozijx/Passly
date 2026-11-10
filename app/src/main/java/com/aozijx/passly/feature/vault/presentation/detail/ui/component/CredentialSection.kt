@@ -45,7 +45,7 @@ private fun CredentialField(
         onEditToggle = { editing ->
             onAction(
                 if (editing) {
-                    DetailUiAction.StartFieldEdit(field, state.valueForEditing)
+                    DetailUiAction.StartFieldEdit(field)
                 } else {
                     DetailUiAction.CancelFieldEdit(field)
                 },

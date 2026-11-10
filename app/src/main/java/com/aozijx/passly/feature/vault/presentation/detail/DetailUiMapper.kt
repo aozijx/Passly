@@ -265,7 +265,6 @@ private fun detailBodySectionsUiModels(
                                 revealedValue = state.revealed(FieldKey.USERNAME)?.asScopedSensitiveText(),
                                 isEditing = state.fieldEdits.isEditing(FieldKey.USERNAME),
                                 editedValue = state.fieldEdits.draft(FieldKey.USERNAME),
-                                valueForEditing = state.revealed(FieldKey.USERNAME).copyToString() ?: entry.username,
                             ),
                         )
                     }
@@ -285,7 +284,6 @@ private fun detailBodySectionsUiModels(
                                 revealedValue = state.revealed(FieldKey.PASSWORD)?.asScopedSensitiveText(),
                                 isEditing = state.fieldEdits.isEditing(FieldKey.PASSWORD),
                                 editedValue = state.fieldEdits.draft(FieldKey.PASSWORD),
-                                valueForEditing = state.revealed(FieldKey.PASSWORD).copyToString().orEmpty(),
                             ),
                         )
                     }

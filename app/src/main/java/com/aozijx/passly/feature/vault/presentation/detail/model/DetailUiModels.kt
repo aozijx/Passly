@@ -32,7 +32,6 @@ data class CredentialFieldUiState(
     val revealedValue: ScopedSensitiveText?,
     val isEditing: Boolean,
     val editedValue: String,
-    val valueForEditing: String = editedValue,
 )
 
 data class RelatedEntryUiModel(

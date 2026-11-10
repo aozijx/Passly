@@ -338,7 +338,7 @@ class DetailViewModel
                 }
 
                 is DetailUiAction.StartFieldEdit -> {
-                    mutate(DetailMutation.FieldEditingStarted(event.field.draftKey, event.initialValue))
+                    startFieldEdit(event.field)
                 }
 
                 is DetailUiAction.UpdateFieldDraft -> {
@@ -651,6 +651,16 @@ class DetailViewModel
             } else {
                 copyField(fieldKey)
             }
+        }
+
+        private fun startFieldEdit(field: DetailField) {
+            val state = _uiState.value
+            val entry = state.snapshotState.entryOrNull() ?: return
+            val fieldKey = field.fieldKey
+            val initialValue =
+                state.revealed(fieldKey).copyToString()
+                    ?: fieldReader.getFieldValue(entry, fieldKey).orEmpty()
+            mutate(DetailMutation.FieldEditingStarted(field.draftKey, initialValue))
         }
 
         private fun toggleFieldVisibility(fieldKey: FieldKey) {
