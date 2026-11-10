@@ -6,7 +6,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
@@ -182,7 +182,7 @@ data class DetailPasskeyUiModel(
 
 data class DetailEditorOverlaysUiModel(
     val tagEditor: DetailTagEditorState,
-    val faviconEditor: DetailFaviconEditorUiModel,
+    val faviconEditor: DetailFaviconEditorState,
     val savingTags: Boolean,
     val savingIcon: Boolean,
     val revisionHistory: DetailRevisionSheetUiModel,

@@ -1,5 +1,11 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.aozijx.passly.presentation.shared.components.VaultIcons
+import java.net.URI
+import java.net.URISyntaxException
+
 sealed interface DetailFaviconSource {
     data object InferredDefault : DetailFaviconSource
 
@@ -42,7 +48,30 @@ sealed interface DetailFaviconEditorState {
         val showDiscardConfirmation: Boolean = false,
     ) : DetailFaviconEditorState {
         val dirty: Boolean get() = source != initialSource || pendingInputPath != null
+        val matchingIcons: List<FaviconIconUiModel>
+            get() =
+                VaultIcons.search(searchQuery).map { icon ->
+                    FaviconIconUiModel(icon.key, icon.labelRes, icon.imageVector)
+                }
+        val canDownloadImageUrl: Boolean
+            get() = imageUrl.canDownloadImageUrl()
     }
+}
+
+data class FaviconIconUiModel(
+    val key: String,
+    @param:StringRes val labelRes: Int,
+    val imageVector: ImageVector,
+)
+
+private fun String.canDownloadImageUrl(): Boolean {
+    val uri =
+        try {
+            URI(trim())
+        } catch (_: URISyntaxException) {
+            return false
+        }
+    return uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()
 }
 
 sealed interface DetailFaviconWorkState {

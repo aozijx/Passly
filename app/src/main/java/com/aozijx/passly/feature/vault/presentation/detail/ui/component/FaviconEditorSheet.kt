@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconProcessingError
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconTab
@@ -72,7 +72,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FaviconEditorSheet(
-    state: DetailFaviconEditorUiModel.Visible,
+    state: DetailFaviconEditorState.Open,
     isSaving: Boolean,
     onTabSelected: (DetailFaviconTab) -> Unit,
     onSearchChanged: (String) -> Unit,
@@ -212,7 +212,7 @@ fun FaviconEditorSheet(
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun FaviconCustomImage(
-    state: DetailFaviconEditorUiModel.Visible,
+    state: DetailFaviconEditorState.Open,
     onUploadRequested: () -> Unit,
     onImageUrlChanged: (String) -> Unit,
     onDownloadRequested: () -> Unit,
@@ -347,7 +347,7 @@ private fun FaviconEditorHeader(source: DetailFaviconSource) {
 
 @Composable
 private fun FaviconIconLibrary(
-    state: DetailFaviconEditorUiModel.Visible,
+    state: DetailFaviconEditorState.Open,
     onSearchChanged: (String) -> Unit,
     onSourceSelected: (DetailFaviconSource) -> Unit,
     modifier: Modifier = Modifier,
