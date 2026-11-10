@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.asScopedSensitiveText
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel

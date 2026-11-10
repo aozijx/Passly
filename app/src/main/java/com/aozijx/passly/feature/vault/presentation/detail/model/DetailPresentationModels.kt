@@ -11,7 +11,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 
 data class DetailPresentationModel(
     val header: DetailHeaderUiModel,
@@ -277,3 +277,40 @@ sealed interface DetailRevisionComparisonUiState {
 
     data object Failed : DetailRevisionComparisonUiState
 }
+
+val DetailRevisionComparisonUiState.restoreInProgress: Boolean
+    get() =
+        when (this) {
+            DetailRevisionComparisonUiState.Loading,
+            DetailRevisionComparisonUiState.Failed,
+            -> false
+
+            is DetailRevisionComparisonUiState.Ready -> restore == DetailRevisionRestorePhase.Restoring
+        }
+
+val DetailRevisionSheetUiModel.blocksDismissal: Boolean
+    get() =
+        when (this) {
+            DetailRevisionSheetUiModel.Hidden,
+            is DetailRevisionSheetUiModel.ListPage,
+            -> false
+
+            is DetailRevisionSheetUiModel.ComparisonPage -> content.restoreInProgress
+        }
+
+val DetailRevisionSheetUiModel.restoreConfirmationVisible: Boolean
+    get() =
+        when (this) {
+            DetailRevisionSheetUiModel.Hidden,
+            is DetailRevisionSheetUiModel.ListPage,
+            -> false
+
+            is DetailRevisionSheetUiModel.ComparisonPage ->
+                when (val comparison = content) {
+                    DetailRevisionComparisonUiState.Loading,
+                    DetailRevisionComparisonUiState.Failed,
+                    -> false
+
+                    is DetailRevisionComparisonUiState.Ready -> comparison.restore == DetailRevisionRestorePhase.Confirming
+                }
+        }

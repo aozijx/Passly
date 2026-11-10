@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.history
 
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionDifference
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
@@ -48,10 +49,4 @@ sealed interface DetailRevisionComparisonPhase {
     data class Failed(
         val reason: DetailRevisionFailure,
     ) : DetailRevisionComparisonPhase
-}
-
-enum class DetailRevisionRestorePhase {
-    Idle,
-    Confirming,
-    Restoring,
 }

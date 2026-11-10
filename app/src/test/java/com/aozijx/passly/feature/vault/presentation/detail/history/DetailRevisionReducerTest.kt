@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.history
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import org.junit.Assert.assertEquals

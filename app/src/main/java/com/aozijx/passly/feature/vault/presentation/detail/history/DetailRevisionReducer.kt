@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.history
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionDifference
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 
 internal sealed interface DetailRevisionMutation {
     data class Opened(

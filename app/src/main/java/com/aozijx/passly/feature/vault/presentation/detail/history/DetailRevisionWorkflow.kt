@@ -11,6 +11,7 @@ import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCa
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
 import com.aozijx.passly.feature.vault.history.RevisionOperationResult
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.DetailWorkSession
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException

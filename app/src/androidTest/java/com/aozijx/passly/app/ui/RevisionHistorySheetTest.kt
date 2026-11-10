@@ -33,7 +33,7 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionD
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionItemUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionListUiState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionSheetUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

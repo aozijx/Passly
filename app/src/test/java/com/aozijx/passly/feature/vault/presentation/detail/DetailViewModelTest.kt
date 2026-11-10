@@ -86,7 +86,7 @@ import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
 import com.aozijx.passly.runtime.session.SecureSessionState

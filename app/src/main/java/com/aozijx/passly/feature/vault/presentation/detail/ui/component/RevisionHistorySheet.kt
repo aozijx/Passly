@@ -37,11 +37,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.revision.RevisionDifferenceRow
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionListUiState
-import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionSheetUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.blocksDismissal
+import com.aozijx.passly.feature.vault.presentation.detail.model.restoreConfirmationVisible
+import com.aozijx.passly.feature.vault.presentation.detail.model.restoreInProgress
 import java.text.DateFormat
 import java.util.Date
 
@@ -52,9 +55,7 @@ fun RevisionHistorySheet(
     onAction: (DetailUiAction) -> Unit,
 ) {
     if (model == DetailRevisionSheetUiModel.Hidden) return
-    val comparison = (model as? DetailRevisionSheetUiModel.ComparisonPage)?.content
-    val restore = (comparison as? DetailRevisionComparisonUiState.Ready)?.restore
-    val dismissAllowed = rememberUpdatedState(restore != DetailRevisionRestorePhase.Restoring)
+    val dismissAllowed = rememberUpdatedState(!model.blocksDismissal)
     val sheetState =
         rememberBottomSheetState(
             initialValue = SheetValue.Hidden,
@@ -84,7 +85,7 @@ fun RevisionHistorySheet(
             }
         }
     }
-    if (restore == DetailRevisionRestorePhase.Confirming) {
+    if (model.restoreConfirmationVisible) {
         AlertDialog(
             onDismissRequest = { onAction(DetailUiAction.CancelRevisionRestore) },
             title = { Text(stringResource(R.string.revision_restore_title)) },
@@ -177,9 +178,7 @@ private fun RevisionComparison(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val restoreInProgress =
-                (content as? DetailRevisionComparisonUiState.Ready)
-                    ?.restore == DetailRevisionRestorePhase.Restoring
+            val restoreInProgress = content.restoreInProgress
             IconButton(
                 enabled = !restoreInProgress,
                 onClick = { onAction(DetailUiAction.RevisionBack) },
