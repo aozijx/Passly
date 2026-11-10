@@ -20,11 +20,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
-import com.aozijx.passly.feature.scanner.presentation.AnimatedScannerOverlay
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
-import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.route.AnimatedScannerOverlay
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadFailureEffectHandler
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffectHandler
@@ -49,13 +50,12 @@ fun AddOtpEditorRoute(
     val saveFailedMessage = stringResource(R.string.vault_add_otp_save_failed)
     val loadFailedMessage = stringResource(R.string.vault_edit_entry_load_failed)
     val uriParsedMessage = stringResource(R.string.vault_otp_uri_parsed)
-    val uriParseFailedMessage = stringResource(R.string.vault_otp_uri_parse_failed)
     val saveActionModifier =
         Modifier.rememberAddEntryFabTransitionModifier(
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
         )
-    var isScannerVisible by remember { mutableStateOf(false) }
+    var scannerOverlayState by remember { mutableStateOf<ScannerOverlayState>(ScannerOverlayState.Hidden) }
 
     DisposableEffect(viewModel) {
         val owner = viewModel.onPageEntered()
@@ -72,20 +72,10 @@ fun AddOtpEditorRoute(
     LaunchedEffect(
         viewModel,
         context,
-        snackbarHostState,
         uriParsedMessage,
-        uriParseFailedMessage,
     ) {
-        collectPageEffects(lifecycleOwner.lifecycle, viewModel.events) { event ->
-            when (event) {
-                AddOtpEvent.UriParsed -> {
-                    Toast.makeText(context, uriParsedMessage, Toast.LENGTH_SHORT).show()
-                }
-
-                AddOtpEvent.UriParseFailed -> {
-                    snackbarHostState.showSnackbar(uriParseFailedMessage)
-                }
-            }
+        collectPageEffects(lifecycleOwner.lifecycle, viewModel.uriAppliedFeedback) {
+            Toast.makeText(context, uriParsedMessage, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -93,14 +83,14 @@ fun AddOtpEditorRoute(
         state = uiState,
         onAction = viewModel::onAction,
         onBack = onBack,
-        onScan = { isScannerVisible = true },
+        onScan = { scannerOverlayState = ScannerOverlayState.Visible },
         snackbarHostState = snackbarHostState,
         saveActionModifier = saveActionModifier,
         isEditingExisting = editSeedToken != null,
     )
 
     AnimatedScannerOverlay(
-        visible = isScannerVisible,
+        state = scannerOverlayState,
         resolveResult = { rawValue ->
             val config = (OtpAuthUriCodec.parse(rawValue) as? OtpUriParseResult.Parsed)?.config
             val presentation =
@@ -123,6 +113,6 @@ fun AddOtpEditorRoute(
                 },
             )
         },
-        onDismiss = { isScannerVisible = false },
+        onDismiss = { scannerOverlayState = ScannerOverlayState.Hidden },
     )
 }

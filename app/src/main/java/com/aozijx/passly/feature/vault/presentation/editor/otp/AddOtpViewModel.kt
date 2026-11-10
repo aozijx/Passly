@@ -51,25 +51,20 @@ class AddOtpViewModel
             ) : FeedbackScope
         }
 
-        private data class InputEvent(
-            val owner: FeedbackScope.Active,
-            val event: AddOtpEvent,
-        )
-
-        private val _uiState = MutableStateFlow(AddOtpCodeState())
+        private val _uiState = MutableStateFlow(AddOtpEditorUiState())
         private var editingEntryId: EntryId? = null
         val uiState = _uiState.asStateFlow()
         private var feedbackScope: FeedbackScope = FeedbackScope.Closed
         private var activePageOwner: Any? = null
-        private val _events = Channel<InputEvent>(Channel.CONFLATED)
-        val events: Flow<AddOtpEvent> =
-            _events
+        private val _uriAppliedFeedback = Channel<FeedbackScope.Active>(Channel.CONFLATED)
+        val uriAppliedFeedback: Flow<Unit> =
+            _uriAppliedFeedback
                 .receiveAsFlow()
-                .filter { delivery ->
-                    feedbackScope === delivery.owner && activePageOwner === delivery.owner.pageOwner &&
+                .filter { owner ->
+                    feedbackScope === owner && activePageOwner === owner.pageOwner &&
                         secureSessionAccessState.hasFullSecureSessionAccess() &&
-                        secureSessionAccessState.authenticationState.value === delivery.owner.authentication
-                }.map { it.event }
+                        secureSessionAccessState.authenticationState.value === owner.authentication
+                }.map { Unit }
         private val writeSession =
             EditorWriteSession(
                 scope = viewModelScope,
@@ -121,7 +116,7 @@ class AddOtpViewModel
             when (action) {
                 is AddOtpAction.FormChanged -> mutateForm { action.form }
                 is AddOtpAction.TypeChanged -> mutateForm { it.withTypeDefaults(action.type) }
-                is AddOtpAction.UriChanged -> updateUri(action.value, action.reportFailure)
+                is AddOtpAction.UriChanged -> updateUri(action.value)
                 AddOtpAction.Save -> save()
             }
         }
@@ -145,34 +140,29 @@ class AddOtpViewModel
 
         fun tryApplyScannedConfig(config: OtpConfig): Boolean {
             if (!mutateForm { it.fromParsedConfig(config) }) return false
-            publishFeedback(AddOtpEvent.UriParsed)
+            publishUriAppliedFeedback()
             return true
         }
 
-        private fun updateUri(
-            value: String,
-            reportFailure: Boolean,
-        ) {
+        private fun updateUri(value: String) {
             if (!mutateForm { it.copy(uriText = value) } || value.isBlank()) return
             when (val parsed = OtpAuthUriCodec.parse(value)) {
                 is OtpUriParseResult.Parsed -> {
-                    if (mutateForm { it.fromParsedConfig(parsed.config) }) publishFeedback(AddOtpEvent.UriParsed)
+                    if (mutateForm { it.fromParsedConfig(parsed.config) }) publishUriAppliedFeedback()
                 }
 
                 OtpUriParseResult.NotOtp,
                 OtpUriParseResult.Malformed,
                 OtpUriParseResult.Unsupported,
-                -> {
-                    if (reportFailure) publishFeedback(AddOtpEvent.UriParseFailed)
-                }
+                -> Unit
             }
         }
 
-        private fun publishFeedback(event: AddOtpEvent) {
+        private fun publishUriAppliedFeedback() {
             val pageOwner = activePageOwner ?: return
             val owner = FeedbackScope.Active(secureSessionAccessState.authenticationState.value, pageOwner)
             feedbackScope = owner
-            _events.trySend(InputEvent(owner, event))
+            _uriAppliedFeedback.trySend(owner)
         }
 
         private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState =
@@ -211,7 +201,7 @@ class AddOtpViewModel
         private fun clearSensitiveContent(reason: EditorWriteSessionClearReason) {
             feedbackScope = FeedbackScope.Closed
             _uiState.value =
-                AddOtpCodeState(
+                AddOtpEditorUiState(
                     loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
@@ -229,6 +219,6 @@ class AddOtpViewModel
 
         override fun onCleared() {
             writeSession.close()
-            _events.close()
+            _uriAppliedFeedback.close()
         }
     }

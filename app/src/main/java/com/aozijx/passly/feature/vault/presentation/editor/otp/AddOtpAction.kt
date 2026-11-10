@@ -13,7 +13,6 @@ sealed interface AddOtpAction {
 
     data class UriChanged(
         val value: String,
-        val reportFailure: Boolean = false,
     ) : AddOtpAction
 
     data object Save : AddOtpAction

@@ -126,12 +126,10 @@ private fun SaveEntryFab(
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val enabled = canSave && !isSaving
-
     val labelVisible = rememberSharedFabLabelVisible(visible = !isSaving)
     SharedAddEntryExtendedFab(
         label = stringResource(R.string.save),
-        onClick = { if (enabled) onSave() },
+        onClick = onSave,
         icon = {
             if (isSaving) {
                 CircularProgressIndicator(
@@ -143,10 +141,11 @@ private fun SaveEntryFab(
             }
         },
         expanded = !isSaving,
-        enabled = enabled,
+        enabled = canSave,
         labelVisible = labelVisible,
         modifier =
-            modifier
-                .then(if (enabled) Modifier else Modifier.semantics { disabled() }),
+            modifier.then(
+                if (canSave) Modifier else Modifier.semantics { disabled() },
+            ),
     )
 }

@@ -109,8 +109,8 @@ class AddOtpViewModelTest {
             runCurrent()
             assertFalse(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
             assertEquals("JBSWY3DPEHPK3PXP", model.uiState.value.form.secret)
-            val events = mutableListOf<AddOtpEvent>()
-            backgroundScope.launch { model.events.toList(events) }
+            val events = mutableListOf<Unit>()
+            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
             runCurrent()
             assertTrue(events.isEmpty())
             release.complete(Unit)
@@ -122,13 +122,13 @@ class AddOtpViewModelTest {
         runTest {
             val session = MutableSession()
             val model = createViewModel(createEntryUseCase(session = session), session)
-            model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
+            model.onAction(AddOtpAction.UriChanged(VALID_URI))
             session.state.value = AuthenticationState.Locked
             runCurrent()
             session.state.value = AuthenticationState.Authenticated(2L)
             runCurrent()
-            val events = mutableListOf<AddOtpEvent>()
-            backgroundScope.launch { model.events.toList(events) }
+            val events = mutableListOf<Unit>()
+            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
             runCurrent()
             assertTrue(events.isEmpty())
         }
@@ -137,15 +137,15 @@ class AddOtpViewModelTest {
     fun manualEditingInvalidatesBufferedParseFeedback() =
         runTest {
             val model = createViewModel()
-            model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
+            model.onAction(AddOtpAction.UriChanged(VALID_URI))
             model.onAction(
                 AddOtpAction.FormChanged(
                     model.uiState.value.form
                         .copy(title = "New draft"),
                 ),
             )
-            val events = mutableListOf<AddOtpEvent>()
-            backgroundScope.launch { model.events.toList(events) }
+            val events = mutableListOf<Unit>()
+            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
             runCurrent()
             assertTrue(events.isEmpty())
         }
@@ -155,25 +155,26 @@ class AddOtpViewModelTest {
         runTest {
             val model = createViewModel()
             model.onPageEntered()
-            model.onAction(AddOtpAction.UriChanged("invalid", true))
-            model.onAction(AddOtpAction.UriChanged(VALID_URI, true))
-            val events = mutableListOf<AddOtpEvent>()
-            backgroundScope.launch { model.events.toList(events) }
+            model.onAction(AddOtpAction.UriChanged(VALID_URI))
+            model.onAction(AddOtpAction.UriChanged(VALID_URI))
+            val events = mutableListOf<Unit>()
+            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
             runCurrent()
-            assertEquals(listOf(AddOtpEvent.UriParsed), events)
+            assertEquals(listOf(Unit), events)
         }
 
     @Test
-    fun destroyedEditorDoesNotDeliverBufferedFailures() =
+    fun destroyedEditorDoesNotDeliverBufferedSuccessFeedback() =
         runTest {
             val model = createViewModel()
-            model.onAction(AddOtpAction.UriChanged("invalid", true))
+            model.onPageEntered()
+            model.onAction(AddOtpAction.UriChanged(VALID_URI))
             ViewModelStore().apply {
                 put("otp", model)
                 clear()
             }
-            val events = mutableListOf<AddOtpEvent>()
-            backgroundScope.launch { model.events.toList(events) }
+            val events = mutableListOf<Unit>()
+            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
             runCurrent()
             assertTrue(events.isEmpty())
         }
@@ -318,17 +319,16 @@ class AddOtpViewModelTest {
             viewModel.onAction(
                 AddOtpAction.UriChanged(
                     "otpauth://totp/Example%3Aalice+tag%2540mail?secret=JBSWY3DPEHPK3PXP&issuer=Example",
-                    reportFailure = true,
                 ),
             )
 
             assertEquals("alice+tag%40mail", viewModel.uiState.value.form.accountName)
             assertEquals("Example", viewModel.uiState.value.form.issuer)
-            assertEquals(AddOtpEvent.UriParsed, viewModel.events.first())
+            assertEquals(Unit, viewModel.uriAppliedFeedback.first())
         }
 
     @Test
-    fun unsupportedUriReportsFailureWithoutReplacingExistingCredentials() =
+    fun unsupportedUriDoesNotReplaceExistingCredentialsOrEmitSuccessFeedback() =
         runTest {
             val viewModel = createViewModel()
             viewModel.onPageEntered()
@@ -337,13 +337,12 @@ class AddOtpViewModelTest {
             viewModel.onAction(
                 AddOtpAction.UriChanged(
                     "otpauth://totp/alice?secret=JBSWY3DPEHPK3PXP&algorithm=MD5",
-                    reportFailure = true,
                 ),
             )
 
             assertEquals("Existing", viewModel.uiState.value.form.secret)
             assertEquals("Keep", viewModel.uiState.value.form.title)
-            assertEquals(AddOtpEvent.UriParseFailed, viewModel.events.first())
+            assertNull(withTimeoutOrNull(1) { viewModel.uriAppliedFeedback.first() })
         }
 
     @Test
@@ -351,12 +350,12 @@ class AddOtpViewModelTest {
         runTest {
             val viewModel = createViewModel()
             val oldOwner = viewModel.onPageEntered()
-            viewModel.onAction(AddOtpAction.UriChanged("invalid", reportFailure = true))
+            viewModel.onAction(AddOtpAction.UriChanged(VALID_URI))
 
             viewModel.onPageExited(oldOwner)
             viewModel.onPageEntered()
 
-            assertNull(withTimeoutOrNull(1) { viewModel.events.first() })
+            assertNull(withTimeoutOrNull(1) { viewModel.uriAppliedFeedback.first() })
         }
 
     @Test
@@ -376,7 +375,7 @@ class AddOtpViewModelTest {
             )
 
         assertTrue(viewModel.tryApplyScannedConfig(config))
-        val state: AddOtpCodeState = viewModel.uiState.value
+        val state: AddOtpEditorUiState = viewModel.uiState.value
         val entry =
             EntryDraftMaterializer().materialize(
                 state.form.toEntryDraft(),

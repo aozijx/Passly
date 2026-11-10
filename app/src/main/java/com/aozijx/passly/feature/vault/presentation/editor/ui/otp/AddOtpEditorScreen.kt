@@ -13,16 +13,15 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
-import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpCodeState
+import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpEditorUiState
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @Composable
 fun AddOtpEditorScreen(
-    state: AddOtpCodeState,
+    state: AddOtpEditorUiState,
     onAction: (AddOtpAction) -> Unit,
     onBack: () -> Unit,
     onScan: () -> Unit,
@@ -45,7 +44,7 @@ fun AddOtpEditorScreen(
         },
         modifier = modifier,
         saveActionModifier = saveActionModifier,
-        isLoading = state.loadPhase == EditorLoadPhase.Loading,
+        isLoading = state.isLoading,
     ) {
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(
