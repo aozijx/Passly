@@ -64,6 +64,8 @@ sealed interface DetailUiAction {
         val field: DetailField,
     ) : DetailUiAction
 
+    data object ActivateSshPrivateKey : DetailUiAction
+
     data object RevealBankCardFields : DetailUiAction
 
     data object RevealSshFields : DetailUiAction

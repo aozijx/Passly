@@ -15,6 +15,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
+import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
@@ -33,6 +34,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionDifference
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
@@ -64,6 +66,7 @@ import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.detail.EntryDetailQueryImpl
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
@@ -116,6 +119,63 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
+    @Test
+    fun sshPrivateKeyActivationRevealsThenCopiesFromCurrentState() =
+        runTest {
+            var revealCount = 0
+            val copiedValues = mutableListOf<String>()
+            val sensitiveFields =
+                object : SensitiveFieldRepository {
+                    override suspend fun getPresence(entryId: EntryId) =
+                        SensitiveFieldPresence(entryId, setOf(SensitiveFieldKey.SSH_PRIVATE_KEY))
+
+                    override suspend fun reveal(
+                        entryId: EntryId,
+                        key: SensitiveFieldKey,
+                        action: SensitiveAccessAction,
+                        permit: AuthorizationPermit,
+                    ) = RevealedSensitiveField(entryId, key, OwnedChars.fromString(SSH_PRIVATE_KEY))
+
+                    override suspend fun revealMany(
+                        entryId: EntryId,
+                        keys: Set<SensitiveFieldKey>,
+                        action: SensitiveAccessAction,
+                        permit: AuthorizationPermit,
+                    ): List<RevealedSensitiveField> {
+                        revealCount += 1
+                        return keys.map { key ->
+                            RevealedSensitiveField(entryId, key, OwnedChars.fromString(SSH_PRIVATE_KEY))
+                        }
+                    }
+
+                    override suspend fun readBundle(entryId: EntryId): EntrySecret = EntrySecret(SshCredential())
+                }
+            val fixture =
+                Fixture(
+                    initialEntry = sshEntry(),
+                    sensitiveFieldRepository = sensitiveFields,
+                    authorizationGate = AllowingAuthorizationGate,
+                    clipboardWriter = SensitiveClipboardWriter { copiedValues += it },
+                )
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+
+                fixture.viewModel.onAction(DetailUiAction.ActivateSshPrivateKey)
+                runCurrent()
+                assertEquals(1, revealCount)
+                assertTrue(fixture.viewModel.uiState.value.revealed(FieldKey.SSH_KEY) != null)
+
+                fixture.viewModel.onAction(DetailUiAction.ActivateSshPrivateKey)
+                runCurrent()
+                assertEquals(listOf(SSH_PRIVATE_KEY), copiedValues)
+                assertTrue(fixture.viewModel.uiState.value.revealed(FieldKey.SSH_KEY) == null)
+            } finally {
+                store.clear()
+            }
+        }
+
     @Test
     fun `saving an unchanged field draft does not start an edit`() =
         runTest {
@@ -1215,16 +1275,18 @@ class DetailViewModelTest {
         initialEntry: Entry = currentEntry(),
         otpConfigRepository: OtpConfigRepository = NoOtpConfigRepository,
         revisionSnapshot: RedactedEntryRevision = restoredSnapshot(),
+        authorizationGate: AuthorizationGate = UnusedAuthorizationGate,
+        clipboardWriter: SensitiveClipboardWriter = SensitiveClipboardWriter { },
     ) {
         val access = AuthenticatedAccess()
         val entries = MutableEntries(initialEntry)
         private val entryQuery = entryQueryRepository(entries)
         val revisions = BlockingRevisionRepository(entries, revisionMetadataFlow, revisionSnapshot, revisionInitialization)
         private val sensitive = sensitiveFieldRepository
-        private val authGate = UnusedAuthorizationGate
+        private val authGate = authorizationGate
         private val activity = NoOpActivityRecorder
         private val fieldReader: EntryFieldReader = DefaultEntryFieldReader()
-        private val clipboard = SensitiveClipboardWriter { }
+        private val clipboard = clipboardWriter
         private val sessionProvider = UnlockedSessionProvider()
         private val freshness = FreshnessState()
         private val installedAppDirectory = installedApps
@@ -1492,6 +1554,14 @@ class DetailViewModelTest {
         ): AuthorizationResult<T> = error("Authorization is not used by this test")
     }
 
+    private object AllowingAuthorizationGate : AuthorizationGate {
+        override suspend fun <T> authorize(
+            scope: AuthorizationScope,
+            input: AuthInput,
+            block: suspend (AuthorizationPermit) -> T,
+        ): AuthorizationResult<T> = AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
+    }
+
     private object EmptyInstalledAppDirectory : InstalledAppDirectory {
         override suspend fun metadataFor(packageName: String): InstalledAppMetadata? = null
 
@@ -1583,6 +1653,15 @@ class DetailViewModelTest {
             profile = EntryProfile(title),
             secret = EntrySecret(LoginCredential()),
         )
+
+        fun sshEntry() =
+            Entry(
+                identity = EntryIdentity(ENTRY_ID, EntryType.SSH, EntryVersion(2), EntryTimestamps(1L)),
+                profile = EntryProfile("Current SSH"),
+                secret = EntrySecret(SshCredential()),
+            )
+
+        const val SSH_PRIVATE_KEY = "private-key"
 
         fun passwordItem(id: EntryId, title: String) = EntryListItem(
             identity = EntryIdentity(id, EntryType.LOGIN, timestamps = EntryTimestamps(1L)),

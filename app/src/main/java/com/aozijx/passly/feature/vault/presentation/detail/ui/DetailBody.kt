@@ -173,13 +173,7 @@ fun DetailBody(
                                 },
                                 onPassphraseChanged = { onAction(DetailUiAction.UpdateFieldDraft(DetailField.SSH_PASSPHRASE, it)) },
                                 onPassphraseSaved = { onAction(DetailUiAction.SaveField(DetailField.SSH_PASSPHRASE, it)) },
-                                onPrivateKeyClick = {
-                                    if (ssh.privateKey is ProtectedDetailFieldUiState.Revealed) {
-                                        onAction(DetailUiAction.CopyField(DetailField.SSH_PRIVATE_KEY))
-                                    } else {
-                                        onAction(DetailUiAction.ToggleFieldVisibility(DetailField.SSH_PRIVATE_KEY))
-                                    }
-                                },
+                                onPrivateKeyClick = { onAction(DetailUiAction.ActivateSshPrivateKey) },
                                 onRevealAll = { onAction(DetailUiAction.RevealSshFields) },
                             )
                         }

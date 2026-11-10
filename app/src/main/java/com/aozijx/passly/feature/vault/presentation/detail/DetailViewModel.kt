@@ -350,15 +350,11 @@ class DetailViewModel
                 }
 
                 is DetailUiAction.ToggleFieldVisibility -> {
-                    val current = _uiState.value.snapshotState.entryOrNull() ?: return
-                    val key = event.field.fieldKey
-                    if (_uiState.value.revealed(key) != null) {
-                        setRevealedField(key, null)
-                    } else {
-                        viewModelScope.launch {
-                            revealFields(current, setOf(key))
-                        }
-                    }
+                    toggleFieldVisibility(event.field.fieldKey)
+                }
+
+                DetailUiAction.ActivateSshPrivateKey -> {
+                    activateSshPrivateKey()
                 }
 
                 DetailUiAction.RevealBankCardFields -> {
@@ -647,6 +643,25 @@ class DetailViewModel
         }
 
         private fun openPasswordBinding() = passwordRelationsWorkflow.open()
+
+        private fun activateSshPrivateKey() {
+            val fieldKey = FieldKey.SSH_KEY
+            if (_uiState.value.revealed(fieldKey) == null) {
+                toggleFieldVisibility(fieldKey)
+            } else {
+                copyField(fieldKey)
+            }
+        }
+
+        private fun toggleFieldVisibility(fieldKey: FieldKey) {
+            val state = _uiState.value
+            val entry = state.snapshotState.entryOrNull() ?: return
+            if (state.revealed(fieldKey) != null) {
+                setRevealedField(fieldKey, null)
+            } else {
+                viewModelScope.launch { revealFields(entry, setOf(fieldKey)) }
+            }
+        }
 
         private fun copyField(fieldKey: FieldKey) {
             val entry = _uiState.value.snapshotState.entryOrNull() ?: return
