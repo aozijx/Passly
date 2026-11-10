@@ -30,10 +30,10 @@
 ### Task 1: Map viewfinder bounds to camera analysis results
 
 **Files:**
-- Modify: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraHost.kt`
-- Add: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraFrameAnalyzer.kt`
-- Add: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerCameraSession.kt`
-- Add: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ScannerRecognitionRegion.kt`
+- Modify: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/camera/ScannerCameraHost.kt`
+- Add: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/camera/ScannerCameraFrameAnalyzer.kt`
+- Add: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/camera/ScannerCameraSession.kt`
+- Add: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/camera/ScannerRecognitionRegion.kt`
 - Modify: `app/src/main/java/com/aozijx/passly/feature/scanner/presentation/ui/ScannerViewfinder.kt`
 
 **Interfaces:**

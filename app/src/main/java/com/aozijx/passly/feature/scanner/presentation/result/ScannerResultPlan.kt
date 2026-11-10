@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.result
 
 internal data class ScannerResultPlan(
     val presentation: ScannerResultPresentation,

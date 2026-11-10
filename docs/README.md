@@ -155,7 +155,6 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 - [应用架构与并发设计 TODO](superpowers/plans/2026-11-06-app-architecture-concurrency-todo.md)
 - [Diagnostics 写入与 flush 可靠性跟进](superpowers/plans/2026-11-06-passly-diagnostics-reliability-followup.md)
 - [Scanner 入口与 Framing 实施计划](superpowers/plans/2026-11-06-scanner-entry-and-framing.md)
-- [Scanner 审查待办](superpowers/plans/2026-11-06-passly-scanner-review-followups.md)
 - [OTP 审查待办](superpowers/plans/2026-11-06-passly-otp-review-followups.md)
 - [Security 审查待办](superpowers/plans/2026-11-06-passly-security-scan-followups.md)
 - [Vault 搜索审查待办](superpowers/plans/2026-11-06-passly-vault-search-review-followups.md)

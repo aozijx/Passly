@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.route
 
 import android.content.Context
 import android.os.VibrationEffect
@@ -29,13 +29,31 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.scanner.presentation.action.ScannerScreenAction
+import com.aozijx.passly.feature.scanner.presentation.action.ScannerUiAction
+import com.aozijx.passly.feature.scanner.presentation.action.resolveScannerScreenAction
+import com.aozijx.passly.feature.scanner.presentation.camera.ScannerCameraHost
+import com.aozijx.passly.feature.scanner.presentation.image.ImageRef
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultOutcome
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultSession
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerFeedback
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerUiState
+import com.aozijx.passly.feature.scanner.presentation.state.mapScannerCameraState
+import com.aozijx.passly.feature.scanner.presentation.state.mapScannerResultActionState
+import com.aozijx.passly.feature.scanner.presentation.state.mapScannerScreenState
 import com.aozijx.passly.feature.scanner.presentation.ui.ScannerScreen
+import com.aozijx.passly.feature.scanner.presentation.viewmodel.ScannerViewModel
+import com.aozijx.passly.feature.scanner.presentation.viewfinder.ScannerViewfinderFrame
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
 import kotlinx.coroutines.launch
 
 @Composable
 internal fun ScannerRoute(
+    overlayState: ScannerOverlayState,
     resolveResult: (String) -> ScannerResultPlan,
     onDismiss: () -> Unit,
 ) {
@@ -43,8 +61,9 @@ internal fun ScannerRoute(
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val resultSession = remember { ScannerResultSession() }
+    val resultSession = remember(overlayState) { ScannerResultSession() }
     val resultPhase by resultSession.phase.collectAsStateWithLifecycle()
+    val resultActions = mapScannerResultActionState(resultPhase)
     val resultValue = (state as? ScannerUiState.ShowingResult)?.result?.rawValue
     val resultPlan = remember(resultValue) {
         resultValue?.let(resolveResult)
@@ -55,8 +74,21 @@ internal fun ScannerRoute(
     val context = LocalContext.current
     val copySucceededMessage = stringResource(R.string.scanner_copy_succeeded)
     val rejectedMessage = stringResource(R.string.scanner_result_rejected)
+    val actionFailedMessage = stringResource(R.string.scanner_result_action_failed)
     val imageNoBarcodeMessage = stringResource(R.string.scanner_image_no_barcode)
     val imageDecodeFailedMessage = stringResource(R.string.scanner_image_decode_failed)
+    DisposableEffect(viewModel, overlayState) {
+        when (overlayState) {
+            ScannerOverlayState.Hidden -> Unit
+            ScannerOverlayState.Visible -> viewModel.onAction(ScannerUiAction.StartScanning)
+        }
+        onDispose {
+            when (overlayState) {
+                ScannerOverlayState.Hidden -> Unit
+                ScannerOverlayState.Visible -> viewModel.onAction(ScannerUiAction.StopScanning)
+            }
+        }
+    }
     val pickPhoto =
         rememberImagePicker { uri, _ ->
             viewModel.onAction(ScannerUiAction.DecodeImage(ImageRef(uri.toString())))
@@ -64,47 +96,40 @@ internal fun ScannerRoute(
 
     fun dismissScanner() {
         resultSession.close()
-        viewModel.onAction(ScannerUiAction.StopScanning)
         onDismiss()
     }
 
     LaunchedEffect(viewModel, lifecycleOwner, context, copySucceededMessage, imageNoBarcodeMessage, imageDecodeFailedMessage) {
-        collectScannerRouteEffects(
+        collectScannerRouteFeedback(
             lifecycle = lifecycleOwner.lifecycle,
-            effects = viewModel.effects,
+            uiState = viewModel.uiState,
             onHostStarted = { viewModel.onAction(ScannerUiAction.HostStarted) },
             onHostStopped = { viewModel.onAction(ScannerUiAction.HostStopped) },
-            onScanSucceeded = {
-                (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
-                    .defaultVibrator
-                    .vibrate(
-                        VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE),
-                    )
-            },
-            onUiEffect = { effect ->
+            onFeedbackConsumed = { viewModel.onAction(ScannerUiAction.FeedbackConsumed(it)) },
+            onFeedback = { feedback ->
+                if (feedback.kind == ScannerFeedback.Kind.ScanSucceeded) {
+                    (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
+                        .defaultVibrator
+                        .vibrate(
+                            VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE),
+                        )
+                    return@collectScannerRouteFeedback
+                }
                 val message =
-                    when (effect) {
-                        ScannerEffect.CopySucceeded -> copySucceededMessage
-                        ScannerEffect.ImageNoBarcode -> imageNoBarcodeMessage
-                        ScannerEffect.ImageDecodeFailed -> imageDecodeFailedMessage
-                        ScannerEffect.ScanSucceeded -> return@collectScannerRouteEffects
+                    when (feedback.kind) {
+                        ScannerFeedback.Kind.CopySucceeded -> copySucceededMessage
+                        ScannerFeedback.Kind.ImageNoBarcode -> imageNoBarcodeMessage
+                        ScannerFeedback.Kind.ImageDecodeFailed -> imageDecodeFailedMessage
+                        ScannerFeedback.Kind.ScanSucceeded -> return@collectScannerRouteFeedback
                     }
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             },
         )
     }
 
-    DisposableEffect(viewModel) {
-        onDispose { viewModel.onAction(ScannerUiAction.StopScanning) }
-    }
-
     fun handleScreenAction(action: ScannerScreenAction) {
-        val phase = resultSession.phase.value
-        if (phase == ScannerResultPhase.Closed ||
-            (phase == ScannerResultPhase.Handling && action != ScannerScreenAction.Dismiss)
-        ) return
-
-        when (action) {
+        when (resolveScannerScreenAction(action, overlayState, resultActions)) {
+            null -> Unit
             ScannerScreenAction.Dismiss -> dismissScanner()
             ScannerScreenAction.PickPhoto -> {
                 viewModel.onAction(ScannerUiAction.StartScanning)
@@ -114,13 +139,18 @@ internal fun ScannerRoute(
             ScannerScreenAction.ScanAgain -> viewModel.onAction(ScannerUiAction.StartScanning)
             ScannerScreenAction.CopyResult -> viewModel.onAction(ScannerUiAction.CopyText)
             ScannerScreenAction.ConfirmResult -> {
-                val plan = resultPlan ?: return
-                scope.launch {
-                    when (resultSession.confirm { plan.confirm() }) {
-                        ScannerResultOutcome.Handled -> dismissScanner()
-                        ScannerResultOutcome.Ignored -> Unit
-                        ScannerResultOutcome.Rejected -> {
-                            Toast.makeText(context, rejectedMessage, Toast.LENGTH_SHORT).show()
+                resultPlan?.let { plan ->
+                    scope.launch {
+                        when (resultSession.confirm { plan.confirm() }) {
+                            ScannerResultOutcome.Handled -> dismissScanner()
+                            ScannerResultOutcome.Ignored -> Unit
+                            ScannerResultOutcome.Rejected -> {
+                                Toast.makeText(context, rejectedMessage, Toast.LENGTH_SHORT).show()
+                            }
+
+                            is ScannerResultOutcome.Failed -> {
+                                Toast.makeText(context, actionFailedMessage, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
@@ -128,11 +158,16 @@ internal fun ScannerRoute(
         }
     }
 
-    BackHandler { handleScreenAction(ScannerScreenAction.Dismiss) }
+    BackHandler(enabled = overlayState.isVisible) { handleScreenAction(ScannerScreenAction.Dismiss) }
 
-    val isResultActionLocked = resultPhase != ScannerResultPhase.Ready
-    val resultPresentation = resultPlan?.presentation ?: ScannerResultPresentation.DEFAULT
-    val isScanning = state == ScannerUiState.Scanning && !isResultActionLocked
+    val screenState =
+        mapScannerScreenState(
+            overlay = overlayState,
+            scanner = state,
+            resultActions = resultActions,
+            presentation = resultPlan?.presentation ?: ScannerResultPresentation.DEFAULT,
+        )
+    val cameraState = mapScannerCameraState(overlayState, state)
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().background(Color.Black),
@@ -145,14 +180,12 @@ internal fun ScannerRoute(
             onBarcodeDetected = { viewModel.onAction(ScannerUiAction.BarcodeDetected(it)) },
             onPermissionDenied = ::dismissScanner,
             onFailure = { viewModel.onAction(ScannerUiAction.CameraFailure(it)) },
-            isScanning = isScanning,
+            cameraState = cameraState,
             viewfinderFrame = viewfinderFrame,
         )
         ScannerScreen(
-            content = state,
-            isScanning = isScanning,
-            isResultActionLocked = isResultActionLocked,
-            resultPresentation = resultPresentation,
+            state = screenState,
+            cameraState = cameraState,
             viewfinderFrame = viewfinderFrame,
             onAction = ::handleScreenAction,
         )
@@ -161,12 +194,12 @@ internal fun ScannerRoute(
 
 @Composable
 internal fun AnimatedScannerOverlay(
-    visible: Boolean,
+    state: ScannerOverlayState,
     resolveResult: (String) -> ScannerResultPlan,
     onDismiss: () -> Unit,
 ) {
     AnimatedVisibility(
-        visible = visible,
+        visible = state.isVisible,
         enter =
             fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
                 slideInVertically(
@@ -181,6 +214,7 @@ internal fun AnimatedScannerOverlay(
                 ),
     ) {
         ScannerRoute(
+            overlayState = state,
             resolveResult = resolveResult,
             onDismiss = onDismiss,
         )

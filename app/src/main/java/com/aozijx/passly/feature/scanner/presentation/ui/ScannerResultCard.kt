@@ -28,14 +28,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
-import com.aozijx.passly.feature.scanner.presentation.ScannerScreenAction
+import com.aozijx.passly.feature.scanner.presentation.action.ScannerScreenAction
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerResultActionState
 
 @Composable
 internal fun ScannerResultCard(
     rawValue: String,
-    isBusy: Boolean,
+    actions: ScannerResultActionState,
     presentation: ScannerResultPresentation,
     onAction: (ScannerScreenAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -79,14 +80,17 @@ internal fun ScannerResultCard(
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 FilledTonalButton(
-                    enabled = !isBusy,
+                    enabled = actions is ScannerResultActionState.Available,
                     onClick = { onAction(ScannerScreenAction.ScanAgain) },
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(stringResource(R.string.scanner_scan_again))
                 }
                 if (presentation.showCopyAction) {
-                    IconButton(enabled = !isBusy, onClick = { onAction(ScannerScreenAction.CopyResult) }) {
+                    IconButton(
+                        enabled = actions is ScannerResultActionState.Available,
+                        onClick = { onAction(ScannerScreenAction.CopyResult) },
+                    ) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = stringResource(R.string.scanner_copy_text),
@@ -94,13 +98,20 @@ internal fun ScannerResultCard(
                     }
                 }
                 Button(
-                    enabled = !isBusy,
+                    enabled = actions is ScannerResultActionState.Available,
                     onClick = { onAction(ScannerScreenAction.ConfirmResult) },
                     modifier = Modifier.weight(1f),
                 ) {
-                    if (isBusy) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
+                    when (actions) {
+                        ScannerResultActionState.Handling -> {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                        }
+
+                        ScannerResultActionState.Available,
+                        ScannerResultActionState.DismissOnly,
+                        ScannerResultActionState.Locked,
+                        -> Unit
                     }
                     Text(primaryActionLabel)
                 }

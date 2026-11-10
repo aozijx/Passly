@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.camera
 
 import android.graphics.Matrix
 import android.graphics.RectF

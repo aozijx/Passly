@@ -31,7 +31,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.aozijx.passly.feature.scanner.presentation.ScannerViewfinderFrame
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerCameraState
+import com.aozijx.passly.feature.scanner.presentation.viewfinder.ScannerViewfinderFrame
 
 private val VIEWFINDER_CORNER_RADIUS = 28.dp
 private val FRAME_DECORATION_LENGTH = 42.dp
@@ -40,7 +41,7 @@ private val FRAME_DECORATION_WIDTH = 4.dp
 
 @Composable
 internal fun ScannerViewfinder(
-    isScanning: Boolean,
+    cameraState: ScannerCameraState,
     frame: ScannerViewfinderFrame,
     modifier: Modifier = Modifier,
 ) {
@@ -86,33 +87,37 @@ internal fun ScannerViewfinder(
                             shape = RoundedCornerShape(VIEWFINDER_CORNER_RADIUS)
                         },
             ) {
-                if (isScanning) {
-                    val transition = rememberInfiniteTransition(label = "scanner-line")
-                    val progress by transition.animateFloat(
-                        initialValue = 0.08f,
-                        targetValue = 0.92f,
-                        animationSpec =
-                            infiniteRepeatable(
-                                animation = tween(durationMillis = 1_600, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse,
-                            ),
-                        label = "scanner-line-progress",
-                    )
-                    val travelPx = with(density) { (frameSize - 2.dp).toPx() }
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(2.dp)
-                                .graphicsLayer { translationY = travelPx * progress }
-                                .background(
-                                    Brush.horizontalGradient(
-                                        0f to Color.Transparent,
-                                        0.5f to MaterialTheme.colorScheme.primary,
-                                        1f to Color.Transparent,
-                                    ),
+                when (cameraState) {
+                    ScannerCameraState.Active -> {
+                        val transition = rememberInfiniteTransition(label = "scanner-line")
+                        val progress by transition.animateFloat(
+                            initialValue = 0.08f,
+                            targetValue = 0.92f,
+                            animationSpec =
+                                infiniteRepeatable(
+                                    animation = tween(durationMillis = 1_600, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Reverse,
                                 ),
-                    )
+                            label = "scanner-line-progress",
+                        )
+                        val travelPx = with(density) { (frameSize - 2.dp).toPx() }
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(2.dp)
+                                    .graphicsLayer { translationY = travelPx * progress }
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            0f to Color.Transparent,
+                                            0.5f to MaterialTheme.colorScheme.primary,
+                                            1f to Color.Transparent,
+                                        ),
+                                    ),
+                        )
+                    }
+
+                    ScannerCameraState.Idle -> Unit
                 }
             }
             // Draw the frame after the clipped scan content so its corner marks stay visible.

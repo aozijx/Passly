@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.action
 
 sealed interface ScannerScreenAction {
     data object Dismiss : ScannerScreenAction

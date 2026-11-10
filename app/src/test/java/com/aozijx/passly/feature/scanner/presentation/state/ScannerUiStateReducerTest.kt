@@ -1,18 +1,19 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.state
 
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResult
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class ScannerReducerTest {
+class ScannerUiStateReducerTest {
     @Test
     fun `starting a scan clears the previous result`() {
         val result =
-            ScannerReducer.reduce(
+            ScannerUiStateReducer.reduce(
                 ScannerUiState.ShowingResult(ScannerResult("old result")),
                 ScannerMutation.Started,
             )
 
-        assertEquals(ScannerUiState.Scanning, result)
+        assertEquals(ScannerUiState.Scanning(), result)
     }
 
     @Test
@@ -20,8 +21,8 @@ class ScannerReducerTest {
         val scanResult =
             ScannerResult(rawValue = "otpauth://totp/example")
         val result =
-            ScannerReducer.reduce(
-                ScannerUiState.Scanning,
+            ScannerUiStateReducer.reduce(
+                ScannerUiState.Scanning(),
                 ScannerMutation.ScanCompleted(scanResult),
             )
 
@@ -31,7 +32,7 @@ class ScannerReducerTest {
     @Test
     fun `stopping scanner clears sensitive result state`() {
         val result =
-            ScannerReducer.reduce(
+            ScannerUiStateReducer.reduce(
                 ScannerUiState.ShowingResult(
                     ScannerResult(rawValue = "otpauth://totp/example?secret=secret"),
                 ),
@@ -44,8 +45,8 @@ class ScannerReducerTest {
     @Test
     fun `image processing is an explicit phase`() {
         val result =
-            ScannerReducer.reduce(
-                ScannerUiState.Scanning,
+            ScannerUiStateReducer.reduce(
+                ScannerUiState.Scanning(),
                 ScannerMutation.ImageProcessingStarted,
             )
 
@@ -58,7 +59,7 @@ class ScannerReducerTest {
 
         assertEquals(
             ScannerUiState.Stopped,
-            ScannerReducer.reduce(
+            ScannerUiStateReducer.reduce(
                 ScannerUiState.Stopped,
                 ScannerMutation.ScanCompleted(lateResult),
             ),

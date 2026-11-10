@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.viewfinder
 
 import android.graphics.RectF
 import androidx.compose.ui.unit.Density

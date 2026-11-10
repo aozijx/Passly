@@ -74,6 +74,7 @@
     <string name="scanner_image_no_barcode">No QR code found in this image</string>
     <string name="scanner_image_decode_failed">Could not read this image. Please try again.</string>
     <string name="scanner_result_rejected">This content cannot be handled here</string>
+    <string name="scanner_result_action_failed">Couldn\'t process this result. Try again.</string>
     <string name="wifi_scanned_seed_unavailable">Scanned content expired. Scan it again.</string>
     <string name="backup_export_success">Export successful</string>
     <string name="backup_import_success">Import successful (icons will sync in background)</string>

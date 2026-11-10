@@ -1,4 +1,6 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.action
+
+import com.aozijx.passly.feature.scanner.presentation.image.ImageRef
 
 sealed interface ScannerUiAction {
     data class BarcodeDetected(
@@ -10,6 +12,10 @@ sealed interface ScannerUiAction {
     ) : ScannerUiAction
 
     data object CopyText : ScannerUiAction
+
+    data class FeedbackConsumed(
+        val id: Long,
+    ) : ScannerUiAction
 
     data object StartScanning : ScannerUiAction
 

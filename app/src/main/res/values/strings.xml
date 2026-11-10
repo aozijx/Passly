@@ -81,6 +81,7 @@
     <string name="scanner_image_no_barcode">未在图片中识别到二维码</string>
     <string name="scanner_image_decode_failed">无法识别此图片，请重试</string>
     <string name="scanner_result_rejected">当前页面无法处理此内容</string>
+    <string name="scanner_result_action_failed">处理失败，请重试</string>
     <string name="wifi_scanned_seed_unavailable">扫码内容已失效，请重新扫描</string>
     <string name="backup_export_success">导出成功</string>
     <string name="backup_import_success">导入成功，图标后台同步中</string>

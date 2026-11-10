@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.camera
 
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -21,6 +21,8 @@ import com.aozijx.passly.app.platform.permission.rememberPermissionRequestHost
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerCameraState
+import com.aozijx.passly.feature.scanner.presentation.viewfinder.ScannerViewfinderFrame
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -31,7 +33,7 @@ internal fun ScannerCameraHost(
     onBarcodeDetected: (String) -> Unit,
     onPermissionDenied: () -> Unit,
     onFailure: (Throwable) -> Unit,
-    isScanning: Boolean,
+    cameraState: ScannerCameraState,
     viewfinderFrame: ScannerViewfinderFrame,
     modifier: Modifier = Modifier,
 ) {
@@ -45,20 +47,25 @@ internal fun ScannerCameraHost(
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     val cameraSession = remember { ScannerCameraSession() }
-    val hasPermission = remember { mutableStateOf(false) }
+    val permissionState = remember { mutableStateOf<ScannerCameraPermissionState>(ScannerCameraPermissionState.Checking) }
     val currentOnBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
     val currentOnPermissionDenied by rememberUpdatedState(onPermissionDenied)
     val currentOnFailure by rememberUpdatedState(onFailure)
     val currentViewfinderFrame by rememberUpdatedState(viewfinderFrame)
     val permissionHost = rememberPermissionRequestHost("scanner.camera") { permission, result ->
         if (permission != RuntimePermission.CAMERA) return@rememberPermissionRequestHost
-        hasPermission.value = result is PermissionRequestOutcome.Granted
-        if (!hasPermission.value) currentOnPermissionDenied()
+        when (result) {
+            PermissionRequestOutcome.Granted -> permissionState.value = ScannerCameraPermissionState.Granted
+            is PermissionRequestOutcome.Denied -> {
+                permissionState.value = ScannerCameraPermissionState.Denied
+                currentOnPermissionDenied()
+            }
+        }
     }
 
     LaunchedEffect(permissionHost) {
         when (permissionHost.status(RuntimePermission.CAMERA)) {
-            PermissionStatus.GRANTED -> hasPermission.value = true
+            PermissionStatus.GRANTED -> permissionState.value = ScannerCameraPermissionState.Granted
             PermissionStatus.DENIED -> permissionHost.request(RuntimePermission.CAMERA)
             else -> currentOnPermissionDenied()
         }
@@ -72,41 +79,51 @@ internal fun ScannerCameraHost(
         }
     }
 
-    DisposableEffect(lifecycleOwner, hasPermission.value, isScanning) {
+    DisposableEffect(lifecycleOwner, permissionState.value, cameraState) {
         val disposed = AtomicBoolean(false)
         cameraSession.stop()
-        if (hasPermission.value && isScanning) {
-            val providerFuture = ProcessCameraProvider.getInstance(context)
-            providerFuture.addListener(
-                {
-                    if (!disposed.get()) {
-                        try {
-                            bindScannerCamera(
-                                provider = providerFuture.get(),
-                                previewView = previewView,
-                                lifecycleOwner = lifecycleOwner,
-                                cameraSession = cameraSession,
-                                imageAnalysis = createScannerImageAnalysis(
-                                    executor = cameraExecutor,
-                                    scanner = barcodeScanner,
-                                    previewView = previewView,
-                                    viewfinderBounds = { currentViewfinderFrame.boundsInPreview },
-                                    isDisposed = disposed::get,
-                                    onBarcodeDetected = { currentOnBarcodeDetected(it) },
-                                    onFailure = { currentOnFailure(it) },
-                                ),
-                                isDisposed = disposed::get,
-                                onFailure = { currentOnFailure(it) },
-                            )
-                        } catch (cancelled: CancellationException) {
-                            throw cancelled
-                        } catch (error: Exception) {
-                            if (!disposed.get()) currentOnFailure(error)
-                        }
+        when (cameraState) {
+            ScannerCameraState.Idle -> Unit
+            ScannerCameraState.Active ->
+                when (permissionState.value) {
+                    ScannerCameraPermissionState.Checking,
+                    ScannerCameraPermissionState.Denied,
+                    -> Unit
+
+                    ScannerCameraPermissionState.Granted -> {
+                        val providerFuture = ProcessCameraProvider.getInstance(context)
+                        providerFuture.addListener(
+                            {
+                                if (!disposed.get()) {
+                                    try {
+                                        bindScannerCamera(
+                                            provider = providerFuture.get(),
+                                            previewView = previewView,
+                                            lifecycleOwner = lifecycleOwner,
+                                            cameraSession = cameraSession,
+                                            imageAnalysis = createScannerImageAnalysis(
+                                                executor = cameraExecutor,
+                                                scanner = barcodeScanner,
+                                                previewView = previewView,
+                                                viewfinderBounds = { currentViewfinderFrame.boundsInPreview },
+                                                isDisposed = disposed::get,
+                                                onBarcodeDetected = { currentOnBarcodeDetected(it) },
+                                                onFailure = { currentOnFailure(it) },
+                                            ),
+                                            isDisposed = disposed::get,
+                                            onFailure = { currentOnFailure(it) },
+                                        )
+                                    } catch (cancelled: CancellationException) {
+                                        throw cancelled
+                                    } catch (error: Exception) {
+                                        if (!disposed.get()) currentOnFailure(error)
+                                    }
+                                }
+                            },
+                            ContextCompat.getMainExecutor(context),
+                        )
                     }
-                },
-                ContextCompat.getMainExecutor(context),
-            )
+                }
         }
 
         onDispose {
@@ -119,6 +136,14 @@ internal fun ScannerCameraHost(
         factory = { previewView },
         modifier = modifier.fillMaxSize(),
     )
+}
+
+private sealed interface ScannerCameraPermissionState {
+    data object Checking : ScannerCameraPermissionState
+
+    data object Granted : ScannerCameraPermissionState
+
+    data object Denied : ScannerCameraPermissionState
 }
 
 private fun bindScannerCamera(

@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,19 +6,26 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
+import com.aozijx.passly.feature.scanner.presentation.action.ScannerUiAction
+import com.aozijx.passly.feature.scanner.presentation.image.BarcodeImageDecoder
+import com.aozijx.passly.feature.scanner.presentation.image.BarcodeImageResult
+import com.aozijx.passly.feature.scanner.presentation.image.ImageRef
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResult
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerFeedback
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerMutation
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerUiState
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerUiStateReducer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 
@@ -47,22 +54,34 @@ class ScannerViewModel internal constructor(
         data object Destroyed : Work
     }
 
-    private data class Delivery(
-        val owner: Work.Active,
-        val effect: ScannerEffect,
-    )
-
-    private val mutableState = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning)
-    val uiState = mutableState.asStateFlow()
+    private val mutableState = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning())
+    internal val uiState = mutableState.asStateFlow()
     private var work: Work = newWork()
-    private val deliveries = Channel<Delivery>(Channel.CONFLATED)
-    val effects = deliveries.receiveAsFlow().filter { work === it.owner }.map { it.effect }
+    private val nextFeedbackId = AtomicLong()
 
     fun onAction(action: ScannerUiAction) {
-        if (work == Work.Destroyed) return
+        when (work) {
+            Work.Destroyed -> return
+
+            is Work.Active,
+            Work.HostPaused,
+            Work.Stopped,
+                -> Unit
+        }
         when (action) {
+            is ScannerUiAction.FeedbackConsumed -> {
+                mutate(ScannerMutation.FeedbackCleared(action.id))
+            }
+
             is ScannerUiAction.BarcodeDetected -> {
-                if (uiState.value == ScannerUiState.Scanning) completeScan(action.barcode)
+                when (uiState.value) {
+                    is ScannerUiState.Scanning -> completeScan(action.barcode)
+
+                    ScannerUiState.ProcessingImage,
+                    is ScannerUiState.ShowingResult,
+                    ScannerUiState.Stopped,
+                        -> Unit
+                }
             }
 
             is ScannerUiAction.DecodeImage -> {
@@ -83,6 +102,7 @@ class ScannerViewModel internal constructor(
             }
 
             ScannerUiAction.HostStopped -> {
+                mutate(ScannerMutation.FeedbackCleared())
                 pauseForHost()
             }
 
@@ -92,9 +112,17 @@ class ScannerViewModel internal constructor(
             }
 
             is ScannerUiAction.CameraFailure -> {
-                if (uiState.value == ScannerUiState.Scanning) {
-                    val owner = work as? Work.Active ?: return
-                    owner.scope.launch { reportFailure(action.error) }
+                when (uiState.value) {
+                    is ScannerUiState.Scanning -> {
+                        val owner = work as? Work.Active ?: return
+                        owner.scope.launch { reportFailure(action.error) }
+                    }
+
+                    ScannerUiState.ProcessingImage,
+                    is ScannerUiState.ShowingResult,
+                    ScannerUiState.Stopped,
+                        -> {
+                    }
                 }
             }
         }
@@ -110,7 +138,14 @@ class ScannerViewModel internal constructor(
     private fun replaceWork(next: Work) {
         val previous = work
         work = next
-        if (previous is Work.Active) previous.scope.cancel()
+        when (previous) {
+            is Work.Active -> previous.scope.cancel()
+
+            Work.HostPaused,
+            Work.Stopped,
+            Work.Destroyed,
+                -> Unit
+        }
     }
 
     private fun pauseForHost() {
@@ -125,10 +160,10 @@ class ScannerViewModel internal constructor(
                         replaceWork(newWork())
                     }
 
-                    ScannerUiState.Scanning,
+                    is ScannerUiState.Scanning,
                     ScannerUiState.ProcessingImage,
                     ScannerUiState.Stopped,
-                    -> {
+                        -> {
                         replaceWork(Work.HostPaused)
                         mutate(ScannerMutation.Stopped)
                     }
@@ -139,18 +174,21 @@ class ScannerViewModel internal constructor(
 
     private fun resumeForHost() {
         when (work) {
-            is Work.Active, Work.Destroyed -> {
-                Unit
-            }
+            is Work.Active, Work.Destroyed -> {}
 
             Work.HostPaused -> {
                 replaceWork(newWork())
-                if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
+                when (uiState.value) {
+                    ScannerUiState.Stopped -> mutate(ScannerMutation.Started)
+
+                    is ScannerUiState.Scanning,
+                    ScannerUiState.ProcessingImage,
+                    is ScannerUiState.ShowingResult,
+                        -> Unit
+                }
             }
 
-            Work.Stopped -> {
-                Unit
-            }
+            Work.Stopped -> {}
         }
     }
 
@@ -160,7 +198,7 @@ class ScannerViewModel internal constructor(
         val owner = newWork()
         replaceWork(owner)
         mutate(ScannerMutation.ScanCompleted(ScannerResult(raw)))
-        deliveries.trySend(Delivery(owner, ScannerEffect.ScanSucceeded))
+        publishFeedback(owner, ScannerFeedback.Kind.ScanSucceeded)
         return true
     }
 
@@ -171,15 +209,30 @@ class ScannerViewModel internal constructor(
         owner.scope.launch {
             if (!clipboardWriter.writeSensitiveIf(text) { work === owner }) return@launch
             currentCoroutineContext().ensureActive()
-            if (work === owner) deliveries.trySend(Delivery(owner, ScannerEffect.CopySucceeded))
+            publishFeedback(owner, ScannerFeedback.Kind.CopySucceeded)
         }
     }
 
     private fun decodeImage(image: ImageRef) {
-        if (work == Work.Stopped || work == Work.Destroyed) return
+        when (work) {
+            Work.Stopped,
+            Work.Destroyed,
+                -> return
+
+            Work.HostPaused,
+            is Work.Active,
+                -> Unit
+        }
         val owner = newWork()
         replaceWork(owner)
-        if (uiState.value == ScannerUiState.Stopped) mutate(ScannerMutation.Started)
+        when (uiState.value) {
+            ScannerUiState.Stopped -> mutate(ScannerMutation.Started)
+
+            is ScannerUiState.Scanning,
+            ScannerUiState.ProcessingImage,
+            is ScannerUiState.ShowingResult,
+                -> Unit
+        }
         mutate(ScannerMutation.ImageProcessingStarted)
         owner.scope.launch {
             val result = decode(image)
@@ -187,16 +240,21 @@ class ScannerViewModel internal constructor(
             if (work !== owner) return@launch
             when (result) {
                 is BarcodeImageResult.Decoded -> {
-                    if (!completeScan(result.rawValue)) imageUnavailable(owner, ScannerEffect.ImageNoBarcode)
+                    if (!completeScan(result.rawValue)) {
+                        imageUnavailable(
+                            owner,
+                            ScannerFeedback.Kind.ImageNoBarcode,
+                        )
+                    }
                 }
 
                 BarcodeImageResult.NoBarcode -> {
-                    imageUnavailable(owner, ScannerEffect.ImageNoBarcode)
+                    imageUnavailable(owner, ScannerFeedback.Kind.ImageNoBarcode)
                 }
 
                 is BarcodeImageResult.Failed -> {
                     reportFailure(result.error)
-                    imageUnavailable(owner, ScannerEffect.ImageDecodeFailed)
+                    imageUnavailable(owner, ScannerFeedback.Kind.ImageDecodeFailed)
                 }
             }
         }
@@ -204,11 +262,26 @@ class ScannerViewModel internal constructor(
 
     private fun imageUnavailable(
         owner: Work.Active,
-        effect: ScannerEffect,
+        feedback: ScannerFeedback.Kind,
     ) {
         if (work !== owner) return
         mutate(ScannerMutation.ImageProcessingFailed)
-        deliveries.trySend(Delivery(owner, effect))
+        publishFeedback(owner, feedback)
+    }
+
+    private fun publishFeedback(
+        owner: Work.Active,
+        kind: ScannerFeedback.Kind,
+    ) {
+        if (work !== owner) return
+        mutate(
+            ScannerMutation.FeedbackPublished(
+                ScannerFeedback(
+                    nextFeedbackId.incrementAndGet(),
+                    kind,
+                ),
+            ),
+        )
     }
 
     private suspend fun reportFailure(error: Throwable) {
@@ -218,12 +291,11 @@ class ScannerViewModel internal constructor(
     }
 
     private fun mutate(mutation: ScannerMutation) {
-        mutableState.value = ScannerReducer.reduce(mutableState.value, mutation)
+        mutableState.update { ScannerUiStateReducer.reduce(it, mutation) }
     }
 
     override fun onCleared() {
         replaceWork(Work.Destroyed)
         mutate(ScannerMutation.Stopped)
-        deliveries.close()
     }
 }

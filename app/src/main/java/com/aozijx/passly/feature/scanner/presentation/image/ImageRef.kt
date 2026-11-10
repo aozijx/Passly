@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.image
 
 /**
  * 图片引用，用于 Contract 层替代 [android.net.Uri]，

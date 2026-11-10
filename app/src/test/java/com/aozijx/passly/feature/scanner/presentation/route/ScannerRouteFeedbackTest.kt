@@ -1,98 +1,115 @@
-package com.aozijx.passly.feature.scanner.presentation
+package com.aozijx.passly.feature.scanner.presentation.route
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
+import com.aozijx.passly.feature.scanner.presentation.action.ScannerUiAction
+import com.aozijx.passly.feature.scanner.presentation.image.BarcodeImageResult
+import com.aozijx.passly.feature.scanner.presentation.image.ImageRef
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResult
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerFeedback
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerUiState
+import com.aozijx.passly.feature.scanner.presentation.viewmodel.ScannerViewModel
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ScannerRouteEffectsTest {
+class ScannerRouteFeedbackTest {
     @get:Rule val main = MainDispatcherRule(StandardTestDispatcher())
 
     @Test
-    fun `route performs one success haptic and stops handling effects when its collector is cancelled`() =
+    fun `route consumes pending feedback from ui state and acknowledges it`() =
         runTest {
-            val effects = Channel<ScannerEffect>(Channel.UNLIMITED)
+            val pending = ScannerFeedback(1, ScannerFeedback.Kind.CopySucceeded)
+            val state = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning(pending))
             val lifecycleOwner = Owner().apply { lifecycle.currentState = Lifecycle.State.STARTED }
             var hapticCount = 0
-            val uiEffects = mutableListOf<ScannerEffect>()
+            val uiFeedback = mutableListOf<ScannerFeedback.Kind>()
             val collector =
                 launch {
-                    collectScannerRouteEffects(
+                    collectScannerRouteFeedback(
                         lifecycle = lifecycleOwner.lifecycle,
-                        effects = effects.receiveAsFlow(),
+                        uiState = state,
                         onHostStarted = {},
                         onHostStopped = {},
-                        onScanSucceeded = { hapticCount++ },
-                        onUiEffect = uiEffects::add,
+                        onFeedback = { feedback ->
+                            if (feedback.kind == ScannerFeedback.Kind.ScanSucceeded) hapticCount++
+                            else uiFeedback += feedback.kind
+                        },
+                        onFeedbackConsumed = { id ->
+                            state.update { current ->
+                                val scanning = current as ScannerUiState.Scanning
+                                scanning.copy(feedback = scanning.feedback?.takeUnless { it.id == id })
+                            }
+                        },
                     )
                 }
             runCurrent()
 
-            effects.send(ScannerEffect.ScanSucceeded)
-            effects.send(ScannerEffect.CopySucceeded)
-            runCurrent()
             assertEquals(1, hapticCount)
-            assertEquals(listOf(ScannerEffect.CopySucceeded), uiEffects)
+            assertEquals(listOf(ScannerFeedback.Kind.CopySucceeded), uiFeedback)
+            assertEquals(null, state.value.feedback)
 
             collector.cancel()
-            effects.send(ScannerEffect.ScanSucceeded)
-            runCurrent()
             assertEquals(1, hapticCount)
         }
 
     @Test
-    fun `background completion feedback is dropped and a resumed scan reports once`() =
+    fun `visible feedback is consumed once and host stop clears pending feedback`() =
         runTest {
             val owner = Owner().apply { lifecycle.currentState = Lifecycle.State.CREATED }
             val model = ScannerViewModel(SensitiveClipboardWriter { }, testLogger()) { BarcodeImageResult.NoBarcode }
             var hapticCount = 0
-            val messages = mutableListOf<ScannerEffect>()
+            val messages = mutableListOf<ScannerFeedback.Kind>()
             backgroundScope.launch {
-                collectScannerRouteEffects(
+                collectScannerRouteFeedback(
                     lifecycle = owner.lifecycle,
-                    effects = model.effects,
+                    uiState = model.uiState,
                     onHostStarted = { model.onAction(ScannerUiAction.HostStarted) },
                     onHostStopped = { model.onAction(ScannerUiAction.HostStopped) },
-                    onScanSucceeded = { hapticCount++ },
-                    onUiEffect = messages::add,
+                    onFeedback = { feedback ->
+                        if (feedback.kind == ScannerFeedback.Kind.ScanSucceeded) hapticCount++ else messages += feedback.kind
+                    },
+                    onFeedbackConsumed = { model.onAction(ScannerUiAction.FeedbackConsumed(it)) },
                 )
             }
             runCurrent()
             owner.lifecycle.currentState = Lifecycle.State.STARTED
             runCurrent()
 
-            model.onAction(ScannerUiAction.BarcodeDetected("completed before stop"))
+            model.onAction(ScannerUiAction.BarcodeDetected("visible scan"))
+            runCurrent()
             owner.lifecycle.currentState = Lifecycle.State.CREATED
             runCurrent()
-            assertEquals(0, hapticCount)
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult("completed before stop")), model.uiState.value)
+            assertEquals(1, hapticCount)
+            assertEquals(ScannerResult("visible scan"), (model.uiState.value as ScannerUiState.ShowingResult).result)
+            assertNull(model.uiState.value.feedback)
 
             owner.lifecycle.currentState = Lifecycle.State.STARTED
             runCurrent()
-            assertEquals(0, hapticCount)
-            assertEquals(emptyList<ScannerEffect>(), messages)
+            assertEquals(1, hapticCount)
+            assertEquals(emptyList<ScannerFeedback.Kind>(), messages)
 
             model.onAction(ScannerUiAction.StartScanning)
             model.onAction(ScannerUiAction.BarcodeDetected("foreground scan"))
             runCurrent()
-            assertEquals(1, hapticCount)
-            assertEquals(emptyList<ScannerEffect>(), messages)
+            assertEquals(2, hapticCount)
+            assertEquals(emptyList<ScannerFeedback.Kind>(), messages)
         }
 
     @Test
@@ -114,15 +131,15 @@ class ScannerRouteEffectsTest {
                         }
                     },
                 )
-            val effects = mutableListOf<ScannerEffect>()
+            val feedback = mutableListOf<ScannerFeedback.Kind>()
             backgroundScope.launch {
-                collectScannerRouteEffects(
+                collectScannerRouteFeedback(
                     lifecycle = owner.lifecycle,
-                    effects = model.effects,
+                    uiState = model.uiState,
                     onHostStarted = { model.onAction(ScannerUiAction.HostStarted) },
                     onHostStopped = { model.onAction(ScannerUiAction.HostStopped) },
-                    onScanSucceeded = {},
-                    onUiEffect = effects::add,
+                    onFeedback = { feedback += it.kind },
+                    onFeedbackConsumed = { model.onAction(ScannerUiAction.FeedbackConsumed(it)) },
                 )
             }
             runCurrent()
@@ -138,14 +155,14 @@ class ScannerRouteEffectsTest {
             runCurrent()
 
             assertEquals(ScannerUiState.Stopped, model.uiState.value)
-            assertEquals(emptyList<ScannerEffect>(), effects)
+            assertEquals(emptyList<ScannerFeedback.Kind>(), feedback)
 
             owner.lifecycle.currentState = Lifecycle.State.STARTED
             runCurrent()
             model.onAction(ScannerUiAction.DecodeImage(ImageRef("photo-picker-result")))
             runCurrent()
-            assertEquals(ScannerUiState.ShowingResult(ScannerResult("photo-picker-result")), model.uiState.value)
-            assertEquals(emptyList<ScannerEffect>(), effects)
+            assertEquals(ScannerResult("photo-picker-result"), (model.uiState.value as ScannerUiState.ShowingResult).result)
+            assertEquals(listOf(ScannerFeedback.Kind.ScanSucceeded), feedback)
         }
 
     private class Owner : LifecycleOwner {
