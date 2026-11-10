@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.search
 
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -10,7 +11,7 @@ class VaultSearchStateTest {
     fun `pull state follows bounded gesture progress`() {
         val state =
             VaultSearchState
-                .initial(isSearchActive = false, query = "")
+                .initial(VaultSearchInput.Closed)
                 .onPullProgressChanged(0.45f)
 
         assertEquals(VaultSearchState.Pulling(0.45f), state)
@@ -23,7 +24,7 @@ class VaultSearchStateTest {
     fun `initial focus loss cannot cancel a pending focus request`() {
         var state =
             VaultSearchState
-                .initial(isSearchActive = false, query = "")
+                .initial(VaultSearchInput.Closed)
                 .startEditing()
 
         state = state.onFocusChanged(focused = false, query = "")
@@ -40,7 +41,7 @@ class VaultSearchStateTest {
     fun `restored focus cannot start editing without an explicit request`() {
         val state =
             VaultSearchState
-                .initial(isSearchActive = false, query = "")
+                .initial(VaultSearchInput.Closed)
                 .onFocusChanged(focused = true, query = "")
 
         assertEquals(VaultSearchState.Browsing, state)
@@ -50,7 +51,7 @@ class VaultSearchStateTest {
     fun `gesture reset cannot cancel editing after pull threshold`() {
         val state =
             VaultSearchState
-                .initial(isSearchActive = false, query = "")
+                .initial(VaultSearchInput.Closed)
                 .onPullProgressChanged(0.9f)
                 .startEditing()
                 .onPullProgressChanged(0f)
@@ -62,7 +63,7 @@ class VaultSearchStateTest {
     fun `settling and pausing preserve non blank results without editing focus`() {
         val editing =
             VaultSearchState
-                .initial(isSearchActive = true, query = "mail")
+                .initial(VaultSearchInput.Open("mail"))
                 .startEditing()
                 .onFocusChanged(focused = true, query = "mail")
 
@@ -76,9 +77,9 @@ class VaultSearchStateTest {
 
     @Test
     fun `external search state resolves browsing and compact results`() {
-        val browsing = VaultSearchState.initial(isSearchActive = false, query = "")
-        val results = browsing.synchronize(isSearchActive = true, query = "mail")
-        val exited = results.synchronize(isSearchActive = false, query = "mail")
+        val browsing = VaultSearchState.initial(VaultSearchInput.Closed)
+        val results = browsing.synchronize(VaultSearchInput.Open("mail"))
+        val exited = results.synchronize(VaultSearchInput.Closed)
 
         assertEquals(VaultSearchState.Browsing, browsing)
         assertEquals(VaultSearchState.Results, results)

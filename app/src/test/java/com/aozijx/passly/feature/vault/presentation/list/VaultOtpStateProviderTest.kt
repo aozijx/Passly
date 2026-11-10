@@ -34,13 +34,20 @@ class VaultOtpStateProviderTest {
                 onUnsubscribe = { events += "unsubscribe:$it" },
             )
 
-            provider.subscribe("otp-1")
-            val state = provider.state("otp-1", VaultOtpKindUiModel.STANDARD).first()
+            provider.subscribe("otp-1", VaultOtpKindUiModel.STANDARD, showCode = true)
+            val state = provider.state("otp-1", VaultOtpKindUiModel.STANDARD, showCode = true).first()
             assertEquals(VaultOtpUiState.Ready(displayCode = "123 456", progress = 0.5f), state)
-            assertEquals(VaultOtpUiState.Pending, provider.state("pending", null).first())
-            assertEquals(VaultOtpUiState.Failed, provider.state("failed", null).first())
-            assertEquals(null, provider.state("missing", null).first())
-            provider.unsubscribe("otp-1")
+            assertEquals(VaultOtpUiState.Pending, provider.state("pending", VaultOtpKindUiModel.STANDARD, true).first())
+            assertEquals(VaultOtpUiState.Failed, provider.state("failed", VaultOtpKindUiModel.STANDARD, true).first())
+            assertEquals(VaultOtpUiState.NotRequested, provider.state("missing", VaultOtpKindUiModel.STANDARD, true).first())
+            assertEquals(VaultOtpUiState.Hidden, provider.state("otp-1", VaultOtpKindUiModel.STANDARD, false).first())
+            assertEquals(
+                VaultOtpUiState.NotApplicable,
+                provider.state("otp-1", VaultOtpKindUiModel.NOT_APPLICABLE, showCode = true).first(),
+            )
+            provider.unsubscribe("otp-1", VaultOtpKindUiModel.STANDARD, showCode = true)
+            provider.subscribe("hidden", VaultOtpKindUiModel.STANDARD, showCode = false)
+            provider.subscribe("plain", VaultOtpKindUiModel.NOT_APPLICABLE, showCode = true)
 
             assertEquals(listOf("subscribe:otp-1", "unsubscribe:otp-1"), events)
         }

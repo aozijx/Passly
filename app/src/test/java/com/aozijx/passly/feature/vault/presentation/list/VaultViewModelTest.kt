@@ -478,7 +478,6 @@ class VaultViewModelTest {
     fun sortPreferenceFailureShowsCurrentPageFeedbackWithoutChangingSelectedSort() =
         runTest(mainDispatcherRule.testDispatcher) {
             val currentSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)
-            val requestedSort = EntrySort(EntrySortField.TITLE, SortDirection.ASC)
             val settings =
                 MutableStateFlow(
                     LibraryViewSettings(
@@ -504,7 +503,7 @@ class VaultViewModelTest {
 
             try {
                 runCurrent()
-                viewModel.onAction(VaultUiAction.SortOptionSelected(requestedSort))
+                viewModel.onAction(VaultUiAction.SortOptionSelected(VaultSortOption.TITLE))
                 runCurrent()
 
                 val effect = effects.receive() as VaultEffect.ShowError
@@ -539,8 +538,10 @@ class VaultViewModelTest {
                 advanceTimeBy(250L)
                 runCurrent()
 
+                viewModel.onAction(VaultUiAction.SearchToggled(active = true))
                 viewModel.onAction(VaultUiAction.SearchQueryChanged("  mail  "))
                 viewModel.onAction(VaultUiAction.FilterToggled(AddType.PASSWORD))
+                assertEquals(VaultSearchInput.Open("  mail  "), viewModel.uiState.value.search)
                 runCurrent()
                 advanceTimeBy(250L)
                 runCurrent()
@@ -552,6 +553,9 @@ class VaultViewModelTest {
                     EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
                     currentQuery.sort,
                 )
+
+                viewModel.onAction(VaultUiAction.ClearFilters)
+                assertEquals(emptySet<AddType>(), viewModel.uiState.value.selectedFilters)
             } finally {
                 entriesCollector.cancel()
                 viewModelStore.clear()

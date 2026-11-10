@@ -4,6 +4,7 @@ import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
+import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
@@ -12,6 +13,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -25,12 +28,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class VaultQueryStateTest {
+class VaultQueryGenerationTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `settings failure invalidates query until recovered settings arrive`() =
         runTest {
-            val uiState = MutableStateFlow(VaultUiState(searchQuery = "mail"))
+            val uiState = MutableStateFlow(VaultUiState(search = VaultSearchInput.Open("mail")))
             val settings =
                 MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
                     RecoverableReadState.Ready(
@@ -43,7 +46,7 @@ class VaultQueryStateTest {
                 )
             val observed = mutableListOf<VaultQueryGeneration>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                buildRecoverableVaultQueryStates(uiState, settings).collect(observed::add)
+                buildRecoverableVaultQueryGenerations(uiState, settings).collect(observed::add)
             }
             runCurrent()
             advanceTimeBy(250L)
@@ -73,18 +76,17 @@ class VaultQueryStateTest {
         }
 
     @Test
-    fun `query state normalizes text and applies hierarchy only to all entries`() {
-        val state =
-            VaultQueryState.create(
-                searchText = "  Mail  ",
-                category = "  Work  ",
+    fun `entry list query applies hierarchy only to all entries`() {
+        val allQuery =
+            EntryListQuery(
+                searchText = "Mail",
+                category = "Work",
                 sort = createdAtDescendingSort,
                 entryTypes = emptySet(),
                 hierarchyMode = EntryHierarchyDisplayMode.EXPANDED,
             )
 
-        val allQuery = state.toEntryListQuery()
-        val passwordQuery = state.copy(entryTypes = setOf(EntryType.LOGIN)).toEntryListQuery()
+        val passwordQuery = allQuery.copy(entryTypes = setOf(EntryType.LOGIN))
 
         assertEquals("Mail", allQuery.searchText)
         assertEquals("Work", allQuery.category)
@@ -99,7 +101,7 @@ class VaultQueryStateTest {
     fun `equal query states do not restart the generation`() =
         runTest {
             val initial =
-                VaultQueryState.create(
+                EntryListQuery(
                     searchText = "mail",
                     category = null,
                     sort = createdAtDescendingSort,
@@ -131,7 +133,7 @@ class VaultQueryStateTest {
     fun `hierarchy changes restart unfiltered query but not type filtered query`() =
         runTest {
             val initial =
-                VaultQueryState.create(
+                EntryListQuery(
                     searchText = "",
                     category = null,
                     sort = createdAtDescendingSort,
@@ -187,7 +189,7 @@ class VaultQueryStateTest {
     fun `changed query cancels the active generation before starting the next`() =
         runTest {
             val initial =
-                VaultQueryState.create(
+                EntryListQuery(
                     searchText = "mail",
                     category = null,
                     sort = createdAtDescendingSort,
@@ -227,23 +229,23 @@ class VaultQueryStateTest {
     @Test
     fun `unrelated ui updates cannot postpone the initial search deadline`() =
         runTest {
-            val states = MutableStateFlow(VaultUiState(searchQuery = "mail"))
-            val observed = mutableListOf<VaultQueryState>()
+            val states = MutableStateFlow(VaultUiState(search = VaultSearchInput.Open("mail")))
+            val observed = mutableListOf<EntryListQuery>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                buildRecoverableVaultQueryStates(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
+                buildRecoverableVaultQueryGenerations(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
                     .availableQueries()
                     .collect(observed::add)
             }
             runCurrent()
             advanceTimeBy(100L)
-            states.value = states.value.copy(showTOTPCode = !states.value.showTOTPCode)
+            states.value = states.value.copy(showTotpCode = !states.value.showTotpCode)
             runCurrent()
             advanceTimeBy(100L)
-            states.value = states.value.copy(categories = VaultCategoriesState.Ready(listOf("Work")), selectedCategory = "Work")
+            states.value = states.value.copy(categories = VaultCategoriesState.Ready(listOf("Work")), categorySelection = VaultCategorySelection.Selected(" Work "))
             runCurrent()
             advanceTimeBy(50L)
             runCurrent()
-            assertEquals(listOf("mail"), observed.map(VaultQueryState::searchText))
+            assertEquals(listOf("mail"), observed.map(EntryListQuery::searchText))
             assertEquals("Work", observed.last().category)
         }
 
@@ -251,20 +253,20 @@ class VaultQueryStateTest {
     @Test
     fun `equivalent search text keeps its deadline while category changes immediately`() =
         runTest {
-            val states = MutableStateFlow(VaultUiState(searchQuery = "mail"))
-            val observed = mutableListOf<VaultQueryState>()
+            val states = MutableStateFlow(VaultUiState(search = VaultSearchInput.Open("mail")))
+            val observed = mutableListOf<EntryListQuery>()
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                buildRecoverableVaultQueryStates(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
+                buildRecoverableVaultQueryGenerations(states, readyLibrarySettings(EntryHierarchyDisplayMode.COLLAPSED))
                     .availableQueries()
                     .collect(observed::add)
             }
             runCurrent()
             advanceTimeBy(250L)
             runCurrent()
-            states.value = states.value.copy(searchQuery = "vault")
+            states.value = states.value.copy(search = VaultSearchInput.Open("vault"))
             runCurrent()
             advanceTimeBy(100L)
-            states.value = states.value.copy(searchQuery = " vault ", selectedCategory = "Work")
+            states.value = states.value.copy(search = VaultSearchInput.Open(" vault "), categorySelection = VaultCategorySelection.Selected("Work"))
             runCurrent()
             assertEquals("mail", observed.last().searchText)
             assertEquals("Work", observed.last().category)
@@ -280,29 +282,29 @@ class VaultQueryStateTest {
         runTest {
             val uiStates =
                 MutableStateFlow(
-                    VaultUiState(searchQuery = "mail"),
+                    VaultUiState(search = VaultSearchInput.Open("mail")),
                 )
             val settings =
                 MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
                     readyLibrarySettingsState(EntryHierarchyDisplayMode.COLLAPSED),
                 )
-            val observed = mutableListOf<VaultQueryState>()
+            val observed = mutableListOf<EntryListQuery>()
 
             val collection =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    buildRecoverableVaultQueryStates(uiStates, settings).availableQueries().collect(observed::add)
+                    buildRecoverableVaultQueryGenerations(uiStates, settings).availableQueries().collect(observed::add)
                 }
             runCurrent()
-            assertEquals(emptyList<VaultQueryState>(), observed)
+            assertEquals(emptyList<EntryListQuery>(), observed)
 
             advanceTimeBy(249L)
             runCurrent()
-            assertEquals(emptyList<VaultQueryState>(), observed)
+            assertEquals(emptyList<EntryListQuery>(), observed)
             advanceTimeBy(1L)
             runCurrent()
-            assertEquals(listOf("mail"), observed.map(VaultQueryState::searchText))
+            assertEquals(listOf("mail"), observed.map(EntryListQuery::searchText))
 
-            uiStates.value = uiStates.value.copy(selectedCategory = "Work")
+            uiStates.value = uiStates.value.copy(categorySelection = VaultCategorySelection.Selected("Work"))
             runCurrent()
             assertEquals("Work", observed.last().category)
 
@@ -319,7 +321,7 @@ class VaultQueryStateTest {
             assertEquals(EntryHierarchyDisplayMode.EXPANDED, observed.last().hierarchyMode)
 
             val countBeforeSearch = observed.size
-            uiStates.value = uiStates.value.copy(searchQuery = "vault")
+            uiStates.value = uiStates.value.copy(search = VaultSearchInput.Open("vault"))
             runCurrent()
             assertEquals(countBeforeSearch, observed.size)
             advanceTimeBy(250L)
@@ -335,7 +337,7 @@ private val createdAtDescendingSort =
         direction = SortDirection.DESC,
     )
 
-private fun Flow<VaultQueryGeneration>.availableQueries(): Flow<VaultQueryState> =
+private fun Flow<VaultQueryGeneration>.availableQueries(): Flow<EntryListQuery> =
     mapNotNull { generation ->
         (generation as? VaultQueryGeneration.Available)?.query
     }

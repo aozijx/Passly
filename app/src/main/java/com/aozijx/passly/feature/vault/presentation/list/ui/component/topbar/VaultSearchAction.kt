@@ -34,7 +34,7 @@ internal fun VaultSearchAction(
     modifier: Modifier = Modifier,
 ) {
     var moreMenuExpanded by remember { mutableStateOf(false) }
-    val action = searchStateHolder.uiState.action(uiState.query)
+    val action = searchStateHolder.uiState.action(uiState.search)
 
     LaunchedEffect(action) {
         if (action != VaultSearchAction.MORE) moreMenuExpanded = false

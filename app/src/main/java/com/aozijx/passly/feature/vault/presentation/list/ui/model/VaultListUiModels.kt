@@ -3,27 +3,15 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.model
 import androidx.compose.runtime.Immutable
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
+import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
+import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
 
 @Immutable
 data class VaultSortUiModel(
-    val option: VaultSortOptionUiModel,
+    val option: VaultSortOption,
     val descending: Boolean,
-) {
-    fun toggled() = copy(descending = !descending)
-
-    companion object {
-        val presets =
-            listOf(
-                VaultSortUiModel(VaultSortOptionUiModel.CREATED_AT, true),
-                VaultSortUiModel(VaultSortOptionUiModel.TITLE, false),
-                VaultSortUiModel(VaultSortOptionUiModel.UPDATED_AT, true),
-                VaultSortUiModel(VaultSortOptionUiModel.LAST_USED_AT, true),
-                VaultSortUiModel(VaultSortOptionUiModel.USAGE_FREQUENCY, true),
-            )
-    }
-}
-
-enum class VaultSortOptionUiModel { TITLE, CREATED_AT, UPDATED_AT, LAST_USED_AT, USAGE_FREQUENCY }
+)
 
 @Immutable
 data class VaultCardPresentationUiModel(
@@ -48,10 +36,10 @@ data class VaultListScreenUiModel(
 
 @Immutable
 data class VaultListToolbarUiModel(
-    val searchQuery: String,
-    val selectedCategory: String?,
+    val search: VaultSearchInput,
+    val categorySelection: VaultCategorySelection,
     val selectedSort: VaultSortUiModel,
-    val isSearchActive: Boolean,
+    val sortOptions: List<VaultSortOption>,
     val categoriesState: VaultCategoriesState,
     val categorySearchQuery: String,
     val matchingCategories: List<String>,

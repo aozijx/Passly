@@ -36,7 +36,7 @@ ViewModel 可随 Settings 条目保留，下次打开时重新加载。
 - 标签分类通过 `json_each` 发现，忽略大小写并稳定排序；编辑与导入入口必须规范化标签空白。
 - 有效搜索文本先去重，再防抖 250 ms；无关 UI 状态刷新及只改变首尾空白的输入不会重置搜索截止时间。
   分类、排序和层级即时传播，搜索等待期间沿用上次已生效的文本。查询变化通过 `flatMapLatest` 取消旧 Pager。
-- 查询代际以 `VaultQueryState.toEntryListQuery()` 的结果为准，再去重并切换 Pager。Presentation 状态变化若没有改变 Room 查询就复用当前 Pager；例如类型筛选启用时，层级偏好不参与实际查询。
+- 搜索、筛选和设置状态直接合成为 Domain `EntryListQuery`，按查询语义去重并切换 Pager。Presentation 状态变化若没有改变 Room 查询就复用当前 Pager；例如类型筛选启用时，层级偏好不参与实际查询。
 
 数据库整体由 SQLCipher 保护，因此摘要可参与 SQL 查询；高敏值不进入分页行。
 
@@ -118,6 +118,6 @@ Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删�
 | 列表查询条件与排序规则 | `EntryListQuery`、`EntrySort` | [`EntryListQuery.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)、[`EntrySort.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt) |
 | 构造 SQLite 分类与分页查询 | `buildEntryCategoryQuery()`、`buildEntryPagingQuery()` | [`EntryPagingQueryFactory.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt) |
 | Session 可读期间创建/重建 Room Pager | `RoomEntryPagingStore.pages()`、`observeFullVaultWhenReadable()` | [`RoomEntryPagingStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/paging/RoomEntryPagingStore.kt)、[`AppDatabaseSession.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
-| 查询输入、筛选/排序参数合成与归一 | `queryInputs()`、`buildRecoverableVaultQueryStates()`、`VaultQueryState.create()`、`toEntryListQuery()` | [`VaultQueryState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryState.kt) |
-| 查询代际传递给 Paging source 并缓存 | `switchRecoverableQueryGenerations(unavailable, load)`；`VaultViewModel.entries` 传入 `entryPageSource.pages(query, ENTRY_PAGING_CONFIG)`，再映射 `EntryListItem::toUiModel` 并 `cachedIn(viewModelScope)` | [`VaultQueryState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryState.kt)、[`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
+| 查询输入、筛选/排序合成为 Domain 查询并防抖/去重 | `queryInputs()`、`buildRecoverableVaultQueryGenerations()`、`VaultQueryGeneration` | [`VaultQueryGeneration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt) |
+| 查询代际传递给 Paging source 并缓存 | `switchRecoverableQueryGenerations(unavailable, load)`；`VaultViewModel.entries` 传入 `entryPageSource.pages(query, ENTRY_PAGING_CONFIG)`，再映射 `EntryListItem::toUiModel` 并 `cachedIn(viewModelScope)` | [`VaultQueryGeneration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt)、[`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
 | 列表界面动作与可见 OTP 订阅 | `VaultViewModel.onAction()`、`subscribeVisibleOtp()`、`unsubscribeVisibleOtp()` | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |

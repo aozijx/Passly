@@ -19,6 +19,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.descriptionRes
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.icon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
 import com.aozijx.passly.feature.vault.presentation.navigation.VaultEditorDestinationRegistry
+import com.aozijx.passly.feature.vault.presentation.editor.VaultEditorCapabilities
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -114,12 +115,9 @@ class VaultAddTypeUiModelTest {
         expectedRoutes.forEach { (type, route) ->
             assertEquals(route, VaultEditorDestinationRegistry.routeFor(type))
             val ui = type.toUiModel()
-            val selected = VaultReducer.reduce(VaultUiState(), VaultMutation.FilterToggled(ui.featureType))
-            assertEquals(setOf(ui), selected.selectedFilters.map(AddType::toUiModel).toSet())
-            val cleared = VaultReducer.reduce(selected, VaultMutation.FilterToggled(ui.featureType))
-            assertEquals(emptySet<AddType>(), cleared.selectedFilters)
+            assertEquals(type, ui.featureType)
         }
-        assertEquals(expectedRoutes.filter { it.second != null }.map { it.first }, VaultEditorDestinationRegistry.creatableTypes)
+        assertEquals(expectedRoutes.filter { it.second != null }.map { it.first }, VaultEditorCapabilities.creatableTypes)
         assertEquals(listOf(VaultAddTypeUiModel.TOTP, VaultAddTypeUiModel.PASSWORD), VaultAddTypeUiModel.fabMenuOptions)
     }
 

@@ -29,6 +29,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
+import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
@@ -41,7 +43,7 @@ import com.aozijx.passly.presentation.shared.components.menu.selectedMenuModifie
 internal fun MainMenuContent(
     onSortClick: () -> Unit,
     onCategoryFilterClick: () -> Unit,
-    showTOTPCode: Boolean,
+    showTotpCode: Boolean,
     onToggleTotpVisibility: () -> Unit,
     onDismissRequest: () -> Unit,
     onRouteRequest: (VaultRouteRequest) -> Unit,
@@ -60,7 +62,7 @@ internal fun MainMenuContent(
         text = {
             Text(
                 stringResource(
-                    if (showTOTPCode) {
+                    if (showTotpCode) {
                         R.string.vault_menu_hide_totp
                     } else {
                         R.string.vault_menu_show_totp
@@ -74,7 +76,7 @@ internal fun MainMenuContent(
         },
         leadingIcon = {
             Icon(
-                if (showTOTPCode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                if (showTotpCode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                 null,
             )
         },
@@ -101,12 +103,13 @@ internal fun MainMenuContent(
 @Composable
 internal fun SortSubMenu(
     selectedSort: VaultSortUiModel,
-    onSortSelected: (VaultSortUiModel) -> Unit,
+    sortOptions: List<VaultSortOption>,
+    onSortSelected: (VaultSortOption) -> Unit,
     onBack: () -> Unit,
 ) {
     BackMenuItem(onBack)
-    VaultSortUiModel.presets.forEach { preset ->
-        val selected = preset.option == selectedSort.option
+    sortOptions.forEach { option ->
+        val selected = option == selectedSort.option
         val direction =
             if (selected) {
                 if (selectedSort.descending) " \u2193" else " \u2191"
@@ -116,12 +119,12 @@ internal fun SortSubMenu(
         DropdownMenuItem(
             text = {
                 MenuOptionText(
-                    text = stringResource(preset.labelResId()) + direction,
+                    text = stringResource(option.labelResId()) + direction,
                     selected = selected,
                 )
             },
             onClick = {
-                onSortSelected(if (selected) selectedSort.toggled() else preset)
+                onSortSelected(option)
             },
             modifier = Modifier.selectedMenuModifier(selected),
         )
@@ -141,9 +144,9 @@ internal fun FilterSubMenu(
     items: List<String>,
     categoriesState: VaultCategoriesState,
     onRetry: () -> Unit,
-    selectedItem: String?,
+    selectedItem: VaultCategorySelection,
     itemText: (String) -> String,
-    onItemSelected: (String?) -> Unit,
+    onItemSelected: (VaultCategorySelection) -> Unit,
     onBack: () -> Unit,
 ) {
     DropdownMenuItem(
@@ -197,8 +200,8 @@ internal fun FilterSubMenu(
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
     EntryTypeMenuItem(
         text = stringResource(R.string.all),
-        selected = selectedItem == null,
-        onClick = { onItemSelected(null) },
+        selected = selectedItem == VaultCategorySelection.All,
+        onClick = { onItemSelected(VaultCategorySelection.All) },
     )
     when (categoriesState) {
         VaultCategoriesState.Loading -> {
@@ -236,8 +239,8 @@ internal fun FilterSubMenu(
             items.forEach { item ->
                 EntryTypeMenuItem(
                     text = itemText(item),
-                    selected = selectedItem == item,
-                    onClick = { onItemSelected(item) },
+                    selected = selectedItem == VaultCategorySelection.Selected(item),
+                    onClick = { onItemSelected(VaultCategorySelection.Selected(item)) },
                 )
             }
         }

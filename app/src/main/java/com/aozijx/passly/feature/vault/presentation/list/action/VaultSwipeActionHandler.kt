@@ -21,7 +21,7 @@ fun resolveCopyRequest(
     item: VaultListItemUiModel,
     fieldKey: FieldKey,
 ): VaultCopyRequest =
-    if (fieldKey == FieldKey.PASSWORD && item.hasOtp) {
+    if (fieldKey == FieldKey.PASSWORD && item.otpKind.isApplicable) {
         VaultCopyRequest.Otp(item.id)
     } else {
         VaultCopyRequest.Field(

@@ -14,13 +14,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.query.EntrySort
-import com.aozijx.passly.domain.entry.model.query.EntrySortField
-import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
+import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchState
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
@@ -104,10 +103,7 @@ class VaultTopBarMenuTest {
             assertEquals(
                 listOf(
                     VaultUiAction.SortOptionSelected(
-                        EntrySort(
-                            field = EntrySortField.LAST_USED_AT,
-                            direction = SortDirection.DESC,
-                        ),
+                        VaultSortOption.LAST_USED_AT,
                     ),
                 ),
                 actions,
@@ -123,18 +119,22 @@ class VaultTopBarMenuTest {
 
     private fun topBarState() =
         VaultTopBarUiState(
-            query = "",
+            search = VaultSearchInput.Closed,
             menu =
                 VaultMenuUiState(
                     showTotpCode = false,
                     categorySearchQuery = "",
                     matchingCategories = emptyList(),
                     categoriesState = VaultCategoriesState.ReadyEmpty,
-                    selectedCategory = null,
-                    selectedSort =
-                        VaultSortUiModel.presets.first {
-                            it.option == VaultSortOptionUiModel.CREATED_AT
-                        },
+                    categorySelection = VaultCategorySelection.All,
+                    selectedSort = VaultSortUiModel(VaultSortOption.CREATED_AT, descending = true),
+                    sortOptions = listOf(
+                        VaultSortOption.CREATED_AT,
+                        VaultSortOption.TITLE,
+                        VaultSortOption.UPDATED_AT,
+                        VaultSortOption.LAST_USED_AT,
+                        VaultSortOption.USAGE_FREQUENCY,
+                    ),
                 ),
             collapseOnScroll = false,
             collapseQuickFilterOnScroll = false,
@@ -143,10 +143,9 @@ class VaultTopBarMenuTest {
 
     private fun searchStateHolder() =
         VaultSearchStateHolder(
-            initialState = VaultSearchState.initial(false, ""),
-            initialSearchActive = false,
-            currentQuery = { "" },
-            currentSearchActive = { false },
+            initialState = VaultSearchState.initial(VaultSearchInput.Closed),
+            initialSearch = VaultSearchInput.Closed,
+            currentSearch = { VaultSearchInput.Closed },
             onQueryChange = {},
             onSearchActiveChange = {},
             onExpandBars = {},

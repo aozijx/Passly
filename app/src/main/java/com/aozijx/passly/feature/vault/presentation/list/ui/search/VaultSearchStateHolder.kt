@@ -7,13 +7,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 
 @Stable
 class VaultSearchStateHolder internal constructor(
     initialState: VaultSearchState,
-    initialSearchActive: Boolean,
-    private val currentQuery: () -> String,
-    private val currentSearchActive: () -> Boolean,
+    initialSearch: VaultSearchInput,
+    private val currentSearch: () -> VaultSearchInput,
     private val onQueryChange: (String) -> Unit,
     private val onSearchActiveChange: (Boolean) -> Unit,
     private val onExpandBars: () -> Unit,
@@ -21,27 +21,21 @@ class VaultSearchStateHolder internal constructor(
     var uiState by mutableStateOf(initialState)
         private set
 
-    private var wasSearchActive = initialSearchActive
+    private var previousSearch = initialSearch
 
-    fun synchronize(
-        searchActive: Boolean,
-        query: String,
-    ) {
-        val searchExited = wasSearchActive && !searchActive
-        uiState = uiState.synchronize(searchActive, query)
+    fun synchronize(search: VaultSearchInput) {
+        val searchExited = previousSearch.isActive && !search.isActive
+        uiState = uiState.synchronize(search)
         if (searchExited || uiState.isEditing) onExpandBars()
-        wasSearchActive = searchActive
+        previousSearch = search
     }
 
     fun queryChanged(query: String) = onQueryChange(query)
 
     fun focusChanged(focused: Boolean) {
-        val nextState = uiState.onFocusChanged(focused, currentQuery())
+        val nextState = uiState.onFocusChanged(focused, currentSearch().query)
         uiState = nextState
-        if (!focused &&
-            nextState == VaultSearchState.Browsing &&
-            currentSearchActive()
-        ) {
+        if (!focused && nextState == VaultSearchState.Browsing && currentSearch().isActive) {
             onSearchActiveChange(false)
         }
     }
@@ -68,7 +62,7 @@ class VaultSearchStateHolder internal constructor(
 
     fun handleBack() {
         if (uiState.isEditing) {
-            uiState = uiState.settle(currentQuery())
+            uiState = uiState.settle(currentSearch().query)
             if (uiState == VaultSearchState.Browsing) onSearchActiveChange(false)
         } else {
             exit()
@@ -76,14 +70,14 @@ class VaultSearchStateHolder internal constructor(
     }
 
     fun pause() {
-        uiState = uiState.onScreenPaused(currentQuery())
-        if (currentSearchActive() && uiState == VaultSearchState.Browsing) {
+        uiState = uiState.onScreenPaused(currentSearch().query)
+        if (currentSearch().isActive && uiState == VaultSearchState.Browsing) {
             onSearchActiveChange(false)
         }
     }
 
     private fun exit() {
-        uiState = uiState.synchronize(false, currentQuery())
+        uiState = uiState.synchronize(VaultSearchInput.Closed)
         onExpandBars()
         onSearchActiveChange(false)
     }
@@ -91,24 +85,21 @@ class VaultSearchStateHolder internal constructor(
 
 @Composable
 internal fun rememberVaultSearchStateHolder(
-    searchActive: Boolean,
-    query: String,
+    search: VaultSearchInput,
     onQueryChange: (String) -> Unit,
     onSearchActiveChange: (Boolean) -> Unit,
     onExpandBars: () -> Unit,
 ): VaultSearchStateHolder {
-    val currentQuery by rememberUpdatedState(query)
-    val currentSearchActive by rememberUpdatedState(searchActive)
+    val currentSearch by rememberUpdatedState(search)
     val currentOnQueryChange by rememberUpdatedState(onQueryChange)
     val currentOnSearchActiveChange by rememberUpdatedState(onSearchActiveChange)
     val currentOnExpandBars by rememberUpdatedState(onExpandBars)
 
     return remember {
         VaultSearchStateHolder(
-            initialState = VaultSearchState.initial(searchActive, query),
-            initialSearchActive = searchActive,
-            currentQuery = { currentQuery },
-            currentSearchActive = { currentSearchActive },
+            initialState = VaultSearchState.initial(search),
+            initialSearch = search,
+            currentSearch = { currentSearch },
             onQueryChange = { currentOnQueryChange(it) },
             onSearchActiveChange = { currentOnSearchActiveChange(it) },
             onExpandBars = { currentOnExpandBars() },

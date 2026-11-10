@@ -9,7 +9,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class PrioritizedNestedScrollConnectionTest {
+class OrderedNestedScrollConnectionTest {
     @Test
     fun `reverse pull is consumed before the app bar receives remaining scroll`() {
         val receivedByAppBar = mutableListOf<Offset>()
@@ -31,10 +31,7 @@ class PrioritizedNestedScrollConnectionTest {
                 }
             }
         val connection =
-            PrioritizedNestedScrollConnection(
-                priority = pullToSearch,
-                secondary = appBar,
-            )
+            OrderedNestedScrollConnection(listOf(pullToSearch, appBar))
 
         val consumed =
             connection.onPreScroll(
@@ -91,7 +88,7 @@ class PrioritizedNestedScrollConnectionTest {
                     return available
                 }
             }
-        val connection = PrioritizedNestedScrollConnection(priority, secondary)
+        val connection = OrderedNestedScrollConnection(listOf(priority, secondary))
 
         val postScrollConsumed =
             connection.onPostScroll(

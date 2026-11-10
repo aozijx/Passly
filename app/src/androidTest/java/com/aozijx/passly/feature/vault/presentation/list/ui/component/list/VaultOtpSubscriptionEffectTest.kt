@@ -24,16 +24,23 @@ class VaultOtpSubscriptionEffectTest {
             object : VaultOtpStateProvider {
                 override fun state(
                     entryId: String,
-                    otpKind: VaultOtpKindUiModel?,
-                ): Flow<VaultOtpUiState?> =
-                    flowOf(VaultOtpUiState.Ready(displayCode = "123456", progress = 0.5f))
+                    otpKind: VaultOtpKindUiModel,
+                    showCode: Boolean,
+                ): Flow<VaultOtpUiState> =
+                    flowOf(if (showCode) VaultOtpUiState.Ready(displayCode = "123456", progress = 0.5f) else VaultOtpUiState.Hidden)
 
-                override fun subscribe(entryId: String) {
-                    events += "subscribe:$entryId"
+                override fun initialState(
+                    entryId: String,
+                    otpKind: VaultOtpKindUiModel,
+                    showCode: Boolean,
+                ): VaultOtpUiState = if (showCode) VaultOtpUiState.NotRequested else VaultOtpUiState.Hidden
+
+                override fun subscribe(entryId: String, otpKind: VaultOtpKindUiModel, showCode: Boolean) {
+                    if (showCode) events += "subscribe:$entryId"
                 }
 
-                override fun unsubscribe(entryId: String) {
-                    events += "unsubscribe:$entryId"
+                override fun unsubscribe(entryId: String, otpKind: VaultOtpKindUiModel, showCode: Boolean) {
+                    if (showCode) events += "unsubscribe:$entryId"
                 }
             }
 
@@ -43,7 +50,7 @@ class VaultOtpSubscriptionEffectTest {
                     entryId = "otp-1",
                     otpKind = VaultOtpKindUiModel.STANDARD,
                     provider = provider,
-                    enabled = enabled.value,
+                    showCode = enabled.value,
                 )
             }
         }

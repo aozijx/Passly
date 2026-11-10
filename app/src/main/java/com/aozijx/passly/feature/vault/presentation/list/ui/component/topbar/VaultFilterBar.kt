@@ -29,7 +29,8 @@ fun VaultFilterBar(
     modifier: Modifier = Modifier,
     filters: List<VaultFilterOptionUiModel>,
     allFiltersSelected: Boolean,
-    onFilterToggled: (VaultAddTypeUiModel?) -> Unit,
+    onClearFilters: () -> Unit,
+    onFilterToggled: (VaultAddTypeUiModel) -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -42,7 +43,7 @@ fun VaultFilterBar(
             item(key = "all") {
                 FilterChip(
                     selected = allFiltersSelected,
-                    onClick = { onFilterToggled(null) },
+                    onClick = onClearFilters,
                     label = {
                         Text(
                             text = stringResource(R.string.all),

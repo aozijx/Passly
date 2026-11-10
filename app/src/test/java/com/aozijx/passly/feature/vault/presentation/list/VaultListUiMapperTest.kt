@@ -22,10 +22,10 @@ import com.aozijx.passly.feature.vault.presentation.list.display.VaultLayoutConf
 import com.aozijx.passly.feature.vault.presentation.list.display.VaultStyleConfig
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemCategoryLabel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortOptionUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
+import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
 import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
 import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 import org.junit.Assert.assertEquals
@@ -67,15 +67,21 @@ class VaultListUiMapperTest {
     fun selectedSortIsProjectedFromThePersistedSettingsOwner() {
         val model = VaultUiState().toUiModel(display(), createdAtDescendingSort())
 
-        assertEquals(VaultSortOptionUiModel.CREATED_AT, model.toolbar.selectedSort.option)
+        assertEquals(VaultSortOption.CREATED_AT, model.toolbar.selectedSort.option)
         assertTrue(model.toolbar.selectedSort.descending)
     }
 
     @Test
-    fun sortPresetsContainCreatedAtOnlyOnce() {
+    fun sortOptionsFollowTheDomainPresetOrderWithoutDuplicates() {
         assertEquals(
-            1,
-            VaultSortUiModel.presets.count { it.option == VaultSortOptionUiModel.CREATED_AT },
+            listOf(
+                VaultSortOption.CREATED_AT,
+                VaultSortOption.TITLE,
+                VaultSortOption.UPDATED_AT,
+                VaultSortOption.LAST_USED_AT,
+                VaultSortOption.USAGE_FREQUENCY,
+            ),
+            VaultUiState().toUiModel(display(), createdAtDescendingSort()).toolbar.sortOptions,
         )
     }
 
@@ -83,7 +89,7 @@ class VaultListUiMapperTest {
     fun createdAtDescendingSortMapsToNewestFirst() {
         val ui = createdAtDescendingSort().toUiModel()
 
-        assertEquals(VaultSortOptionUiModel.CREATED_AT, ui.option)
+        assertEquals(VaultSortOption.CREATED_AT, ui.option)
         assertTrue(ui.descending)
     }
 
@@ -167,7 +173,7 @@ class VaultListUiMapperTest {
         assertEquals("entry-1", ui.id)
         assertEquals("Mail", ui.title)
         assertEquals("user@example.com", ui.username)
-        assertEquals("Personal", ui.category)
+        assertEquals(VaultListItemCategoryLabel.Tag("Personal"), ui.categoryLabel)
         assertEquals("example.com", ui.associatedDomain)
         assertEquals("com.example", ui.associatedAppPackage)
         assertEquals(null, ui.iconName)
@@ -176,7 +182,6 @@ class VaultListUiMapperTest {
         assertEquals(EntryVisualCategory.EMAIL, ui.visualCategory)
         assertTrue(ui.favorite)
         assertTrue(ui.hasPassword)
-        assertTrue(ui.hasOtp)
         assertEquals(VaultOtpKindUiModel.STEAM, ui.otpKind)
         assertEquals("ABC12", ui.otpPreview)
         assertEquals(

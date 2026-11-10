@@ -28,6 +28,8 @@ object CardStyleTokens {
     }
 
     object Totp {
+        const val LOW_PROGRESS_THRESHOLD = 0.2f
+
         val elevation = 1.dp
         val contentPadding = 16.dp
 

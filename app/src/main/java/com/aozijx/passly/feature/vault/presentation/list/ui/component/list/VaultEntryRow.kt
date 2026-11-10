@@ -41,21 +41,17 @@ internal fun VaultEntryRow(
     modifier: Modifier = Modifier,
 ) {
     val totpState =
-        if (item.hasOtp) {
-            observeVaultOtpState(
-                entryId = item.id,
-                otpKind = item.otpKind,
-                provider = otpStateProvider,
-                enabled = content.showTotpCode,
-            )
-        } else {
-            null
-        }
+        observeVaultOtpState(
+            entryId = item.id,
+            otpKind = item.otpKind,
+            provider = otpStateProvider,
+            showCode = content.showTotpCode,
+        )
     val cardStyle =
         remember(
             item.entryType,
             item.hasPassword,
-            item.hasOtp,
+            item.otpKind,
             content.cardPresentations,
         ) {
             CardStyleRegistry.resolveStyle(item, content.cardPresentations)
@@ -119,7 +115,6 @@ internal fun VaultEntryRow(
             cardStyle.Render(
                 entry = item,
                 totpState = totpState,
-                showTotpCode = content.showTotpCode,
                 onClick = { onAction(VaultListItemAction.Clicked(item)) },
             )
         }
@@ -129,20 +124,22 @@ internal fun VaultEntryRow(
 @Composable
 internal fun observeVaultOtpState(
     entryId: String,
-    otpKind: VaultOtpKindUiModel?,
+    otpKind: VaultOtpKindUiModel,
     provider: VaultOtpStateProvider,
-    enabled: Boolean,
-): VaultOtpUiState? {
-    if (!enabled) return null
-    DisposableEffect(entryId, provider) {
-        provider.subscribe(entryId)
-        onDispose { provider.unsubscribe(entryId) }
+    showCode: Boolean,
+): VaultOtpUiState {
+    DisposableEffect(entryId, otpKind, showCode, provider) {
+        provider.subscribe(entryId, otpKind, showCode)
+        onDispose { provider.unsubscribe(entryId, otpKind, showCode) }
     }
     val stateFlow =
-        remember(entryId, otpKind, provider) {
-            provider.state(entryId, otpKind).distinctUntilChanged()
+        remember(entryId, otpKind, showCode, provider) {
+            provider.state(entryId, otpKind, showCode).distinctUntilChanged()
         }
-    val current by stateFlow.collectAsStateWithLifecycle(initialValue = null)
+    val current by
+        stateFlow.collectAsStateWithLifecycle(
+            initialValue = provider.initialState(entryId, otpKind, showCode),
+        )
     return current
 }
 

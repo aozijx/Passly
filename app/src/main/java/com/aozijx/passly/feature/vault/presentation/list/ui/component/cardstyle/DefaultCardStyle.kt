@@ -24,6 +24,9 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.displayCodeOrPlaceholder
+import com.aozijx.passly.feature.vault.presentation.list.model.progress
+import com.aozijx.passly.feature.vault.presentation.list.model.shouldDisplayCode
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 @Composable
@@ -61,7 +64,7 @@ fun DefaultItem(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = entry.categoryOrTemplateLabel(),
+                    text = entry.categoryLabel.displayText(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -73,14 +76,12 @@ fun DefaultItem(
 @Composable
 fun DefaultOtpItem(
     entry: VaultListItemUiModel,
-    totpState: VaultOtpUiState?,
-    showCode: Boolean = true,
+    totpState: VaultOtpUiState,
     onClick: () -> Unit,
 ) {
-    val readyState = totpState as? VaultOtpUiState.Ready
-    val progress = readyState?.progress ?: 0f
+    val progress = totpState.progress
     val progressColor =
-        if (readyState != null && progress < 0.2f) {
+        if (totpState is VaultOtpUiState.Ready && progress < CardStyleTokens.Totp.LOW_PROGRESS_THRESHOLD) {
             MaterialTheme.colorScheme.error
         } else {
             MaterialTheme.colorScheme.primary
@@ -115,7 +116,7 @@ fun DefaultOtpItem(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = entry.categoryOrTemplateLabel(),
+                    text = entry.categoryLabel.displayText(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -131,9 +132,9 @@ fun DefaultOtpItem(
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             )
 
-            if (showCode) {
+            if (totpState.shouldDisplayCode) {
                 Text(
-                    text = readyState?.displayCode ?: "------",
+                    text = totpState.displayCodeOrPlaceholder,
                     style =
                         MaterialTheme.typography.titleLarge.copy(
                             fontFamily = FontFamily.Monospace,
@@ -158,16 +159,14 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState?,
-        showTotpCode: Boolean,
+        totpState: VaultOtpUiState,
         onClick: () -> Unit,
     ) {
         when {
-            entry.hasOtp -> {
+            entry.otpKind.isApplicable -> {
                 DefaultOtpItem(
                     entry = entry,
                     totpState = totpState,
-                    showCode = showTotpCode,
                     onClick = onClick,
                 )
             }
@@ -185,7 +184,6 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
             DefaultOtpItem(
                 entry = entry,
                 totpState = CardStylePreviewFixtures.otpState,
-                showCode = true,
                 onClick = onClick,
             )
         } else {

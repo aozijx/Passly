@@ -33,36 +33,37 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.displayCodeOrPlaceholder
+import com.aozijx.passly.feature.vault.presentation.list.model.progress
+import com.aozijx.passly.feature.vault.presentation.list.model.shouldDisplayCode
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
-
-private object TotpBehaviorTokens {
-    const val FALLBACK_CODE = "------"
-    const val STEAM_LABEL = "STEAM"
-    const val TOTP_LABEL = "TOTP"
-
-    const val LOW_PROGRESS_THRESHOLD = 0.2f
-}
 
 @Composable
 fun TotpStyleVaultItem(
     entry: VaultListItemUiModel,
-    totpState: VaultOtpUiState?,
-    showCode: Boolean = true,
+    totpState: VaultOtpUiState,
     onClick: () -> Unit,
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
-    val isSteam = entry.otpKind == VaultOtpKindUiModel.STEAM
-    val readyState = totpState as? VaultOtpUiState.Ready
-    val targetProgress = readyState?.progress ?: 0f
+    val targetProgress = totpState.progress
     val progress by animateFloatAsState(targetValue = targetProgress, label = "TotpProgress")
-    val shownCode = readyState?.displayCode ?: TotpBehaviorTokens.FALLBACK_CODE
 
     val progressColor by animateColorAsState(
         targetValue =
-            if (progress < TotpBehaviorTokens.LOW_PROGRESS_THRESHOLD) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.primary
+            when (totpState) {
+                VaultOtpUiState.Failed -> MaterialTheme.colorScheme.error
+                is VaultOtpUiState.Ready ->
+                    if (progress < CardStyleTokens.Totp.LOW_PROGRESS_THRESHOLD) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+
+                VaultOtpUiState.NotApplicable,
+                VaultOtpUiState.Hidden,
+                VaultOtpUiState.NotRequested,
+                VaultOtpUiState.Pending,
+                -> MaterialTheme.colorScheme.primary
             },
         label = "ProgressColor",
     )
@@ -120,7 +121,7 @@ fun TotpStyleVaultItem(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = entry.categoryOrTemplateLabel(),
+                        text = entry.categoryLabel.displayText(),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -132,9 +133,9 @@ fun TotpStyleVaultItem(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.codeColumnSpacing),
                 ) {
-                    if (showCode) {
+                    if (totpState.shouldDisplayCode) {
                         Text(
-                            text = shownCode,
+                            text = totpState.displayCodeOrPlaceholder,
                             style =
                                 MaterialTheme.typography.titleLarge.copy(
                                     fontFamily = FontFamily.Monospace,
@@ -159,7 +160,7 @@ fun TotpStyleVaultItem(
                                     ),
                             )
                             Text(
-                                text = if (isSteam) TotpBehaviorTokens.STEAM_LABEL else TotpBehaviorTokens.TOTP_LABEL,
+                                text = entry.otpKind.codeTypeLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline,
                                 fontWeight = FontWeight.SemiBold,
@@ -189,19 +190,17 @@ internal object TotpVaultCardStyle : VaultCardStyleComponent {
     override fun supportsEntryType(entryType: EntryType): Boolean =
         entryType == EntryType.OTP
 
-    override fun supports(entry: VaultListItemUiModel): Boolean = entry.hasOtp
+    override fun supports(entry: VaultListItemUiModel): Boolean = entry.otpKind.isApplicable
 
     @Composable
     override fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState?,
-        showTotpCode: Boolean,
+        totpState: VaultOtpUiState,
         onClick: () -> Unit,
     ) {
         TotpStyleVaultItem(
             entry = entry,
             totpState = totpState,
-            showCode = showTotpCode,
             onClick = onClick,
         )
     }
@@ -211,7 +210,6 @@ internal object TotpVaultCardStyle : VaultCardStyleComponent {
         TotpStyleVaultItem(
             entry = CardStylePreviewFixtures.totpEntry(entryType),
             totpState = CardStylePreviewFixtures.otpState,
-            showCode = true,
             onClick = onClick,
         )
     }

@@ -11,7 +11,7 @@ data class VaultListItemUiModel(
     val entryType: EntryType,
     val title: String,
     val username: String,
-    val category: String?,
+    val categoryLabel: VaultListItemCategoryLabel,
     val favorite: Boolean,
     val associatedDomain: String?,
     val associatedAppPackage: String?,
@@ -20,12 +20,18 @@ data class VaultListItemUiModel(
     val iconImageModel: LocalIconImageModel?,
     val visualCategory: EntryVisualCategory,
     val hasPassword: Boolean,
-    val hasOtp: Boolean,
-    val otpKind: VaultOtpKindUiModel?,
+    val otpKind: VaultOtpKindUiModel,
     val otpPreview: String?,
     val passwordCardSecondaryText: VaultPasswordCardSecondaryTextUiModel,
     val passwordCardSupportingText: VaultPasswordCardSupportingTextUiModel,
 )
+
+@Immutable
+sealed interface VaultListItemCategoryLabel {
+    data class Tag(val value: String) : VaultListItemCategoryLabel
+
+    data class EntryTypeName(val entryType: EntryType) : VaultListItemCategoryLabel
+}
 
 sealed interface VaultPasswordCardSecondaryTextUiModel {
     data class Value(val text: String) : VaultPasswordCardSecondaryTextUiModel
@@ -35,4 +41,14 @@ sealed interface VaultPasswordCardSecondaryTextUiModel {
 
 enum class VaultPasswordCardSupportingTextUiModel { FAVORITE, AUTOFILL, PROTECTED }
 
-enum class VaultOtpKindUiModel { STANDARD, STEAM }
+enum class VaultOtpKindUiModel(
+    val codeTypeLabel: String,
+) {
+    NOT_APPLICABLE(""),
+    STANDARD("TOTP"),
+    STEAM("STEAM"),
+    ;
+
+    val isApplicable: Boolean
+        get() = this != NOT_APPLICABLE
+}

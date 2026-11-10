@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.isEditing
@@ -74,19 +75,24 @@ fun VaultTopBar(
                 )
             },
         )
-        uiState.menu.selectedCategory?.let { category ->
-            InputChip(
-                selected = true,
-                onClick = { onAction(VaultUiAction.ClearCategory) },
-                label = { Text(category) },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.vault_clear_filter),
-                    )
-                },
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+        when (val selection = uiState.menu.categorySelection) {
+            VaultCategorySelection.All -> Unit
+            is VaultCategorySelection.Selected -> {
+                InputChip(
+                    selected = true,
+                    onClick = {
+                        onAction(VaultUiAction.CategorySelectionChanged(VaultCategorySelection.All))
+                    },
+                    label = { Text(selection.name) },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.vault_clear_filter),
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
         }
     }
 }

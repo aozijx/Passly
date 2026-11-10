@@ -47,7 +47,7 @@ internal fun VaultSearchHeader(
     ) {
         Box(Modifier.fillMaxWidth(widthFraction)) {
             VaultSearchBar(
-                query = uiState.query,
+                query = uiState.search.query,
                 isEditing = searchStateHolder.uiState.isEditing,
                 onQueryChange = searchStateHolder::queryChanged,
                 onSearch = searchStateHolder::submit,

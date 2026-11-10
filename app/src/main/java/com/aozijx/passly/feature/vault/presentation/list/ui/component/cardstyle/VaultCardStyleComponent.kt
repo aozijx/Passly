@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 import androidx.compose.runtime.Composable
 import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemCategoryLabel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
@@ -33,8 +34,7 @@ interface VaultCardStyleComponent {
     @Composable
     fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState?,
-        showTotpCode: Boolean,
+        totpState: VaultOtpUiState,
         onClick: () -> Unit,
     )
 
@@ -52,8 +52,12 @@ internal object CardStylePreviewFixtures {
             title = "示例账号",
             username = "demo_user",
             associatedDomain = "example.com",
-            hasOtp = entryType == EntryType.OTP,
-            otpKind = VaultOtpKindUiModel.STANDARD.takeIf { entryType == EntryType.OTP },
+            otpKind =
+                if (entryType == EntryType.OTP) {
+                    VaultOtpKindUiModel.STANDARD
+                } else {
+                    VaultOtpKindUiModel.NOT_APPLICABLE
+                },
         )
 
     fun passwordEntry(entryType: EntryType) =
@@ -72,7 +76,6 @@ internal object CardStylePreviewFixtures {
             id = "-102",
             title = "示例二步验证",
             username = "totp_user",
-            hasOtp = true,
             otpKind = VaultOtpKindUiModel.STANDARD,
         )
 
@@ -83,14 +86,13 @@ internal object CardStylePreviewFixtures {
         username: String,
         associatedDomain: String? = null,
         hasPassword: Boolean = false,
-        hasOtp: Boolean = false,
-        otpKind: VaultOtpKindUiModel? = null,
+        otpKind: VaultOtpKindUiModel = VaultOtpKindUiModel.NOT_APPLICABLE,
     ) = VaultListItemUiModel(
         id = id,
         entryType = entryType,
         title = title,
         username = username,
-        category = null,
+        categoryLabel = VaultListItemCategoryLabel.EntryTypeName(entryType),
         favorite = false,
         associatedDomain = associatedDomain,
         associatedAppPackage = null,
@@ -108,7 +110,6 @@ internal object CardStylePreviewFixtures {
                 ),
             ),
         hasPassword = hasPassword,
-        hasOtp = hasOtp,
         otpKind = otpKind,
         otpPreview = null,
         passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(entryType),

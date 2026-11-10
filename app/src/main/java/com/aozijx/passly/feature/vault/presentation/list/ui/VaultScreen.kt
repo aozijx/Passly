@@ -28,7 +28,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.component.list.Vault
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultMenuUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultTopBar
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultTopBarUiState
-import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.PrioritizedNestedScrollConnection
+import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.OrderedNestedScrollConnection
 import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.rememberFabVisibilityNestedScrollConnection
 import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.rememberPullToSearchNestedScrollConnection
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
@@ -66,19 +66,18 @@ fun VaultScreen(
 
     val searchStateHolder =
         rememberVaultSearchStateHolder(
-            searchActive = state.toolbar.isSearchActive,
-            query = state.toolbar.searchQuery,
+            search = state.toolbar.search,
             onQueryChange = { onAction(VaultUiAction.SearchQueryChanged(it)) },
             onSearchActiveChange = { onAction(VaultUiAction.SearchToggled(it)) },
             onExpandBars = ::expandVaultBars,
         )
     val mainGridState = rememberLazyGridState()
-    val searchGridState = remember(state.toolbar.isSearchActive) { LazyGridState() }
-    val gridState = if (state.toolbar.isSearchActive) searchGridState else mainGridState
+    val searchGridState = remember(state.toolbar.search.isActive) { LazyGridState() }
+    val gridState = if (state.toolbar.search.isActive) searchGridState else mainGridState
     val pullToSearchConnection =
         rememberPullToSearchNestedScrollConnection(
             gridState = gridState,
-            enabled = state.content.isPullToSearchEnabled && !state.toolbar.isSearchActive,
+            enabled = state.content.isPullToSearchEnabled && !state.toolbar.search.isActive,
             onProgressChanged = searchStateHolder::updatePullProgress,
             onTriggered = searchStateHolder::request,
         )
@@ -88,23 +87,22 @@ fun VaultScreen(
     val vaultScrollConnection =
         if (appBarConsumesScroll) {
             remember(pullToSearchConnection, scrollBehavior.nestedScrollConnection) {
-                PrioritizedNestedScrollConnection(
-                    priority = pullToSearchConnection,
-                    secondary = scrollBehavior.nestedScrollConnection,
+                OrderedNestedScrollConnection(
+                    listOf(
+                        pullToSearchConnection,
+                        scrollBehavior.nestedScrollConnection,
+                    ),
                 )
             }
         } else {
             pullToSearchConnection
         }
 
-    LaunchedEffect(state.toolbar.isSearchActive, state.toolbar.searchQuery) {
-        searchStateHolder.synchronize(
-            searchActive = state.toolbar.isSearchActive,
-            query = state.toolbar.searchQuery,
-        )
+    LaunchedEffect(state.toolbar.search) {
+        searchStateHolder.synchronize(state.toolbar.search)
     }
 
-    BackHandler(enabled = state.toolbar.isSearchActive) {
+    BackHandler(enabled = state.toolbar.search.isActive) {
         searchStateHolder.handleBack()
     }
     LifecycleResumeEffect(Unit) {
@@ -121,15 +119,16 @@ fun VaultScreen(
             VaultTopBar(
                 uiState =
                     VaultTopBarUiState(
-                        query = state.toolbar.searchQuery,
+                        search = state.toolbar.search,
                         menu =
                             VaultMenuUiState(
                                 showTotpCode = state.content.showTotpCode,
                                 categorySearchQuery = state.toolbar.categorySearchQuery,
                                 matchingCategories = state.toolbar.matchingCategories,
                                 categoriesState = state.toolbar.categoriesState,
-                                selectedCategory = state.toolbar.selectedCategory,
+                                categorySelection = state.toolbar.categorySelection,
                                 selectedSort = state.toolbar.selectedSort,
+                                sortOptions = state.toolbar.sortOptions,
                             ),
                         collapseOnScroll = state.layout.collapseTopBarOnScroll,
                         collapseQuickFilterOnScroll = state.layout.collapseQuickFilterBarOnScroll,

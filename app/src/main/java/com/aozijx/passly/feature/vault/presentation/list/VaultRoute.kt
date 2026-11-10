@@ -14,7 +14,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,11 +29,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableReadState
-import com.aozijx.passly.feature.scanner.presentation.AnimatedScannerOverlay
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
-import com.aozijx.passly.feature.scanner.presentation.ScannerPrimaryActionLabel
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPresentation
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.route.AnimatedScannerOverlay
+import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.list.action.VaultCopyRequest
@@ -59,9 +60,13 @@ internal fun VaultRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    var isScannerVisible by rememberSaveable { mutableStateOf(false) }
-    DisposableEffect(vaultViewModel, isScannerVisible) {
-        val owner = if (!isScannerVisible) vaultViewModel.onPageEntered() else null
+    var scannerOverlayState by remember { mutableStateOf<ScannerOverlayState>(ScannerOverlayState.Hidden) }
+    DisposableEffect(vaultViewModel, scannerOverlayState) {
+        val owner =
+            when (scannerOverlayState) {
+                ScannerOverlayState.Hidden -> vaultViewModel.onPageEntered()
+                ScannerOverlayState.Visible -> null
+            }
         onDispose {
             owner?.let(vaultViewModel::onPageExited)
         }
@@ -116,7 +121,9 @@ internal fun VaultRoute(
                 return
             }
 
-            is RecoverableReadState.Ready -> state.value
+            is RecoverableReadState.Ready -> {
+                state.value
+            }
         }
 
     val renderState = uiState.toUiModel(vaultDisplayConfig, librarySettings.sort)
@@ -206,7 +213,7 @@ internal fun VaultRoute(
         onRouteRequest = { request ->
             when (request) {
                 VaultRouteRequest.OpenScanner -> {
-                    isScannerVisible = true
+                    scannerOverlayState = ScannerOverlayState.Visible
                 }
 
                 VaultRouteRequest.OpenSettings -> {
@@ -220,10 +227,10 @@ internal fun VaultRoute(
     )
 
     AnimatedScannerOverlay(
-        visible = isScannerVisible,
+        state = scannerOverlayState,
         resolveResult = { rawValue ->
             when (val code = resolveVaultScannedCode(rawValue)) {
-                is VaultScannedCode.Otp ->
+                is VaultScannedCode.Otp -> {
                     ScannerResultPlan(
                         presentation =
                             ScannerResultPresentation(
@@ -238,22 +245,32 @@ internal fun VaultRoute(
                             }
                         },
                     )
+                }
 
-                is VaultScannedCode.Wifi ->
+                is VaultScannedCode.Wifi -> {
                     ScannerResultPlan(
                         presentation = ScannerResultPresentation.DEFAULT,
                         confirm = {
-                            when (navigation.navigate(VaultDestinationRequest.EditScannedWifi(code.payload))) {
-                                VaultNavigationResult.Navigated -> ScannerResultHandling.Handled
+                            when (val result = navigation.navigate(VaultDestinationRequest.EditScannedWifi(code.payload))) {
+                                VaultNavigationResult.Navigated -> {
+                                    ScannerResultHandling.Handled
+                                }
+
                                 VaultNavigationResult.UnsupportedDestination,
                                 VaultNavigationResult.AccessDenied,
-                                is VaultNavigationResult.NavigationFailed,
-                                -> ScannerResultHandling.Rejected
+                                -> {
+                                    ScannerResultHandling.Rejected
+                                }
+
+                                is VaultNavigationResult.NavigationFailed -> {
+                                    ScannerResultHandling.Failed(result.failure)
+                                }
                             }
                         },
                     )
+                }
 
-                is VaultScannedCode.WebLink ->
+                is VaultScannedCode.WebLink -> {
                     ScannerResultPlan(
                         presentation = ScannerResultPresentation.DEFAULT,
                         confirm = {
@@ -265,15 +282,17 @@ internal fun VaultRoute(
                             }
                         },
                     )
+                }
 
-                VaultScannedCode.Unsupported ->
+                VaultScannedCode.Unsupported -> {
                     ScannerResultPlan(
                         presentation = ScannerResultPresentation.DEFAULT,
                         confirm = { ScannerResultHandling.Rejected },
                     )
+                }
             }
         },
-        onDismiss = { isScannerVisible = false },
+        onDismiss = { scannerOverlayState = ScannerOverlayState.Hidden },
     )
 }
 

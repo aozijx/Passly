@@ -11,7 +11,6 @@ import androidx.compose.ui.focus.FocusRequester
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
-import com.aozijx.passly.feature.vault.presentation.list.toFeatureModel
 
 private enum class VaultMenuPage { MAIN, SORT, CATEGORY_FILTER }
 
@@ -43,7 +42,7 @@ internal fun VaultDropdownMenu(
                 MainMenuContent(
                     onSortClick = { currentPage = VaultMenuPage.SORT },
                     onCategoryFilterClick = { currentPage = VaultMenuPage.CATEGORY_FILTER },
-                    showTOTPCode = uiState.showTotpCode,
+                    showTotpCode = uiState.showTotpCode,
                     onToggleTotpVisibility = {
                         onAction(VaultUiAction.ToggleShowTotpCode)
                     },
@@ -55,8 +54,9 @@ internal fun VaultDropdownMenu(
             VaultMenuPage.SORT -> {
                 SortSubMenu(
                     selectedSort = uiState.selectedSort,
+                    sortOptions = uiState.sortOptions,
                     onSortSelected = {
-                        onAction(VaultUiAction.SortOptionSelected(it.toFeatureModel()))
+                        onAction(VaultUiAction.SortOptionSelected(it))
                     },
                     onBack = { currentPage = VaultMenuPage.MAIN },
                 )
@@ -77,10 +77,10 @@ internal fun VaultDropdownMenu(
                     items = uiState.matchingCategories,
                     categoriesState = uiState.categoriesState,
                     onRetry = { onAction(VaultUiAction.RetryCategories) },
-                    selectedItem = uiState.selectedCategory,
+                    selectedItem = uiState.categorySelection,
                     itemText = { it },
                     onItemSelected = {
-                        onAction(VaultUiAction.CategorySelected(it))
+                        onAction(VaultUiAction.CategorySelectionChanged(it))
                         onDismissRequest()
                     },
                     onBack = {

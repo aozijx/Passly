@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.search
 
 import androidx.compose.runtime.Immutable
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 
 enum class VaultSearchAction { MORE, CLEAR, NONE }
 
@@ -15,14 +16,10 @@ sealed interface VaultSearchState {
     data object Results : VaultSearchState
 
     companion object {
-        fun initial(
-            isSearchActive: Boolean,
-            query: String,
-        ): VaultSearchState =
-            when {
-                !isSearchActive -> Browsing
-                query.isNotBlank() -> Results
-                else -> Browsing
+        fun initial(search: VaultSearchInput): VaultSearchState =
+            when (search) {
+                VaultSearchInput.Closed -> Browsing
+                is VaultSearchInput.Open -> search.toSearchState()
             }
     }
 }
@@ -46,11 +43,15 @@ val VaultSearchState.layoutProgress: Float
             -> 0f
         }
 
-fun VaultSearchState.action(query: String): VaultSearchAction =
-    when {
-        this == VaultSearchState.Browsing || this is VaultSearchState.Pulling -> VaultSearchAction.MORE
-        query.isNotEmpty() -> VaultSearchAction.CLEAR
-        else -> VaultSearchAction.NONE
+fun VaultSearchState.action(search: VaultSearchInput): VaultSearchAction =
+    when (this) {
+        VaultSearchState.Browsing,
+        is VaultSearchState.Pulling,
+        -> VaultSearchAction.MORE
+
+        is VaultSearchState.Editing,
+        VaultSearchState.Results,
+        -> if (search.query.isNotEmpty()) VaultSearchAction.CLEAR else VaultSearchAction.NONE
     }
 fun VaultSearchState.onPullProgressChanged(progress: Float): VaultSearchState =
     when (this) {
@@ -58,7 +59,9 @@ fun VaultSearchState.onPullProgressChanged(progress: Float): VaultSearchState =
         VaultSearchState.Results,
         -> this
 
-        else -> progress.coerceIn(0f, 1f).takeIf { it > 0f }?.let(VaultSearchState::Pulling) ?: VaultSearchState.Browsing
+        VaultSearchState.Browsing,
+        is VaultSearchState.Pulling,
+        -> progress.coerceIn(0f, 1f).takeIf { it > 0f }?.let(VaultSearchState::Pulling) ?: VaultSearchState.Browsing
     }
 
 fun VaultSearchState.startEditing(): VaultSearchState = VaultSearchState.Editing()
@@ -67,11 +70,18 @@ fun VaultSearchState.onFocusChanged(
     focused: Boolean,
     query: String,
 ): VaultSearchState =
-    when {
-        focused && this is VaultSearchState.Editing -> copy(hasReceivedFocus = true)
-        focused -> this
-        this is VaultSearchState.Editing && hasReceivedFocus -> settle(query)
-        else -> this
+    when (this) {
+        is VaultSearchState.Editing ->
+            when {
+                focused -> copy(hasReceivedFocus = true)
+                hasReceivedFocus -> settle(query)
+                else -> this
+            }
+
+        VaultSearchState.Browsing,
+        is VaultSearchState.Pulling,
+        VaultSearchState.Results,
+        -> this
     }
 
 fun VaultSearchState.settle(query: String): VaultSearchState =
@@ -79,13 +89,20 @@ fun VaultSearchState.settle(query: String): VaultSearchState =
 
 fun VaultSearchState.onScreenPaused(query: String): VaultSearchState = settle(query)
 
-fun VaultSearchState.synchronize(
-    isSearchActive: Boolean,
-    query: String,
-): VaultSearchState =
-    when {
-        !isSearchActive -> VaultSearchState.Browsing
-        this is VaultSearchState.Editing || this is VaultSearchState.Pulling -> this
-        query.isNotBlank() -> VaultSearchState.Results
-        else -> VaultSearchState.Browsing
+fun VaultSearchState.synchronize(search: VaultSearchInput): VaultSearchState =
+    when (search) {
+        VaultSearchInput.Closed -> VaultSearchState.Browsing
+        is VaultSearchInput.Open ->
+            when (this) {
+                is VaultSearchState.Editing,
+                is VaultSearchState.Pulling,
+                -> this
+
+                VaultSearchState.Browsing,
+                VaultSearchState.Results,
+                -> search.toSearchState()
+            }
     }
+
+private fun VaultSearchInput.Open.toSearchState(): VaultSearchState =
+    if (query.isNotBlank()) VaultSearchState.Results else VaultSearchState.Browsing

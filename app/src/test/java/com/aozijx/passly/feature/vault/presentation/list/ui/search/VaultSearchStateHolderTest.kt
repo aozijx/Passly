@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.search
 
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,10 +12,9 @@ class VaultSearchStateHolderTest {
         var searchActive = false
         val holder =
             VaultSearchStateHolder(
-                initialState = VaultSearchState.initial(searchActive, ""),
-                initialSearchActive = searchActive,
-                currentQuery = { "" },
-                currentSearchActive = { searchActive },
+                initialState = VaultSearchState.initial(VaultSearchInput.Closed),
+                initialSearch = VaultSearchInput.Closed,
+                currentSearch = { if (searchActive) VaultSearchInput.Open("") else VaultSearchInput.Closed },
                 onQueryChange = {},
                 onSearchActiveChange = { searchActive = it },
                 onExpandBars = {},
@@ -33,10 +33,9 @@ class VaultSearchStateHolderTest {
         var barsExpanded = false
         val holder =
             VaultSearchStateHolder(
-                initialState = VaultSearchState.initial(searchActive, query),
-                initialSearchActive = searchActive,
-                currentQuery = { query },
-                currentSearchActive = { searchActive },
+                initialState = VaultSearchState.initial(VaultSearchInput.Open(query)),
+                initialSearch = VaultSearchInput.Open(query),
+                currentSearch = { if (searchActive) VaultSearchInput.Open(query) else VaultSearchInput.Closed },
                 onQueryChange = { query = it },
                 onSearchActiveChange = { searchActive = it },
                 onExpandBars = { barsExpanded = true },
@@ -55,10 +54,9 @@ class VaultSearchStateHolderTest {
         var searchActive = false
         val holder =
             VaultSearchStateHolder(
-                initialState = VaultSearchState.initial(searchActive, ""),
-                initialSearchActive = searchActive,
-                currentQuery = { "" },
-                currentSearchActive = { searchActive },
+                initialState = VaultSearchState.initial(VaultSearchInput.Closed),
+                initialSearch = VaultSearchInput.Closed,
+                currentSearch = { if (searchActive) VaultSearchInput.Open("") else VaultSearchInput.Closed },
                 onQueryChange = {},
                 onSearchActiveChange = { searchActive = it },
                 onExpandBars = {},

@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.list
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.flow.flowOf
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
@@ -13,12 +14,27 @@ import kotlinx.coroutines.flow.map
 interface VaultOtpStateProvider {
     fun state(
         entryId: String,
-        otpKind: VaultOtpKindUiModel?,
-    ): Flow<VaultOtpUiState?>
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    ): Flow<VaultOtpUiState>
 
-    fun subscribe(entryId: String)
+    fun initialState(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    ): VaultOtpUiState
 
-    fun unsubscribe(entryId: String)
+    fun subscribe(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    )
+
+    fun unsubscribe(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    )
 }
 
 internal class VaultOtpStateProviderBindings(
@@ -37,12 +53,41 @@ internal class VaultOtpStateProviderBindings(
 
     override fun state(
         entryId: String,
-        otpKind: VaultOtpKindUiModel?,
-    ): Flow<VaultOtpUiState?> = states.map { current -> current[entryId]?.toUiModel(otpKind) }
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    ): Flow<VaultOtpUiState> =
+        if (!otpKind.isApplicable || !showCode) {
+            flowOf(initialState(entryId, otpKind, showCode))
+        } else {
+            states.map { current -> current[entryId]?.toUiModel(otpKind) ?: VaultOtpUiState.NotRequested }
+        }
 
-    override fun subscribe(entryId: String) = onSubscribe(entryId)
+    override fun initialState(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    ): VaultOtpUiState =
+        when {
+            !otpKind.isApplicable -> VaultOtpUiState.NotApplicable
+            !showCode -> VaultOtpUiState.Hidden
+            else -> states.value[entryId]?.toUiModel(otpKind) ?: VaultOtpUiState.NotRequested
+        }
 
-    override fun unsubscribe(entryId: String) = onUnsubscribe(entryId)
+    override fun subscribe(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    ) {
+        if (otpKind.isApplicable && showCode) onSubscribe(entryId)
+    }
+
+    override fun unsubscribe(
+        entryId: String,
+        otpKind: VaultOtpKindUiModel,
+        showCode: Boolean,
+    ) {
+        if (otpKind.isApplicable && showCode) onUnsubscribe(entryId)
+    }
 }
 
 @Composable

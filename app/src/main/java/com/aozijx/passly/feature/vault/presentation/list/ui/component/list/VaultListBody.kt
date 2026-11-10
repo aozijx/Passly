@@ -55,8 +55,9 @@ internal fun VaultListBody(
             VaultFilterBar(
                 filters = state.navigation.filters,
                 allFiltersSelected = state.navigation.allFiltersSelected,
+                onClearFilters = { onAction(VaultUiAction.ClearFilters) },
                 onFilterToggled = { filter ->
-                    onAction(VaultUiAction.FilterToggled(filter?.featureType))
+                    onAction(VaultUiAction.FilterToggled(filter.featureType))
                 },
             )
         }

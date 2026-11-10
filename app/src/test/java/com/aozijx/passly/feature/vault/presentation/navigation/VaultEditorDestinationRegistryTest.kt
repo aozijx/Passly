@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.navigation
 
 import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.presentation.editor.VaultEditorCapabilities
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -35,7 +36,7 @@ class VaultEditorDestinationRegistryTest {
         EntryType.entries.forEach { type ->
             val hasRoute = VaultEditorDestinationRegistry.editRouteFor(type, "seed-token") != null
 
-            assertEquals(hasRoute, VaultEditorDestinationRegistry.supportsFullFormEdit(type))
+            assertEquals(hasRoute, VaultEditorCapabilities.supportsFullFormEdit(type))
         }
     }
 }

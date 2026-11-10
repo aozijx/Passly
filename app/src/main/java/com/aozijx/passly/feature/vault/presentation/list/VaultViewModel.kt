@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -74,7 +75,7 @@ class VaultViewModel
             )
 
         private val queryState: Flow<VaultQueryGeneration> =
-            buildRecoverableVaultQueryStates(
+            buildRecoverableVaultQueryGenerations(
                 uiStates = uiState,
                 librarySettings = librarySettingsState,
             )
@@ -99,19 +100,20 @@ class VaultViewModel
         fun onAction(action: VaultUiAction) {
             when (action) {
                 is VaultUiAction.SearchQueryChanged -> {
-                    mutate(VaultMutation.SearchQueryChanged(action.query))
+                    _uiState.update { state ->
+                        when (val search = state.search) {
+                            VaultSearchInput.Closed -> state
+                            is VaultSearchInput.Open -> state.copy(search = search.copy(query = action.query))
+                        }
+                    }
                 }
 
-                is VaultUiAction.CategorySelected -> {
-                    mutate(VaultMutation.CategoryChanged(action.category))
+                is VaultUiAction.CategorySelectionChanged -> {
+                    _uiState.update { it.copy(categorySelection = action.selection) }
                 }
 
                 is VaultUiAction.CategorySearchQueryChanged -> {
-                    mutate(VaultMutation.CategorySearchQueryChanged(action.query))
-                }
-
-                VaultUiAction.ClearCategory -> {
-                    mutate(VaultMutation.CategoryChanged(null))
+                    _uiState.update { it.copy(categorySearchQuery = action.query) }
                 }
 
                 VaultUiAction.RetryCategories -> {
@@ -119,19 +121,45 @@ class VaultViewModel
                 }
 
                 is VaultUiAction.SortOptionSelected -> {
-                    selectSortOption(action.sort)
+                    selectSortOption(action.option)
                 }
 
                 is VaultUiAction.FilterToggled -> {
-                    mutate(VaultMutation.FilterToggled(action.filter))
+                    _uiState.update { state ->
+                        val filters = state.selectedFilters
+                        state.copy(
+                            selectedFilters =
+                                if (action.filter in filters) {
+                                    filters - action.filter
+                                } else {
+                                    filters + action.filter
+                                },
+                        )
+                    }
+                }
+
+                VaultUiAction.ClearFilters -> {
+                    _uiState.update { it.copy(selectedFilters = emptySet()) }
                 }
 
                 is VaultUiAction.SearchToggled -> {
-                    mutate(VaultMutation.SearchVisibilityChanged(action.active))
+                    _uiState.update { state ->
+                        state.copy(
+                            search =
+                                if (action.active) {
+                                    when (val current = state.search) {
+                                        VaultSearchInput.Closed -> VaultSearchInput.Open("")
+                                        is VaultSearchInput.Open -> current
+                                    }
+                                } else {
+                                    VaultSearchInput.Closed
+                                },
+                        )
+                    }
                 }
 
                 VaultUiAction.ToggleShowTotpCode -> {
-                    toggleShowTOTPCode()
+                    _uiState.update { it.copy(showTotpCode = !it.showTotpCode) }
                 }
 
                 is VaultUiAction.QuickDelete -> {
@@ -148,18 +176,22 @@ class VaultViewModel
             }
         }
 
-        private fun selectSortOption(sort: EntrySort) {
+        private fun selectSortOption(option: VaultSortOption) {
+            val currentSort =
+                (librarySettingsState.value as? RecoverableReadState.Ready)?.value?.sort ?: return
+            val requestedSort =
+                if (currentSort.field == option.field) {
+                    currentSort.toggled()
+                } else {
+                    EntrySort.presets().single { it.field == option.field }
+                }
             val owner = pageEffects.currentOwner ?: return
             viewModelScope.launch {
                 writePreferenceWithFeedback(
                     failureRes = R.string.vault_error_sort_failed,
                     onFailure = { emitError(owner, it) },
-                ) { settingsRepository.setSort(sort) }
+                ) { settingsRepository.setSort(requestedSort) }
             }
-        }
-
-        private fun toggleShowTOTPCode() {
-            mutate(VaultMutation.TotpVisibilityToggled)
         }
 
         fun subscribeVisibleOtp(entryId: String) {
@@ -187,7 +219,7 @@ class VaultViewModel
                                     ?: VaultCategoriesState.ReadyEmpty
                             is RecoverableReadState.Failed -> VaultCategoriesState.Failed
                         }
-                    mutate(VaultMutation.CategoriesStateChanged(categories))
+                    _uiState.update { it.copy(categories = categories) }
                 }
             }
         }
@@ -205,10 +237,6 @@ class VaultViewModel
             message: UiErrorMessage,
         ) {
             pageEffects.tryEmit(owner, VaultEffect.ShowError(message))
-        }
-
-        private fun mutate(mutation: VaultMutation) {
-            _uiState.value = VaultReducer.reduce(_uiState.value, mutation)
         }
 
         override fun onCleared() {

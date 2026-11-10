@@ -21,11 +21,7 @@ internal object VaultEditorDestinationRegistry {
             AddType.WIFI to AppRoute.AddWifi.route,
         )
 
-    val creatableTypes: List<AddType> = routes.keys.toList()
-
     fun routeFor(type: AddType): String? = routes[type]
-
-    fun supportsFullFormEdit(type: EntryType): Boolean = type in editRouteFactories
 
     fun editRouteFor(type: EntryType, seedToken: String): String? =
         editRouteFactories[type]?.invoke(seedToken)

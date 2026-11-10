@@ -1,10 +1,11 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar
 
 import androidx.compose.runtime.Immutable
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 
 @Immutable
 data class VaultTopBarUiState(
-    val query: String,
+    val search: VaultSearchInput,
     val menu: VaultMenuUiState,
     val collapseOnScroll: Boolean,
     val collapseQuickFilterOnScroll: Boolean,

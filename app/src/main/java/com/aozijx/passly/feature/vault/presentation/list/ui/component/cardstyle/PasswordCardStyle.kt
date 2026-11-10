@@ -173,8 +173,7 @@ internal object PasswordVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState?,
-        showTotpCode: Boolean,
+        totpState: VaultOtpUiState,
         onClick: () -> Unit,
     ) {
         PasswordStyleVaultItem(entry = entry, onClick = onClick)
