@@ -15,6 +15,16 @@
 
 OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节集中在[OTP Runtime 专项审查](2026-11-11-otp-runtime-owner-and-invalidation.md)，此处不重复。
 
+## Activity 与 Revision DAO 收敛证据
+
+主维护 TODO Task 34/36 的生产接口收敛和实现验证已完成；活动计划只保留尚未完成的设备 instrumentation 运行。
+
+- **Task 34，Activity 查询：** `ActivityQueryRepository` 的唯一生产消费者是 `DetailViewModel`，只订阅 `observeByEntryId()`。移除没有生产消费者的 `observeAll()`、`observeByType()` 及对应 Repository/Room adapter 路径；保留 Room session gate 测试需要的查询和修订恢复事务测试使用的 `getByEntryId()`、`countByEntryId()`、`countByEntryIdAndType()`。`EntryActivityAnalyticsDao`、`AppDatabase` accessor 和聚合 DTO 无生产调用者；列表 usageCount/lastUsedAt 由 `EntryPagingQueryFactory` 提供。完整备份不含修订历史，因此没有备份合同依赖被删接口。
+- **Task 36，Revision DAO：** 删除没有生产消费者的 `getByEntryId()`、`getLatest()`、`countAll()`、批量 `insertAllStrict()`、Import upsert 和 `deleteBefore()`；测试改用生产观察 Flow 与逐条严格插入，保留历史上限、恢复后最新快照、清空回收站与附件/图标引用保护断言。未改数据库实体或 Schema。
+- **初始化编排：** `EntryRevisionHistoryInitializationFlowTest` 覆盖已完成 generation 短路、事务成功后的单次标记与先标记后清理、事务失败重试、generation 标记失败重试及并发调用串行复核。实现与调用位置见下方表格。
+
+历史执行记录：Task 34/36 的 `:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`、`verifyArchitecture` 与目标文件 `git diff --check` 曾通过；初始化编排定向 JVM 5/5、`:data:testDebugUnitTest` 177/177 与 `:data:compileDebugAndroidTestKotlin` 曾通过。上述均为计划中记录的 2026-11-08/11-11 结果，本次未重跑；Android instrumentation 未在设备执行，仍由主计划 Task 34/36 跟踪。
+
 ## 历史验证边界
 
 主计划迁移前的 2026-11-11 记录报告了全 JVM 测试通过及 App/Core/Data/Security/Autofill AndroidTest 源集编译通过；同一记录说明没有连接设备，Android instrumentation 未执行。此处保留为当日历史执行记录，本次归档没有重跑测试；不能据此判定全仓测试逻辑审查完成或设备行为通过。
@@ -28,4 +38,5 @@ OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节�
 | Security 会话与密钥清理 | `VaultSessionController`、`DekManager` | [`VaultSessionController.kt`](../../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt)、[`DekManager.kt`](../../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt) |
 | 修订历史 Room 查询和初始化测试 owner | `EntryRevisionHistoryRebuilder`、`InitializeEntryRevisionHistory` | [`EntryRevisionHistoryRebuilder.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionHistoryRebuilder.kt)、[`InitializeEntryRevisionHistory.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/InitializeEntryRevisionHistory.kt) |
 | 初始化代次和失败重试编排回归 | `EntryRevisionHistoryInitializationFlowTest` | [`EntryRevisionHistoryInitializationFlowTest.kt`](../../../data/src/test/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionHistoryInitializationFlowTest.kt) |
+| Activity 与 Revision DAO 的保留查询和写入 | `EntryActivityQueryDao`、`EntryRevisionQueryDao`、`EntryRevisionCommandDao` | [`EntryActivityQueryDao.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/dao/activity/EntryActivityQueryDao.kt)、[`EntryRevisionQueryDao.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/dao/revision/EntryRevisionQueryDao.kt)、[`EntryRevisionCommandDao.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/dao/revision/EntryRevisionCommandDao.kt)、[`RoomObservationSessionTest.kt`](../../../data/src/androidTest/java/com/aozijx/passly/data/local/database/session/RoomObservationSessionTest.kt)、[`EntryUpdateAndRevisionRestoreTransactionTest.kt`](../../../data/src/androidTest/java/com/aozijx/passly/data/repository/entry/EntryUpdateAndRevisionRestoreTransactionTest.kt) |
 | 诊断导出 manifest 与 service | `DiagnosticsExportEncoders`、`ObservabilityExportService` | [`DiagnosticsExportEncoders.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)、[`ObservabilityExportService.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |
