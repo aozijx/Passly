@@ -84,7 +84,7 @@
 
 **2026-11-08 Vault 迟到删除失败回归：** 删除授权等待期间退出页面，之后 Repository 返回失败；`PageEffects` 不向已退出 owner 投递错误。定向 `VaultViewModelTest.deleteFailureCompletingAfterPageExitDoesNotEmitStalePageEffect` 通过（1 项）。
 
-**2026-11-11 Vault OTP 生命周期归并：** `VaultViewModel` 以 Vault 图生命周期持有已请求条目的 lease，Detail 只观察共享 Runtime 状态并向图 owner 请求幂等激活；行离开组合不释放 lease，删除与图销毁负责释放。`VaultOtpRequestEffectTest` 核对 provider 只在显示时请求激活。本次编译和 instrumentation 尚未运行。
+**2026-11-11 Vault OTP 生命周期归并：** `VaultViewModel` 以 Vault 图生命周期持有已请求条目的 lease，Detail 只观察共享 Runtime 状态并向图 owner 请求幂等激活；行离开组合不释放 lease，删除与图销毁负责释放。`VaultViewModelTest` 新增幂等 retain、删除释放和 ViewModel 清理释放回归；`VaultOtpRequestEffectTest` 改为验证可见且 resumed 的行只请求激活、不持有/释放 lease。App JVM 测试全量 1188/1188 通过，AndroidTest 源码编译通过；无连接设备，instrumentation runtime 未执行。Route/NavHost 转场 owner 验收仍开放。
 
 **2026-11-08 VaultRoute 无效 owner 开关清理：** 全仓仅有 `VaultRoute` 自身声明和默认值为 `true` 的条件读取，没有调用方传入 `false`；删除 `isEffectsPage` 参数与不可达分支，保留 overlay 关闭时创建、overlay 打开时退出的现有 owner 生命周期。Route/NavHost 转场期间的 owner 行为仍待宿主验证。
 
@@ -250,9 +250,9 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 ### Task 45：统一认证请求与生物识别策略轮换的 Host 并发所有权
 
-- [ ] 以真实 Host/Provisioner 覆盖普通认证与轮换争用、等待取消、pause/destroy、迟到 callback、journal 收尾和重试；同一 UI lease 只服务一个请求，旧 owner 不影响新 owner。
+- [ ] 以真实 Host/Provisioner 验收共享 UI lease 的生命周期交错：普通认证与生物识别轮换争用、等待取消、Host pause/destroy、旧 callback 与新 owner 隔离。journal 收尾和轮换提交结果由 Task 59 跟踪；本 Task 不重复这些事务验收。
 
-**2026-11-07：deferred，机制已实现待整链路验收。** AuthenticationHostRegistry:73–92 已有可取消 UI mutex；provisioner 与普通认证共用 lease/finally release。ActivityAuthUiHost 使用 request-owned prompt/identity/CAS，HostRegistry/RequestOwnedSlot 已有竞争/取消单测。旧 requestMutex.tryLock 描述移除，当前为 AuthenticationRequestSlot。
+共享 lease、单飞请求、request identity 及现有 helper 测试见[认证专题](../../../platform/security/authentication.md)；本项只跟踪真实 Host/Provisioner 交错，helper 单测不能代替 Activity 生命周期验收。
 
 
 <a id="task-64"></a>
