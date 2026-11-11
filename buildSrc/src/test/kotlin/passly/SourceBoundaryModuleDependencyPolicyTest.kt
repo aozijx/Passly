@@ -73,15 +73,15 @@ class SourceBoundaryModuleDependencyPolicyTest {
     }
 
     @Test
-    fun presentationFeatureMayUseVaultContractButNotDataPaging() {
+    fun presentationFeatureMayUseDomainPagingPortButNotDataPaging() {
         val allowed =
             EditorSource(
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt",
-                content = "import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource",
+                content = "import com.aozijx.passly.domain.entry.port.EntryPagingRepository",
             )
         val forbidden =
             allowed.copy(
-                content = "import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore",
+                content = "import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore",
             )
 
         assertEquals(
@@ -97,30 +97,25 @@ class SourceBoundaryModuleDependencyPolicyTest {
     }
 
     @Test
-    fun vaultDataTypesAreRestrictedToAppAdapters() {
-        val dataImport = "import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore"
-        val adapter =
+    fun domainPagingPortAllowsOnlyPagingCommonTypes() {
+        val pagingPort =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/app/entry/paging/DataVaultEntryPageSource.kt",
-                content = dataImport,
+                path = "domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryPagingRepository.kt",
+                content = "import androidx.paging.PagingData",
             )
-        val unrelated =
-            adapter.copy(
-                path = "app/src/main/java/com/aozijx/passly/app/entry/Unrelated.kt",
+        val composePort =
+            pagingPort.copy(
+                content = "import androidx.compose.runtime.Immutable",
             )
 
         assertEquals(
             emptyList(),
-            SourceBoundaryVerifier.verify(listOf(adapter), SourceBoundaryPolicy.generalRules),
+            SourceBoundaryVerifier.verify(listOf(pagingPort), SourceBoundaryPolicy.generalRules),
         )
-        assertEquals(
-            "VAULT_DATA_ADAPTER_ONLY",
+        assertTrue(
             SourceBoundaryVerifier
-                .verify(
-                    listOf(unrelated),
-                    SourceBoundaryPolicy.generalRules,
-                ).single()
-                .ruleId,
+                .verify(listOf(composePort), SourceBoundaryPolicy.generalRules)
+                .any { it.ruleId == "LAYER_DOMAIN" },
         )
     }
 

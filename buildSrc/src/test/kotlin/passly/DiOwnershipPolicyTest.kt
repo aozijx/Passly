@@ -55,19 +55,19 @@ class DiOwnershipPolicyTest {
     }
 
     @Test
-    fun appAdapterMayBindItsImplementationToAFeatureContract() {
+    fun dataModuleBindsItsPagingImplementationToTheDomainPort() {
         val source =
             EditorSource(
-                path = "app/src/main/java/com/aozijx/passly/app/entry/di/VaultEntryDataAdapterModule.kt",
+                path = "data/src/main/java/com/aozijx/passly/data/repository/entry/EntryPersistenceModule.kt",
                 content =
                     """
-                    import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
+                    import com.aozijx.passly.domain.entry.port.EntryPagingRepository
                     import dagger.Binds
                     import dagger.Module
                     @Module
-                    abstract class VaultEntryDataAdapterModule {
+                    abstract class EntryPersistenceModule {
                         @Binds
-                        abstract fun bind(impl: DataVaultEntryPageSource): VaultEntryPageSource
+                        abstract fun bind(impl: RoomEntryPagingStore): EntryPagingRepository
                     }
                     """.trimIndent(),
             )

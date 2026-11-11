@@ -158,6 +158,11 @@ internal object SourceBoundaryPolicy {
                         "com.aozijx.passly.presentation.",
                         "com.aozijx.passly.security.",
                     ),
+                allowedImportPrefixes =
+                    setOf(
+                        "androidx.paging.PagingConfig",
+                        "androidx.paging.PagingData",
+                    ),
                 message = "imports a forbidden namespace",
             ),
             SourceBoundaryRule(
@@ -326,19 +331,6 @@ internal object SourceBoundaryPolicy {
                     sourcePathContains = "/presentation/",
                     forbiddenContentMarkers = setOf("@Module"),
                     message = "presentation cannot declare a dependency injection module",
-                ),
-                SourceBoundaryRule(
-                    id = "VAULT_DATA_ADAPTER_ONLY",
-                    sourcePathContains = "/app/src/",
-                    forbiddenImportPrefixes =
-                        setOf(
-                            "com.aozijx.passly.data.repository.entry.paging.EntryPagingStore",
-                        ),
-                    allowedSourcePathContains =
-                        setOf(
-                            "/app/entry/paging/DataVaultEntryPageSource.kt",
-                        ),
-                    message = "vault paging Data types may only be imported by App adapters",
                 ),
                 SourceBoundaryRule(
                     id = "PRESENTATION_AUTH_MANAGER_IMPORT",

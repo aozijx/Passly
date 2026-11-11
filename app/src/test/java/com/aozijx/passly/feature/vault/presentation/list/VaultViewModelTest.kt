@@ -42,6 +42,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryPagingRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -50,7 +51,6 @@ import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
-import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.entryTypes
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
@@ -588,8 +588,8 @@ class VaultViewModelTest {
             )
         return VaultViewModel(
                 entryListQueryRepository = TestEntryListQueryRepository(availableCategories),
-            entryPageSource =
-                object : VaultEntryPageSource {
+            entryPagingRepository =
+                object : EntryPagingRepository {
                     override fun pages(
                         query: EntryListQuery,
                         config: PagingConfig,

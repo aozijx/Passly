@@ -12,9 +12,9 @@ import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryPagingRepository
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
-import com.aozijx.passly.feature.vault.entry.VaultEntryPageSource
 import com.aozijx.passly.feature.vault.model.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
@@ -40,7 +40,7 @@ class VaultViewModel
     @Inject
     internal constructor(
         private val entryListQueryRepository: EntryListQueryRepository,
-        private val entryPageSource: VaultEntryPageSource,
+        private val entryPagingRepository: EntryPagingRepository,
         private val settingsRepository: LibraryViewSettingsRepository,
         private val entryCommandWorkflowFactory: VaultEntryCommandWorkflowFactory,
         otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
@@ -84,7 +84,7 @@ class VaultViewModel
             queryState
                 .switchRecoverableQueryGenerations(
                     unavailable = flowOf(PagingData.empty<EntryListItem>()),
-                    load = { query -> entryPageSource.pages(query, ENTRY_PAGING_CONFIG) },
+                    load = { query -> entryPagingRepository.pages(query, ENTRY_PAGING_CONFIG) },
                 ).map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
                 .cachedIn(viewModelScope)
 

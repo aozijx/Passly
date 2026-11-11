@@ -8,7 +8,6 @@ import com.aozijx.passly.data.repository.entry.RoomEntryListQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository
 import com.aozijx.passly.data.repository.entry.RoomSensitiveFieldRepository
 import com.aozijx.passly.data.repository.entry.command.EntryResourceCleaner
-import com.aozijx.passly.data.repository.entry.paging.EntryPagingStore
 import com.aozijx.passly.data.repository.entry.paging.RoomEntryPagingStore
 import com.aozijx.passly.data.repository.otp.RoomOtpConfigRepository
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
@@ -17,6 +16,7 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryIconResourceCleaner
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
+import com.aozijx.passly.domain.entry.port.EntryPagingRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
@@ -65,7 +65,7 @@ internal abstract class EntryPersistenceModule {
 
     @Binds
     @Singleton
-    abstract fun bindEntryPagingStore(impl: RoomEntryPagingStore): EntryPagingStore
+    abstract fun bindEntryPagingRepository(impl: RoomEntryPagingStore): EntryPagingRepository
 
     @Binds
     @Singleton

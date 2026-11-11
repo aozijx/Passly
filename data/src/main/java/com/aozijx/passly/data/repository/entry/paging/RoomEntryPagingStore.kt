@@ -12,6 +12,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntryUsage
+import com.aozijx.passly.domain.entry.port.EntryPagingRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +23,7 @@ internal class RoomEntryPagingStore
     @Inject
     constructor(
         private val databaseSession: AppDatabaseSession,
-    ) : EntryPagingStore {
+    ) : EntryPagingRepository {
         override fun pages(
             query: EntryListQuery,
             config: PagingConfig,

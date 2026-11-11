@@ -192,7 +192,7 @@ class SourceBoundaryLayerPolicyTest {
                         listOf(
                             "com.aozijx.passly.feature.vault.presentation.VaultUiState",
                             "com.aozijx.passly.feature.vault.model.AddType",
-                            "com.aozijx.passly.feature.vault.VaultEntryPageSource",
+                            "com.aozijx.passly.domain.entry.port.EntryPagingRepository",
                             "com.aozijx.passly.domain.entry.model.Entry",
                             "com.aozijx.passly.domain.entry.model.EntryType",
                             "com.aozijx.passly.data.repository.EntryRepositoryImpl",
@@ -202,7 +202,11 @@ class SourceBoundaryLayerPolicyTest {
                 LayerCase(
                     owner = "feature.presentation",
                     path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt",
-                    allowed = listOf("com.aozijx.passly.feature.vault.VaultEntryPageSource", "com.aozijx.passly.domain.entry.model.Entry"),
+                    allowed =
+                        listOf(
+                            "com.aozijx.passly.domain.entry.port.EntryPagingRepository",
+                            "com.aozijx.passly.domain.entry.model.Entry",
+                        ),
                     forbidden = listOf("com.aozijx.passly.data.repository.entry.RoomEntryQueryRepository"),
                 ),
                 LayerCase(
@@ -217,7 +221,7 @@ class SourceBoundaryLayerPolicyTest {
                     forbidden =
                         listOf(
                             "com.aozijx.passly.feature.vault.presentation.VaultUiState",
-                            "com.aozijx.passly.feature.vault.VaultEntryPageSource",
+                            "com.aozijx.passly.domain.entry.port.EntryPagingRepository",
                             "com.aozijx.passly.domain.entry.model.Entry",
                             "com.aozijx.passly.domain.entry.model.EntryTypeMetadata",
                             "com.aozijx.passly.data.repository.EntryRepositoryImpl",
