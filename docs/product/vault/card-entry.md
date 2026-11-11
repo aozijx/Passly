@@ -33,6 +33,8 @@ CVV 可留空；填写时页面复用 Domain 的 `CardCvvValidator`，与创建�
 按 Entry 类型物化替代表单、保留表单不拥有的状态并执行 `EntryValidation.validate(updated)`；清空可选表单值会映射为该
 完整表单字段的清除，不会触发逐字段修订。
 
+银行卡编辑表单不拥有 `PAYMENT_PLATFORM`，因此生成的 draft 会省略此键。`EntryFormEditor` 在完整替换时保留原银行卡凭据中的付款平台；若其他调用方显式提供 `PAYMENT_PLATFORM`，则使用新表单物化的值。省略字段表示表单不管理它，不表示清空。
+
 ## 可选银行资料
 
 创建页的“银行资料”包含以下可选字段，保存前去除首尾空白；币种允许多币种文本，如 `CNY / USD`。
@@ -89,6 +91,7 @@ Bitwarden 的分离年月字段在适配边界允许一位或两位月份，完�
 | 接收 Save Action、截取当前表单并延迟给写入会话 | `onAction(AddBankCardAction.Save)`、`save()`、`writeSession.save { current.form.toEntryDraft() }` | [`AddBankCardViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/AddBankCardViewModel.kt)、[`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
 | 由编辑模式选择创建或完整表单替换 | `createEntryUseCase(draft)`、`editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))` | [`AddBankCardViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/bankcard/AddBankCardViewModel.kt) |
 | 替换银行卡表单、保留表单外状态并执行完整校验 | `EntryFormEditor.apply(entry, draft)`、`EntryValidation.validate(updated)` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryValidation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryValidation.kt) |
+| 银行卡完整表单编辑保留未暴露的付款平台字段 | `EntryFormEditor.apply(entry, draft)` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt) |
 | 校验卡号与 CVV | `CardNumberValidator.validate()`、`CardCvvValidator` | [`CardNumberValidator.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/CardNumberValidator.kt)、[`CardCvvValidator.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/CardCvvValidator.kt) |
 | 表达和解析有效期 | `CardExpiry.parse()` | [`CardExpiry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/credential/CardExpiry.kt) |
 | 将银行卡凭据映射到加密 payload | `EntrySecretMapper.toPayload()` / `toDomain()` | [`EntrySecretMapper.kt`](../../../data/src/main/java/com/aozijx/passly/data/mapper/entry/EntrySecretMapper.kt) |

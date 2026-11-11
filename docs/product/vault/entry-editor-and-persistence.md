@@ -67,7 +67,7 @@ Bank Card、Wi-Fi 四类，其余类型明确拒绝。新增类型时分别更�
 共享的 `EditorWriteSession` 持有保存任务，驱动保存、失败恢复和清空回调；保存取点击时的表单快照，期间拒绝表单更新和重复保存。
 成功清空表单并发送 `EditorSaveEffect.Saved`，失败回到可重试状态。成功事件不包含条目 ID；宿主按保存成功回调离开创建流程。
 
-`EditorWriteSession.save { draft }` 将普通 `AppResult.Failure` 或普通 `Exception` 映射为 `EditorSaveEffect.Failed` 并调用 `onIdle()`；`CancellationException` 仅在相同认证 owner 仍有效时恢复 Editing/Idle，否则清空，然后继续传播。fatal `Error` 不在捕获范围内，会原样逸出且跳过 `Finished`、`onIdle()` 和 `onClear()`；若 ViewModel 仍存活，阶段可能停在 `Saving`，敏感表单未由该失败路径清理。此缺口由[维护 TODO Task 42](../../project/work/plans/2026-10-30-passly-maintainability-todo.md)跟踪；fatal `Error` 不应按可重试的普通失败解释。
+`EditorWriteSession.save { draft }` 将普通 `AppResult.Failure` 或普通 `Exception` 映射为 `EditorSaveEffect.Failed` 并调用 `onIdle()`；`CancellationException` 仅在相同认证 owner 仍有效时恢复 Editing/Idle，否则清空，然后继续传播。fatal `Error` 不映射为普通失败：若保存 attempt 仍是当前 owner，session 会关闭为不可重新激活的终态、清空表单并停止 effects，再原样重抛 Error；清理异常作为 suppressed failure 附加，不替换原错误。若 attempt 已被锁定/关闭流程接管，不重复清理已失效的状态。
 
 Route 按生命周期收集状态；Screen 接收状态和 Action。`EditorSaveEffectHandler` 消费保存结果并调用宿主回调或显示失败提示。
 焦点、动画和展开状态留在 Compose；字段值、扫码结果和保存状态回到表单状态。敏感输入不进入导航参数或 SavedState。
@@ -176,6 +176,7 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 | 登记所有条目的字段定义并检查目录覆盖 | `EntryTypeDefinitions`、`buildEntryTypeDefinitionIndex()` | [`EntryTypeDefinitions.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitions.kt)、[`EntryTypeDefinitionRegistry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitionRegistry.kt) |
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |
 | 编辑详情条目与完整表单 | `EditEntryUseCase.edit(entryId, edit)` | [`EditEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EditEntryUseCase.kt) |
+| 保存任务、owner、取消与 fatal Error 清理 | `EditorWriteSession.save()`、`close()` | [`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
 | 获授权读取完整编辑表单 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
 | 编辑认证后的一次性表单交接 | `EntryEditorSeedStore`、`EntryEditorSeedCoordinator` | [`EntryEditorSeedStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EntryEditorSeedStore.kt) |
 | 按条目类型选择创建/完整编辑目标 | `VaultEditorDestinationRegistry.routeFor()`、`editRouteFor()` | [`VaultEditorDestinationRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/navigation/VaultEditorDestinationRegistry.kt) |

@@ -66,6 +66,9 @@ grant 有效、grant 丢失和 provider/tree 不可用。
 选择、更换和清除使用同一互斥区串行执行。每次操作在取得互斥权后读取当前已保存 URI；清除不使用 UI 事件携带的旧快照，
 因此排队等待期间完成的选择会成为随后清除实际移除并释放的 URI。
 
+目录设置操作的普通失败由 Settings ViewModel 记录并作为当前页面 effect 展示；取消继续传播，fatal `Error` 不转换为普通失败。
+清除确认只在成功后关闭，失败时保留对话框以便重试；操作期间确认和取消按钮禁用。页面离开后，旧 owner 的结果不会交付到新页面。
+
 另存到指定位置使用单文件 `CreateDocument` 合同，与默认目录 tree grant 分开。两者都由系统选择器授予目标访问，
 不需要完整存储权限。SAF Route 收到平台 `Uri` 后立即转为不透明 URI 字符串交给流程编排；授权由系统按应用与 URI 授予，
 不依赖同一个 `Uri` 对象实例。Backup 不为单文件导入/导出持久化 URI 授权，也不承诺设备重启后继续访问；操作在当前授权有效时直接使用该 URI。
@@ -81,3 +84,4 @@ SAF 存储实现负责解析字符串并执行平台操作。默认目录 tree g
 | Room、秘密字段、附件资源与链接快照 | `RoomVaultBackupStore.read(options)` | [`RoomVaultBackupStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/backup/RoomVaultBackupStore.kt) |
 | SAF 持久 grant 与 URI 可达状态检查 | `BackupDirectoryGrantInspector.inspect(treeUri)`、`AndroidBackupDirectoryAccess.inspect(treeUri)` | [`BackupDirectoryGrantInspector.kt`](../../../app/src/main/java/com/aozijx/passly/app/backup/BackupDirectoryGrantInspector.kt)、[`AndroidBackupDirectoryAccess.kt`](../../../app/src/main/java/com/aozijx/passly/app/backup/AndroidBackupDirectoryAccess.kt) |
 | 目录选择、更换、清除时的授权提交和补偿 | `BackupDirectorySettingsInteractor.select(treeUri)`、`clear()` | [`BackupDirectorySettingsInteractor.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/backup/BackupDirectorySettingsInteractor.kt) |
+| 目录操作的页面 owner、失败反馈与重试状态 | `DataManagementSettingsViewModel.handleSelection(uri, owner)`、`onAction(ClearBackupDirectory)` | [`DataManagementSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/backup/DataManagementSettingsViewModel.kt) |

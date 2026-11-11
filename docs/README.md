@@ -166,6 +166,11 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 #### 2026-11 审查记录
 
+- [通知权限未启动结果与重试审查](project/reviews/2026-11-11-notification-permission-not-started.md)
+- [App Password 对话框生命周期审查](project/reviews/2026-11-11-app-password-dialog-lifecycle.md)
+- [完整表单编辑 owner 与失败交接审查](project/reviews/2026-11-11-full-form-editing-boundaries.md)
+- [银行卡完整表单编辑保留付款平台审查](project/reviews/2026-11-11-card-payment-platform-preservation.md)
+- [Backup 目录设置失败处理审查](project/reviews/2026-11-08-backup-directory-settings-failure-feedback.md)
 - [Database Reset 成功反馈计时器审查](project/reviews/2026-11-11-database-reset-feedback.md)
 - [Android 系统通知网关平台边界审查](project/reviews/2026-11-11-system-notification-gateway.md)
 - [设置资源归属与本地化审查](project/reviews/2026-11-08-app-settings-resource-cohesion.md)
