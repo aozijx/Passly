@@ -260,6 +260,6 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 ### Task 64：让附件 GC 解锁后完整排空并在失败后恢复
 
 - [ ] 在真实 SQLCipher/文件系统执行 AttachmentResourceGarbageCollectorTest 多批排空、失败文件重试、worker 重建唤醒，验证撤权、当前/历史引用保护及最终回收。
-- [ ] 验证条目写事务已提交后，调用方取消是否会把成功写入呈现为未完成并允许重复提交：`CreateEntryExecutor.execute()`、`UpdateEntryExecutor.execute()`、`RestoreEntryRevisionExecutor.execute()` 在数据库写入返回后调用 `PostCommitCleanup.afterCommit(...)`；其 `run()` 将普通清理异常记录后吞掉，却继续传播 `CancellationException`，而 `AttachmentResourceGarbageCollector.drain()` 也传播取消。追踪 Vault `EditorWriteSession`、Detail revision owner 与 Autofill/Inbox 调用者的结果映射和重试入口，按每个 durable commit point 定义取消语义；覆盖事务已提交但 GC 被取消、普通清理异常、fatal `Error`、调用方离页/认证撤权和重试，特别确认普通创建的随机 EntryId 不会因“结果未知”被再次创建。静态链路已确认，尚无 owner 级行为证据，不先把它描述成已复现缺陷。
+- [ ] 沿 Vault `EditorWriteSession`、Detail revision owner 与 Autofill/Inbox 调用链验证 durable commit 后取消的结果映射、离页/撤权恢复与重试，特别确认普通创建不会重复生成 EntryId；当前只有静态链路证据，尚未验证 owner 行为。
 
-**2026-11-07：deferred，实现/测试已接入待仪器执行。** worker 已跨页、越过失败行并有界退避；单测有跨批/锁定/退避/fatal/取消，仪器源码有跨批/文件重试/重建唤醒。移除旧“仅一批、无重试 owner”实现待办。
+附件 GC 与提交后清理的当前合同、实现函数及源码测试覆盖见[数据库专题](../../../platform/data/database.md#历史与附件生命周期)和[审查记录](../../reviews/2026-11-11-attachment-gc-postcommit-review.md)；本 Task 仅保留设备运行与 owner 级结果验收。

@@ -119,6 +119,8 @@ CVV、支付 PIN、身份号码、助记词、恢复码、SSH 私钥/口令、Pa
 - 外键和删除前引用计数阻止仍被引用的内容被回收。附件不做通用压缩。
 - 每条附件引用都绑定现存 Entry 与 `ACTIVE` 资源。Backup 导入和修订恢复在对应写事务中创建引用；当前没有附件编辑/上传流程需要数据库保存草稿 owner。
 
+对应实现入口：[`AttachmentResourceGarbageCollector.drain()` 与分页/单项处理](../../../data/src/main/java/com/aozijx/passly/data/repository/attachment/AttachmentResourceGarbageCollector.kt)、[`PostCommitCleanup.afterCommit()`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/PostCommitCleanup.kt)，以及 [`CreateEntryExecutor.execute()`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/CreateEntryExecutor.kt)、[`UpdateEntryExecutor.execute()`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/UpdateEntryExecutor.kt)、[`RestoreEntryRevisionExecutor.execute()`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/RestoreEntryRevisionExecutor.kt)。实现覆盖与未闭合验收见[附件 GC 与提交后取消审查](../../project/reviews/2026-11-11-attachment-gc-postcommit-review.md)。
+
 ## Session 生命周期
 
 ```mermaid
