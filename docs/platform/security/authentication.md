@@ -2,7 +2,7 @@
 
 状态：当前实现。
 
-代码核对日期：2026-11-08。
+代码核对日期：2026-11-11。
 
 ## 契约与状态机
 
@@ -150,6 +150,11 @@ stateDiagram-v2
   ViewModel scope 收尾，页面 state 只保留不含 disclosure 的 Committing 标记，完成后不把旧页面结果重新展示。
 - 确认操作会在启动协程前同步占用 `Committing` 状态，重复确认不会再次提交。提交期间页面保留同一 disclosure，
   禁用复制、确认和丢弃，并忽略弹层关闭；成功进入 `Committed` 并更新恢复码可用状态，失败则丢弃候选并进入 `Failed`。
+- `RecoveryCodeDraftInteractor` 拥有候选草稿的创建、复制、关闭、提交和 durable commit marker 核对；
+  `RecoveryCodeSettingsViewModel.confirmAndEnable()` 仍协调页面 owner 与 UI 状态。提交取消或 fatal `Error` 时，ViewModel
+  在 `NonCancellable` 中调用 `reconcileInterruptedCommit()`，依据 Interactor 的核对结果清除 disclosure、恢复可重试 disclosure
+  或发布失败状态，然后继续传播取消/fatal。对应的 Interactor 与 ViewModel 测试源码覆盖 durable commit、离页和异常收尾；
+  是否应把这段提交恢复编排整体移入应用操作 owner 仍在审查，未由本地测试源码证明真实 Activity/Route 行为。
 - SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
   “恢复码草稿已过期，请重新认证后生成”。
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，
@@ -242,7 +247,8 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 | 区分应用密码 Envelope 提交与会话协调结果 | `runAppPasswordProvisioning()`、`DefaultAuthenticationMethodProvisioner.setAppPassword()` | [`AppPasswordProvisioningCommit.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/AppPasswordProvisioningCommit.kt)、[`DefaultAuthenticationMethodProvisioner.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultAuthenticationMethodProvisioner.kt) |
 | 验证应用密码提交前失败、提交后普通失败/取消/fatal 结果 | `AppPasswordProvisioningCommitTest` | [`AppPasswordProvisioningCommitTest.kt`](../../../security/src/test/java/com/aozijx/passly/security/authentication/method/credential/AppPasswordProvisioningCommitTest.kt) |
 | 验证可用性快照失败后的有界重试 | `AuthenticationAvailabilityRetry`、`AuthenticationAvailabilityRetryTest` | [`AuthenticationAvailabilityRetry.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/flow/AuthenticationAvailabilityRetry.kt)、[`AuthenticationAvailabilityRetryTest.kt`](../../../security/src/test/java/com/aozijx/passly/security/authentication/flow/AuthenticationAvailabilityRetryTest.kt) |
-| 生成并提交 Recovery Code 草稿 | `DefaultRecoveryCredentialGenerator`、`SecureRecoveryCodeDraft`、`RecoveryCodeDraftInteractor`、`RecoveryCodeSettingsViewModel` | [`DefaultRecoveryCodeDraftFactory.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultRecoveryCodeDraftFactory.kt)、[`RecoveryCodeDraftInteractor.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt)、[`RecoveryCodeSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt) |
+| 生成与持有恢复码草稿 | `DefaultRecoveryCodeDraftFactory.create()`、`RecoveryCodeDraftInteractor.generate()`、`copy()`、`dismiss()` | [`DefaultRecoveryCodeDraftFactory.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/credential/DefaultRecoveryCodeDraftFactory.kt)、[`RecoveryCodeDraftInteractor.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt) |
+| 提交与中断后核对页面状态 | `RecoveryCodeDraftInteractor.commit()`、`reconcileCommit()`、`RecoveryCodeSettingsViewModel.confirmAndEnable()`、`reconcileInterruptedCommit()` | [`RecoveryCodeDraftInteractor.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractor.kt)、[`RecoveryCodeSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModel.kt)、[`RecoveryCodeDraftInteractorTest`](../../../app/src/test/java/com/aozijx/passly/feature/settings/security/RecoveryCodeDraftInteractorTest.kt)、[`RecoveryCodeSettingsViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/security/RecoveryCodeSettingsViewModelTest.kt) |
 | 执行生物识别密钥轮换 | `RotateBiometricKeyUseCase`、`BiometricCryptoFactory` | [`RotateBiometricKeyUseCase.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/RotateBiometricKeyUseCase.kt)、[`BiometricCryptoFactory.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/BiometricCryptoFactory.kt) |
 | 清理候选密钥并恢复 PREPARED/COMMITTED journal | `withBiometricRotationCandidate()`、`BiometricRotationReconciler` | [`BiometricRotationCandidate.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/BiometricRotationCandidate.kt)、[`BiometricRotationReconciler.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/method/biometric/BiometricRotationReconciler.kt) |
 | 验证轮换候选和 journal 清理/重试边界 | `BiometricRotationCandidateTest`、`BiometricRotationReconcilerTest` | [`BiometricRotationCandidateTest.kt`](../../../security/src/test/java/com/aozijx/passly/security/authentication/method/biometric/BiometricRotationCandidateTest.kt)、[`BiometricRotationReconcilerTest.kt`](../../../security/src/test/java/com/aozijx/passly/security/authentication/method/biometric/BiometricRotationReconcilerTest.kt) |

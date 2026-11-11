@@ -20,7 +20,7 @@ Detail 独立工作流与职责迁移只在[主维护待办 Task 83](2026-10-30-
 ### 2. 其他复合流程
 
 - [ ] **Backup**：沿 `BackupViewModel`、`BackupWorkflow`、`BackupReducer`、文件选择器 Route 核对 `pendingImportDocument`/`pendingExportTarget` 与页面 owner、request ID 的一致性，尤其是退出、重入、回调迟到和执行中关闭；检查凭据擦除与提交后结果。现有 sealed workflow 是合理基础，先做宿主行为测试，不按文件长度拆分。
-- [ ] **Unlock 与 Recovery Code**：对 `UnlockViewModel` 的认证、尝试次数刷新和首次密码设置，以及 `RecoveryCodeSettingsViewModel` 的生成、验证、提交与 disclosure 清理，分别列出唯一状态 owner、durable commit point、取消与 fatal 清理路径。安全流程保留显式 `when` 和提交顺序，不能改成通用事件 handler 或持依赖的状态对象；优先复用现有安全/维护待办的验收项。
+- [ ] **Unlock**：核对 `UnlockViewModel` 的认证、尝试次数刷新和首次密码设置的状态 owner、取消/fatal 清理及 Route feedback；Recovery Code 提交恢复只在[主维护待办 Task 84](2026-10-30-passly-maintainability-todo.md#task-84)跟踪，现状见[owner 审查](../../reviews/2026-11-11-recovery-code-draft-owner.md)。安全流程保留显式 `when` 和提交顺序，不改成通用事件 handler 或持依赖的状态对象。
 
 ### 3. 其余页面的轻量核对
 
