@@ -74,21 +74,7 @@
 - [ ] 补齐授权撤销期间操作及其余 page owner 交接/迟到结果行为；纯 `VaultReducer`/`VaultQueryState` 单测仍不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
 - [ ] 让 Route 消费与各 owner 对齐：`VaultRoute` 负责 Compose/导航/system effect，Content 只接收 immutable state/actions；确保图级 `VaultViewModel` 在 Trash/Detail 转场或目的地保留期间不会重复创建 effect collector 或重复订阅 Paging/OTP。给选定的 owners 增加 Route/NavHost 行为回归后同步状态管理文档，运行 Vault Presentation 定向测试、`verifyArchitecture` 和 `git diff --check`。
 
-**当前证据（2026-11-11）：** `VaultViewModel` 保留列表查询、分页/筛选、设置排序、OTP Runtime 与同一 `VaultUiState`；分类读取由 `RecoverableRead` 管理并投影为 `Loading/Ready/Failed`。删除、字段复制和 OTP 复制由 `VaultEntryCommandWorkflow` 执行，它持有按条目删除单飞，并用当前 `PageEffects` owner 控制异步结果；VM 只分派当前页面动作，不再保留列表删除确认状态。`VaultViewModelTest` 已覆盖分类恢复、sort 写入失败、settings sort 驱动新 Paging generation、搜索与类型筛选组合、删除单飞、删除后 OTP 状态清理、退出页面后的删除失败抑制，以及离页/current-page copy；新增撤权期间锁定时不复制回归。`TrashCommandUseCaseTest` 现在验证授权等待期间锁定不会触达条目查询或命令。OTP lease 由 Vault 图级 ViewModel 按条目 ID 幂等保留，列表行滚出组合与 Detail 离页不会释放；图 ViewModel 销毁或条目删除时释放。`VaultOtpRequestEffectTest` 覆盖列表行只对可见验证码发出激活请求、不负责 lease 生命周期。Vault→Detail 的真实 NavHost 转场行为测试仍缺。
-
-**2026-11-08 Vault 列表删除确认死路径清理：** 调用闭包确认 `VaultScreen` 不消费 `dialogs.pendingDelete`，实际列表删除只由 `QuickDelete` 触发；移除无人调用的 `ItemToDeleteSelected` / `ConfirmDelete`、`pendingDelete` 状态/UI 投影、Reducer mutation 与 workflow 分支。保留真实的 Trash command、同条目单飞、当前 page effect 失败反馈和删除后的 OTP Runtime 清理。切换后全仓无 Vault 列表确认删除旧符号引用（Trash 页面自己的确认状态独立保留）；四个 Vault list 定向测试共 28 项通过，`verifyArchitecture` 通过。Task 32 的 OTP 可见行退订、撤权及 Route/NavHost 覆盖仍待处理。
-
-**2026-11-08 Vault sort 写入失败回归：** 注入 `setSort` 普通异常，验证当前 page owner 收到 `vault_error_sort_failed`，而 `selectedSort` 继续等于设置 Flow 的已保存值。定向 `VaultViewModelTest.sortPreferenceFailureShowsCurrentPageFeedbackWithoutChangingSelectedSort` 通过（1 项）。
-
-**2026-11-08 Vault 删除后 OTP 失效回归：** 先订阅并生成可见 OTP，确认删除完成后状态被清除；再模拟页面恢复刷新，验证旧订阅不会重新启用该条目。定向 `VaultViewModelTest.completedDeleteClearsVisibleOtpAndDoesNotReactivateItOnRefresh` 通过（1 项）。
-
-**2026-11-08 Vault 迟到删除失败回归：** 删除授权等待期间退出页面，之后 Repository 返回失败；`PageEffects` 不向已退出 owner 投递错误。定向 `VaultViewModelTest.deleteFailureCompletingAfterPageExitDoesNotEmitStalePageEffect` 通过（1 项）。
-
-**2026-11-11 Vault OTP 生命周期归并：** `VaultViewModel` 以 Vault 图生命周期持有已请求条目的 lease，Detail 只观察共享 Runtime 状态并向图 owner 请求幂等激活；行离开组合不释放 lease，删除与图销毁负责释放。`VaultViewModelTest` 新增幂等 retain、删除释放和 ViewModel 清理释放回归；`VaultOtpRequestEffectTest` 改为验证可见且 resumed 的行只请求激活、不持有/释放 lease。App JVM 测试全量 1188/1188 通过，AndroidTest 源码编译通过；无连接设备，instrumentation runtime 未执行。Route/NavHost 转场 owner 验收仍开放。
-
-**2026-11-08 VaultRoute 无效 owner 开关清理：** 全仓仅有 `VaultRoute` 自身声明和默认值为 `true` 的条件读取，没有调用方传入 `false`；删除 `isEffectsPage` 参数与不可达分支，保留 overlay 关闭时创建、overlay 打开时退出的现有 owner 生命周期。Route/NavHost 转场期间的 owner 行为仍待宿主验证。
-
-**2026-11-07 分类 Flow 缺口（已处理）：** 旧实现由 `VaultViewModel` 直接 collect `availableCategories`，普通异常会结束 collector，空列表也无法表达加载或失败。现改由 `RecoverableRead` 管理分类订阅，并通过明确状态和 Retry action 暴露失败恢复；锁定/重开恢复由数据库 observation owner 管理，证据见下方。
+当前列表状态、命令和图级 OTP lease 合同见[列表与搜索专题](../../../product/vault/list-and-search.md#代码位置)；实现与历史验证证据见[Vault 列表 owner 审查记录](../../reviews/2026-11-11-vault-list-owner-followup.md)。本 Task 只保留撤权/owner 交接与真实 Route/NavHost 转场验收。
 
 
 ## P2：恢复与交付合同

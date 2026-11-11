@@ -18,4 +18,4 @@
 
 ## 未闭合验收
 
-活动计划 [Task 64](../work/plans/2026-10-30-passly-maintainability-todo.md#task-64让附件-gc-解锁后完整排空并在失败后恢复) 保留两项工作：在设备上执行附件 GC instrumentation；沿 Vault `EditorWriteSession`、Detail revision owner 与 Autofill/Inbox 真实调用链验证提交后取消如何映射结果、是否产生重复重试，以及离页和撤权后的恢复。当前静态链路不能证明 owner 行为已验收，也不构成已复现缺陷。
+活动计划 [Task 64](../work/plans/2026-10-30-passly-maintainability-todo.md#task-64) 保留两项工作：在设备上执行附件 GC instrumentation；沿 Vault `EditorWriteSession`、Detail revision owner 与 Autofill/Inbox 真实调用链验证提交后取消如何映射结果、是否产生重复重试，以及离页和撤权后的恢复。当前静态链路不能证明 owner 行为已验收，也不构成已复现缺陷。
