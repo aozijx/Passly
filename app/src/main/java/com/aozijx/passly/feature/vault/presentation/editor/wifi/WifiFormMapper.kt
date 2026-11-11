@@ -4,12 +4,12 @@ import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.EntryTypeDefinition
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
-import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
+import com.aozijx.passly.feature.vault.presentation.editor.withOptionalText
+import com.aozijx.passly.feature.vault.presentation.editor.withTags
 
 fun AddWifiFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.WIFI]
@@ -64,26 +64,3 @@ internal fun AddWifiFormState.applyScanned(payload: WifiQrPayload): AddWifiFormS
         isPasswordVisible = false,
         isHidden = payload.isHidden,
     )
-
-private fun EntryDraft.withOptionalText(
-    definition: EntryTypeDefinition,
-    key: FieldKey,
-    rawValue: String,
-): EntryDraft =
-    rawValue
-        .trim()
-        .takeIf(String::isNotEmpty)
-        ?.let { withValue(definition, key, EntryDraftValue.Text(it)) }
-        ?: this
-
-private fun EntryDraft.withTags(
-    definition: EntryTypeDefinition,
-    rawTags: String,
-): EntryDraft {
-    val values = parseRawTags(rawTags).distinct()
-    return if (values.isEmpty()) {
-        this
-    } else {
-        withValue(definition, FieldKey.TAGS, EntryDraftValue.TextList(values))
-    }
-}

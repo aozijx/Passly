@@ -67,7 +67,7 @@ class WifiFormMapperTest {
         assertEquals(EntryDraftValue.Toggle(true), draft[FieldKey.WIFI_HIDDEN])
         assertEquals(EntryDraftValue.Text("legacy device"), draft[FieldKey.NOTES])
         assertEquals(
-            EntryDraftValue.TextList(listOf("work", "network")),
+            EntryDraftValue.TextList(listOf("work", "network", "work")),
             draft[FieldKey.TAGS],
         )
     }

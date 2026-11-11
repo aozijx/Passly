@@ -6,7 +6,8 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
-import com.aozijx.passly.feature.vault.presentation.editor.parseRawTags
+import com.aozijx.passly.feature.vault.presentation.editor.withOptionalText
+import com.aozijx.passly.feature.vault.presentation.editor.withTags
 
 fun AddPasswordFormState.toEntryDraft(): EntryDraft {
     val definition = EntryTypeDefinitions[EntryType.LOGIN]
@@ -58,22 +59,3 @@ internal fun AddPasswordFormState.fromEntry(entry: Entry): AddPasswordFormState 
                 .toSet(),
         isPasswordVisible = false,
     )
-
-private fun EntryDraft.withOptionalText(
-    definition: com.aozijx.passly.domain.entry.model.EntryTypeDefinition,
-    key: FieldKey,
-    rawValue: String,
-): EntryDraft =
-    rawValue
-        .trim()
-        .takeIf(String::isNotEmpty)
-        ?.let { withValue(definition, key, EntryDraftValue.Text(it)) }
-        ?: this
-
-private fun EntryDraft.withTags(
-    definition: com.aozijx.passly.domain.entry.model.EntryTypeDefinition,
-    rawTags: String,
-): EntryDraft {
-    val values = parseRawTags(rawTags)
-    return if (values.isEmpty()) this else withValue(definition, FieldKey.TAGS, EntryDraftValue.TextList(values))
-}
