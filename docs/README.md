@@ -165,6 +165,7 @@ ADR 说明决策原因，主题页说明当前实现。已发布 ADR 保留原�
 
 ##### 验收记录
 
+- [Autofill 宿主与字段交付验收](reviews/2026-11-08-autofill-host-validation.md)
 - [兼容、弃用与冗余清理审查](reviews/2026-11-08-compatibility-deprecated-redundancy-cleanup.md)
 - [硬件 Keystore 真机验收](reviews/2026-11-03-hardware-keystore-verification.md)
 - [Domain 边界与 Entry 标签策略审查](reviews/2026-11-07-domain-boundary-scan.md)
