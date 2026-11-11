@@ -244,7 +244,7 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 - [ ] 为真实认证宿主补取消/替换/重建后的迟到密码 callback 测试，保留实际 CharArray 引用，验证错误 request、stale identity、CAS 失配和未接管路径擦除，且不提交给新请求。
 
-**2026-11-07：deferred，防护已实现待宿主验收。** ActivityAuthUiHost:270–283 已擦除请求身份/类型不符及 CAS 失败输入；SecretDialogSubmissionTest 已覆盖空请求、错误请求、inactive、接管及 stale identity，不再列为当前缺少基础 wipe。
+迟到输入的当前清理合同、准确函数及 helper 测试见[认证专题](../../../platform/security/authentication.md)；本 Task 只保留真实认证 Host 取消、替换和重建交错下的迟到 callback 验收。
 
 <a id="task-45"></a>
 
