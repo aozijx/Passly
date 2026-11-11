@@ -66,6 +66,8 @@ stateDiagram-v2
 
 可用认证方式是持久凭据快照的派生状态。`AuthenticationManager.refreshAvailability()` 立即尝试刷新；普通 `Exception` 会安排 Manager 所有的指数退避重试（首次等待 1 秒，最长间隔 60 秒），同时仍向当前调用方传播。取消继续传播，fatal `Error` 不降级。启动刷新失败由同一重试 owner 接管。凭据持久化已经提交后，设置流程不会把后续可用性刷新失败伪装成未提交：Domain 的 `AuthenticationResult.Success.pendingMaintenance` 可同时携带 `AUTHENTICATION_AVAILABILITY_REFRESH` 与其他维护项，安全设置按该领域语义提示用户操作已保存、可用性刷新正在重试。UI 只依赖 Domain 结果，不依赖 Security 重试实现。
 
+[`AuthenticationMethodsStateTest`](../../../security/src/test/java/com/aozijx/passly/security/authentication/flow/AuthenticationMethodsStateTest.kt) 覆盖旧 generation 不能覆盖较新解析、恢复码消费使在途旧快照失效、刷新取消后可再次取得 owner，以及调用方取消不取消 Manager 所有的刷新和失败观察器异常处理。它验证状态协调器合同，不替代 `DefaultAuthenticationManager`、持久 Store 与 Provisioner 的集成验收；该跨 owner 闭包仍由主维护计划 Task 46 跟踪。
+
 MainActivity 与统一的 `AutofillAuthActivity` 都在根 Compose 安装 `AuthenticationHost`；Autofill 各入口复用同一个宿主。Registry 只保存 Host
 弱引用、owner ID 和注册 token；取得 lease 与实际展示前都会检查 resumed、finishing、destroyed 和 token。无 Host
 时最多等待 500 ms，Activity 销毁会取消所属请求，Autofill 请求不会转交 MainActivity。
@@ -240,6 +242,7 @@ DEK；显式重试成功后再恢复 Authenticated。Data 查询订阅同时检�
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 协调认证请求和认证方式 | `DefaultAuthenticationManager` | [`DefaultAuthenticationManager.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/flow/DefaultAuthenticationManager.kt) |
+| 为认证方式刷新分配 generation、串行发布并使恢复码消费后的旧快照失效 | `AuthenticationMethodsState.beginRefresh()`、`refresh()`、`onRecoveryCodeConsumed()` | [`AuthenticationMethodsState.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/flow/AuthenticationMethodsState.kt)、[`AuthenticationMethodsStateTest.kt`](../../../security/src/test/java/com/aozijx/passly/security/authentication/flow/AuthenticationMethodsStateTest.kt) |
 | 管理应用密码设置请求与页面结果归属 | `AppPasswordSettingsViewModel.runChange()`、`AppPasswordSettingsInteractor.execute()` | [`AppPasswordSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/AppPasswordSettingsViewModel.kt)、[`AppPasswordSettingsInteractor.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/security/AppPasswordSettingsInteractor.kt) |
 | Security Route owner 销毁时清除密码对话框草稿 | `rememberAppPasswordDialogCoordinator()`、`AppPasswordDialogCoordinatorOwner()`、`AppPasswordDialogCoordinator.clear()` | [`SecurityRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/main/navigation/core/SecurityRoute.kt)、[`AppPasswordDialogCoordinator.kt`](../../../app/src/main/java/com/aozijx/passly/feature/settings/presentation/security/AppPasswordDialogCoordinator.kt) |
 | 决定翻转锁定后的 task-clear 条件、请求所有者和一次性消费 | `DeviceLockHandler`、`ActiveTaskClearRequests`、`TaskClearActivityOwner` | [`DeviceLockController.kt`](../../../app/src/main/java/com/aozijx/passly/app/DeviceLockController.kt)、[`ActiveTaskClearRequests.kt`](../../../app/src/main/java/com/aozijx/passly/app/ActiveTaskClearRequests.kt)、[`TaskClearActivityOwner.kt`](../../../app/src/main/java/com/aozijx/passly/app/TaskClearActivityOwner.kt) |

@@ -73,7 +73,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 - [ ] 补真实 manager/store/provisioner 集成覆盖：同一持久快照解析、并发刷新、提交后刷新、调用方取消及恢复事件；同时为启动首次刷新失败提供可观察状态和重试投影。状态对象单测不代替 manager 合同。认证设置变更后的提交后刷新失败已有 Domain pending 状态与页面提示。
 
-**2026-11-07：retained，收窄剩余合同。** resolver 已读统一 credentials snapshot，AuthenticationMethodsState 已有 generation、串行解析、recovery revision，刷新由 manager 长期 scope 托管；测试覆盖状态对象竞争/取消/失败 observer。移除旧“分别解析过时快照”的描述。
+认证方式状态协调、manager 重试合同和状态 owner 测试见[认证专题](../../../platform/security/authentication.md#host-与-生物识别)；本 Task 只保留 manager/store/provisioner 集成及启动失败反馈验收。
 
 <a id="task-51"></a>
 
