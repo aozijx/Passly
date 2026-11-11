@@ -2,7 +2,7 @@
 
 **范围：** 诊断日志写入失败后的清理、失败状态传播和 flush 可观察语义。本文跟踪可靠性问题，不是安全扫描报告或漏洞清单。
 
-**2026-11-07 顺序：** Task 4（异常断言和 App 测试基线）已完成；剩余先处理 Task 1 writer/flush 失败，再处理 Task 2 导出结果；Task 3 流清理可独立处理。原 Tasks 1/2 当前调用仍在，本轮未改实现。
+**当前优先序：** 先处理 Task 1 的 writer/flush 失败，再处理 Task 2 的导出结果；Task 3 的流清理可独立处理。
 
 
 <a id="task-1"></a>
@@ -36,4 +36,4 @@
 - [ ] 由取得 OutputStream 的 owner 覆盖取得流后的全部阶段，包括 ensureActive、manifest 创建和编码；取消、普通异常、fatal 均关闭已取得流，保留目标删除补偿和异常主次序。
 - [ ] 覆盖 openDocument 返回时取消、manifest 创建失败、编码/关闭失败及成功；断言流关闭次数、目标补偿、授权单次消费及异常传播。协调 encoder 现有 use 合同，避免重复关闭掩盖根因。
 
-**2026-11-07：retained，源码确认的资源所有权缺口，尚未注入复现。** ObservabilityExportService:165–167 在 openDocument 后先 ensureActive，writeExport:200–205 又先执行 manifestFactory.create；DiagnosticsExportEncoders:247、259、271 的 use 只保护进入编码后。前述失败窗口 catch 只删除 URI，未关闭已取得流；现有写入中取消测试不覆盖编码器接管前窗口，目标删除不等于 descriptor 关闭。
+**当前证据：** `exportToDocument()` 在 `storage.openDocument(uri)` 返回流后还会调用 `ensureActive()`；随后 `writeExport()` 先运行 `manifestFactory.create()`，再把流交给 encoder。`DiagnosticsExportEncoders` 的 `use` 只从进入编码器后开始关闭责任。取消、普通异常与 fatal `Error` 分支都调用 `deleteDocumentAfterFailure(uri, failure)`，但没有在删除 URI 前显式关闭已取得的流。因此 open 后取消或 manifest 创建失败的窗口仍存在资源所有权缺口；当前源码确认尚未以回归用例复现。涉及入口为 [`ObservabilityExportService.exportToDocument()` / `writeExport()`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) 与 [`DiagnosticsExportEncoders`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)。
