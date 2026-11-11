@@ -1,6 +1,6 @@
 # Passly 深度维护审查待办
 
-**最近复核：2026-11-08。** 全模块 Kotlin 静态盘点，并沿生产调用闭包重点检查会话/认证、敏感清理、Flow 恢复、页面与平台宿主、备份、诊断及既有待办；不等同于全仓安全扫描或逐行证明。
+**最近部分复核：2026-11-11。** 本轮将已验收的 Runtime Session lease 生命周期、DatabaseReset 成功反馈计时器，以及通知分发平台测试移出活动待办，并分别归档到正式主题页与审查记录；其余范围仍沿用先前全模块 Kotlin 静态盘点和生产调用闭包证据，不等同于全仓安全扫描或逐行证明。
 
 ## 执行顺序
 
@@ -8,24 +8,24 @@
 
 | 顺序 | 执行入口 | 依赖与原因 |
 | --- | --- | --- |
-| 1 / P1 | [安全 Task 6](2026-11-06-passly-security-scan-followups.md#task-6)、[Session 与 DEK 审查记录](../../reviews/2026-11-07-session-close-and-dek-wipe.md)，本页 37→26、59 | 接收方身份、lease 关闭、撤权与提交事实；先完成 Data admission 与撤权线性化，再闭合 Runtime/reset 跨层终态 |
+| 1 / P1 | [安全 Task 6](2026-11-06-passly-security-scan-followups.md#task-6)、[Session 与 DEK 审查记录](../../reviews/2026-11-07-session-close-and-dek-wipe.md)，本页 37、59 | 接收方身份、lease 关闭、撤权与提交事实；Runtime 自身 lease 排空已验收，继续闭合 Data admission 与 Security/reset 跨层终态 |
 | 2 / P1 | 本页 42、40、32；[诊断 Tasks 1–3](2026-11-06-passly-diagnostics-reliability-followup.md) | seed/流资源、目录操作终态、分类查询与 flush；先固定失败结果再改 owner |
 | 3 / P2 | 本页 46、51；[安全 Tasks 3、7、9](2026-11-06-passly-security-scan-followups.md)、OTP/搜索专题；Autofill Task 82（设置策略） | 46 接 59 的提交后恢复；Autofill 设置策略待办由专题清单维护 |
-| 4 / 定向验收 | 本页 22、23、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
+| 4 / 定向验收 | 本页 22、27、29、31、44、45、64；[Autofill 宿主验收](2026-11-07-passly-autofill-followups.md#task-21)、Scanner 验收 | 已有机制，不重复实现；JVM、Route/宿主和设备验证分别标记 |
 | 5 / P3 | 本页 83 → 84/80，35、34、36、74、75、77 | 83 管 Detail 具体流程，84 管 owner 清单，80 管状态模式；77 先稳定诊断可靠性 |
 
-安全 Task 1/5/10、Autofill 设置快照、OTP HOTP 和非 ASCII 搜索仍有策略合同待裁定；本轮不臆定产品行为，不把候选升级为已验证漏洞。允许独立项并行，表中箭头表示必须先满足的前置条件。
+安全 Task 1/5/10、Autofill 设置快照和非 ASCII 搜索仍有策略合同待裁定；本轮不臆定产品行为，不把候选升级为已验证漏洞。OTP 列表 HOTP 复制已由当前实现确定为支持，剩余 owner 级行为断言由 OTP 专题 TODO 跟踪。允许独立项并行，表中箭头表示必须先满足的前置条件。
 
 ## 专题 owner 索引
 
 | 主题 | 唯一详细待办/验收来源 | 本页关联 |
 | --- | --- | --- |
-| 架构与并发 | [架构与并发 TODO](2026-11-06-app-architecture-concurrency-todo.md) | 26、37、51、80、83、84；具体缺陷先处理，广域提案随后 |
+| 架构与并发 | [架构与并发 TODO](2026-11-06-app-architecture-concurrency-todo.md) | 37、51、80、83、84；具体缺陷先处理，广域提案随后 |
 | Autofill 后续 | [唯一后续清单](2026-11-07-passly-autofill-followups.md) | 21 宿主验收、82 设置策略；其他已完成合同已归入主题文档 |
 | Scanner | [输入与生命周期合同](../../../product/scanner/input-lifecycle.md)、[结果交接合同](../../../product/scanner/result-handoff.md)、[取景框计划](2026-11-06-scanner-entry-and-framing.md) | 42、51；Route/Activity Result 关闭交错与图片/坐标验收仍待验证 |
 | Vault / OTP | [搜索 TODO](2026-11-06-passly-vault-search-review-followups.md)、[OTP TODO](2026-11-06-passly-otp-review-followups.md) | 27、32、34–36、42 |
 | Backup / 诊断 | [Backup 格式说明](../../../product/backup/passly-archive-v1.md)、[数据端口迁移审查记录](../../reviews/2026-11-07-backup-data-port-migration.md)、[诊断可靠性 TODO](2026-11-06-passly-diagnostics-reliability-followup.md) | 40、73、74、77 |
-| 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 26、37、44–46、59、64；非合作 lease 关闭验收归档在安全审查记录 |
+| 安全与资源 | [安全遗留 TODO](2026-11-06-passly-security-scan-followups.md) | 37、44–46、59、64；Runtime lease 关闭验收归档在 Session 审查记录 |
 
 <a id="task-37"></a>
 
@@ -46,15 +46,6 @@
 **2026-11-07 Room 列表订阅收敛：** `DatabaseReadAccess` 在授权、lock state 与 lock generation 合流时采样当前 generation，避免快速重开时组合出重复的可读代际并重启 Room Pager 两次。`RoomObservationSessionTest` 现覆盖真实 SQLCipher PagingSource 的新增、编辑更新、过滤与重置恢复；`:data:testDebugUnitTest` 与设备 `RoomObservationSessionTest` 全类通过。Task 37 仍待真实 Security 撤权与 Data reset 并发终态验收。
 
 **2026-11-08 JVM 验证批次：** Security 全量 179/179、Runtime Session 34/34、Data JVM 170/170 均通过；`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin` 和 `verifyArchitecture` 通过。Security 锁定异常测试将跨协程边界的异常对象 identity 断言收敛为类型与 message，保留清敏、终态和 suppressed failure 断言。一次合并 Gradle 构建曾因 Core Hilt 聚合 wrapper 编译失败；随后独立强制 Data JVM 全量执行通过。`adb devices` 无设备，真实 Room instrumentation 与跨层 reset/lock 仍待验收。
-<a id="task-26"></a>
-
-### Task 26：明确 Runtime Session 生命周期转换的并发所有者
-- [ ] 补齐 Runtime 自身的 lease 排空与资源关闭合同：覆盖 active lease 的真实退出、超时/调用方取消后的收尾、迟到结果和资源句柄存活。认证撤权、Data Reset 与 lock 的跨层交错统一由 Task 37 验收，避免两处维护同一组场景。运行 Runtime 定向测试。
-
-**2026-11-07 Runtime lifecycle 串行化：** `RuntimeSessionManager.lifecycleMutex` 保护完整 `unlock`（close-failure 检查、resume、key copy、resource open）、`softLock` 与 `seal`；`VaultSessionController` 的会话互斥继续作为外层 owner，`SecureDatabaseResetCoordinator` 也使用该外层互斥。锁顺序为 Security/reset session mutex → Runtime lifecycle mutex → SessionLeaseGate 的 resource/lease mutex；请求 lease 与执行资源操作分阶段取 gate 锁，`resumeIfOpen` 唯一的嵌套顺序为 resource mutex → lease mutex。五项屏障用例先在旧实现失败，再在新 owner 下通过，覆盖两个首次 unlock、open/seal、seal drain/unlock、soft-lock/resume 和 seal 调用方取消。
-
-**2026-11-07 soft-lock 排空批次：** Runtime 在 `softLock()` 发布 `SOFT_LOCKED` 后等待活动 lease；5 秒超时或调用方取消会请求登记 owner 取消，再在不可取消清理区等待实际退出，保留已打开的 handle。新增两项屏障回归，分别验证超时取消与调用方取消后仍等待、不关闭资源，且新 lease 被拒绝。Runtime 用例通过。Security 当前已先发布认证撤权、等待 Runtime soft-lock/seal 排空，再清敏感会话 key；Task 26 仅保留与 Task 37 共用的 Reset/跨层终态验收。
-
 <a id="task-59"></a>
 
 ### Task 59：闭合生物识别轮换的提交后恢复与启动对账
@@ -234,7 +225,6 @@
 ### Task 74：按测试对象优化单测结构与重复装配
 - [ ] Detail 生产 owner 稳定后再评估是否拆分 `DetailViewModelTest.kt`；按独立工作流和生命周期职责决定，不以行数拆分，避免搬动仍在变化的 fixture 合同。
 - [ ] 继续全仓 `src/test`、`src/androidTest`、`src/testFixtures` 的逻辑审查；逐项追生产 owner、输入/状态/副作用断言及失败/取消清理，再决定合并或删除。不同模块、平台生命周期、稳定协议键和安全策略保持各自 owner。详细扫描计数不在此维护，避免把动态快照误作完成证明。
-- [ ] DatabaseReset 状态模型迁移后的 ViewModel 用例保留失败、授权取消、成功和页面 owner 交接断言；静态追踪发现未覆盖旧成功提示计时器与新 reset 重叠：旧计时器只检查当前状态是否 Completed，若新操作先完成，可能提前清除新提示。补定时交错回归并修正 timer owner 后再关闭此项；本轮未运行测试。
 
 <a id="task-75"></a>
 
@@ -268,14 +258,6 @@
 **实现证据（2026-11-01，提交 `ca0e02602`）：** Route 在 Activity 配置变化销毁时通过 `isChangingConfigurations` 保留 ViewModel 中相同的 `NotificationPermissionRequest` 与开通意图；新页面 owner 进入后重绑并重发请求。真正离页会清除其 owner 的待处理请求，迟到的旧 token grant/deny 不能影响新 owner。`NotificationSettingsViewModelTest` 已覆盖重建后同一 token 恢复并只写一次、真实离页后旧结果作废，以及新 owner 请求不被旧 owner dispose 清理。源码分支上 grant 由 `completeRuntimePermissionRequest(request)` 校验活动 owner；deny 由 `onAction(RuntimePermissionDenied(request))` 校验 token 并依赖离页时清空 pending 拦截过期结果。通知设置文档已记录此差异。实际 locale recreation 与系统弹窗仍缺设备级组合验证。
 
 **旧证据更正：** 早期记录的无 owner `CancelRuntimePermissionRequest` 分支已删除。当前 Route 只调用 `onPageExited(owner, preservePendingPermissionRequest=...)`；ViewModel 先验证 owner 仍 active，再只修改该 owner 持有的 pending request。`AnimatedContent` 交错目前有 ViewModel owner 回归，但动画实际 dispose 顺序仍未由 Compose 导航测试验证。
-
-<a id="task-23"></a>
-
-### Task 23：闭合通知分发在设置快照未就绪时的事件所有权
-
-- [ ] 给 AndroidSystemNotificationGateway 增加平台注入测试，覆盖 channel 创建、文案解析和 notify() 的普通异常、取消及 fatal Error；验证失败结果、异常类型和 dispatcher dedup claim 释放。
-
-**2026-11-07：retained，仅平台测试缺口。** 快照 provider 已使用 RecoverableRead 发布 Loading/Ready/Failed 并重订阅；dispatcher 对 mandatory 在 Loading/Failed 时继续路由。provider/dispatcher 测试已有首次失败、旧快照失效、publisher 启动竞态、恢复和取消覆盖。等级比较已用显式 severity/meetsMinimum，Snackbar 时长由 longToast 表达。移除旧“永久 Loading/Ready、mandatory 被抑制、ordinal 决策”的实现待办。
 
 <a id="task-27"></a>
 

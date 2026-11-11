@@ -39,11 +39,9 @@ HOTP 的 `consumeHotpCode(entryId)` 在一个数据库事务内读取当前计�
 
 TOTP/Steam 的 `TimedReady` 状态保存当前码、下一窗码和当前时间窗截止时间/周期，不保存复制阶段。Runtime 只在时间窗边界发布新的码；Vault 与 Detail 的 M3 Expressive 进度指示器由 Compose `Animatable` 按截止时间本地动画，列表滚出再进入时按绝对截止时间恢复动画位置。因而逐帧进度变化不再更新 Runtime 的共享 StateFlow。复制时 Runtime 先读 `OtpRuntimePolicy` 快照，再按决策时刻判断是否位于最后 3 秒，避免偏好变化依赖订阅时序。策略读取或计算期间若跨过时间窗，有活动租约时 Runtime 使用同一份租约种子按新的时间窗重算；无活动租约时使用本次按需读取的临时材料重算并清理。无法稳定在当前时间窗时不返回验证码。`OtpRuntimePolicy.copyNextTotpNearExpiry` 默认开启并可关闭临期复制下一窗码。HOTP 则仍只在用户主动复制时消费计数器。部分服务在窗口开始前可能拒绝下一窗码。
 
-## Vault 列表复制路径与待办
+## Vault 列表复制路径
 
-列表滑动动作经 `resolveCopyRequest(item, FieldKey.PASSWORD)` 判断条目是否带 OTP；若是，则 `VaultRoute` 派发 `VaultUiAction.CopyOtp(request.entryId)`。`VaultViewModel` 在启动 `viewModelScope` 任务前读取 `pageEffects.currentOwner`，调用 `copyOtpCode(EntryId(entryId), canDeliver = { pageEffects.isActive(owner) }, codeProvider = { otpRuntime.codeForCopy(entryId) })`。因此隐藏或未激活卡片也会按需生成并清理材料。`CopyOtpCodeUseCase.invoke(entryId, canDeliver, codeProvider)` 将调用 coroutine 的 `Job.isActive` 与页面 owner 条件合成为 `canWrite`，在取码前、剪贴板写入时和使用记录前复核；Route 离开后，仍等待授权的任务不会写剪贴板。
-
-Vault 列表和 Detail 都调用 `OtpCodeRuntime.codeForCopy()`；HOTP 在两个入口均按需原子消费。Detail 路径传入 `workSession.isCurrent(token)`，Vault 路径传入当前页面 owner，并在取码和写剪贴板前复核 owner。
+列表滑动动作经 `resolveCopyRequest(item, FieldKey.PASSWORD)` 判断条目是否带 OTP；若是，则 `VaultRoute` 派发 `VaultUiAction.CopyOtp(request.entryId)`。`VaultEntryCommandWorkflow.copyOtp()` 先要求完整安全会话，再捕获页面 owner 并调用 `CopyOtpCodeUseCase`；用例先完成复制授权，随后通过 `OtpCodeRuntime.codeForCopy(entryId)` 取码。HOTP 在该入口与 Detail 一样通过 `generateHotpCode()` 原子消费计数器。隐藏或未激活卡片也会按需读取并清理材料。用例把 coroutine Job、页面 owner 和完整会话条件合成为交付检查，在取码前、剪贴板写入时和使用记录前复核；Route 离开、会话撤权或授权未通过时不会向旧剪贴板目标写入。Detail 同样在 `DetailViewModel.copyOtpCode()` 传入 `workSession.isCurrent(token)`，并在取码和剪贴板写入前复核页面 owner。
 
 ## 代码位置
 
@@ -53,6 +51,7 @@ Vault 列表和 Detail 都调用 `OtpCodeRuntime.codeForCopy()`；HOTP 在两个
 | 创建应用级共享 Runtime 并只启动一组持续状态收集 | `OtpRuntimeModule.provideOtpCodeRuntime()` 注入生成/存储/策略读取端口并把会话状态映射成 `OtpRuntimeSignals`，Runtime 的 `start(signals)` 幂等启动 ticker 和两条会话信号流 | [`OtpRuntimeModule.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/OtpRuntimeModule.kt)、[`OtpCodeRuntime.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/OtpCodeRuntime.kt) |
 | Detail 只观察共享 Runtime 状态并请求 Vault owner 保留条目 | `DetailRoute` 收集 `VaultViewModel.otpStates` 并按 `entryId` 映射展示模型；OTP 区块出现时调用图级 owner 的 `retainOtp(entryId)`。`DetailViewModel` 不拥有 lease 或 OTP 状态副本 | [`DetailRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRoute.kt)、[`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt) |
 | Detail 复制时携带 owner token | `copyOtpCode()` -> `copyOtpCodeUseCase(entry.id, canDeliver = { workSession.isCurrent(token) }, codeProvider = { otpRuntime.codeForCopy(entry.id.value) })` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt) |
+| Vault 列表复制先校验完整安全会话与页面 owner，再授权、取码和记录活动 | `VaultEntryCommandWorkflow.copyOtp()` -> `CopyOtpCodeUseCase.invoke()`；HOTP 取码由 Runtime 原子消费 | [`VaultEntryCommandWorkflow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultEntryCommandWorkflow.kt)、[`CopyEntryFieldUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CopyEntryFieldUseCase.kt) |
 | 复制时 HOTP 按需消费；TOTP/Steam 优先读取租约状态，未激活时按需读取材料并计算当前码或临期下一码 | `OtpCodeRuntime.codeForCopy(entryId)` -> HOTP `generateHotpCode(entryId)` -> `consumeHotpCode(entryId)` | [`OtpCodeRuntime.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/OtpCodeRuntime.kt) |
 | 区分 UI 偏好观察与 OTP 操作策略读取 | `OtpRuntimePolicyRepository.otpRuntimePolicy` 供设置 UI 观察；`OtpRuntimePolicySnapshotReader.readOtpRuntimePolicySnapshot()` 供复制命令读取单次快照 | [`OtpRuntimePolicyRepository.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/settings/port/OtpRuntimePolicyRepository.kt)、[`ProtoAppPreferencesStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/settings/ProtoAppPreferencesStore.kt) |
 | 认证、敏感字段读取、剪贴板写入和使用记录顺序 | `CopyOtpCodeUseCase.invoke(entryId, canDeliver, codeProvider)` | [`CopyEntryFieldUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CopyEntryFieldUseCase.kt) |

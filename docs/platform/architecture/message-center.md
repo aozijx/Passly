@@ -34,7 +34,7 @@ flowchart LR
 
 Router/Sink 抛出的普通 `Exception` 映射为 `FAILED/NO_AVAILABLE_TARGET`，并释放 claim 供相同 eventId 重试；
 `CancellationException` 与 fatal JVM `Error` 清理 claim 后原样传播。Android system gateway 只把普通投递 `Exception`
-映射为 `SinkResult.Failed`，不会吞掉取消或 fatal `Error`。因此致命故障会终止当前队列 consumer 子协程并交给 coroutine 异常处理器，而不会伪装成单条普通投递失败。
+映射为 `SinkResult.Failed`，不会吞掉取消或 fatal `Error`。平台 API 由 `SystemNotificationPlatform` 隔离，网关测试通过该端口验证 channel、文案、发送与失败语义；验收记录见[系统通知网关审查](../../project/reviews/2026-11-11-system-notification-gateway.md)。因此致命故障会终止当前队列 consumer 子协程并交给 coroutine 异常处理器，而不会伪装成单条普通投递失败。
 
 强制消息只绕过产品总开关、topic 和最低等级，不依赖通知设置快照中的用户偏好；快照仍在加载或读取失败时，使用中性系统开关值继续路由，
 但不绕过 Android 权限或系统 channel。普通消息遇到 Loading 则抑制，不占用去重 claim。
@@ -82,3 +82,4 @@ Router/Sink 抛出的普通 `Exception` 映射为 `FAILED/NO_AVAILABLE_TARGET`�
 | 消息模型及受控参数 | `AppNotice`、`ArgumentKey`、`ArgumentValue` | [`AppNotice.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/model/AppNotice.kt)、[`NoticeArgument.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/model/NoticeArgument.kt) |
 | 事件策略注册 | `NoticeCodeRegistry.policyFor()` | [`NoticeCodeRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/contract/NoticeCodeRegistry.kt) |
 | 路由与分发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |
+| Android 通知平台适配及可注入边界 | `AndroidSystemNotificationGateway.deliver()` 处理受控文案、异常和结果；`AndroidSystemNotificationPlatform` 封装系统通知与 Channel API | [`AndroidSystemNotificationGateway.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/system/AndroidSystemNotificationGateway.kt)、[`SystemNotificationPlatform.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/system/SystemNotificationPlatform.kt)、[`AndroidSystemNotificationPlatform.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/system/AndroidSystemNotificationPlatform.kt) |

@@ -5,10 +5,10 @@
 | 验收项 | 结果 |
 | --- | --- |
 | 旧文档迁移 | 重组前 `HEAD` 有 116 篇 Markdown 文档；112 篇保留文档均有新路径目标。其余 4 篇是已完成的 Settings 资源计划/设计、Vault App Picker 计划和 Scanner Framing 设计；细节分别迁入 Settings/Vault/Scanner 正式文档及审查记录后删除。无其他未映射或意外缺失的目标。 |
-| 导航链接 | 扫描当前 122 篇 `docs/**/*.md`，相对 Markdown 失效目标 0 项；从 `docs/README.md` 可达全部 122 篇。Vault、Autofill、Settings、Backup、Scanner、Diagnostics Overview 与平台架构、Data、安全 Overview 均由唯一索引导航。 |
+| 导航链接 | 当前 `docs/` 有 122 篇主题 Markdown（不含索引 `docs/README.md`）；本地相对 Markdown 目标失效 0 项；`docs/README.md` 有 122 个互不重复的文档目标，全部存在且覆盖全部 122 篇主题页。Vault、Autofill、Settings、Backup、Scanner、Diagnostics Overview 与平台架构、Data、安全 Overview 均由唯一索引导航。 |
 | 旧路径引用 | 仓库源码、README、AGENTS 和文档中的当前路径引用已更新；设计稿中仅有的旧路径映射示例在本次归档时删除。 |
 | 错误码文档 | 本轮独立运行 `:buildSrc:test --no-parallel --max-workers=2` 成功（7 actionable tasks 均 `UP-TO-DATE`）；`verifyArchitecture --no-parallel --max-workers=2` 成功，执行了 `verifyErrorCodes` 与 `verifyModuleBoundaries`。 |
-| 总索引与相对链接 | 对当前 222 篇仓库 Markdown 扫描相对链接，失效目标 0 项；`docs/README.md` 对 122 篇 `docs/**/*.md` 的未索引和多余索引均为 0 项。 |
+| 总索引与相对链接 | 当前工作区可见 127 篇仓库 Markdown；对 `docs/` 中 123 篇 Markdown（含索引）扫描相对目标，失效 0 项；`docs/README.md` 的失效、重复和未索引文档目标均为 0 项。 |
 | 独立审阅 | 发现两份 2026-10 记录错列在 2026-11 分组；已在 `docs/README.md` 新增 2026-10 分组并移回对应链接。 |
 | 文档与待办生命周期 | 目录规则、唯一权威页、Overview 组合职责和完成后删除计划的约定已写入正式维护文档；本次实施计划和设计稿完成后移除。 |
 

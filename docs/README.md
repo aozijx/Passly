@@ -149,7 +149,6 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 #### 2026-11 设计
 
-- [OTP 复制设置读取设计](project/work/specs/2026-11-11-otp-copy-setting-read-design.md)
 - [Typed Diagnostic Events 设计](project/work/specs/2026-11-04-typed-diagnostic-events-design.md)
 
 #### 2026-11 实施与待办
@@ -167,6 +166,8 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 #### 2026-11 审查记录
 
+- [Database Reset 成功反馈计时器审查](project/reviews/2026-11-11-database-reset-feedback.md)
+- [Android 系统通知网关平台边界审查](project/reviews/2026-11-11-system-notification-gateway.md)
 - [设置资源归属与本地化审查](project/reviews/2026-11-08-app-settings-resource-cohesion.md)
 - [文档分类与路径重组验收](project/reviews/2026-11-11-functional-docs-reorganization.md)
 - [Autofill 宿主与字段交付验收](project/reviews/2026-11-08-autofill-host-validation.md)
