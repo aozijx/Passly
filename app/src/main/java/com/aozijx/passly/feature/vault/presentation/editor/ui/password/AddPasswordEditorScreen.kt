@@ -79,7 +79,7 @@ fun AddPasswordEditorScreen(
             NextFocusTextField(
                 value = form.username,
                 onValueChange = { onAction(AddPasswordAction.UsernameChanged(it)) },
-                label = stringResource(R.string.field_username_hint),
+                label = stringResource(R.string.field_username),
             )
         }
 

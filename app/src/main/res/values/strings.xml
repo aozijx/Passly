@@ -28,7 +28,6 @@
     <string name="vault_editor_hide_field">隐藏%1$s</string>
     <string name="vault_editor_field_visible">已显示</string>
     <string name="vault_editor_field_hidden">已隐藏</string>
-    <string name="field_username_hint">账号或邮箱</string>
     <string name="field_category">分类</string>
     <string name="restore">恢复</string>
     <string name="not_set">未设置</string>

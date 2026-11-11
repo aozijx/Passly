@@ -8,7 +8,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 internal fun FieldKey.labelRes(): Int =
     when (this) {
         FieldKey.TITLE -> R.string.field_title
-        FieldKey.USERNAME -> R.string.field_username_hint
+        FieldKey.USERNAME -> R.string.field_username
         FieldKey.EMAIL -> R.string.revision_label_email
         FieldKey.PASSWORD -> R.string.password_label
         FieldKey.NOTES -> R.string.field_notes

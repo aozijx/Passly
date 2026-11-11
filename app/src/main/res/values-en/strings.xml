@@ -26,7 +26,6 @@
     <string name="vault_editor_hide_field">Hide %1$s</string>
     <string name="vault_editor_field_visible">Visible</string>
     <string name="vault_editor_field_hidden">Hidden</string>
-    <string name="field_username_hint">Username or email</string>
     <string name="field_category">Category</string>
     <string name="restore">Restore</string>
     <!-- Entry Type Names -->

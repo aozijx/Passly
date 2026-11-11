@@ -50,7 +50,7 @@ class EntryFocusBehaviorTest {
 
         val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
         val title = resources.getString(R.string.field_title)
-        val username = resources.getString(R.string.field_username_hint)
+        val username = resources.getString(R.string.field_username)
         val password = resources.getString(R.string.password_label)
         composeRule.onNodeWithText(title).performClick().assertIsFocused()
         composeRule.onNodeWithText(title).performImeAction()
