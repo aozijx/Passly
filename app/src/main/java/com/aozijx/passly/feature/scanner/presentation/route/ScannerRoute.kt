@@ -5,15 +5,9 @@ import android.os.VibrationEffect
 import android.os.VibratorManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,8 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -34,40 +28,46 @@ import com.aozijx.passly.feature.scanner.presentation.action.ScannerUiAction
 import com.aozijx.passly.feature.scanner.presentation.action.resolveScannerScreenAction
 import com.aozijx.passly.feature.scanner.presentation.camera.ScannerCameraHost
 import com.aozijx.passly.feature.scanner.presentation.image.ImageRef
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultPresentation
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultOutcome
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultSession
 import com.aozijx.passly.feature.scanner.presentation.state.ScannerFeedback
-import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
 import com.aozijx.passly.feature.scanner.presentation.state.ScannerUiState
 import com.aozijx.passly.feature.scanner.presentation.state.mapScannerCameraState
 import com.aozijx.passly.feature.scanner.presentation.state.mapScannerResultActionState
 import com.aozijx.passly.feature.scanner.presentation.state.mapScannerScreenState
 import com.aozijx.passly.feature.scanner.presentation.ui.ScannerScreen
-import com.aozijx.passly.feature.scanner.presentation.viewmodel.ScannerViewModel
 import com.aozijx.passly.feature.scanner.presentation.viewfinder.ScannerViewfinderFrame
+import com.aozijx.passly.feature.scanner.presentation.viewmodel.ScannerViewModel
 import com.aozijx.passly.presentation.shared.media.ImageType
 import com.aozijx.passly.presentation.shared.media.rememberImagePicker
 import kotlinx.coroutines.launch
 
 @Composable
 internal fun ScannerRoute(
-    overlayState: ScannerOverlayState,
+    visible: Boolean,
     resolveResult: (String) -> ScannerResultPlan,
     onDismiss: () -> Unit,
 ) {
     val viewModel = hiltViewModel<ScannerViewModel>()
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentState = state
     val scope = rememberCoroutineScope()
-    val resultSession = remember(overlayState) { ScannerResultSession() }
+    val resultSession = remember { ScannerResultSession() }
     val resultPhase by resultSession.phase.collectAsStateWithLifecycle()
     val resultActions = mapScannerResultActionState(resultPhase)
-    val resultValue = (state as? ScannerUiState.ShowingResult)?.result?.rawValue
-    val resultPlan = remember(resultValue) {
-        resultValue?.let(resolveResult)
-    }
+    val resultValue =
+        when (currentState) {
+            is ScannerUiState.ShowingResult -> currentState.result.rawValue
+
+            is ScannerUiState.Scanning,
+            ScannerUiState.ProcessingImage,
+            ScannerUiState.Stopped,
+            -> null
+        }
+    val resultPlan = remember(resultValue) { resultValue?.let(resolveResult) }
     DisposableEffect(resultSession) {
         onDispose { resultSession.close() }
     }
@@ -77,16 +77,10 @@ internal fun ScannerRoute(
     val actionFailedMessage = stringResource(R.string.scanner_result_action_failed)
     val imageNoBarcodeMessage = stringResource(R.string.scanner_image_no_barcode)
     val imageDecodeFailedMessage = stringResource(R.string.scanner_image_decode_failed)
-    DisposableEffect(viewModel, overlayState) {
-        when (overlayState) {
-            ScannerOverlayState.Hidden -> Unit
-            ScannerOverlayState.Visible -> viewModel.onAction(ScannerUiAction.StartScanning)
-        }
+    DisposableEffect(viewModel, visible) {
+        if (visible) viewModel.onAction(ScannerUiAction.StartScanning)
         onDispose {
-            when (overlayState) {
-                ScannerOverlayState.Hidden -> Unit
-                ScannerOverlayState.Visible -> viewModel.onAction(ScannerUiAction.StopScanning)
-            }
+            if (visible) viewModel.onAction(ScannerUiAction.StopScanning)
         }
     }
     val pickPhoto =
@@ -128,22 +122,40 @@ internal fun ScannerRoute(
     }
 
     fun handleScreenAction(action: ScannerScreenAction) {
-        when (resolveScannerScreenAction(action, overlayState, resultActions)) {
-            null -> Unit
-            ScannerScreenAction.Dismiss -> dismissScanner()
+        when (resolveScannerScreenAction(action, resultActions)) {
+            null -> {
+                Unit
+            }
+
+            ScannerScreenAction.Dismiss -> {
+                dismissScanner()
+            }
+
             ScannerScreenAction.PickPhoto -> {
                 viewModel.onAction(ScannerUiAction.StartScanning)
                 pickPhoto(ImageType.SCREEN)
             }
 
-            ScannerScreenAction.ScanAgain -> viewModel.onAction(ScannerUiAction.StartScanning)
-            ScannerScreenAction.CopyResult -> viewModel.onAction(ScannerUiAction.CopyText)
+            ScannerScreenAction.ScanAgain -> {
+                viewModel.onAction(ScannerUiAction.StartScanning)
+            }
+
+            ScannerScreenAction.CopyResult -> {
+                viewModel.onAction(ScannerUiAction.CopyText)
+            }
+
             ScannerScreenAction.ConfirmResult -> {
                 resultPlan?.let { plan ->
                     scope.launch {
                         when (resultSession.confirm { plan.confirm() }) {
-                            ScannerResultOutcome.Handled -> dismissScanner()
-                            ScannerResultOutcome.Ignored -> Unit
+                            ScannerResultOutcome.Handled -> {
+                                dismissScanner()
+                            }
+
+                            ScannerResultOutcome.Ignored -> {
+                                Unit
+                            }
+
                             ScannerResultOutcome.Rejected -> {
                                 Toast.makeText(context, rejectedMessage, Toast.LENGTH_SHORT).show()
                             }
@@ -158,24 +170,24 @@ internal fun ScannerRoute(
         }
     }
 
-    BackHandler(enabled = overlayState.isVisible) { handleScreenAction(ScannerScreenAction.Dismiss) }
+    BackHandler(enabled = visible) { handleScreenAction(ScannerScreenAction.Dismiss) }
 
     val screenState =
         mapScannerScreenState(
-            overlay = overlayState,
-            scanner = state,
+            scanner = currentState,
             resultActions = resultActions,
             presentation = resultPlan?.presentation ?: ScannerResultPresentation.DEFAULT,
         )
-    val cameraState = mapScannerCameraState(overlayState, state)
+    val cameraState = mapScannerCameraState(currentState)
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize().background(Color.Black),
     ) {
         val density = LocalDensity.current
-        val viewfinderFrame = remember(maxWidth, maxHeight, density) {
-            ScannerViewfinderFrame.fitContainer(maxWidth, maxHeight, density)
-        }
+        val viewfinderFrame =
+            remember(maxWidth, maxHeight, density) {
+                ScannerViewfinderFrame.fitContainer(maxWidth, maxHeight, density)
+            }
         ScannerCameraHost(
             onBarcodeDetected = { viewModel.onAction(ScannerUiAction.BarcodeDetected(it)) },
             onPermissionDenied = ::dismissScanner,
@@ -188,35 +200,6 @@ internal fun ScannerRoute(
             cameraState = cameraState,
             viewfinderFrame = viewfinderFrame,
             onAction = ::handleScreenAction,
-        )
-    }
-}
-
-@Composable
-internal fun AnimatedScannerOverlay(
-    state: ScannerOverlayState,
-    resolveResult: (String) -> ScannerResultPlan,
-    onDismiss: () -> Unit,
-) {
-    AnimatedVisibility(
-        visible = state.isVisible,
-        enter =
-            fadeIn(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                slideInVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    initialOffsetY = { it },
-                ),
-        exit =
-            fadeOut(animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()) +
-                slideOutVertically(
-                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                    targetOffsetY = { it },
-                ),
-    ) {
-        ScannerRoute(
-            overlayState = state,
-            resolveResult = resolveResult,
-            onDismiss = onDismiss,
         )
     }
 }

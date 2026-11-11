@@ -116,7 +116,6 @@ internal fun ScannerScreen(
                     }
                 }
 
-                ScannerScreenUiState.Hidden,
                 ScannerScreenUiState.Scanning,
                 ScannerScreenUiState.Stopped,
                 -> {

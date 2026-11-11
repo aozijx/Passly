@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.scanner.presentation.result
 
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultHandling
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async

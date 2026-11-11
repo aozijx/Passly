@@ -162,7 +162,7 @@ class SourceBoundaryReferenceScannerTest {
         val reviewedRouteIntegration =
             EditorSource(
                 path = "app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt",
-                content = "import com.aozijx.passly.feature.scanner.presentation.ScannerRoute",
+                content = "import com.aozijx.passly.feature.scanner.presentation.integration.ScannerOverlay",
             )
         assertEquals(
             emptyList(),
@@ -171,7 +171,7 @@ class SourceBoundaryReferenceScannerTest {
 
         val unregisteredRouteIntegration =
             businessDependency.copy(
-                content = "import com.aozijx.passly.feature.scanner.presentation.ScannerRoute",
+                content = "import com.aozijx.passly.feature.scanner.presentation.route.ScannerRoute",
             )
         assertEquals(
             "FEATURE_CROSS_FEATURE",

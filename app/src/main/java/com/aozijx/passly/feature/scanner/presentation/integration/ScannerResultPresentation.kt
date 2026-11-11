@@ -1,4 +1,4 @@
-package com.aozijx.passly.feature.scanner.presentation.result
+package com.aozijx.passly.feature.scanner.presentation.integration
 
 internal enum class ScannerPrimaryActionLabel {
     Continue,

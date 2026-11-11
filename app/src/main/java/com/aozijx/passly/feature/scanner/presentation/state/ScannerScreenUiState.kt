@@ -1,14 +1,10 @@
 package com.aozijx.passly.feature.scanner.presentation.state
 
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultPresentation
 import com.aozijx.passly.feature.scanner.presentation.result.ScannerResult
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
 
 internal sealed interface ScannerScreenUiState {
     val resultActions: ScannerResultActionState
-
-    data object Hidden : ScannerScreenUiState {
-        override val resultActions = ScannerResultActionState.Locked
-    }
 
     data object Scanning : ScannerScreenUiState {
         override val resultActions = ScannerResultActionState.Available

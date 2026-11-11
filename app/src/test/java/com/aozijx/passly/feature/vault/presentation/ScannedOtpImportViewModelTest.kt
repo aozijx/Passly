@@ -11,9 +11,9 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultHandling
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultOutcome
-import com.aozijx.passly.feature.scanner.presentation.ScannerResultSession
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultOutcome
+import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultSession
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

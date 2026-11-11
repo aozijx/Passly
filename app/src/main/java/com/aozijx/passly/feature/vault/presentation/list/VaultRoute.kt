@@ -29,13 +29,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableReadState
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultHandling
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPlan
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultTextInteraction
-import com.aozijx.passly.feature.scanner.presentation.route.AnimatedScannerOverlay
-import com.aozijx.passly.feature.scanner.presentation.state.ScannerOverlayState
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerOverlay
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultHandling
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultPlan
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultTextInteraction
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.list.action.VaultCopyRequest
@@ -61,13 +60,10 @@ internal fun VaultRoute(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    var scannerOverlayState by remember { mutableStateOf<ScannerOverlayState>(ScannerOverlayState.Hidden) }
-    DisposableEffect(vaultViewModel, scannerOverlayState) {
+    var scannerOverlayVisible by remember { mutableStateOf(false) }
+    DisposableEffect(vaultViewModel, scannerOverlayVisible) {
         val owner =
-            when (scannerOverlayState) {
-                ScannerOverlayState.Hidden -> vaultViewModel.onPageEntered()
-                ScannerOverlayState.Visible -> null
-            }
+            if (scannerOverlayVisible) null else vaultViewModel.onPageEntered()
         onDispose {
             owner?.let(vaultViewModel::onPageExited)
         }
@@ -214,7 +210,7 @@ internal fun VaultRoute(
         onRouteRequest = { request ->
             when (request) {
                 VaultRouteRequest.OpenScanner -> {
-                    scannerOverlayState = ScannerOverlayState.Visible
+                    scannerOverlayVisible = true
                 }
 
                 VaultRouteRequest.OpenSettings -> {
@@ -227,8 +223,8 @@ internal fun VaultRoute(
         },
     )
 
-    AnimatedScannerOverlay(
-        state = scannerOverlayState,
+    ScannerOverlay(
+        visible = scannerOverlayVisible,
         resolveResult = { rawValue ->
             when (val code = resolveVaultScannedCode(rawValue)) {
                 is VaultScannedCode.Otp -> {
@@ -293,7 +289,7 @@ internal fun VaultRoute(
                 }
             }
         },
-        onDismiss = { scannerOverlayState = ScannerOverlayState.Hidden },
+        onDismiss = { scannerOverlayVisible = false },
     )
 }
 

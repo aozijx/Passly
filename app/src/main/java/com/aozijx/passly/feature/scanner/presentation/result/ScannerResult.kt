@@ -4,13 +4,3 @@ package com.aozijx.passly.feature.scanner.presentation.result
 data class ScannerResult(
     val rawValue: String,
 )
-
-sealed interface ScannerResultHandling {
-    data object Handled : ScannerResultHandling
-
-    data object Rejected : ScannerResultHandling
-
-    data class Failed(
-        val error: Exception,
-    ) : ScannerResultHandling
-}

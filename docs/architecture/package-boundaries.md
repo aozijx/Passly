@@ -214,7 +214,7 @@ security -> *.data.repository / *.data.local
 
 | 依赖边 | 允许内容 | Owner / 边界 |
 | --- | --- | --- |
-| Vault → Scanner | OTP/Wi-Fi 编辑器和 Vault Route 的 Scanner UI 合同 | 对应 Vault Route 持有页面与扫描结果生命周期 |
+| Vault → Scanner | `feature.scanner.presentation.integration` 中的扫描覆盖层与结果处理合同 | Scanner 封装摄像头、识别和结果展示；Vault Route 只提供领域解释/宿主操作并管理可见性。禁止导入 Scanner 的 Route、状态、相机与 ViewModel 实现包。 |
 | Settings → Vault | `CardStyleRegistry`，仅限 `InterfaceScreen.kt` | 设置页组合已注册的 Vault 样式预览，并持久化稳定 presentation key；其他 Vault API 仍禁止 |
 | Settings → Backup | `BackupOperationRoute` | Settings 持有页面和 SAF Activity Result launcher；Backup 内部存储实现不可导入 |
 | Settings → Database | `DatabaseResetRoute` | Settings 持有 Data Management 宿主；Sheet owner 出入时清理终态，但不取消 Resetting 中的确认操作 |

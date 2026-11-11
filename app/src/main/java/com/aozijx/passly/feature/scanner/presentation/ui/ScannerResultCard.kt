@@ -29,9 +29,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.scanner.presentation.action.ScannerScreenAction
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerPrimaryActionLabel
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultPresentation
-import com.aozijx.passly.feature.scanner.presentation.result.ScannerResultTextInteraction
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerPrimaryActionLabel
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultPresentation
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultTextInteraction
 import com.aozijx.passly.feature.scanner.presentation.state.ScannerResultActionState
 
 @Composable
@@ -110,7 +110,9 @@ internal fun ScannerResultCard(
                         ScannerResultActionState.Available,
                         ScannerResultActionState.DismissOnly,
                         ScannerResultActionState.Locked,
-                        -> Unit
+                        -> {
+                            Unit
+                        }
                     }
                     Text(primaryActionLabel)
                 }

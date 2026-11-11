@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.scanner.presentation.result
 
+import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultHandling
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
