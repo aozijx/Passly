@@ -151,15 +151,16 @@ class AddWifiViewModel
         fun tryApplyScannedWifi(payload: WifiQrPayload): Boolean = mutateForm { it.applyScanned(payload) }
 
         private fun mutateForm(transform: (AddWifiFormState) -> AddWifiFormState): Boolean {
-            if (!writeSession.canEdit() || !canEditForm()) return false
+            if (!writeSession.canEdit()) return false
             val current = _uiState.value
+            if (!current.loadPhase.allowsSaving) return false
             _uiState.value = current.copy(form = transform(current.form))
             return true
         }
 
         private fun save() {
             val current = _uiState.value
-            if (!canEditForm()) return
+            if (!current.loadPhase.allowsSaving) return
             if (!current.canSave) return
             writeSession.save { current.form.toEntryDraft() }
         }
@@ -170,8 +171,6 @@ class AddWifiViewModel
                     loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
-
-        private fun canEditForm() = editingEntryId == null || _uiState.value.loadPhase == EditorLoadPhase.Ready
 
         private fun failEditLoad() {
             _uiState.value =

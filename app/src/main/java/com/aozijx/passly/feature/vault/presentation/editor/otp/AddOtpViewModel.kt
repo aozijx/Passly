@@ -122,9 +122,10 @@ class AddOtpViewModel
         }
 
         private fun mutateForm(transform: (OtpFormState) -> OtpFormState): Boolean {
-            if (!writeSession.canEdit() || !canEditForm()) return false
+            if (!writeSession.canEdit()) return false
             feedbackScope = FeedbackScope.Closed
             val current = _uiState.value
+            if (!current.loadPhase.allowsSaving) return false
             val form = transform(current.form)
             _uiState.value = current.copy(form = form)
             return true
@@ -132,7 +133,7 @@ class AddOtpViewModel
 
         private fun save() {
             val current = _uiState.value
-            if (!canEditForm()) return
+            if (!current.loadPhase.allowsSaving) return
             if (!current.canSave) return
             feedbackScope = FeedbackScope.Closed
             writeSession.save { current.form.toEntryDraft() }
@@ -205,8 +206,6 @@ class AddOtpViewModel
                     loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
-
-        private fun canEditForm() = editingEntryId == null || _uiState.value.loadPhase == EditorLoadPhase.Ready
 
         private fun failEditLoad() {
             feedbackScope = FeedbackScope.Closed

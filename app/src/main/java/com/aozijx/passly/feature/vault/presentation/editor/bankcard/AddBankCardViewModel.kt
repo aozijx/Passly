@@ -153,15 +153,16 @@ class AddBankCardViewModel
         }
 
         private fun mutateForm(transform: (AddBankCardFormState) -> AddBankCardFormState) {
-            if (!writeSession.canEdit() || !canEditForm()) return
+            if (!writeSession.canEdit()) return
             val current = _uiState.value
+            if (!current.loadPhase.allowsSaving) return
             val form = transform(current.form)
             _uiState.value = current.copy(form = form)
         }
 
         private fun save() {
             val current = _uiState.value
-            if (!canEditForm()) return
+            if (!current.loadPhase.allowsSaving) return
             if (!current.canSave) return
             writeSession.save { current.form.toEntryDraft() }
         }
@@ -172,8 +173,6 @@ class AddBankCardViewModel
                     loadPhase = reason.toEditorLoadPhase(editingExisting = editingEntryId != null),
                 )
         }
-
-        private fun canEditForm() = editingEntryId == null || _uiState.value.loadPhase == EditorLoadPhase.Ready
 
         private fun failEditLoad() {
             _uiState.value =
