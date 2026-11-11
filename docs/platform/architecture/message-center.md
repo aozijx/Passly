@@ -1,0 +1,84 @@
+# 消息中心
+
+## 边界与数据流
+
+业务代码只发布 `AppNotice(eventId, code, arguments)`。`topic`、`level`、投递策略、强制性与
+eventId TTL 由可信 `NoticeCodeRegistry` 决定，发布者不能伪造。参数只能使用 `Count`、
+`DurationMs`、`EnumCode`、`ReasonCode` 或 `Flag`，不得传入自由文本、凭据、路径或 URL。
+
+```mermaid
+flowchart LR
+    P["Publisher"] --> Q["Bounded channel (128)"]
+    Q --> D["DefaultAppNoticeDispatcher"]
+    S["Atomic settings snapshot"] --> D
+    V["App visibility"] --> D
+    N["Permission / channel state"] --> D
+    D --> R["DefaultNoticeRouter"]
+    R --> I["InAppNoticeSink"]
+    R --> A["AndroidSystemNotificationGateway"]
+```
+
+`publish()` 只返回有界内存队列的入队结果；`Accepted` 表示本次运行中已排队，不保证投递或进程重启后恢复。
+通知是 best-effort：队列消费早于首个设置快照时，普通可选事件以 `SETTINGS_UNAVAILABLE` 抑制并丢弃，不无限等待、也不自动重放；
+需要确定投递结果的调用方使用 `dispatch()` 获得 `NoticeDispatchReceipt`。Dispatcher 串行处理消息并在一次处理开始时原子读取设置版本，
+整条消息使用同一快照。
+
+## 判定顺序
+
+1. 以 `eventId` 获取两阶段去重 claim；同一事件正在处理或仍在 TTL 内时拒绝。
+2. 读取 `NoticeCodePolicy`。非 mandatory 消息依次检查总开关、topic 开关和最低等级。
+3. 根据 `DeliveryPolicy` 与前后台状态生成初始目标。
+4. 系统目标同时检查产品设置、`POST_NOTIFICATIONS`、系统通知总开关和 channel。
+5. `PREFER_*` 在首选目标不可用或投递失败时按策略回退；`SYSTEM_ONLY` 不回退。
+6. 投递完成后，至少一个目标成功才完成 eventId claim；所有目标失败时释放 claim，允许同一事件重试。
+
+Router/Sink 抛出的普通 `Exception` 映射为 `FAILED/NO_AVAILABLE_TARGET`，并释放 claim 供相同 eventId 重试；
+`CancellationException` 与 fatal JVM `Error` 清理 claim 后原样传播。Android system gateway 只把普通投递 `Exception`
+映射为 `SinkResult.Failed`，不会吞掉取消或 fatal `Error`。因此致命故障会终止当前队列 consumer 子协程并交给 coroutine 异常处理器，而不会伪装成单条普通投递失败。
+
+强制消息只绕过产品总开关、topic 和最低等级，不依赖通知设置快照中的用户偏好；快照仍在加载或读取失败时，使用中性系统开关值继续路由，
+但不绕过 Android 权限或系统 channel。普通消息遇到 Loading 则抑制，不占用去重 claim。
+
+通知等级比较使用 `MessageLevel.severity` 明确表示最低等级顺序；Snackbar/Toast 长度由 `NoticeLevel.longToast` 显式标记。
+调整 enum 声明顺序不会改变过滤阈值或提示时长。
+
+`DefaultMessageSettingsSnapshotProvider` 首次读取前为 Loading。设置 Flow 正常结束或抛出普通异常后都会清除旧 Ready 值为 Loading，并在固定 1 秒间隔后重新订阅；
+取消和 fatal `Error` 不映射为普通读取失败。恢复后的每次实际设置 emission 都生成新版本。Loading 期间普通通知仍按上述 best-effort 合同处理，
+不保留队列事件等待恢复。
+
+## 事件注册表
+
+事件编号使用 `NoticeCode` 枚举名这一稳定字符串，不使用或持久化 Kotlin ordinal；枚举调整顺序不会改变事件编号。
+所有事件的精确 `eventId` TTL 当前为 120 秒。同一 `NoticeCode` 的不同 `eventId` 始终分别投递，避免吞掉合法的连续操作。
+
+| NoticeCode | Topic | Level | Delivery | Mandatory |
+|---|---|---|---|---:|
+| `CLIPBOARD_CLEARED` | CLIPBOARD | INFO | IN_APP_ONLY | 否 |
+| `CLIPBOARD_CLEAR_FAILED` | CLIPBOARD | ERROR | IN_APP_ONLY | 否 |
+| `APP_LOCKED` | APP_LIFECYCLE | INFO | IN_APP_ONLY | 否 |
+| `APP_CLOSE_REMINDER` | APP_LIFECYCLE | WARNING | IN_APP_ONLY | 否 |
+| `BACKUP_EXPORT_COMPLETED` | BACKUP | SUCCESS | PREFER_IN_APP | 否 |
+| `BACKUP_EXPORT_FAILED` | BACKUP | ERROR | PREFER_IN_APP | 否 |
+| `BACKUP_IMPORT_COMPLETED` | BACKUP | SUCCESS | PREFER_IN_APP | 否 |
+| `BACKUP_IMPORT_FAILED` | BACKUP | ERROR | PREFER_IN_APP | 否 |
+| `BACKUP_DIRECTORY_CHECK_COMPLETED` | BACKUP | SUCCESS | IN_APP_ONLY | 否 |
+| `BACKUP_DIRECTORY_CHECK_FAILED` | BACKUP | ERROR | IN_APP_ONLY | 否 |
+| `SECURITY_RECOVERY_REQUIRED` | SECURITY | CRITICAL | PREFER_IN_APP | 是 |
+| `SECURITY_ACTION_FAILED` | SECURITY | ERROR | PREFER_SYSTEM | 是 |
+| `DATABASE_INDEX_REBUILD_COMPLETED` | DATABASE | SUCCESS | PREFER_IN_APP | 否 |
+| `DATABASE_INDEX_REBUILD_FAILED` | DATABASE | ERROR | PREFER_IN_APP | 否 |
+| `DATABASE_OPERATION_FAILED` | DATABASE | ERROR | PREFER_IN_APP | 是 |
+| `NOTIFICATION_PERMISSION_DENIED` | APP_LIFECYCLE | WARNING | IN_APP_ONLY | 否 |
+
+应用内队列容量为 64；队列满时明确返回失败，不丢弃已排队消息。Dispatcher 仅在至少一个输出目标成功后保留 eventId claim，
+全部失败会释放 claim 以支持重试。新增事件必须同时增加：枚举、注册策略、受控文本资源与解析映射、参数契约、Router/Dispatcher 测试以及本表。
+不得增加 `StubSystemNotificationGateway` 或在 feature 中直接调用 `NotificationManager`。
+
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 消息模型及受控参数 | `AppNotice`、`ArgumentKey`、`ArgumentValue` | [`AppNotice.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/model/AppNotice.kt)、[`NoticeArgument.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/model/NoticeArgument.kt) |
+| 事件策略注册 | `NoticeCodeRegistry.policyFor()` | [`NoticeCodeRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/contract/NoticeCodeRegistry.kt) |
+| 路由与分发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |

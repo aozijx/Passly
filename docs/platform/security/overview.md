@@ -1,0 +1,50 @@
+# 安全总览
+
+Passly 的目标是保护离线设备上的保险库数据，并把凭据暴露限制在完成用户操作所需的最短时间。安全设计不声称抵御已完全控制系统或能持续读取进程内存的攻击者。
+
+## 防护层
+
+```mermaid
+flowchart TB
+    Auth["生物识别 / 应用密码 / 恢复码"] --> Envelope["Envelope 解封 Vault DEK"]
+    Envelope --> Session["派生字段会话密钥"]
+    Session --> Field["AES-256-GCM 字段加密"]
+    Envelope --> DB["SQLCipher 数据库"]
+```
+
+- Android Keystore 保护生物识别包装密钥。
+- Argon2id 从应用密码或恢复码派生包装密钥。
+- 多个 Envelope 包装同一份随机 Vault DEK；认证方式可变化而不重加密全部数据。
+- SQLCipher 保护数据库整体，敏感负载另做字段级认证加密。
+- 非敏感 Profile 元数据使用结构化列支持本地查询；密码、密钥、OTP Secret 等高敏字段不进入查询索引。
+- `USER` / `IDLE_TIMEOUT` 触发 `SOFT_LOCKED`：阻止新租约并排空现有 lease，数据库保持打开、DEK 保留，字段会话密钥清除；重新认证可恢复会话。
+- `AUTOFILL_REQUEST_FINISHED`、`BACKGROUND`、`RECOVERY_EXIT`、`INTEGRITY_FAILURE`、`APP_EXIT` 触发 `SEALED`：撤销授权后等待数据库 lease 实际退出，再封存/关闭数据库、清除字段会话密钥并擦除 DEK。忽略取消的 lease 仍存活时不会强制关闭其资源；锁定保持等待。验收证据见[Session 关闭与 DEK 擦除审查](../../project/reviews/2026-11-07-session-close-and-dek-wipe.md)。
+
+## 信任边界
+
+| 区域             | 允许持有                                    | 禁止                      |
+|----------------|-----------------------------------------|-------------------------|
+| UI/ViewModel   | 短生命周期明文、`CharArray` 输入、UI state         | 持久化密钥、记录凭据日志            |
+| Repository     | 解锁会话中的领域明文                              | 向 Domain 暴露 Entity/密文细节 |
+| Security       | DEK、派生密钥、Envelope 操作                    | 依赖 Room/DataStore 具体实现  |
+| VaultBootstrapStore | Envelope 密文、salt、nonce、verification tag | 明文 DEK                  |
+| Room/SQLCipher | 加密数据库与字段密文                              | 自动删库恢复                  |
+
+## 开发约束
+
+- AES-GCM nonce 每次随机生成且同一密钥下不得复用。
+- 密钥、密码和恢复码不得进入日志、异常消息或持久 UI state。
+- `ByteArray`/`CharArray` 使用后尽快覆盖，但 JVM/Android 运行时不保证所有副本可被可靠擦除。
+- 数据损坏、错误凭据和版本不兼容必须区分，禁止用删除数据隐藏错误。
+- 密码学原语或格式变更必须新增 ADR 和测试向量。
+
+参见[威胁模型](threat-model.md)、[密钥管理](key-management.md)、[认证](authentication.md)和
+[安全诊断](diagnostics.md)。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 认证、授权和会话生命周期 | `DefaultAuthenticationManager`、`VaultSessionController` | [`DefaultAuthenticationManager.kt`](../../../security/src/main/java/com/aozijx/passly/security/authentication/flow/DefaultAuthenticationManager.kt)、[`VaultSessionController.kt`](../../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt) |
+| DEK 与字段密钥管理 | `DekManager`、`SecuritySensitiveFieldCryptor` | [`DekManager.kt`](../../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt)、[`SecuritySensitiveFieldCryptor.kt`](../../../security/src/main/java/com/aozijx/passly/security/dek/SecuritySensitiveFieldCryptor.kt) |
+| 加密数据库会话访问 | `AppDatabaseSession` | [`AppDatabaseSession.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |

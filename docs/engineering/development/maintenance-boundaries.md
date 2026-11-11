@@ -1,0 +1,85 @@
+# Passly 维护边界
+
+本文收敛已完成重构和功能实施中仍需长期遵守的约束。历史实施计划、阶段清单和已完成任务不再作为当前架构事实；代码、Gradle 依赖、测试与正式 ADR 才是事实源。
+
+## 设计原则
+
+- 优先高内聚、低耦合和单一职责。按业务能力拆分文件，不按行数制造包装层。
+- 不新增 Coordinator、万能 Context、Manager 式职责桶，或参数完全相同的转发函数。
+- 简单页面使用轻量单向数据流；只有复杂状态机、异步结果汇合和可独立验证的状态转换才引入 Reducer。
+- 只有具备独立生命周期、多宿主复用、显著构建隔离收益，或必须由编译器阻断的边界时才新增 Gradle 模块。
+- 包名不等于模块边界。移动代码前检查完整 import 闭包、资源、Hilt/KSP、测试和真实调用方。
+- UI 附近的纯 Kotlin 代码只有在表达持久业务不变量、跨入口复用的规则或领域值约束时才归入 Domain；输入建议、图标分类和页面分区等展示策略继续归 Presentation。迁移时拆开混合职责，并追踪创建、编辑、导入等入口是否都需要同一业务约束。
+- ADR 保留历史。决策变化时新增 superseding ADR，不把历史 ADR 改写成从未发生过的新结论。
+
+## 职责与命名
+
+- ViewModel 管理页面状态与页面范围异步任务，通过可观察 UI state 呈现结果；不持有 Activity 生命周期或 Context/Resources/NavController，也不直接依赖 DAO、Room、文件实现。Route/Activity 管理宿主生命周期、导航与平台 effect。
+- Repository 聚合领域数据并隔离持久化模型；UseCase/应用服务拥有一个完整、有意义的业务动作及其编排；Policy 负责可复用的纯判断；Gateway 只用于真实的外部能力边界。
+- 多模块调用方依赖 Domain 能力端口；具体能力由拥有实现机制的模块实现并在组合根绑定。Autofill Inbox 入队契约属于 `domain.autofill.port`，Security 只拥有其密封加密和耐久文件写入实现，App Feature 不直接依赖 Security 实现包。
+- 审查 Domain 跨包 API 时追踪实际消费工作流和实现 owner；特定业务操作留在该业务能力合同中，不扩张通用共享端口。授权、持久化等有意跨包的语义合同须有调用链证据；当前合法边见[包边界](../../platform/architecture/package-boundaries.md)。
+- 单次 Repository 调用若只是简单读写，可由 ViewModel 直接发起；当单仓库操作本身承载明确业务意图、验证、不变量、可复用流程或独立测试边界时，也可以由 UseCase 封装。不要机械建立一对一 Repository 转发层。
+- ViewModel 同时堆积多个独立状态机、业务流程、宽依赖闭包或各自有取消/重试合同的任务组时，按真实职责把规则归入 Domain Policy、完整操作归入 UseCase/应用服务、平台生命周期归入 Route/Activity。判断拆分看职责和依赖是否减少，不按行数强拆；禁止把大 ViewModel 原样搬进 God UseCase/Manager。
+- 不把数据库实现、认证策略、导航和 UI 错误展示混入同一个对象；拆出的能力须由真实 owner 管理，不增加只转发参数和结果的桥接层。
+- 审查 Route/ViewModel 拆分时，先追踪状态所有者、异步任务组、取消与资源清理、宿主副作用及依赖闭包；仅当新所有者能独立承担自己的状态和任务合同并实际减少原所有者的状态或依赖时才拆分。Route 保留生命周期、Activity Result、导航和系统 API；避免只搬函数、回调包或一一转发层。异步编排所有权变化需有 Route/ViewModel 行为测试。官方 UI state/UDF 建议见[状态管理](architecture-and-state.md)。
+- 页面根 Reducer 只组合子状态。标签、favicon 等拥有独立状态语义的能力由各自 Reducer 处理。
+- Presentation Loader 只返回页面实际消费的投影；不得为未使用的摘要、就绪标记或未来策略预留状态，也不得为无复用消费者的 Policy 保留 DI 抽象。
+- Credential 与 OTP 分离；BankCard、Wi-Fi、SSH、Identity、Seed 和 Passkey 保持各自业务边界，不放进“可容纳一切”的 section。
+
+## 敏感数据与认证
+
+- 密码、恢复码、token、OTP secret 等敏感值优先使用可擦除容器；所有权转移后调用方不得继续读取，使用完成必须 wipe。
+- 敏感值不得进入日志、遥测、异常消息、Toast、SavedState 或普通 UI 字符串状态。
+- OTP 代码按时间窗口即时计算，不缓存 OTP secret。需要新鲜认证时只处理明确的认证过期异常，暂停 ticker，认证代际更新后恢复。
+- 恢复码不是日常解锁方式，只能进入受限恢复模式。恢复模式只允许重设应用密码，不能读取、搜索、复制、自动填充或导出 Vault 数据，也不能调用 Backup。
+- 恢复模式完成密码重设后必须锁定，由用户使用新密码重新进入普通会话。
+- 密文不能跨密钥上下文直接复制。任何合法明文迁移都必须先通过原密钥完成认证解密，再使用目标密钥重新加密。
+
+## 数据库错误与独立重置
+
+- 已删除损坏数据库保存、隔离、扫描、导入和恢复能力；不得重新引入 recovery ID、quarantine 副本或错误页恢复入口。
+- 数据库初始化失败界面只提供重试和关闭应用，不能从错误页静默删库或触发数据重置。
+- 数据重置是“设置 → 数据管理”中的独立破坏性功能，必须经过明确确认和新鲜认证。
+- 重置删除数据库及其 WAL/SHM/journal、附件和自定义图片，然后使用现有 Bootstrap 密钥材料创建空数据库并刷新会话。
+- 重置不生成恢复编号，不保留故障数据库副本；应用设置、认证信封和独立密钥绑定存储按当前产品语义保留。
+- Room Schema、Payload 或 Proto 发生破坏性开发期变更时，不保留无需求依据的内部兼容分支；Room schema 仍须按结构变化递增版本，并为受支持的数据定义迁移。明确不支持的旧开发数据可要求清除或重新安装，文档须写明适用范围；初始化失败路径不得静默删库。
+
+## 条目、标签与 favicon
+
+- 条目保存必须以同一个编辑快照更新主体、敏感字段、标签和 favicon，避免 UI 显示成功但子资源未持久化。
+- 标签是条目配套数据，不因通用 sensitive 规则额外要求认证；只有实际读取或修改高敏感值的动作才进入相应认证边界。
+- favicon URL 只用于下载。下载完成后条目保存应用私有目录中的本地文件路径，展示时不得再次请求外部服务器。
+- 标签和 favicon 编辑器都使用 `Closed / Open` 表达会话生命周期，并以显式 overlay 状态表达放弃确认；
+  favicon 打开后再用独立的 `Idle / Processing / Failed` 工作状态表达合法组合。UI 只接收对应的密封投影，
+  不再用 `visible`、`processing`、nullable error 和 `confirmDiscard` 拼接出矛盾状态。
+- favicon 裁剪基于实际测量的视口和图片几何，并遵守 ContentScale.Crop 的溢出范围；不能依赖固定屏幕常量。
+- 图片处理协程必须重新抛出 CancellationException；取消或替换任务后，在 NonCancellable 清理阶段删除无主暂存文件。
+
+## Compose 与设置页面
+
+- 优先使用 Material 3 官方组件、Defaults API、主题排版和对齐参数，不复制官方组件的 shape、gap 或测量逻辑。
+- 设置分组使用 SegmentedListItem；图标缺失时不保留不可见 leading 占位。
+- 带 subtitle 的条目通过官方 verticalAlignment 居中 icon 和 trailing 控件。Switch 状态只由 Switch 表达，不改变条目容器形状。
+- 应用圆角设置继续通过 MaterialTheme.shapes 暴露并统一生效；Material Expressive 不决定认证、数据库或导出等业务逻辑。
+- 手机端页面转场的视觉层级由单栏 transition policy 决定，导航状态仍由 navigator 拥有，并保留 predictive back；窗口单双栏变化不算页面导航。
+
+## Backup、附件与导出
+
+- Backup、数据库 Revision 和普通数据库重置是三个独立边界，不共享“恢复”入口或隐含权限。
+- Backup 必须保持明确版本、完整性验证、认证门禁和事务性导入；覆盖或合并失败必须整体回滚。
+- Kotlin `enum.name`、`ordinal`、`Enum.valueOf()` 和 `enumValueOf()` 不得作为外部 wire protocol；Entry、
+  Field、Relation 和 Resource 使用显式稳定键注册表。内部重命名不能隐式改变备份文件。
+- 完整备份使用覆盖数据库可读取类型的 archive registry，不能直接以 UI 当前可创建或可筛选类型决定
+  历史数据是否导出。数据库出现未注册类型时导出失败，禁止静默漏条目。
+- 兼容导入只允许隔离未知或无效 Entry 及其依赖；格式身份、认证、输入上限、重复顶层 ID、资源清单、
+  大小、哈希和路径校验始终严格。覆盖过滤为空必须在清库前失败。
+- 附件正文与引用分离。只有当前引用和历史引用都为零时才允许进入持久化 GC 流程。
+- 二维码或敏感导出必须先完成认证，再生成可展示或可分享的产物；取消、失败和页面退出时清理临时文件。
+
+## 变更与验证
+
+- Bug 修复、结构重构、格式化和依赖升级分别提交；依赖升级单独验证，不直接跨越主要版本。
+- 每个可独立验收的阶段使用精确路径暂存，不使用 git add .，并保留用户未纳入范围的工作区修改。
+- 提交前至少运行 git diff --check、相关单元测试和 verifyArchitecture（包含 verifyModuleBoundaries）。
+- UI/资源/导航变化增加 assembleDebug 和 AndroidTest 编译；数据库、安全、认证和 Backup 变化运行对应测试与 lint。
+- 不以“文件已移动”或“编译通过”单独证明边界完成；同时检查运行时所有权、依赖方向、资源、DI 和回归测试。

@@ -1,0 +1,115 @@
+# 日志记录、错误与 Trace
+
+状态：当前实现（代码核对：2026-11-06）。
+
+Passly 只有一套结构化日志管线。业务代码提交类型化 `LogStatement`，底层统一处理 Trace、字段校验、
+异常归类、隐私清洗、采样/聚合和 Sink 分发；业务层不得拼 JSON、直接写文件或调用 `android.util.Log`。
+运行时分层、存储与 Sink 行为见[运行时与存储](runtime-and-storage.md)，导出协议见[JSONL、TSV 与 ZIP](export-formats.md)，
+隐私约束见[诊断安全](../../security/diagnostics.md)。架构决策见 [ADR-0024](../../../project/decisions/ADR-0024-structured-observability-logger.md)。
+
+## Logger 合同
+
+业务层通过注入的 `Logger` 调用 `logger.log(LogStatements.<领域>.<事件>(...))`。当前事件目录覆盖
+Application、Database、Security、Autofill、Backup 和 Vault。类型化语句绑定等级、事件、错误码、原因码和允许字段，
+调用点不重复导入协议常量。
+
+- `DEBUG`、`INFO` 用于观察和状态转换。
+- 已知降级但没有异常对象时使用 `degraded`。
+- `warn`、`error`、`fatal` 强制传入 `ErrorCode + ReasonCode + Throwable`。
+- `DefaultLogger.emit()` 将已脱敏记录交给各 `LogSink.emit(record)`：普通 `Exception` 被隔离，`CancellationException` 按原实例传播，fatal `Error` 不会被伪装成普通 Sink 故障。Trace lifecycle hook 的 `onSpanStarted(span)` / `onSpanCompleted(span)` 同步调用会隔离普通 `Exception`；fatal `Error` 仍向上传播。业务异常不会因普通 Sink 写入失败而被替换。
+
+`DefaultLogger.emit(event, traceContext)` 为每次日志调用生成 `event_id`、时间戳、elapsed time、当前 process/session ID 与 Trace 快照，组成 `SanitizationContext` 后调用 `sanitizer.sanitize(event, context)`。只有 `Accepted(record)` 会继续进入可选的 `EventAggregator.record(record)`；聚合器返回 `false` 时停止后续分发。未被抑制的记录按注入顺序逐个调用 `LogSink.emit(record)`。因此字段清理和拒绝先于聚合、Logcat 与持久 Sink，调用方不能绕过 sanitizer 直接选择某个下游。
+
+操作型事件采用互斥终态，同一 `span_id` 最多输出一个终态：
+
+- `*.started`：操作开始；仅在需要耗时或链路定位时记录。
+- `*.completed`：只表示成功，不能携带 `result=FAILURE/CANCELLED`。
+- `*.failed`：异常失败，必须携带 `error_code + reason_code + exception`。
+- `*.rejected`：输入、凭据或策略被受控拒绝，使用 WARN 和稳定错误/原因码，但没有伪造异常。
+- `*.cancelled`：用户或调用方取消，使用 INFO，不携带错误载荷。
+- `*.skipped/unavailable`：未执行或能力不可用，不得冒充 completed/failed。
+
+Security 的认证事件统一为 `security.authentication.*`，具体用途由 `authentication_purpose` 区分；只有实际
+Vault 状态变化才使用 `security.vault.unlocked`。锁定事件使用 `security.lock.started`，并精确结束为
+`completed`、`failed` 或 `cancelled`，禁止输出 `security.lock.completed + result=FAILURE`。
+
+错误码和原因码的唯一来源是 `config/observability/error-catalog.json`。Gradle 生成 core 类型、App 用户提示
+resolver 和 `error-codes.md`。错误码按 Application、Database、Security、Autofill、Backup 分组，但 wire
+值不依赖 Kotlin 枚举名。只有 `USER_ACTIONABLE` 错误能映射本地化提示；UI 不得回退显示原始错误码。
+
+Autofill 服务记录所选展示模式和键盘 Inline 能力；手动无障碍回退分别记录用户请求、受控不可用、
+平台接收写入和异常失败。来源是枚举，目标包只记录 HMAC 标识；节点文字、候选标题、用户名和凭据不进入日志。
+
+错误码表达“哪个稳定操作失败”，原因码表达“为什么失败”。例如 `SECURITY_LOCK_FAILED` 下使用
+`SESSION_SOFT_LOCK_FAILED` 或 `SESSION_SEAL_FAILED`，不得再配同义的 `SECURITY_LOCK_OPERATION_FAILED`。
+异常类别由 `error_code + reason_code + Throwable` 联合映射：文件清理属于 `IO`；Vault DEK 校验属于
+`CRYPTO`；Vault 回调失败属于 `LIFECYCLE`。业务层不得根据混淆后的异常类名推断错误含义。
+
+持久化 codec 中的等级、类别和异常类别均使用显式 `wireId`，禁止写入 `enum.ordinal`。已有 ID 在
+schema 1 内保持不变，新增值只能分配未使用 ID，枚举重排不得改变日志协议。
+
+## Vault 写操作
+
+条目创建由 `CreateEntryUseCase` 持有 `vault_entry_create` Span，无论来自编辑器还是 Autofill 保存，均输出
+`vault.entry.create.started`，并以 `vault.entry.create.completed` 或 `vault.entry.create.failed` 结束。允许字段仅为
+`entry_type`、`trigger` 和 `elapsed_ms`；`trigger` 区分 `USER` 与 `AUTOFILL`。不得记录条目 ID、标题、账号、
+密码、URL、SSID、应用包名或草稿内容。
+
+受控 `AppResult.Failure` 保持原返回值并按错误严重级别输出；未包装异常记录原始 `Throwable` 以便底层生成
+脱敏应用栈后再原样抛出；协程取消不记为业务失败。ViewModel、Autofill 适配层和 Repository 不得重复记录
+同一次创建失败。
+
+详情编辑由 `EditEntryUseCase` 持有 `vault_entry_update` Span，输出
+`vault.entry.update.started/completed/failed`。更新事件不记录 Entry ID 或被修改字段的值；成功读取条目类型后
+才附加 `entry_type`，因此会话受限或条目不存在时不会为了补齐日志字段额外查询数据。一次乐观锁冲突重试仍属于
+同一 Span，只在最终结果处记录一次 completed/failed，避免把内部重试误报成用户可见失败。
+
+## Trace 所有权
+
+Trace 属于一次用户操作或系统回调，不属于模块。入口使用 `withRootTrace` 创建随机 `trace_id`；内部操作使用
+`inSpan` 继承 Trace 并创建新的 `span_id/parent_span_id`。Security 在 Autofill 操作中只是子 Span，独立调用时
+才创建自己的根 Trace，因此不存在 Security 对 Autofill 模块的依赖。
+
+`TraceContextElement` 在协程与线程上下文间传播 Trace。跨 Service、PendingIntent、Activity 回调只传递
+process-local 的 opaque `TraceToken`：默认单次消费、最长 10 分钟、最多 128 个，并绑定
+`process_session_id`。进程重启、会话不匹配、过期或重复消费都不能恢复旧上下文，更不能恢复授权。
+由独立 `CoroutineScope.launch` 启动的清理任务不会自动继承调用方的 Trace：同一操作内的清理应直接在当前
+协程建立子 Span；由页面退出单独发起的清理则建立自己的根 Trace，不能在无 Trace 上下文中直接写失败日志。
+
+认证事件记录受控 `purpose`。锁定使用 `SessionLockRequest(reason, trigger)`，分别表达策略原因和实际触发信号。
+例如后台超时、屏幕关闭、翻转、Autofill 完成和 App 退出不能压缩成同一个“锁定”原因。
+
+设备翻转传感器采用带释放阈值的边沿触发：持续朝下只派发一次，恢复朝上后才能再次触发。
+`application.device_lock.completed` 只表示实际执行了锁定，并记录 `trigger` 与 `clear_task`；会话已经锁定、
+翻转锁定关闭等未执行情况记录为 DEBUG `application.device_lock.skipped`，不得以 `completed + locked=false`
+表达，以免把操作结果和最终会话状态混为一谈。
+
+## 异常语义
+
+`ExceptionMapper` 依据错误码上下文把异常映射为稳定类别：`DATABASE_IO`、`CRYPTO`、
+`AUTHENTICATION`、`PLATFORM`、`LIFECYCLE`、`IO` 或 `UNKNOWN`。它不读取 `message`、
+`localizedMessage` 或 suppressed exception。
+
+安全快照最多保留 24 个清洗后的异常栈帧、3 层 cause 的简单类型、外部帧计数，以及稳定
+`exception_kind` 与受限异常类型。栈帧保留类名和方法名，并在安全时附上源码文件名与行号；不记录绝对路径、异常消息、
+变量或用户输入，也不按包名前缀、混淆类名形状过滤帧。Release 的 R8 符号仍可能混淆，精确还原需使用与 App 版本
+匹配的 mapping。失败通过同一操作的 `trace_id` 关联，不生成第二套 diagnostic/correlation ID。
+
+## 聚合和采样
+
+`EventAggregator` 只接收已脱敏记录。默认维护 256 个 LRU bucket，窗口一分钟；聚合键不包含 Trace、Span 或
+原始标识符。只有 `from_state == to_state` 的重复 DEBUG/INFO 观察可以抑制，窗口首条仍输出。
+真实状态转换以及 WARN/ERROR/FATAL 永不采样。聚合快照带递归保护，Logger 自身指标不会再次进入聚合器。
+
+采集等级只控制已脱敏记录进入本地加密文件 store；它与上述聚合/采样规则、Logcat 构建配置和 Trace 生命周期
+相互独立。默认持久记录 INFO 及以上，用户可在诊断页调整本地记录等级。
+
+## 代码位置
+
+| 职责 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 日志接口与 trace 操作 | `Logger.log()`、`Logger.withRootTrace()`、`Logger.inSpan()` | [`Logger.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/Logger.kt) |
+| 运行时分派、隐私边界、Sink 异常语义和 Span 终态 | `DefaultLogger.emit()`、`emitFailure()`、`runSpan()`、`notifyStarted(span)`、`notifyCompleted(span)` | [`DefaultLogger.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/internal/DefaultLogger.kt) |
+| 待处理事件与脱敏记录模型 | `PendingLogEvent`、`SanitizedLogRecord` | [`LogRecord.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogRecord.kt) |
+| 日志语句封装 | `LogStatements` | [`LogStatements.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/LogStatements.kt) |
+| 敏感字段清理 | `PrivacyPolicy.sanitize()` | [`PrivacyPolicy.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/privacy/PrivacyPolicy.kt) |
