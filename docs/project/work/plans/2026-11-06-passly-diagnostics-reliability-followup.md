@@ -27,7 +27,7 @@
 - [ ] 为 flush 超时、普通写入失败和成功分别覆盖 SHARE/EXPORT_LOCAL 的结果、文件/URI 清理与授权 permit 单次消费；确保空记录也不能掩盖 flush 失败。
 - [ ] 同步更新[诊断日志导出](../../../product/diagnostics/export.md)，记录 flush 超时、分页上限和明确的失败合同。
 
-**当前证据（2026-11-06）：** `EncryptedLogRecordStore.flush(timeoutMs)` 在 writer shutdown、队列无法入队、marker/紧急线程超时、中断或观测到新增普通写入失败时返回 `false`。`ObservabilityExportService.export()` 传入 `FLUSH_TIMEOUT_MS = 300`，但丢弃返回值并继续 `readRecords()`；读取按 500 条分页、最多 5,000 条。现有 `ObservabilityExportServiceTest` 搜索结果未见针对 flush=false 的断言；需要在后续实现前核实完整测试覆盖。源码确认当前调用没有把失败反馈给导出调用方，属于待修逻辑，不是已验证的设备复现。
+**当前源码与测试定义（2026-11-11）：** `EncryptedLogRecordStore.flush(timeoutMs)` 在 writer shutdown、队列无法入队、marker/紧急线程超时、中断或观测到新增普通写入失败时返回 `false`。`ObservabilityExportService.export()` 传入 `FLUSH_TIMEOUT_MS = 300`，但丢弃 Boolean 并继续 `readRecords()`；读取按 500 条分页、最多 5,000 条。当前 `ObservabilityExportServiceTest.PageStore.flush()` 固定返回 `true`；`coroutine cancellation during record flush stops before export` 只覆盖取消，不覆盖 `false` 结果。因此失败传播仍未实现或覆盖，本轮仅检查源码与测试定义，未运行测试。
 
 <a id="task-3"></a>
 
@@ -36,4 +36,4 @@
 - [ ] 由取得 OutputStream 的 owner 覆盖取得流后的全部阶段，包括 ensureActive、manifest 创建和编码；取消、普通异常、fatal 均关闭已取得流，保留目标删除补偿和异常主次序。
 - [ ] 覆盖 openDocument 返回时取消、manifest 创建失败、编码/关闭失败及成功；断言流关闭次数、目标补偿、授权单次消费及异常传播。协调 encoder 现有 use 合同，避免重复关闭掩盖根因。
 
-**当前证据：** `exportToDocument()` 在 `storage.openDocument(uri)` 返回流后还会调用 `ensureActive()`；随后 `writeExport()` 先运行 `manifestFactory.create()`，再把流交给 encoder。`DiagnosticsExportEncoders` 的 `use` 只从进入编码器后开始关闭责任。取消、普通异常与 fatal `Error` 分支都调用 `deleteDocumentAfterFailure(uri, failure)`，但没有在删除 URI 前显式关闭已取得的流。因此 open 后取消或 manifest 创建失败的窗口仍存在资源所有权缺口；当前源码确认尚未以回归用例复现。涉及入口为 [`ObservabilityExportService.exportToDocument()` / `writeExport()`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) 与 [`DiagnosticsExportEncoders`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)。
+**当前源码与测试定义（2026-11-11）：** `exportToDocument()` 取得 `OutputStream` 后先执行 `ensureActive()`，再调用 `writeExport()`；`writeExport()` 先创建 manifest，再进入 encoder。encoder 的 `use` 只在调用开始后承担关闭责任。故在打开后取消，或 manifest 创建失败时，导出服务虽会删除 URI，却没有关闭手中的流。现有 `ObservabilityExportServiceTest` 覆盖进入编码后的写入失败/取消与目标删除，但没有覆盖打开流后、encoder 启动前的取消或 manifest 失败；测试流也未记录关闭次数。本轮仅核对源码与测试定义，未运行测试。涉及入口为 [`ObservabilityExportService.exportToDocument()` / `writeExport()`](../../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) 与 [`DiagnosticsExportEncoders`](../../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)。

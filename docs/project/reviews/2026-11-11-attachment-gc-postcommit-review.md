@@ -9,7 +9,7 @@
 ## 代码与覆盖位置
 
 - [AttachmentResourceGarbageCollector](../../../data/src/main/java/com/aozijx/passly/data/repository/attachment/AttachmentResourceGarbageCollector.kt)：`drain()`、`drainPass()`、`drainAfterUnlock()`、`drainOne()` 管理授权、分页、重试和引用保护。
-- [PostCommitCleanup](../../../data/src/main/java/com/aozijx/passly/data/src/main/java/com/aozijx/passly/data/repository/entry/command/PostCommitCleanup.kt)：`afterCommit()` 与 `run()` 定义提交后清理及异常语义；入口包括 `CreateEntryExecutor.execute()`、`UpdateEntryExecutor.execute()`、`RestoreEntryRevisionExecutor.execute()`。
+- [PostCommitCleanup](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/PostCommitCleanup.kt)：`afterCommit()` 与 `run()` 定义提交后清理及异常语义；入口包括 `CreateEntryExecutor.execute()`、`UpdateEntryExecutor.execute()`、`RestoreEntryRevisionExecutor.execute()`。
 - [AttachmentGarbageCollectionWorkerTest](../../../data/src/test/java/com/aozijx/passly/data/repository/attachment/AttachmentGarbageCollectionWorkerTest.kt) 覆盖分页、失败继续、授权丢失、退避、fatal 与取消。
 - [AttachmentResourceGarbageCollectorTest](../../../data/src/androidTest/java/com/aozijx/passly/data/repository/attachment/AttachmentResourceGarbageCollectorTest.kt) 包含跨批、文件删除重试及解锁恢复用例。
 - [PostCommitCleanupTest](../../../data/src/test/java/com/aozijx/passly/data/repository/entry/command/PostCommitCleanupTest.kt) 覆盖清理异常、取消、fatal 传播。

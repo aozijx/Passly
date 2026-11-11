@@ -16,6 +16,12 @@
 - 旧符号、生产调用方、测试、DI、导航、资源与正式文档引用已完成静态闭包扫描。
 - 以上结果记录于 2026-11-08 的审查快照；本记录不代表之后代码变更已经重新验证。
 
+## 2026-11-10 Vault 状态归属补充
+
+Detail 标签编辑以 `DetailTagEditorState` 作为 Route/Composable 消费的唯一状态；标签 chips 从草稿与候选派生。列表 OTP 使用非空 `VaultOtpKindUiModel` 和互斥 `VaultOtpUiState`；OTP 表单由 `OtpFormState` 投影 HOTP counter 与 Steam 参数编辑能力。URI 成功反馈由 `uriAppliedFeedback` 表达，不保留未使用的失败事件分支。当前行为合同已写入[编辑与写入](../../product/vault/entry-editor-and-persistence.md)、[列表与搜索](../../product/vault/list-and-search.md)、[OTP 创建](../../product/vault/otp-entry.md)及[OTP URI](../../product/vault/otp-uri.md)。
+
+原维护计划记录这些改动的生产、单测与 AndroidTest 源集编译及 `verifyArchitecture` 通过，测试未运行；本记录本次只核对当前声明和专题文档，没有重跑这些命令。Vault 的剩余 Route、Trash、导航状态和跨层依赖审计仍开放，由主维护计划 Task 32、42、83、84 跟踪。
+
 ## 后续事项
 
 跨 Feature 的 ViewModel 职责审计仍由维护 TODO 的 Task 83 跟踪；本次 Vault 页面审查只关闭其 Vault 子范围，不代替 Task 83 的整体验收。

@@ -15,3 +15,9 @@ Vault 列表的查询、设置读取、分类恢复和 OTP 状态由图级 `Vaul
 ## 未闭合事项
 
 [主维护计划 Task 32](../work/plans/2026-10-30-passly-maintainability-todo.md#task-32) 继续跟踪撤权与 owner 交接，以及 Vault→Detail/Trash 转场期间图级 collector 和 Paging/OTP 订阅行为。当前源代码与 JVM 测试不能代替真实导航宿主覆盖。
+
+## Vault Paging 查询代际去重（历史修正）
+
+2026-11-07 的维护记录发现，旧逻辑先按页面查询状态去重；当类型筛选已经启用时，层级偏好不改变有效 `EntryListQuery`，但会导致相同查询对应的 Pager 重启。当前实现先将筛选、排序与层级偏好映射为 `EntryListQuery`，仅在“全部”查询中应用层级模式，再按生成的查询去重。行为合同见[列表与搜索](../../product/vault/list-and-search.md)；生产入口为 [`buildRecoverableVaultQueryGenerations()` / `switchRecoverableQueryGenerations()`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt)，当前测试源为 [`VaultQueryGenerationTest`](../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGenerationTest.kt)。
+
+原活动计划记录了修复时的红灯回归和 `VaultQueryStateTest` 8/8 结果；该测试名及旧 helper 名已不在当前源码中，本记录保留为历史执行证据，不代表本轮重跑。主维护计划 Task 84 的 VaultViewModel 调用闭包审计仍开放。

@@ -20,6 +20,8 @@ Top app bar 的保存/分享先由 `DiagnosticsViewModel.onAction(RequestExport(
 
 `SHARE` 创建格式 artifact 临时文件、编码并通过 FileProvider 分享；成功后尝试安排 10 分钟删除，调度失败时保留文件并依下一次分享时的过期清理回收。未成功分享时，在清理边界删除临时明文文件。`EXPORT_LOCAL` 要求 document URI，打开 provider 输出流并写编码内容；失败或取消时尝试删除系统预建 URI。
 
+**当前 SAF 输出流关闭缺口：** `exportToDocument()` 取得输出流后还会检查协程状态，`writeExport()` 随后创建 manifest，再调用 encoder；encoder 的 `use` 只在开始编码后才接管关闭。若打开后、进入 encoder 前取消或 manifest 创建失败，服务会尝试删除 URI，但尚未关闭已取得的流。该窗口及所需的关闭/补偿顺序仍由[诊断日志可靠性 TODO Task 3](../../project/work/plans/2026-11-06-passly-diagnostics-reliability-followup.md#task-3)跟踪。
+
 两种格式都在读取、编码和写入边界检查协程取消。同步编码或日志读取不可中断时，在步骤返回后检查取消并执行补偿。普通读取/写入/分享异常以 `Result.failure` 返回；fatal `Error` 经清理后传播。清理 fatal Error 优先传播并保留原错误为 suppressed；分享已成功后，调度删除失败不撤销已交付文件。
 
 平台合同：[Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files)。日志结构与 TSV/JSONL/ZIP 字段见[可观测性导出格式](../../platform/architecture/observability/export-formats.md)。

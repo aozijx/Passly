@@ -4,7 +4,7 @@
 
 ## 创建与详情编辑
 
-详情标签提交使用 Domain 的 EntryTagPolicy 执行拆分、去重、排序与数量/长度校验；输入建议及可编辑草稿状态属于 Presentation。
+详情标签提交使用 Domain 的 EntryTagPolicy 执行拆分、去重、排序与数量/长度校验；输入建议及可编辑草稿状态属于 Presentation。编辑弹层由互斥的 `DetailTagEditorState.Closed/Open` 统一持有；`Open` 包含初始标签、草稿、候选、输入、校验及放弃确认，chips 状态从同一草稿/候选派生。Domain 校验结果在 Presentation 映射为资源化的单数/复数反馈，Composable 不维护第二份标签编辑状态。
 
 当前独立创建页支持 Login、OTP、Bank Card、Wi-Fi。详情页为这四种类型提供完整表单编辑，并继续为其余类型
 提供按一个逻辑字段提交的编辑方式。完整表单复用创建表单及类型验证；更新只替换表单拥有的字段，保留身份、
@@ -185,6 +185,7 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 | 通过 Domain `RelatedPasswordOperations` 查找候选并校验绑定/解绑的活动 Login 与关系 ID；App 实现并在组合根绑定 | `candidates()`、`bind()`、`unlink()` | [`RelatedPasswordOperations.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/RelatedPasswordOperations.kt)、[`RelatedPasswordOperationsImpl.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/RelatedPasswordOperationsImpl.kt)、[`VaultDetailDomainBindingsModule.kt`](../../../app/src/main/java/com/aozijx/passly/app/entry/di/VaultDetailDomainBindingsModule.kt) |
 | 持有确认状态、页面/会话取消和解绑后刷新 | `DetailPasswordRelationsWorkflow.requestUnlink()`、`confirmUnlink()` | [`DetailPasswordRelationsWorkflow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailPasswordRelationsWorkflow.kt) |
 | 展示关系分组、绑定选择器和解绑确认 | `RelatedEntriesSection()`、`RelatedPasswordPickerSheet()` | [`RelatedEntriesSection.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedEntriesSection.kt)、[`RelatedPasswordPickerSheet.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/component/RelatedPasswordPickerSheet.kt) |
+| 维护详情标签弹层的单一状态及草稿、校验和 chips 投影 | `DetailTagEditorReducer.reduce()`、`DetailTagEditorState`、`DetailEditorOverlays()` | [`DetailTagEditorReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailTagEditorReducer.kt)、[`DetailTagEditorState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailTagEditorState.kt)、[`DetailEditorOverlays.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/ui/DetailEditorOverlays.kt) |
 | 共享应用目录状态与搜索投影 | `AppPackagePickerUiState`、`fromInstalledApps()`、`search()`、`mapItems()` | [`AppPackagePickerUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/AppPackagePickerUiState.kt) |
 | Detail 与 Password 各自持有目录加载/失败/重试 | `DetailViewModel.loadPackagePickerApps()`、`AddPasswordViewModel.loadAssociatedApps()` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`AddPasswordViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/password/AddPasswordViewModel.kt) |
 | 渲染互斥 picker 状态并转发查询/重试/选择事件 | `AppPackagePickerBottomSheet()` | [`AppPackagePickerBottomSheet.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/common/ui/AppPackagePickerBottomSheet.kt) |

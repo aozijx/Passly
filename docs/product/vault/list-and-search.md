@@ -7,6 +7,8 @@
 具体合同见[条目修订历史](entry-revision-history.md)。备份、回收站和数据库维护不复用主列表的 Paging 配置，
 分别遵守自己的事务和授权边界。创建表单、四种类型的完整编辑、详情逐项编辑及当前未覆盖的类型见[条目编辑器与写入架构](entry-editor-and-persistence.md)。
 
+列表行的 OTP 类型由非空 `VaultOtpKindUiModel` 表达（不适用、标准 OTP、Steam）；展示阶段由互斥的 `VaultOtpUiState` 表达不适用、隐藏、未请求、等待、定时码就绪、HOTP 就绪或失败。行只在类型适用且用户允许显示时代为请求激活；类型判断与运行状态不再由 nullable kind 和独立 `hasOtp` 组合。
+
 ## 回收站读取
 
 从 Settings 点击回收站时直接显示模态底部表单，不新增导航目的地；关闭后仍停留在 Settings。
@@ -121,3 +123,4 @@ Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删�
 | 查询输入、筛选/排序合成为 Domain 查询并防抖/去重 | `queryInputs()`、`buildRecoverableVaultQueryGenerations()`、`VaultQueryGeneration` | [`VaultQueryGeneration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt) |
 | 查询代际传递给 Domain 分页端口并缓存 | `switchRecoverableQueryGenerations(unavailable, load)`；`VaultViewModel.entries` 调用 `EntryPagingRepository.pages(query, ENTRY_PAGING_CONFIG)`，再映射 `EntryListItem::toUiModel` 并 `cachedIn(viewModelScope)` | [`EntryPagingRepository.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryPagingRepository.kt)、[`VaultQueryGeneration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt)、[`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
 | 列表动作与图级 OTP 激活 owner | `VaultViewModel.onAction()`、幂等 `retainOtp(entryId)`；行只请求激活，Vault 图 ViewModel 在销毁时统一关闭保留的 lease | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
+| 将列表条目映射为非空 OTP 类型并投影互斥的验证码 UI 状态 | `EntryListItem.toUiModel()`、`VaultListItemUiModel.otpKind`、`VaultOtpStateProvider.state()`、`VaultOtpUiState` | [`VaultListUiMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultListUiMapper.kt)、[`VaultListItemUiModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/model/VaultListItemUiModel.kt)、[`VaultOtpStateProvider.state()`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultOtpStateProvider.kt)、[`VaultOtpUiState`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/model/VaultOtpStateProvider.kt) |
