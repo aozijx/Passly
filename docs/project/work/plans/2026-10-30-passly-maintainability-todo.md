@@ -238,7 +238,7 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 - [ ] 在真实 SQLCipher/设备执行已有 RoomObservationSessionTest 的 soft-lock、seal/reopen、DAO emission race、旧 lease 释放用例；验证普通错误可见、撤权清敏感状态、快速恢复不读旧 handle。
 
-**2026-11-07：deferred，机制/竞态测试已接入，待仪器执行。** AppDatabaseSessionObservations 已用 lock generation 取消旧流并处理 SessionLockedException；DatabaseObservationRecoveryTest 覆盖恢复、旧 emission 取消和普通错误不吞空。RoomObservationSessionTest:402、470 已有屏障测试，移除“无恢复机制/无屏障测试”的旧描述。
+当前观察恢复实现、异常边界和 JVM/Room 测试证据见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)与[数据库会话合同](../../../platform/data/database.md#session-生命周期)；本项只跟踪尚未完成的 SQLCipher/设备交错验收。
 
 <a id="task-44"></a>
 
