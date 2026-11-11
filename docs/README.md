@@ -166,6 +166,7 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 #### 2026-11 审查记录
 
+- [全项目测试逻辑清理审查](project/reviews/2026-11-11-test-logic-maintenance-review.md)
 - [OTP Runtime owner 与缓存失效审查](project/reviews/2026-11-11-otp-runtime-owner-and-invalidation.md)
 - [通知权限未启动结果与重试审查](project/reviews/2026-11-11-notification-permission-not-started.md)
 - [App Password 对话框生命周期审查](project/reviews/2026-11-11-app-password-dialog-lifecycle.md)

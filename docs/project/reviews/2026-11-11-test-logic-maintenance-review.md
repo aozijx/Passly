@@ -1,0 +1,31 @@
+# 全项目测试逻辑清理审查
+
+## 审查范围
+
+本记录归档主维护计划中的跨模块测试逻辑审查与已完成修正。判断测试是否重复时，以生产 owner、输入、失败来源和最终副作用为准；相似名称不代表重复，不能用更短的文件作为删除理由。本记录不替代开放项：全仓逐例审查与 Detail 测试拆分评估留在[主维护 TODO Task 74](../work/plans/2026-10-30-passly-maintainability-todo.md#task-74)；Data/Room 的真实运行时验证留在[Task 36](../work/plans/2026-10-30-passly-maintainability-todo.md#task-36)。
+
+## 已审查与修正
+
+- **App 与 Feature：** Detail/Backup mapper 的状态断言迁到当前 UI 投影；Unlock 回归覆盖错误凭据失败后清除敏感输入，并在 attempt-status 读取失败时保留错误凭据反馈。Bitwarden 自动格式识别路径改由 registry/dispatcher 的测试覆盖，样本断言真实 folder 映射；Backup sheet metadata 和 OTP 列表复制的 owner 行为各由对应测试验证。
+- **备份事务与解析：** `BackupImportPlannerTest` 区分可忽略输入、普通 IO 异常和 fatal `Error`；`DefaultBackupOperationGatewayTest` 按授权、导入/导出提交阶段和资源清理分别覆盖取消、失败、fatal 与密码擦除。跨阶段失败合同各自保留，没有把同名风格的异常测试合并。
+- **Security 与 Runtime：** 会话 lock 与 database reset 的 fatal 清理入口分别保留；取消测试补调用 Job 的取消态断言。DEK 清理测试验证异常类型/message 与敏感状态终态，不假定跨协程 throwable 对象 identity 稳定。Runtime lease 的普通退出、超时、seal 和并发状态转换继续由不同场景覆盖。
+- **Data 与 Room：** 修订历史 DAO tie-break 测试把同时间戳数据放到保留边界并反序插入，以断言稳定删除顺序。Room observation 测试分别验证授权复核、已准入事务、reset 后分页、seal 等待/超时、锁定时取消旧 emission 与重订阅。`EntryRevisionHistoryInitializationFlowTest` 覆盖已完成代次跳过、重建失败与标记失败后的重试、标记先于 post-commit cleanup，以及并发调用只重建一次；当前待补的是受影响 Data/Room instrumentation 的设备运行。
+- **Diagnostics：** JSONL/TSV manifest、service 输出与正式格式页统一为 schema 1，payload 版本拒绝测试继续保留为独立负向合同。单格式 JSONL 本地输出断言并入全格式循环；factory/encoder 与 service 端到端合同仍由不同测试覆盖。
+- **buildSrc：** `SourceBoundaryViewModelTest`、`PresentationUiApiVerifierTest` 与 DI/module boundary 测试针对不同 verifier 和输入边界；补齐 supertype 实际来源、Compose `Scope` 与嵌套泛型参数断言。不同 rule ID 与模块限制行为没有合并。
+
+OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节集中在[OTP Runtime 专项审查](2026-11-11-otp-runtime-owner-and-invalidation.md)，此处不重复。
+
+## 历史验证边界
+
+主计划迁移前的 2026-11-11 记录报告了全 JVM 测试通过及 App/Core/Data/Security/Autofill AndroidTest 源集编译通过；同一记录说明没有连接设备，Android instrumentation 未执行。此处保留为当日历史执行记录，本次归档没有重跑测试；不能据此判定全仓测试逻辑审查完成或设备行为通过。
+
+## 代码与测试位置
+
+| 职责 | 类/函数与测试 | 源码 |
+| --- | --- | --- |
+| 当前 Vault 页面投影与 Detail 行为 | `VaultViewModelTest`、`DetailViewModelTest` | [`VaultViewModelTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModelTest.kt)、[`DetailViewModelTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModelTest.kt) |
+| Backup 导入计划与事务清理 | `BackupImportPlanner`、`DefaultBackupOperationGateway` | [`BackupImportPlanner.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/archive/BackupImportPlanner.kt)、[`DefaultBackupOperationGateway.kt`](../../../app/src/main/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGateway.kt) |
+| Security 会话与密钥清理 | `VaultSessionController`、`DekManager` | [`VaultSessionController.kt`](../../../security/src/main/java/com/aozijx/passly/security/session/VaultSessionController.kt)、[`DekManager.kt`](../../../security/src/main/java/com/aozijx/passly/security/dek/DekManager.kt) |
+| 修订历史 Room 查询和初始化测试 owner | `EntryRevisionHistoryRebuilder`、`InitializeEntryRevisionHistory` | [`EntryRevisionHistoryRebuilder.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionHistoryRebuilder.kt)、[`InitializeEntryRevisionHistory.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/command/InitializeEntryRevisionHistory.kt) |
+| 初始化代次和失败重试编排回归 | `EntryRevisionHistoryInitializationFlowTest` | [`EntryRevisionHistoryInitializationFlowTest.kt`](../../../data/src/test/java/com/aozijx/passly/data/repository/entry/command/EntryRevisionHistoryInitializationFlowTest.kt) |
+| 诊断导出 manifest 与 service | `DiagnosticsExportEncoders`、`ObservabilityExportService` | [`DiagnosticsExportEncoders.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsExportEncoders.kt)、[`ObservabilityExportService.kt`](../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityExportService.kt) |
