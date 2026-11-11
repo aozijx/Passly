@@ -14,7 +14,6 @@ import com.aozijx.passly.data.codec.json.AppJson
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
-import com.aozijx.passly.domain.entry.model.credential.EntryCredentialKind
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
@@ -95,23 +94,8 @@ class EntrySecretMapperTest {
     }
 
     @Test
-    fun `payload adapter registry rejects duplicate credential kinds`() {
-        assertThrows(IllegalArgumentException::class.java) {
-            EntryPayloadAdapterRegistry(listOf(OtpEntryPayloadAdapter(), OtpEntryPayloadAdapter()))
-        }
-    }
-
-    @Test
-    fun `every credential kind except none has a registered payload adapter`() {
-        EntryCredentialKind.entries
-            .filterNot { it == EntryCredentialKind.NONE }
-            .forEach { kind -> assertEquals(kind, entryPayloadAdapters.get(kind).kind) }
-    }
-
-    @Test
-    fun `login adapter is shared by entry types with the same credential kind`() {
+    fun `login mapping is shared by entry types with the same credential kind`() {
         val secret = EntrySecret(LoginCredential(email = "ada@example.test", password = "secret"))
-        val adapter = entryPayloadAdapters.get(EntryCredentialKind.LOGIN)
 
         listOf(EntryType.LOGIN, EntryType.API_KEY).forEach { entryType ->
             val payload = EntrySecretMapper.toPayload(secret, entryType)
@@ -120,63 +104,50 @@ class EntrySecretMapperTest {
             assertEquals(null, payload.otp)
             assertEquals(secret, EntrySecretMapper.toDomain(payload, entryType))
         }
-        assertEquals(EntryCredentialKind.LOGIN, adapter.kind)
     }
 
     @Test
-    fun `card adapter owns the full card slot`() {
+    fun `card mapper owns the full card slot`() {
         val credential = populatedDataClass(CardCredential::class.java) as CardCredential
         val expectedPayload = populatedDataClass(CardCredentialPayload::class.java) as CardCredentialPayload
-        val adapter = entryPayloadAdapters.get(EntryCredentialKind.CARD)
+        val payload = EntrySecretMapper.toPayload(EntrySecret(credential), EntryType.BANK_CARD)
 
-        val payload = adapter.encode(credential)
-
-        assertEquals(EntryCredentialKind.CARD, adapter.kind)
         assertEquals(expectedPayload, payload.card)
         assertEquals(null, payload.login)
-        assertEquals(credential, adapter.decode(payload))
+        assertEquals(credential, EntrySecretMapper.toDomain(payload, EntryType.BANK_CARD).credential)
     }
 
     @Test
-    fun `identity adapter owns the full identity slot`() {
+    fun `identity mapper owns the full identity slot`() {
         val credential = populatedDataClass(IdentityCredential::class.java) as IdentityCredential
         val expectedPayload = populatedDataClass(IdentityCredentialPayload::class.java) as IdentityCredentialPayload
-        val adapter = entryPayloadAdapters.get(EntryCredentialKind.IDENTITY)
+        val payload = EntrySecretMapper.toPayload(EntrySecret(credential), EntryType.ID_CARD)
 
-        val payload = adapter.encode(credential)
-
-        assertEquals(EntryCredentialKind.IDENTITY, adapter.kind)
         assertEquals(expectedPayload, payload.identity)
         assertEquals(null, payload.login)
-        assertEquals(credential, adapter.decode(payload))
+        assertEquals(credential, EntrySecretMapper.toDomain(payload, EntryType.ID_CARD).credential)
     }
 
     @Test
-    fun `ssh adapter owns the full ssh slot`() {
+    fun `ssh mapper owns the full ssh slot`() {
         val credential = populatedDataClass(SshCredential::class.java) as SshCredential
         val expectedPayload = populatedDataClass(SshCredentialPayload::class.java) as SshCredentialPayload
-        val adapter = entryPayloadAdapters.get(EntryCredentialKind.SSH)
+        val payload = EntrySecretMapper.toPayload(EntrySecret(credential), EntryType.SSH_KEY)
 
-        val payload = adapter.encode(credential)
-
-        assertEquals(EntryCredentialKind.SSH, adapter.kind)
         assertEquals(expectedPayload, payload.ssh)
         assertEquals(null, payload.login)
-        assertEquals(credential, adapter.decode(payload))
+        assertEquals(credential, EntrySecretMapper.toDomain(payload, EntryType.SSH_KEY).credential)
     }
 
     @Test
-    fun `passkey adapter owns the full passkey slot`() {
+    fun `passkey mapper owns the full passkey slot`() {
         val credential = populatedDataClass(PasskeyCredential::class.java) as PasskeyCredential
         val expectedPayload = populatedDataClass(PasskeyCredentialPayload::class.java) as PasskeyCredentialPayload
-        val adapter = entryPayloadAdapters.get(EntryCredentialKind.PASSKEY)
+        val payload = EntrySecretMapper.toPayload(EntrySecret(credential), EntryType.PASSKEY)
 
-        val payload = adapter.encode(credential)
-
-        assertEquals(EntryCredentialKind.PASSKEY, adapter.kind)
         assertEquals(expectedPayload, payload.passkey)
         assertEquals(null, payload.login)
-        assertEquals(credential, adapter.decode(payload))
+        assertEquals(credential, EntrySecretMapper.toDomain(payload, EntryType.PASSKEY).credential)
     }
 
     @Test
@@ -311,7 +282,7 @@ class EntrySecretMapperTest {
     }
 
     @Test
-    fun `wifi adapter round trips the credential slot`() {
+    fun `wifi mapper round trips the credential slot`() {
         val secret =
             EntrySecret(
                 WifiCredential(
@@ -321,11 +292,8 @@ class EntrySecretMapperTest {
                     isHidden = true,
                 ),
             )
-        val adapter = entryPayloadAdapters.get(EntryCredentialKind.WIFI)
-
         val payload = EntrySecretMapper.toPayload(secret, EntryType.WIFI)
 
-        assertEquals(EntryCredentialKind.WIFI, adapter.kind)
         assertEquals("WPA", payload.wifi?.securityType)
         assertEquals(secret, EntrySecretMapper.toDomain(payload, EntryType.WIFI))
     }
