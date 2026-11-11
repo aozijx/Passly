@@ -6,9 +6,9 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.model.history.EntryRevisionHistory
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionSummary
 import com.aozijx.passly.domain.entry.model.history.RedactedEntryRevision
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
@@ -22,17 +22,16 @@ class EntryRevisionHistoryPolicyTest {
         val middle = revision("middle", 2, "Middle title", username = "old user")
         val current = revision("current", 3, "Middle title", username = "current user")
 
-        val history =
+        val summaries =
             EntryRevisionHistoryPolicy.summarize(
                 metadata = listOf(oldest.metadata, current.metadata, middle.metadata),
                 snapshots = listOf(oldest, middle, current).associateBy { it.metadata.id },
-            ) as EntryRevisionHistory.Available
+            )
 
-        assertEquals(3, history.latest.metadata.version.value)
-        assertEquals(setOf(RevisionFieldId.Username), history.latest.changedFields)
-        assertEquals(listOf(2, 1), history.previous.map { it.metadata.version.value })
-        assertEquals(setOf(RevisionFieldId.Title), history.previous[0].changedFields)
-        assertEquals(emptySet<RevisionFieldId>(), history.previous[1].changedFields)
+        assertEquals(listOf(3, 2, 1), summaries.map { it.metadata.version.value })
+        assertEquals(setOf(RevisionFieldId.Username), summaries[0].changedFields)
+        assertEquals(setOf(RevisionFieldId.Title), summaries[1].changedFields)
+        assertEquals(emptySet<RevisionFieldId>(), summaries[2].changedFields)
     }
 
     @Test
@@ -41,17 +40,15 @@ class EntryRevisionHistoryPolicyTest {
         val changed = revision("changed", 2, "Changed title")
         val current = revision("current", 3, "Current title")
 
-        val history =
+        val summaries =
             EntryRevisionHistoryPolicy.summarize(
                 metadata = listOf(current.metadata, unchanged.metadata, changed.metadata),
                 snapshots = listOf(unchanged, changed, current).associateBy { it.metadata.id },
-            ) as EntryRevisionHistory.Available
+            )
 
-        assertEquals("current", history.latest.metadata.id.value)
-        assertEquals(setOf(RevisionFieldId.Title), history.latest.changedFields)
-        assertEquals(listOf("changed", "unchanged"), history.previous.map { it.metadata.id.value })
-        assertEquals(setOf(RevisionFieldId.Title), history.previous[0].changedFields)
-        assertEquals(emptySet<RevisionFieldId>(), history.previous[1].changedFields)
+        assertEquals(listOf("current", "changed"), summaries.map { it.metadata.id.value })
+        assertEquals(setOf(RevisionFieldId.Title), summaries[0].changedFields)
+        assertEquals(setOf(RevisionFieldId.Title), summaries[1].changedFields)
     }
 
     @Test
@@ -59,21 +56,35 @@ class EntryRevisionHistoryPolicyTest {
         val historical = revision("historical", 1, "Old title")
         val current = revision("current", 2, "Current title")
 
-        val history =
+        val summaries =
             EntryRevisionHistoryPolicy.summarize(
                 metadata = listOf(current.metadata, historical.metadata),
                 snapshots = mapOf(current.metadata.id to current),
-            ) as EntryRevisionHistory.Available
+            )
 
-        assertEquals("current", history.latest.metadata.id.value)
-        assertEquals(emptySet<RevisionFieldId>(), history.latest.changedFields)
-        assertEquals(listOf("historical"), history.previous.map { it.metadata.id.value })
-        assertEquals(emptySet<RevisionFieldId>(), history.previous.single().changedFields)
+        assertEquals(listOf("current", "historical"), summaries.map { it.metadata.id.value })
+        assertEquals(emptySet<RevisionFieldId>(), summaries.first().changedFields)
+        assertEquals(emptySet<RevisionFieldId>(), summaries.last().changedFields)
     }
 
     @Test
-    fun `empty metadata maps to explicit empty history`() {
-        assertEquals(EntryRevisionHistory.Empty, EntryRevisionHistoryPolicy.summarize(emptyList(), emptyMap()))
+    fun `empty metadata maps to empty summaries`() {
+        assertEquals(emptyList<EntryRevisionSummary>(), EntryRevisionHistoryPolicy.summarize(emptyList(), emptyMap()))
+    }
+
+    @Test
+    fun `unchanged adjacent historical versions do not add a duplicate row`() {
+        val duplicateOne = revision("duplicate-one", 1, "Same")
+        val duplicateTwo = revision("duplicate-two", 2, "Same")
+        val current = revision("current", 3, "Current")
+
+        val summaries =
+            EntryRevisionHistoryPolicy.summarize(
+                metadata = listOf(duplicateOne.metadata, current.metadata, duplicateTwo.metadata),
+                snapshots = listOf(duplicateOne, duplicateTwo, current).associateBy { it.metadata.id },
+            )
+
+        assertEquals(listOf("current", "duplicate-one"), summaries.map { it.metadata.id.value })
     }
 
     private fun revision(
