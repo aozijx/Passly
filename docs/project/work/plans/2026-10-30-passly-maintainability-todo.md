@@ -217,9 +217,7 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 - [ ] 设备验收 `AppCompatDelegate.setApplicationLocales()` 配置重建与系统授权/拒绝弹窗组合，并确认 PermissionRequestHost arbiter lease 最终释放。分别断言 grant 经 `completeRuntimePermissionRequest(request)` 依据当前 pending owner 处理，deny 经 `onAction(RuntimePermissionDenied(request))` 按 token/`enableWhenGranted` 处理；验证新 Route 重绑 owner、旧 host/session 关闭后不会产生重复提交或过期反馈。现有 `PermissionRequestHostTest` 只覆盖宿主替换和旧结果拒绝，不能代替真实 Activity recreation。
 - [ ] 为通知权限 `Busy` / `HostUnavailable` 分支增加 Route/host 行为覆盖，验证提示、重试时机及 arbiter lease 收尾；ViewModel 的未启动与新 token 重试行为已有回归覆盖，结果见[未启动通知权限请求审查](../../reviews/2026-11-11-notification-permission-not-started.md)。
 
-**实现证据（2026-11-01，提交 `ca0e02602`）：** Route 在 Activity 配置变化销毁时通过 `isChangingConfigurations` 保留 ViewModel 中相同的 `NotificationPermissionRequest` 与开通意图；新页面 owner 进入后重绑并重发请求。真正离页会清除其 owner 的待处理请求，迟到的旧 token grant/deny 不能影响新 owner。`NotificationSettingsViewModelTest` 已覆盖重建后同一 token 恢复并只写一次、真实离页后旧结果作废，以及新 owner 请求不被旧 owner dispose 清理。源码分支上 grant 由 `completeRuntimePermissionRequest(request)` 校验活动 owner；deny 由 `onAction(RuntimePermissionDenied(request))` 校验 token 并依赖离页时清空 pending 拦截过期结果。通知设置文档已记录此差异。实际 locale recreation 与系统弹窗仍缺设备级组合验证。
-
-**旧证据更正：** 早期记录的无 owner `CancelRuntimePermissionRequest` 分支已删除。当前 Route 只调用 `onPageExited(owner, preservePendingPermissionRequest=...)`；ViewModel 先验证 owner 仍 active，再只修改该 owner 持有的 pending request。`AnimatedContent` 交错目前有 ViewModel owner 回归，但动画实际 dispose 顺序仍未由 Compose 导航测试验证。
+配置重建、token 与页面 owner 的当前实现见[通知权限审查记录](../../reviews/2026-11-11-notification-permission-not-started.md#配置重建与页面-owner)和[通知设置专题](../../../product/settings/notification-settings.md)；此 Task 只保留 locale/系统弹窗设备组合及 Busy/HostUnavailable Route/host 行为验收。
 
 <a id="task-27"></a>
 
