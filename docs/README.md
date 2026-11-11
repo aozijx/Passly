@@ -166,6 +166,7 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 #### 2026-11 审查记录
 
+- [数据库撤权线性化审查](project/reviews/2026-11-11-database-revocation-linearization.md)
 - [Vault 列表 owner 收敛审查](project/reviews/2026-11-11-vault-list-owner-followup.md)
 - [附件 GC 与提交后取消审查](project/reviews/2026-11-11-attachment-gc-postcommit-review.md)
 - [认证提交后维护与取消恢复审查](project/reviews/2026-11-11-authentication-post-commit-recovery.md)
