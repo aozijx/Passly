@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.backup.internal.archive.format.bitwarden
 
-import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.BackupBundleValidator
+import com.aozijx.passly.feature.backup.internal.archive.BackupJson
+import com.aozijx.passly.feature.backup.internal.archive.format.json.BackupJsonParserFactory
 import com.aozijx.passly.feature.backup.internal.archive.io.LimitedOutputStream
 import com.aozijx.passly.feature.backup.internal.archive.io.WipingByteArrayOutputStream
 import com.aozijx.passly.feature.backup.internal.archive.io.copyCurrentValueTo
-import com.aozijx.passly.feature.backup.internal.archive.io.forEachObjectField
 import com.aozijx.passly.feature.backup.internal.archive.io.decodeStrictUtf8
-import com.aozijx.passly.feature.backup.internal.archive.format.json.BackupJsonParserFactory
-import com.fasterxml.jackson.core.JsonGenerator
+import com.aozijx.passly.feature.backup.internal.archive.io.forEachObjectField
 import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import java.io.InputStream
@@ -21,7 +21,10 @@ import javax.inject.Singleton
 internal class BitwardenJsonParser
     @Inject
     constructor() {
-        fun parse(input: InputStream): BitwardenExport {
+        fun parse(
+            input: InputStream,
+            onItemParsed: (BitwardenItem) -> Unit,
+        ): BitwardenExport {
             val folders = mutableListOf<BitwardenFolder>()
             val items = mutableListOf<BitwardenItem>()
             var encrypted = false
@@ -61,7 +64,10 @@ internal class BitwardenJsonParser
                             while (parser.nextToken() != JsonToken.END_ARRAY) {
                                 require(items.size < BackupBundleValidator.MAX_ENTRIES) { "Bitwarden item 数量过多" }
                                 require(parser.currentToken == JsonToken.START_OBJECT) { "Bitwarden item 无效" }
-                                items += parser.decodeBitwardenRecord<BitwardenItem>()
+                                parser
+                                    .decodeBitwardenRecord<BitwardenItem>()
+                                    .also(onItemParsed)
+                                    .also(items::add)
                             }
                         }
 
@@ -70,7 +76,9 @@ internal class BitwardenJsonParser
                             parser.skipChildren()
                         }
 
-                        else -> parser.skipChildren()
+                        else -> {
+                            parser.skipChildren()
+                        }
                     }
                 }
                 require(parser.currentToken == JsonToken.END_OBJECT && parser.nextToken() == null) {
@@ -85,6 +93,7 @@ internal class BitwardenJsonParser
             const val MAX_RECORD_BYTES = 8 * 1024 * 1024
         }
     }
+
 internal inline fun <reified T> JsonParser.decodeBitwardenRecord(): T {
     val output = WipingByteArrayOutputStream()
     try {

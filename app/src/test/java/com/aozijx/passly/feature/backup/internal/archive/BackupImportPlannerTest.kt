@@ -7,6 +7,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupLinkRecord
+import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -22,6 +23,13 @@ class BackupImportPlannerTest {
             },
         )
 
+        val ioFailure = IOException("candidate validation infrastructure failed")
+        val propagatedIoFailure =
+            assertThrows(IOException::class.java) {
+                BackupImportPlanner.isCandidateValid { throw ioFailure }
+            }
+        assertSame(ioFailure, propagatedIoFailure)
+
         val fatalError = AssertionError("fatal validator failure")
         val propagated =
             assertThrows(AssertionError::class.java) {
@@ -33,21 +41,18 @@ class BackupImportPlannerTest {
 
     @Test
     fun compatibleImportIgnoresUnknownFields() {
-        val plan =
-            BackupImportPlanner.plan(
-                bundle =
-                    bundle(
-                        entry(
-                            "login",
-                            listOf(
-                                BackupFieldRecord("title", BackupFieldValue.text("Example")),
-                                BackupFieldRecord("password", BackupFieldValue.text("secret")),
-                                BackupFieldRecord("future_field", BackupFieldValue.text("future")),
-                            ),
-                        ),
+        val source =
+            bundle(
+                entry(
+                    "login",
+                    listOf(
+                        BackupFieldRecord("title", BackupFieldValue.text("Example")),
+                        BackupFieldRecord("password", BackupFieldValue.text("secret")),
+                        BackupFieldRecord("future_field", BackupFieldValue.text("future")),
                     ),
-                strategy = BackupImportStrategy.COMPATIBLE,
+                ),
             )
+        val plan = BackupImportPlanner.plan(source, BackupImportStrategy.COMPATIBLE)
 
         assertEquals(
             listOf("title", "password"),
@@ -58,6 +63,9 @@ class BackupImportPlannerTest {
         )
         assertEquals(1, plan.summary.ignoredFieldCount)
         assertEquals(0, plan.summary.skippedEntryCount)
+        assertThrows(IllegalArgumentException::class.java) {
+            BackupImportPlanner.plan(source, BackupImportStrategy.STRICT)
+        }
     }
 
     @Test
@@ -96,7 +104,11 @@ class BackupImportPlannerTest {
                 BackupImportStrategy.COMPATIBLE,
             )
 
-        assertEquals(listOf("valid-note"), plan.bundle.document.entries.map { it.id })
+        assertEquals(
+            listOf("valid-note"),
+            plan.bundle.document.entries
+                .map { it.id },
+        )
         assertEquals(1, plan.summary.skippedEntryCount)
     }
 

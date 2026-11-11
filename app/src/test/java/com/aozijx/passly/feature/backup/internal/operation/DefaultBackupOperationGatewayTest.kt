@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.operation
 
-import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.error.model.BackupFailed
+import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
@@ -47,7 +47,10 @@ class DefaultBackupOperationGatewayTest {
             val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
                     backupService = UnusedBackupService,
                     storageSupport = RecordingStorageSupport(gate),
                     authorizationGate = gate,
@@ -92,7 +95,10 @@ class DefaultBackupOperationGatewayTest {
             val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
                     backupService = UnusedBackupService,
                     storageSupport = storage,
                     authorizationGate = gate,
@@ -113,13 +119,17 @@ class DefaultBackupOperationGatewayTest {
             var passwordCopy: CharArray? = null
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
-                    backupService = object : BackupArchiveService by UnusedBackupService {
-                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> {
-                            passwordCopy = request.password
-                            return AppResult.failure(BackupFailed())
-                        }
-                    },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> {
+                                passwordCopy = request.password
+                                return AppResult.failure(BackupFailed())
+                            }
+                        },
                     storageSupport = storage,
                     authorizationGate = gate,
                     errorReporter = noopErrorReporter,
@@ -141,10 +151,14 @@ class DefaultBackupOperationGatewayTest {
             val storage = RecordingStorageSupport(gate).apply { deleteFailure = deletionFailure }
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
-                    backupService = object : BackupArchiveService by UnusedBackupService {
-                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
-                    },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                        },
                     storageSupport = storage,
                     authorizationGate = gate,
                     errorReporter = noopErrorReporter,
@@ -153,7 +167,10 @@ class DefaultBackupOperationGatewayTest {
             val result = gateway.exportToUri(exportRequest(), "content://documents/export", deleteOnFailure = true)
 
             assertTrue(result is BackupExecutionResult.ExportCleanupFailed)
-            assertTrue("cleanup exception must be retained", (result as BackupExecutionResult.ExportCleanupFailed).cleanupFailure === deletionFailure)
+            assertTrue(
+                "cleanup exception must be retained",
+                (result as BackupExecutionResult.ExportCleanupFailed).cleanupFailure === deletionFailure,
+            )
         }
 
     @Test
@@ -163,10 +180,14 @@ class DefaultBackupOperationGatewayTest {
             val storage = RecordingStorageSupport(gate)
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
-                    backupService = object : BackupArchiveService by UnusedBackupService {
-                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
-                    },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                        },
                     storageSupport = storage,
                     authorizationGate = gate,
                     errorReporter = noopErrorReporter,
@@ -185,10 +206,14 @@ class DefaultBackupOperationGatewayTest {
             val storage = RecordingStorageSupport(gate)
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
-                    backupService = object : BackupArchiveService by UnusedBackupService {
-                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
-                    },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                        },
                     storageSupport = storage,
                     authorizationGate = gate,
                     errorReporter = noopErrorReporter,
@@ -208,10 +233,14 @@ class DefaultBackupOperationGatewayTest {
             val storage = RecordingStorageSupport(gate).apply { deleteFailure = cancellation }
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
-                    backupService = object : BackupArchiveService by UnusedBackupService {
-                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
-                    },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                        },
                     storageSupport = storage,
                     authorizationGate = gate,
                     errorReporter = noopErrorReporter,
@@ -230,10 +259,14 @@ class DefaultBackupOperationGatewayTest {
             val storage = RecordingStorageSupport(gate).apply { deleteFailure = fatal }
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
-                    backupService = object : BackupArchiveService by UnusedBackupService {
-                        override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
-                    },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun export(request: BackupExportRequest): AppResult<Unit> = AppResult.failure(BackupFailed())
+                        },
                     storageSupport = storage,
                     authorizationGate = gate,
                     errorReporter = noopErrorReporter,
@@ -434,7 +467,10 @@ class DefaultBackupOperationGatewayTest {
             val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
             val gateway =
                 DefaultBackupOperationGateway(
-                    settingsSource = object : BackupDirectorySettingsSource { override val backupDirectoryUri = flowOf(null) },
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
                     backupService =
                         object : BackupArchiveService by UnusedBackupService {
                             override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
@@ -459,6 +495,56 @@ class DefaultBackupOperationGatewayTest {
             assertTrue(result is BackupExecutionResult.Failure)
             assertTrue(requireNotNull(operationPassword).all { it == '\u0000' })
             assertEquals(1, reported.size)
+        }
+
+    @Test
+    fun `fatal import error propagates unchanged and wipes its temporary password`() =
+        runTest {
+            val gate = RecordingAuthorizationGate()
+            val fatal = AssertionError("fatal import implementation failure")
+            var operationPassword: CharArray? = null
+            val reported = mutableListOf<com.aozijx.passly.core.error.model.AppError>()
+            val gateway =
+                DefaultBackupOperationGateway(
+                    settingsSource =
+                        object : BackupDirectorySettingsSource {
+                            override val backupDirectoryUri = flowOf(null)
+                        },
+                    backupService =
+                        object : BackupArchiveService by UnusedBackupService {
+                            override suspend fun import(request: BackupImportRequest): AppResult<BackupImportResult> {
+                                operationPassword = request.password
+                                throw fatal
+                            }
+                        },
+                    storageSupport = RecordingStorageSupport(gate),
+                    authorizationGate = gate,
+                    errorReporter = AppErrorReporter { error, _ -> reported += error },
+                )
+            val callerPassword = OwnedChars.fromString("secret")
+
+            try {
+                val propagated =
+                    try {
+                        gateway.import(
+                            BackupImportOperationRequest(
+                                sourceUri = "content://documents/import",
+                                password = callerPassword,
+                                mode = ImportMode.APPEND,
+                                strategy = BackupImportStrategy.STRICT,
+                            ),
+                        )
+                        null
+                    } catch (error: AssertionError) {
+                        error
+                    }
+
+                assertSame(fatal, propagated)
+                assertTrue(requireNotNull(operationPassword).all { it == '\u0000' })
+                assertTrue(reported.isEmpty())
+            } finally {
+                callerPassword.wipe()
+            }
         }
 
     @Test

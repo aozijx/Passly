@@ -74,7 +74,9 @@ internal class JsonFormatDispatcher
                                 while (parser.nextToken() != JsonToken.END_ARRAY) {
                                     require(items.size < BackupBundleValidator.MAX_ENTRIES) { "Bitwarden item 数量过多" }
                                     require(parser.currentToken == JsonToken.START_OBJECT) { "Bitwarden item 无效" }
-                                    items += parser.decodeBitwardenRecord<BitwardenItem>()
+                                    val item = parser.decodeBitwardenRecord<BitwardenItem>()
+                                    bitwardenImporter.validateImportSupport(item)
+                                    items += item
                                 }
                             }
 
@@ -106,7 +108,9 @@ internal class JsonFormatDispatcher
                                 encrypted = parser.booleanValue
                             }
 
-                            else -> parser.skipChildren()
+                            else -> {
+                                parser.skipChildren()
+                            }
                         }
                     }
                     require(parser.currentToken == JsonToken.END_OBJECT && parser.nextToken() == null) {
@@ -125,10 +129,13 @@ internal class JsonFormatDispatcher
                             }
                         }
 
-                        itemsSeen && !documentSeen && resources.isEmpty() ->
+                        itemsSeen && !documentSeen && resources.isEmpty() -> {
                             bitwardenImporter.decodeParsed(BitwardenExport(encrypted, folders, items))
+                        }
 
-                        else -> throw BackupFailed()
+                        else -> {
+                            throw BackupFailed()
+                        }
                     }
                 transferred = documentSeen
                 return result
@@ -137,5 +144,4 @@ internal class JsonFormatDispatcher
                 if (!transferred) resources.values.forEach { it.fill(0) }
             }
         }
-
     }
