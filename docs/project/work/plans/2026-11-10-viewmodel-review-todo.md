@@ -24,7 +24,7 @@ Detail 独立工作流与职责迁移只在[主维护待办 Task 83](2026-10-30-
 
 ### 3. 其余页面的轻量核对
 
-- [ ] 对回收站、设置、Shell、诊断、数据库重置及 Recovery Mode 的其余 ViewModel 按“真相源、合法状态、长 Flow 失败恢复、任务取消、敏感清理、Route effect”逐项核对。继续检查 `TrashViewModel` 的冷 Flow 失败重订阅、`StorageSettingsViewModel` 的多个刷新任务及状态 owner；已有明确 owner 且无行为缺口者记录保留结论，不强加 Reducer。Vault 列表、Detail 和编辑器具体流程由主维护待办的 Task 83/42 跟踪，Autofill 宿主由 Task 21 跟踪。
+- [ ] 对回收站、设置、Shell、诊断、数据库重置及 Recovery Mode 的其余 ViewModel 按“真相源、合法状态、长 Flow 失败恢复、任务取消、敏感清理、Route effect”逐项核对。继续检查 `TrashViewModel` 的冷 Flow 失败重订阅；`StorageSettingsViewModel` 的状态与任务 owner 已核对，保留结论见[边界审查](../../reviews/2026-11-11-storage-settings-viewmodel-boundary.md)。Vault 列表、Detail 和编辑器具体流程由主维护待办的 Task 83/42 跟踪，Autofill 宿主由 Task 21 跟踪。
 - [ ] 每一项输出具体调用链、反例测试和修改前后 owner 差异；确认无实际问题时关闭对应待办。执行受影响单测、`verifyArchitecture`、`git diff --check`；涉及 Android 宿主则补 AndroidTest 编译和设备行为验收。
 
 ## 当前判断与限制
