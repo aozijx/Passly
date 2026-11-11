@@ -8,11 +8,8 @@ import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
-import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
@@ -114,20 +111,18 @@ class AddOtpViewModel
 
         fun onAction(action: AddOtpAction) {
             when (action) {
-                is AddOtpAction.FormChanged -> mutateForm { action.form }
-                is AddOtpAction.TypeChanged -> mutateForm { it.withTypeDefaults(action.type) }
                 is AddOtpAction.UriChanged -> updateUri(action.value)
+                is AddOtpAction.FormMutation -> mutateForm(action)
                 AddOtpAction.Save -> save()
             }
         }
 
-        private fun mutateForm(transform: (OtpFormState) -> OtpFormState): Boolean {
+        private fun mutateForm(mutation: AddOtpAction.FormMutation): Boolean {
             if (!writeSession.canEdit()) return false
             feedbackScope = FeedbackScope.Closed
             val current = _uiState.value
             if (!current.loadPhase.allowsSaving) return false
-            val form = transform(current.form)
-            _uiState.value = current.copy(form = form)
+            _uiState.value = current.copy(form = OtpFormReducer.reduce(current.form, mutation))
             return true
         }
 
@@ -140,16 +135,16 @@ class AddOtpViewModel
         }
 
         fun tryApplyScannedConfig(config: OtpConfig): Boolean {
-            if (!mutateForm { it.fromParsedConfig(config) }) return false
+            if (!mutateForm(AddOtpAction.ConfigApplied(config))) return false
             publishUriAppliedFeedback()
             return true
         }
 
         private fun updateUri(value: String) {
-            if (!mutateForm { it.copy(uriText = value) } || value.isBlank()) return
+            if (!mutateForm(AddOtpAction.UriChanged(value)) || value.isBlank()) return
             when (val parsed = OtpAuthUriCodec.parse(value)) {
                 is OtpUriParseResult.Parsed -> {
-                    if (mutateForm { it.fromParsedConfig(parsed.config) }) publishUriAppliedFeedback()
+                    if (mutateForm(AddOtpAction.ConfigApplied(parsed.config))) publishUriAppliedFeedback()
                 }
 
                 OtpUriParseResult.NotOtp,
@@ -164,39 +159,6 @@ class AddOtpViewModel
             val owner = FeedbackScope.Active(secureSessionAccessState.authenticationState.value, pageOwner)
             feedbackScope = owner
             _uriAppliedFeedback.trySend(owner)
-        }
-
-        private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState =
-            copy(
-                type = type,
-                digits =
-                    when (type) {
-                        OtpType.STEAM -> "5"
-                        OtpType.TOTP, OtpType.HOTP -> if (digits == "5") "6" else digits
-                    },
-                period =
-                    when (type) {
-                        OtpType.STEAM -> "30"
-                        OtpType.TOTP -> period.ifBlank { "30" }
-                        OtpType.HOTP -> period
-                    },
-                algorithm = if (type == OtpType.STEAM) OtpHashAlgorithm.SHA1 else algorithm,
-                counter = if (type == OtpType.HOTP) counter.ifBlank { "0" } else counter,
-            )
-
-        private fun OtpFormState.fromParsedConfig(config: OtpConfig): OtpFormState {
-            val parsedAccountName = config.accountName.orEmpty()
-            return copy(
-                title = config.suggestedEntryTitle(fallback = title),
-                accountName = parsedAccountName,
-                secret = config.secret.orEmpty(),
-                issuer = config.issuer.orEmpty(),
-                digits = config.digits.toString(),
-                period = (config.periodSeconds ?: 30).toString(),
-                counter = (config.counter ?: 0L).toString(),
-                algorithm = config.algorithm,
-                encoding = config.encoding,
-            ).withTypeDefaults(config.type)
         }
 
         private fun clearSensitiveContent(reason: EditorWriteSessionClearReason) {

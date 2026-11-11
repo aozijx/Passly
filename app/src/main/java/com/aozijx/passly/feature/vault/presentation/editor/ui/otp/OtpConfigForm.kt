@@ -41,7 +41,7 @@ fun OtpConfigForm(
         )
         NextFocusTextField(
             value = state.secret,
-            onValueChange = { onAction(AddOtpAction.FormChanged(state.copy(secret = it))) },
+            onValueChange = { onAction(AddOtpAction.SecretChanged(it)) },
             label = stringResource(R.string.totp_secret),
             isError = state.secretHasInputError,
             supportingText =
@@ -53,19 +53,17 @@ fun OtpConfigForm(
         )
         NextFocusTextField(
             value = state.issuer,
-            onValueChange = { onAction(AddOtpAction.FormChanged(state.copy(issuer = it))) },
+            onValueChange = { onAction(AddOtpAction.IssuerChanged(it)) },
             label = stringResource(R.string.otp_issuer),
         )
         NextFocusTextField(
             value = state.accountName,
-            onValueChange = { onAction(AddOtpAction.FormChanged(state.copy(accountName = it))) },
+            onValueChange = { onAction(AddOtpAction.AccountNameChanged(it)) },
             label = stringResource(R.string.otp_account_name),
         )
         DropdownSelector(
             value = state.algorithm,
-            onValueChange = {
-                onAction(AddOtpAction.FormChanged(state.copy(algorithm = it)))
-            },
+            onValueChange = { onAction(AddOtpAction.AlgorithmChanged(it)) },
             options = OtpHashAlgorithm.entries,
             label = stringResource(R.string.totp_algorithm),
             enabled = state.allowsParameterEditing,
@@ -78,9 +76,7 @@ fun OtpConfigForm(
             if (state.usesCounterField) {
                 NextFocusTextField(
                     value = state.counter,
-                    onValueChange = {
-                        onAction(AddOtpAction.FormChanged(state.copy(counter = it)))
-                    },
+                    onValueChange = { onAction(AddOtpAction.CounterChanged(it)) },
                     label = stringResource(R.string.otp_counter),
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
@@ -97,9 +93,7 @@ fun OtpConfigForm(
             } else {
                 NextFocusTextField(
                     value = state.period,
-                    onValueChange = {
-                        onAction(AddOtpAction.FormChanged(state.copy(period = it)))
-                    },
+                    onValueChange = { onAction(AddOtpAction.PeriodChanged(it)) },
                     label = stringResource(R.string.totp_period),
                     enabled = state.allowsParameterEditing,
                     modifier = Modifier.weight(1f),
@@ -117,9 +111,7 @@ fun OtpConfigForm(
             }
             NextFocusTextField(
                 value = state.digits,
-                onValueChange = {
-                    onAction(AddOtpAction.FormChanged(state.copy(digits = it)))
-                },
+                onValueChange = { onAction(AddOtpAction.DigitsChanged(it)) },
                 label = stringResource(R.string.totp_digits),
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Number,
@@ -137,9 +129,7 @@ fun OtpConfigForm(
         }
         DropdownSelector(
             value = state.encoding,
-            onValueChange = {
-                onAction(AddOtpAction.FormChanged(state.copy(encoding = it)))
-            },
+            onValueChange = { onAction(AddOtpAction.EncodingChanged(it)) },
             options = OtpSecretEncoding.entries,
             label = stringResource(R.string.otp_secret_encoding),
             modifier = Modifier.fillMaxWidth(),

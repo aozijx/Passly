@@ -71,7 +71,7 @@ class AddOtpViewModelTest {
     @Test
     fun `scan without identity keeps the existing editor title`() {
         val model = createViewModel()
-        model.onAction(AddOtpAction.FormChanged(OtpFormState(title = "My title")))
+        model.onAction(AddOtpAction.TitleChanged("My title"))
         assertTrue(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
         assertEquals("My title", model.uiState.value.form.title)
     }
@@ -104,7 +104,8 @@ class AddOtpViewModelTest {
                     }
                 }
             val model = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
-            model.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Submitted", secret = "JBSWY3DPEHPK3PXP")))
+            model.onAction(AddOtpAction.TitleChanged("Submitted"))
+            model.onAction(AddOtpAction.SecretChanged("JBSWY3DPEHPK3PXP"))
             model.onAction(AddOtpAction.Save)
             runCurrent()
             assertFalse(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
@@ -138,12 +139,7 @@ class AddOtpViewModelTest {
         runTest {
             val model = createViewModel()
             model.onAction(AddOtpAction.UriChanged(VALID_URI))
-            model.onAction(
-                AddOtpAction.FormChanged(
-                    model.uiState.value.form
-                        .copy(title = "New draft"),
-                ),
-            )
+            model.onAction(AddOtpAction.TitleChanged("New draft"))
             val events = mutableListOf<Unit>()
             backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
             runCurrent()
@@ -221,12 +217,7 @@ class AddOtpViewModelTest {
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
             assertEquals(secret, model.uiState.value.form.secret)
 
-            model.onAction(
-                AddOtpAction.FormChanged(
-                    model.uiState.value.form
-                        .copy(issuer = "Updated issuer"),
-                ),
-            )
+            model.onAction(AddOtpAction.IssuerChanged("Updated issuer"))
             model.onAction(AddOtpAction.Save)
             advanceUntilIdle()
             assertEquals(
@@ -263,7 +254,7 @@ class AddOtpViewModelTest {
                         }
                     }
                 val viewModel = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
-                viewModel.onAction(AddOtpAction.FormChanged(form))
+                viewModel.setForm(form)
                 viewModel.onAction(AddOtpAction.Save)
 
                 assertEquals(0, created.size)
@@ -284,14 +275,12 @@ class AddOtpViewModelTest {
                     }
                 }
             val viewModel = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
-            viewModel.onAction(
-                AddOtpAction.FormChanged(
-                    OtpFormState(
-                        title = "Mail",
-                        secret = " my====== ",
-                        digits = "7",
-                        period = "60",
-                    ),
+            viewModel.setForm(
+                OtpFormState(
+                    title = "Mail",
+                    secret = " my====== ",
+                    digits = "7",
+                    period = "60",
                 ),
             )
             viewModel.onAction(AddOtpAction.Save)
@@ -332,7 +321,8 @@ class AddOtpViewModelTest {
         runTest {
             val viewModel = createViewModel()
             viewModel.onPageEntered()
-            viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "Keep", secret = "Existing")))
+            viewModel.onAction(AddOtpAction.TitleChanged("Keep"))
+            viewModel.onAction(AddOtpAction.SecretChanged("Existing"))
 
             viewModel.onAction(
                 AddOtpAction.UriChanged(
@@ -402,7 +392,8 @@ class AddOtpViewModelTest {
     @Test
     fun switchingFromSteamToHotpRestoresNumericDigits() {
         val viewModel = createViewModel()
-        viewModel.onAction(AddOtpAction.FormChanged(OtpFormState(title = "OTP", secret = "MY")))
+        viewModel.onAction(AddOtpAction.TitleChanged("OTP"))
+        viewModel.onAction(AddOtpAction.SecretChanged("MY"))
         viewModel.onAction(AddOtpAction.TypeChanged(OtpType.STEAM))
         assertEquals("5", viewModel.uiState.value.form.digits)
         viewModel.onAction(AddOtpAction.TypeChanged(OtpType.HOTP))
@@ -420,6 +411,20 @@ class AddOtpViewModelTest {
         autofillEntryWriter = NoOpAutofillEntryWriter,
         logger = testLogger(),
     )
+
+    private fun AddOtpViewModel.setForm(form: OtpFormState) {
+        onAction(AddOtpAction.TitleChanged(form.title))
+        onAction(AddOtpAction.IssuerChanged(form.issuer))
+        onAction(AddOtpAction.AccountNameChanged(form.accountName))
+        onAction(AddOtpAction.SecretChanged(form.secret))
+        onAction(AddOtpAction.TypeChanged(form.type))
+        onAction(AddOtpAction.AlgorithmChanged(form.algorithm))
+        onAction(AddOtpAction.EncodingChanged(form.encoding))
+        onAction(AddOtpAction.PeriodChanged(form.period))
+        onAction(AddOtpAction.DigitsChanged(form.digits))
+        onAction(AddOtpAction.CounterChanged(form.counter))
+        onAction(AddOtpAction.UriChanged(form.uriText))
+    }
 
     private object AuthenticatedSession : SecureSessionAccessState {
         override val authenticationState: StateFlow<AuthenticationState> =

@@ -49,9 +49,7 @@ fun AddOtpEditorScreen(
         EntryEditorSection(title = stringResource(R.string.vault_editor_section_basic_info)) {
             NextFocusTextField(
                 value = form.title,
-                onValueChange = {
-                    onAction(AddOtpAction.FormChanged(form.copy(title = it)))
-                },
+                onValueChange = { onAction(AddOtpAction.TitleChanged(it)) },
                 label = stringResource(R.string.field_title),
             )
         }
