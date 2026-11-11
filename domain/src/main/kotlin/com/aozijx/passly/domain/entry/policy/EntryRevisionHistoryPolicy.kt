@@ -36,25 +36,15 @@ object EntryRevisionHistoryPolicy {
                 )
             }
         val current = summaries.firstOrNull() ?: return emptyList()
-        val currentSnapshot = snapshots[current.metadata.id]
         val historicalSummaries = summaries.drop(1)
-        val visibleByCurrent =
-            historicalSummaries
-                .filter { summary ->
-                    val snapshot = snapshots[summary.metadata.id]
-                    snapshot == null || currentSnapshot == null ||
-                        EntryRevisionComparator
-                            .compare(historical = snapshot, current = currentSnapshot)
-                            .any { it.kind != RevisionDifferenceKind.UNCHANGED }
-                }
         val visibleHistory =
-            visibleByCurrent.filterIndexed { index, summary ->
-                val nextOlder = visibleByCurrent.getOrNull(index + 1) ?: current
-                val snapshot = snapshots[summary.metadata.id]
+            historicalSummaries.filterIndexed { index, revision ->
+                val nextOlder = historicalSummaries.getOrNull(index + 1) ?: current
+                val revisionSnapshot = snapshots[revision.metadata.id]
                 val olderSnapshot = snapshots[nextOlder.metadata.id]
-                nextOlder == current || snapshot == null || olderSnapshot == null ||
+                revisionSnapshot == null || olderSnapshot == null ||
                     EntryRevisionComparator
-                        .compare(historical = snapshot, current = olderSnapshot)
+                        .compare(historical = revisionSnapshot, current = olderSnapshot)
                         .any { it.kind != RevisionDifferenceKind.UNCHANGED }
             }
         return listOf(current) + visibleHistory
