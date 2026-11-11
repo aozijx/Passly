@@ -5,7 +5,7 @@
 | 顺序 | 剩余事项 | 性质 |
 | --- | --- | --- |
 | 1 | [安全 Task 6](2026-11-06-passly-security-scan-followups.md#task-6)：Legacy 网页接收方身份 | 已确认安全问题；在候选展示与凭据交付前闭合接收方信任边界 |
-| 2 | [Task 21](#task-21)：统一宿主结果交付与销毁验收 | 已实现合同的宿主/设备验证，包含原 Task 9 |
+| 2 | [Task 21](#task-21)：统一宿主结果交付与销毁验收 | 已实现合同的宿主/设备验证 |
 | 3 | [Task 82](#task-82)：设置变更后现存交互有效期 | 待裁定策略，尚未认定为运行缺陷 |
 
 网页接收方身份由[安全 TODO Task 6](2026-11-06-passly-security-scan-followups.md#task-6)持有并优先处理；质量门禁由[主待办 Task 73](2026-10-30-passly-maintainability-todo.md#task-73)持有。这里不复制安全问题、Lint 报告或整个 ViewModel 审计。
@@ -34,9 +34,3 @@ Task 21 的已完成单测、Activity entry 检查和 API 36 AVD 验收证据集
 - [ ] 明确总开关或 Credential Manager 开关关闭后，既有 interaction/系统 PendingIntent 是可在原有效期内完成，还是立即撤销；再按所选合同覆盖候选展示、选择/交付、来源隔离、过期与 lease 收尾，不预设必须增加设置重读。
 
 **当前证据：** 设置项及其现有生效阶段见[共享填充设置表](../../../product/autofill/fill-flow.md#设置项与生效阶段)。`DiscoverAutofillCandidates` 每次发现读取最新设置，候选展示后的 `ResolveAutofillSelection` 不重读；Credential Manager create 最终保存时会重读开关。缺少“关闭即撤销”或“原请求继续”的明确产品合同，不能仅凭某一阶段不重读设置认定漏洞。
-
-## 本次清理决定
-
-- **合并：** 原 Task 9 → 21；原 Task 52 的系统状态观察验收已完成并从计划清除。主清单移除重复段落；本页当前未完成项为 Task 21、82。
-- **移除：** 原 Task 85 的强制 entries.firstOrNull → when 形式改造。当前协议已用显式 wireKey/wireValue，未知值仍拒绝；没有依据说明查找形式本身造成行为缺陷。保留稳定键和未知值拒绝合同，不改生产实现。
-- **归档：** 模块抽取与 BottomSheet 认证计划转为实施记录，去掉过期任务、临时工作区指令、固定 AVD 名称与 reset/setup 操作前提；剩余验收只由本页 Task 21 持有。
