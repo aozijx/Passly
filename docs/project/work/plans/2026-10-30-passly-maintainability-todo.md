@@ -95,8 +95,6 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 - [ ] 依赖升级独立验证：catalog 当前 palette 1.1.0、Material3 1.5.0-beta02、DataStore 1.3.0、SQLCipher 4.20.0 已更新；旧“14 条升级提示”不再整体列为未实施。
 - [ ] APK Analyzer 保存交付/release APK 的 DEX、资源、native、assets 基线；历史 debug 体积不是 release 优化收益，设备/性能验收按功能 owner 执行。
 
-**2026-11-07 更正：** DetailViewModelTest 旧 CREATE/Lifecycle 夹具已改 AUTOFILL，实际 retry 并验证订阅两次及 Ready，移出待修。ScannerResultCard 的 Modifier 位置已调整，Lint 任务已在 entry 拆分后成功退出；当前测试失败已收敛并清零，不沿用 2026-11-02 统计。
-
 <a id="task-83"></a>
 
 ### Task 83：复核 Repository 覆盖并把业务工作流移出大 ViewModel
