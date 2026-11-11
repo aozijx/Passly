@@ -50,16 +50,11 @@
 
 ### Task 59：闭合生物识别轮换的提交后恢复与启动对账
 
-- [ ] 统一轮换 durable commit 后结果：binding 已切换后，候选清理状态读取或 availability refresh 普通失败不得显示未提交/允许盲重试；按持久事实保留 pending 派生恢复。
-- [ ] 覆盖生物识别轮换提交前/后异常、取消、fatal、alias/journal、启动恢复、敏感缓冲及 host lease；包含 `withBiometricRotationCandidate` 返回后读取状态失败、provisioner 刷新失败。manager 同快照解析、并发刷新和恢复事件复用 Task 46 的集成覆盖。
-- [ ] 精确验收应用密码 durable commit 后的取消结果：`DefaultAuthenticationMethodProvisioner.setAppPassword(password)` 先由 `dekManager.rekeyWithKey(...)` / `initializeWithKey(...)` 持久化 APP_PASSWORD envelope，再执行 `reconcileSession()`；普通模式先调用 `refreshAvailabilityAfterCommit()` 再 `session.markAuthenticated(...)`，恢复模式调用 `finishRecoveryPasswordProvisioning(seal, refreshAvailability)`。会话协调中的刷新或认证态发布若取消，会从 `runAppPasswordProvisioning()` 直接传播，跳过普通异常分支的 `hasCommittedAppPasswordEnvelope(store, salt)`；`AppPasswordSettingsInteractor.execute(request)` 只在 `finally` 清理输入，`AppPasswordSettingsViewModel.runChange()` 没有收到 Completed 时不发成功 effect。用提交前/后取消的 owner 行为覆盖确认 `isEnabled` Flow 能否及时校正页面状态、是否留下可重试界面或造成重复提交；不可把普通异常的 envelope 读回保证外推到取消。
-- [ ] 保留 reconciler 可重试清理及 fatal 传播，以真实 rotate/provisioner/启动 owner 测试闭合并同步认证文档。
+- [ ] 增加 `RotateBiometricKeyUseCase` + `DefaultAuthenticationMethodProvisioner` + 持久 Store 的 owner 级回归：binding 已提交后 candidate cleanup 或 availability refresh 普通失败必须保持成功结果并带准确的 pending maintenance，重试不能盲目重复轮换。
+- [ ] 用真实 Authentication Host/Provisioner/启动 owner 覆盖轮换 commit 前后异常、取消与 fatal、alias/journal 恢复和 host lease 释放。`BiometricRotationCandidateTest` 与 `BiometricRotationReconcilerTest` 已覆盖 helper/reconciler 级边界，不重复这些单元场景；manager 同快照与并发刷新由 Task 46 跟踪。
+- [ ] 在 `AppPasswordSettingsInteractor` / `AppPasswordSettingsViewModel` owner 覆盖提交前后取消：确认请求缓冲清理、`isEnabled` Flow 与页面结果一致、不会显示错误的成功/失败或允许重复提交。`AppPasswordProvisioningCommitTest` 已验证 envelope 持久化后的取消传播，但不覆盖设置页状态投影。
 
-**2026-11-07：retained，提交后窄残余已部分收敛。** `withBiometricRotationCandidate()` 清理阶段读取持久状态失败时保留已提交 Success，并携带 `BIOMETRIC_ROTATION_CLEANUP`；Security Manager 对认证方式解析普通失败启用 1s 起步、上限 60s 的指数退避，成功后发布最新快照。生物识别轮换、禁用生物识别与禁用应用密码在持久操作后刷新失败时返回成功并携带 `AUTHENTICATION_AVAILABILITY_REFRESH`；UI 以提示反馈，不显示提交失败。取消仍传播，fatal `Error` 不转换。Security 176 项/34 类、App 全量 998 项、`verifyArchitecture` 通过。剩余：启动时刷新失败的可见状态、provisioner/store 的真实 durable-commit 集成覆盖，以及取消/fatal/host lease 与启动恢复联合验收。
-
-**2026-11-07 应用密码结果透传：** 设置/修改/禁用的 App interactor 不再把 Domain `Success` 压成无信息的 `Completed`；完成结果携带 `pendingMaintenance`，ViewModel 发出成功效果后再按 Domain 维护类型提示。应用密码持久提交后，可用性刷新失败被带回 Domain 结果并提示重试状态；恢复模式封存后刷新失败同样保留该语义。新增用例覆盖 Security 提交结果、恢复流程、Interactor 映射和 ViewModel 反馈。当前 Security 177 项/34 类、App 1010 项/179 类全通过，`verifyArchitecture` 通过。仍需用真实 provisioner/store 组合覆盖提交点前后及异常次序。
-
-**2026-11-07 候选清理恢复：** `withBiometricRotationCandidate()` 在操作已返回结果后读取轮换状态/清理候选若遇普通 `Exception`，不再覆盖操作结果；成功结果标记 `BIOMETRIC_ROTATION_CLEANUP` 以使用已有恢复合同，失败或取消结果保留原结果。`CancellationException` 继续传播，fatal `Error` 不捕获。新增回归先按旧实现失败，修复后 Security 单测 175 项/33 类全部通过。仍待真实 rotation/provisioner 测试覆盖 durable commit 后刷新失败，以及提交前/后取消、启动恢复和 host lease。
+**底层实现和测试证据：** 已归档于[认证提交后维护审查](../../reviews/2026-11-11-authentication-post-commit-recovery.md)，权威合同见[认证机制与会话](../../../platform/security/authentication.md)。剩余项仅要求跨 provisioner、持久 Store、ViewModel 与真实 Host 的 owner 联动验证。
 
 
 <a id="task-42"></a>
@@ -195,6 +190,8 @@
 **证据：** 当前生产 Repository 通过 `observeByEntryId()` 发布修订元数据，通过 `getById()` 加载、揭示和恢复目标修订；`EntryRevisionWriter`、永久删除、清空回收站与图标回收路径消费其余写入、裁剪及图标引用查询。`getByEntryId()`、`getLatest()`、`countAll()` 和 `insertAllStrict()` 仅被仪器测试使用，现已改用生产 Flow 和逐条严格插入；Import upsert 与 `deleteBefore()` 无调用点，且 [`docs/product/backup/backup-workflows.md`](../../../product/backup/backup-workflows.md) 明确完整备份不含修订历史。更新保留历史上限、恢复后最新快照、清空回收站及附件/图标引用保护行为断言。
 
 **2026-11-08 批次：** 删除修订 DAO 中无消费者的查询、Import 写入和过期清理方法；把所有测试专用 get/count/batch insert 调用迁到 `observeByEntryId()` 与逐条 `insertStrict()`，保留行为断言。未改表结构或 schema。`:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`、`verifyArchitecture` 通过；目标文件 `git diff --check` 通过；instrumentation tests 因当前无连接设备未运行。
+
+**2026-11-11 初始化编排回归：** 新增 `EntryRevisionHistoryInitializationFlowTest`，覆盖已完成 generation 短路、事务成功后只标记一次并先标记再清理、事务失败重试、generation 标记失败重试，以及并发调用串行复核。定向 JVM 报告 5/5 通过；`:data:testDebugUnitTest` 全量 177/177 通过，`:data:compileDebugAndroidTestKotlin` 通过。设备未连接，Data instrumentation runtime 仍待验收。
 
 <a id="task-74"></a>
 
