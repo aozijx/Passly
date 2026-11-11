@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.entry.policy
 
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionHistory
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionSummary
@@ -12,27 +13,33 @@ object EntryRevisionHistoryPolicy {
     fun summarize(
         metadata: List<EntryRevisionMetadata>,
         snapshots: Map<EntryRevisionId, RedactedEntryRevision>,
-    ): List<EntryRevisionSummary> {
+    ): EntryRevisionHistory {
         val ordered = metadata.sortedByDescending { it.version.value }
-        return ordered.mapIndexed { index, revision ->
-            val olderRevision = ordered.getOrNull(index + 1)
-            val revisionSnapshot = snapshots[revision.id]
-            val olderSnapshot = olderRevision?.let { snapshots[it.id] }
-            val differences =
-                if (revisionSnapshot == null || olderSnapshot == null) {
-                    emptyList()
-                } else {
-                    EntryRevisionComparator.compare(historical = revisionSnapshot, current = olderSnapshot)
-                }
-            EntryRevisionSummary(
-                metadata = revision,
-                changedFields =
-                    differences
-                        .asSequence()
-                        .filter { it.kind != RevisionDifferenceKind.UNCHANGED }
-                        .map { it.field }
-                        .toSet<RevisionFieldId>(),
-            )
-        }
+        val summaries =
+            ordered.mapIndexed { index, revision ->
+                val olderRevision = ordered.getOrNull(index + 1)
+                val revisionSnapshot = snapshots[revision.id]
+                val olderSnapshot = olderRevision?.let { snapshots[it.id] }
+                val differences =
+                    if (revisionSnapshot == null || olderSnapshot == null) {
+                        emptyList()
+                    } else {
+                        EntryRevisionComparator.compare(historical = revisionSnapshot, current = olderSnapshot)
+                    }
+                EntryRevisionSummary(
+                    metadata = revision,
+                    changedFields =
+                        differences
+                            .asSequence()
+                            .filter { it.kind != RevisionDifferenceKind.UNCHANGED }
+                            .map { it.field }
+                            .toSet<RevisionFieldId>(),
+                )
+            }
+        val latest = summaries.firstOrNull() ?: return EntryRevisionHistory.Empty
+        return EntryRevisionHistory.Available(
+            latest = latest,
+            previous = summaries.drop(1),
+        )
     }
 }
