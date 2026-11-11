@@ -51,7 +51,11 @@ class EntryRevisionLifecycleDaoTest {
             )
             assertEquals(
                 (51 downTo 2).toList(),
-                database.entryRevisionQueryDao().observeByEntryId("entry-a").first().map { it.version },
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("entry-a")
+                    .first()
+                    .map { it.version },
             )
         }
 
@@ -63,8 +67,8 @@ class EntryRevisionLifecycleDaoTest {
             val revisions =
                 listOf(
                     revision("entry-a", version = 1, createdAt = 10L, revisionId = "revision-1"),
+                    revision("entry-a", version = 2, createdAt = 20L, revisionId = "revision-3"),
                     revision("entry-b", version = 1, createdAt = 20L, revisionId = "revision-2"),
-                    revision("entry-a", version = 2, createdAt = 30L, revisionId = "revision-3"),
                     revision("entry-b", version = 2, createdAt = 30L, revisionId = "revision-4"),
                 )
             revisions.forEach { database.entryRevisionCommandDao().insertStrict(it) }
@@ -75,16 +79,32 @@ class EntryRevisionLifecycleDaoTest {
             )
             assertEquals(
                 2,
-                database.entryRevisionQueryDao().observeByEntryId("entry-a").first().size +
-                    database.entryRevisionQueryDao().observeByEntryId("entry-b").first().size,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("entry-a")
+                    .first()
+                    .size +
+                    database
+                        .entryRevisionQueryDao()
+                        .observeByEntryId("entry-b")
+                        .first()
+                        .size,
             )
             assertEquals(
                 listOf("revision-3"),
-                database.entryRevisionQueryDao().observeByEntryId("entry-a").first().map { it.revisionId },
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("entry-a")
+                    .first()
+                    .map { it.revisionId },
             )
             assertEquals(
                 listOf("revision-4"),
-                database.entryRevisionQueryDao().observeByEntryId("entry-b").first().map { it.revisionId },
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("entry-b")
+                    .first()
+                    .map { it.revisionId },
             )
         }
 
@@ -103,7 +123,14 @@ class EntryRevisionLifecycleDaoTest {
                     updatedAt = 10L,
                 ),
             )
-            assertEquals(1, database.entryRevisionQueryDao().observeByEntryId("entry-a").first().size)
+            assertEquals(
+                1,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("entry-a")
+                    .first()
+                    .size,
+            )
 
             database.withTransaction {
                 assertEquals(1, database.entryRevisionCommandDao().deleteByEntryId("entry-a"))
@@ -116,7 +143,14 @@ class EntryRevisionLifecycleDaoTest {
                 )
             }
 
-            assertEquals(0, database.entryRevisionQueryDao().observeByEntryId("entry-a").first().size)
+            assertEquals(
+                0,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("entry-a")
+                    .first()
+                    .size,
+            )
         }
 
     @Test
@@ -143,12 +177,24 @@ class EntryRevisionLifecycleDaoTest {
             assertNull(database.entryQueryDao().getById("deleted"))
             assertEquals(
                 listOf("active"),
-                database.entryRevisionQueryDao().observeByEntryId("active").first().map { it.entryId },
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("active")
+                    .first()
+                    .map { it.entryId },
             )
             assertEquals(
                 1,
-                database.entryRevisionQueryDao().observeByEntryId("active").first().size +
-                    database.entryRevisionQueryDao().observeByEntryId("deleted").first().size,
+                database
+                    .entryRevisionQueryDao()
+                    .observeByEntryId("active")
+                    .first()
+                    .size +
+                    database
+                        .entryRevisionQueryDao()
+                        .observeByEntryId("deleted")
+                        .first()
+                        .size,
             )
         }
 
