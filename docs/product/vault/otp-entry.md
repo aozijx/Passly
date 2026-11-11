@@ -30,6 +30,8 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 反馈只包含 `UriParsed / UriParseFailed`，不携带 URI 或密钥。`tryApplyScannedConfig` 明确返回配置是否已被当前编辑会话接受；
 锁定、保存中或销毁后的拒绝不会填入表单或发送成功反馈，Scanner Route 据此返回 `Rejected`，不能把忽略的配置报告为 `Applied`。
 
+OTP 编辑表单通过字段级 `AddOtpAction.FormMutation` 修改当前状态，不从 Composable 回传整份 `OtpFormState`。`AddOtpViewModel` 先验证 `EditorWriteSession` 和编辑阶段，再由 `OtpFormReducer.reduce(current.form, mutation)` 产生下一状态。切换 OTP 类型时集中应用 Steam、TOTP、HOTP 默认值；手动 URI 与扫码解析成功则使用 `ConfigApplied` 映射配置，非法 URI 保留用户已输入字段。更新已有 OTP 并成功写入后，ViewModel 调用 `OtpCodeRuntimePort.entryChanged(entryId)` 使活动 Runtime 重新读取配置；新建条目不走这条编辑失效路径。
+
 创建和归档读取共用 Domain 的参数规则；原生恢复校验合法性后保留密钥表示和身份元数据，
 不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[Passly Archive v1](../backup/passly-archive-v1.md)。
 
@@ -53,6 +55,7 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
+| 校验编辑 owner 后把字段级 mutation 归约到当前 OTP 表单状态 | `AddOtpViewModel.onAction(FormMutation)`、`mutateForm()`、`OtpFormReducer.reduce()` | [`AddOtpAction.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpAction.kt)、[`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`OtpFormReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormReducer.kt) |
 | 将编辑表单状态映射为新建草稿，解析配置、标题、备注与标签 | `OtpFormState.toEntryDraft()` | [`OtpFormMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormMapper.kt) |
 | 处理 OTP 编辑页 Action，快照当前状态并在 Save 时提交草稿 | `AddOtpViewModel.onAction(AddOtpAction.Save)`、`save()`、`EditorWriteSession.save { current.form.toEntryDraft() }` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
 | 将新 OTP 配置转换为带默认标题的草稿 | `OtpConfig.toNewEntryDraft(title = suggestedEntryTitle())`、`OtpConfig.suggestedEntryTitle()` | [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt) |
@@ -61,4 +64,5 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 | 从 Vault 扫码结果派发导入并将布尔结果映射为 Applied / Rejected | `VaultRoute` 的 scanner import callback、`ScannedOtpImportViewModel.importScannedOtp(config)` | [`VaultRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultRoute.kt) |
 | 在 OTP 编辑器中接收扫码配置，只填充当前编辑会话而不直接创建 | `AddOtpEditorRoute` 的 ApplyToOtpEditor callback、`AddOtpViewModel.tryApplyScannedConfig(config)` | [`AddOtpEditorRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpEditorRoute.kt)、[`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt) |
 | 从新建或编辑 ViewModel 的写入闭包进入创建/完整表单替换 | `createEntryUseCase(draft)`、`editDetailEntry.edit(entryId, EntryEdit.ReplaceForm(draft))` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt) |
+| 验证完整表单编辑写入后使活动 OTP Runtime 失效并重载配置 | `fullEditLoadsOtpAndWritesUpdatedConfiguration` | [`AddOtpViewModelTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModelTest.kt)、[`OtpCodeRuntime.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/OtpCodeRuntime.kt) |
 | 最终验证 OTP 配置并在创建前拒绝不合法值 | `OtpConfigValidation.validate()`、`EntryValidation.validate()` | [`OtpConfigValidation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpConfigValidation.kt)、[`EntryValidation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryValidation.kt) |

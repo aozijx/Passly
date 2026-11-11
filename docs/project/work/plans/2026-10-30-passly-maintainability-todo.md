@@ -238,7 +238,7 @@
 <a id="task-27"></a>
 
 ### Task 27：闭合 OTP Runtime 缓存失效与刷新故障恢复合同
-- [ ] 补充真实 Compose Route/NavHost/宿主回归：OTP 编辑保存后返回 Detail 时显示与复制使用新配置；取消或失败不触发保存成功刷新；列表/Detail owner 变化、锁定、离页及恢复时只激活仍有 owner 的条目，迟到结果不得覆盖当前状态。现有 Runtime/ViewModel 测试不证明这组真实导航与生命周期交互；实现和历史 JVM 验收见[OTP Runtime owner 与失效审查](../../reviews/2026-11-11-otp-runtime-owner-and-invalidation.md)。
+- [ ] 补充真实 Compose Route/NavHost/宿主回归：验证保存后返回 Detail 的显示与复制读取新 OTP 配置，取消/失败不触发成功刷新，以及列表/Detail owner 变化、锁定、离页和恢复时的 lease 与迟到结果。`AddOtpViewModelTest.fullEditLoadsOtpAndWritesUpdatedConfiguration` 源码覆盖编辑成功后使活动 Runtime 重载配置，但未由本轮执行；它不证明真实导航交互。实现和既有 owner 验收边界见[OTP Runtime owner 与失效审查](../../reviews/2026-11-11-otp-runtime-owner-and-invalidation.md)。
 
 <a id="task-29"></a>
 
