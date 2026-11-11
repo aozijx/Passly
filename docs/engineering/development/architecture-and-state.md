@@ -64,6 +64,12 @@ Route handles navigation, platform APIs, lifecycle and UI behavior
 
 Route 通过 `collectAsStateWithLifecycle()` 或相应 lifecycle API 收集 ViewModel 状态。`LaunchedEffect` 的生命周期是组合生命周期，不代表宿主处于 `STARTED`；任何需要可见期间执行的平台行为须由 Lifecycle API 或显式 lifecycle observer 限定。
 
+### 页面一次性事件的可见性与 owner
+
+对使用 `PageEffects` 的页面，`collectPageEffects()` 通过 `repeatOnLifecycle(STARTED)` 在宿主可见时收集。`PageEffects` 将事件绑定到页面访问 owner：同一 owner 在宿主 STOPPED 时发出的事件可缓冲到恢复后交付；owner 退出后，其待处理事件会被丢弃。该通用收集器只定义传递时机和 owner 隔离，不替各类事件决定是否应重放。Toast/Snackbar、导航、SAF 选择器、权限请求及平台结果各自仍须明确离页、重建和取消语义。
+
+[`PageEffectLifecycleTest`](../../../app/src/test/java/com/aozijx/passly/presentation/shared/event/PageEffectLifecycleTest.kt) 覆盖同一页面恢复后交付缓冲事件，以及旧 owner 退出后丢弃停止期间的事件；[`PageEffectsTest`](../../../app/src/test/java/com/aozijx/passly/presentation/shared/event/PageEffectsTest.kt) 覆盖 owner 归属。该 helper 测试不代替各 Route、Activity 或真实导航宿主的行为验收。
+
 焦点、Popup 展开、动画进度等纯视觉状态可由 Compose 或普通 state holder 管理。页面级状态由 screen/destination 的 ViewModel 持有；不要为了小组件复用而把 ViewModel 下传，也不要仅为隐藏一个函数而创建第二个 ViewModel。
 
 ## 当前应用
