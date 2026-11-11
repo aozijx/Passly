@@ -124,6 +124,53 @@ class EntryFormEditorTest {
     }
 
     @Test
+    fun cardFormPreservesPaymentPlatformWhenEditorDoesNotOwnIt() {
+        val original =
+            entry(
+                EntryType.BANK_CARD,
+                CardCredential(
+                    cardNumber = "4111111111111111",
+                    paymentPlatform = "Existing wallet",
+                ),
+            )
+        val updated =
+            apply(
+                original,
+                draft(
+                    EntryType.BANK_CARD,
+                    FieldKey.TITLE to EntryDraftValue.Text("Updated card"),
+                    FieldKey.CARD_NUMBER to EntryDraftValue.Text("5555555555554444"),
+                ),
+            )
+
+        assertEquals("Existing wallet", updated.secret.card?.paymentPlatform)
+    }
+
+    @Test
+    fun cardFormUsesPaymentPlatformWhenDraftExplicitlyProvidesIt() {
+        val original =
+            entry(
+                EntryType.BANK_CARD,
+                CardCredential(
+                    cardNumber = "4111111111111111",
+                    paymentPlatform = "Existing wallet",
+                ),
+            )
+        val updated =
+            apply(
+                original,
+                draft(
+                    EntryType.BANK_CARD,
+                    FieldKey.TITLE to EntryDraftValue.Text("Updated card"),
+                    FieldKey.CARD_NUMBER to EntryDraftValue.Text("5555555555554444"),
+                    FieldKey.PAYMENT_PLATFORM to EntryDraftValue.Text("New wallet"),
+                ),
+            )
+
+        assertEquals("New wallet", updated.secret.card?.paymentPlatform)
+    }
+
+    @Test
     fun rejectsTypeMismatchUnsupportedTypeAndInvalidCredential() {
         val login = entry(EntryType.LOGIN, LoginCredential(password = "old"))
         assertEquals(EntryEditResult.Unsupported, editor.apply(login, draft(EntryType.WIFI)))

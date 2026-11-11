@@ -3,6 +3,7 @@ package com.aozijx.passly.domain.entry.policy
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryDraft
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 
 /** Applies one complete supported editor form while preserving entry state the form does not own. */
 class EntryFormEditor(
@@ -52,7 +53,18 @@ class EntryFormEditor(
         val updated =
             replacement.copy(
                 profile = profile,
-                secret = replacement.secret.copy(customFields = entry.secret.customFields),
+                secret =
+                    replacement.secret.copy(
+                        customFields = entry.secret.customFields,
+                        credential =
+                            if (draft.type == EntryType.BANK_CARD && FieldKey.PAYMENT_PLATFORM !in draft.values) {
+                                replacement.secret.card
+                                    ?.copy(paymentPlatform = entry.secret.card?.paymentPlatform)
+                                    ?: replacement.secret.credential
+                            } else {
+                                replacement.secret.credential
+                            },
+                    ),
             )
         val violations = EntryValidation.validate(updated)
         return if (violations.isEmpty()) EntryEditResult.Updated(updated) else EntryEditResult.Invalid(violations)
