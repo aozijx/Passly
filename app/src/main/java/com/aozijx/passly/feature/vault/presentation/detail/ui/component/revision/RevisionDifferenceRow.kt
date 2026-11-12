@@ -12,9 +12,9 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.resolveText
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceContentUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionFieldLabelUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionRevealActionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
 import java.text.DateFormat
@@ -66,16 +66,9 @@ internal fun RevisionDifferenceRow(
         colors = ListItemDefaults.colors(),
         elevation = ListItemDefaults.elevation(),
     ) {
-        Text(difference.label.resolve())
+        Text(difference.label.resolveText())
     }
 }
-
-@Composable
-private fun DetailRevisionFieldLabelUiState.resolve(): String =
-    when (this) {
-        is DetailRevisionFieldLabelUiState.Resource -> stringResource(resource)
-        is DetailRevisionFieldLabelUiState.Named -> stringResource(resource, name)
-    }
 
 @Composable
 private fun revisionValue(value: DetailRevisionValueUiModel): String =

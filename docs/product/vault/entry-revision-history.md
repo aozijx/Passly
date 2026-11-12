@@ -49,8 +49,8 @@ Job，以及独立的历史敏感值存储；条目切换、会话撤权、关�
 自定义字段对象转成调试文本。Wi-Fi 密码、安全回答以及任一侧为隐藏类型的自定义字段，只输出变更类型，
 不向普通差异模型传递值；高敏行继续使用不透明指纹判断变化，并沿用原授权揭示入口。
 公开字段按名称展示之前/现在，自定义字段按位置和名称区分；布尔、日期、附件与关联条目数量在界面按当前语言格式化，
-不展示内部文件路径或对象字符串。UI 映射与差异行渲染分别位于 `DetailRevisionUiMapper` 和 `RevisionDifferenceRow`，
-共享字段名称使用穷尽资源映射。
+不展示内部文件路径或对象字符串。UI 映射位于 `DetailRevisionUiMapper`；历史列表和差异行共用
+`DetailRevisionFieldLabelUiState.resolveText()` 解析资源标签，映射分支穷尽覆盖资源标签和命名自定义字段。
 
 Revision snapshot 是不可变历史事实。恢复不是把旧 row 原地设为当前，而是在 Data 层单事务中：校验 Entry 和
 revision、消费精确 permit、物化快照、写入新的当前版本并记录活动。UI 只有收到事务成功才显示完成。

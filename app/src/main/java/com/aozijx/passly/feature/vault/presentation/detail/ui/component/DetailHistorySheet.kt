@@ -68,7 +68,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryRe
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistorySheetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonContentUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionComparisonUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionFieldLabelUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.blocksDismissal
 import com.aozijx.passly.feature.vault.presentation.detail.model.restoreConfirmationVisible
 import com.aozijx.passly.feature.vault.presentation.detail.model.restoreEnabled
@@ -261,7 +260,7 @@ private fun ColumnScope.RevisionList(
 
                             is DetailHistoryAffectedFieldsUiState.Labels -> {
                                 Text(
-                                    affectedFields.items.map { it.resolve() }.joinToString(),
+                                    affectedFields.items.map { it.resolveText() }.joinToString(),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -325,13 +324,6 @@ private fun historyIcon(icon: DetailHistoryIcon) =
         DetailHistoryIcon.EXPORTED -> Icons.Outlined.FileDownload
         DetailHistoryIcon.IMPORTED -> Icons.Outlined.FileUpload
         DetailHistoryIcon.SNAPSHOT -> Icons.Outlined.History
-    }
-
-@Composable
-private fun DetailRevisionFieldLabelUiState.resolve(): String =
-    when (this) {
-        is DetailRevisionFieldLabelUiState.Resource -> stringResource(resource)
-        is DetailRevisionFieldLabelUiState.Named -> stringResource(resource, name)
     }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
