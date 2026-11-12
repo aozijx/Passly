@@ -120,9 +120,7 @@ private fun deliverLegacyResult(
                             usernameIds = request.usernameIds,
                             passwordIds = request.passwordIds,
                             otpIds = request.otpIds,
-                            username = result.payload.username,
-                            password = result.payload.password,
-                            totpCode = result.payload.otpCode,
+                            fieldValues = result.payload.fields,
                         )
                     if (dataset == null) {
                         viewModel.cancel()

@@ -70,7 +70,8 @@ username/password/OTP 语义。`ParsedStructure.toAutofillRequest()` 将结果�
 | `enabled` | 每次 `DiscoverAutofillCandidates.invoke()`；Legacy 保存回调与 Credential Manager create 入口也分别检查 | 关闭后拒绝新的发现/保存操作。 |
 | `credentialManagerEnabled` | Credential Manager 候选发现、begin-create 与最终 create 保存 | 只关闭 Credential Manager 流程，不控制 Legacy 或 Accessibility。Create 保存时会再次读取。 |
 | `requireAuthentication` | 新建 get/fill interaction 时传给 `StartAutofillInteraction` | 控制新交互的授权要求；Credential Manager create 由系统显式创建动作和 Vault session 状态处理，不使用该开关。 |
-| `strictDomainMatching` | 发现候选时传入 `AutofillCandidateQuery` | 控制网页候选的主机匹配严格度；不改变 interaction 绑定的精确 host。 |
+| `strictDomainMatching` | 发现候选时传入 `AutofillCandidateQuery`，并随发现上下文传入凭据解析 | 控制网页候选和 OTP 条目自身网址配置的匹配严格度；不改变 interaction 绑定的精确 host。 |
+| `otpAutofillEnabled` | 随发现上下文传入凭据解析 | 全局 OTP 填充开关，默认关闭；只影响请求中识别出 OTP 字段的填充。 |
 | `presentation` | Legacy Autofill response 构造 | 选择 Legacy 的 FLOATING、SYSTEM_INLINE 或 BOTTOM_SHEET 展示；Credential Manager 与 Accessibility 使用各自的平台展示流程。 |
 
 设置在 discovery 时读取；解锁后重新发现会重新读取策略。候选展示后的 `ResolveAutofillSelection` 不重读这些设置，Credential Manager create 则在最终保存时再次检查两个开关。因而关闭开关后已展示候选是否仍可完成，当前调用路径已有明确差异，但整体产品策略仍待裁定，见 [Task 82](../../project/work/plans/2026-11-07-passly-autofill-followups.md#task-82)。
@@ -96,7 +97,10 @@ interaction。并发授权合并为一次认证；成功后重新发现或最终
 “本轮没有认证弹窗”不等于无密钥解密：只有设置关闭“填充前验证”且已有完整 `Authenticated` Vault 会话时，或已有
 Autofill lease 仍持有本轮临时会话时，interaction 才可从创建时进入 `Authorized`。Vault 锁定或设置要求新鲜认证时，
 先完成 Autofill 认证，之后才查候选和响应选择。候选的 title/username 是 SQLCipher 数据库中的元数据列，并非单独的
-字段密文；Vault 锁定时数据库会话不可读。密码/OTP 字段由 `SecretFieldStore.readField()` 单独解密，调用前经过
+字段密文；Vault 锁定时数据库会话不可读。选择解析只读取请求中实际出现的凭据字段：账号来自已读取的条目元数据列；
+只有请求密码时才调用 `SecretFieldStore.readField(PASSWORD)`，只有请求 OTP 且开关开启时才查找 OTP 来源并调用
+`SecretFieldStore.readOtpGenerationMaterial()` 读取低敏配置和独立 OTP seed。未请求的密文字段不解密，返回的
+`AutofillCredentialPayload.fields` 只包含实际解析到的请求字段。读取操作调用前经过
 `ResolveAutofillSelection` 的 interaction 状态与展示候选校验，以及 resolver 的 Autofill session-access 检查；字段密钥
 由 DEK 派生，SEALED 锁定会在数据库 session 排干后清除 DEK 和派生 field key。这里没有“提前解密、等认证完成再填充”的
 缓存路径。单元回归测试覆盖新鲜认证未完成时 resolver 调用次数为零。
@@ -115,19 +119,17 @@ Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInter
 
 `ResolveAutofillSelection` 不重读发现时的设置。它验证 interaction 存在、scope 相同且已授权，再通过状态机确认 Entry ID 确实展示过。
 Credential Manager 的 `allowedUserIds` 在 `CredentialManagerFlow.selectPassword()` 收到解析结果后独立校验，Legacy 不使用该限制。
-`AutofillCredentialResolver` 只读取选中条目的密码；请求需要 OTP 时，才沿 `OTP_FOR` 关系读取独立加密 secret 并生成验证码。
+`ResolveAutofillSelection` 将本次请求的 `AutofillCredentialField` 集合传给 `AutofillCredentialResolver`；Credential Manager 请求账号和密码，Legacy 与 Accessibility 按识别出的字段角色请求对应字段。账号只从已查询的条目元数据构造，密码仅在请求密码时通过 `SecretFieldStore.readField(PASSWORD)` 解密。
+请求 OTP 且 `otpAutofillEnabled` 开启时，resolver 优先查找选中登录条目的 `OTP_FOR` 关联。关联 OTP 必须符合它自身的包名或网址范围，否则本次不填 OTP。登录条目没有关联时，才从符合各自包名或网址范围的活动 OTP 条目中选择；仅唯一候选可回退，零个或多个候选都不填 OTP。通过范围匹配后，`SecretFieldStore.readOtpGenerationMaterial()` 读取该 OTP 的配置和独立加密 seed 并生成验证码。解析结果仅包含请求且成功取得的非空字段；未请求字段不会解密或进入 payload。
 Base32 secret 的字符、补位和尾部位由 Domain 的 `OtpSecretCodec` 统一校验；`OtpGenerator` 遇到损坏密钥时
 返回 `InvalidSecret`，不生成或填充 OTP 码。
 
-Legacy 选择时，`AutofillFillViewModel` 将 `request.interactionId`、新建的
-`AutofillGrantContext(request.packageName, request.webDomain)`、选中的 `EntryId`，以及
-`request.otpIds.isNotEmpty()` 作为 `ResolveAutofillSelection.invoke(interactionId, scope, entryId, includeOtp)`
-参数。只有当前请求实际包含识别出的验证码字段时，resolver 才读取 OTP secret；设置页没有独立开关。
-Credential Manager 则由 `CredentialManagerFlow.selectPassword()` 传入平台解析后的 interaction、scope、EntryId
-和 `allowedUserIds`，并固定 `includeOtp = false`。use case 在解析前再次规范化并比较 scope，再由
-`interactionStore.beginSelection(interactionId, entryId, sessionAtMs)` 原子检查展示资格，最后将
-`AutofillCredentialSelection(entryId, includeOtp)` 交给 resolver；平台解析的用户限制由 Credential Manager
-flow 在拿到结果后额外校验 username，Legacy 不使用该参数。
+Legacy 选择时，`AutofillFillViewModel` 将 `request.roleMap()` 转换为 `requestedFields`，并与 interaction、scope、选中的
+`EntryId`、OTP 开关和域名匹配策略一起传给 `ResolveAutofillSelection`。use case 在解析前再次规范化并比较 scope，再由
+`interactionStore.beginSelection(interactionId, entryId, sessionAtMs)` 原子检查展示资格，最后将显式字段集合封入
+`AutofillCredentialSelection` 交给 resolver。OTP 开关关闭时，use case 从集合中移除 OTP 字段。Credential Manager
+请求 `USERNAME` 和 `PASSWORD`，不会请求 OTP；平台解析的用户限制由 Credential Manager flow 在拿到结果后额外校验 username，
+Legacy 不使用该参数。
 
 Legacy 网页请求的 `webDomain` 在当前版本未经过 DAL 或应用签名验证，故先返回不含候选账户信息的通用确认操作。
 用户确认应用标签/包名与规范网页 host 后才查询并展示候选；选中条目后，还要在 secret resolver 读取前确认条目标题和账号。

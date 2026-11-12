@@ -6,6 +6,7 @@ import com.aozijx.passly.data.codec.sensitiveFieldKeyFromStorageKey
 import com.aozijx.passly.data.codec.toStorageKey
 import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.DatabaseClock
+import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntrySecretFieldEntity
 import com.aozijx.passly.data.mapper.entry.SensitiveFieldUpdate
 import com.aozijx.passly.data.mapper.entry.mergeSensitiveFields
@@ -170,10 +171,10 @@ class SecretFieldStore
         /** Reads OTP metadata and its encoded seed as caller-owned bytes for secure generation. */
         suspend fun readOtpGenerationMaterial(
             db: AppDatabase,
-            entryId: String,
+            entry: EntryEntity,
         ): OtpGenerationMaterial? {
-            val entry = db.entryQueryDao().getById(entryId) ?: return null
             if (entry.deletedAt != null || entry.entryType.credentialKind != EntryCredentialKind.OTP) return null
+            val entryId = entry.entryId
             val bundle = readBundle(db, entryId, entry.entryType)
             val config = bundle.otp?.config ?: return null
             val generationConfig = config.toGenerationConfig()

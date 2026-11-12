@@ -191,6 +191,11 @@ internal class ProtoAppPreferencesStore
                 strictDomainMatching = enabled
             }
 
+        override suspend fun setOtpAutofillEnabled(enabled: Boolean) =
+            updateAutofill {
+                otpAutofillEnabled = enabled
+            }
+
         private suspend fun updateAppearance(block: AppearancePreferences.Builder.() -> Unit) =
             update { current -> setAppearance(current.appearance.toBuilder().apply(block)) }
 

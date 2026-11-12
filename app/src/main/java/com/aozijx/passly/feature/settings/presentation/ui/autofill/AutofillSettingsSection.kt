@@ -126,6 +126,16 @@ internal fun AutofillSettingsSection(
                         },
                     ),
                 )
+                add(
+                    switchSettingsGroupItem(
+                        key = "autofill.otp_enabled",
+                        enabled = enabled,
+                        title = stringResource(R.string.settings_autofill_otp_enabled),
+                        subtitle = stringResource(R.string.settings_autofill_otp_enabled_summary),
+                        checked = settings.otpAutofillEnabled,
+                        onCheckedChange = { onAction(AutofillSettingsAction.SetOtpAutofillEnabled(it)) },
+                    ),
+                )
             },
     )
 }

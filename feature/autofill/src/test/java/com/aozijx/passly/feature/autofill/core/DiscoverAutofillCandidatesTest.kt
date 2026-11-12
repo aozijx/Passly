@@ -76,6 +76,7 @@ class DiscoverAutofillCandidatesTest {
                             credentialManagerEnabled = true,
                             requireAuthentication = true,
                             strictDomainMatching = true,
+                            otpAutofillEnabled = false,
                         ),
                 )
 
@@ -156,6 +157,7 @@ class DiscoverAutofillCandidatesTest {
                             credentialManagerEnabled = true,
                             requireAuthentication = false,
                             strictDomainMatching = false,
+                            otpAutofillEnabled = false,
                         ),
                 )
 
@@ -182,6 +184,7 @@ class DiscoverAutofillCandidatesTest {
                             credentialManagerEnabled = true,
                             requireAuthentication = false,
                             strictDomainMatching = false,
+                            otpAutofillEnabled = false,
                         ),
                 )
             val first =
@@ -282,6 +285,7 @@ class DiscoverAutofillCandidatesTest {
                 credentialManagerEnabled = true,
                 requireAuthentication = false,
                 strictDomainMatching = true,
+                otpAutofillEnabled = false,
             ),
         hasCredentials: Boolean = true,
         vaultState: AuthenticationState = AuthenticationState.Authenticated(1L),

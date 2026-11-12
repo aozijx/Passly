@@ -6,19 +6,18 @@ import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialSelection
 import com.aozijx.passly.domain.autofill.port.AutofillCredentialResolver
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.query.MatchType
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
-import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -38,50 +37,68 @@ internal class RoomAutofillCredentialResolver
                 ) {
                     val entity = entryQueryDao().getById(selection.entryId.value)
                     if (entity == null || entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
-                        return@queryAutofill resolveAutofillCredential(entity, password = null, otpCode = null)
-                    }
-                    val password =
-                        secretFieldStore.readField(
-                            db = this,
-                            entryId = entity.entryId,
-                            key = SensitiveFieldKey.PASSWORD,
+                        return@queryAutofill resolveAutofillCredential(
+                            entity,
+                            selection.requestedFields,
+                            emptyMap(),
                         )
-                    val otpCode =
-                        if (selection.includeOtp) {
-                            val otpEntryId =
-                                findLinkedOtpEntryId(
-                                    loginEntryId = entity.entryId,
-                                    links = entryLinkQueryDao().getByEntryId(entity.entryId),
-                                )
-                            otpEntryId?.let { linkedEntryId ->
-                                val otpEntity = entryQueryDao().getById(linkedEntryId)
-                                if (
-                                    otpEntity == null ||
-                                    otpEntity.deletedAt != null ||
-                                    otpEntity.entryType != EntryType.OTP
-                                ) {
-                                    return@let null
-                                }
-                                val config =
-                                    secretFieldStore
-                                        .readBundle(
-                                            this,
-                                            linkedEntryId,
-                                            otpEntity.entryType,
-                                        ).otp
-                                        ?.config
-                                val secret =
-                                    secretFieldStore.readFieldBytes(
-                                        db = this,
-                                        entryId = linkedEntryId,
-                                        key = SensitiveFieldKey.OTP_SECRET,
-                                    )
-                                generateAutofillOtpCode(true, config, secret)
+                    }
+                    val database = this
+                    val values =
+                        buildMap {
+                            if (AutofillCredentialField.USERNAME in selection.requestedFields) {
+                                entity.username
+                                    .takeIf(String::isNotBlank)
+                                    ?.let { put(AutofillCredentialField.USERNAME, it) }
                             }
-                        } else {
-                            null
+                            if (AutofillCredentialField.PASSWORD in selection.requestedFields) {
+                                secretFieldStore
+                                    .readField(database, entity.entryId, SensitiveFieldKey.PASSWORD)
+                                    ?.takeIf(String::isNotBlank)
+                                    ?.let { put(AutofillCredentialField.PASSWORD, it) }
+                            }
+                            if (AutofillCredentialField.OTP in selection.requestedFields) {
+                                val linkedOtpEntryId =
+                                    findLinkedOtpEntryId(
+                                        loginEntryId = entity.entryId,
+                                        links = entryLinkQueryDao().getByEntryId(entity.entryId),
+                                    )
+                                val otpEntity =
+                                    if (linkedOtpEntryId != null) {
+                                        entryQueryDao().getById(linkedOtpEntryId)
+                                    } else {
+                                        entryQueryDao()
+                                            .getActiveByType(EntryType.OTP)
+                                            .filter { otpEntry -> otpEntry.matchesAutofillScope(selection) }
+                                            .singleOrNull()
+                                    }
+                                otpEntity?.let { matchedOtp ->
+                                    if (
+                                        matchedOtp.deletedAt != null ||
+                                        matchedOtp.entryType != EntryType.OTP ||
+                                        !matchedOtp.matchesAutofillScope(selection)
+                                    ) {
+                                        return@let
+                                    }
+                                    secretFieldStore
+                                        .readOtpGenerationMaterial(database, matchedOtp)
+                                        ?.use { material ->
+                                            when (
+                                                val result =
+                                                    OtpGenerator.generate(
+                                                        material,
+                                                        timestamp = System.currentTimeMillis() / 1000,
+                                                    )
+                                            ) {
+                                                is OtpResult.Success -> put(AutofillCredentialField.OTP, result.code)
+                                                is OtpResult.CounterSuccess -> put(AutofillCredentialField.OTP, result.code)
+                                                is OtpResult.Failure -> Unit
+                                            }
+                                        }
+                                }
+                            }
                         }
-                    resolveAutofillCredential(entity, password = password, otpCode = otpCode)
+                    resolveAutofillCredential(entity, selection.requestedFields, values)
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -96,6 +113,13 @@ internal class RoomAutofillCredentialResolver
         }
     }
 
+private fun EntryEntity.matchesAutofillScope(selection: AutofillCredentialSelection): Boolean =
+    autofillMatch(
+        applicationId = selection.scope.packageName.takeIf { selection.scope.webDomain == null },
+        domain = selection.scope.webDomain,
+        strictDomainMatching = selection.strictDomainMatching,
+    ).type != MatchType.UNKNOWN
+
 internal fun findLinkedOtpEntryId(
     loginEntryId: String,
     links: List<EntryLinkEntity>,
@@ -105,43 +129,21 @@ internal fun findLinkedOtpEntryId(
             it.relationType == EntryRelationType.OTP_FOR && it.targetEntryId == loginEntryId
         }?.sourceEntryId
 
-internal fun generateAutofillOtpCode(
-    includeOtp: Boolean,
-    config: OtpConfig?,
-    secret: ByteArray?,
-    timestampSeconds: Long = System.currentTimeMillis() / 1000,
-): String? {
-    if (!includeOtp || config == null || secret == null) {
-        secret?.fill(0)
-        return null
-    }
-    val material = OtpGenerationMaterial(config.toGenerationConfig(), secret)
-    return try {
-        when (val result = OtpGenerator.generate(material, timestamp = timestampSeconds)) {
-            is OtpResult.Success -> result.code
-            is OtpResult.CounterSuccess -> result.code
-            is OtpResult.Failure -> null
-        }
-    } finally {
-        material.close()
-    }
-}
-
 internal fun resolveAutofillCredential(
     entity: EntryEntity?,
-    password: String?,
-    otpCode: String?,
+    requestedFields: Set<AutofillCredentialField>,
+    values: Map<AutofillCredentialField, String>,
 ): AutofillCredentialResolution {
     if (entity == null) return AutofillCredentialResolution.NotFound
-    if (entity.deletedAt != null || entity.entryType != EntryType.LOGIN || password.isNullOrBlank()) {
+    if (entity.deletedAt != null || entity.entryType != EntryType.LOGIN) {
         return AutofillCredentialResolution.NotFillable
     }
+    val resolvedFields = values.filter { (field, value) -> field in requestedFields && value.isNotBlank() }
+    if (resolvedFields.isEmpty()) return AutofillCredentialResolution.NotFillable
     return AutofillCredentialResolution.Resolved(
         AutofillCredentialPayload(
             entryId = EntryId(entity.entryId),
-            username = entity.username,
-            password = password,
-            otpCode = otpCode,
+            fields = resolvedFields,
         ),
     )
 }

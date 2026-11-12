@@ -10,6 +10,7 @@ import android.service.autofill.Presentations
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 
 /**
  * Legacy Dataset Factory for building individual Autofill datasets.
@@ -29,9 +30,7 @@ internal object LegacyDatasetFactory {
         usernameIds: List<AutofillId>,
         passwordIds: List<AutofillId>,
         otpIds: List<AutofillId>,
-        username: String,
-        password: String,
-        totpCode: String?,
+        fieldValues: Map<AutofillCredentialField, String>,
         presentation: RemoteViews? = null,
         existingBuilder: Dataset.Builder? = null,
     ): Dataset? {
@@ -40,9 +39,9 @@ internal object LegacyDatasetFactory {
 
         fun addField(
             id: AutofillId,
-            text: String?,
+            text: String,
         ) {
-            if (text.isNullOrBlank()) return
+            if (text.isBlank()) return
             val value = AutofillValue.forText(text)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -64,9 +63,15 @@ internal object LegacyDatasetFactory {
             added = true
         }
 
-        usernameIds.distinct().forEach { addField(it, username) }
-        passwordIds.distinct().forEach { addField(it, password) }
-        otpIds.distinct().forEach { addField(it, totpCode) }
+        fieldValues.forEach { (field, value) ->
+            val ids =
+                when (field) {
+                    AutofillCredentialField.USERNAME -> usernameIds
+                    AutofillCredentialField.PASSWORD -> passwordIds
+                    AutofillCredentialField.OTP -> otpIds
+                }
+            ids.distinct().forEach { addField(it, value) }
+        }
 
         return if (added) builder.build() else null
     }

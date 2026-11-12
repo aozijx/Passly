@@ -87,6 +87,10 @@ sealed interface AutofillSettingsAction {
         val enabled: Boolean,
     ) : AutofillSettingsAction
 
+    data class SetOtpAutofillEnabled(
+        val enabled: Boolean,
+    ) : AutofillSettingsAction
+
     data object RetryPreferences : AutofillSettingsAction
 
     data object RetrySystemService : AutofillSettingsAction

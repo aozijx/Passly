@@ -2,37 +2,38 @@ package com.aozijx.passly.data.repository.autofill
 
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutofillCredentialResolutionTest {
     @Test
-    fun activeLoginWithPasswordResolvesTypedPayload() {
+    fun resolvesOnlyRequestedFields() {
         val resolution =
             resolveAutofillCredential(
                 entity = loginEntity(),
-                password = "secret",
-                otpCode = null,
+                requestedFields = setOf(AutofillCredentialField.USERNAME),
+                values =
+                    mapOf(
+                        AutofillCredentialField.USERNAME to "person@example.com",
+                        AutofillCredentialField.PASSWORD to "unrequested-secret",
+                    ),
             )
 
         val payload = (resolution as AutofillCredentialResolution.Resolved).payload
         assertEquals("entry-1", payload.entryId.value)
-        assertEquals("person@example.com", payload.username)
-        assertEquals("secret", payload.password)
-        assertEquals(null, payload.otpCode)
+        assertEquals(mapOf(AutofillCredentialField.USERNAME to "person@example.com"), payload.fields)
     }
 
     @Test
     fun missingEntryIsNotFound() {
         assertSame(
             AutofillCredentialResolution.NotFound,
-            resolveAutofillCredential(entity = null, password = "secret", otpCode = null),
+            resolveAutofillCredential(entity = null, requestedFields = emptySet(), values = emptyMap()),
         )
     }
 
@@ -42,16 +43,16 @@ class AutofillCredentialResolutionTest {
             AutofillCredentialResolution.NotFillable,
             resolveAutofillCredential(
                 entity = loginEntity().copy(deletedAt = 30L),
-                password = "secret",
-                otpCode = null,
+                requestedFields = setOf(AutofillCredentialField.PASSWORD),
+                values = mapOf(AutofillCredentialField.PASSWORD to "secret"),
             ),
         )
         assertSame(
             AutofillCredentialResolution.NotFillable,
             resolveAutofillCredential(
                 entity = loginEntity().copy(entryType = EntryType.NOTE),
-                password = "secret",
-                otpCode = null,
+                requestedFields = setOf(AutofillCredentialField.PASSWORD),
+                values = mapOf(AutofillCredentialField.PASSWORD to "secret"),
             ),
         )
     }
@@ -62,8 +63,8 @@ class AutofillCredentialResolutionTest {
             AutofillCredentialResolution.NotFillable,
             resolveAutofillCredential(
                 entity = loginEntity(),
-                password = "  ",
-                otpCode = null,
+                requestedFields = setOf(AutofillCredentialField.PASSWORD),
+                values = mapOf(AutofillCredentialField.PASSWORD to "  "),
             ),
         )
     }
@@ -81,29 +82,15 @@ class AutofillCredentialResolutionTest {
     }
 
     @Test
-    fun otpCodeIsGeneratedOnlyWhenRequested() {
-        val config = OtpConfig.Totp(secret = null)
-        val otpSeed = "JBSWY3DPEHPK3PXP".toByteArray()
+    fun absentOrBlankRequestedValuesDoNotProducePayloadFields() {
+        val resolution =
+            resolveAutofillCredential(
+                entity = loginEntity(),
+                requestedFields = setOf(AutofillCredentialField.USERNAME, AutofillCredentialField.PASSWORD),
+                values = mapOf(AutofillCredentialField.USERNAME to " "),
+            )
 
-        assertEquals(
-            "282760",
-            generateAutofillOtpCode(
-                includeOtp = true,
-                config = config,
-                secret = otpSeed,
-                timestampSeconds = 0L,
-            ),
-        )
-        assertTrue(otpSeed.all { it == 0.toByte() })
-        assertEquals(
-            null,
-            generateAutofillOtpCode(
-                includeOtp = false,
-                config = config,
-                secret = "JBSWY3DPEHPK3PXP".toByteArray(),
-                timestampSeconds = 0L,
-            ),
-        )
+        assertSame(AutofillCredentialResolution.NotFillable, resolution)
     }
 
     private fun loginEntity(): EntryEntity =

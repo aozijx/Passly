@@ -89,4 +89,5 @@ internal fun readAutofill(p: AutofillPreferences): AutofillSettings =
         credentialManagerEnabled = p.credentialManagerEnabled,
         requireAuthentication = p.requireAuthentication,
         strictDomainMatching = p.strictDomainMatching,
+        otpAutofillEnabled = p.otpAutofillEnabled,
     )

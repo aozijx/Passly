@@ -200,6 +200,8 @@
     <string name="settings_autofill_require_authentication_summary">Required before every fill, even while the app is unlocked</string>
     <string name="settings_autofill_strict_domain_matching">Match exact website host</string>
     <string name="settings_autofill_strict_domain_matching_summary">When off, also match subdomains under the same registered domain</string>
+    <string name="settings_autofill_otp_enabled">Fill one-time codes</string>
+    <string name="settings_autofill_otp_enabled_summary">Allow OTP codes when a sign-in request includes a one-time code field</string>
     <!-- Interaction and gestures -->
     <!-- Swipe actions -->
     <string name="settings_swipe_action_copy_password">Copy password</string>

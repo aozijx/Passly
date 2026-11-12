@@ -294,6 +294,8 @@ class AutofillSettingsViewModelTest {
             strictDomainMatchingWrites += enabled
         }
 
+        override suspend fun setOtpAutofillEnabled(enabled: Boolean) = save()
+
         override suspend fun setAutofillEnabled(enabled: Boolean) = save()
 
         override suspend fun setAutofillPresentation(presentation: AutofillPresentation) {
@@ -312,6 +314,7 @@ class AutofillSettingsViewModelTest {
                 credentialManagerEnabled = true,
                 requireAuthentication = true,
                 strictDomainMatching = true,
+                otpAutofillEnabled = false,
             )
     }
 }

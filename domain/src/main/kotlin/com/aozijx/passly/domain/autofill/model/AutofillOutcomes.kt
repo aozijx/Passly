@@ -7,6 +7,8 @@ data class AutofillDiscoveryContext(
     val roleMap: Map<String, FieldRole>,
     val presentation: AutofillPresentation,
     val requireAuthentication: Boolean,
+    val otpAutofillEnabled: Boolean,
+    val strictDomainMatching: Boolean,
 )
 
 enum class AutofillOperationFailure {
@@ -67,6 +69,7 @@ sealed interface AutofillDiscoveryOutcome {
     data class ResumeSelection(
         val snapshot: AutofillInteractionSnapshot,
         val entryId: EntryId,
+        val context: AutofillDiscoveryContext,
     ) : AutofillDiscoveryOutcome
 
     data class Failed(

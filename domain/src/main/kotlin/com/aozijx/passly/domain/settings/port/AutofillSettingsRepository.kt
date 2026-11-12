@@ -18,4 +18,6 @@ interface AutofillSettingsRepository : AutofillSettingsSource {
     suspend fun setAutofillAuthenticationRequired(required: Boolean)
 
     suspend fun setAutofillStrictDomainMatching(enabled: Boolean)
+
+    suspend fun setOtpAutofillEnabled(enabled: Boolean)
 }

@@ -5,7 +5,6 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,13 +27,11 @@ import com.aozijx.passly.core.ui.components.settings.SettingsSection
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillPreferencesState
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsAction
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsEffect
-import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsUiState
 import com.aozijx.passly.feature.settings.presentation.autofill.AutofillSettingsViewModel
 import com.aozijx.passly.feature.settings.presentation.ui.autofill.AutofillSettingsSection
 import com.aozijx.passly.feature.settings.presentation.ui.main.SettingsSecondaryPage
 import com.aozijx.passly.feature.settings.presentation.ui.main.component.SettingsGroup
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AutofillRoute(onBack: (() -> Unit)?) {
     val viewModel: AutofillSettingsViewModel = hiltViewModel()

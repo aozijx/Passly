@@ -69,6 +69,7 @@ class LegacySaveFlowTest {
                     credentialManagerEnabled = true,
                     requireAuthentication = true,
                     strictDomainMatching = true,
+                    otpAutofillEnabled = false,
                 )
 
             assertEquals(LegacySavePreparation.Disabled, fixture.flow.prepare(request()))
@@ -164,6 +165,7 @@ class LegacySaveFlowTest {
             credentialManagerEnabled = true,
             requireAuthentication = true,
             strictDomainMatching = true,
+            otpAutofillEnabled = false,
         )
 
     private fun request() =

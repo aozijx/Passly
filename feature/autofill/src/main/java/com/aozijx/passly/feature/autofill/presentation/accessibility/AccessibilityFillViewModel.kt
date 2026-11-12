@@ -10,6 +10,7 @@ import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -24,6 +25,7 @@ import com.aozijx.passly.feature.autofill.core.AuthorizeAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
+import com.aozijx.passly.feature.autofill.presentation.requestedCredentialFields
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -75,7 +77,9 @@ internal class AccessibilityFillViewModel
             val interactionId: AutofillInteractionId,
             val request: AutofillRequest,
             val roles: Map<String, FieldRole>,
-            val includeOtp: Boolean,
+            val requestedFields: Set<AutofillCredentialField>,
+            val otpAutofillEnabled: Boolean,
+            val strictDomainMatching: Boolean,
         )
 
         internal fun start() {
@@ -141,8 +145,9 @@ internal class AccessibilityFillViewModel
                                     interactionId,
                                     request,
                                     outcome.context.roleMap,
-                                    outcome.context.roleMap.values
-                                        .contains(FieldRole.OTP),
+                                    outcome.context.roleMap.requestedCredentialFields(),
+                                    outcome.context.otpAutofillEnabled,
+                                    outcome.context.strictDomainMatching,
                                 )
                             traceContinuations.capture(interactionId.value)
                             logger.log(
@@ -211,7 +216,9 @@ internal class AccessibilityFillViewModel
                                 selection.interactionId,
                                 AutofillGrantContext(selection.request.packageName),
                                 entryId,
-                                selection.includeOtp,
+                                selection.requestedFields,
+                                otpAutofillEnabled = selection.otpAutofillEnabled,
+                                strictDomainMatching = selection.strictDomainMatching,
                             )
                         if (abandoned) {
                             finishInteraction.cancel(selection.interactionId)

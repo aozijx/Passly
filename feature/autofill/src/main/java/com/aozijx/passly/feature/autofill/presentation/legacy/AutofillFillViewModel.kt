@@ -10,6 +10,8 @@ import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.trace.TraceContinuationStore
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillCandidateSummary
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
+import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryContext
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -21,6 +23,7 @@ import com.aozijx.passly.feature.autofill.core.ConfirmLegacyWebAutofill
 import com.aozijx.passly.feature.autofill.core.DiscoverAutofillCandidates
 import com.aozijx.passly.feature.autofill.core.FinishAutofillInteraction
 import com.aozijx.passly.feature.autofill.core.ResolveAutofillSelection
+import com.aozijx.passly.feature.autofill.presentation.requestedCredentialFields
 import com.aozijx.passly.feature.autofill.presentation.result.AutofillActivityResultClaim
 import com.aozijx.passly.feature.autofill.runtime.AutofillSelectionReceipt
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +59,7 @@ internal class AutofillFillViewModel
             get() = resultClaim.isClaimed
 
         private var currentRequest: AutofillFillRequest? = null
+        private var selectionContext: AutofillDiscoveryContext? = null
 
         @Volatile private var abandoned = false
 
@@ -81,6 +85,7 @@ internal class AutofillFillViewModel
             if (abandoned) return
             if (currentRequest == request && mutableUiState.value != AutofillFillUiState.Initial) return
             currentRequest = request
+            selectionContext = null
             viewModelScope.launch {
                 continueTrace(request) {
                     mutate(AutofillFillMutation.Loading)
@@ -124,21 +129,24 @@ internal class AutofillFillViewModel
             logger.log(LogStatements.Autofill.discoveryStarted())
             when (val discovery = discover(request)) {
                 is AutofillDiscoveryOutcome.ResumeSelection -> {
+                    selectionContext = discovery.context
                     resolve(
                         request,
                         discovery.entryId,
-                        includeOtp = request.otpIds.isNotEmpty(),
+                        request.roleMap().requestedCredentialFields(),
+                        context = discovery.context,
                     )
                 }
 
                 is AutofillDiscoveryOutcome.Candidates -> {
+                    selectionContext = discovery.context
                     logger.log(
                         LogStatements.Autofill.discoveryCompleted(
                             monotonicTimeMs() - discoveryStartedAt,
                         ),
                     )
                     val directEntryId = request.directEntryId
-                    val includeOtp = request.otpIds.isNotEmpty()
+                    val requestedFields = request.roleMap().requestedCredentialFields()
                     when {
                         directEntryId != null && request.webDomain != null -> {
                             val candidate = discovery.candidates.firstOrNull { it.entry.id == directEntryId }
@@ -150,7 +158,7 @@ internal class AutofillFillViewModel
                         }
 
                         directEntryId != null -> {
-                            resolve(request, directEntryId, includeOtp)
+                            resolve(request, directEntryId, requestedFields, discovery.context)
                         }
 
                         request.uiMode == AutofillPresentation.BOTTOM_SHEET -> {
@@ -269,7 +277,12 @@ internal class AutofillFillViewModel
                         if (!confirmWebAutofill.confirmEntry(request.interactionId, scope, entryId)) {
                             fail(request)
                         } else {
-                            resolve(request, entryId, request.otpIds.isNotEmpty())
+                            resolve(
+                                request,
+                                entryId,
+                                request.roleMap().requestedCredentialFields(),
+                                checkNotNull(selectionContext),
+                            )
                         }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
@@ -296,7 +309,12 @@ internal class AutofillFillViewModel
                 continueTrace(request) {
                     mutate(AutofillFillMutation.Loading)
                     try {
-                        resolve(request, entryId, request.otpIds.isNotEmpty())
+                        resolve(
+                            request,
+                            entryId,
+                            request.roleMap().requestedCredentialFields(),
+                            checkNotNull(selectionContext),
+                        )
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (error: Exception) {
@@ -309,7 +327,8 @@ internal class AutofillFillViewModel
         private suspend fun resolve(
             request: AutofillFillRequest,
             entryId: EntryId,
-            includeOtp: Boolean,
+            requestedFields: Set<AutofillCredentialField>,
+            context: AutofillDiscoveryContext,
         ) {
             when (
                 val outcome =
@@ -317,7 +336,9 @@ internal class AutofillFillViewModel
                         interactionId = request.interactionId,
                         scope = AutofillGrantContext(request.packageName, request.webDomain),
                         entryId = entryId,
-                        includeOtp = includeOtp,
+                        requestedFields = requestedFields,
+                        otpAutofillEnabled = context.otpAutofillEnabled,
+                        strictDomainMatching = context.strictDomainMatching,
                     )
             ) {
                 is AutofillSelectionOutcome.Filled -> {

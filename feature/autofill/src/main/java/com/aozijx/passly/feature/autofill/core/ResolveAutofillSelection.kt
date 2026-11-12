@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.access.model.AuthenticationResult
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialSelection
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
@@ -36,7 +37,9 @@ internal class ResolveAutofillSelection
             interactionId: AutofillInteractionId,
             scope: AutofillGrantContext,
             entryId: EntryId,
-            includeOtp: Boolean,
+            requestedFields: Set<AutofillCredentialField>,
+            otpAutofillEnabled: Boolean,
+            strictDomainMatching: Boolean,
         ): AutofillSelectionOutcome {
             val snapshot =
                 interactionStore.snapshot(interactionId)
@@ -66,8 +69,20 @@ internal class ResolveAutofillSelection
                 }
             }
             return when (val selection = interactionStore.beginSelection(interactionId, entryId, sessionGeneration)) {
-                is AutofillInteractionUpdate.Rejected -> AutofillSelectionOutcome.Rejected(selection.reason)
-                is AutofillInteractionUpdate.Updated -> resolve(interactionId, scope, entryId, includeOtp)
+                is AutofillInteractionUpdate.Rejected -> {
+                    AutofillSelectionOutcome.Rejected(selection.reason)
+                }
+
+                is AutofillInteractionUpdate.Updated -> {
+                    val fields = if (otpAutofillEnabled) requestedFields else requestedFields - AutofillCredentialField.OTP
+                    resolve(
+                        interactionId,
+                        scope,
+                        entryId,
+                        fields,
+                        strictDomainMatching,
+                    )
+                }
             }
         }
 
@@ -75,10 +90,11 @@ internal class ResolveAutofillSelection
             interactionId: AutofillInteractionId,
             scope: AutofillGrantContext,
             entryId: EntryId,
-            includeOtp: Boolean,
+            requestedFields: Set<AutofillCredentialField>,
+            strictDomainMatching: Boolean,
         ): AutofillSelectionOutcome =
             try {
-                resolveCredential(entryId, includeOtp)
+                resolveCredential(entryId, scope, requestedFields, strictDomainMatching)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: FreshAuthenticationRequiredException) {
@@ -89,7 +105,7 @@ internal class ResolveAutofillSelection
                     interactionStore.finish(interactionId, AutofillInteractionState.Cancelled)
                     return AutofillSelectionOutcome.Unauthorized
                 }
-                reauthenticateAndResolve(interactionId, scope, entryId, includeOtp)
+                reauthenticateAndResolve(interactionId, scope, entryId, requestedFields, strictDomainMatching)
             } catch (_: Exception) {
                 AutofillSelectionOutcome.Failed(AutofillOperationFailure.CREDENTIAL_RESOLUTION_FAILED)
             }
@@ -98,13 +114,14 @@ internal class ResolveAutofillSelection
             interactionId: AutofillInteractionId,
             scope: AutofillGrantContext,
             entryId: EntryId,
-            includeOtp: Boolean,
+            requestedFields: Set<AutofillCredentialField>,
+            strictDomainMatching: Boolean,
         ): AutofillSelectionOutcome =
             try {
                 when (authenticationRequester.authenticate(AuthenticationRequest(AuthenticationPurpose.AUTOFILL))) {
                     is AuthenticationResult.Success -> {
                         validateActiveSelection(interactionId, scope, entryId)
-                            ?: resolveCredential(entryId, includeOtp)
+                            ?: resolveCredential(entryId, scope, requestedFields, strictDomainMatching)
                     }
 
                     is AuthenticationResult.Cancelled -> {
@@ -153,12 +170,14 @@ internal class ResolveAutofillSelection
 
         private suspend fun resolveCredential(
             entryId: EntryId,
-            includeOtp: Boolean,
+            scope: AutofillGrantContext,
+            requestedFields: Set<AutofillCredentialField>,
+            strictDomainMatching: Boolean,
         ): AutofillSelectionOutcome =
             when (
                 val resolution =
                     credentialResolver.resolve(
-                        AutofillCredentialSelection(entryId, includeOtp),
+                        AutofillCredentialSelection(entryId, requestedFields, scope, strictDomainMatching),
                     )
             ) {
                 is AutofillCredentialResolution.Resolved -> AutofillSelectionOutcome.Filled(resolution.payload)

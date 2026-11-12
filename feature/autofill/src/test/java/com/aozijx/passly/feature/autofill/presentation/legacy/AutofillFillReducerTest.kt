@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.autofill.presentation.legacy
 
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -56,9 +57,12 @@ class AutofillFillReducerTest {
         val payload =
             AutofillCredentialPayload(
                 entryId = EntryId("entry-1"),
-                username = "alice",
-                password = "secret",
-                otpCode = "123456",
+                fields =
+                    mapOf(
+                        AutofillCredentialField.USERNAME to "alice",
+                        AutofillCredentialField.PASSWORD to "secret",
+                        AutofillCredentialField.OTP to "123456",
+                    ),
             )
         val receipt = AutofillSelectionReceipt(AutofillInteractionId("interaction-1"), payload.entryId)
         val selected =

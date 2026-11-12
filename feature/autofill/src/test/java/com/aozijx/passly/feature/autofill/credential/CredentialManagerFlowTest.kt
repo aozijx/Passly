@@ -213,6 +213,7 @@ class CredentialManagerFlowTest {
                     credentialManagerEnabled = true,
                     requireAuthentication = true,
                     strictDomainMatching = true,
+                    otpAutofillEnabled = false,
                 ),
                 AutofillSettings(
                     enabled = true,
@@ -220,6 +221,7 @@ class CredentialManagerFlowTest {
                     credentialManagerEnabled = false,
                     requireAuthentication = true,
                     strictDomainMatching = true,
+                    otpAutofillEnabled = false,
                 ),
             ).forEach { policy ->
                 val fixture = fixture(AuthenticationState.Authenticated(1L), policy)
@@ -247,6 +249,7 @@ class CredentialManagerFlowTest {
                 credentialManagerEnabled = true,
                 requireAuthentication = false,
                 strictDomainMatching = true,
+                otpAutofillEnabled = false,
             ),
         inboxOutcome: AutofillInboxEnqueueOutcome = AutofillInboxEnqueueOutcome.NotProvisioned,
     ): Fixture {
@@ -269,7 +272,13 @@ class CredentialManagerFlowTest {
         val resolver =
             RecordingCredentialResolver(
                 AutofillCredentialResolution.Resolved(
-                    AutofillCredentialPayload(EntryId("entry-1"), "alice", "secret"),
+                    AutofillCredentialPayload(
+                        EntryId("entry-1"),
+                        mapOf(
+                            com.aozijx.passly.domain.autofill.model.AutofillCredentialField.USERNAME to "alice",
+                            com.aozijx.passly.domain.autofill.model.AutofillCredentialField.PASSWORD to "secret",
+                        ),
+                    ),
                 ),
             )
         val commandRepository = RecordingEntryCreation()

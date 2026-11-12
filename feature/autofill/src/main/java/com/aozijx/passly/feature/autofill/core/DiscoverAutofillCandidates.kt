@@ -110,6 +110,8 @@ internal class DiscoverAutofillCandidates
                         roleMap = match.roleMap,
                         presentation = policy.presentation,
                         requireAuthentication = policy.requireAuthentication,
+                        otpAutofillEnabled = policy.otpAutofillEnabled,
+                        strictDomainMatching = policy.strictDomainMatching,
                     )
                 if (snapshot.state == AutofillInteractionState.RequiresUnlock) {
                     return AutofillDiscoveryOutcome.RequiresUnlock(snapshot, context)
@@ -137,7 +139,7 @@ internal class DiscoverAutofillCandidates
                     snapshot.state == AutofillInteractionState.CandidatesReady &&
                     scope.webDomain == null
                 ) {
-                    return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId)
+                    return AutofillDiscoveryOutcome.ResumeSelection(snapshot, directEntryId, context)
                 }
 
                 val candidates =

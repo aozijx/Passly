@@ -80,6 +80,7 @@ message AutofillPreferences {
     reserved 5 to 8;
     reserved "include_otp", "save_prompts_enabled", "allow_unmatched_suggestions", "max_suggestions";
     optional bool strict_domain_matching = 9 [default = true];
+    optional bool otp_autofill_enabled = 10 [default = false];
 }
 
 enum AutofillPresentationPreference {

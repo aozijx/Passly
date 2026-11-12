@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.app.autofill.AutofillServiceStatusSource
 import com.aozijx.passly.app.settings.RecoverableRead
-import com.aozijx.passly.domain.settings.model.AutofillSettings
 import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
@@ -13,7 +12,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -91,6 +89,12 @@ internal class AutofillSettingsViewModel
                     }
                 }
 
+                is AutofillSettingsAction.SetOtpAutofillEnabled -> {
+                    saveSetting {
+                        settingsRepository.setOtpAutofillEnabled(action.enabled)
+                    }
+                }
+
                 AutofillSettingsAction.RetryPreferences -> {
                     preferencesRead.retry()
                 }
@@ -139,10 +143,10 @@ internal class AutofillSettingsViewModel
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
-        private fun observeSystemService(retry: MutableStateFlow<Int>): Flow<AutofillSystemServiceStatus> =
+        private fun observeSystemService(retry: MutableStateFlow<Int>) =
             retry
                 .flatMapLatest {
-                    flow<AutofillSystemServiceObservation> {
+                    flow {
                         emit(AutofillSystemServiceObservation.Checking)
                         autofillServiceStatusSource.observeServiceEnabled().collect { isEnabled ->
                             emit(AutofillSystemServiceObservation.EnabledChanged(isEnabled))
@@ -154,7 +158,7 @@ internal class AutofillSettingsViewModel
                             else -> throw error
                         }
                     }
-                }.runningFold<AutofillSystemServiceObservation, AutofillSystemServiceStatus>(
+                }.runningFold(
                     AutofillSystemServiceStatus.Checking,
                     AutofillSettingsUiStateMapper::systemServiceStatus,
                 )

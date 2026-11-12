@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.autofill.credential
 
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.autofill.model.AutofillAuthorizationOutcome
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillDiscoveryOutcome
 import com.aozijx.passly.domain.autofill.model.AutofillGrantContext
 import com.aozijx.passly.domain.autofill.model.AutofillInboxEnqueueOutcome
@@ -121,22 +122,34 @@ internal class CredentialManagerFlow
                             interactionId = interactionId,
                             scope = scope,
                             entryId = entryId,
-                            includeOtp = false,
+                            requestedFields =
+                                setOf(
+                                    AutofillCredentialField.USERNAME,
+                                    AutofillCredentialField.PASSWORD,
+                                ),
+                            otpAutofillEnabled = false,
+                            strictDomainMatching = true,
                         )
                 ) {
                     is AutofillSelectionOutcome.Filled -> {
                         val payload = selection.payload
+                        val username =
+                            payload.fields[AutofillCredentialField.USERNAME]
+                                ?: return CredentialManagerPasswordResult.NotAvailable
+                        val password =
+                            payload.fields[AutofillCredentialField.PASSWORD]
+                                ?: return CredentialManagerPasswordResult.NotAvailable
                         if (
-                            payload.username.isBlank() ||
-                            payload.password.isBlank() ||
-                            (allowedUserIds.isNotEmpty() && payload.username !in allowedUserIds)
+                            username.isBlank() ||
+                            password.isBlank() ||
+                            (allowedUserIds.isNotEmpty() && username !in allowedUserIds)
                         ) {
                             CredentialManagerPasswordResult.NotAvailable
                         } else {
                             CredentialManagerPasswordResult
                                 .Success(
-                                    username = payload.username,
-                                    password = payload.password,
+                                    username = username,
+                                    password = password,
                                     receipt = AutofillSelectionReceipt(interactionId, payload.entryId),
                                 ).also { completed = true }
                         }

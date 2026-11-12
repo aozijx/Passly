@@ -4,15 +4,25 @@ import com.aozijx.passly.domain.entry.model.EntryId
 
 data class AutofillCredentialSelection(
     val entryId: EntryId,
-    val includeOtp: Boolean,
+    val requestedFields: Set<AutofillCredentialField>,
+    val scope: AutofillGrantContext,
+    val strictDomainMatching: Boolean,
 )
+
+enum class AutofillCredentialField {
+    USERNAME,
+    PASSWORD,
+    OTP,
+}
 
 data class AutofillCredentialPayload(
     val entryId: EntryId,
-    val username: String,
-    val password: String,
-    val otpCode: String? = null,
-)
+    val fields: Map<AutofillCredentialField, String>,
+) {
+    init {
+        require(fields.isNotEmpty())
+    }
+}
 
 sealed interface AutofillCredentialResolution {
     data class Resolved(

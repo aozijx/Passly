@@ -22,7 +22,8 @@ internal class RoomOtpConfigRepository
             databaseSession.queryFullVault(
                 onDenied = { null },
             ) {
-                secretFieldStore.readOtpGenerationMaterial(this, entryId)
+                val entry = entryQueryDao().getById(entryId) ?: return@queryFullVault null
+                secretFieldStore.readOtpGenerationMaterial(this, entry)
             }
 
         override suspend fun consumeHotpCode(

@@ -32,6 +32,7 @@ class AutofillSettingsSectionTest {
                 credentialManagerEnabled = false,
                 requireAuthentication = true,
                 strictDomainMatching = true,
+                otpAutofillEnabled = false,
             )
         composeRule.setContent {
             MaterialTheme {
@@ -133,5 +134,6 @@ class AutofillSettingsSectionTest {
             credentialManagerEnabled = false,
             requireAuthentication = true,
             strictDomainMatching = true,
+            otpAutofillEnabled = false,
         )
 }

@@ -386,6 +386,8 @@ class LegacyResponseFactoryInstrumentedTest {
         roleMap = roleMap,
         presentation = presentation,
         requireAuthentication = false,
+        otpAutofillEnabled = false,
+        strictDomainMatching = true,
     )
 
     private fun snapshot() =

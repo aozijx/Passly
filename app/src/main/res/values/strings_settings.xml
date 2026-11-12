@@ -197,6 +197,8 @@
     <string name="settings_autofill_require_authentication_summary">即使应用已解锁，每次填充仍需验证</string>
     <string name="settings_autofill_strict_domain_matching">严格匹配网站主机</string>
     <string name="settings_autofill_strict_domain_matching_summary">关闭后，也会匹配同一注册域名下的子域名</string>
+    <string name="settings_autofill_otp_enabled">填充一次性验证码</string>
+    <string name="settings_autofill_otp_enabled_summary">允许在登录填充请求包含验证码字段时填充 OTP</string>
     <!-- Interaction and gestures -->
     <!-- Swipe actions -->
     <string name="settings_swipe_action_copy_password">复制密码</string>

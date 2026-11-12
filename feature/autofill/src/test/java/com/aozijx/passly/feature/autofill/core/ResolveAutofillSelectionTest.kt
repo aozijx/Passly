@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.port.AuthenticationRequester
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.access.port.SessionLockController
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialResolution
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialSelection
@@ -30,6 +31,14 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
+private val loginCredentialFields =
+    setOf(AutofillCredentialField.USERNAME, AutofillCredentialField.PASSWORD)
+private val loginCredentialValues =
+    mapOf(
+        AutofillCredentialField.USERNAME to "alice",
+        AutofillCredentialField.PASSWORD to "secret",
+    )
 
 class ResolveAutofillSelectionTest {
     @Test
@@ -53,7 +62,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     AutofillGrantContext(" COM.EXAMPLE.APP ", "HTTPS://EXAMPLE.COM:443/login"),
                     EntryId("entry-1"),
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.CandidateUnavailable, outcome)
@@ -77,7 +88,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     scope("com.example.other"),
                     EntryId("entry-1"),
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.ScopeMismatch, outcome)
@@ -101,7 +114,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     scope(),
                     EntryId("entry-2"),
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(
@@ -127,7 +142,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     scope(),
                     EntryId("entry-1"),
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.Unauthorized, beforeAuthentication)
@@ -142,7 +159,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     scope(),
                     EntryId("entry-1"),
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.CandidateUnavailable, afterAuthentication)
@@ -155,8 +174,7 @@ class ResolveAutofillSelectionTest {
             val payload =
                 AutofillCredentialPayload(
                     entryId = EntryId("entry-1"),
-                    username = "alice",
-                    password = "secret",
+                    fields = loginCredentialValues,
                 )
             val fixture = fixture(AutofillCredentialResolution.Resolved(payload))
             val interaction =
@@ -172,12 +190,14 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     scope(),
                     payload.entryId,
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields + AutofillCredentialField.OTP,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.Filled(payload), outcome)
             assertEquals(1, fixture.resolver.resolveCalls)
-            assertTrue(fixture.resolver.lastSelection?.includeOtp == false)
+            assertEquals(loginCredentialFields, fixture.resolver.lastSelection?.requestedFields)
         }
 
     @Test
@@ -186,8 +206,7 @@ class ResolveAutofillSelectionTest {
             val payload =
                 AutofillCredentialPayload(
                     entryId = EntryId("entry-1"),
-                    username = "alice",
-                    password = "secret",
+                    fields = loginCredentialValues,
                 )
             val fixture = fixture(AutofillCredentialResolution.Resolved(payload))
             val interaction =
@@ -207,7 +226,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     webScope(),
                     payload.entryId,
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertTrue(outcome !is AutofillSelectionOutcome.Filled)
@@ -224,7 +245,7 @@ class ResolveAutofillSelectionTest {
             val fixture =
                 fixture(
                     AutofillCredentialResolution.Resolved(
-                        AutofillCredentialPayload(EntryId("entry-1"), "alice", "secret"),
+                        AutofillCredentialPayload(EntryId("entry-1"), loginCredentialValues),
                     ),
                 )
             val interaction = fixture.start(AutofillInteractionSource.LEGACY, webScope(), requireAuthentication = false)
@@ -232,7 +253,15 @@ class ResolveAutofillSelectionTest {
             fixture.store.recordCandidates(interaction.id, setOf(EntryId("entry-1")), sessionAtMs = 2L)
             fixture.store.confirmWebEntry(interaction.id, webScope(), EntryId("entry-1"), sessionAtMs = 2L)
 
-            val outcome = fixture.operation(interaction.id, webScope(), EntryId("entry-1"), includeOtp = false)
+            val outcome =
+                fixture.operation(
+                    interaction.id,
+                    webScope(),
+                    EntryId("entry-1"),
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
+                )
 
             assertEquals(
                 AutofillSelectionOutcome.Rejected(AutofillInteractionRejection.WEB_CONFIRMATION_EXPIRED),
@@ -247,8 +276,7 @@ class ResolveAutofillSelectionTest {
             val payload =
                 AutofillCredentialPayload(
                     entryId = EntryId("entry-1"),
-                    username = "alice",
-                    password = "secret",
+                    fields = loginCredentialValues,
                 )
             val fixture =
                 fixture(
@@ -270,7 +298,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     selectionScope,
                     payload.entryId,
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.Filled(payload), outcome)
@@ -318,7 +348,9 @@ class ResolveAutofillSelectionTest {
                     interaction.id,
                     selectionScope,
                     EntryId("entry-1"),
-                    includeOtp = false,
+                    requestedFields = loginCredentialFields,
+                    otpAutofillEnabled = false,
+                    strictDomainMatching = true,
                 )
 
             assertEquals(AutofillSelectionOutcome.Cancelled, outcome)

@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
+import com.aozijx.passly.domain.autofill.model.AutofillCredentialField
 import com.aozijx.passly.domain.autofill.model.AutofillCredentialPayload
 import com.aozijx.passly.domain.autofill.model.AutofillField
 import com.aozijx.passly.domain.autofill.model.AutofillInteractionId
@@ -211,9 +212,9 @@ internal class AccessibilityFillSessionStore
                 pending.roles.mapNotNull { (id, role) ->
                     val value =
                         when (role) {
-                            FieldRole.USERNAME -> pending.payload.username
-                            FieldRole.PASSWORD -> pending.payload.password
-                            FieldRole.OTP -> pending.payload.otpCode
+                            FieldRole.USERNAME -> pending.payload.fields[AutofillCredentialField.USERNAME]
+                            FieldRole.PASSWORD -> pending.payload.fields[AutofillCredentialField.PASSWORD]
+                            FieldRole.OTP -> pending.payload.fields[AutofillCredentialField.OTP]
                             FieldRole.SUBMIT, FieldRole.UNKNOWN -> null
                         }?.takeIf(String::isNotBlank) ?: return@mapNotNull null
                     val node = captured.nodes[id] ?: return@mapNotNull null

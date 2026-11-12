@@ -8,8 +8,8 @@ package com.aozijx.passly.domain.settings.model
  * specific gate.
  * [presentation] applies to the traditional AutofillService; Credential Manager
  * and Accessibility use their platform-specific presentation flows. OTP is
- * included only when the current request exposes an OTP field; Credential
- * Manager password requests do not support OTP credentials.
+ * filled only when [otpAutofillEnabled] and the current request exposes an OTP
+ * field; Credential Manager password requests do not support OTP credentials.
  */
 data class AutofillSettings(
     val enabled: Boolean,
@@ -17,6 +17,7 @@ data class AutofillSettings(
     val credentialManagerEnabled: Boolean,
     val requireAuthentication: Boolean,
     val strictDomainMatching: Boolean,
+    val otpAutofillEnabled: Boolean,
 )
 
 enum class AutofillPresentation(
