@@ -27,11 +27,16 @@ internal class EntryRevisionHistoryInitializationFlow
                             AppResult.success(Unit)
                         } else {
                             when (val rebuilt = rebuild()) {
-                                is AppResult.Failure -> rebuilt
+                                is AppResult.Failure -> {
+                                    rebuilt
+                                }
 
                                 is AppResult.Success -> {
                                     when (val marked = markCompleted(currentGeneration)) {
-                                        is AppResult.Failure -> marked
+                                        is AppResult.Failure -> {
+                                            marked
+                                        }
+
                                         is AppResult.Success -> {
                                             afterCommitCleanup()
                                             AppResult.success(Unit)

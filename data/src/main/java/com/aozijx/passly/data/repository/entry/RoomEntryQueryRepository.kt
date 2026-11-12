@@ -29,7 +29,8 @@ internal class RoomEntryQueryRepository
             return databaseSession.queryFullVault(
                 onDenied = { emptyMap() },
             ) {
-                entryIds.distinct()
+                entryIds
+                    .distinct()
                     .chunked(MAX_ENTRY_IDS_PER_QUERY)
                     .flatMap { ids -> entryQueryDao().getTypesByIds(ids.map(EntryId::value)) }
                     .associate { EntryId(it.entryId) to it.entryType }
@@ -74,7 +75,7 @@ internal class RoomEntryQueryRepository
                 entryQueryDao().getActive().flatMapTo(linkedSetOf()) { it.tags }
             }
 
-    private companion object {
-        const val MAX_ENTRY_IDS_PER_QUERY = 900
-    }
+        private companion object {
+            const val MAX_ENTRY_IDS_PER_QUERY = 900
+        }
     }

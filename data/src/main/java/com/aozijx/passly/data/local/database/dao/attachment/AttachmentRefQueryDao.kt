@@ -14,5 +14,4 @@ interface AttachmentRefQueryDao {
 
     @Query("SELECT * FROM attachment_refs WHERE entryId IN (:entryIds) ORDER BY entryId, displayOrder, createdAt")
     suspend fun getByEntryIds(entryIds: List<String>): List<AttachmentRefEntity>
-
 }

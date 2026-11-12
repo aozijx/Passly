@@ -24,8 +24,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.domain.entry.otp.generation.OtpResult
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationConfig
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After

@@ -254,10 +254,11 @@ internal object EntrySecretMapper {
                 is OtpConfig.Totp -> algorithm to digits
                 is OtpConfig.Hotp -> algorithm to digits
             }
-        val movingFactor = when (this) {
-            is OtpConfig.Totp -> periodSeconds to null
-            is OtpConfig.Hotp -> null to counter
-        }
+        val movingFactor =
+            when (this) {
+                is OtpConfig.Totp -> periodSeconds to null
+                is OtpConfig.Hotp -> null to counter
+            }
         return OtpConfigPayload(
             type = type.toStorageKey(),
             secret = secret,

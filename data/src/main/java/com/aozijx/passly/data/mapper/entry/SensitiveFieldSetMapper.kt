@@ -6,10 +6,10 @@ import com.aozijx.passly.domain.entry.model.credential.EntryCredential
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
-import com.aozijx.passly.domain.entry.model.otp.withSecret
 import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.otp.withSecret
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 
 internal sealed interface SensitiveFieldUpdate {

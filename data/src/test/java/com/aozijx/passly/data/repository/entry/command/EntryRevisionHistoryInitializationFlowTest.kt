@@ -181,12 +181,11 @@ class EntryRevisionHistoryInitializationFlowTest {
         rebuild: suspend () -> AppResult<Unit>,
         markCompleted: suspend (Int) -> AppResult<Unit> = { AppResult.success(Unit) },
         afterCommitCleanup: suspend () -> Unit = {},
-    ) =
-        EntryRevisionHistoryInitializationFlow(
-            currentGeneration = 1,
-            completedGeneration = completedGeneration,
-            rebuild = rebuild,
-            markCompleted = markCompleted,
-            afterCommitCleanup = afterCommitCleanup,
-        )
+    ) = EntryRevisionHistoryInitializationFlow(
+        currentGeneration = 1,
+        completedGeneration = completedGeneration,
+        rebuild = rebuild,
+        markCompleted = markCompleted,
+        afterCommitCleanup = afterCommitCleanup,
+    )
 }

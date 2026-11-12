@@ -32,8 +32,9 @@ internal class HotpCodeConsumptionTransaction
                     ?.takeIf { it.deletedAt == null && it.entryType == EntryType.OTP }
                     ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
             val bundle = secretFieldStore.readBundle(db, entryId, entry.entryType)
-            val storedConfig = bundle.otp?.config as? OtpConfig.Hotp
-                ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            val storedConfig =
+                bundle.otp?.config as? OtpConfig.Hotp
+                    ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
             if (storedConfig.counter != expectedCounter) {
                 return OtpResult.Failure(OtpGenerationError.CounterChanged)
             }
@@ -68,7 +69,9 @@ internal class HotpCodeConsumptionTransaction
                         result
                     }
 
-                    is OtpResult.Success -> OtpResult.Failure(OtpGenerationError.InvalidCounter)
+                    is OtpResult.Success -> {
+                        OtpResult.Failure(OtpGenerationError.InvalidCounter)
+                    }
                 }
             } finally {
                 material.close()
