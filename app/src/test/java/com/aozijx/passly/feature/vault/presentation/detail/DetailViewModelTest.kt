@@ -71,7 +71,6 @@ import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RelatedPasswordOperationsImpl
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
-import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.RollbackHotpCounterUseCase
@@ -79,6 +78,7 @@ import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
+import com.aozijx.passly.feature.vault.otp.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.otp.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.createTestOtpRuntime
 import com.aozijx.passly.feature.vault.otp.generationMaterialForTest
@@ -1455,7 +1455,7 @@ class DetailViewModelTest {
                         clipboard,
                         activity,
                     ),
-                copyOtpCodeUseCase = CopyOtpCodeUseCase(authGate, clipboard, activity),
+                copyOtpCodeUseCase = CopyOtpCodeUseCase(authGate, clipboard, activity, otpRuntime),
                 rollbackHotpCounterUseCase = RollbackHotpCounterUseCase(authGate, otpRuntime),
                 faviconImageProcessor = favicon,
                 presentationLoader =

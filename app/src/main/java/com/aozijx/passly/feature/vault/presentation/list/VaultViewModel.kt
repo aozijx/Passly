@@ -64,7 +64,6 @@ class VaultViewModel
         private val entryCommands =
             entryCommandWorkflowFactory.create(
                 scope = viewModelScope,
-                otpRuntime = otpRuntime,
                 pageEffects = pageEffects,
                 onOtpEntryRemoved = ::onOtpEntryRemoved,
             )

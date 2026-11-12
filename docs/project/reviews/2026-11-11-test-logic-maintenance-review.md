@@ -55,7 +55,7 @@ OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节�
 
 - `RoomObservationSessionTest` 的八个场景分别覆盖授权二次核验、已准入事务排空、新命令撤权拒绝、reset 后 Paging 重启、seal 等待/超时，以及普通锁/数据库锁导致旧 DAO emission 取消或占位后恢复订阅；这些场景验证的授权时点和 Room 生命周期不同，保留独立测试。
 - `EntryRevisionLifecycleDaoTest` 分别验证单条目保留上限、跨条目全局清理稳定 tie-break、软删除与永久删除历史差异、清空回收站仅清删除项历史；没有同一结果的重复断言。
-- `EntryLinkConstraintDaoTest.endpointTripleIsUnique_andDeletingEndpointCascadesLink` 已覆盖 DAO 唯一约束、同 ID 更新和级联删除；缺少的是 Repository `upsert()` 与端点删除的事务交错，所以 Task 35 只追 Repository 竞态，不再添加相同 DAO 约束测试。
+- `EntryLinkConstraintDaoTest.endpointPairIsUnique_andDeletingEndpointCascadesLink` 已覆盖 `(firstEntryId, secondEntryId)` DAO 唯一约束、同 ID 更新和级联删除；缺少的是 Repository `upsert()` 与端点删除的事务交错，所以 Task 35 只追 Repository 竞态，不再添加相同 DAO 约束测试。
 - 当前 Data 有 176 项 JVM 测试，AndroidTest 源集编译通过。全仓未发现 `src/testFixtures`/`src/androidTestFixtures` 目录或 Gradle fixture 配置，也未发现 disabled/ignored 测试、明显恒真断言或重复的反引号测试名；这些命名/静态筛查不能代替剩余 Feature owner 的逐例审查。
 
 ## DetailViewModelTest 拆分评估
@@ -92,9 +92,13 @@ OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节�
 
 ## Vault 列表 ViewModel 测试复核
 
-`VaultViewModelTest` 的类别流“首个 emission 前失败”与“先发值再失败”分别验证空初态错误和已发状态后错误；字段复制与 OTP 复制在页面离开时分别保护敏感字段写入与 OTP lease 状态；删除后清 OTP 状态与清理 graph lease 验证的是运行时最终态与 lease 副作用；设置读取恢复、排序 Paging generation、排序写入失败反馈也属于不同数据源/状态 owner。未发现可删除的重复场景。删除旧 `VaultDisplayViewModelTest` 后曾只保留失败重试与 hierarchy 行为，本轮补回了新的 owner 下“等所有设置源发值再离开 Loading”及完整 Ready 字段投影断言。`retainOtpIsIdempotentAndGraphViewModelOwnsLeaseUntilCleared` 原来只持有一个 entry，本轮扩展为两个 entry，重复 retain 第一个，并验证 ViewModel 清理时两个 lease 都释放。`:app:testDebugUnitTest --tests com.aozijx.passly.feature.vault.presentation.list.VaultViewModelTest` 通过。
+`VaultViewModelTest` 的类别流“首个 emission 前失败”与“先发值再失败”分别验证空初态错误和已发状态后错误；字段复制与 OTP 复制在页面离开时分别保护敏感字段写入与 OTP lease 状态；删除后清 OTP 状态与清理 graph lease 验证的是运行时最终态与 lease 副作用；设置读取恢复、排序 Paging generation、排序写入失败反馈也属于不同数据源/状态 owner。未发现可删除的重复场景。删除旧 `VaultDisplayViewModelTest` 后曾只保留失败重试与 hierarchy 行为，本轮补回了新的 owner 下“等所有设置源发值再离开 Loading”及完整 Ready 字段投影断言。`retainOtpIsIdempotentAndGraphViewModelOwnsLeaseUntilCleared` 原来只持有一个 entry，本轮扩展为两个 entry，重复 retain 第一个，并验证 ViewModel 清理时两个 lease 都释放。
 
-同名源集测试核对发现 JVM 与 AndroidTest 各有 `AppBackupSnapshotGatewayTest`，但并非重复：JVM 测试覆盖 restore 的映射、overwrite 保护和 OTP invalidation；AndroidTest 覆盖实际 Android `Context` 下的 `read()`、资源 ID 和读取选项上限。保留两个 source set 的测试 owner。
+本批新增的 HOTP 列表复制用例覆盖：成功消费计数后才写剪贴板并记录 Activity、消费事务失败不交付、授权取消不消费，以及页面离开或 session 撤权期间不消费/不交付。2026-11-12 在当前工作树使用 fresh single-use Gradle daemon 实际执行 `:app:testDebugUnitTest --tests com.aozijx.passly.feature.vault.presentation.list.VaultViewModelTest --rerun-tasks --no-daemon --no-parallel --max-workers=2`，退出码 0；构建报告 119 个 actionable tasks 成功，未报告测试失败。首次复跑遇到复用 daemon 的 KSP 生成 Java 读取错误，执行 `gradlew --stop` 后重跑通过；该环境仍输出一个与本批无关的 `FaviconImageStore.kt` nullable receiver 编译警告。该结果只覆盖当前 Vault ViewModel 测试，不代表 Route/NavHost 或设备验收完成。
+
+同名源集测试核对发现 JVM 与 AndroidTest 各有 `AppBackupSnapshotGatewayTest`，但并非重复：JVM 测试覆盖 restore 的映射、overwrite 保护和 OTP invalidation；AndroidTest 覆盖实际 Android `Context` 下的 `read()`、资源 ID 和读取选项上限。保留两个 source set 的测试 owner。列表 HOTP 的 ViewModel 行为断言已在本批补齐；OTP 专题剩余项仅继续跟踪 Runtime/Detail/Route/NavHost 的 owner 交接与设备验收，不重复本批用例。
+
+当前工作树的 Data entity 可见性收敛曾使 `SensitiveRevisionSnapshotCodec` 和 `EntryPagingRow` 的 public API 暴露 internal 类型，导致 App 单测编译门禁失败；将这两个仅供 Data 模块内部使用的辅助类型同步收窄为 `internal` 后，未改变数据库或编码合同。随后使用 `--no-build-cache --no-configuration-cache --no-daemon --no-parallel --max-workers=2` 验证：Copy OTP/Field、Vault ViewModel、Detail ViewModel 定向测试通过；Vault/OTP 映射与两个 Backup owner 定向测试共 48 项、0 failures、0 errors、0 skipped。设备、Route/NavHost 和全仓逻辑审查仍不由这些 JVM 结果替代。
 
 ## Autofill 提交与结果测试复核
 

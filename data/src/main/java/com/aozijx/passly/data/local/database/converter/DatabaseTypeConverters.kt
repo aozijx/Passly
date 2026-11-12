@@ -10,7 +10,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 
-object EntryTypeConverter {
+internal object EntryTypeConverter {
     @TypeConverter
     fun fromEntryType(value: EntryType): String = value.toStorageKey()
 
@@ -18,7 +18,7 @@ object EntryTypeConverter {
     fun toEntryType(value: String): EntryType = entryTypeFromStorageKey(value)
 }
 
-object ActivityTypeConverter {
+internal object ActivityTypeConverter {
     @TypeConverter
     fun fromActivityType(value: ActivityType): String = value.toStorageKey()
 
@@ -26,7 +26,7 @@ object ActivityTypeConverter {
     fun toActivityType(value: String): ActivityType = activityTypeFromStorageKey(value)
 }
 
-object OtpTypeConverter {
+internal object OtpTypeConverter {
     @TypeConverter
     fun fromOtpType(value: OtpType): String = value.toStorageKey()
 
@@ -34,7 +34,7 @@ object OtpTypeConverter {
     fun toOtpType(value: String): OtpType = otpTypeFromStorageKey(value)
 }
 
-object StringSetConverter {
+internal object StringSetConverter {
     @TypeConverter
     fun fromStringSet(value: Set<String>): String = AppJson.encodeToString(value.sorted())
 

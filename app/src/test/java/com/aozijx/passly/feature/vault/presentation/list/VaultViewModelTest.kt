@@ -56,9 +56,9 @@ import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
-import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.entryTypes
+import com.aozijx.passly.feature.vault.otp.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
 import com.aozijx.passly.feature.vault.otp.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpLease
@@ -314,6 +314,207 @@ class VaultViewModelTest {
                 )
             } finally {
                 gate.resume.complete(Unit)
+                otpStateCollector.cancel()
+                runCurrent()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun vaultHOTPcopyConsumesCounterOnceAndRecordsOnlyDeliveredCopy() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = RecordingHotpRepository()
+            val runtime = createTestOtpRuntime(repository, scope = backgroundScope)
+            val gate = PausingAuthorizationGate()
+            val clipboardValues = mutableListOf<String>()
+            val activityRecorder = RecordingActivityRecorder()
+            val viewModel =
+                createViewModel(
+                    gate = gate,
+                    clipboardValues = clipboardValues,
+                    otpRuntime = runtime,
+                    activityRecorder = activityRecorder,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value, OtpType.HOTP)
+
+            try {
+                runCurrent()
+                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.HotpReady)
+
+                viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
+                gate.started.await()
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertEquals(listOf(0L), repository.consumedCounters)
+                assertEquals(1L, repository.currentCounter)
+                assertEquals(listOf("123456"), clipboardValues)
+                assertEquals(listOf(ENTRY_ID.value), activityRecorder.copiedEntryIds)
+                assertEquals(listOf(ActivityType.COPY_OTP_CODE), activityRecorder.recordedTypes)
+            } finally {
+                gate.resume.complete(Unit)
+                viewModel.onPageExited(owner)
+                otpStateCollector.cancel()
+                runCurrent()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun vaultHOTPcopyDoesNotDeliverWhenCounterTransactionFails() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = RecordingHotpRepository(failConsumption = true)
+            val runtime = createTestOtpRuntime(repository, scope = backgroundScope)
+            val gate = PausingAuthorizationGate()
+            val clipboardValues = mutableListOf<String>()
+            val activityRecorder = RecordingActivityRecorder()
+            val viewModel =
+                createViewModel(
+                    gate = gate,
+                    clipboardValues = clipboardValues,
+                    otpRuntime = runtime,
+                    activityRecorder = activityRecorder,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value, OtpType.HOTP)
+
+            try {
+                runCurrent()
+                viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
+                gate.started.await()
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertEquals(listOf(0L), repository.consumedCounters)
+                assertEquals(0L, repository.currentCounter)
+                assertTrue(clipboardValues.isEmpty())
+                assertTrue(activityRecorder.copiedEntryIds.isEmpty())
+                assertTrue(activityRecorder.recordedTypes.isEmpty())
+            } finally {
+                gate.resume.complete(Unit)
+                viewModel.onPageExited(owner)
+                otpStateCollector.cancel()
+                runCurrent()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun vaultHOTPcopyDoesNotConsumeOrDeliverWhenAuthorizationIsCancelled() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = RecordingHotpRepository()
+            val runtime = createTestOtpRuntime(repository, scope = backgroundScope)
+            val clipboardValues = mutableListOf<String>()
+            val activityRecorder = RecordingActivityRecorder()
+            val viewModel =
+                createViewModel(
+                    gate = CancelledAuthorizationGate,
+                    clipboardValues = clipboardValues,
+                    otpRuntime = runtime,
+                    activityRecorder = activityRecorder,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value, OtpType.HOTP)
+
+            try {
+                runCurrent()
+                viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
+                runCurrent()
+
+                assertTrue(repository.consumedCounters.isEmpty())
+                assertEquals(0L, repository.currentCounter)
+                assertTrue(clipboardValues.isEmpty())
+                assertTrue(activityRecorder.copiedEntryIds.isEmpty())
+                assertTrue(activityRecorder.recordedTypes.isEmpty())
+            } finally {
+                viewModel.onPageExited(owner)
+                otpStateCollector.cancel()
+                runCurrent()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun vaultHOTPcopyDoesNotConsumeOrDeliverAfterPageExitDuringAuthorization() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = RecordingHotpRepository()
+            val runtime = createTestOtpRuntime(repository, scope = backgroundScope)
+            val gate = PausingAuthorizationGate()
+            val clipboardValues = mutableListOf<String>()
+            val activityRecorder = RecordingActivityRecorder()
+            val viewModel =
+                createViewModel(
+                    gate = gate,
+                    clipboardValues = clipboardValues,
+                    otpRuntime = runtime,
+                    activityRecorder = activityRecorder,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value, OtpType.HOTP)
+
+            try {
+                runCurrent()
+                viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
+                gate.started.await()
+                viewModel.onPageExited(owner)
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertTrue(repository.consumedCounters.isEmpty())
+                assertEquals(0L, repository.currentCounter)
+                assertTrue(clipboardValues.isEmpty())
+                assertTrue(activityRecorder.copiedEntryIds.isEmpty())
+                assertTrue(activityRecorder.recordedTypes.isEmpty())
+            } finally {
+                gate.resume.complete(Unit)
+                otpStateCollector.cancel()
+                runCurrent()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun vaultHOTPcopyDoesNotConsumeOrDeliverAfterSessionRevocationDuringAuthorization() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val repository = RecordingHotpRepository()
+            val runtime = createTestOtpRuntime(repository, scope = backgroundScope)
+            val gate = PausingAuthorizationGate()
+            val access = TestAccessState()
+            val clipboardValues = mutableListOf<String>()
+            val activityRecorder = RecordingActivityRecorder()
+            val viewModel =
+                createViewModel(
+                    gate = gate,
+                    clipboardValues = clipboardValues,
+                    otpRuntime = runtime,
+                    activityRecorder = activityRecorder,
+                    secureSessionAccessState = access,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val owner = viewModel.onPageEntered()
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value, OtpType.HOTP)
+
+            try {
+                runCurrent()
+                viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
+                gate.started.await()
+                access.authenticationState.value = AuthenticationState.Locked
+                gate.resume.complete(Unit)
+                runCurrent()
+
+                assertTrue(repository.consumedCounters.isEmpty())
+                assertEquals(0L, repository.currentCounter)
+                assertTrue(clipboardValues.isEmpty())
+                assertTrue(activityRecorder.copiedEntryIds.isEmpty())
+                assertTrue(activityRecorder.recordedTypes.isEmpty())
+            } finally {
+                gate.resume.complete(Unit)
+                viewModel.onPageExited(owner)
                 otpStateCollector.cancel()
                 runCurrent()
                 viewModelStore.clear()
@@ -825,11 +1026,12 @@ class VaultViewModelTest {
     private fun CoroutineScope.collectOtpState(
         viewModel: VaultViewModel,
         entryId: String,
+        otpType: OtpType = OtpType.TOTP,
     ) = launch {
         viewModel
             .otpUiStateFlow(
                 entryId = entryId,
-                otpPresentation = OtpPresentation.Applicable(OtpType.TOTP),
+                otpPresentation = OtpPresentation.Applicable(otpType),
                 showCode = true,
             ).collect()
     }
@@ -844,6 +1046,7 @@ class VaultViewModelTest {
         interfaceSettings: Flow<InterfaceSettings> = flowOf(sampleInterfaceSettings()),
         interactionSettings: Flow<InteractionSettings> = flowOf(sampleInteractionSettings()),
         otpRuntime: OtpCodeRuntimePort? = null,
+        activityRecorder: ActivityRecorder = TestActivityRecorder,
         onPageQuery: (EntryListQuery) -> Unit = {},
         setSort: suspend (EntrySort) -> Unit = {},
         moveToTrashResult: AppResult<Unit> = AppResult.Success(Unit),
@@ -852,7 +1055,7 @@ class VaultViewModelTest {
         val access = secureSessionAccessState
         val entries = TestEntries(onMoveToTrash, moveToTrashResult)
         val clipboard = SensitiveClipboardWriter { clipboardValues += it }
-        val activity = TestActivityRecorder
+        val activity = activityRecorder
         val sensitiveFields = EmptySensitiveFields
         val settings = TestSettingsRepository(librarySettings, setSort)
         val otpRuntime = otpRuntime ?: createTestOtpRuntime(otpConfigRepository)
@@ -883,7 +1086,7 @@ class VaultViewModelTest {
                             clipboardWriter = clipboard,
                             activityRecorder = activity,
                         ),
-                    copyOtpCode = CopyOtpCodeUseCase(gate, clipboard, activity),
+                    copyOtpCode = CopyOtpCodeUseCase(gate, clipboard, activity, otpRuntime),
                 ),
             otpRuntime = otpRuntime,
         )
@@ -957,6 +1160,14 @@ class VaultViewModelTest {
             resume.await()
             return AuthorizationResult.Allowed(block(object : AuthorizationPermit {}))
         }
+    }
+
+    private object CancelledAuthorizationGate : AuthorizationGate {
+        override suspend fun <T> authorize(
+            scope: AuthorizationScope,
+            input: AuthInput,
+            block: suspend (AuthorizationPermit) -> T,
+        ): AuthorizationResult<T> = AuthorizationResult.Cancelled
     }
 
     private class TestAccessState : SecureSessionAccessState {
@@ -1065,6 +1276,25 @@ class VaultViewModelTest {
         override suspend fun deleteBefore(timestamp: Long) = Unit
     }
 
+    private class RecordingActivityRecorder : ActivityRecorder {
+        val copiedEntryIds = mutableListOf<String>()
+        val recordedTypes = mutableListOf<ActivityType>()
+
+        override suspend fun recordUsage(
+            entryId: String,
+            type: ActivityType,
+            affectedFields: Set<FieldKey>,
+        ): AppResult<Unit> {
+            copiedEntryIds += entryId
+            recordedTypes += type
+            return AppResult.Success(Unit)
+        }
+
+        override suspend fun deleteByEntryId(entryId: String) = Unit
+
+        override suspend fun deleteBefore(timestamp: Long) = Unit
+    }
+
     private object EmptyOtpConfigRepository : OtpConfigRepository {
         override suspend fun getGenerationMaterial(entryId: String): OtpGenerationMaterial? = null
 
@@ -1086,6 +1316,34 @@ class VaultViewModelTest {
             entryId: String,
             expectedCounter: Long,
         ): OtpResult = OtpResult.Failure(OtpGenerationError.InvalidSecret)
+
+        override suspend fun rollbackHotpCounter(
+            entryId: String,
+            expectedCurrentCounter: Long,
+        ): Boolean = false
+    }
+
+    private class RecordingHotpRepository(
+        private val failConsumption: Boolean = false,
+    ) : OtpConfigRepository {
+        var currentCounter = 0L
+            private set
+        val consumedCounters = mutableListOf<Long>()
+
+        override suspend fun getGenerationMaterial(entryId: String) =
+            generationMaterialForTest(OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = currentCounter))
+
+        override suspend fun consumeHotpCode(
+            entryId: String,
+            expectedCounter: Long,
+        ): OtpResult {
+            consumedCounters += expectedCounter
+            if (expectedCounter != currentCounter) return OtpResult.Failure(OtpGenerationError.CounterChanged)
+            if (failConsumption) return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            val nextCounter = currentCounter + 1
+            currentCounter = nextCounter
+            return OtpResult.CounterSuccess(code = "123456", nextCounter = nextCounter)
+        }
 
         override suspend fun rollbackHotpCounter(
             entryId: String,

@@ -16,7 +16,7 @@ import javax.inject.Singleton
  * Field-level values (`PASSWORD`, card CVV, …) are never part of this payload.
  */
 @Singleton
-class SecretBundleCodec
+internal class SecretBundleCodec
     @Inject
     constructor(
         private val fieldEncryptor: FieldEncryptor,

@@ -41,5 +41,5 @@
 
 - 目录保持 schema 1；`group_path` 是必需归属元数据，不因开发期目录结构变化升级 schema。生成的 `ErrorCodes`、`Reasons`、`CatalogErrorCodes` 和 Markdown 使用嵌套归属，并校验叶节点/父级命名空间冲突。
 - 已迁移 Kotlin 生产与测试引用，没有保留扁平别名；现有目录 wire 字符串与基线逐项比较，变化数为 0。
-- 当前工作树运行 `:app:compileDebugKotlin verifyArchitecture --no-parallel --max-workers=2` 成功；其中 `verifyErrorCodes`、`verifyModuleBoundaries`、`verifyArchitecture` 与 App Kotlin 编译均通过。测试未运行。
+- HEAD `6064da2f4` 上重跑 `:app:compileDebugKotlin verifyArchitecture --no-parallel --max-workers=2` 成功；其中 `verifyErrorCodes`、`verifyModuleBoundaries`、`verifyArchitecture` 与 App Kotlin 编译均通过。测试未运行。
 - 运行时 Reporter 字段覆盖、UI 错误映射及调用方 fallback 尚未逐项核验；这些是剩余事项，不是编译阻断。

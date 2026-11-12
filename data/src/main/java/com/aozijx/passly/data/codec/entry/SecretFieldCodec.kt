@@ -10,7 +10,7 @@ import javax.inject.Inject
  * Encrypts and decrypts one field-level secret payload. Each field gets its own AES-GCM
  * ciphertext bound to `entryId + fieldKey`, so revealing one field never decrypts the others.
  */
-class SecretFieldCodec
+internal class SecretFieldCodec
     @Inject
     constructor(
         private val fieldEncryptor: SensitiveFieldCryptor,

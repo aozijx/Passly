@@ -19,7 +19,7 @@ data class SensitiveFieldCipherSnapshot(
 )
 
 @Singleton
-class SensitiveRevisionSnapshotCodec
+internal class SensitiveRevisionSnapshotCodec
     @Inject
     constructor() {
         fun encode(fields: List<EntrySecretFieldEntity>): ByteArray {

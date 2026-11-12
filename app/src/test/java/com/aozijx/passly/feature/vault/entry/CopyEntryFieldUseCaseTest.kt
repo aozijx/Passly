@@ -25,6 +25,7 @@ import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.feature.vault.copy.SensitiveCopyResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
@@ -40,7 +41,7 @@ class CopyEntryFieldUseCaseTest {
 
             val result = fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME, canDeliver = { true })
 
-            assertEquals(CopyEntryFieldResult.Copied, result)
+            assertEquals(SensitiveCopyResult.Copied, result)
             assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), fixture.gate.scope)
             assertEquals(listOf("alice"), fixture.clipboard.values)
             assertEquals(1, fixture.query.reads)
@@ -56,7 +57,7 @@ class CopyEntryFieldUseCaseTest {
 
             val result = fixture.useCase(ENTRY_ID, EntryType.LOGIN, FieldKey.PASSWORD, canDeliver = { true })
 
-            assertEquals(CopyEntryFieldResult.Copied, result)
+            assertEquals(SensitiveCopyResult.Copied, result)
             assertEquals(
                 AuthorizationScope.SensitiveFields(
                     entryId = ENTRY_ID,
@@ -96,7 +97,7 @@ class CopyEntryFieldUseCaseTest {
             visitCurrent = false
             finishQuery.complete(Unit)
 
-            assertEquals(CopyEntryFieldResult.Unavailable, pendingCopy.await())
+            assertEquals(SensitiveCopyResult.Unavailable, pendingCopy.await())
             assertTrue(fixture.clipboard.values.isEmpty())
             assertTrue(fixture.activityRecorder.activities.isEmpty())
         }
@@ -126,7 +127,7 @@ class CopyEntryFieldUseCaseTest {
             visitCurrent = false
             finishReveal.complete(Unit)
 
-            assertEquals(CopyEntryFieldResult.Unavailable, pendingCopy.await())
+            assertEquals(SensitiveCopyResult.Unavailable, pendingCopy.await())
             assertTrue(fixture.clipboard.values.isEmpty())
             assertTrue(fixture.activityRecorder.activities.isEmpty())
             assertTrue(revealed.isEmpty)
@@ -139,52 +140,10 @@ class CopyEntryFieldUseCaseTest {
 
             val result = fixture.useCase(ENTRY_ID, EntryType.ACCOUNT, FieldKey.USERNAME, canDeliver = { true })
 
-            assertEquals(CopyEntryFieldResult.NotAuthorized, result)
+            assertEquals(SensitiveCopyResult.NotAuthorized, result)
             assertEquals(0, fixture.query.reads)
             assertTrue(fixture.clipboard.values.isEmpty())
             assertTrue(fixture.activityRecorder.activities.isEmpty())
-        }
-
-    @Test
-    fun otpValueIsResolvedOnlyAfterAuthorization() =
-        runTest {
-            val gate = RecordingGate(allowed = true)
-            val clipboard = RecordingClipboard()
-            val activityRecorder = RecordingActivityRecorder()
-            var reads = 0
-
-            val result =
-                CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID, canDeliver = { true }) {
-                    reads++
-                    "123456"
-                }
-
-            assertEquals(CopyEntryFieldResult.Copied, result)
-            assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), gate.scope)
-            assertEquals(1, reads)
-            assertEquals(listOf("123456"), clipboard.values)
-            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_OTP_CODE), activityRecorder.activities)
-            assertEquals(listOf(emptySet<FieldKey>()), activityRecorder.affectedFields)
-        }
-
-    @Test
-    fun cancelledOtpAuthorizationDoesNotResolveValue() =
-        runTest {
-            val gate = RecordingGate(allowed = false)
-            val clipboard = RecordingClipboard()
-            val activityRecorder = RecordingActivityRecorder()
-            var reads = 0
-
-            val result =
-                CopyOtpCodeUseCase(gate, clipboard, activityRecorder).invoke(ENTRY_ID, canDeliver = { true }) {
-                    reads++
-                    "123456"
-                }
-
-            assertEquals(CopyEntryFieldResult.NotAuthorized, result)
-            assertEquals(0, reads)
-            assertTrue(clipboard.values.isEmpty())
-            assertTrue(activityRecorder.activities.isEmpty())
         }
 
     private fun fixture(

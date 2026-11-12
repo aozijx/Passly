@@ -49,6 +49,8 @@ INFO；ERROR/FATAL 可尝试一次独立 emergency write。
 取出的 flush boundary，因此 `flush()` 的 latch 可能已完成，而 `writeFailureCount` 没有增加，调用方会把未落盘批次当作成功。
 该 normal-writer fatal path 尚无测试覆盖，修复与行为测试见[诊断写入 flush TODO Task 1](../../../project/work/plans/2026-11-06-passly-diagnostics-reliability-followup.md)。
 
+`AppLifecycleObserver.onStop()` 将 `ObservabilityRuntimeController.flush()` 排入 `Dispatchers.IO` 的串行生命周期协程队列后立即返回；生命周期回调不等待该 flush 完成。`onDestroy()` 同样异步排入会话锁定与 runtime shutdown，并等待前序生命周期任务。若该任务运行且 flush 正常成功，store 会等待此前队列边界并同步文件；当前 fatal-writer 缺口仍可能让 flush 误报成功，见[诊断写入 flush Task 1](../../../project/work/plans/2026-11-06-passly-diagnostics-reliability-followup.md#task-1)。移除任务、force-stop 或进程被终止不能依赖这些回调保证最后一批落盘。设备上的退出与终止窗口仍由[诊断持久性 Task 77](../../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-77)验收。
+
 队列恢复并发生生命周期 flush 时，运行时写入一条 `application.log.overflow` 计数汇总。汇总不包含被丢弃内容，
 也不递归进入已饱和队列。
 
@@ -86,6 +88,7 @@ fatal `Error` 在这些清理动作后从 writer 线程传播。普通 crash han
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
 | 观测运行时启动、崩溃处理、flush 与关闭 | `ObservabilityRuntimeController.start()`、`flush()`、`shutdown()` | [`ObservabilityRuntimeController.kt`](../../../../app/src/main/java/com/aozijx/passly/app/observability/ObservabilityRuntimeController.kt) |
+| 应用前后台生命周期与诊断 flush 排队 | `AppLifecycleObserver.onStop()`、`onDestroy()`、`enqueueLifecycleOperation()` | [`AppLifecycleObserver.kt`](../../../../app/src/main/java/com/aozijx/passly/app/AppLifecycleObserver.kt) |
 | 诊断记录读取、分页与页面行映射 | `DiagnosticsLogStoreAdapter.readLines()`、`readRecords()` | [`DiagnosticsLogStoreAdapter.kt`](../../../../app/src/main/java/com/aozijx/passly/app/observability/DiagnosticsLogStoreAdapter.kt)、[`LogRecordStore.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
 | 加密日志记录读写、批次与 flush marker | `EncryptedLogRecordStore.write()`、`WriteTask.run()`、`writeBatch(batch)`、`flush(timeoutMs)`、`clear()` | [`EncryptedLogRecordStore.kt`](../../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogRecordStore.kt)、[`LogRecordStore.kt`](../../../../core/src/main/kotlin/com/aozijx/passly/core/observability/sink/LogRecordStore.kt) |
 | 日志文件轮转与过期文件清理 | `EncryptedLogFileManager.cleanup()`、`clear()` | [`EncryptedLogFileManager.kt`](../../../../data/src/main/java/com/aozijx/passly/data/observability/EncryptedLogFileManager.kt) |

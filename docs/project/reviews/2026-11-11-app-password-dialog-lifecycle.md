@@ -8,7 +8,7 @@ Coordinator/ViewModel JVM 测试分别覆盖关闭后迟到输入不能恢复草
 
 ## 尚未验收
 
-当前无连接的 Android 设备/AVD，仪器测试尚未运行。仍需执行该 Compose 测试并补真实配置重建验收，记录设备/API。该缺口由主维护 TODO Task 29 跟踪；现有 JVM owner 测试不能代替 Android 宿主生命周期验证。
+该仪器测试尚未执行。仍需运行 Compose 测试并补真实配置重建验收，记录设备/API。该缺口由主维护 TODO Task 29 跟踪；现有 JVM owner 测试不能代替 Android 宿主生命周期验证。
 
 ## 代码位置
 

@@ -24,16 +24,16 @@ import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.copy.SensitiveCopyResult
 import com.aozijx.passly.feature.vault.detail.EditableEntryLoadResult
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
-import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
-import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.RollbackHotpCounterUseCase
+import com.aozijx.passly.feature.vault.otp.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
@@ -702,7 +702,7 @@ class DetailViewModel
                         entry.type,
                         fieldKey,
                         canDeliver = { workSession.isCurrent(token) },
-                    ) != CopyEntryFieldResult.Copied
+                    ) != SensitiveCopyResult.Copied
                 ) {
                     return@launch
                 }
@@ -730,9 +730,7 @@ class DetailViewModel
                     copyOtpCodeUseCase(
                         entry.id,
                         canDeliver = { workSession.isCurrent(token) },
-                    ) {
-                        if (workSession.isCurrent(token)) otpRuntime.codeForCopy(entry.id.value) else null
-                    } != CopyEntryFieldResult.Copied
+                    ) != SensitiveCopyResult.Copied
                 ) {
                     return@launch
                 }

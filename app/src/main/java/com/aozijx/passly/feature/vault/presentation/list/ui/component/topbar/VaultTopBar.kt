@@ -28,7 +28,7 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.search.isEditing
 import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
 @Composable
-fun VaultTopBar(
+internal fun VaultTopBar(
     uiState: VaultTopBarUiState,
     searchStateHolder: VaultSearchStateHolder,
     scrollBehavior: TopAppBarScrollBehavior,

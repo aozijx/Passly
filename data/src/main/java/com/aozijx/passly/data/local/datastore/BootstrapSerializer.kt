@@ -7,7 +7,7 @@ import com.google.protobuf.InvalidProtocolBufferException
 import java.io.InputStream
 import java.io.OutputStream
 
-object BootstrapSerializer : Serializer<BootstrapData> {
+internal object BootstrapSerializer : Serializer<BootstrapData> {
     override val defaultValue: BootstrapData
         get() = BootstrapData.getDefaultInstance()
 

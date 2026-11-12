@@ -7,7 +7,7 @@ import com.google.protobuf.InvalidProtocolBufferException
 import java.io.InputStream
 import java.io.OutputStream
 
-object SecurityPreferencesSerializer : Serializer<SecurityPreferences> {
+internal object SecurityPreferencesSerializer : Serializer<SecurityPreferences> {
     override val defaultValue: SecurityPreferences = SecurityPreferences.getDefaultInstance()
 
     override suspend fun readFrom(input: InputStream): SecurityPreferences =

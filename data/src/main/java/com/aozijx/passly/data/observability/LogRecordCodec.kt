@@ -33,7 +33,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 
-object LogRecordCodec {
+internal object LogRecordCodec {
     private const val SCHEMA_VERSION = 1
     private const val MAX_STRING_BYTES = 4096
     private const val MAX_FIELDS = 64

@@ -94,7 +94,7 @@ data class DecodedEntryContentSnapshot(
 )
 
 @Singleton
-class EntryContentSnapshotCodec
+internal class EntryContentSnapshotCodec
     @Inject
     constructor(
         private val fieldEncryptor: FieldEncryptor,

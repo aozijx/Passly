@@ -11,11 +11,11 @@
 - `BiometricRotationReconcilerTest` 覆盖 committed alias/journal 清理重试、PREPARED candidate 删除失败、已激活 candidate 保护、普通 store failure、取消/fatal 传播和 metadata 更新失败后的幂等重试。
 - `AuthenticationAvailabilityRetryTest` 覆盖 transient refresh failure 的有界退避；`AppPasswordSettingsViewModelTest` 和 `SecuritySettingsViewModelTest` 覆盖 pending maintenance 到页面反馈的映射。
 
-这些测试验证组件与 helper 的合同，不证明真实 `RotateBiometricKeyUseCase`、`DefaultAuthenticationMethodProvisioner`、durable Store、Authentication Host 和设置页在提交竞态下的联合结果。当前工作树可找到 `AppPasswordProvisioningCommitTest.cancellation after persistence propagates`，但设置页 ViewModel 测试没有对应取消状态用例；本审查没有执行测试。
+这些测试验证组件与 helper 的合同，不证明真实 `RotateBiometricKeyUseCase`、`DefaultAuthenticationMethodProvisioner`、durable Store、Authentication Host 和设置页在提交竞态下的联合结果。[`AppPasswordSettingsViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/settings/presentation/security/AppPasswordSettingsViewModelTest.kt) 已覆盖请求缓冲清理、页面 owner/生命周期取消，以及提交前后取消时的页面状态和反馈；它使用 fake Provisioner 与 availability Flow，不能证明真实 Interactor/Provisioner/Store 的联合结果。本审查没有执行测试。
 
 ## 未关闭的 owner 验收
 
-Task 59 保留三项：实际 provisioner/store 组合在绑定提交后失败时返回成功及 pending 状态；真实 Host/启动 owner 的轮换错误、取消、fatal、journal 与 lease 终态；应用密码提交前后取消时 Interactor/ViewModel 的输入清理、`isEnabled` Flow、页面结果与重试状态一致。
+Task 59 保留三项：实际 provisioner/store 组合在绑定提交后失败时返回成功及 pending 状态；真实 Host/启动 owner 的轮换错误、取消、fatal、journal 与 lease 终态；真实 App Password Interactor/Provisioner/Store 在提交前后取消时的持久状态、页面结果与维护重试一致。输入缓冲清理和 ViewModel 本地取消边界已由现有设置页测试覆盖。
 
 ## 代码与测试位置
 
