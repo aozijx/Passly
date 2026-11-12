@@ -6,7 +6,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
 /** A creation draft from an existing configuration; identity metadata is not form-normalized. */
@@ -37,13 +36,6 @@ fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft
                     .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digits))
                     .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(algorithm.name))
                     .withValue(definition, FieldKey.OTP_COUNTER, EntryDraftValue.LongNumber(counter))
-            }
-
-            is OtpConfig.Steam -> {
-                draft
-                    .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(SteamDefinition.DIGITS))
-                    .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(SteamDefinition.defaultAlgorithm.name))
-                    .withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(SteamDefinition.PERIOD_SECONDS))
             }
         }
     issuer?.takeIf(String::isNotBlank)?.let {

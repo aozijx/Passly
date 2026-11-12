@@ -38,13 +38,11 @@ internal fun VaultEntryRow(
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val totpState =
-        observeVaultOtpState(
-            entryId = item.id,
-            otpPresentation = item.otpPresentation,
-            otpUiStateFlow = otpUiStateFlow,
-            showCode = content.showTotpCode,
-        )
+    val otpStateFlow =
+        remember(item.id, item.otpPresentation, content.showTotpCode, otpUiStateFlow) {
+            otpUiStateFlow(item.id, item.otpPresentation, content.showTotpCode)
+        }
+    val totpState by otpStateFlow.collectAsStateWithLifecycle()
     val cardStyle =
         remember(
             item.entryType,
@@ -117,20 +115,6 @@ internal fun VaultEntryRow(
             )
         }
     }
-}
-
-@Composable
-internal fun observeVaultOtpState(
-    entryId: String,
-    otpPresentation: OtpPresentation,
-    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
-    showCode: Boolean,
-): OtpUiState {
-    val stateFlow = remember(entryId, otpPresentation, showCode, otpUiStateFlow) {
-        otpUiStateFlow(entryId, otpPresentation, showCode)
-    }
-    val current by stateFlow.collectAsStateWithLifecycle()
-    return current
 }
 
 private fun createAppSwipeActionSpec(

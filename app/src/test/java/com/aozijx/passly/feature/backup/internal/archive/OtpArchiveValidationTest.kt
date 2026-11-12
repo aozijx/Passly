@@ -1,6 +1,7 @@
 package com.aozijx.passly.feature.backup.internal.archive
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
@@ -63,7 +64,7 @@ class OtpArchiveValidationTest {
         val steam = otp("steam-defaults", field("otp_type", BackupFieldValue.text("steam")))
         BackupBundleValidator.validate(bundle(steam), requireResourceData = false)
         assertEquals(
-            OtpConfig.Steam(secret = SECRET),
+            SteamDefinition.configuration(secret = SECRET),
             mapper
                 .toEntry(steam)
                 .secret.otp

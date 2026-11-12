@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -65,13 +66,8 @@ class EntryValidationTest {
             otpViolations(OtpConfig.Totp(secret = "MY", digits = 5)),
         )
         assertEquals(
-            setOf(FieldKey.OTP_DIGITS, FieldKey.OTP_PERIOD, FieldKey.OTP_ALGORITHM)
-                .mapTo(linkedSetOf()) { EntryViolation(it, EntryViolationCode.INVALID_FORMAT) },
-            otpViolations(
-                OtpConfig.Steam(
-                    secret = "MY",
-                    ),
-            ),
+            setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.INVALID_FORMAT)),
+            otpViolations(SteamDefinition.configuration(secret = "MY")),
         )
     }
 

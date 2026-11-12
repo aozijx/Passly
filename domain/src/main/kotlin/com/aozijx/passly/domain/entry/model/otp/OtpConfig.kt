@@ -29,6 +29,12 @@ enum class OtpSecretEncoding {
     BASE64,
 }
 
+/** Steam uses the TOTP time factor with its own output alphabet and fixed parameters. */
+enum class TotpVariant {
+    STANDARD,
+    STEAM,
+}
+
 /** Configuration variants contain only the parameters their OTP algorithm consumes. */
 sealed interface OtpConfig {
     val type: OtpType
@@ -47,13 +53,29 @@ sealed interface OtpConfig {
         override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
         override val issuer: String? = null,
         override val accountName: String? = null,
+        val variant: TotpVariant = TotpVariant.STANDARD,
     ) : OtpConfig {
-        override val type = OtpType.TOTP
+        override val type =
+            when (variant) {
+                TotpVariant.STANDARD -> OtpType.TOTP
+                TotpVariant.STEAM -> OtpType.STEAM
+            }
 
         init {
             require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
-            require(digits in TotpDefinition.allowedDigits) { "TOTP digits are unsupported" }
-            require(periodSeconds > 0) { "TOTP period must be positive" }
+            when (variant) {
+                TotpVariant.STANDARD -> {
+                    require(digits in TotpDefinition.allowedDigits) { "TOTP digits are unsupported" }
+                    require(periodSeconds > 0) { "TOTP period must be positive" }
+                    require(algorithm in TotpDefinition.supportedAlgorithms) { "TOTP algorithm is unsupported" }
+                }
+
+                TotpVariant.STEAM -> {
+                    require(algorithm == SteamDefinition.defaultAlgorithm) { "Steam algorithm is fixed" }
+                    require(digits == SteamDefinition.DIGITS) { "Steam digits are fixed" }
+                    require(periodSeconds == SteamDefinition.PERIOD_SECONDS) { "Steam period is fixed" }
+                }
+            }
         }
     }
 
@@ -74,19 +96,6 @@ sealed interface OtpConfig {
             require(counter >= 0L) { "HOTP counter cannot be negative" }
         }
     }
-
-    data class Steam(
-        override val secret: String? = null,
-        override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
-        override val issuer: String? = null,
-        override val accountName: String? = null,
-    ) : OtpConfig {
-        override val type = OtpType.STEAM
-
-        init {
-            require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
-        }
-    }
 }
 
 /** Returns the same algorithm-specific configuration with a replaced secret value. */
@@ -94,5 +103,4 @@ fun OtpConfig.withSecret(secret: String?): OtpConfig =
     when (this) {
         is OtpConfig.Totp -> copy(secret = secret)
         is OtpConfig.Hotp -> copy(secret = secret)
-        is OtpConfig.Steam -> copy(secret = secret)
     }

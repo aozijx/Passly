@@ -136,7 +136,12 @@ object OtpAuthUriCodec {
                         if (algorithm !in SteamDefinition.supportedAlgorithms || digits != SteamDefinition.DIGITS) {
                             return OtpUriParseResult.Unsupported
                         }
-                        OtpConfig.Steam(secret, issuer = label.issuer, accountName = label.account)
+                        SteamDefinition.configuration(
+                            secret = secret,
+                            encoding = OtpSecretEncoding.BASE32,
+                            issuer = label.issuer,
+                            accountName = label.account,
+                        )
                     }
                 }
             } catch (_: IllegalArgumentException) {
@@ -167,7 +172,6 @@ object OtpAuthUriCodec {
                 when (config) {
                     is OtpConfig.Totp -> config.algorithm to config.digits
                     is OtpConfig.Hotp -> config.algorithm to config.digits
-                    is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm to SteamDefinition.DIGITS
                 }
             val parameters =
                 linkedMapOf(
@@ -183,7 +187,6 @@ object OtpAuthUriCodec {
             when (config) {
                 is OtpConfig.Totp -> parameters["period"] = config.periodSeconds.toString()
                 is OtpConfig.Hotp -> parameters["counter"] = config.counter.toString()
-                is OtpConfig.Steam -> parameters["period"] = SteamDefinition.PERIOD_SECONDS.toString()
             }
             label.issuer?.let { parameters["issuer"] = it }
             val text = label.issuer?.let { "$it:${label.account}" } ?: label.account

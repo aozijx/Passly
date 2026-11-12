@@ -91,7 +91,12 @@ internal object KeyedEntryArchiveMapper {
                             if (counter != null) add(FieldKey.OTP_COUNTER)
                         }
                     require(invalid.isEmpty()) { "Invalid Steam archive parameters" }
-                    OtpConfig.Steam(secret, encoding, issuer, accountName)
+                    SteamDefinition.configuration(
+                        secret = secret,
+                        encoding = encoding,
+                        issuer = issuer,
+                        accountName = accountName,
+                    )
                 }
             }
         require(OtpConfigValidation.validate(config).isEmpty()) { "Invalid OTP archive configuration" }

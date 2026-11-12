@@ -129,19 +129,22 @@ class EntryDraftMaterializer {
                 OtpType.STEAM -> {
                     val invalid =
                         buildSet {
-                            if (draft.text(FieldKey.OTP_ALGORITHM)?.let { it != SteamDefinition.defaultAlgorithm.name } == true) {
-                                add(FieldKey.OTP_ALGORITHM)
-                            }
-                            if (draft.number(FieldKey.OTP_DIGITS)?.let { it != SteamDefinition.DIGITS } == true) {
-                                add(FieldKey.OTP_DIGITS)
-                            }
-                            if (draft.number(FieldKey.OTP_PERIOD)?.let { it != SteamDefinition.PERIOD_SECONDS } == true) {
-                                add(FieldKey.OTP_PERIOD)
-                            }
+                            addAll(
+                                OtpConfigValidation.validateSteam(
+                                    algorithm = draft.otpAlgorithm(),
+                                    digits = draft.number(FieldKey.OTP_DIGITS) ?: SteamDefinition.DIGITS,
+                                    periodSeconds = draft.number(FieldKey.OTP_PERIOD) ?: SteamDefinition.PERIOD_SECONDS,
+                                ),
+                            )
                             if (draft.longNumber(FieldKey.OTP_COUNTER) != null) add(FieldKey.OTP_COUNTER)
                         }
                     if (invalid.isNotEmpty()) throw InvalidEntryDraft(invalid)
-                    OtpConfig.Steam(secret, encoding, issuer, accountName)
+                    SteamDefinition.configuration(
+                        secret = secret,
+                        encoding = encoding,
+                        issuer = issuer,
+                        accountName = accountName,
+                    )
                 }
             }
         return Entry(

@@ -12,4 +12,21 @@ data object SteamDefinition : OtpTypeDefinition {
 
     val defaultAlgorithm = OtpHashAlgorithm.SHA1
     val supportedAlgorithms = setOf(OtpHashAlgorithm.SHA1)
+
+    fun configuration(
+        secret: String? = null,
+        encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
+        issuer: String? = null,
+        accountName: String? = null,
+    ): OtpConfig.Totp =
+        OtpConfig.Totp(
+            secret = secret,
+            algorithm = defaultAlgorithm,
+            digits = DIGITS,
+            periodSeconds = PERIOD_SECONDS,
+            encoding = encoding,
+            issuer = issuer,
+            accountName = accountName,
+            variant = TotpVariant.STEAM,
+        )
 }

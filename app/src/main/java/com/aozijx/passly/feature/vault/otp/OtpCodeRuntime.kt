@@ -226,12 +226,16 @@ internal class OtpCodeRuntime(
                     is OtpResult.Failure -> {
                         OtpCodeState.Failed(nextResult.error)
                     }
+
+                    is OtpResult.CounterSuccess -> OtpCodeState.Failed(OtpGenerationError.InvalidCounter)
                 }
             }
 
             is OtpResult.Failure -> {
                 OtpCodeState.Failed(genResult.error)
             }
+
+            is OtpResult.CounterSuccess -> OtpCodeState.Failed(OtpGenerationError.InvalidCounter)
         }
 
     private fun retryable(error: OtpGenerationError): Boolean = error is OtpGenerationError.CryptoError
@@ -326,9 +330,8 @@ internal class OtpCodeRuntime(
                 val preview = states.value[entryId] as? OtpCodeState.HotpReady
                     ?: return@withLock OtpResult.Failure(OtpGenerationError.InvalidSecret)
                 when (val result = consumeHotpCode(entryId, preview.counter)) {
-                    is OtpResult.Success -> {
+                    is OtpResult.CounterSuccess -> {
                         val nextCounter = result.nextCounter
-                            ?: return@withLock OtpResult.Failure(OtpGenerationError.InvalidCounter)
                         if (!isCurrent(entryId, token)) return@withLock OtpResult.Failure(OtpGenerationError.InvalidSecret)
                         lastHotpNextCounters[entryId] = nextCounter
                         _states.update { it + (entryId to OtpCodeState.Pending) }
@@ -356,6 +359,8 @@ internal class OtpCodeRuntime(
                         }
                         result
                     }
+
+                    is OtpResult.Success -> OtpResult.Failure(OtpGenerationError.InvalidCounter)
                 }
             }
         } catch (_: FreshAuthenticationRequiredException) {
@@ -402,7 +407,7 @@ internal class OtpCodeRuntime(
             val nowSeconds = currentTimeMillis() / 1000
             val schedule = schedules[entryId]
             if (schedule is OtpSchedule.Counter) {
-                return (generateHotpCode(entryId) as? OtpResult.Success)?.code
+                return (generateHotpCode(entryId) as? OtpResult.CounterSuccess)?.code
             }
             val ready = states.value[entryId] as? OtpCodeState.TimedReady
             val timedSchedule = schedule as? OtpSchedule.Timed
@@ -432,7 +437,7 @@ internal class OtpCodeRuntime(
                     val expectedCounter = generationConfig.counter
                     val result = consumeHotpCode(entryId, expectedCounter)
                     if (!isCopyRequestCurrent(entryId, copyToken, copySessionEpoch)) return null
-                    return (result as? OtpResult.Success)?.code
+                    return (result as? OtpResult.CounterSuccess)?.code
                 }
                 val period =
                     when (generationConfig) {
@@ -576,6 +581,13 @@ internal class OtpCodeRuntime(
             val state =
                 when (val result = codeGenerator(material, counter)) {
                     is OtpResult.Success ->
+                        OtpCodeState.HotpReady(
+                            code = result.code,
+                            counter = counter,
+                            canRollbackPrevious = canRollbackPrevious,
+                        )
+
+                    is OtpResult.CounterSuccess ->
                         OtpCodeState.HotpReady(
                             code = result.code,
                             counter = counter,

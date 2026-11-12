@@ -30,10 +30,9 @@ import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
-import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
+import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 
 object EntrySecretMapper {
     fun toPayload(
@@ -254,12 +253,10 @@ object EntrySecretMapper {
             when (this) {
                 is OtpConfig.Totp -> algorithm to digits
                 is OtpConfig.Hotp -> algorithm to digits
-                is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm to SteamDefinition.DIGITS
             }
         val movingFactor = when (this) {
             is OtpConfig.Totp -> periodSeconds to null
             is OtpConfig.Hotp -> null to counter
-            is OtpConfig.Steam -> SteamDefinition.PERIOD_SECONDS to null
         }
         return OtpConfigPayload(
             type = type.toStorageKey(),
@@ -279,27 +276,47 @@ object EntrySecretMapper {
         val algorithm = otpHashAlgorithmFromStorageKey(algorithm)
         val encoding = otpSecretEncodingFromStorageKey(encoding)
         return when (otpType) {
-            OtpType.TOTP ->
+            OtpType.TOTP -> {
+                require(counter == null) { "TOTP payload cannot contain a counter" }
                 OtpConfig.Totp(
                     secret,
                     algorithm,
                     digits,
-                    periodSeconds ?: TotpDefinition.DEFAULT_PERIOD_SECONDS,
+                    requireNotNull(periodSeconds) { "TOTP payload is missing its period" },
                     encoding,
                     issuer,
                     accountName,
                 )
-            OtpType.HOTP ->
+            }
+
+            OtpType.HOTP -> {
+                require(periodSeconds == null) { "HOTP payload cannot contain a period" }
                 OtpConfig.Hotp(
                     secret,
                     algorithm,
                     digits,
-                    counter ?: HotpDefinition.INITIAL_COUNTER,
+                    requireNotNull(counter) { "HOTP payload is missing its counter" },
                     encoding,
                     issuer,
                     accountName,
                 )
-            OtpType.STEAM -> OtpConfig.Steam(secret, encoding, issuer, accountName)
+            }
+
+            OtpType.STEAM -> {
+                val period = requireNotNull(periodSeconds) { "Steam payload is missing its period" }
+                require(period == SteamDefinition.PERIOD_SECONDS) { "Steam payload period is invalid" }
+                require(counter == null) { "Steam payload cannot contain a counter" }
+                require(algorithm in SteamDefinition.supportedAlgorithms) { "Steam payload algorithm is invalid" }
+                require(OtpConfigValidation.validateSteam(algorithm, digits, period).isEmpty()) {
+                    "Steam payload parameters are invalid"
+                }
+                SteamDefinition.configuration(
+                    secret = secret,
+                    encoding = encoding,
+                    issuer = issuer,
+                    accountName = accountName,
+                )
+            }
         }
     }
 

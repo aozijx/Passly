@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
 import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
@@ -32,12 +33,17 @@ internal fun OtpFormState.fromEntry(entry: Entry): OtpFormState {
         configuration =
             when (config) {
                 is OtpConfig.Totp -> {
-                    OtpFormConfiguration.Totp(
-                        algorithm = config.algorithm,
-                        digits = config.digits.toString(),
-                        periodSeconds = config.periodSeconds.toString(),
-                        encoding = config.encoding,
-                    )
+                    when (config.variant) {
+                        TotpVariant.STANDARD ->
+                            OtpFormConfiguration.Totp(
+                                algorithm = config.algorithm,
+                                digits = config.digits.toString(),
+                                periodSeconds = config.periodSeconds.toString(),
+                                encoding = config.encoding,
+                            )
+
+                        TotpVariant.STEAM -> OtpFormConfiguration.Steam(config.encoding)
+                    }
                 }
 
                 is OtpConfig.Hotp -> {
@@ -47,10 +53,6 @@ internal fun OtpFormState.fromEntry(entry: Entry): OtpFormState {
                         counter = config.counter.toString(),
                         encoding = config.encoding,
                     )
-                }
-
-                is OtpConfig.Steam -> {
-                    OtpFormConfiguration.Steam(config.encoding)
                 }
 
                 null -> {

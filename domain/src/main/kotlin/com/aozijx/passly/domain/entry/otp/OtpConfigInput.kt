@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
@@ -128,7 +129,7 @@ private fun OtpConfigInput.Hotp.parseHotp(): OtpConfigInputResult {
 private fun OtpConfigInput.Steam.parseSteam(): OtpConfigInputResult {
     val normalizedSecret = secret.normalizeSecret(encoding) ?: return OtpConfigInputResult.Invalid(setOf(FieldKey.OTP_SECRET))
     return OtpConfigInputResult.Valid(
-        OtpConfig.Steam(
+        SteamDefinition.configuration(
             secret = normalizedSecret,
             encoding = encoding,
             issuer = issuer.normalizedMetadata(),

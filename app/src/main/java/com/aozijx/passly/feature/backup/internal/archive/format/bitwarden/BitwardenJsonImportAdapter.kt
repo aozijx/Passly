@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.model.credential.CardExpiryParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriParseResult
@@ -318,8 +319,9 @@ internal class BitwardenJsonImportAdapter
 
                     OtpUriParseResult.NotOtp -> {
                         if (trimmed.startsWith("steam://", ignoreCase = true)) {
-                            OtpConfig.Steam(
-                                OtpSecretCodec.canonicalBase32(trimmed.drop("steam://".length), OtpSecretEncoding.BASE32),
+                            SteamDefinition.configuration(
+                                secret = OtpSecretCodec.canonicalBase32(trimmed.drop("steam://".length), OtpSecretEncoding.BASE32),
+                                encoding = OtpSecretEncoding.BASE32,
                             )
                         } else {
                             OtpConfig.Totp(

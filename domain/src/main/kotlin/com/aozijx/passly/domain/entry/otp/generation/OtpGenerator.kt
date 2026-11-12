@@ -17,14 +17,13 @@ object OtpGenerator {
 
     fun generate(
         material: OtpGenerationMaterial,
-        overrideCounter: Long? = null,
         timestamp: Long = System.currentTimeMillis() / 1000,
     ): OtpResult =
         try {
             val config = material.config
             when (config) {
                 is OtpGenerationConfig.Timed -> generateTimed(config, material.secretBytes, timestamp)
-                is OtpGenerationConfig.Hotp -> generateCounterBased(config, material.secretBytes, overrideCounter ?: config.counter)
+                is OtpGenerationConfig.Hotp -> generateCounterBased(config, material.secretBytes, config.counter)
             }
         } catch (e: OtpGenerationError) {
             OtpResult.Failure(e)
@@ -42,7 +41,7 @@ object OtpGenerator {
     }
 
     private fun generateCounterBased(
-        config: OtpGenerationConfig,
+        config: OtpGenerationConfig.Hotp,
         secretBytes: ByteArray,
         counter: Long,
     ): OtpResult {
@@ -50,7 +49,7 @@ object OtpGenerator {
         if (counter == Long.MAX_VALUE) return OtpResult.Failure(OtpGenerationError.CounterExhausted)
         val result = computeOtp(config, secretBytes, counter, config.digits)
         return if (result is OtpResult.Success) {
-            OtpResult.Success(code = result.code, nextCounter = counter + 1)
+            OtpResult.CounterSuccess(code = result.code, nextCounter = counter + 1)
         } else {
             result
         }
@@ -131,16 +130,19 @@ object OtpGenerator {
             100000000L,
             1000000000L,
         )
-
 }
 
-sealed class OtpResult {
+sealed interface OtpResult {
     data class Success(
         val code: String,
-        val nextCounter: Long? = null,
-    ) : OtpResult()
+    ) : OtpResult
+
+    data class CounterSuccess(
+        val code: String,
+        val nextCounter: Long,
+    ) : OtpResult
 
     data class Failure(
         val error: OtpGenerationError,
-    ) : OtpResult()
+    ) : OtpResult
 }

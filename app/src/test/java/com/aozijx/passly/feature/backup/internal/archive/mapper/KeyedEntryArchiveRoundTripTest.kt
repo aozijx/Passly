@@ -13,6 +13,7 @@ import com.aozijx.passly.domain.entry.model.credential.CustomField
 import com.aozijx.passly.domain.entry.model.credential.CustomFieldKind
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -172,7 +173,7 @@ class KeyedEntryArchiveRoundTripTest {
                         add(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP", algorithm = algorithm, encoding = encoding))
                         add(OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", algorithm = algorithm, counter = 7L, encoding = encoding))
                         if (algorithm == OtpHashAlgorithm.SHA1) {
-                            add(OtpConfig.Steam(secret = "JBSWY3DPEHPK3PXP", encoding = encoding))
+                            add(SteamDefinition.configuration(secret = "JBSWY3DPEHPK3PXP", encoding = encoding))
                         }
                     }
                 }
@@ -196,7 +197,6 @@ class KeyedEntryArchiveRoundTripTest {
                 when (config) {
                     is OtpConfig.Totp -> config.algorithm
                     is OtpConfig.Hotp -> config.algorithm
-                    is OtpConfig.Steam -> OtpHashAlgorithm.SHA1
                 }
             assertEquals(algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
             assertEquals(config.encoding.toArchiveKey(), record.fieldText("otp_encoding"))

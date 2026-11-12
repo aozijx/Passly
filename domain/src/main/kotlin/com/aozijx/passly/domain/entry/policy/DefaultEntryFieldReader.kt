@@ -8,7 +8,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 
 /** Reads existing scalar values without authorization, decryption or presentation formatting. */
 class DefaultEntryFieldReader : EntryFieldReader {
@@ -87,7 +86,6 @@ class DefaultEntryFieldReader : EntryFieldReader {
             FieldKey.OTP_PERIOD -> {
                 when (otp) {
                     is OtpConfig.Totp -> otp.periodSeconds.toString()
-                    is OtpConfig.Steam -> SteamDefinition.PERIOD_SECONDS.toString()
                     is OtpConfig.Hotp, null -> null
                 }
             }
@@ -100,7 +98,6 @@ class DefaultEntryFieldReader : EntryFieldReader {
                 when (otp) {
                     is OtpConfig.Totp -> otp.digits.toString()
                     is OtpConfig.Hotp -> otp.digits.toString()
-                    is OtpConfig.Steam -> SteamDefinition.DIGITS.toString()
                     null -> null
                 }
             }
@@ -109,7 +106,6 @@ class DefaultEntryFieldReader : EntryFieldReader {
                 when (otp) {
                     is OtpConfig.Totp -> otp.algorithm.storageKey()
                     is OtpConfig.Hotp -> otp.algorithm.storageKey()
-                    is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm.storageKey()
                     null -> null
                 }
             }

@@ -119,6 +119,7 @@ internal fun generateAutofillOtpCode(
     return try {
         when (val result = OtpGenerator.generate(material, timestamp = timestampSeconds)) {
             is OtpResult.Success -> result.code
+            is OtpResult.CounterSuccess -> result.code
             is OtpResult.Failure -> null
         }
     } finally {

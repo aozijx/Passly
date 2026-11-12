@@ -2,6 +2,8 @@ package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
@@ -551,7 +553,7 @@ class OtpCodeRuntimeTest {
     fun `Steam pre-generates current and next window codes`() =
         runTest {
             val seed = "JBSWY3DPEHPK3PXP".toByteArray()
-            val material = OtpGenerationMaterial(OtpConfig.Steam(secret = "unused").toGenerationConfig(), seed)
+            val material = OtpGenerationMaterial(SteamDefinition.configuration(secret = "unused").toGenerationConfig(), seed)
             val runtime =
                 OtpCodeRuntime(
                     scope = backgroundScope,
@@ -658,7 +660,7 @@ class OtpCodeRuntimeTest {
                         assertEquals(counter, expectedCounter)
                         val usedCounter = expectedCounter
                         counter = expectedCounter + 1
-                        OtpResult.Success("code-$usedCounter", nextCounter = counter)
+                        OtpResult.CounterSuccess("code-$usedCounter", nextCounter = counter)
                     },
                 )
             coordinator.acquire("hotp")
@@ -694,7 +696,7 @@ class OtpCodeRuntimeTest {
             consumptionStarted.await()
 
             coordinator.onSessionStateChanged(unlocked = false)
-            finishConsumption.complete(OtpResult.Success("123456", nextCounter = 8))
+            finishConsumption.complete(OtpResult.CounterSuccess("123456", nextCounter = 8))
 
             assertEquals(null, pendingCopy.await())
             assertEquals(emptyMap<String, OtpCodeState>(), coordinator.states.value)
@@ -1135,7 +1137,7 @@ class OtpCodeRuntimeTest {
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val storedConfig =
-                OtpConfig.Steam(
+                SteamDefinition.configuration(
                     secret = "JBSWY3DPEHPK3PXP",
                     encoding = OtpSecretEncoding.BASE32,
                 )
@@ -1160,10 +1162,11 @@ class OtpCodeRuntimeTest {
                 runtime.acquire("steam-entry")
 
                 assertEquals("steam-entry", loadedEntryId)
-                assertTrue(generatedConfig is OtpGenerationConfig.Steam)
+                assertTrue(generatedConfig is OtpGenerationConfig.Totp)
                 assertEquals(OtpHashAlgorithm.SHA1, generatedConfig?.algorithm)
                 assertEquals(5, generatedConfig?.digits)
                 assertEquals(OtpOutputFormat.STEAM_ALPHABET, generatedConfig?.outputFormat)
+                assertEquals(TotpVariant.STEAM, (generatedConfig as OtpGenerationConfig.Totp).variant)
                 assertEquals(OtpSecretEncoding.BASE32, generatedConfig?.encoding)
                 assertEquals("38CTQ", runtime.readyCode("steam-entry"))
             } finally {
@@ -1247,9 +1250,8 @@ class OtpCodeRuntimeTest {
             val config = material.config
             codeGenerator(
                 when (config) {
-                    is OtpGenerationConfig.Totp -> OtpConfig.Totp(secret, config.algorithm, config.digits, config.periodSeconds, config.encoding)
+                    is OtpGenerationConfig.Totp -> OtpConfig.Totp(secret, config.algorithm, config.digits, config.periodSeconds, config.encoding, variant = config.variant)
                     is OtpGenerationConfig.Hotp -> OtpConfig.Hotp(secret, config.algorithm, config.digits, config.counter, config.encoding)
-                    is OtpGenerationConfig.Steam -> OtpConfig.Steam(secret, config.encoding)
                 },
             )
         },

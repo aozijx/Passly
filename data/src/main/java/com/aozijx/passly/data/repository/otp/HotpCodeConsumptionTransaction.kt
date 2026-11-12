@@ -55,10 +55,8 @@ internal class HotpCodeConsumptionTransaction
                         result
                     }
 
-                    is OtpResult.Success -> {
-                        val nextCounter =
-                            result.nextCounter
-                                ?: return OtpResult.Failure(OtpGenerationError.InvalidCounter)
+                    is OtpResult.CounterSuccess -> {
+                        val nextCounter = result.nextCounter
                         secretFieldStore.updateExisting(
                             db,
                             entryId,
@@ -69,6 +67,8 @@ internal class HotpCodeConsumptionTransaction
                         )
                         result
                     }
+
+                    is OtpResult.Success -> OtpResult.Failure(OtpGenerationError.InvalidCounter)
                 }
             } finally {
                 material.close()

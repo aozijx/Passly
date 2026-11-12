@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 
 internal object OtpFormReducer {
@@ -161,12 +162,17 @@ internal object OtpFormReducer {
             configuration =
                 when (config) {
                     is OtpConfig.Totp -> {
-                        OtpFormConfiguration.Totp(
-                            algorithm = config.algorithm,
-                            digits = config.digits.toString(),
-                            periodSeconds = config.periodSeconds.toString(),
-                            encoding = config.encoding,
-                        )
+                        when (config.variant) {
+                            TotpVariant.STANDARD ->
+                                OtpFormConfiguration.Totp(
+                                    algorithm = config.algorithm,
+                                    digits = config.digits.toString(),
+                                    periodSeconds = config.periodSeconds.toString(),
+                                    encoding = config.encoding,
+                                )
+
+                            TotpVariant.STEAM -> OtpFormConfiguration.Steam(config.encoding)
+                        }
                     }
 
                     is OtpConfig.Hotp -> {
@@ -176,10 +182,6 @@ internal object OtpFormReducer {
                             counter = config.counter.toString(),
                             encoding = config.encoding,
                         )
-                    }
-
-                    is OtpConfig.Steam -> {
-                        OtpFormConfiguration.Steam(config.encoding)
                     }
                 },
         )

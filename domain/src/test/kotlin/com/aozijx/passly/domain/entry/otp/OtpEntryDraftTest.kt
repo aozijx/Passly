@@ -10,6 +10,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -18,15 +19,16 @@ class OtpEntryDraftTest {
     @Test
     fun scannedTotpPreservesConfigAndBuildsDisplayTitle() {
         val draft =
-            OtpConfig.Totp(
-                secret = "secret",
-                algorithm = OtpHashAlgorithm.SHA256,
-                digits = 8,
-                periodSeconds = 45,
-                encoding = OtpSecretEncoding.BASE64,
-                issuer = "Example",
-                accountName = "alice",
-            ).toNewEntryDraft()
+            OtpConfig
+                .Totp(
+                    secret = "secret",
+                    algorithm = OtpHashAlgorithm.SHA256,
+                    digits = 8,
+                    periodSeconds = 45,
+                    encoding = OtpSecretEncoding.BASE64,
+                    issuer = "Example",
+                    accountName = "alice",
+                ).toNewEntryDraft()
 
         assertEquals(EntryType.OTP, draft.type)
         assertEquals(EntryDraftValue.Text("Example: alice"), draft[FieldKey.TITLE])
@@ -60,8 +62,8 @@ class OtpEntryDraftTest {
 
     @Test
     fun `fallback title follows otp type when identity is absent`() {
-        val hotp = OtpConfig.Hotp(secret = "MY", counter = Long.MAX_VALUE, )
-        val steam = OtpConfig.Steam(secret = "MY")
+        val hotp = OtpConfig.Hotp(secret = "MY", counter = Long.MAX_VALUE)
+        val steam = SteamDefinition.configuration(secret = "MY")
         assertEquals(EntryDraftValue.Text("HOTP"), hotp.toNewEntryDraft()[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("Steam"), steam.toNewEntryDraft()[FieldKey.TITLE])
     }
@@ -69,11 +71,12 @@ class OtpEntryDraftTest {
     @Test
     fun scannedHotpPreservesCounterWithoutPeriod() {
         val draft =
-            OtpConfig.Hotp(
-                secret = "secret",
-                counter = 42L,
-                accountName = "alice",
-            ).toNewEntryDraft()
+            OtpConfig
+                .Hotp(
+                    secret = "secret",
+                    counter = 42L,
+                    accountName = "alice",
+                ).toNewEntryDraft()
 
         assertEquals(EntryDraftValue.Text("alice"), draft[FieldKey.TITLE])
         assertEquals(EntryDraftValue.LongNumber(42L), draft[FieldKey.OTP_COUNTER])

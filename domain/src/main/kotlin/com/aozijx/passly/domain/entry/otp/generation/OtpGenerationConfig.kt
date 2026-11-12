@@ -4,7 +4,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 
 /** Non-sensitive, type-specific parameters required by each OTP generation algorithm. */
 sealed interface OtpGenerationConfig {
@@ -22,7 +22,14 @@ sealed interface OtpGenerationConfig {
         override val digits: Int,
         override val periodSeconds: Int,
         override val encoding: OtpSecretEncoding,
-    ) : Timed
+        val variant: TotpVariant = TotpVariant.STANDARD,
+    ) : Timed {
+        override val outputFormat =
+            when (variant) {
+                TotpVariant.STANDARD -> OtpOutputFormat.DECIMAL
+                TotpVariant.STEAM -> OtpOutputFormat.STEAM_ALPHABET
+            }
+    }
 
     data class Hotp(
         override val algorithm: OtpHashAlgorithm,
@@ -30,20 +37,21 @@ sealed interface OtpGenerationConfig {
         val counter: Long,
         override val encoding: OtpSecretEncoding,
     ) : OtpGenerationConfig
-
-    data class Steam(
-        override val encoding: OtpSecretEncoding,
-    ) : Timed {
-        override val algorithm = SteamDefinition.defaultAlgorithm
-        override val digits = SteamDefinition.DIGITS
-        override val periodSeconds = SteamDefinition.PERIOD_SECONDS
-        override val outputFormat = OtpOutputFormat.STEAM_ALPHABET
-    }
 }
 
 fun OtpConfig.toGenerationConfig(): OtpGenerationConfig =
     when (this) {
-        is OtpConfig.Totp -> OtpGenerationConfig.Totp(algorithm, digits, periodSeconds, encoding)
-        is OtpConfig.Hotp -> OtpGenerationConfig.Hotp(algorithm, digits, counter, encoding)
-        is OtpConfig.Steam -> OtpGenerationConfig.Steam(encoding)
+        is OtpConfig.Totp -> {
+            OtpGenerationConfig.Totp(
+                algorithm = algorithm,
+                digits = digits,
+                periodSeconds = periodSeconds,
+                encoding = encoding,
+                variant = variant,
+            )
+        }
+
+        is OtpConfig.Hotp -> {
+            OtpGenerationConfig.Hotp(algorithm, digits, counter, encoding)
+        }
     }

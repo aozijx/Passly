@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
@@ -154,7 +155,7 @@ class OtpAuthUriCodecTest {
 
     @Test
     fun `steam marker round trips with explicit algorithm digits and period`() {
-        val config = OtpConfig.Steam(secret = SECRET, issuer = "Steam", accountName = "alice")
+        val config = SteamDefinition.configuration(secret = SECRET, issuer = "Steam", accountName = "alice")
         assertEquals(config, parsed(formatted(config, "Display title")))
         assertEquals(OtpType.STEAM, parsed("otpauth://totp/Steam:alice?secret=$SECRET").type)
         listOf("algorithm=SHA256", "period=60", "digits=6").forEach { parameter ->

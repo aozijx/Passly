@@ -5,7 +5,6 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldRecord
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupFieldValue
@@ -38,14 +37,12 @@ internal fun OtpConfig.toOtpArchiveFields(): List<BackupFieldRecord> =
             when (this@toOtpArchiveFields) {
                 is OtpConfig.Totp -> algorithm to digits
                 is OtpConfig.Hotp -> algorithm to digits
-                is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm to SteamDefinition.DIGITS
             }
         put(FieldKey.OTP_ALGORITHM, BackupFieldValue.text(algorithm.archiveKey))
         put(FieldKey.OTP_DIGITS, BackupFieldValue.integer(digits))
         when (this@toOtpArchiveFields) {
             is OtpConfig.Totp -> put(FieldKey.OTP_PERIOD, BackupFieldValue.integer(periodSeconds))
             is OtpConfig.Hotp -> put(FieldKey.OTP_COUNTER, BackupFieldValue.long(counter))
-            is OtpConfig.Steam -> put(FieldKey.OTP_PERIOD, BackupFieldValue.integer(SteamDefinition.PERIOD_SECONDS))
         }
         val encodingKey =
             when (encoding) {

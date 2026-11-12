@@ -77,11 +77,11 @@ class HotpCodeConsumptionTransactionTest {
                 database.withTransaction {
                     transaction.consume(database, ENTRY_ID, expectedCounter = 7) { material ->
                         val counter = (material.config as OtpGenerationConfig.Hotp).counter
-                        OtpResult.Success(code = "123456", nextCounter = counter + 1)
+                        OtpResult.CounterSuccess(code = "123456", nextCounter = counter + 1)
                     }
                 }
 
-            assertTrue(result is OtpResult.Success)
+            assertTrue(result is OtpResult.CounterSuccess)
             assertEquals(
                 8L,
                 secretFieldStore
@@ -170,7 +170,7 @@ class HotpCodeConsumptionTransactionTest {
                 database.withTransaction {
                     transaction.consume(database, ENTRY_ID, expectedCounter = 7) {
                         generated = true
-                        OtpResult.Success(code = "123456", nextCounter = 9)
+                        OtpResult.CounterSuccess(code = "123456", nextCounter = 9)
                     }
                 }
 

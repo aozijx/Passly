@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -44,22 +45,20 @@ class OtpGeneratorTest {
             )
 
         for ((expectedCode, counter) in expected) {
-            val result = generate(config, overrideCounter = counter)
-            assertTrue(result is OtpResult.Success)
-            val success = result as OtpResult.Success
+            val result = generate(config.copy(counter = counter))
+            assertTrue(result is OtpResult.CounterSuccess)
+            val success = result as OtpResult.CounterSuccess
             assertEquals(expectedCode, success.code)
             assertEquals(counter + 1, success.nextCounter)
         }
     }
 
     @Test
-    fun `hotp exhausted stored or overridden counter cannot return wrapped next counter`() {
+    fun `hotp exhausted counter cannot return wrapped next counter`() {
         val config = OtpConfig.Hotp(secret = SECRET_20, counter = Long.MAX_VALUE)
 
         val exhausted = OtpResult.Failure(OtpGenerationError.CounterExhausted)
         assertEquals(exhausted, generate(config))
-        assertEquals(exhausted, generate(config.copy(counter = 0), overrideCounter = Long.MAX_VALUE))
-        assertEquals(OtpResult.Failure(OtpGenerationError.InvalidCounter), generate(config, overrideCounter = -1))
     }
 
     @Test
@@ -67,8 +66,8 @@ class OtpGeneratorTest {
         val config = OtpConfig.Hotp(secret = SECRET_20, counter = Long.MAX_VALUE - 1)
         val result = generate(config)
 
-        assertTrue(result is OtpResult.Success)
-        assertEquals(Long.MAX_VALUE, (result as OtpResult.Success).nextCounter)
+        assertTrue(result is OtpResult.CounterSuccess)
+        assertEquals(Long.MAX_VALUE, (result as OtpResult.CounterSuccess).nextCounter)
     }
 
     @Test
@@ -148,7 +147,7 @@ class OtpGeneratorTest {
     @Test
     fun `steam - 固定样例`() {
         val secret = "JBSWY3DPEHPK3PXP"
-        val config = OtpConfig.Steam(secret = secret)
+        val config = SteamDefinition.configuration(secret = secret)
 
         val result = generate(config, timestamp = 1000000L)
         assertTrue(result is OtpResult.Success)
@@ -187,12 +186,13 @@ private fun generateByteSeed(
 ): OtpResult {
     val material =
         OtpGenerationMaterial(
-            OtpConfig.Totp(
-                secret = null,
-                digits = 8,
-                periodSeconds = 30,
-                encoding = encoding,
-            ).toGenerationConfig(),
+            OtpConfig
+                .Totp(
+                    secret = null,
+                    digits = 8,
+                    periodSeconds = 30,
+                    encoding = encoding,
+                ).toGenerationConfig(),
             encodedSecret.toByteArray(Charsets.US_ASCII),
         )
 
@@ -201,9 +201,8 @@ private fun generateByteSeed(
 
 private fun generate(
     config: OtpConfig,
-    overrideCounter: Long? = null,
     timestamp: Long = System.currentTimeMillis() / 1000,
 ): OtpResult {
     val material = OtpGenerationMaterial(config.toGenerationConfig(), config.secret?.toByteArray() ?: byteArrayOf())
-    return material.use { OtpGenerator.generate(it, overrideCounter, timestamp) }
+    return material.use { OtpGenerator.generate(it, timestamp) }
 }
