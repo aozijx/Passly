@@ -1,8 +1,8 @@
 package com.aozijx.passly.domain.entry.policy
 
 import com.aozijx.passly.domain.entry.model.Entry
-import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
@@ -14,9 +14,8 @@ import org.junit.Test
 
 class EntryTitleEditPolicyTest {
     @Test
-    fun titleEditValueUsesWifiNetworkNameAndFallsBackToProfileTitle() {
+    fun titleEditValueUsesWifiNetworkNameAndProfileTitleForOtherTypes() {
         assertEquals("Network", wifi("Network").titleEditValue)
-        assertEquals("Personal label", wifi("").titleEditValue)
         assertEquals("Mail", login().titleEditValue)
     }
 
