@@ -20,11 +20,9 @@ internal sealed interface TrashMutation {
         val entryId: String,
     ) : TrashMutation
 
-    data object EntryActionFinished : TrashMutation
+    data object OperationFinished : TrashMutation
 
     data object EmptyStarted : TrashMutation
-
-    data object EmptyFinished : TrashMutation
 
     data class ActionFailed(
         val message: UiErrorMessage,
@@ -75,15 +73,11 @@ internal object TrashReducer {
                 )
             }
 
-            TrashMutation.EntryActionFinished -> {
-                state.finishOperation()
-            }
-
             TrashMutation.EmptyStarted -> {
                 state.copy(operation = TrashOperationState.Emptying)
             }
 
-            TrashMutation.EmptyFinished -> {
+            TrashMutation.OperationFinished -> {
                 state.finishOperation()
             }
 

@@ -14,7 +14,7 @@ class TrashReducerTest {
                 TrashUiState(operation = TrashOperationState.Failed(UiErrorMessage(R.string.trash_error_command))),
                 TrashMutation.EntryActionStarted("entry-1"),
             )
-        val finished = TrashReducer.reduce(started, TrashMutation.EntryActionFinished)
+        val finished = TrashReducer.reduce(started, TrashMutation.OperationFinished)
 
         assertEquals(TrashOperationState.Entry("entry-1"), started.operation)
         assertSame(TrashOperationState.Idle, finished.operation)

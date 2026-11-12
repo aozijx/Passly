@@ -143,7 +143,6 @@ internal class TrashViewModel
             if (_uiState.value.isBusy) return
             runOperation(
                 started = TrashMutation.EntryActionStarted(entryId),
-                finished = TrashMutation.EntryActionFinished,
                 fallback = R.string.trash_error_command,
                 operation = operation,
             )
@@ -153,7 +152,6 @@ internal class TrashViewModel
             if (_uiState.value.isBusy || _uiState.value.content !is TrashContentState.Items) return
             runOperation(
                 started = TrashMutation.EmptyStarted,
-                finished = TrashMutation.EmptyFinished,
                 fallback = R.string.trash_error_empty,
                 operation = trashCommand::empty,
             )
@@ -161,7 +159,6 @@ internal class TrashViewModel
 
         private fun runOperation(
             started: TrashMutation,
-            finished: TrashMutation,
             @StringRes fallback: Int,
             operation: suspend () -> TrashCommandResult,
         ) {
@@ -186,7 +183,7 @@ internal class TrashViewModel
                     } finally {
                         if (isCurrentSession(session)) {
                             operationJob = null
-                            mutate(finished)
+                            mutate(TrashMutation.OperationFinished)
                         }
                     }
                 }
