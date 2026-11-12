@@ -20,7 +20,7 @@ import javax.inject.Singleton
 
 /** Parses the root once and incrementally decodes each Base64 resource. */
 @Singleton
-class JsonBackupImporter
+internal class JsonBackupImporter
     @Inject
     constructor() {
         fun import(

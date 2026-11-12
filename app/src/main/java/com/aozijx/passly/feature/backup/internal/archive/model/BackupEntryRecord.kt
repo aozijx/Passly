@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.backup.internal.archive.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class BackupEntryRecord(
+internal data class BackupEntryRecord(
     val id: String,
     val type: String,
     val revision: Int,

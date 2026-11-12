@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupBundle
 import java.security.MessageDigest
 
-object BackupBundleValidator {
+internal object BackupBundleValidator {
     private val safeArchiveId = Regex("[A-Za-z0-9_-]{1,160}")
 
     const val MAX_RESOURCE_BYTES = 16 * 1024 * 1024

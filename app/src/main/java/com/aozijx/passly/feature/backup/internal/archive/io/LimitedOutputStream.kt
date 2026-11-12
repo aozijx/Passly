@@ -4,7 +4,7 @@ import java.io.FilterOutputStream
 import java.io.OutputStream
 
 /** Rejects the first over-budget write before any of that write reaches the destination. */
-class LimitedOutputStream(
+internal class LimitedOutputStream(
     output: OutputStream,
     private val maxBytes: Long,
 ) : FilterOutputStream(output) {

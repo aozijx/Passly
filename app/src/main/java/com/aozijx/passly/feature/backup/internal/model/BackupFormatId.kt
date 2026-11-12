@@ -7,7 +7,7 @@ package com.aozijx.passly.feature.backup.internal.model
  * formats without changing the backup service contract.
  */
 @JvmInline
-value class BackupFormatId(
+internal value class BackupFormatId(
     val value: String,
 ) {
     init {
@@ -17,7 +17,7 @@ value class BackupFormatId(
     }
 }
 
-object BackupFormats {
+internal object BackupFormats {
     val PASSLY_ENCRYPTED = BackupFormatId("passly.encrypted")
     val PASSLY_JSON = BackupFormatId("passly.json")
     val READABLE_TEXT = BackupFormatId("passly.text")

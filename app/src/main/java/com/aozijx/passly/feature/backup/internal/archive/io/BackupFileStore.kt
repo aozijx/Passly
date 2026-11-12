@@ -7,7 +7,7 @@ import java.io.OutputStream
  * 文件存储接口，抽象备份的 IO 层。
  * 当前实现通过 Android ContentResolver 读写 URI。
  */
-interface BackupFileStore {
+internal interface BackupFileStore {
     fun openOutput(
         uri: String,
         maxBytes: Long = MAX_BYTES,

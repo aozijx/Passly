@@ -7,7 +7,7 @@ import java.io.InputStream
  * 限制读取最大字节数的 InputStream 包装器。
  * 防止内存溢出（OOM）。
  */
-class LimitedInputStream(
+internal class LimitedInputStream(
     input: InputStream,
     private val maxBytes: Long,
 ) : FilterInputStream(input) {

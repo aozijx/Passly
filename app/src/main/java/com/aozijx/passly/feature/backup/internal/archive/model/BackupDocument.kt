@@ -3,7 +3,7 @@ package com.aozijx.passly.feature.backup.internal.archive.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class BackupDocument(
+internal data class BackupDocument(
     val format: String,
     val version: Int,
     val exportedAt: Long,

@@ -4,13 +4,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class BackupFieldRecord(
+internal data class BackupFieldRecord(
     val key: String,
     val value: BackupFieldValue,
 )
 
 @Serializable
-data class BackupFieldValue(
+internal data class BackupFieldValue(
     val kind: String,
     val text: String? = null,
     val texts: List<String>? = null,
@@ -46,7 +46,7 @@ data class BackupFieldValue(
 }
 
 @Serializable
-data class BackupCustomFieldValue(
+internal data class BackupCustomFieldValue(
     val name: String,
     val value: String,
     val kind: String,

@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 /** Streams resource Base64 while serializing the bounded structured document once. */
 @Singleton
-class JsonBackupExporter
+internal class JsonBackupExporter
     @Inject
     constructor() {
         fun export(

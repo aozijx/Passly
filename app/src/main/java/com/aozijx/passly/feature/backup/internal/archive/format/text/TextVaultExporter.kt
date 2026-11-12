@@ -12,7 +12,7 @@ import javax.inject.Singleton
  * 只用于导出（export），不实现导入（import）。
  */
 @Singleton
-class TextVaultExporter
+internal class TextVaultExporter
     @Inject
     constructor(
         private val renderer: TextVaultRenderer,

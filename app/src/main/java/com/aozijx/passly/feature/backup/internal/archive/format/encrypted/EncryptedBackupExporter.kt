@@ -11,7 +11,7 @@ import kotlinx.serialization.encodeToString
 
 /** Composes the JSON document, ZIP archive and chunked container for export. */
 @Singleton
-class EncryptedBackupExporter
+internal class EncryptedBackupExporter
     @Inject
     constructor() {
         fun export(

@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 
-interface BackupStorageSupport {
+internal interface BackupStorageSupport {
     fun buildBackupFileName(
         extension: String = "passly",
         timestamp: Long = System.currentTimeMillis(),

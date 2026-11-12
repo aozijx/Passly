@@ -5,7 +5,7 @@ import com.aozijx.passly.feature.backup.contract.BackupImportStrategy
 import com.aozijx.passly.feature.backup.contract.ImportMode
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 
-data class BackupExportOptions(
+internal data class BackupExportOptions(
     val includeIcons: Boolean = true,
     val includeAttachments: Boolean = true,
     val includeDeleted: Boolean = true,
@@ -24,7 +24,7 @@ data class BackupExportOptions(
  * The service reads [password] only during the call. The caller retains
  * ownership and must clear it after the operation.
  */
-class BackupExportRequest(
+internal class BackupExportRequest(
     val targetUri: String,
     val format: BackupFormatId,
     val password: CharArray? = null,
@@ -37,7 +37,7 @@ class BackupExportRequest(
  * A null [format] enables content-based format detection. This is the normal
  * path for future third-party importers such as Bitwarden.
  */
-class BackupImportRequest(
+internal class BackupImportRequest(
     val sourceUri: String,
     val mode: ImportMode,
     val format: BackupFormatId? = null,

@@ -21,7 +21,7 @@ import javax.inject.Singleton
  * - 自定义字段输出为 "自定义字段.<名称>: <值>"
  */
 @Singleton
-class TextVaultRenderer
+internal class TextVaultRenderer
     @Inject
     constructor() {
         private val dateFormatter =

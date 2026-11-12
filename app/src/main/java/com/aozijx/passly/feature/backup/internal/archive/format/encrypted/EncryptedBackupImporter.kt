@@ -20,7 +20,7 @@ import kotlinx.coroutines.CancellationException
 
 /** Composes the chunked decryptor, ZIP reader and document mapper for import. */
 @Singleton
-class EncryptedBackupImporter
+internal class EncryptedBackupImporter
     @Inject
     constructor() {
         fun import(
