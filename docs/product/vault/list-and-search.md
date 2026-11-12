@@ -33,7 +33,7 @@ ViewModel 可随 Settings 条目保留，下次打开由 `onSheetOpened()` 重�
 `EntryListQuery` 统一承载搜索、快捷筛选、标签分类、排序和层级模式。Room 在同一查询中完成过滤、排序和
 分页，UI 不对已加载页面二次过滤或重排。
 
-- 搜索覆盖标题、用户名、主网址、标签、域名和应用 ID；Domain 对输入执行 trim/lowercase，Data 绑定同一转义 pattern 到六个 `LOWER(column) LIKE ?` 条件，并转义 `%`、`_`、反斜杠。当前集成测试只覆盖 ASCII 搜索；非 ASCII 大小写合同待确认，见[搜索审查待办](../../project/work/plans/2026-11-06-passly-vault-search-review-followups.md)。
+- 搜索覆盖标题、用户名、主网址、标签、域名和应用 ID。Domain 的 [`EntryListQuery.normalizedSearchText`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt) 对输入执行 trim/lowercase；Data 的 [`buildEntryPagingQuery()` / `escapeLike()`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt) 将同一转义 pattern 绑定到六个 `LOWER(column) LIKE ?` 条件，并转义 `%`、`_`、反斜杠。当前集成测试只覆盖 ASCII 大小写；非 ASCII 大小写合同待确认，见[搜索审查待办](../../project/work/plans/2026-11-06-passly-vault-search-review-followups.md)。
 - 快捷筛选包括全部、密码、TOTP，按 capability flag 过滤，不按 EntryType 猜测能力。
 - 标签分类通过 `json_each` 发现，忽略大小写并稳定排序；编辑与导入入口必须规范化标签空白。
 - 有效搜索文本先去重，再防抖 250 ms；无关 UI 状态刷新及只改变首尾空白的输入不会重置搜索截止时间。
