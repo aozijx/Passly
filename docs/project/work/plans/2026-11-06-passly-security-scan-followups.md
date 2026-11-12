@@ -35,7 +35,7 @@
 - [ ] 决定第三方 package/class/method 是否继续通过 24-frame sanitizer，并进入用户主动授权的导出；若需 allowlist/去标识化，先确定诊断效用和最小暴露规则。
 - [ ] 若调整输出范围，同步 encoder、隐私策略和测试，覆盖应用、平台、第三方 frame，且确认不重新引入 Throwable message、用户数据或绝对路径。
 
-**当前证据（2026-11-06）：** `ExceptionSnapshotFactory.normalize(frame)` 对 package/class/method/file/line 做长度和字符约束，但不做 package allowlist；Passly 前缀被剥除，第三方包名原样保留。快照被加密日志、debug Logcat 和新鲜 `EXPORT_DIAGNOSTICS` 授权后的 JSONL/TSV/ZIP 使用。`ExceptionSnapshotFactoryTest` 验证第三方 frame 可保留且异常 message/路径 sentinel 被剔除；`LogcatSinkTest` 验证 debug/release 边界。安全文档已经与当前实现一致，后续只剩是否进一步限制第三方 frame 的策略决定；本轮未发现帧中含用户输入或绝对路径的证据。
+**当前实现与策略缺口：** 第三方 frame 的保留范围、sanitizer 和测试证据见[Diagnostics 安全合同](../../../platform/security/diagnostics.md)；原扫描将“是否进一步去标识第三方 frame”列为策略候选而非漏洞，见[扫描记录](../../../platform/security/2026-11-06-repository-scan.md)。本 Task 只跟踪尚未裁定的最小化策略。
 
 ## 完成顺序与验证记录
 
