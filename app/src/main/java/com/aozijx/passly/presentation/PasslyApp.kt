@@ -10,6 +10,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.app.message.compose.ProvideAppNoticePublisher
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
+import com.aozijx.passly.app.message.contract.InAppNoticeStream
+import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import com.aozijx.passly.app.message.presentation.AppNoticeEffects
 import com.aozijx.passly.app.platform.permission.PermissionServices
 import com.aozijx.passly.app.platform.permission.ProvidePermissionServices
@@ -34,6 +36,8 @@ import com.aozijx.passly.security.authentication.host.AuthenticationHost
 internal fun PasslyApp(
     activity: FragmentActivity,
     noticePublisher: AppNoticePublisher,
+    inAppNoticeStream: InAppNoticeStream,
+    noticeTextResolver: NoticeTextResolver,
     permissionServices: PermissionServices,
 ) {
     val shellViewModel = hiltViewModel<AppShellViewModel>()
@@ -81,7 +85,7 @@ internal fun PasslyApp(
 
     ProvidePermissionServices(permissionServices) {
         ProvideAppNoticePublisher(noticePublisher) {
-            AppNoticeEffects()
+            AppNoticeEffects(inAppNoticeStream, noticeTextResolver)
             AppTheme(
                 appearance = settings.appearance,
                 appCornerRadiusDp = settings.appCornerRadiusDp,

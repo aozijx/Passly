@@ -15,6 +15,8 @@ flowchart LR
     N["Permission / channel state"] --> D
     D --> R["DefaultNoticeRouter"]
     R --> I["InAppNoticeSink"]
+    I --> C["MainActivity / PasslyApp composition"]
+    C --> T["AppNoticeEffects: resolve text and show Toast"]
     R --> A["AndroidSystemNotificationGateway"]
 ```
 
@@ -82,4 +84,5 @@ Router/Sink 抛出的普通 `Exception` 映射为 `FAILED/NO_AVAILABLE_TARGET`�
 | 消息模型及受控参数 | `AppNotice`、`ArgumentKey`、`ArgumentValue` | [`AppNotice.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/model/AppNotice.kt)、[`NoticeArgument.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/model/NoticeArgument.kt) |
 | 事件策略注册 | `NoticeCodeRegistry.policyFor()` | [`NoticeCodeRegistry.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/contract/NoticeCodeRegistry.kt) |
 | 路由与分发 | `DefaultNoticeRouter.route()`、`DefaultAppNoticeDispatcher.dispatch()` | [`DefaultNoticeRouter.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultNoticeRouter.kt)、[`DefaultAppNoticeDispatcher.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/runtime/DefaultAppNoticeDispatcher.kt) |
+| 应用内提示展示 | `MainActivity` 注入 `InAppNoticeStream` 与 `NoticeTextResolver`，`PasslyApp` 传给 `AppNoticeEffects`；Composable 在组合期间收集队列、解析受控文案并显示 Toast | [`MainActivity.kt`](../../../app/src/main/java/com/aozijx/passly/presentation/MainActivity.kt)、[`PasslyApp.kt`](../../../app/src/main/java/com/aozijx/passly/presentation/PasslyApp.kt)、[`AppNoticeEffects.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/presentation/AppNoticeEffects.kt) |
 | Android 通知平台适配及可注入边界 | `AndroidSystemNotificationGateway.deliver()` 处理受控文案、异常和结果；`AndroidSystemNotificationPlatform` 封装系统通知与 Channel API | [`AndroidSystemNotificationGateway.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/system/AndroidSystemNotificationGateway.kt)、[`SystemNotificationPlatform.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/system/SystemNotificationPlatform.kt)、[`AndroidSystemNotificationPlatform.kt`](../../../app/src/main/java/com/aozijx/passly/app/message/system/AndroidSystemNotificationPlatform.kt) |

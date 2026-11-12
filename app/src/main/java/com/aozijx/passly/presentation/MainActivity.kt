@@ -11,6 +11,8 @@ import com.aozijx.passly.app.ActiveTaskClearRequests
 import com.aozijx.passly.app.TaskClearActivityOwner
 import com.aozijx.passly.app.ViewTaskClearCallbackScheduler
 import com.aozijx.passly.app.message.contract.AppNoticePublisher
+import com.aozijx.passly.app.message.contract.InAppNoticeStream
+import com.aozijx.passly.app.message.contract.NoticeTextResolver
 import com.aozijx.passly.app.message.model.NoticeCode
 import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.platform.permission.PermissionServices
@@ -25,6 +27,12 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var noticePublisher: AppNoticePublisher
+
+    @Inject
+    lateinit var inAppNoticeStream: InAppNoticeStream
+
+    @Inject
+    lateinit var noticeTextResolver: NoticeTextResolver
 
     @Inject
     lateinit var permissionStatusReader: PermissionStatusReader
@@ -66,6 +74,8 @@ class MainActivity : AppCompatActivity() {
             PasslyApp(
                 activity = this,
                 noticePublisher = noticePublisher,
+                inAppNoticeStream = inAppNoticeStream,
+                noticeTextResolver = noticeTextResolver,
                 permissionServices = permissionServices,
             )
         }
