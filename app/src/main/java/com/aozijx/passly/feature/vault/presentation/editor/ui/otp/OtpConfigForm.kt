@@ -22,6 +22,7 @@ import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFieldFeedbackU
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormConfiguration
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.labelResource
+import com.aozijx.passly.feature.vault.otp.presentation.plugin
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +42,7 @@ fun OtpConfigForm(
             onValueChange = { onAction(AddOtpAction.TypeChanged(it)) },
             options = OtpType.entries,
             label = stringResource(R.string.otp_type),
-            optionLabel = { stringResource(it.labelResource) },
+            optionLabel = { stringResource(it.plugin().labelResource) },
         )
         NextFocusTextField(
             value = state.secret,

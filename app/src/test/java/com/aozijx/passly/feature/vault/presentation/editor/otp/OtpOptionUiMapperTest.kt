@@ -4,15 +4,19 @@ import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.feature.vault.otp.presentation.plugin
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class OtpOptionUiMapperTest {
     @Test
     fun otpTypesMapToLocalizedLabels() {
-        assertEquals(R.string.otp_type_totp, OtpType.TOTP.labelResource)
-        assertEquals(R.string.otp_type_hotp, OtpType.HOTP.labelResource)
-        assertEquals(R.string.otp_type_steam, OtpType.STEAM.labelResource)
+        assertEquals(R.string.otp_type_totp, OtpType.TOTP.plugin().labelResource)
+        assertEquals(R.string.otp_type_hotp, OtpType.HOTP.plugin().labelResource)
+        assertEquals(R.string.otp_type_steam, OtpType.STEAM.plugin().labelResource)
+        assertEquals("123 456", OtpType.TOTP.plugin().formatCode("123456"))
+        assertEquals("123 456", OtpType.HOTP.plugin().formatCode("123456"))
+        assertEquals("123456", OtpType.STEAM.plugin().formatCode("123456"))
     }
 
     @Test

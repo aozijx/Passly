@@ -4,15 +4,6 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.entry.model.otp.OtpType
-
-internal val OtpType.labelResource: Int
-    @StringRes get() =
-        when (this) {
-            OtpType.TOTP -> R.string.otp_type_totp
-            OtpType.HOTP -> R.string.otp_type_hotp
-            OtpType.STEAM -> R.string.otp_type_steam
-        }
 
 internal val OtpHashAlgorithm.labelResource: Int
     @StringRes get() =
