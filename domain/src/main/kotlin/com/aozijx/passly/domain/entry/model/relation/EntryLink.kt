@@ -32,6 +32,13 @@ class EntryLink private constructor(
         require(firstEntryId.value < secondEntryId.value) { "Entry link endpoints must be canonical" }
     }
 
+    fun otherEndpoint(entryId: EntryId): EntryId? =
+        when (entryId) {
+            firstEntryId -> secondEntryId
+            secondEntryId -> firstEntryId
+            else -> null
+        }
+
     companion object {
         fun create(
             id: EntryLinkId,

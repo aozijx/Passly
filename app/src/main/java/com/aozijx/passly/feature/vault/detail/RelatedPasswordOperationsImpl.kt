@@ -59,8 +59,7 @@ internal class RelatedPasswordOperationsImpl
                     entryLinkRepository
                         .getLinks(sourceEntryId)
                         .any { link ->
-                            (link.firstEntryId == targetEntryId || link.secondEntryId == targetEntryId) &&
-                                link.otherEndpoint(sourceEntryId) == targetEntryId
+                            link.otherEndpoint(sourceEntryId) == targetEntryId
                         }
                 if (alreadyRelated) return@withLoggedFailure AppResult.Success(Unit)
 
@@ -96,7 +95,7 @@ internal class RelatedPasswordOperationsImpl
                 if (selectedLink == null) {
                     val samePasswordRelationExists =
                         sourceLinks.any { link ->
-                            hasEndpoints(link, sourceEntryId, targetEntryId)
+                            link.otherEndpoint(sourceEntryId) == targetEntryId
                         }
                     return@withLoggedFailure if (samePasswordRelationExists) {
                         AppResult.Failure(ValidationError())
@@ -105,28 +104,13 @@ internal class RelatedPasswordOperationsImpl
                     }
                 }
 
-                if (!hasEndpoints(selectedLink, sourceEntryId, targetEntryId)) {
+                if (selectedLink.otherEndpoint(sourceEntryId) != targetEntryId) {
                     return@withLoggedFailure AppResult.Failure(ValidationError())
                 }
 
                 val result = entryLinkRepository.delete(linkId)
                 if (result is AppResult.Failure) logFailure(result.error)
                 result
-            }
-
-        private fun hasEndpoints(
-            link: EntryLink,
-            firstEntryId: EntryId,
-            secondEntryId: EntryId,
-        ): Boolean =
-            (link.firstEntryId == firstEntryId && link.secondEntryId == secondEntryId) ||
-                (link.firstEntryId == secondEntryId && link.secondEntryId == firstEntryId)
-
-        private fun EntryLink.otherEndpoint(entryId: EntryId): EntryId? =
-            when (entryId) {
-                firstEntryId -> secondEntryId
-                secondEntryId -> firstEntryId
-                else -> null
             }
 
         private suspend fun activeLogins(): List<EntryListItem> = entryListQueryRepository.getActiveByType(EntryType.LOGIN)

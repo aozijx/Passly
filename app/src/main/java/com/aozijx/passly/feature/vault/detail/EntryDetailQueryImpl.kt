@@ -140,10 +140,3 @@ private fun resolveDirectRelatedEntryIds(
         .mapNotNull { it.otherEndpoint(entryId) }
         .distinct()
         .toList()
-
-private fun EntryLink.otherEndpoint(entryId: EntryId): EntryId? =
-    when (entryId) {
-        firstEntryId -> secondEntryId
-        secondEntryId -> firstEntryId
-        else -> null
-    }

@@ -3,6 +3,7 @@ package com.aozijx.passly.domain.entry.model.relation
 import com.aozijx.passly.domain.entry.model.EntryId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class EntryLinkTest {
@@ -30,5 +31,16 @@ class EntryLinkTest {
                 createdAt = 1L,
             )
         }
+    }
+
+    @Test
+    fun otherEndpointReturnsTheOppositeEndpointAndRejectsUnrelatedEntries() {
+        val first = EntryId("entry-a")
+        val second = EntryId("entry-b")
+        val link = EntryLink.create(EntryLinkId("link"), first, second, createdAt = 1L)
+
+        assertEquals(second, link.otherEndpoint(first))
+        assertEquals(first, link.otherEndpoint(second))
+        assertNull(link.otherEndpoint(EntryId("entry-c")))
     }
 }
