@@ -5,7 +5,7 @@
 ## 行为回归
 
 - [ ] 覆盖 `ScannerRoute`、Activity Result 与显式关闭的交错：picker 结果先于 `HostStarted` 到达、宿主停止/恢复、overlay 退出动画期间快速重开，以及结果 owner callback 迟到；确认显式 `Stopped` 后不重建扫描 owner，旧会话不能覆盖新会话。
-- [ ] 覆盖结果确认与 Vault/OTP/Wi-Fi/外链 owner 的组合：失败保留结果并可重试，并发确认/关闭不重复提交，关闭后的迟到回执不回写；验证 Wi-Fi seed 只按当前 token 清理，敏感扫码文本不进入日志或 Toast。
+- [ ] 补实际调用方与 `ScannerResultSession` 的组合回归：通过 Vault、OTP、Wi-Fi 和外链确认路径验证 owner 失败/取消后的重试或失败结果，以及关闭与业务副作用交错；验证 Wi-Fi seed 只按当前 token 清理，敏感扫码文本不进入日志或 Toast。Session 自身的并发单飞、拒绝后重试、关闭后忽略迟到回执和取消后释放确认已由 [`ScannerResultSessionTest`](../../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/result/ScannerResultSessionTest.kt) 覆盖，证据见[Scanner owner 审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)。
 - [ ] 覆盖 `BarcodeImageDecoder` 在图片加载、ML Kit 处理和取消交错时关闭已创建的 client，并丢弃取消后的结果；同步失败与取消都不能泄漏 client。
 - [ ] 为 `ScannerRecognitionRegion` 和候选筛选补确定性覆盖：无值/空白/框外候选后接框内有效码，`cornerPoints` 四角边界、无角点时 `boundingBox` fallback、无效坐标跳过处理；确认候选顺序不会让无效码阻断后续有效码。
 
