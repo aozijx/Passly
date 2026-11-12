@@ -2,8 +2,8 @@ package com.aozijx.passly.domain.entry.model.relation
 
 import com.aozijx.passly.domain.entry.model.EntryId
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class EntryLinkTest {
