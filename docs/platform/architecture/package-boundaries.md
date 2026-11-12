@@ -233,7 +233,12 @@ security -> *.data.repository / *.data.local
 
 全局 `AppRoute` 与导航 callback 合同 `ShellNavigationContext` 由 `app.navigation` 拥有。Shell NavHost 使用该合同承载控制器，Vault/Settings 只定义并注册各自的 destination graph；它们不再导入 Shell presentation 包。全局图仍由 App 根组合连接。
 
-`AppTheme`、`PersistedAppTheme`、`LocalAppearanceSettings` 及主题设置状态 owner 由 `app.theme` 拥有；App 主入口和 Autofill 系统 Activity 使用同一主题组合，Settings 读取中立的当前外观 CompositionLocal。Shell 不再拥有跨应用使用的主题实现。
+`AppTheme`、`PersistedAppTheme`、`LocalAppearanceSettings` 及主题设置状态 owner 由 `app.theme` 拥有；App 主入口和 Autofill 系统 Activity 使用同一主题组合，Settings 读取中立的当前外观 CompositionLocal。`PasslyApp` 用 `AppShellViewModel.settings` 驱动主 Activity 主题；`AutofillAuthActivity` 通过 `PersistedAppTheme` 使用 Activity-scoped `AppThemeSettingsViewModel` 读取外观与圆角。两者服务不同 Activity/ViewModelStoreOwner，不互相依赖或镜像同一个页面状态。Shell 不再拥有跨应用使用的主题实现。
+
+| 主题入口 | 类/函数 | 源码文件 |
+| --- | --- | --- |
+| 主 Activity 将 Shell 状态中的设置投影应用到 AppTheme | `PasslyApp()`、`AppShellViewModel.uiState.settings` | [`PasslyApp.kt`](../../../app/src/main/java/com/aozijx/passly/presentation/PasslyApp.kt)、[`AppShellViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/shell/presentation/AppShellViewModel.kt) |
+| Autofill 认证 Activity 读取持久外观并应用 AppTheme | `AutofillAuthActivity.onCreate()`、`PersistedAppTheme()`、`AppThemeSettingsViewModel` | [`AutofillAuthActivity.kt`](../../../app/src/main/java/com/aozijx/passly/app/autofill/presentation/AutofillAuthActivity.kt)、[`PersistedAppTheme.kt`](../../../app/src/main/java/com/aozijx/passly/app/theme/PersistedAppTheme.kt)、[`AppThemeSettingsViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/app/theme/AppThemeSettingsViewModel.kt) |
 
 Autofill 的 Android service、服务 Manifest 声明、领域编排适配、平台协议、收件箱导入和主要 Presentation 实现在 `:feature:autofill`；Feature manifest 提供三个服务组件与其权限、metadata、配置资源。App 仍是最终 Manifest 合并/Hilt root，并保留 `app.autofill.presentation.AutofillAuthActivity` 平台宿主与需要 App 能力的 Android 适配器。Activity 源码与包名均归属 App，避免把组合根伪装成 Feature 实现，也让 import 边界规则能完整审查它。最终 APK 合并 Manifest 中包含 Feature 的服务和 App 的唯一 Autofill 平台宿主 Activity。Activity 负责 App 主题、窗口、应用任务生命周期和最终 Android 结果回调；Security 提供统一的 `AuthenticationHost` 并在自身模块内解析认证宿主依赖，认证 UI/流程归 Security 所有；Feature 的 `AutofillFeatureEntry` 只解析 launch 并分派到 Legacy、Accessibility、Credential 专属 entry，各模式 entry 分别拥有自己的 ViewModel、生命周期取消与平台结果交付。App Activity 只通过稳定 Feature 宿主 API 进入 Autofill，不直接依赖实现类型。系统服务启用状态只供 App 的 Settings 页面展示，因此其观察接口和 Android 实现均留在 App Autofill 适配器；设置偏好通过 Domain 端口读取，Autofill inbox importer 由 Feature 自己绑定到 Domain 端口，禁止反向依赖 `:app`。
 
