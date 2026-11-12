@@ -118,7 +118,7 @@ class AppBackupSnapshotGatewayTest {
                     },
                     loadOtpMaterial = {
                         loads++
-                        generationMaterialForTest(OtpConfig(secret = otpSecret))
+                        generationMaterialForTest(OtpConfig.Totp(secret = otpSecret))
                     },
                 )
             val lease = runtime.acquire("active-entry")

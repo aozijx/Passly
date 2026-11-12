@@ -82,7 +82,7 @@ class AutofillCredentialResolutionTest {
 
     @Test
     fun otpCodeIsGeneratedOnlyWhenRequested() {
-        val config = OtpConfig(secret = null)
+        val config = OtpConfig.Totp(secret = null)
         val otpSeed = "JBSWY3DPEHPK3PXP".toByteArray()
 
         assertEquals(
