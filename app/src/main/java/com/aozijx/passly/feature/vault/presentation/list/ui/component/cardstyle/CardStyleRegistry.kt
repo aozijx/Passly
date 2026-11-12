@@ -29,10 +29,6 @@ object CardStyleRegistry {
         }
     }
 
-    /** Registered appearances in the order shown by settings. */
-    val styles: List<VaultCardStyleComponent>
-        get() = registrations
-
     val configurableEntryTypes: List<EntryType>
         get() = EntryType.entries.filter { stylesFor(it).size > 1 }
 

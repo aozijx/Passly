@@ -52,8 +52,7 @@ class CardStyleRegistryTest {
         )
     }
 
-    @Test fun `all style components are discoverable through the registry`() {
-        assertEquals(listOf("default", "password", "totp"), CardStyleRegistry.styles.map(VaultCardStyleComponent::key))
+    @Test fun `strict style lookup resolves the requested component`() {
         assertSame(PasswordVaultCardStyle, CardStyleRegistry.styleFor(EntryType.LOGIN, "password"))
     }
 
