@@ -64,11 +64,13 @@ class FaviconImageStore
                     if (total == 0) throw FaviconImageException(FaviconImageFailure.EMPTY_INPUT)
                 }
                 return if (target.hasGifSignature()) {
-                    target.withExtension(GIF_EXTENSION).also { gifTarget ->
-                        if (!target.renameTo(gifTarget)) {
-                            throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
-                        }
-                    }.absolutePath
+                    target
+                        .withExtension(GIF_EXTENSION)
+                        .also { gifTarget ->
+                            if (!target.renameTo(gifTarget)) {
+                                throw FaviconImageException(FaviconImageFailure.SAVE_FAILED)
+                            }
+                        }.absolutePath
                 } else {
                     target.absolutePath
                 }

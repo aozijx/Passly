@@ -11,8 +11,8 @@ import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.feature.settings.security.AppPasswordChangeRequest
 import com.aozijx.passly.feature.settings.security.AppPasswordSettingsInteractor
 import com.aozijx.passly.testing.MainDispatcherRule
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
@@ -265,7 +265,11 @@ class AppPasswordSettingsViewModelTest {
     fun `view model cancellation while provisioner is pending wipes request without feedback`() =
         runTest {
             val gate = CompletableDeferred<Unit>()
-            val provisioner = Provisioner(setPassword = { gate.await(); AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD) })
+            val provisioner =
+                Provisioner(setPassword = {
+                    gate.await()
+                    AuthenticationResult.Success(AuthenticationMethod.APP_PASSWORD)
+                })
             val viewModel = viewModel(provisioner)
             val store = ViewModelStore().apply { put("app-password", viewModel) }
             viewModel.onPageEntered()
@@ -323,16 +327,15 @@ class AppPasswordSettingsViewModelTest {
     private fun viewModel(
         provisioner: Provisioner,
         methods: MutableStateFlow<AuthenticationMethods> = MutableStateFlow(AuthenticationMethods()),
-    ) =
-        AppPasswordSettingsViewModel(
-            AppPasswordSettingsInteractor(
-                authenticationMethodAvailability =
-                    object : AuthenticationMethodAvailability {
-                        override val methods = methods
-                    },
-                authenticationMethodProvisioner = provisioner,
-            ),
-        )
+    ) = AppPasswordSettingsViewModel(
+        AppPasswordSettingsInteractor(
+            authenticationMethodAvailability =
+                object : AuthenticationMethodAvailability {
+                    override val methods = methods
+                },
+            authenticationMethodProvisioner = provisioner,
+        ),
+    )
 
     private class Provisioner(
         private val authorize: suspend () -> AuthenticationResult = {

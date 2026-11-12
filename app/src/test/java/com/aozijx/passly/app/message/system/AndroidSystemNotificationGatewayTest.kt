@@ -85,29 +85,37 @@ class AndroidSystemNotificationGatewayTest {
     fun `deliver propagates cancellation and fatal errors`() {
         val cancelled = CancellationException("cancelled")
         val cancelGateway = gateway(RecordingSystemNotificationPlatform()) { throw cancelled }
-        assertSame(cancelled, assertThrows(CancellationException::class.java) {
-            runBlocking { cancelGateway.deliver(newAppNotice(NoticeCode.APP_LOCKED)) }
-        })
+        assertSame(
+            cancelled,
+            assertThrows(CancellationException::class.java) {
+                runBlocking { cancelGateway.deliver(newAppNotice(NoticeCode.APP_LOCKED)) }
+            },
+        )
 
         val fatal = LinkageError("fatal")
         val fatalPlatform = RecordingSystemNotificationPlatform().apply { notifyFailure = fatal }
         val fatalGateway = gateway(fatalPlatform, ::resolved)
-        assertSame(fatal, assertThrows(LinkageError::class.java) {
-            runBlocking { fatalGateway.deliver(newAppNotice(NoticeCode.APP_LOCKED)) }
-        })
+        assertSame(
+            fatal,
+            assertThrows(LinkageError::class.java) {
+                runBlocking { fatalGateway.deliver(newAppNotice(NoticeCode.APP_LOCKED)) }
+            },
+        )
     }
 
     @Test
     fun `deliver does not touch channel or resolver while notifications are unavailable`() =
         runBlocking {
-            val platform = RecordingSystemNotificationPlatform().apply {
-                channelImportance = NotificationManager.IMPORTANCE_NONE
-            }
+            val platform =
+                RecordingSystemNotificationPlatform().apply {
+                    channelImportance = NotificationManager.IMPORTANCE_NONE
+                }
             var resolverCalled = false
-            val gateway = gateway(platform) {
-                resolverCalled = true
-                resolved(it)
-            }
+            val gateway =
+                gateway(platform) {
+                    resolverCalled = true
+                    resolved(it)
+                }
 
             assertEquals(SinkResult.Disabled, gateway.deliver(newAppNotice(NoticeCode.APP_LOCKED)))
             assertTrue(platform.calls.isEmpty())
@@ -117,15 +125,13 @@ class AndroidSystemNotificationGatewayTest {
     private fun gateway(
         platform: RecordingSystemNotificationPlatform,
         resolve: (AppNotice) -> ResolvedNotice,
-    ) =
-        AndroidSystemNotificationGateway(
-            platform = platform,
-            permissionStatusReader = { PermissionStatus.GRANTED },
-            textResolver = resolve,
-        )
+    ) = AndroidSystemNotificationGateway(
+        platform = platform,
+        permissionStatusReader = { PermissionStatus.GRANTED },
+        textResolver = resolve,
+    )
 
-    private fun resolved(notice: AppNotice) =
-        ResolvedNotice(notice.eventId, "title", "text", NoticeLevel.INFO)
+    private fun resolved(notice: AppNotice) = ResolvedNotice(notice.eventId, "title", "text", NoticeLevel.INFO)
 
     private class RecordingSystemNotificationPlatform : SystemNotificationPlatform {
         val calls = mutableListOf<String>()

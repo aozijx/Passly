@@ -248,7 +248,7 @@ class DefaultAppNoticeDispatcherTest {
                         codeRegistry = NoticeCodeRegistry(::defaultNoticeCodePolicy),
                         settingsProvider =
                             MessageSettingsSnapshotProvider {
-                                 settingsProvider.current().also { firstSettingsRead.countDown() }
+                                settingsProvider.current().also { firstSettingsRead.countDown() }
                             },
                         visibilityProvider = AppVisibilityProvider { AppVisibility.FOREGROUND },
                         systemStateProvider = availableSystemState(),

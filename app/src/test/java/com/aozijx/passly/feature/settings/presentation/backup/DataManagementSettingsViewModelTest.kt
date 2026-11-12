@@ -11,11 +11,11 @@ import com.aozijx.passly.feature.settings.backup.BackupDirectorySettingsInteract
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.RecordingTestLogger
 import java.io.IOException
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent

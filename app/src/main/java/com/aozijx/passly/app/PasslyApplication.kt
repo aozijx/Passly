@@ -29,7 +29,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 @HiltAndroidApp
-class PasslyApplication : Application(), ImageLoaderFactory {
+class PasslyApplication :
+    Application(),
+    ImageLoaderFactory {
     companion object {
         @SuppressLint("StaticFieldLeak")
         private lateinit var instance: PasslyApplication
@@ -62,7 +64,8 @@ class PasslyApplication : Application(), ImageLoaderFactory {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun newImageLoader(): ImageLoader =
-        ImageLoader.Builder(this)
+        ImageLoader
+            .Builder(this)
             .components {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     add(ImageDecoderDecoder.Factory())

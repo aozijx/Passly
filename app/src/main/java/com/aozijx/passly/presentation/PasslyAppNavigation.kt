@@ -14,8 +14,8 @@ import androidx.navigation.compose.rememberNavController
 import com.aozijx.passly.core.ui.adaptive.ProvidePasslyAdaptiveLayout
 import com.aozijx.passly.feature.settings.presentation.main.navigation.registerSettingsGraph
 import com.aozijx.passly.feature.shell.presentation.navigation.PasslyNavHost
-import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.otp.presentation.ui.ProvideOtpProgressClock
+import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
 import com.aozijx.passly.feature.vault.presentation.navigation.registerVaultGraph
 import com.aozijx.passly.feature.vault.presentation.trash.TrashRoute
 

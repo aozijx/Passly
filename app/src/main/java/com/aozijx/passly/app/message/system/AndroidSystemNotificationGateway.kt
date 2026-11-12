@@ -24,8 +24,8 @@ class AndroidSystemNotificationGateway
         private val textResolver: NoticeTextResolver,
     ) : SystemNotificationGateway,
         SystemNotificationStateProvider {
-        override fun current(): SystemNotificationState {
-            return SystemNotificationState(
+        override fun current(): SystemNotificationState =
+            SystemNotificationState(
                 userSettingEnabled = true,
                 runtimePermissionGranted =
                     permissionStatusReader.status(
@@ -35,7 +35,6 @@ class AndroidSystemNotificationGateway
                 channelEnabled =
                     platform.channelImportance(CHANNEL_ID) != NotificationManager.IMPORTANCE_NONE,
             )
-        }
 
         override suspend fun deliver(notice: AppNotice): SinkResult {
             val state = current()
@@ -69,7 +68,6 @@ class AndroidSystemNotificationGateway
             const val FIRST_NOTIFICATION_ID = 42_000
             const val ID_RANGE = 10_000
 
-            fun notificationId(eventId: String): Int =
-                FIRST_NOTIFICATION_ID + (eventId.hashCode() and Int.MAX_VALUE) % ID_RANGE
+            fun notificationId(eventId: String): Int = FIRST_NOTIFICATION_ID + (eventId.hashCode() and Int.MAX_VALUE) % ID_RANGE
         }
     }
