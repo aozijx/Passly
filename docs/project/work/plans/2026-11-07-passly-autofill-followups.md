@@ -1,6 +1,6 @@
 # Autofill 重构后待办与验收
 
-**复核：2026-11-08。** 本页是 Autofill 维护后续的唯一执行清单；保留仍有效的原 Task ID。模块切换、统一宿主、framework result 迁出 ViewModel、direct-entry resume 归用例、设置端口拆分均已接入，不再作为待实现项。生产合同见[共享填充](../../../product/autofill/fill-flow.md)、[Legacy 平台](../../../product/autofill/legacy-service.md)与[验证矩阵](../../../product/autofill/verification.md)；已完成的宿主/AVD 验收证据见[审查记录](../../reviews/2026-11-08-autofill-host-validation.md)。
+**清单复核：2026-11-12。** 本页是 Autofill 维护后续的唯一执行清单；保留仍有效的原 Task ID。模块切换、统一宿主、framework result 迁出 ViewModel、direct-entry resume 归用例、设置端口拆分均已接入，不再作为待实现项。生产合同见[共享填充](../../../product/autofill/fill-flow.md)、[Legacy 平台](../../../product/autofill/legacy-service.md)与[验证矩阵](../../../product/autofill/verification.md)；已完成的宿主/AVD 验收证据见[审查记录](../../reviews/2026-11-08-autofill-host-validation.md)。
 
 | 顺序 | 剩余事项 | 性质 |
 | --- | --- | --- |
@@ -16,10 +16,8 @@
 
 - [ ] 以真实 App Activity + Feature entry 覆盖 Legacy discovery/selection 的配置重建、回调失败及重试、成功后终态释放。验证 Feature delivery claim 与 Activity result claim 只在各自显式 commit marker 后终结；当前 App completion callback 返回后才调用 marker，因此还需覆盖 callback 在 `setResult` 等部分副作用后抛错的恢复语义。断言平台提交先于 interaction/lease 收尾、callback 恰好一次且记录不重复。SelectedCredential 是为重建/重试暂存的语义结果；不能把“VM 不持有 Dataset”改写成“VM 不得暂存任何结果”。
 - [ ] 覆盖 Accessibility finish/destroy 与 session lock 互斥阻塞交错，断言主线程 teardown 返回且最终清理完成；覆盖 Credential Manager 支持 API 上的取消、交付及宿主替换。复用已有 lease/claim 单测，不重新实现其已具备的取消等待和重试机制。
-- [ ] 以真实宿主覆盖认证、候选查询、选择和 Route 尚未启动时的非配置 `ON_STOP`；确认旧结果不再交付、interaction/lease 终结且下一次填充立即可用。已完成的源码、单测和 Activity 入口验收见[宿主与字段交付审查记录](../../reviews/2026-11-08-autofill-host-validation.md)；本项只跟踪真实宿主交错验收。
-- [ ] 按[验证矩阵](../../../product/autofill/verification.md)验收尚缺的字段交付场景：BottomSheet 选择后目标控件实际填值；请求提供 InlinePresentation 时验证 Inline 专属候选与认证结果。已完成的 SYSTEM_INLINE 系统下拉验收及其范围限制见[宿主与字段交付审查记录](../../reviews/2026-11-08-autofill-host-validation.md)。设备、测试应用与测试凭据按执行时现状记录。
-Task 21 的已完成单测、Activity entry 检查和 API 36 AVD 验收证据集中保存在上述审查记录；本 Task 只保留未执行的整链路与设备验收，不重复列实现 owner 或历史环境清理步骤。
-
+- [ ] 以真实宿主覆盖认证、候选查询、选择和 Route 尚未启动时的非配置 `ON_STOP`；确认旧结果不再交付、interaction/lease 终结且下一次填充立即可用。
+- [ ] 按[验证矩阵](../../../product/autofill/verification.md)验收尚缺的字段交付场景：BottomSheet 选择后目标控件实际填值；请求提供 InlinePresentation 时验证 Inline 专属候选与认证结果。设备、测试应用与测试凭据按执行时现状记录。
 <a id="task-82"></a>
 
 ## Task 82：裁定已展示交互的设置快照合同
