@@ -80,7 +80,8 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 ### Task 51：明确非 Scanner Route 一次性 effect 的前后台交付合同
 
 - [ ] 逐项定义 Toast/Snackbar、导航、SAF picker、权限和平台交付在 STOPPED、恢复、离页、owner 替换后的有效期；短命反馈明确是否丢弃，待完成请求明确如何恢复。
-- [ ] 补 PageEffects 及真实 Route/宿主测试，覆盖同页 STOPPED→STARTED、转场、请求代际、锁定/关闭及 callback 异常；不把不同 effect 塞入统一 handler 表。
+- [x] 补通用 `PageEffects` owner 与 lifecycle helper 测试：覆盖同页 STOPPED→STARTED 缓冲交付、旧 owner 丢弃、迟到 exit 和有限队列溢出；证据见[PageEffects owner 审查](../../reviews/2026-11-12-page-effects-owner.md)。
+- [ ] 补真实 Route/宿主测试，逐类覆盖转场、请求代际、锁定/关闭及 callback 异常；分别判断各 effect 应消费、丢弃、重试或恢复，不把不同 effect 塞入统一 handler 表。
 
 共享 `PageEffects` 的 STARTED 收集、页面 owner 隔离及缓冲恢复合同见[状态管理专题](../../../engineering/development/architecture-and-state.md#页面一次性事件的可见性与-owner)。本 Task 只跟踪不同 effect 的有效期决策和 Route/宿主覆盖。
 
@@ -114,7 +115,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 - [ ] 沿具体 Route/宿主核对专项流程 owner：Scanner `Work.Active` 与 reducer/UI state、反馈消费确认及宿主暂停恢复/owner 替换/停止清理；Autofill Settings 的偏好与系统服务 Flow 独立失败恢复、页面退出后的旧 effect 丢弃及写入期间状态变化；Backup 文档选择 request ID 与页面 owner、退出重入/迟到回调/执行中关闭及凭据擦除/提交结果；Unlock 认证、尝试刷新和首次密码设置的 owner、取消/fatal 清理及页面反馈。相机识别、decoder、结果交付和 Recovery Code 提交恢复分别由 Scanner 专题、Autofill Task 21 与本 Task 前项维护，不复制范围。
 - [ ] 对 Settings、Shell、Diagnostics、Database Reset 和 Recovery Mode 的其余 ViewModel 按状态真相源、合法状态、长 Flow 失败重订阅、任务取消、敏感清理及 Route effect 核对。`StorageSettingsViewModel` 已审查并保留，证据见[边界审查](../../reviews/2026-11-11-storage-settings-viewmodel-boundary.md)。
 - [ ] 审查分散在层外/文件外的 Coordinator、Session、Store 和 helper。
-  - **待审候选：** `PageEffects`。`ScannerCameraHost` 与 `ScannerResultSession` 已核实为 Scanner Route 下互相独立的资源和确认 owner，审查证据见[Scanner 相机与结果确认 owner 审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)；`SecureDatabaseResetCoordinator`、`DatabaseSessionRetryCoordinator` 的共享会话顺序和分离职责见[数据库重置协调 owner 审查](../../reviews/2026-11-12-secure-database-reset-owner.md)与[数据库重试及设置读取 owner 审查](../../reviews/2026-11-12-database-retry-and-recoverable-reads.md)；`RecoverableRead` 与 `AccessibilityFillSessionStore` 已核实为独立状态 owner，见对应审查记录。
+  - **待审候选：** 无。`PageEffects` 是跨多个页面访问共用的有限队列和 STARTED collector；其 owner/lifecycle 合同已有单测，不取代具体事件的有效期规则。审查证据见[PageEffects owner 审查](../../reviews/2026-11-12-page-effects-owner.md)；其他已审候选见[Scanner 审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)、[数据库重置审查](../../reviews/2026-11-12-secure-database-reset-owner.md)、[数据库重试与设置读取审查](../../reviews/2026-11-12-database-retry-and-recoverable-reads.md)及[Autofill 宿主验收](../../reviews/2026-11-08-autofill-host-validation.md#2026-11-12-accessibilityfillsessionstore-owner-review)。Task 84 的 ViewModel/Route 全量审计仍开放。
   - **审查要求：** 为每项记录真实创建者、生命周期、共享者、状态真相源及所处 Gradle module；合并重复机制或移除纯桥接前，证明职责不受配置重建、Route、系统 callback、认证/锁定 owner 或其他调用方需要。已完成项的合同和取舍保留在对应专题页及[Vault owner 审查记录](../../reviews/2026-11-08-vault-presentation-boundaries.md)，不在活动计划重复列出。
 - [ ] 对每个 ViewModel 依赖分类并验证层边界：可观察的 Domain/Repository 数据、完整业务动作 UseCase/Interactor、窄应用端口、Presentation 状态 owner、平台/持久化实现。继续禁止 ViewModel 间依赖及直接 DAO/Room/Data Entity/具体文件实现；明确哪些 `feature.*.data` 或 `feature.*.internal` 类型实际是跨层实现泄漏，避免仅按 `internal` 包名搬移。核查 `verifyArchitecture` 当前 ViewModel 门禁与 `ViewModelDependencyVerifier` 的覆盖范围；若新增静态边界，只针对已证实错误依赖设计白名单/反例测试，不把合法 Repository Flow 或窄业务端口误禁。
 - [ ] 将本轮的稳定规则同步到 `docs/platform/architecture/viewmodel-ownership.md`、`docs/platform/architecture/package-boundaries.md`、`docs/engineering/development/maintenance-boundaries.md` 及必要功能文档，并使本 TODO 保留未迁移清单与决策证据。迁移需要分批按 Feature 执行；每次必须减少原 ViewModel 的独立业务职责、状态、异步任务组或实现依赖，而不是只变短文件。覆盖取消/重试/离页迟到结果/配置重建/会话锁定/持久提交点/敏感清理；运行对应 ViewModel/Route/宿主测试、相关模块门禁、`verifyArchitecture` 和 `git diff --check`。
