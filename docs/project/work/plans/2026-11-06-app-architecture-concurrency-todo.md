@@ -73,7 +73,8 @@
 
 - [ ] 审查 `SingleThreadKdfRunner`：单线程排队是否由 KDF 资源/成本策略要求；验证取消后 worker secret 擦除、迟到结果丢弃、executor shutdown 与排队任务结束行为。评估 `CoroutineDispatcher.limitedParallelism(1)` 或 channel worker 时必须证明等价的串行和秘密清理语义，禁止只为统一技术栈改写。
 - [ ] 审查 `EncryptedLogRecordStore` 的有界 `ThreadPoolExecutor`、溢出/紧急线程、优先级驱逐、`flush(timeout)`、shutdown 与日志丢失窗口。当前专用写队列承担串行文件写和同步 flush；若考虑 Channel/协程 actor，需比较队列背压、fatal logging、线程中断及 shutdown 语义并复用已有并发测试。
-- [ ] 审查 `ScannerCameraHost` 的 CameraX analyzer executor 与 Compose `DisposableEffect` owner，确保解绑、停止 analyzer、关闭 scanner 和 executor 的时机正确，且重组/权限变更不会泄漏或重复绑定。
+- [x] 源码审查 `ScannerCameraHost` 的 CameraX analyzer executor 与 Compose `DisposableEffect` owner：session 会停止 analyzer、移除 listener 并只解绑本身 use case；组件销毁时再关闭 executor 和 ML Kit scanner。审查证据见[Scanner 相机与结果确认 owner 审查](../../reviews/2026-11-12-scanner-camera-and-result-owners.md)。
+- [ ] 补相机 host 生命周期行为验证：覆盖权限变化/组合重建使旧 provider listener 失效、无重复绑定，以及 analyzer 正在处理时停止 session 并关闭 scanner/executor 的清理顺序。当前源码审查没有专用 Host/Session 测试，不能代替实际异步与设备行为验证。
 - [ ] 审查 Runtime Session、Autofill lease/timeout、Clipboard 清理、Favicon 与附件资源回收等自建 scope/dispatcher。`Job.cancel()` 仅表示取消请求；对仍在使用安全资源的任务，须等 lease/事务退出或依赖可验证 abort 合同后才可关闭资源。
 
 ### Task 6：制定状态、Flow 与并发失败合同
