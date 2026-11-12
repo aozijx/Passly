@@ -24,7 +24,7 @@
 - [ ] 根据最低支持 Android 设备可承受的资源预算，确定导入专用的 Argon2 memory、iteration、parallelism 上限。导出强度合同与导入防滥用合同分开裁定；不要把用户已确认保留的 256 MiB 文件上限当作 KDF 资源依据。
 - [ ] 补齐当前测试缺口：以注入派生器验证最高合法参数可被接受、错误口令/认证失败不进入恢复，以及导出参数和导入上限保持独立；保留超上限与畸形 Header 在派生前拒绝的现有断言。
 
-**当前证据（2026-11-08）：** 容器使用分块 AEAD 输入流；每个 data record 的 tag 通过后才向 ZIP reader 交付该块，terminal 与物理 EOF 完整验证前不调用 restore。文件上限为 256 MiB，Android FileStore 不整体读入内存。`BackupContainerV1Spec` 将导入上限固定为 iterations 10、memory 262144 KiB、parallelism 8；`BackupContainerHeader.read()` 在 `ChunkedBackupInputStream` 调用派生器前拒绝超限参数。`BackupContainerHeaderTest` 覆盖超限字段及畸形/截断 Header 在派生前失败；`ChunkedBackupStreamsTest` 使用最低合法 KDF 参数覆盖加密流往返。最高合法参数、错误口令和导出参数路径的专项覆盖仍缺；最低支持设备资源预算未实测。当前协议与代码 owner 见[Archive v1](../../../product/backup/passly-archive-v1.md)，测试映射见[Backup 验证要求](../../../product/backup/verification.md)。旧单块容器路径已删除，数字版本 1 对应分块布局。
+**当前实现与测试缺口：** Header 范围、派生前拒绝和分块终止验证见[Archive v1](../../../product/backup/passly-archive-v1.md)；现有测试覆盖及未覆盖用例见[备份验证要求](../../../product/backup/verification.md)。本 Task 只保留最低设备资源预算，以及最高合法参数、错误口令与导出参数边界的专门验收。
 
 **验收：** 分块备份容器测试通过；KDF 超限用例证明派生函数未调用；当前分块格式参数往返和畸形输入拒绝通过；明确旧单块布局停止导入；Room/备份格式版本不变；`git diff --check` 通过。
 
