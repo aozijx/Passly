@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIconCardUiModel
 import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
@@ -33,7 +34,9 @@ class DetailIconCardTest {
                     ),
                 iconDescriptionRes = R.string.vault_detail_favicon_default,
             )
-        val title = compose.activity.getString(R.string.vault_detail_favicon_title)
+        val title =
+            InstrumentationRegistry.getInstrumentation().targetContext
+                .getString(R.string.vault_detail_favicon_title)
         compose.setContent {
             MaterialTheme {
                 DetailIconCard(model = model, onEdit = { editorOpened = true })
