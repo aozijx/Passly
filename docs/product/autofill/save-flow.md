@@ -55,6 +55,11 @@ Legacy 对 Saved/Queued 调一次 `SaveCallback.onSuccess()`；失败调一次�
 `AutofillEntryCreation.createFromAutofill(entryDraft, inboxDraftId)`；成功映射为 `Saved`，Domain `AppResult.Failure`
 映射为 `Failed(PERSISTENCE_FAILED)`。Inbox drain 时传入 `inboxDraftId`，普通直接保存时为 null。
 
+原生应用条目的标题需要应用标签时，`buildAutofillCredentialDraft(...)` 挂起调用 Domain
+`ApplicationLabelResolver.labelFor(packageName)`；Core 的 `InstalledAppCatalog.labelFor()` 在 `Dispatchers.IO` 上查询
+`PackageManager`。因此 `SaveAutofillCredential.invoke()` 可由 Modern Credential Manager 的 `viewModelScope` 或 Legacy
+Service 调用，而不依赖调用方先切换线程。网页条目使用页面标题或规范化域名，不查询应用标签。
+
 
 ## 代码位置
 
@@ -65,3 +70,4 @@ Legacy 对 Saved/Queued 调一次 `SaveCallback.onSuccess()`；失败调一次�
 | 构造 Legacy 保存草稿并映射平台回调 | `LegacyAutofillService.onSaveRequest(request, callback)`、`LegacySaveFlow.prepare(request)`、`persistImmediately(draft)` | [`LegacyAutofillService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/LegacyAutofillService.kt)、[`LegacySaveFlow.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/LegacySaveFlow.kt) |
 | 创建 Credential Manager 草稿并完成 interaction | `CredentialManagerFlow.createPassword(interactionId, scope, username, password)` | [`CredentialManagerFlow.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/credential/CredentialManagerFlow.kt) |
 | 将平台无关草稿转换为 Login `EntryDraft` 并持久化 | `SaveAutofillCredential.invoke(draft, inboxDraftId)`、`buildAutofillCredentialDraft(draft, applicationLabelResolver)`、`AutofillEntryCreation.createFromAutofill(entryDraft, inboxDraftId)` | [`SaveAutofillCredential.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/core/SaveAutofillCredential.kt)、[`AutofillEntryCreation.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/AutofillEntryCreation.kt) |
+| 在后台解析原生应用标签 | `ApplicationLabelResolver.labelFor(packageName)`、`InstalledAppCatalog.labelFor(packageName)` | [`ApplicationLabelResolver.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/autofill/port/ApplicationLabelResolver.kt)、[`InstalledAppCatalog.kt`](../../../core/src/main/kotlin/com/aozijx/passly/core/platform/packageinfo/InstalledAppCatalog.kt) |

@@ -36,7 +36,8 @@ class InstalledAppCatalog
             return InstalledAppMetadata(label, packageName).also { cache.put(packageName, it) }
         }
 
-        override fun labelFor(packageName: String): String? = metadataForBlocking(packageName)?.label
+        override suspend fun labelFor(packageName: String): String? =
+            withContext(Dispatchers.IO) { metadataForBlocking(packageName)?.label }
 
         @SuppressLint("QueryPermissionsNeeded")
         private fun resolveLabel(packageName: String): String? {

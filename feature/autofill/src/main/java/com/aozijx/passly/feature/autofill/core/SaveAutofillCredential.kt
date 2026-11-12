@@ -51,7 +51,7 @@ internal class SaveAutofillCredential
         }
     }
 
-internal fun buildAutofillCredentialDraft(
+internal suspend fun buildAutofillCredentialDraft(
     draft: AutofillSaveDraft,
     applicationLabelResolver: ApplicationLabelResolver,
 ): EntryDraft? {
@@ -64,7 +64,12 @@ internal fun buildAutofillCredentialDraft(
     val title =
         resolveAutofillCredentialTitle(
             applicationId = applicationId,
-            appLabel = applicationId?.let(applicationLabelResolver::labelFor),
+            appLabel =
+                if (applicationId == null) {
+                    null
+                } else {
+                    applicationLabelResolver.labelFor(applicationId)
+                },
             domain = domain,
             pageTitle = draft.pageTitle,
             usernameValue = draft.username,
