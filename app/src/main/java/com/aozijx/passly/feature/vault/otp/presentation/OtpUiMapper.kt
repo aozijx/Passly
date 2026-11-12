@@ -12,15 +12,6 @@ internal fun OtpCodeState?.toOtpUiState(
     return this?.toUiModel(type::formatCode) ?: OtpUiState.NotRequested
 }
 
-internal fun OtpCodeState?.toOtpUiState(
-    type: OtpType?,
-    showCode: Boolean = true,
-): OtpUiState {
-    if (type == null) return OtpUiState.NotApplicable
-    if (!showCode) return OtpUiState.Hidden
-    return this?.toUiModel(type::formatCode) ?: OtpUiState.NotRequested
-}
-
 private fun OtpCodeState.toUiModel(formatter: (String) -> String): OtpUiState =
     when (this) {
         OtpCodeState.Pending -> OtpUiState.Pending

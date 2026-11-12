@@ -30,6 +30,7 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.otp.OtpCodeState
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotRefreshPhase
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
@@ -346,7 +347,7 @@ class DetailUiMapperTest {
                 nextCode = "654321",
                 windowEndMillis = 30_000L,
                 periodSeconds = 30,
-            ).toOtpUiState(OtpType.TOTP)
+            ).toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true)
 
         require(ui is OtpUiState.TimedReady)
         assertEquals("123 456", ui.currentCode)
@@ -356,7 +357,11 @@ class DetailUiMapperTest {
 
     @Test
     fun missingOtpRuntimeStateMapsToAnExplicitPlaceholder() {
-        val ui = (null as OtpCodeState?).toOtpUiState(OtpType.TOTP)
+        val ui =
+            (null as OtpCodeState?).toOtpUiState(
+                OtpPresentation.Applicable(OtpType.TOTP),
+                showCode = true,
+            )
 
         assertEquals(OtpUiState.NotRequested, ui)
         assertEquals("------", ui.displayCodeOrPlaceholder)

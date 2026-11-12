@@ -16,7 +16,7 @@ class OtpUiStateMapperTest {
 
         assertEquals(
             OtpUiState.TimedReady("ABCDE", "FGHIJ", 30_000L, 30),
-            state.toOtpUiState(OtpType.STEAM, showCode = true),
+            state.toOtpUiState(OtpPresentation.Applicable(OtpType.STEAM), showCode = true),
         )
     }
 
@@ -37,16 +37,16 @@ class OtpUiStateMapperTest {
                 windowEndMillis = 30_000L,
                 periodSeconds = 30,
             ),
-            timedState.toOtpUiState(OtpType.TOTP, showCode = true),
+            timedState.toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true),
         )
         assertEquals(
             OtpUiState.Pending,
-            OtpCodeState.Pending.toOtpUiState(OtpType.TOTP, showCode = true),
+            OtpCodeState.Pending.toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true),
         )
         assertEquals(
             OtpUiState.Failed(canRollbackPrevious = false),
             OtpCodeState.Failed(OtpGenerationError.InvalidSecret)
-                .toOtpUiState(OtpType.TOTP, showCode = true),
+                .toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true),
         )
     }
 
@@ -62,7 +62,7 @@ class OtpUiStateMapperTest {
 
         assertEquals(
             OtpUiState.Hidden,
-            state.toOtpUiState(OtpType.TOTP, showCode = false),
+            state.toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = false),
         )
         assertEquals(
             OtpUiState.NotApplicable,
@@ -70,12 +70,12 @@ class OtpUiStateMapperTest {
         )
         assertEquals(
             OtpUiState.NotRequested,
-            null.toOtpUiState(OtpType.TOTP, showCode = true),
+            null.toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true),
         )
         assertEquals(
             OtpUiState.HotpReady(currentCode = "123 456", counter = 9L, canRollbackPrevious = false),
             OtpCodeState.HotpReady(code = "123456", counter = 9)
-                .toOtpUiState(OtpType.HOTP, showCode = true),
+                .toOtpUiState(OtpPresentation.Applicable(OtpType.HOTP), showCode = true),
         )
     }
 }
