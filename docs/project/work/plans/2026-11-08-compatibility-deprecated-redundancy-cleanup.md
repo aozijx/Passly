@@ -39,3 +39,4 @@
 - App 与 Domain `internal` 顶层函数的低引用候选定向复核中，settings navigation transition helpers、theme interpolation、device-lock result 和 Backup write cleanup helper 都有同模块生产路径及对应行为测试；没有孤立声明可移除。此为符号级局部检查，不代表 App/Domain 模块审计完成。
 - `:feature:autofill` 低引用声明复核中，Legacy Autofill、Manual Accessibility Fill 与 Modern Credential Provider service 都由 Feature Manifest 注册；save rejection/result/title helpers 有当前调用或供对应行为测试使用，未发现孤立旧路径。模块其他声明仍待审计。
 - Domain access 中 `AuthenticationPolicy`、`AuthenticationRequirement` 与 `AuthenticationFreshness` 没有实现、DI 绑定、生产/测试消费者，只在相互 KDoc 中出现；当前策略由 `AuthenticationMethodPolicy` 和 `AuthenticationManager` 实际执行。删除未接入的旧 API，并把 `AuthorizationGate` KDoc 同步到当前链路。`:domain:compileTestKotlin :security:compileDebugUnitTestKotlin :app:compileDebugUnitTestKotlin` 通过；仅编译源码，未执行测试。
+- Domain ports 定向扫描未发现只有声明、没有生产实现/消费者的接口；所有低引用接口至少有所属模块绑定与生产使用。这个结果与本轮移除的非-port `AuthenticationPolicy` 分开记录，其他模块端口仍待查。
