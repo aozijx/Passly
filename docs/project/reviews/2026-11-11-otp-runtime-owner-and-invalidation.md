@@ -12,7 +12,9 @@
 
 ## 仍待验证
 
-Task 27 只保留真实 Compose Route/NavHost/宿主回归：编辑成功后 Detail 显示与复制取新配置，取消/失败不触发保存成功刷新；owner 替换、锁定、离页与恢复时不激活无主条目，也不接受迟到结果。现有 Runtime 与 ViewModel 测试及 `VaultOtpRequestEffectTest` 源码不足以证明这些真实导航交互；该 AndroidTest 尚未由本审查执行。
+Vault 列表的 HOTP 复制尚未由一个 owner 级用例把授权、真实 Runtime 计数消费与剪贴板/活动记录交付串联验证；该缺口由[OTP 审查待办 Task 1](../work/plans/2026-11-06-passly-otp-review-followups.md#task-1)跟踪，与下方 Detail Route/NavHost 生命周期验收分开。
+
+主维护 TODO Task 27 继续跟踪真实 Compose Route/NavHost/宿主回归：编辑成功后 Detail 显示与复制取新配置，取消/失败不触发保存成功刷新；owner 替换、锁定、离页与恢复时不激活无主条目，也不接受迟到结果。旧 `VaultOtpRequestEffectTest` 后续已删除：它调用已删除的 `onAcquireOtp` 参数，并重复验证 `VaultViewModelTest` 已覆盖的图级 lease 合同。当前没有 Compose 测试证明真实导航交互，本审查未执行该 AndroidTest。
 
 ## 相关测试维护记录
 
@@ -26,8 +28,10 @@ Task 27 只保留真实 Compose Route/NavHost/宿主回归：编辑成功后 Det
 | --- | --- | --- |
 | 创建单例 Runtime 并绑定应用级信号 | `OtpRuntimeModule.provideOtpCodeRuntime()` | [`OtpRuntimeModule.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/OtpRuntimeModule.kt) |
 | 持有列表与 Detail 共用的条目 lease | `VaultViewModel.retainOtp(entryId)` | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
+| 列表 OTP 复制调用工作流 | `VaultEntryCommandWorkflow.copyOtp()`、`CopyOtpCodeUseCase.invoke()` | [`VaultEntryCommandWorkflow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultEntryCommandWorkflow.kt)、[`CopyEntryFieldUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CopyEntryFieldUseCase.kt) |
 | OTP 保存成功后失效旧配置 | `AddOtpViewModel` 保存成功分支、`OtpCodeRuntime.entryChanged(entryId)` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`OtpCodeRuntime.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/OtpCodeRuntime.kt) |
 | 覆盖导入提交后失效 Vault 快照 | `AppBackupSnapshotGateway` 的 `onCommitted` | [`AppBackupSnapshotGateway.kt`](../../../app/src/main/java/com/aozijx/passly/app/database/backup/AppBackupSnapshotGateway.kt) |
 | 离页复制请求的交付 owner 回归 | `VaultViewModelTest.routeExitWhileOtpCopyWaitsForAuthorizationPreventsClipboardWrite` | [`VaultViewModelTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModelTest.kt) |
+| OTP 复制授权和交付回归 | `CopyEntryFieldUseCaseTest` | [`CopyEntryFieldUseCaseTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/entry/CopyEntryFieldUseCaseTest.kt) |
 | OTP 算法向量、编码和计数器回归 | `OtpGeneratorTest`、`OtpSecretCodecTest` | [`OtpGeneratorTest.kt`](../../../domain/src/test/kotlin/com/aozijx/passly/domain/entry/otp/generation/OtpGeneratorTest.kt)、[`OtpSecretCodecTest.kt`](../../../domain/src/test/kotlin/com/aozijx/passly/domain/entry/otp/generation/OtpSecretCodecTest.kt) |
 | Runtime lease、失效、复制和重试回归 | `OtpCodeRuntimeTest` | [`OtpCodeRuntimeTest.kt`](../../../app/src/test/java/com/aozijx/passly/feature/vault/otp/OtpCodeRuntimeTest.kt) |

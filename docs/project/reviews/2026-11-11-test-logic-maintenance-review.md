@@ -109,7 +109,7 @@ Core 中易混淆的场景分别绑定到不同边界：clipboard scheduler 的�
 - `VaultAddTypeUiModelTest` 对应的旧 UI model/转换已从生产代码移除；`AddTypePresentationTest` 改验 `AddType` 直接元数据与 FAB 支持，`VaultListUiMapperTest` 仍校验可创建类型和顺序。
 - `CardStyleSettingsProjectionTest` 的 persisted selection 与不支持样式回退断言迁入 `InterfaceSettingsUiMapperTest`；新的 `CardStyleSettingsSectionTest` 另验真实设置页展开、预览尺寸和选择 action。
 - `RevisionHistorySheetTest` 替换为当前同时呈现 activity/revision 的 `DetailHistorySheetTest`，保留长列表滚动、revision 比较与恢复、仅对可 reveal 历史敏感行提供 reveal，以及恢复中禁止离开。
-- `VaultOtpSubscriptionEffectTest` 的组合生命周期 unsubscribe 合同随 UI 改为 request-only 已过时；`VaultOtpRequestEffectTest` 校验可见时重复请求且退出组合不关图级 lease，lease 生命周期由 `VaultViewModelTest` 覆盖。
+- `VaultOtpSubscriptionEffectTest` 的组合生命周期 unsubscribe 合同随 UI 改为 request-only 已过时。`VaultOtpRequestEffectTest` 后续也已删除：它依赖已删除的 `onAcquireOtp` 参数，并重复验证 `VaultViewModelTest` 已覆盖的图级 lease；当前没有 Compose 测试覆盖可见时的请求及真实导航交接，Route/NavHost 验收仍由主维护计划 Task 32 跟踪。
 - `VaultDisplayViewModelTest` 的 loading/字段投影缺口已迁入当前 `VaultViewModelTest` 并补回；失败重试和 hierarchy 无关行为也迁到同一 owner。
 - `EntryVisualCategoryClassifierTest` 移到新的 `entryvisual` owner 包并增加所有固定 EntryType 的分类覆盖；Domain OTP 测试移到 `otp.generation` 包，SHA256 弱“成功即可”检查替换为 SHA1/SHA256/SHA512 RFC 6238 全向量校验并补 byte material 清理覆盖。Security mapping 测试按实际 owner 更名，测试内容保留。
 
