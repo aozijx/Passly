@@ -173,8 +173,10 @@ Credential Manager Route 只在 Activity 处于 `STARTED` 时消费进程内缓�
 StateFlow 或 SavedState。Credential 与 Legacy Activity 均用 `AutofillActivityResultClaim` 约束实例内重复提交。平台 callback
 失败会释放 claim：Credential Manager 取消 interaction 并返回 `RESULT_CANCELED`，Legacy Autofill 取消 ViewModel
 工作流并返回取消结果，`onDestroy()` 不会因残留的防重标志跳过清理。callback 已成功后，日志/trace 的普通
-`Exception` 不会触发第二次平台提交或把成功结果覆盖为取消；结果已交给 Android 后继续完成 interaction 与 lease
-收尾。fatal `Error` 不在这些恢复分支内，行为与待验证路径见并发 TODO。
+`Exception` 不会触发第二次平台提交或把成功结果覆盖为取消；结果已交给 Android 后，interaction 完成与 lease
+释放由 runtime scope 异步排队。fatal `Error` 不映射为普通失败：平台提交标记前会先清理可回滚状态再传播失败；标记后保留已提交结果，
+触发异步收尾后继续传播原错误。Activity callback 部分副作用后失败、completion scope 取消和同步桥接等待合同仍待宿主验收，
+见[Autofill Task 21](../../../project/work/plans/2026-11-07-passly-autofill-followups.md#task-21)及[宿主验收记录](../../../project/reviews/2026-11-08-autofill-host-validation.md)。
 
 最后一个已提交结果完成后，仍未向 Android 提交结果的列表、认证和选择 interaction 全部过期，再立即回收临时会话。
 关闭期间的新请求等待该会话完成锁定后再创建 interaction，不能落入“旧数据库仍开着但已禁止借用”的中间态。
