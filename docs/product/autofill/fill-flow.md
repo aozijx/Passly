@@ -26,6 +26,10 @@ Credential Manager Provider 在 API 34+ 提供 Password get/create/clear-state�
 会话存储读取请求，具体页面类只由 App 平台适配器引用，Feature 不依赖 Presentation。
 服务任务在协程启动前或执行期间取消时，都会清除本次暂存请求和 trace continuation，并继续传播取消；普通启动错误才记录为回退失败。
 
+`AccessibilityFillSessionStore` 是进程内单槽 owner，保存 `Captured` 或 `Pending` 两种状态：capture token、目标 package/window、捕获时间、可编辑节点引用；选择完成后再附加角色映射、结果 payload 与一次性交付 receipt。`ManualAccessibilityFillService.onServiceConnected()` 绑定弱 service 引用，`onDestroy()` 调用 `unbind()` 清空会话、回调和过期任务；无障碍选择 Activity 的 Intent 只含模式，不含 token、节点或凭据。`capture()` 仅由用户点击浮动按钮/系统无障碍按钮触发，确认焦点目标属于可见、可编辑的外部应用后，最多遍历 256 个节点并提取最多 32 个字段的元数据，不读取输入框当前文本；capture 总有效期为 30 秒。
+
+`AccessibilityFillViewModel.start()` 从 `pendingCapture()` 取得请求；候选发现、认证和选择完成后调用 `prepareDelivery()`，将 payload 与 receipt 暂存最多 10 秒。原窗口重新活动时，Service 调用 `claimWhenTargetActive()` 检查 package、window ID 和 capture 时限，并先把单槽置空，再返回一次性 `DeliveryClaim`。`DeliveryClaim.commit()` 会再次检查目标窗口并刷新每个节点，确认节点仍可编辑且支持 `ACTION_SET_TEXT` 后逐字段写入。平台强制要求的单次 `Bundle` 在每个 action 的 `finally` 中清空。页面退出、取消与服务销毁会清理各自 owner 的暂存并结束对应 interaction；capture 超时清除捕获槽，pending 交付超时调用服务回调取消 interaction。宿主 teardown 与 session lock 并发收尾的真实行为仍见 Autofill Task 21。
+
 | 入口与展示 | 触发 | 候选 UI | 交付 | 边界与回退 |
 | --- | --- | --- | --- | --- |
 | Legacy 悬浮 | 系统 `FillRequest` | 系统下拉菜单 `RemoteViews` | `Dataset` | 用户选“悬浮候选”或键盘不支持 Inline 时使用 |
@@ -219,3 +223,4 @@ interaction 可以借用同一个临时数据库会话，但不共享候选或�
 | 保留、重试临时 Autofill session 锁责任 | `AutofillUnlockLease.release()`、`awaitReadyForInteraction()` | [`AutofillUnlockLease.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/runtime/AutofillUnlockLease.kt) |
 | Accessibility 模式宿主观察 Activity 销毁并清理选择流程 | `AccessibilityAutofillEntry` 的 `ON_DESTROY` observer、`AccessibilityFillViewModel.cancel()` | [`AccessibilityAutofillEntry.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityAutofillEntry.kt)、[`AccessibilityFillViewModel.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/presentation/accessibility/AccessibilityFillViewModel.kt) |
 | 无障碍填充事件与服务清理 | `ManualAccessibilityFillService.onAccessibilityEvent()`、`onDestroy()` | [`ManualAccessibilityFillService.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt) |
+| 保存捕获请求、短期结果和一次性交付 claim | `AccessibilityFillSessionStore.bind()`、`capture()`、`pendingCapture()`、`prepareDelivery()`、`claimWhenTargetActive()`、`unbind()` | [`AccessibilityFillSessionStore.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/AccessibilityFillSessionStore.kt) |

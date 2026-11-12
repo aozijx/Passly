@@ -10,6 +10,12 @@
 | API 36 Legacy 实机交付 | 锁定态显示认证入口；认证后出现已匹配候选，选择后目标页面收到 username/password 字段值。系统设置项在验收后恢复，临时 Debug Vault 数据已清理。请求没有 InlinePresentation support，Android 使用系统下拉候选，因此该次验收不证明 Inline 专属 UI。 |
 | 构建/架构 | `:app:compileDebugKotlin`、`:feature:autofill:compileDebugKotlin` 和 `verifyArchitecture` 通过；当时没有运行额外单测任务。 |
 
+## 2026-11-12 AccessibilityFillSessionStore owner review
+
+`AccessibilityFillSessionStore` 是 `:feature:autofill` 进程内单例，独占 `Empty / Captured / Pending` 单槽状态与 `AccessibilityNodeInfo` 引用。宿主 Service 绑定/解绑弱引用；用户显式触发 capture 后保存受限节点元数据和 30 秒有效期；选择后的角色映射、结果 payload 与 receipt 最多暂存 10 秒。token、package/window 与时限校验阻止旧请求认领，claim 在交付前清空槽位，并在填充时重新核对目标与节点能力。
+
+本轮未发现可安全合并的重复状态 owner；现有测试未直接覆盖 Store 的完整状态合同，因此不把代码审查当作测试证据。capture 超时仅清除捕获槽，pending 交付超时通过服务回调取消 interaction。Accessibility finish/destroy 与 session lock 互斥阻塞交错仍由[Task 21](../work/plans/2026-11-07-passly-autofill-followups.md#task-21)验收。
+
 仍需验收 Legacy Activity 配置重建、callback 部分提交后的失败/重试、Accessibility destroy 与 session lock 交错、Credential Manager 的取消/交付/宿主替换，以及 BottomSheet 和 InlinePresentation 专属字段写入。`result.delivered` 仅表示平台收到认证结果，不能代替目标控件值检查。当前生产合同见 [Autofill 共享流程](../../product/autofill/fill-flow.md)、[Legacy Service](../../product/autofill/legacy-service.md)、[Credential Manager](../../product/autofill/credential-manager.md)和[验证矩阵](../../product/autofill/verification.md)。
 
 ## 代码位置
