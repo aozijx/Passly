@@ -16,16 +16,9 @@
 
 - [ ] 以真实 App Activity + Feature entry 覆盖 Legacy discovery/selection 的配置重建、回调失败及重试、成功后终态释放。验证 Feature delivery claim 与 Activity result claim 只在各自显式 commit marker 后终结；当前 App completion callback 返回后才调用 marker，因此还需覆盖 callback 在 `setResult` 等部分副作用后抛错的恢复语义。断言平台提交先于 interaction/lease 收尾、callback 恰好一次且记录不重复。SelectedCredential 是为重建/重试暂存的语义结果；不能把“VM 不持有 Dataset”改写成“VM 不得暂存任何结果”。
 - [ ] 覆盖 Accessibility finish/destroy 与 session lock 互斥阻塞交错，断言主线程 teardown 返回且最终清理完成；覆盖 Credential Manager 支持 API 上的取消、交付及宿主替换。复用已有 lease/claim 单测，不重新实现其已具备的取消等待和重试机制。
-- [ ] 以真实宿主覆盖认证、候选查询、选择和 Route 尚未启动时的非配置 `ON_STOP`；确认旧结果不再交付、interaction/lease 终结且下一次填充立即可用。本轮源码审查、模块编译及 `:feature:autofill:testDebugUnitTest` 已通过；两项 fatal 路径测试改为比较异常类型与消息，避免协程边界复制堆栈时的错误身份断言。`adb devices` 未发现设备，宿主整链路仍待设备验收。
-- [ ] 按[验证矩阵](../../../product/autofill/verification.md)补齐尚缺的真实字段验收：BottomSheet 选择后直接填入目标控件；提供 InlinePresentation 的请求下验证 Inline 专属候选与认证结果。SYSTEM_INLINE 下系统下拉候选认证后真实填值已在 Pixel_8_Pro API 36 验证；不能把该结果扩大为 Inline 专属界面证明，也不能将 result.delivered 单独当成成功填值。设备、测试应用与测试凭据按执行时现状记录，不沿用历史 AVD/reset 条件。
+- [ ] 以真实宿主覆盖认证、候选查询、选择和 Route 尚未启动时的非配置 `ON_STOP`；确认旧结果不再交付、interaction/lease 终结且下一次填充立即可用。已完成的源码、单测和 Activity 入口验收见[宿主与字段交付审查记录](../../reviews/2026-11-08-autofill-host-validation.md)；本项只跟踪真实宿主交错验收。
+- [ ] 按[验证矩阵](../../../product/autofill/verification.md)验收尚缺的字段交付场景：BottomSheet 选择后目标控件实际填值；请求提供 InlinePresentation 时验证 Inline 专属候选与认证结果。已完成的 SYSTEM_INLINE 系统下拉验收及其范围限制见[宿主与字段交付审查记录](../../reviews/2026-11-08-autofill-host-validation.md)。设备、测试应用与测试凭据按执行时现状记录。
 Task 21 的已完成单测、Activity entry 检查和 API 36 AVD 验收证据集中保存在上述审查记录；本 Task 只保留未执行的整链路与设备验收，不重复列实现 owner 或历史环境清理步骤。
-
-### 2026-11-10 从头复核与日志进度
-
-- 已沿 Legacy、Credential Manager、Accessibility 入口复核发现、认证、选择、结果交付和宿主退出路径；给三类宿主的未提交退出、Legacy/Credential Manager 系统请求取消、Legacy/Credential Manager 平台结果提交异常增加结构化事件。候选查询异常保留异常类型和来源，不记录凭据或原始请求值。
-- 定向测试复现查询正常返回后协程已取消但 interaction 仍活动：无竞争的状态写入不会必然检查取消。`DiscoverAutofillCandidates` 现于查询返回和发布结果前显式检查取消，并在创建 interaction 后的取消路径终结它；新增回归测试通过。
-- Credential Manager begin-get 现在把构造出的响应与 interaction ID 一并返回 Service。系统取消信号在回调前到达、响应构造中取消或抛普通异常时，立即结束该 interaction；Legacy 与 Credential Manager 复用同一发现结果 ID 映射。
-- `:core:test`、`:feature:autofill:testDebugUnitTest` 与 AndroidTest Kotlin 编译通过。`:app:compileDebugKotlin` 被 Vault `BankCardSection.kt:95` 的既有 `String?`/`String` 类型不匹配阻断，无法据此证明宿主模块编译通过。仍需覆盖真实 Activity/Service 取消交错、配置重建与设备交付。
 
 <a id="task-82"></a>
 

@@ -107,6 +107,8 @@ Legacy 的 `AutofillFillViewModel.initialize(request)` 先调用 `authorizeInter
 
 `DiscoverAutofillCandidates.invoke()` 用 `request.source` 选择启发式或严格字段匹配器，并从 `request.packageName`、`request.domain` 构造 `AutofillGrantContext(...).normalized()`。新交互时，它将规范化 scope、`request.source.toInteractionSource()` 和设置中的 `requireAuthentication` 传给 `StartAutofillInteraction`；已有交互则按 `interactionId` 读取 snapshot 并要求 scope 完全相同。候选查询只按应用包名或网页域名匹配，统一限制为最多 10 条，不提供未关联条目回退，也不扫描密码明文寻找相同密码。网页 scope 时 `packageName = null`，原生应用才传规范化 package；返回的 candidate IDs 再传给 `interactionStore.recordCandidates(snapshot.id, ids)`，使最终选择必须属于实际展示集合。
 
+候选查询返回后、记录或发布候选前会重新检查协程取消；若请求在此期间取消，流程会在 `NonCancellable` 清理中终结当前 interaction，再传播原取消，避免查询已返回但 interaction 仍处于活动状态。该边界由 [`DiscoverAutofillCandidatesTest.cancellationAfterCandidateQueryClosesInteraction`](../../../feature/autofill/src/test/java/com/aozijx/passly/feature/autofill/core/DiscoverAutofillCandidatesTest.kt) 覆盖。
+
 传统 Autofill 的保存提示不再有独立开关：全局 Autofill 启用且字段分类识别出有效密码字段时，响应始终带上系统 SaveInfo；全局关闭时不返回填充响应，也不接受保存请求。Credential Manager 的创建流程仍由其自身平台能力和设置控制。
 
 ## 解析秘密

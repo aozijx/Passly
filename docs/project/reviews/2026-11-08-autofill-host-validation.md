@@ -10,6 +10,16 @@
 | API 36 Legacy 实机交付 | 锁定态显示认证入口；认证后出现已匹配候选，选择后目标页面收到 username/password 字段值。系统设置项在验收后恢复，临时 Debug Vault 数据已清理。请求没有 InlinePresentation support，Android 使用系统下拉候选，因此该次验收不证明 Inline 专属 UI。 |
 | 构建/架构 | `:app:compileDebugKotlin`、`:feature:autofill:compileDebugKotlin` 和 `verifyArchitecture` 通过；当时没有运行额外单测任务。 |
 
+## 2026-11-10 发现取消与 Credential begin-get 复核
+
+`DiscoverAutofillCandidates.invoke()` 在候选查询后、记录与发布结果前检查协程状态；取消路径在 `NonCancellable` 中终结 interaction。`DiscoverAutofillCandidatesTest.cancellationAfterCandidateQueryClosesInteraction` 验证查询返回后取消会传播，并且 Store 中不再留有活动 interaction。
+
+`CredentialBeginGetHandler.resolve()` 将平台 response 与 interaction ID 一并返回；response 构建期间取消或发生普通 `Exception` 时，它在 `NonCancellable` 中取消已建立的 interaction。`ModernCredentialService.onBeginGetCredentialRequest()` 在平台 callback 前检查 `CancellationSignal`，取消、普通失败路径会清理仍待提交的 interaction。当前正式行为见[共享填充流程](../../product/autofill/fill-flow.md)与[Credential Manager](../../product/autofill/credential-manager.md)。handler 本身没有专属行为测试；这里的证据是源码审查，不扩大为测试覆盖结论。
+
+Legacy 与 Credential Manager 使用同一 `AutofillDiscoveryOutcome.interactionIdOrNull()` 映射清理对应的 pending interaction。Autofill 生命周期退出与框架取消路径使用结构化事件；[`AutofillObservabilityTest`](../../../feature/autofill/src/test/java/com/aozijx/passly/feature/autofill/AutofillObservabilityTest.kt) 验证退出/取消事件只记录来源元数据，并验证目标包名以散列标识记录。该测试不替代各宿主的设备交错验收。
+
+本次历史验证记录为 `:core:test`、`:feature:autofill:testDebugUnitTest` 与 AndroidTest Kotlin 编译通过；同一快照的 `:app:compileDebugKotlin` 被 `BankCardSection.kt:95` 的 `String?`/`String` 类型不匹配阻断。后续构建结果须按各自修订解释，不能把这次阻断视为 Autofill 模块编译失败。
+
 ## 2026-11-12 AccessibilityFillSessionStore owner review
 
 `AccessibilityFillSessionStore` 是 `:feature:autofill` 进程内单例，独占 `Empty / Captured / Pending` 单槽状态与 `AccessibilityNodeInfo` 引用。宿主 Service 绑定/解绑弱引用；用户显式触发 capture 后保存受限节点元数据和 30 秒有效期；选择后的角色映射、结果 payload 与 receipt 最多暂存 10 秒。token、package/window 与时限校验阻止旧请求认领，claim 在交付前清空槽位，并在填充时重新核对目标与节点能力。

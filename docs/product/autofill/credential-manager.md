@@ -13,6 +13,8 @@ clear-state。暂不支持 privileged browser origin、Passkey、远程条目、
 
 `CredentialBeginGetHandler.resolve(request)` 只保留 `BeginGetPasswordOption`，从 `request.callingAppInfo` 解析 packageName，随后把 `adapter.buildRequest(packageName)` 作为 `autofillRequest` 传给 `CredentialManagerFlow.beginGet(autofillRequest)`。若要求先解锁，返回的 PendingIntent 携带 interaction ID；`resolveAfterUnlock(request, interactionId)` 再以相同 packageName 构造 `autofillRequest`，调用 `unlockAndRediscover(interactionId, autofillRequest)`。最终 Get Activity 从系统 `sourceIntent` 调用 `CredentialRequestParser.parsePasswordGet(sourceIntent)`；Ready 结果中的 `interactionId`、`entryId`、`packageName`、`option.allowedUserIds` 分别传给 `selectPassword(interactionId, AutofillGrantContext(packageName, null), entryId, allowedUserIds)`，scope 固定为 native package、无 web domain。只有密码非空，且 `allowedUserIds` 非空时 username 属于该集合，才构造带 `AutofillSelectionReceipt` 的 Success。
 
+Begin-get handler 将构造出的平台 response 与对应的 interaction ID 作为同一结果返回给 Service。若发现交互已建立，但构造 response 时发生取消或普通 `Exception`，handler 会在 `NonCancellable` 中取消该 interaction，再传播原失败。Service 收到结果后还会检查平台 `CancellationSignal`；若平台请求已取消，则结束该 interaction 且不调用成功 callback。
+
 最终选择通过 `PendingIntentHandler.retrieveProviderGetCredentialRequest()` 取得系统请求，重新验证调用方、
 interaction scope、已展示 Entry 和 `allowedUserIds`，再读取单条密码。ViewModel 的可观察 UI state 只表示
 `Loading` 或不可恢复状态；含系统返回 `Intent` 的完成结果经进程内缓冲的一次性事件交给 Activity，Route 只在
