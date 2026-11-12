@@ -15,8 +15,11 @@ import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
+import com.aozijx.passly.domain.entry.policy.EntryTitleEditDecision
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
+import com.aozijx.passly.domain.entry.policy.planTitleEdit
+import com.aozijx.passly.domain.entry.policy.titleEditValue
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
@@ -206,7 +209,7 @@ class DetailViewModel
             when (event) {
                 DetailUiAction.StartTitleEdit -> {
                     _uiState.value.snapshotState.entryOrNull()?.let { entry ->
-                        mutate(DetailMutation.FieldEditingStarted(DetailDraftKey.Title, entry.detailDisplayTitle))
+                        mutate(DetailMutation.FieldEditingStarted(DetailDraftKey.Title, entry.titleEditValue))
                     }
                 }
 
@@ -226,15 +229,15 @@ class DetailViewModel
                             DetailFieldEdit.NotEditing -> return
                             is DetailFieldEdit.Editing -> edit.draft
                         }
-                    when (val plan = current.planDetailTitleEdit(draft)) {
-                        DetailTitleEditPlan.Cancel -> {
+                    when (val decision = current.planTitleEdit(draft)) {
+                        EntryTitleEditDecision.Unchanged -> {
                             mutate(DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
                         }
 
-                        is DetailTitleEditPlan.Save -> {
+                        is EntryTitleEditDecision.Change -> {
                             viewModelScope.launch {
                                 persistEntryEdit(
-                                    edit = plan.edit,
+                                    edit = decision.edit,
                                     completion = DetailEditCompletion.Title,
                                 )
                             }

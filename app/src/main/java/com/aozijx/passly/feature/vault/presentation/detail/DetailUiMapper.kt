@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.policy.titleEditValue
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
@@ -48,7 +49,7 @@ internal fun detailHeaderUiModel(
 ) = DetailHeaderUiModel(
     title =
         when (val edit = state.fieldEdits.edit(DetailDraftKey.Title)) {
-            DetailFieldEdit.NotEditing -> DetailTitleUiState.Display(entry.detailDisplayTitle)
+            DetailFieldEdit.NotEditing -> DetailTitleUiState.Display(entry.titleEditValue)
             is DetailFieldEdit.Editing -> DetailTitleUiState.Editing(edit.draft)
         },
     favorite = entry.favorite,
@@ -114,14 +115,14 @@ internal fun toDetailPresentationModel(
         EntryVisualCategoryClassifier.classify(
             EntryClassificationInput(
                 entryType = entry.type,
-                title = entry.detailDisplayTitle,
+                title = entry.titleEditValue,
                 username = entry.username,
                 urls = setOfNotNull(entry.associatedDomain),
                 domains = setOfNotNull(entry.associatedDomain),
                 packageNames = entry.associations.applicationIds,
                 appNames =
                     setOfNotNull(
-                        entry.detailDisplayTitle.takeIf {
+                        entry.titleEditValue.takeIf {
                             entry.associations.applicationIds.isNotEmpty() && entry.associatedDomain == null
                         },
                     ),

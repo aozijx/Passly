@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
+import com.aozijx.passly.domain.entry.policy.titleEditValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import kotlinx.coroutines.CancellationException
@@ -110,7 +111,7 @@ internal class DetailWorkSession(
                             DetailEditCompletion.Title ->
                                 DetailMutation.SaveSucceeded.DraftSaved(
                                     DetailEditCompletion.Title,
-                                    result.data.detailDisplayTitle,
+                                    result.data.titleEditValue,
                                 )
 
                             DetailEditCompletion.Notes ->
