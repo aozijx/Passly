@@ -80,7 +80,6 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 ### Task 51：明确非 Scanner Route 一次性 effect 的前后台交付合同
 
 - [ ] 逐项定义 Toast/Snackbar、导航、SAF picker、权限和平台交付在 STOPPED、恢复、离页、owner 替换后的有效期；短命反馈明确是否丢弃，待完成请求明确如何恢复。
-- [x] 补通用 `PageEffects` owner 与 lifecycle helper 测试：覆盖同页 STOPPED→STARTED 缓冲交付、旧 owner 丢弃、迟到 exit 和有限队列溢出；证据见[PageEffects owner 审查](../../reviews/2026-11-12-page-effects-owner.md)。
 - [ ] 补真实 Route/宿主测试，逐类覆盖转场、请求代际、锁定/关闭及 callback 异常；分别判断各 effect 应消费、丢弃、重试或恢复，不把不同 effect 塞入统一 handler 表。
 
 共享 `PageEffects` 的 STARTED 收集、页面 owner 隔离及缓冲恢复合同见[状态管理专题](../../../engineering/development/architecture-and-state.md#页面一次性事件的可见性与-owner)。本 Task 只跟踪不同 effect 的有效期决策和 Route/宿主覆盖。
