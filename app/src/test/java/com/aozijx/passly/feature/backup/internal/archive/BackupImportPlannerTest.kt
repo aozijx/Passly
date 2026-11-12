@@ -19,11 +19,14 @@ class BackupImportPlannerTest {
     @Test
     fun structuralFailuresHaveSameReasonInBothImportStrategiesAndExportValidation() {
         val source = bundle(entry("note", listOf(BackupFieldRecord("title", BackupFieldValue.text("entry")))))
-        val cases = listOf(
-            source.copy(document = source.document.copy(format = "unknown")) to Reasons.Backup.Document.BackupDocumentFormatUnsupported,
-            source.copy(document = source.document.copy(version = BackupDocument.CURRENT_VERSION + 1)) to Reasons.Backup.Document.BackupDocumentVersionUnsupported,
-            source.copy(document = source.document.copy(entries = source.document.entries + source.document.entries)) to Reasons.Backup.Document.BackupDocumentDuplicateEntryId,
-        )
+        val cases =
+            listOf(
+                source.copy(document = source.document.copy(format = "unknown")) to Reasons.Backup.Document.BackupDocumentFormatUnsupported,
+                source.copy(document = source.document.copy(version = BackupDocument.CURRENT_VERSION + 1)) to
+                    Reasons.Backup.Document.BackupDocumentVersionUnsupported,
+                source.copy(document = source.document.copy(entries = source.document.entries + source.document.entries)) to
+                    Reasons.Backup.Document.BackupDocumentDuplicateEntryId,
+            )
         cases.forEach { (invalid, reason) ->
             BackupImportStrategy.entries.forEach { strategy ->
                 val failure = assertThrows(BackupIntegrityException::class.java) { BackupImportPlanner.plan(invalid, strategy) }

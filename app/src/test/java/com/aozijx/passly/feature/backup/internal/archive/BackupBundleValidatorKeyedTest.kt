@@ -16,20 +16,33 @@ class BackupBundleValidatorKeyedTest {
     @Test
     fun resourceIntegrityReportsManifestSizeAndDigestSeparately() {
         val content = byteArrayOf(1, 2, 3)
-        val record = BackupResourceRecord(
-            id = "icon", entryId = "entry", kind = BackupResourceKind.ICON,
-            size = content.size.toLong(), sha256 = BackupBundleValidator.sha256Hex(content),
-        )
-        val document = BackupDocument(format = BackupDocument.FORMAT, version = BackupDocument.CURRENT_VERSION, exportedAt = 1, entries = emptyList(), resources = listOf(record))
-        val cases = listOf(
-            BackupBundle(document, emptyMap()) to Reasons.Backup.Resource.BackupResourceManifestMismatch,
-            BackupBundle(document, mapOf("icon" to byteArrayOf(1))) to Reasons.Backup.Resource.BackupResourceSizeMismatch,
-            BackupBundle(document, mapOf("icon" to byteArrayOf(3, 2, 1))) to Reasons.Backup.Resource.BackupResourceDigestMismatch,
-        )
+        val record =
+            BackupResourceRecord(
+                id = "icon",
+                entryId = "entry",
+                kind = BackupResourceKind.ICON,
+                size = content.size.toLong(),
+                sha256 = BackupBundleValidator.sha256Hex(content),
+            )
+        val document =
+            BackupDocument(
+                format = BackupDocument.FORMAT,
+                version = BackupDocument.CURRENT_VERSION,
+                exportedAt = 1,
+                entries = emptyList(),
+                resources = listOf(record),
+            )
+        val cases =
+            listOf(
+                BackupBundle(document, emptyMap()) to Reasons.Backup.Resource.BackupResourceManifestMismatch,
+                BackupBundle(document, mapOf("icon" to byteArrayOf(1))) to Reasons.Backup.Resource.BackupResourceSizeMismatch,
+                BackupBundle(document, mapOf("icon" to byteArrayOf(3, 2, 1))) to Reasons.Backup.Resource.BackupResourceDigestMismatch,
+            )
         cases.forEach { (bundle, reason) ->
-            val failure = assertThrows(BackupIntegrityException::class.java) {
-                KeyedBackupBundleValidator.validateResourceIntegrity(bundle, setOf("entry"), requireResourceData = true)
-            }
+            val failure =
+                assertThrows(BackupIntegrityException::class.java) {
+                    KeyedBackupBundleValidator.validateResourceIntegrity(bundle, setOf("entry"), requireResourceData = true)
+                }
             assertEquals(reason, failure.reasonCode)
         }
     }

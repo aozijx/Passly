@@ -34,10 +34,21 @@ class BackupCodecTest {
         val encoded = ByteArrayOutputStream()
         val password = "password".toCharArray()
         try {
-            ChunkedBackupOutputStream(encoded, password, KeyDerivation.BASELINE_ARGON2ID_PARAMETERS, ::testKey).use { it.write(zip.toByteArray()) }
-            val failure = assertThrows(BackupFailed::class.java) {
-                EncryptedBackupImporter().import(ByteArrayInputStream(encoded.toByteArray()), password, BackupImportStrategy.STRICT, ::testKey)
-            }
+            ChunkedBackupOutputStream(
+                encoded,
+                password,
+                KeyDerivation.BASELINE_ARGON2ID_PARAMETERS,
+                ::testKey,
+            ).use { it.write(zip.toByteArray()) }
+            val failure =
+                assertThrows(BackupFailed::class.java) {
+                    EncryptedBackupImporter().import(
+                        ByteArrayInputStream(encoded.toByteArray()),
+                        password,
+                        BackupImportStrategy.STRICT,
+                        ::testKey,
+                    )
+                }
             org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipDocumentMissing.value, failure.reasonCode)
         } finally {
             password.fill('\u0000')
@@ -46,17 +57,29 @@ class BackupCodecTest {
 
     @Test
     fun encryptedImportWrongPasswordReportsAuthenticationFailure() {
-        val bundle = BackupBundle(
-            BackupDocument(format = BackupDocument.FORMAT, version = BackupDocument.CURRENT_VERSION, exportedAt = 1, entries = emptyList()),
-        )
+        val bundle =
+            BackupBundle(
+                BackupDocument(
+                    format = BackupDocument.FORMAT,
+                    version = BackupDocument.CURRENT_VERSION,
+                    exportedAt = 1,
+                    entries = emptyList(),
+                ),
+            )
         val encoded = ByteArrayOutputStream()
         val password = "correct".toCharArray()
         val wrongPassword = "incorrect".toCharArray()
         try {
             EncryptedBackupExporter().export(bundle, password, encoded, ::testKey)
-            val failure = assertThrows(BackupFailed::class.java) {
-                EncryptedBackupImporter().import(ByteArrayInputStream(encoded.toByteArray()), wrongPassword, BackupImportStrategy.STRICT, ::testKey)
-            }
+            val failure =
+                assertThrows(BackupFailed::class.java) {
+                    EncryptedBackupImporter().import(
+                        ByteArrayInputStream(encoded.toByteArray()),
+                        wrongPassword,
+                        BackupImportStrategy.STRICT,
+                        ::testKey,
+                    )
+                }
             org.junit.Assert.assertEquals(Reasons.Backup.Authentication.BackupAuthenticationFailed.value, failure.reasonCode)
         } finally {
             password.fill('\u0000')
@@ -83,17 +106,19 @@ class BackupCodecTest {
 
     @Test
     fun zipRead_emptyArchiveAndUnsafeResourceName_throw() {
-        val missing = assertThrows(BackupIntegrityException::class.java) {
-            BackupZipCodec.readZip(ByteArrayInputStream(byteArrayOf()))
-        }
+        val missing =
+            assertThrows(BackupIntegrityException::class.java) {
+                BackupZipCodec.readZip(ByteArrayInputStream(byteArrayOf()))
+            }
         org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipDocumentMissing, missing.reasonCode)
-        val invalid = assertThrows(BackupIntegrityException::class.java) {
-            BackupZipCodec.buildZip(
-                "{}".toByteArray(),
-                mapOf("../outside" to byteArrayOf(1)),
-                ByteArrayOutputStream(),
-            )
-        }
+        val invalid =
+            assertThrows(BackupIntegrityException::class.java) {
+                BackupZipCodec.buildZip(
+                    "{}".toByteArray(),
+                    mapOf("../outside" to byteArrayOf(1)),
+                    ByteArrayOutputStream(),
+                )
+            }
         org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipInvalidEntry, invalid.reasonCode)
     }
 
@@ -113,9 +138,10 @@ class BackupCodecTest {
         assertTrue(localNameOffset >= 0)
         archive[localNameOffset + secondName.lastIndex] = '1'.code.toByte()
 
-        val failure = assertThrows(BackupIntegrityException::class.java) {
-            BackupZipCodec.readZip(ByteArrayInputStream(archive))
-        }
+        val failure =
+            assertThrows(BackupIntegrityException::class.java) {
+                BackupZipCodec.readZip(ByteArrayInputStream(archive))
+            }
         org.junit.Assert.assertEquals(Reasons.Backup.Archive.BackupZipDuplicateEntry, failure.reasonCode)
     }
 

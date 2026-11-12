@@ -17,15 +17,20 @@ class ChunkedBackupStreamsTest {
     @Test
     fun truncatedRecordsIdentifyTheIncompletePart() {
         val encoded = encode(byteArrayOf(1, 2, 3))
-        val cases = listOf(
-            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + 1) to Reasons.Backup.Container.BackupRecordHeaderTruncated,
-            encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + BackupContainerV1Spec.RECORD_HEADER_LENGTH + 1) to Reasons.Backup.Container.BackupRecordDataTruncated,
-            encoded.copyOf(encoded.size - BackupContainerV1Spec.RECORD_HEADER_LENGTH - 32) to Reasons.Backup.Container.BackupTerminalMissing,
-        )
+        val cases =
+            listOf(
+                encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + 1) to Reasons.Backup.Container.BackupRecordHeaderTruncated,
+                encoded.copyOf(BackupContainerV1Spec.HEADER_LENGTH + BackupContainerV1Spec.RECORD_HEADER_LENGTH + 1) to
+                    Reasons.Backup.Container.BackupRecordDataTruncated,
+                encoded.copyOf(
+                    encoded.size - BackupContainerV1Spec.RECORD_HEADER_LENGTH - 32,
+                ) to Reasons.Backup.Container.BackupTerminalMissing,
+            )
         cases.forEach { (bytes, reason) ->
-            val failure = assertThrows(BackupTruncatedException::class.java) {
-                ChunkedBackupInputStream(ByteArrayInputStream(bytes), password, ::deriveKey).use { it.readBytes() }
-            }
+            val failure =
+                assertThrows(BackupTruncatedException::class.java) {
+                    ChunkedBackupInputStream(ByteArrayInputStream(bytes), password, ::deriveKey).use { it.readBytes() }
+                }
             assertEquals(reason, failure.reasonCode)
         }
     }

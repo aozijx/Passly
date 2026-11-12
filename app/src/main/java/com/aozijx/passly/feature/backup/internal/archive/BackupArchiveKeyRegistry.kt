@@ -90,5 +90,4 @@ internal object BackupArchiveKeyRegistry {
     fun fieldKey(field: FieldKey): String = fieldKeys.getValue(field)
 
     fun field(key: String): FieldKey? = fields[key]
-
 }

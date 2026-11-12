@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.backup.presentation
 import com.aozijx.passly.app.message.model.AppNotice
 import com.aozijx.passly.app.message.model.ArgumentKey
 import com.aozijx.passly.app.message.model.ArgumentValue
-import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.app.message.model.NoticeCode
+import com.aozijx.passly.app.message.model.newAppNotice
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
 import com.aozijx.passly.feature.backup.contract.BackupOperation
@@ -33,7 +33,9 @@ internal fun BackupNoticeEffect.toAppNotice(): AppNotice =
                         NoticeCode.BACKUP_IMPORT_AUTHENTICATION_FAILED
                     }
 
-                    else -> operation.failureNoticeCode()
+                    else -> {
+                        operation.failureNoticeCode()
+                    }
                 },
             )
         }

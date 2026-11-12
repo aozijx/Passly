@@ -3,15 +3,15 @@ package com.aozijx.passly.feature.backup.internal.archive
 import com.aozijx.passly.core.error.model.BackupFailed
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.core.observability.LogCategory
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatement
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.LogStatements.Backup.Stage
-import com.aozijx.passly.core.observability.monotonicTimeMs
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.ReasonCode
 import com.aozijx.passly.core.observability.Reasons
+import com.aozijx.passly.core.observability.monotonicTimeMs
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
 import com.aozijx.passly.feature.backup.contract.BackupImportResult
@@ -98,12 +98,13 @@ internal class BackupArchiveServiceImpl
         private suspend fun importArchive(request: BackupImportRequest): BackupImportResult {
             var ownedBundle: BackupBundle? = null
             try {
-                val bundle = fileStore.openInput(request.sourceUri).use { source ->
-                    val selection = formatRegistry.selectImporter(request.format, source)
-                    logBestEffort(LogStatements.Backup.phase(Stage.IMPORT_FORMAT_SELECTED))
-                    validatePassword(selection.adapter.requiresPassword, request.password)
-                    selection.adapter.decode(selection.input, request.password, request.strategy).also { ownedBundle = it }
-                }
+                val bundle =
+                    fileStore.openInput(request.sourceUri).use { source ->
+                        val selection = formatRegistry.selectImporter(request.format, source)
+                        logBestEffort(LogStatements.Backup.phase(Stage.IMPORT_FORMAT_SELECTED))
+                        validatePassword(selection.adapter.requiresPassword, request.password)
+                        selection.adapter.decode(selection.input, request.password, request.strategy).also { ownedBundle = it }
+                    }
                 logBestEffort(
                     LogStatements.Backup.phaseWithCounts(
                         Stage.IMPORT_DECODE_COMPLETED,

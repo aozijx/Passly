@@ -7,9 +7,9 @@ import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.Events
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.LogFields
-import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.LogValue
+import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.core.observability.reporting.AppErrorReporter
 import com.aozijx.passly.core.observability.reporting.ErrorReportContext
@@ -39,14 +39,14 @@ import com.aozijx.passly.testing.RecordingTestLogger
 import com.aozijx.passly.testing.testLogger
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -60,14 +60,26 @@ class BackupArchiveServiceImplTest {
             val snapshotGateway = FakeSnapshotGateway()
             val logger = RecordingTestLogger()
             val importer = FakeImportAdapter(decodeFailure = BackupIntegrityException(Reasons.Backup.Resource.BackupResourceDigestMismatch))
-            val service = service(
-                snapshotGateway, FakeBackupFileStore(), RecordingErrorReporter(), FakeExportAdapter(),
-                setOf(importer), UnconfinedTestDispatcher(testScheduler), logger,
-            )
+            val service =
+                service(
+                    snapshotGateway,
+                    FakeBackupFileStore(),
+                    RecordingErrorReporter(),
+                    FakeExportAdapter(),
+                    setOf(importer),
+                    UnconfinedTestDispatcher(testScheduler),
+                    logger,
+                )
 
-            val result = service.import(
-                BackupImportRequest("content://backup/import", ImportMode.OVERWRITE, format = importer.formatId, password = charArrayOf('p')),
-            )
+            val result =
+                service.import(
+                    BackupImportRequest(
+                        "content://backup/import",
+                        ImportMode.OVERWRITE,
+                        format = importer.formatId,
+                        password = charArrayOf('p'),
+                    ),
+                )
 
             assertEquals(
                 Reasons.Backup.Resource.BackupResourceDigestMismatch.value,
@@ -76,7 +88,9 @@ class BackupArchiveServiceImplTest {
             assertEquals(null, snapshotGateway.restoredBundle)
             assertEquals(
                 LogValue.ReasonCodeValue(Reasons.Backup.Resource.BackupResourceDigestMismatch),
-                logger.events.last { it.event == Events.Backup.Phase }.fields.values[LogFieldKeys.Backup.FailureReason],
+                logger.events
+                    .last { it.event == Events.Backup.Phase }
+                    .fields.values[LogFieldKeys.Backup.FailureReason],
             )
         }
 
@@ -96,9 +110,15 @@ class BackupArchiveServiceImplTest {
                     UnconfinedTestDispatcher(testScheduler),
                 )
 
-            val result = service.import(
-                BackupImportRequest("content://backup/import", ImportMode.OVERWRITE, format = importer.formatId, password = charArrayOf('p')),
-            )
+            val result =
+                service.import(
+                    BackupImportRequest(
+                        "content://backup/import",
+                        ImportMode.OVERWRITE,
+                        format = importer.formatId,
+                        password = charArrayOf('p'),
+                    ),
+                )
 
             assertTrue(result is AppResult.Failure)
             assertEquals(null, snapshotGateway.restoredBundle)
@@ -114,7 +134,11 @@ class BackupArchiveServiceImplTest {
             val logger =
                 object : Logger by testLogger() {
                     override fun log(statement: com.aozijx.passly.core.observability.LogStatement) = statement.writeTo(this)
-                    override fun info(event: EventKey, fields: LogFields) {
+
+                    override fun info(
+                        event: EventKey,
+                        fields: LogFields,
+                    ) {
                         if (event == Events.Backup.ImportCompleted) throw IOException("logger unavailable")
                     }
                 }
@@ -153,7 +177,11 @@ class BackupArchiveServiceImplTest {
             val logger =
                 object : Logger by testLogger() {
                     override fun log(statement: com.aozijx.passly.core.observability.LogStatement) = statement.writeTo(this)
-                    override fun info(event: EventKey, fields: LogFields) {
+
+                    override fun info(
+                        event: EventKey,
+                        fields: LogFields,
+                    ) {
                         if (event == Events.Backup.ImportCompleted) throw cancellation
                     }
                 }
@@ -197,7 +225,10 @@ class BackupArchiveServiceImplTest {
                 object : Logger by testLogger() {
                     override fun log(statement: com.aozijx.passly.core.observability.LogStatement) = statement.writeTo(this)
 
-                    override fun info(event: EventKey, fields: LogFields) {
+                    override fun info(
+                        event: EventKey,
+                        fields: LogFields,
+                    ) {
                         if (event == Events.Backup.ImportCompleted) throw fatal
                     }
                 }
@@ -535,11 +566,12 @@ class BackupArchiveServiceImplTest {
             )
             assertEquals(
                 setOf(LogFieldKeys.Backup.Stage, LogFieldKeys.Backup.EntryCount, LogFieldKeys.Backup.ResourceCount),
-                logger.events.single {
-                    it.event == Events.Backup.Phase &&
-                        (it.fields.values[LogFieldKeys.Backup.Stage] as LogValue.EnumValue).value.value ==
-                        LogStatements.Backup.Stage.IMPORT_DECODE_COMPLETED.name
-                }.fields.values.keys,
+                logger.events
+                    .single {
+                        it.event == Events.Backup.Phase &&
+                            (it.fields.values[LogFieldKeys.Backup.Stage] as LogValue.EnumValue).value.value ==
+                            LogStatements.Backup.Stage.IMPORT_DECODE_COMPLETED.name
+                    }.fields.values.keys,
             )
             assertEquals("content://backup/import", fileStore.readUri)
             assertEquals(payload.toList(), importer.decodedPayload?.toList())

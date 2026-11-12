@@ -139,16 +139,17 @@ class BackupContainerHeaderTest {
             val password = "header-password".toCharArray()
             var derivationStarted = false
             try {
-                val failure = assertThrows(BackupTruncatedException::class.java) {
-                    ChunkedBackupInputStream(
-                        input = ByteArrayInputStream(truncatedHeader),
-                        password = password,
-                        deriveKey = { _, _, _ ->
-                            derivationStarted = true
-                            throw IllegalStateException("KDF started for truncated $field")
-                        },
-                    )
-                }
+                val failure =
+                    assertThrows(BackupTruncatedException::class.java) {
+                        ChunkedBackupInputStream(
+                            input = ByteArrayInputStream(truncatedHeader),
+                            password = password,
+                            deriveKey = { _, _, _ ->
+                                derivationStarted = true
+                                throw IllegalStateException("KDF started for truncated $field")
+                            },
+                        )
+                    }
                 assertEquals(Reasons.Backup.Container.BackupContainerHeaderTruncated, failure.reasonCode)
                 assertFalse("$field truncation must be rejected before KDF", derivationStarted)
             } finally {

@@ -24,33 +24,44 @@ class JsonBackupStreamTest {
     @Test
     fun autoDispatchRejectsResourceDigestMismatchInBothStrategies() {
         val content = byteArrayOf(1, 2, 3)
-        val document = BackupDocument(
-            format = BackupDocument.FORMAT,
-            version = BackupDocument.CURRENT_VERSION,
-            exportedAt = 1,
-            entries =
-                listOf(
-                    BackupEntryRecord(
-                        id = "entry",
-                        type = "login",
-                        revision = 1,
-                        createdAt = 1,
-                        updatedAt = 1,
-                        fields =
-                            listOf(
-                                BackupFieldRecord("title", BackupFieldValue.text("title")),
-                                BackupFieldRecord("password", BackupFieldValue.text("password")),
-                            ),
+        val document =
+            BackupDocument(
+                format = BackupDocument.FORMAT,
+                version = BackupDocument.CURRENT_VERSION,
+                exportedAt = 1,
+                entries =
+                    listOf(
+                        BackupEntryRecord(
+                            id = "entry",
+                            type = "login",
+                            revision = 1,
+                            createdAt = 1,
+                            updatedAt = 1,
+                            fields =
+                                listOf(
+                                    BackupFieldRecord("title", BackupFieldValue.text("title")),
+                                    BackupFieldRecord("password", BackupFieldValue.text("password")),
+                                ),
+                        ),
                     ),
-                ),
-            resources = listOf(BackupResourceRecord(id = "icon", entryId = "entry", kind = BackupResourceKind.ICON, size = 3, sha256 = BackupBundleValidator.sha256Hex(content))),
-        )
+                resources =
+                    listOf(
+                        BackupResourceRecord(
+                            id = "icon",
+                            entryId = "entry",
+                            kind = BackupResourceKind.ICON,
+                            size = 3,
+                            sha256 = BackupBundleValidator.sha256Hex(content),
+                        ),
+                    ),
+            )
         val payload = """{"document":${BackupJson.encodeToString(document)},"resourcesBase64":{"icon":"AwIB"}}"""
 
         BackupImportStrategy.entries.forEach { strategy ->
-            val failure = org.junit.Assert.assertThrows(BackupIntegrityException::class.java) {
-                dispatcher().decode(ByteArrayInputStream(payload.toByteArray()), null, strategy)
-            }
+            val failure =
+                org.junit.Assert.assertThrows(BackupIntegrityException::class.java) {
+                    dispatcher().decode(ByteArrayInputStream(payload.toByteArray()), null, strategy)
+                }
             assertEquals(Reasons.Backup.Resource.BackupResourceDigestMismatch, failure.reasonCode)
         }
     }
@@ -107,7 +118,13 @@ class JsonBackupStreamTest {
 
         val entry = imported.document.entries.single()
         assertEquals("login", entry.type)
-        assertEquals("Personal", entry.fields.single { it.key == "tags" }.value.texts?.single())
+        assertEquals(
+            "Personal",
+            entry.fields
+                .single { it.key == "tags" }
+                .value.texts
+                ?.single(),
+        )
     }
 
     @Test

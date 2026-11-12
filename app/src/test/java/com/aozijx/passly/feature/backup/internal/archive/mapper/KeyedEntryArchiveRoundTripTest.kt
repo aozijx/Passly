@@ -13,10 +13,10 @@ import com.aozijx.passly.domain.entry.model.credential.CustomField
 import com.aozijx.passly.domain.entry.model.credential.CustomFieldKind
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.feature.backup.internal.archive.BackupJson
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupEntryRecord
 import org.junit.Assert.assertEquals

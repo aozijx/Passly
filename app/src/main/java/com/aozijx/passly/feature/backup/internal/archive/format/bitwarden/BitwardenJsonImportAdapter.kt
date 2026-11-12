@@ -97,9 +97,17 @@ internal class BitwardenJsonImportAdapter
 
         internal fun validateImportSupport(item: BitwardenItem) {
             if (item.type !in 1..4) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
-            if (!item.login?.fido2Credentials.isNullOrEmpty()) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
+            if (!item.login?.fido2Credentials.isNullOrEmpty()) {
+                throw BackupFailed(
+                    reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value,
+                )
+            }
             if (item.attachments.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
-            if (item.passwordHistory.isNotEmpty()) throw BackupFailed(reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value)
+            if (item.passwordHistory.isNotEmpty()) {
+                throw BackupFailed(
+                    reasonCode = Reasons.Backup.ImportExport.BackupContentUnsupported.value,
+                )
+            }
         }
 
         private fun BitwardenItem.toBackupRecords(
