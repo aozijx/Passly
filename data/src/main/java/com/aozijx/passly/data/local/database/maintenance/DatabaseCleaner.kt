@@ -23,7 +23,7 @@ data class DatabaseClearResult(
  * 业务层不应直接组合多个 [com.aozijx.passly.data.local.database.dao] 的 clear() 调用，
  * 应通过此接口统一执行。
  */
-interface DatabaseCleaner {
+internal interface DatabaseCleaner {
     /** 清空所有用户数据表，返回各表删除行数。 */
     suspend fun clearAllData(): DatabaseClearResult
 }

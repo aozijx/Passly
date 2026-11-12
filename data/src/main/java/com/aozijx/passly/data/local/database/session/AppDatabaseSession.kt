@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.Flow
 
 /** AppDatabase-typed adapter around the resource-agnostic session runtime. */
 @Singleton
-class AppDatabaseSession
+internal class AppDatabaseSession
     @Inject
     internal constructor(
         resource: AppDatabaseSessionResource,
