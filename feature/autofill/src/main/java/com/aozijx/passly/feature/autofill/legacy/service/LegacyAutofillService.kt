@@ -4,6 +4,7 @@ import android.os.CancellationSignal
 import android.service.autofill.AutofillService
 import android.service.autofill.FillCallback
 import android.service.autofill.FillRequest
+import android.service.autofill.FillResponse
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import com.aozijx.passly.core.observability.AutofillLogSnapshot
@@ -73,11 +74,13 @@ class LegacyAutofillService : AutofillService() {
         cancellationSignal: CancellationSignal,
         callback: FillCallback,
     ) {
+        val completion = AutofillRequestCompletion(callback::onSuccess, callback::onFailure)
         val job =
             serviceScope.launch {
                 logger.withRootTrace(Operations.AutofillLegacyRequest) {
                     var discovery: LegacyAutofillDiagnostics.Discovery? = null
                     var pendingInteractionId: AutofillInteractionId? = null
+                    var response: FillResponse? = null
                     try {
                         diagnostics.fillRequestReceived(request)
                         val parsed = AutofillStructureParser.parse(request.fillContexts)
@@ -122,7 +125,7 @@ class LegacyAutofillService : AutofillService() {
                                 discoveryLog.unavailable(observation.reason)
                             }
                         }
-                        callback.onSuccess(result.response)
+                        response = result.response
                     } catch (e: CancellationException) {
                         try {
                             withContext(NonCancellable) {
@@ -130,6 +133,11 @@ class LegacyAutofillService : AutofillService() {
                             }
                         } catch (cleanupFailure: Exception) {
                             e.addSuppressed(cleanupFailure)
+                        }
+                        try {
+                            completion.cancel()
+                        } catch (callbackFailure: Exception) {
+                            e.addSuppressed(callbackFailure)
                         }
                         logger.log(LogStatements.Autofill.requestCancelled(AutofillInteractionSource.LEGACY))
                         throw e
@@ -142,11 +150,19 @@ class LegacyAutofillService : AutofillService() {
                             }
                         }
                         diagnostics.discoveryFailed(e, discovery)
-                        callback.onFailure("Fill request failed")
+                        completion.failure("Fill request failed")
+                        return@withRootTrace
                     }
+                    completion.success(response)
                 }
             }
-        cancellationSignal.setOnCancelListener { job.cancel() }
+        cancellationSignal.setOnCancelListener {
+            try {
+                completion.cancel()
+            } finally {
+                job.cancel()
+            }
+        }
     }
 
     override fun onSaveRequest(
