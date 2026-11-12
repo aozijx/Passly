@@ -68,7 +68,6 @@ class DetailViewModel
         private val revealEntryFields: RevealEntryFieldsUseCase,
         private val loadEditableEntry: LoadEditableEntryUseCase,
         private val editEntry: EditEntryUseCase,
-        private val fieldReader: EntryFieldReader,
         private val copyEntryFieldUseCase: CopyEntryFieldUseCase,
         private val copyOtpCodeUseCase: CopyOtpCodeUseCase,
         private val rollbackHotpCounterUseCase: RollbackHotpCounterUseCase,
@@ -112,7 +111,6 @@ class DetailViewModel
             DetailWorkSession(
                 hasAccess = secureSessionAccessState::hasFullSecureSessionAccess,
                 editEntry = editEntry::edit,
-                fieldReader = fieldReader,
                 present = presentationLoader::present,
                 onMutation = ::mutate,
                 onReveal = ::addRevealedField,
@@ -683,7 +681,7 @@ class DetailViewModel
             val fieldKey = field.fieldKey
             val initialValue =
                 state.revealed(fieldKey)?.copyToString()
-                    ?: fieldReader.getFieldValue(entry, fieldKey).orEmpty()
+                    ?: EntryFieldReader.getFieldValue(entry, fieldKey).orEmpty()
             mutate(DetailMutation.FieldEditingStarted(field.draftKey, initialValue))
         }
 

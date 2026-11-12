@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryEditResult
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -383,7 +382,6 @@ class DetailWorkSessionTest {
                         }
                     }
                 },
-                fieldReader = DefaultEntryFieldReader(),
                 present = {
                     presentCalls++
                     beforePresent()

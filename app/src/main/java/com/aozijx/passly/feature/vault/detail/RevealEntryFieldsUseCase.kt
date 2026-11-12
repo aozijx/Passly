@@ -20,7 +20,6 @@ internal class RevealEntryFieldsUseCase
     @Inject
     constructor(
         private val authorizationGate: AuthorizationGate,
-        private val entryFieldReader: EntryFieldReader,
         private val sensitiveFieldRepository: SensitiveFieldRepository,
         private val activityRecorder: ActivityRecorder,
     ) {
@@ -39,7 +38,7 @@ internal class RevealEntryFieldsUseCase
                 requestedFields.forEach { fieldKey ->
                     if (definition[fieldKey]?.access == EntryFieldAccess.SECRET) {
                         OwnedChars
-                            .fromNullableString(entryFieldReader.getFieldValue(entry, fieldKey))
+                            .fromNullableString(EntryFieldReader.getFieldValue(entry, fieldKey))
                             ?.let {
                                 ownedValues += it
                                 values[fieldKey] = it

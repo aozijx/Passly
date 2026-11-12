@@ -53,8 +53,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
-import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
@@ -1435,7 +1433,6 @@ class DetailViewModelTest {
         private val sensitive = sensitiveFieldRepository
         private val authGate = authorizationGate
         private val activity = NoOpActivityRecorder
-        private val fieldReader: EntryFieldReader = DefaultEntryFieldReader()
         private val clipboard = clipboardWriter
         private val installedAppDirectory = installedApps
         private val favicon = UnusedFaviconImageProcessor
@@ -1447,15 +1444,13 @@ class DetailViewModelTest {
                 activityQueryRepository = activityQueryRepository,
                 exportEntryQr = ExportEntryQrUseCase(authGate, sensitive, activity, testLogger()),
                 secureSessionAccessState = access,
-                revealEntryFields = RevealEntryFieldsUseCase(authGate, fieldReader, sensitive, activity),
+                revealEntryFields = RevealEntryFieldsUseCase(authGate, sensitive, activity),
                 loadEditableEntry = LoadEditableEntryUseCase(entries, sensitive, authGate, access, activity),
                 editEntry = EditEntryUseCase(entries, entries, access, testLogger()),
-                fieldReader = fieldReader,
                 copyEntryFieldUseCase =
                     CopyEntryFieldUseCase(
                         authGate,
                         entries,
-                        fieldReader,
                         sensitive,
                         clipboard,
                         activity,

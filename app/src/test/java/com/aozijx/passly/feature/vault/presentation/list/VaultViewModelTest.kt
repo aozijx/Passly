@@ -41,7 +41,6 @@ import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
-import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
@@ -880,7 +879,6 @@ class VaultViewModelTest {
                         CopyEntryFieldUseCase(
                             authorizationGate = gate,
                             entryQueryRepository = entries,
-                            entryFieldReader = DefaultEntryFieldReader(),
                             sensitiveFieldRepository = sensitiveFields,
                             clipboardWriter = clipboard,
                             activityRecorder = activity,

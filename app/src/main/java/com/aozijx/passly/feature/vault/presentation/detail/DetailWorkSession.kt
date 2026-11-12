@@ -17,7 +17,6 @@ import kotlinx.coroutines.isActive
 internal class DetailWorkSession(
     private val hasAccess: () -> Boolean,
     private val editEntry: suspend (EntryId, EntryEdit) -> AppResult<Entry>,
-    private val fieldReader: EntryFieldReader,
     private val present: suspend (Entry) -> DetailEntryPresentation,
     private val onMutation: (DetailMutation) -> Unit,
     private val onReveal: (FieldKey, SensitiveValue) -> Unit,
@@ -129,7 +128,7 @@ internal class DetailWorkSession(
                             is DetailEditCompletion.Field ->
                                 DetailMutation.SaveSucceeded.DraftSaved(
                                     completion,
-                                    fieldReader.getFieldValue(result.data, completion.key).orEmpty(),
+                                    EntryFieldReader.getFieldValue(result.data, completion.key).orEmpty(),
                                 )
 
                             DetailEditCompletion.Favorite ->

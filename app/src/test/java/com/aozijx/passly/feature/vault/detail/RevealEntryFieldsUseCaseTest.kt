@@ -23,7 +23,6 @@ import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
 import com.aozijx.passly.domain.sensitive.OwnedChars
@@ -37,15 +36,13 @@ import org.junit.Test
 
 class RevealEntryFieldsUseCaseTest {
     @Test
-    fun `wifi password is read as low sensitivity without field authorization`() =
+    fun `wifi password is read as low sensitivity without field authorization`() {
         runTest {
             val gate = RecordingAuthorizationGate(allowed = true)
             val recorder = RecordingActivityRecorder()
-            val reader = RecordingFieldReader("wifi-secret")
             val useCase =
                 RevealEntryFieldsUseCase(
                     authorizationGate = gate,
-                    entryFieldReader = reader,
                     sensitiveFieldRepository = RevealingRepository(),
                     activityRecorder = recorder,
                 )
@@ -60,20 +57,18 @@ class RevealEntryFieldsUseCaseTest {
             assertEquals("wifi-secret", String(result.getValue(FieldKey.PASSWORD).toCharArray()))
             result.values.forEach { it.wipe() }
             assertNull(gate.scope)
-            assertEquals(listOf(FieldKey.PASSWORD), reader.keys)
             assertTrue(recorder.activities.isEmpty())
         }
+    }
 
     @Test
-    fun `login password uses exact reveal scope and records one view`() =
+    fun `login password uses exact reveal scope and records one view`() {
         runTest {
             val gate = RecordingAuthorizationGate(allowed = true)
             val recorder = RecordingActivityRecorder()
-            val reader = RecordingFieldReader("must-not-read")
             val useCase =
                 RevealEntryFieldsUseCase(
                     authorizationGate = gate,
-                    entryFieldReader = reader,
                     sensitiveFieldRepository = RevealingRepository(),
                     activityRecorder = recorder,
                 )
@@ -95,18 +90,17 @@ class RevealEntryFieldsUseCaseTest {
                 ),
                 gate.scope,
             )
-            assertTrue(reader.keys.isEmpty())
             assertEquals(listOf(ActivityType.REVEAL_FIELDS), recorder.activities)
             assertEquals(listOf(setOf(FieldKey.PASSWORD)), recorder.affectedFields)
         }
+    }
 
     @Test
-    fun `denied high sensitivity reveal returns no plaintext`() =
+    fun `denied high sensitivity reveal returns no plaintext`() {
         runTest {
             val useCase =
                 RevealEntryFieldsUseCase(
                     authorizationGate = RecordingAuthorizationGate(allowed = false),
-                    entryFieldReader = RecordingFieldReader("must-not-read"),
                     sensitiveFieldRepository = RevealingRepository(),
                     activityRecorder = RecordingActivityRecorder(),
                 )
@@ -120,16 +114,16 @@ class RevealEntryFieldsUseCaseTest {
                     ).isEmpty(),
             )
         }
+    }
 
     @Test
-    fun `revealed values are wiped when activity recording fails`() =
+    fun `revealed values are wiped when activity recording fails`() {
         runTest {
             val repository = RevealingRepository()
             val failure = IllegalStateException("activity recording failed")
             val useCase =
                 RevealEntryFieldsUseCase(
                     authorizationGate = RecordingAuthorizationGate(allowed = true),
-                    entryFieldReader = RecordingFieldReader("must-not-read"),
                     sensitiveFieldRepository = repository,
                     activityRecorder = RecordingActivityRecorder(failure),
                 )
@@ -147,16 +141,16 @@ class RevealEntryFieldsUseCaseTest {
             assertEquals(1, repository.revealedValues.size)
             assertTrue(repository.revealedValues.single().isWiped)
         }
+    }
 
     @Test
-    fun `revealed values are wiped when activity recording is cancelled`() =
+    fun `revealed values are wiped when activity recording is cancelled`() {
         runTest {
             val repository = RevealingRepository()
             val cancellation = CancellationException("activity recording cancelled")
             val useCase =
                 RevealEntryFieldsUseCase(
                     authorizationGate = RecordingAuthorizationGate(allowed = true),
-                    entryFieldReader = RecordingFieldReader("must-not-read"),
                     sensitiveFieldRepository = repository,
                     activityRecorder = RecordingActivityRecorder(cancellation),
                 )
@@ -174,16 +168,16 @@ class RevealEntryFieldsUseCaseTest {
             assertEquals(1, repository.revealedValues.size)
             assertTrue(repository.revealedValues.single().isWiped)
         }
+    }
 
     @Test
-    fun `revealed values are wiped when authorization suspending boundary cancels`() =
+    fun `revealed values are wiped when authorization suspending boundary cancels`() {
         runTest {
             val repository = RevealingRepository()
             val cancellation = CancellationException("authorization boundary cancelled")
             val useCase =
                 RevealEntryFieldsUseCase(
                     authorizationGate = RecordingAuthorizationGate(allowed = true, failureAfterBlock = cancellation),
-                    entryFieldReader = RecordingFieldReader("must-not-read"),
                     sensitiveFieldRepository = repository,
                     activityRecorder = RecordingActivityRecorder(),
                 )
@@ -201,34 +195,7 @@ class RevealEntryFieldsUseCaseTest {
             assertEquals(1, repository.revealedValues.size)
             assertTrue(repository.revealedValues.single().isWiped)
         }
-
-    @Test
-    fun `low sensitivity field read failure after an earlier value propagates`() =
-        runTest {
-            val failure = IllegalStateException("second field read failed")
-            val reader = RecordingFieldReader(value = "first-field", failureAt = FieldKey.NOTES, failure = failure)
-            val activity = RecordingActivityRecorder()
-            val useCase =
-                RevealEntryFieldsUseCase(
-                    authorizationGate = RecordingAuthorizationGate(allowed = false),
-                    entryFieldReader = reader,
-                    sensitiveFieldRepository = RevealingRepository(),
-                    activityRecorder = activity,
-                )
-
-            val actualFailure =
-                runCatching {
-                    useCase.reveal(
-                        entry = entry(EntryType.LOGIN),
-                        requestedFields = linkedSetOf(FieldKey.USERNAME, FieldKey.NOTES),
-                        recordLowSensitivityAccess = true,
-                    )
-                }.exceptionOrNull()
-
-            assertSame(failure, actualFailure)
-            assertEquals(listOf(FieldKey.USERNAME, FieldKey.NOTES), reader.keys)
-            assertTrue(activity.activities.isEmpty())
-        }
+    }
 
     private class RecordingAuthorizationGate(
         private val allowed: Boolean,
@@ -251,24 +218,6 @@ class RevealEntryFieldsUseCaseTest {
                     AuthenticationFailure(AuthenticationFailureCode.HOST_UNAVAILABLE),
                 )
             }
-        }
-    }
-
-    private class RecordingFieldReader(
-        private val value: String,
-        private val failureAt: FieldKey? = null,
-        private val failure: Throwable? = null,
-    ) : EntryFieldReader {
-        val keys = mutableListOf<FieldKey>()
-
-        override fun getFieldValue(
-            profile: EntryProfile,
-            secret: EntrySecret,
-            key: FieldKey,
-        ): String {
-            keys += key
-            if (key == failureAt) throw requireNotNull(failure)
-            return value
         }
     }
 

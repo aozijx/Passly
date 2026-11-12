@@ -21,7 +21,6 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -205,7 +204,6 @@ class CopyEntryFieldUseCaseTest {
                 CopyEntryFieldUseCase(
                     authorizationGate = gate,
                     entryQueryRepository = query,
-                    entryFieldReader = UsernameReader,
                     sensitiveFieldRepository = sensitiveRepository,
                     clipboardWriter = clipboard,
                     activityRecorder = activityRecorder,
@@ -261,14 +259,6 @@ class CopyEntryFieldUseCaseTest {
         override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
 
         override suspend fun getTypesByIds(entryIds: List<EntryId>) = emptyMap<EntryId, EntryType>()
-    }
-
-    private object UsernameReader : EntryFieldReader {
-        override fun getFieldValue(
-            profile: EntryProfile,
-            secret: EntrySecret,
-            key: FieldKey,
-        ): String? = profile.username.takeIf { key == FieldKey.USERNAME }
     }
 
     private class RecordingSensitiveRepository(

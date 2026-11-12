@@ -23,8 +23,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class DefaultEntryFieldReaderTest {
-    private val reader = DefaultEntryFieldReader()
+class EntryFieldReaderTest {
+    private val reader = EntryFieldReader
     private val entry =
         Entry(
             identity =

@@ -94,7 +94,7 @@ Autofill 策略通过专属 `AutofillSettingsSource` / `AutofillSettingsReposito
 只有可复用的条目匹配语义进入 Entry Domain。卡号校验和 Wi-Fi 二维码载荷解析属于纯规则，位于
 `domain/entry/policy`；相机、扫码结果展示与导入编排仍在 App Feature。
 
-`EntryFieldReader` 的默认实现也位于 `domain/entry/policy`，App 仅通过 DI 连接。读取按 `FieldKey`
+`EntryFieldReader` 是 `domain/entry/policy` 中的纯函数对象，调用方直接按 `FieldKey`
 穷尽映射，不按枚举名称或前缀猜分组；新增字段必须明确其读取语义。凭据不存在或高敏值未揭示时返回
 无值，不编造 OTP 默认配置。读取器不授权、不访问仓库、不解密；复制与揭示流程继续在 Feature 中授权。
 布尔值使用 `true` / `false`，时间戳保留毫秒值，列表沿用逗号加空格、恢复码使用换行分隔；展示层负责本地化。

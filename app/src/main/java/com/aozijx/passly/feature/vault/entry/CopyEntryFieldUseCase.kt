@@ -26,7 +26,6 @@ internal class CopyEntryFieldUseCase
     constructor(
         private val authorizationGate: AuthorizationGate,
         private val entryQueryRepository: EntryQueryRepository,
-        private val entryFieldReader: EntryFieldReader,
         private val sensitiveFieldRepository: SensitiveFieldRepository,
         private val clipboardWriter: SensitiveClipboardWriter,
         private val activityRecorder: ActivityRecorder,
@@ -59,8 +58,7 @@ internal class CopyEntryFieldUseCase
                                         ?: return@authorize CopyEntryFieldResult.Unavailable
                                 if (!canWrite()) return@authorize CopyEntryFieldResult.Unavailable
                                 val value =
-                                    entryFieldReader
-                                        .getFieldValue(entry, fieldKey)
+                                    EntryFieldReader.getFieldValue(entry, fieldKey)
                                         ?.takeIf(String::isNotBlank)
                                         ?: return@authorize CopyEntryFieldResult.Unavailable
                                 if (clipboardWriter.writeSensitiveIf(value, canWrite)) {

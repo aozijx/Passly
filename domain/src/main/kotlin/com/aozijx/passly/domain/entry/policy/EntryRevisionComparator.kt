@@ -11,7 +11,6 @@ import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldValue
 
 object EntryRevisionComparator {
-    private val fieldReader = DefaultEntryFieldReader()
     private val aggregateFields =
         setOf(
             FieldKey.TITLE,
@@ -77,8 +76,8 @@ object EntryRevisionComparator {
             definitions
                 .filter { it.key !in aggregateFields && it.access != EntryFieldAccess.HIGH_SENSITIVITY }
                 .forEach { field ->
-                    val before = fieldReader.getFieldValue(historical.profile, historical.secret, field.key)
-                    val after = fieldReader.getFieldValue(current.profile, current.secret, field.key)
+                    val before = EntryFieldReader.getFieldValue(historical.profile, historical.secret, field.key)
+                    val after = EntryFieldReader.getFieldValue(current.profile, current.secret, field.key)
                     if (field.key == FieldKey.PASSWORD || field.key == FieldKey.SECURITY_ANSWER) {
                         add(EntryRevisionDifference(RevisionFieldId.ProtectedField(field.key), differenceKind(before, after), null, null))
                     } else {
