@@ -110,6 +110,8 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 取消图标裁剪时，即使详情 ViewModel 同时销毁，正在执行的临时输入删除也会在不可取消区完成；未完成的临时文件另由进程启动时的 staging 清理兜底。
 这些都是现有详情机制，不代表四类创建页已经共享统一 Session。
 
+Favicon 编辑状态和 Action 仍归 `DetailViewModel`：它发起上传/URL staging、图片处理和保存，并把结果映射回详情 reducer。`DetailFaviconSession` 独立拥有 preparation/save Job、staged/promoted 文件资源和关闭清理；`DetailWorkSession.persist()` 使用当前 Detail visit token 提交 `EntryEdit.SetIcon`，仅在 `EditEntryUseCase` 返回持久化成功后调用 `onCommitted` 将 promoted candidate 从临时资源集合中移除。若页面 token 已过期，promote 后的 candidate 会在不可取消区回收。该边界不再额外包装成 UseCase 或 Coordinator：图片转换是平台能力，条目更新已有完整 UseCase，页面草稿和提交 owner 也都已有明确归属。
+
 详情复制会把当前访问凭据传到复制用例，并在异步读取结束后、剪贴板平台写入前再次核对。剪贴板写入器若需先挂起读取保留策略，必须在该读取后核对凭据，再执行同步的平台写入；已关闭或切换的详情不能把旧结果写入剪贴板。
 
 ## 详情页密码关联
@@ -176,6 +178,9 @@ Data 根据真实高敏行键维护能力标记，按 Preserve / Clear / Replace
 | 登记所有条目的字段定义并检查目录覆盖 | `EntryTypeDefinitions`、`buildEntryTypeDefinitionIndex()` | [`EntryTypeDefinitions.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitions.kt)、[`EntryTypeDefinitionRegistry.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryTypeDefinitionRegistry.kt) |
 | 将完整表单应用到已有条目并保留未管理状态 | `EntryFormEditor.apply()`、`EntryEdit.ReplaceForm` | [`EntryFormEditor.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryFormEditor.kt)、[`EntryEdit.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/policy/EntryEdit.kt) |
 | 编辑详情条目与完整表单 | `EditEntryUseCase.edit(entryId, edit)` | [`EditEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EditEntryUseCase.kt) |
+| Favicon 编辑 Action、图片准备/处理与条目图标保存协调 | `DetailViewModel.stageFaviconInput()`、`processPendingFavicon()`、`saveFavicon()` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt) |
+| Favicon 准备/保存 Job、staged/promoted 资源 owner 与关闭清理 | `DetailFaviconSession.launchPreparation()`、`publishPreparation()`、`launchSave()`、`close()` | [`DetailFaviconSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailFaviconSession.kt) |
+| Detail visit 有效性检查、`EntryEdit` 提交与持久成功后的 UI 发布 | `DetailWorkSession.persist(token, edit, completion, onCommitted)` | [`DetailWorkSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailWorkSession.kt) |
 | 保存任务、owner、取消与 fatal Error 清理 | `EditorWriteSession.save()`、`close()` | [`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
 | 获授权读取完整编辑表单 | `LoadEditableEntryUseCase.invoke()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
 | 编辑认证后的一次性表单交接 | `EntryEditorSeedStore`、`EntryEditorSeedCoordinator` | [`EntryEditorSeedStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/EntryEditorSeedStore.kt) |

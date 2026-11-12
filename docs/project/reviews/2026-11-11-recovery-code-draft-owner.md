@@ -7,7 +7,7 @@
 - `RecoveryCodeDraftInteractor.generate()` 创建并持有 `RecoveryCredentialDraft`；`copy()` 在临时字符数组 finally 清理后交付剪贴板；`dismiss()` / `close()` 关闭候选。
 - `commit()` 执行草稿提交；`reconcileCommit()` 读取草稿 durable marker，已提交时释放草稿并返回事实结果。
 - `RecoveryCodeSettingsViewModel.confirmAndEnable()` 同步进入 Committing 状态并防止重复确认，启动提交协程。取消和 fatal `Error` 路径先进入 `reconcileInterruptedCommit()`，在 `NonCancellable` 中调用 `reconcileCommit()`，再按当前 page owner 更新可用状态、disclosure 与结果状态，最后传播原取消/fatal。
-- 因此当前 durable 写入与 marker 核对已在 Interactor；页面 owner 仍负责提交协程的结果协调和 UI 状态收尾。是否进一步提取为 Security 应用操作 owner 尚未定论。
+- 因此 durable 写入与 marker 核对留在 Interactor；当前页面 owner 负责根据持久事实收尾 disclosure、`SavedStateHandle` 标记和页面状态。该协调保留在 `RecoveryCodeSettingsViewModel`：把它移入 Security 操作 owner 需要将 PageEffects owner、敏感 disclosure 和 UI 状态回调重新传回 ViewModel，不能形成独立状态/生命周期 owner，且增加转发层。真实 Route/Activity 生命周期验收仍开放。
 
 ## 证据与限制
 

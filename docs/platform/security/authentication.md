@@ -156,8 +156,9 @@ stateDiagram-v2
 - `RecoveryCodeDraftInteractor` 拥有候选草稿的创建、复制、关闭、提交和 durable commit marker 核对；
   `RecoveryCodeSettingsViewModel.confirmAndEnable()` 仍协调页面 owner 与 UI 状态。提交取消或 fatal `Error` 时，ViewModel
   在 `NonCancellable` 中调用 `reconcileInterruptedCommit()`，依据 Interactor 的核对结果清除 disclosure、恢复可重试 disclosure
-  或发布失败状态，然后继续传播取消/fatal。对应的 Interactor 与 ViewModel 测试源码覆盖 durable commit、离页和异常收尾；
-  是否应把这段提交恢复编排整体移入应用操作 owner 仍在审查，未由本地测试源码证明真实 Activity/Route 行为。
+  或发布失败状态，然后继续传播取消/fatal。这段协调保留在页面 ViewModel，因为结果必须绑定当前 PageEffects owner 并更新页面 disclosure/状态；
+  将其移入操作 owner 会重新引入回调桥接，无法让新 owner 独立拥有页面状态。对应的 Interactor 与 ViewModel 测试源码覆盖 durable commit、离页和异常收尾；
+  真实 Route/Activity 行为仍由[维护计划 Task 84](../../project/work/plans/2026-10-30-passly-maintainability-todo.md#task-84)跟踪。
 - SavedStateHandle 只保存 disclosure 标记和 generation ID。进程恢复但草稿不存在时显示
   “恢复码草稿已过期，请重新认证后生成”。
 - 恢复码不再产生普通 `Authenticated` 会话。验证成功后进入受限 `RecoveryMode`：数据库可以为恢复任务打开，
