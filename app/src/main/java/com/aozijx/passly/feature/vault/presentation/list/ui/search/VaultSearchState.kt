@@ -99,8 +99,7 @@ fun VaultSearchState.onFocusChanged(
         }
     }
 
-fun settle(query: String): VaultSearchState =
-    query.takeIf(String::isNotBlank)?.let { VaultSearchState.Results } ?: VaultSearchState.Browsing
+fun settle(query: String): VaultSearchState = VaultSearchState.initial(VaultSearchInput.Open(query))
 
 fun VaultSearchState.synchronize(search: VaultSearchInput): VaultSearchState =
     when (search) {
