@@ -44,8 +44,6 @@ private fun AutofillCompletionEffect(
         when (state) {
             is AutofillFillUiState.Result -> onResult(state.result)
 
-            AutofillFillUiState.Error -> onResult(AutofillFillResult.Cancelled)
-
             AutofillFillUiState.Initial,
             AutofillFillUiState.Loading,
             is AutofillFillUiState.ShowCandidates,
@@ -69,7 +67,6 @@ private fun AutofillFillContent(
         AutofillFillUiState.Initial,
         AutofillFillUiState.Loading,
         is AutofillFillUiState.Result,
-        AutofillFillUiState.Error,
         -> {
             Unit
         }

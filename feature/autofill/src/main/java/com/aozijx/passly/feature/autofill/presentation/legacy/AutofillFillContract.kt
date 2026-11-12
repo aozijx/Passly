@@ -23,6 +23,17 @@ internal sealed interface AutofillFillResult {
     ) : AutofillFillResult
 
     data object Cancelled : AutofillFillResult
+
+    data class Failed(
+        val reason: AutofillFillFailure,
+    ) : AutofillFillResult
+}
+
+internal enum class AutofillFillFailure {
+    AUTHENTICATION,
+    DISCOVERY,
+    SELECTION,
+    INTERNAL,
 }
 
 internal sealed class AutofillFillUiState {
@@ -48,8 +59,6 @@ internal sealed class AutofillFillUiState {
     data class Result(
         val result: AutofillFillResult,
     ) : AutofillFillUiState()
-
-    data object Error : AutofillFillUiState()
 }
 
 internal data class AutofillFillRequest(

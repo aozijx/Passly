@@ -148,6 +148,11 @@ private fun deliverLegacyResult(
                     onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
                     markPlatformCommitted()
                 }
+
+                is AutofillFillResult.Failed -> {
+                    onComplete(AutofillHostCompletion.ActivityResult(android.app.Activity.RESULT_CANCELED))
+                    markPlatformCommitted()
+                }
             }
         }
     } catch (error: Exception) {

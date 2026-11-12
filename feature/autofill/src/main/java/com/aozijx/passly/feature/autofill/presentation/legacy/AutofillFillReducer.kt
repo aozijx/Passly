@@ -24,8 +24,6 @@ internal sealed interface AutofillFillMutation {
         val result: AutofillFillResult,
     ) : AutofillFillMutation
 
-    data object Failed : AutofillFillMutation
-
     data object ResultDelivered : AutofillFillMutation
 }
 
@@ -36,42 +34,66 @@ internal object AutofillFillReducer {
     ): AutofillFillUiState =
         when (mutation) {
             is AutofillFillMutation.Loading -> {
-                AutofillFillUiState.Loading
-            }
-
-            is AutofillFillMutation.CandidatesAvailable -> {
-                AutofillFillUiState.ShowCandidates(mutation.candidates)
-            }
-
-            is AutofillFillMutation.WebRecipientConfirmationRequired -> {
-                AutofillFillUiState.ConfirmWebRecipient(mutation.packageName, mutation.webDomain)
-            }
-
-            is AutofillFillMutation.WebEntryConfirmationRequired -> {
-                AutofillFillUiState.ConfirmWebEntry(mutation.packageName, mutation.webDomain, mutation.candidate)
-            }
-
-            is AutofillFillMutation.Completed -> {
-                AutofillFillUiState.Result(mutation.result)
-            }
-
-            AutofillFillMutation.Failed -> {
-                AutofillFillUiState.Error
-            }
-
-            AutofillFillMutation.ResultDelivered -> {
                 when (state) {
-                    is AutofillFillUiState.Result,
-                    AutofillFillUiState.Error,
-                    -> AutofillFillUiState.Initial
-
                     AutofillFillUiState.Initial,
-                    AutofillFillUiState.Loading,
                     is AutofillFillUiState.ShowCandidates,
                     is AutofillFillUiState.ConfirmWebRecipient,
                     is AutofillFillUiState.ConfirmWebEntry,
+                    -> AutofillFillUiState.Loading
+
+                    AutofillFillUiState.Loading,
+                    is AutofillFillUiState.Result,
                     -> state
                 }
+            }
+
+            is AutofillFillMutation.CandidatesAvailable -> {
+                if (state == AutofillFillUiState.Loading) {
+                    AutofillFillUiState.ShowCandidates(mutation.candidates)
+                } else {
+                    state
+                }
+            }
+
+            is AutofillFillMutation.WebRecipientConfirmationRequired -> {
+                if (state == AutofillFillUiState.Loading) {
+                    AutofillFillUiState.ConfirmWebRecipient(mutation.packageName, mutation.webDomain)
+                } else {
+                    state
+                }
+            }
+
+            is AutofillFillMutation.WebEntryConfirmationRequired -> {
+                if (state == AutofillFillUiState.Loading) {
+                    AutofillFillUiState.ConfirmWebEntry(mutation.packageName, mutation.webDomain, mutation.candidate)
+                } else {
+                    state
+                }
+            }
+
+            is AutofillFillMutation.Completed -> {
+                when {
+                    state is AutofillFillUiState.Result -> {
+                        state
+                    }
+
+                    mutation.result is AutofillFillResult.Failed ||
+                        mutation.result == AutofillFillResult.Cancelled -> {
+                        AutofillFillUiState.Result(mutation.result)
+                    }
+
+                    state == AutofillFillUiState.Loading -> {
+                        AutofillFillUiState.Result(mutation.result)
+                    }
+
+                    else -> {
+                        state
+                    }
+                }
+            }
+
+            AutofillFillMutation.ResultDelivered -> {
+                if (state is AutofillFillUiState.Result) AutofillFillUiState.Initial else state
             }
         }
 }

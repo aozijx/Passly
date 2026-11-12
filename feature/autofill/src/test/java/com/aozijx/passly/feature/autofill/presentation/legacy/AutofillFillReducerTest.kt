@@ -12,14 +12,14 @@ import org.junit.Test
 
 class AutofillFillReducerTest {
     @Test
-    fun `loading replaces a previous terminal state`() {
+    fun `late loading cannot replace a terminal state`() {
         val result =
             AutofillFillReducer.reduce(
-                AutofillFillUiState.Error,
+                AutofillFillUiState.Result(AutofillFillResult.Failed(AutofillFillFailure.INTERNAL)),
                 AutofillFillMutation.Loading,
             )
 
-        assertSame(AutofillFillUiState.Loading, result)
+        assertEquals(AutofillFillUiState.Result(AutofillFillResult.Failed(AutofillFillFailure.INTERNAL)), result)
     }
 
     @Test
@@ -35,11 +35,11 @@ class AutofillFillReducerTest {
     }
 
     @Test
-    fun `result delivery clears result and error terminal states`() {
+    fun `result delivery clears result and failure terminal states`() {
         val terminalStates =
             listOf(
                 "result" to AutofillFillUiState.Result(AutofillFillResult.Cancelled),
-                "error" to AutofillFillUiState.Error,
+                "failure" to AutofillFillUiState.Result(AutofillFillResult.Failed(AutofillFillFailure.INTERNAL)),
             )
         val actual =
             terminalStates.map { (name, state) ->
@@ -82,13 +82,56 @@ class AutofillFillReducerTest {
     }
 
     @Test
-    fun `failure exposes the workflow message`() {
+    fun `failure retains its typed reason`() {
         val result =
             AutofillFillReducer.reduce(
                 AutofillFillUiState.Loading,
-                AutofillFillMutation.Failed,
+                AutofillFillMutation.Completed(AutofillFillResult.Failed(AutofillFillFailure.DISCOVERY)),
             )
 
-        assertEquals(AutofillFillUiState.Error, result)
+        assertEquals(
+            AutofillFillUiState.Result(AutofillFillResult.Failed(AutofillFillFailure.DISCOVERY)),
+            result,
+        )
+    }
+
+    @Test
+    fun `late candidate result cannot reopen a terminal failure`() {
+        val failed = AutofillFillUiState.Result(AutofillFillResult.Failed(AutofillFillFailure.SELECTION))
+
+        val result =
+            AutofillFillReducer.reduce(
+                failed,
+                AutofillFillMutation.CandidatesAvailable(emptyList()),
+            )
+
+        assertSame(failed, result)
+    }
+
+    @Test
+    fun `failure completes from a visible intermediate state`() {
+        val result =
+            AutofillFillReducer.reduce(
+                AutofillFillUiState.ShowCandidates(emptyList()),
+                AutofillFillMutation.Completed(AutofillFillResult.Failed(AutofillFillFailure.SELECTION)),
+            )
+
+        assertEquals(
+            AutofillFillUiState.Result(AutofillFillResult.Failed(AutofillFillFailure.SELECTION)),
+            result,
+        )
+    }
+
+    @Test
+    fun `late failure cannot cancel a completed selection`() {
+        val completed = AutofillFillUiState.Result(AutofillFillResult.Cancelled)
+
+        val result =
+            AutofillFillReducer.reduce(
+                completed,
+                AutofillFillMutation.Completed(AutofillFillResult.Failed(AutofillFillFailure.INTERNAL)),
+            )
+
+        assertSame(completed, result)
     }
 }
