@@ -186,8 +186,8 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 ### Task 22：验收通知权限重建与启动失败交接
 
-- [ ] 设备验收 `AppCompatDelegate.setApplicationLocales()` 配置重建与系统授权/拒绝弹窗组合，并确认 PermissionRequestHost arbiter lease 最终释放。分别断言 grant 经 `completeRuntimePermissionRequest(request)` 依据当前 pending owner 处理，deny 经 `onAction(RuntimePermissionDenied(request))` 按 token/`enableWhenGranted` 处理；验证新 Route 重绑 owner、旧 host/session 关闭后不会产生重复提交或过期反馈。共享 `PermissionRequestSession` 与进程级 arbiter 的边界已审查，见[权限中心架构](../../../platform/architecture/permission-center.md)；现有 `PermissionRequestHostTest` 已覆盖宿主替换、旧结果拒绝、`HostUnavailable` 与 lease 收尾，但这些用例不能代替真实 Activity recreation。
-- [ ] 补 `NotificationsRoute` 与 `PermissionRequestHost` 的联动回归，验证通知权限 `Busy` / `HostUnavailable` 各自提示、未启动后新 token 重试及 pending 清理；通用 `PermissionRequestSessionTest` 已覆盖 Busy/HostUnavailable 与 lease 生命周期，ViewModel 未启动重试见[审查记录](../../reviews/2026-11-11-notification-permission-not-started.md)，不重复增加同层 helper 测试。
+- [ ] 在设备上验收 `AppCompatDelegate.setApplicationLocales()` 引发的 Activity 重建与系统授权/拒绝弹窗组合；确认新 Route/host 接管有效请求、旧 host/session 不产生重复提交或过期反馈，且 PermissionRequestHost arbiter lease 最终释放。
+- [ ] 补 `NotificationsRoute` 与 `PermissionRequestHost` 联动行为覆盖：`Busy` / `HostUnavailable` 提示、未启动后的新 token 重试及 pending 清理。当前 ViewModel owner 与通用 session/lease 测试证据见[通知权限审查记录](../../reviews/2026-11-11-notification-permission-not-started.md)；这些测试不代替 Route/host 联动验收。
 
 配置重建、token 与页面 owner 的当前实现见[通知权限审查记录](../../reviews/2026-11-11-notification-permission-not-started.md#配置重建与页面-owner)和[通知设置专题](../../../product/settings/notification-settings.md)；此 Task 只保留 locale/系统弹窗设备组合及 Busy/HostUnavailable Route/host 行为验收。
 
