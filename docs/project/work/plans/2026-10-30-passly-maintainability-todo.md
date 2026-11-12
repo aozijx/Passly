@@ -92,7 +92,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 ### Task 73：把官方 Android 检查纳入维护复核并处理已发现的质量项
 
 - [ ] 按本轮 app/Autofill Lint 新报告裁定剩余项，不沿用旧数量；清理 EmptySuperCall、冗余 API、UseKtx、资源时保留清理/持久时序及中英文合同。
-- [ ] 依赖升级独立验证：按仓库当前 [version catalog](../../../gradle/libs.versions.toml) 和实际升级改动，核对受影响模块的依赖解析、编译及必要测试是否有可追溯的执行证据，并记录命令与结果；旧“14 条升级提示”只作历史背景，不作为当前未完成数量。
+- [ ] 依赖升级独立验证：按仓库当前 [version catalog](../../../../gradle/libs.versions.toml) 和实际升级改动，核对受影响模块的依赖解析、编译及必要测试是否有可追溯的执行证据，并记录命令与结果；旧“14 条升级提示”只作历史背景，不作为当前未完成数量。
 - [ ] APK Analyzer 保存交付/release APK 的 DEX、资源、native、assets 基线；历史 debug 体积不是 release 优化收益，设备/性能验收按功能 owner 执行。
 
 <a id="task-83"></a>
@@ -142,8 +142,8 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 <a id="task-34"></a>
 
-### Task 34：验收 Activity 查询与修订恢复的 Room 行为
-- [ ] 在设备上运行 `RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest`，记录设备/API 和 SQLCipher 行为。此前的安装失败证据见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#task-34-36-device-install-attempt)。
+### Task 34：验收 Room 会话观察、Activity 查询与修订恢复
+- [ ] 在设备上运行 `RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest`，记录设备/API 和 SQLCipher 行为；Room observation 同时覆盖会话撤权、旧 DAO emission 与恢复订阅场景。此前的安装失败证据见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#task-34-36-device-install-attempt)。
 
 实现调用闭包、Activity DAO 收敛及历史构建验证见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#activity-与-revision-dao-收敛证据)；本项只跟踪尚未运行的 Room/修订恢复设备验收。
 
@@ -201,14 +201,6 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 ### Task 29：验收 App Password 草稿的真实宿主生命周期清理
 
 - [ ] 在设备或 AVD 上运行 `AppPasswordDialogCoordinatorLifecycleTest` 并记录 API/结果；再通过真实 Activity 配置重建验证草稿按认证合同清空。当前 owner 合同、Compose 测试覆盖及其与 Activity recreation 的边界见[App Password 对话框生命周期审查](../../reviews/2026-11-11-app-password-dialog-lifecycle.md)。
-
-<a id="task-31"></a>
-
-### Task 31：验收 Room 观察在会话锁切换下的取消与重建
-
-- [ ] 在真实 SQLCipher/设备执行已有 RoomObservationSessionTest 的 soft-lock、seal/reopen、DAO emission race、旧 lease 释放用例；验证普通错误可见、撤权清敏感状态、快速恢复不读旧 handle。
-
-当前观察恢复实现、异常边界和 JVM/Room 测试证据见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)与[数据库会话合同](../../../platform/data/database.md#session-生命周期)；本项只跟踪尚未完成的 SQLCipher/设备交错验收。
 
 <a id="task-44"></a>
 
