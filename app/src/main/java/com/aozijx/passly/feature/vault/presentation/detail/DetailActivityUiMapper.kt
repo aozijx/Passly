@@ -45,7 +45,10 @@ internal fun EntryActivity.toDetailHistoryItemUiModel(): DetailHistoryItemUiMode
                 is EntryActivityContext.ContentRevision -> {
                     DetailHistoryRevisionReference.Pending(activityContext.version.value)
                 }
-                EntryActivityContext.Usage, EntryActivityContext.Lifecycle -> DetailHistoryRevisionReference.Unlinked
+
+                EntryActivityContext.Usage, EntryActivityContext.Lifecycle -> {
+                    DetailHistoryRevisionReference.Unlinked
+                }
             },
     )
 }

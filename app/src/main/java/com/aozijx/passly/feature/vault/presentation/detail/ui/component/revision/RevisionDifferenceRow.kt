@@ -12,11 +12,11 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.resolveText
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceContentUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionRevealActionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.resolveText
 import java.text.DateFormat
 import java.util.Date
 

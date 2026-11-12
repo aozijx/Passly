@@ -7,9 +7,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailQrState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentationModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailHistorySheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailTopBar

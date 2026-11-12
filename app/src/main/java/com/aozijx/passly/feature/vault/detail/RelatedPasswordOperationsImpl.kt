@@ -38,7 +38,8 @@ internal class RelatedPasswordOperationsImpl
                         .asSequence()
                         .map { link ->
                             if (link.firstEntryId == sourceEntryId) link.secondEntryId else link.firstEntryId
-                        }.filter(activeIds::contains).toSet()
+                        }.filter(activeIds::contains)
+                        .toSet()
 
                 activeLogins.filter { it.id != sourceEntryId && it.id !in relatedIds }
             }

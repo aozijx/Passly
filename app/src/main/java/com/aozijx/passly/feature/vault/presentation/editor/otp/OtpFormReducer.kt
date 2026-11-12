@@ -163,15 +163,18 @@ internal object OtpFormReducer {
                 when (config) {
                     is OtpConfig.Totp -> {
                         when (config.variant) {
-                            TotpVariant.STANDARD ->
+                            TotpVariant.STANDARD -> {
                                 OtpFormConfiguration.Totp(
                                     algorithm = config.algorithm,
                                     digits = config.digits.toString(),
                                     periodSeconds = config.periodSeconds.toString(),
                                     encoding = config.encoding,
                                 )
+                            }
 
-                            TotpVariant.STEAM -> OtpFormConfiguration.Steam(config.encoding)
+                            TotpVariant.STEAM -> {
+                                OtpFormConfiguration.Steam(config.encoding)
+                            }
                         }
                     }
 

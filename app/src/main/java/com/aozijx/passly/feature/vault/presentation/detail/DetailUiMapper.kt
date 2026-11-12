@@ -4,11 +4,11 @@ import androidx.annotation.StringRes
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.policy.titleEditValue
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.policy.titleEditValue
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.mapItems
@@ -104,10 +104,13 @@ internal fun toDetailPresentationModel(
         when (val activityHistory = state.activityHistory) {
             DetailActivityHistoryState.Loading,
             DetailActivityHistoryState.Failed,
-            -> emptyList()
+            -> {
+                emptyList()
+            }
 
-            is DetailActivityHistoryState.Content ->
+            is DetailActivityHistoryState.Content -> {
                 activityHistory.activities.map(EntryActivity::toDetailHistoryItemUiModel)
+            }
         }
     val fields = DetailFieldProjection(state)
     val hasPassword = SensitiveFieldKey.PASSWORD in state.sensitiveFieldKeys

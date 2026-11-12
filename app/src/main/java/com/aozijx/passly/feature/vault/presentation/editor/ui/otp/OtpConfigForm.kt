@@ -16,13 +16,13 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
+import com.aozijx.passly.feature.vault.otp.presentation.plugin
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpConfigurationFeedbackUiState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFieldFeedbackUiState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormConfiguration
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.labelResource
-import com.aozijx.passly.feature.vault.otp.presentation.plugin
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @OptIn(ExperimentalMaterial3Api::class)

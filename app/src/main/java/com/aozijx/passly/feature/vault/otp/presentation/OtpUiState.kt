@@ -35,7 +35,9 @@ val OtpUiState.canRollbackPrevious: Boolean
     get() =
         when (this) {
             is OtpUiState.HotpReady -> canRollbackPrevious
+
             is OtpUiState.Failed -> canRollbackPrevious
+
             OtpUiState.NotApplicable,
             OtpUiState.Hidden,
             OtpUiState.NotRequested,
@@ -48,7 +50,9 @@ val OtpUiState.displayCodeOrPlaceholder: String
     get() =
         when (this) {
             is OtpUiState.TimedReady -> currentCode
+
             is OtpUiState.HotpReady -> currentCode
+
             OtpUiState.NotApplicable,
             OtpUiState.Hidden,
             OtpUiState.NotRequested,

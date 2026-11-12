@@ -476,7 +476,9 @@ internal object DetailReducer {
                                 }
                             }
 
-                            is DetailMutation.SaveSucceeded.OtherSaved -> state.fieldEdits
+                            is DetailMutation.SaveSucceeded.OtherSaved -> {
+                                state.fieldEdits
+                            }
                         }
                     state.copy(
                         saveState = DetailSaveState.Idle,

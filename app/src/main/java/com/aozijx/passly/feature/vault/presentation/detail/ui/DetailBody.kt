@@ -28,13 +28,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotRefreshPhase
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
-import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.AssociatedInfoSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.BankCardSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.CredentialSection
@@ -46,12 +46,12 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.IdCardSe
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.InfoGroupCard
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.MetadataSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.NotesSection
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.OtpSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.PasskeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedEntriesSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedPasswordPickerSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.OtpSection
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

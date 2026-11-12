@@ -42,12 +42,13 @@ private object SteamPlugin : OtpTypePlugin {
 /** Keeps presentation-specific behavior local while checking complete Domain type coverage. */
 internal object OtpTypePlugins {
     private val plugins = listOf(TotpPlugin, HotpPlugin, SteamPlugin)
-    private val byType = plugins.associateBy(OtpTypePlugin::type).also { registered ->
-        check(registered.size == plugins.size) { "OTP presentation plugins must be unique" }
-        check(registered.keys == OtpTypeDefinitions.all.map { it.type }.toSet()) {
-            "Every Domain OTP type must have a presentation plugin"
+    private val byType =
+        plugins.associateBy(OtpTypePlugin::type).also { registered ->
+            check(registered.size == plugins.size) { "OTP presentation plugins must be unique" }
+            check(registered.keys == OtpTypeDefinitions.all.map { it.type }.toSet()) {
+                "Every Domain OTP type must have a presentation plugin"
+            }
         }
-    }
 
     fun get(type: OtpType): OtpTypePlugin = byType.getValue(type)
 }

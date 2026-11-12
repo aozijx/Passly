@@ -9,7 +9,9 @@ internal sealed interface OtpActivationRecovery {
         val atMillis: Long,
     ) : OtpActivationRecovery
 
-    data class Retrying(val attempt: Int) : OtpActivationRecovery
+    data class Retrying(
+        val attempt: Int,
+    ) : OtpActivationRecovery
 
     data object AwaitingFreshAuthentication : OtpActivationRecovery
 
@@ -17,7 +19,9 @@ internal sealed interface OtpActivationRecovery {
 }
 
 internal sealed interface OtpActivationRecoveryEvent {
-    data class RetryableFailure(val nowMillis: Long) : OtpActivationRecoveryEvent
+    data class RetryableFailure(
+        val nowMillis: Long,
+    ) : OtpActivationRecoveryEvent
 
     data object FreshAuthenticationRequired : OtpActivationRecoveryEvent
 
@@ -39,15 +43,18 @@ internal object OtpActivationRecoveryReducer {
         when (event) {
             is OtpActivationRecoveryEvent.RetryableFailure -> {
                 val attempt =
-                    (when (state) {
-                        is OtpActivationRecovery.RetryScheduled -> state.attempt
-                        is OtpActivationRecovery.Retrying -> state.attempt
-                        OtpActivationRecovery.AwaitingFreshAuthentication,
-                        OtpActivationRecovery.PermanentlyFailed,
-                        OtpActivationRecovery.Active,
-                        -> 0
-                    })
-                        .plus(1)
+                    (
+                        when (state) {
+                            is OtpActivationRecovery.RetryScheduled -> state.attempt
+
+                            is OtpActivationRecovery.Retrying -> state.attempt
+
+                            OtpActivationRecovery.AwaitingFreshAuthentication,
+                            OtpActivationRecovery.PermanentlyFailed,
+                            OtpActivationRecovery.Active,
+                            -> 0
+                        }
+                    ).plus(1)
                         .coerceAtMost(MAX_RETRY_ATTEMPTS)
                 OtpActivationRecovery.RetryScheduled(
                     attempt = attempt,
@@ -55,18 +62,24 @@ internal object OtpActivationRecoveryReducer {
                 )
             }
 
-            OtpActivationRecoveryEvent.FreshAuthenticationRequired ->
+            OtpActivationRecoveryEvent.FreshAuthenticationRequired -> {
                 OtpActivationRecovery.AwaitingFreshAuthentication
+            }
 
-            OtpActivationRecoveryEvent.PermanentFailure -> OtpActivationRecovery.PermanentlyFailed
+            OtpActivationRecoveryEvent.PermanentFailure -> {
+                OtpActivationRecovery.PermanentlyFailed
+            }
 
-            OtpActivationRecoveryEvent.RetryElapsed ->
+            OtpActivationRecoveryEvent.RetryElapsed -> {
                 (state as? OtpActivationRecovery.RetryScheduled)?.let { OtpActivationRecovery.Retrying(it.attempt) }
                     ?: OtpActivationRecovery.Active
+            }
 
             OtpActivationRecoveryEvent.Recovered,
             OtpActivationRecoveryEvent.FreshAuthenticationCompleted,
-            -> OtpActivationRecovery.Active
+            -> {
+                OtpActivationRecovery.Active
+            }
         }
 
     private fun retryDelayMillis(attempt: Int): Long {

@@ -28,7 +28,9 @@ internal fun rememberOtpWindowProgress(
                             .toFloat() / periodMillis
                     }
 
-                    else -> 0f
+                    else -> {
+                        0f
+                    }
                 }
             }
         }

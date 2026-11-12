@@ -45,7 +45,8 @@ class OtpUiStateMapperTest {
         )
         assertEquals(
             OtpUiState.Failed(canRollbackPrevious = false),
-            OtpCodeState.Failed(OtpGenerationError.InvalidSecret)
+            OtpCodeState
+                .Failed(OtpGenerationError.InvalidSecret)
                 .toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true),
         )
     }
@@ -74,7 +75,8 @@ class OtpUiStateMapperTest {
         )
         assertEquals(
             OtpUiState.HotpReady(currentCode = "123 456", counter = 9L, canRollbackPrevious = false),
-            OtpCodeState.HotpReady(code = "123456", counter = 9)
+            OtpCodeState
+                .HotpReady(code = "123456", counter = 9)
                 .toOtpUiState(OtpPresentation.Applicable(OtpType.HOTP), showCode = true),
         )
     }

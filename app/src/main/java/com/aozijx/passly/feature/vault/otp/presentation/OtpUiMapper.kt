@@ -13,19 +13,28 @@ internal fun OtpCodeState?.toOtpUiState(
 
 private fun OtpCodeState.toUiModel(formatter: (String) -> String): OtpUiState =
     when (this) {
-        OtpCodeState.Pending -> OtpUiState.Pending
-        is OtpCodeState.TimedReady ->
+        OtpCodeState.Pending -> {
+            OtpUiState.Pending
+        }
+
+        is OtpCodeState.TimedReady -> {
             OtpUiState.TimedReady(
                 currentCode = formatter(code),
                 nextCode = formatter(nextCode),
                 windowEndMillis = windowEndMillis,
                 periodSeconds = periodSeconds,
             )
-        is OtpCodeState.HotpReady ->
+        }
+
+        is OtpCodeState.HotpReady -> {
             OtpUiState.HotpReady(
                 currentCode = formatter(code),
                 counter = counter,
                 canRollbackPrevious = canRollbackPrevious,
             )
-        is OtpCodeState.Failed -> OtpUiState.Failed(canRollbackPrevious)
-}
+        }
+
+        is OtpCodeState.Failed -> {
+            OtpUiState.Failed(canRollbackPrevious)
+        }
+    }

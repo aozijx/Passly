@@ -29,7 +29,6 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
@@ -65,6 +64,7 @@ import com.aozijx.passly.feature.vault.otp.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.feature.vault.otp.createTestOtpRuntime
 import com.aozijx.passly.feature.vault.otp.generationMaterialForTest
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import kotlinx.coroutines.CompletableDeferred
@@ -1068,19 +1068,29 @@ class VaultViewModelTest {
     private object EmptyOtpConfigRepository : OtpConfigRepository {
         override suspend fun getGenerationMaterial(entryId: String): OtpGenerationMaterial? = null
 
-        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long): OtpResult =
-            OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        override suspend fun consumeHotpCode(
+            entryId: String,
+            expectedCounter: Long,
+        ): OtpResult = OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
-        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long): Boolean = false
+        override suspend fun rollbackHotpCounter(
+            entryId: String,
+            expectedCurrentCounter: Long,
+        ): Boolean = false
     }
 
     private object ReadyOtpConfigRepository : OtpConfigRepository {
         override suspend fun getGenerationMaterial(entryId: String) = generationMaterialForTest(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP"))
 
-        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long): OtpResult =
-            OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        override suspend fun consumeHotpCode(
+            entryId: String,
+            expectedCounter: Long,
+        ): OtpResult = OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
-        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long): Boolean = false
+        override suspend fun rollbackHotpCounter(
+            entryId: String,
+            expectedCurrentCounter: Long,
+        ): Boolean = false
     }
 
     private companion object {

@@ -72,9 +72,9 @@ import com.aozijx.passly.feature.vault.detail.RelatedPasswordOperationsImpl
 import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
-import com.aozijx.passly.feature.vault.entry.RollbackHotpCounterUseCase
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.entry.RollbackHotpCounterUseCase
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
@@ -1748,10 +1748,15 @@ class DetailViewModelTest {
     private object NoOtpConfigRepository : OtpConfigRepository {
         override suspend fun getGenerationMaterial(entryId: String): OtpGenerationMaterial? = null
 
-        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long) =
-            OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        override suspend fun consumeHotpCode(
+            entryId: String,
+            expectedCounter: Long,
+        ) = OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
-        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long) = false
+        override suspend fun rollbackHotpCounter(
+            entryId: String,
+            expectedCurrentCounter: Long,
+        ) = false
     }
 
     private class MutableOtpConfigRepository(
@@ -1767,10 +1772,15 @@ class DetailViewModelTest {
             return generationMaterialForTest(config)
         }
 
-        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long) =
-            OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        override suspend fun consumeHotpCode(
+            entryId: String,
+            expectedCounter: Long,
+        ) = OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
-        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long) = false
+        override suspend fun rollbackHotpCounter(
+            entryId: String,
+            expectedCurrentCounter: Long,
+        ) = false
     }
 
     private class AuthenticatedAccess : SecureSessionAccessState {

@@ -30,8 +30,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.preview.CardStylePreviewFixtures

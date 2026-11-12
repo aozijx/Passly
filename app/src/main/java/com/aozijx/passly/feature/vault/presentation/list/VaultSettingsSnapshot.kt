@@ -23,8 +23,14 @@ internal fun RecoverableReadState<VaultSettingsSnapshot>.toDisplayUiState(): Vau
 
         is RecoverableReadState.Ready -> {
             when (val library = value.library) {
-                RecoverableReadState.Loading -> VaultDisplayUiState.Loading
-                is RecoverableReadState.Failed -> VaultDisplayUiState.Failed
+                RecoverableReadState.Loading -> {
+                    VaultDisplayUiState.Loading
+                }
+
+                is RecoverableReadState.Failed -> {
+                    VaultDisplayUiState.Failed
+                }
+
                 is RecoverableReadState.Ready -> {
                     val settings = value
                     VaultDisplayUiState.Ready(

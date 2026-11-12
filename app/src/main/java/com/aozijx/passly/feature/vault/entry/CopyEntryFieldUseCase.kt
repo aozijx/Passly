@@ -58,7 +58,8 @@ internal class CopyEntryFieldUseCase
                                         ?: return@authorize CopyEntryFieldResult.Unavailable
                                 if (!canWrite()) return@authorize CopyEntryFieldResult.Unavailable
                                 val value =
-                                    EntryFieldReader.getFieldValue(entry, fieldKey)
+                                    EntryFieldReader
+                                        .getFieldValue(entry, fieldKey)
                                         ?.takeIf(String::isNotBlank)
                                         ?: return@authorize CopyEntryFieldResult.Unavailable
                                 if (clipboardWriter.writeSensitiveIf(value, canWrite)) {

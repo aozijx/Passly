@@ -15,9 +15,9 @@ import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
-import com.aozijx.passly.domain.entry.policy.EntryTitleEditDecision
 import com.aozijx.passly.domain.entry.policy.EntryTagNormalizationResult
 import com.aozijx.passly.domain.entry.policy.EntryTagPolicy
+import com.aozijx.passly.domain.entry.policy.EntryTitleEditDecision
 import com.aozijx.passly.domain.entry.policy.planTitleEdit
 import com.aozijx.passly.domain.entry.policy.titleEditValue
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository

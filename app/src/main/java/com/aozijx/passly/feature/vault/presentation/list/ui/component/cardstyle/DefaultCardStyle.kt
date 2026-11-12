@@ -23,11 +23,11 @@ import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
-import com.aozijx.passly.feature.vault.otp.presentation.ui.rememberOtpWindowProgress
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.otp.presentation.displayCodeOrPlaceholder
 import com.aozijx.passly.feature.vault.otp.presentation.shouldDisplayCode
+import com.aozijx.passly.feature.vault.otp.presentation.ui.rememberOtpWindowProgress
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.preview.CardStylePreviewFixtures
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 

@@ -8,5 +8,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 sealed interface OtpPresentation {
     data object NotApplicable : OtpPresentation
 
-    data class Applicable(val type: OtpType) : OtpPresentation
+    data class Applicable(
+        val type: OtpType,
+    ) : OtpPresentation
 }

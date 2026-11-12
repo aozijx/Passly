@@ -30,13 +30,17 @@ fun OtpSection(
     when (type) {
         OtpType.TOTP,
         OtpType.STEAM,
-        -> TotpCard(
-            currentState = currentState,
-            onQrClick = onQrClick,
-            onCodeClick = onCodeClick,
-        )
+        -> {
+            TotpCard(
+                currentState = currentState,
+                onQrClick = onQrClick,
+                onCodeClick = onCodeClick,
+            )
+        }
 
-        OtpType.HOTP -> HotpCard(currentState, onQrClick, onCodeClick, onPreviousClick)
+        OtpType.HOTP -> {
+            HotpCard(currentState, onQrClick, onCodeClick, onPreviousClick)
+        }
     }
 }
 

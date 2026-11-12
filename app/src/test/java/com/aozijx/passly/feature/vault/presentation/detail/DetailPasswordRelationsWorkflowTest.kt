@@ -545,13 +545,14 @@ class DetailPasswordRelationsWorkflowTest {
                                 }
 
                                 override suspend fun getTypesByIds(entryIds: List<EntryId>) =
-                                    entryIds.mapNotNull { id ->
-                                        when (id) {
-                                            EntryId("source") -> id to entry("source").type
-                                            EntryId("target") -> id to entry("target").type
-                                            else -> null
-                                        }
-                                    }.toMap()
+                                    entryIds
+                                        .mapNotNull { id ->
+                                            when (id) {
+                                                EntryId("source") -> id to entry("source").type
+                                                EntryId("target") -> id to entry("target").type
+                                                else -> null
+                                            }
+                                        }.toMap()
                             },
                         sensitiveFieldRepository =
                             object : SensitiveFieldRepository {

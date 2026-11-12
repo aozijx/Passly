@@ -107,41 +107,51 @@ internal class DetailWorkSession(
                 if (isCurrent(token) && currentCoroutineContext().isActive) {
                     onMutation(
                         when (completion) {
-                            DetailEditCompletion.Title ->
+                            DetailEditCompletion.Title -> {
                                 DetailMutation.SaveSucceeded.DraftSaved(
                                     DetailEditCompletion.Title,
                                     result.data.titleEditValue,
                                 )
+                            }
 
-                            DetailEditCompletion.Notes ->
+                            DetailEditCompletion.Notes -> {
                                 DetailMutation.SaveSucceeded.DraftSaved(
                                     DetailEditCompletion.Notes,
-                                    result.data.secret.notes.orEmpty(),
+                                    result.data.secret.notes
+                                        .orEmpty(),
                                 )
+                            }
 
-                            DetailEditCompletion.Domain ->
+                            DetailEditCompletion.Domain -> {
                                 DetailMutation.SaveSucceeded.DraftSaved(
                                     DetailEditCompletion.Domain,
-                                    result.data.associations.primaryUrl.orEmpty(),
+                                    result.data.associations.primaryUrl
+                                        .orEmpty(),
                                 )
+                            }
 
-                            is DetailEditCompletion.Field ->
+                            is DetailEditCompletion.Field -> {
                                 DetailMutation.SaveSucceeded.DraftSaved(
                                     completion,
                                     EntryFieldReader.getFieldValue(result.data, completion.key).orEmpty(),
                                 )
+                            }
 
-                            DetailEditCompletion.Favorite ->
+                            DetailEditCompletion.Favorite -> {
                                 DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Favorite)
+                            }
 
-                            DetailEditCompletion.Applications ->
+                            DetailEditCompletion.Applications -> {
                                 DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Applications)
+                            }
 
-                            DetailEditCompletion.Tags ->
+                            DetailEditCompletion.Tags -> {
                                 DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Tags)
+                            }
 
-                            DetailEditCompletion.Icon ->
+                            DetailEditCompletion.Icon -> {
                                 DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Icon)
+                            }
                         },
                     )
                 }

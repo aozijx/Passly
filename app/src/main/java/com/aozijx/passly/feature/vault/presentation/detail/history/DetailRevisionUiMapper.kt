@@ -78,14 +78,21 @@ private fun toHistoryListUiState(
             .filter { filter == DetailHistoryFilter.ALL || it.filter == filter }
     val activitySource =
         when (activityHistory) {
-            DetailActivityHistoryState.Loading -> DetailHistoryLoadState.LOADING
-            DetailActivityHistoryState.Failed -> DetailHistoryLoadState.FAILED
-            is DetailActivityHistoryState.Content ->
+            DetailActivityHistoryState.Loading -> {
+                DetailHistoryLoadState.LOADING
+            }
+
+            DetailActivityHistoryState.Failed -> {
+                DetailHistoryLoadState.FAILED
+            }
+
+            is DetailActivityHistoryState.Content -> {
                 when (activityHistory.phase) {
                     DetailActivityHistoryPhase.Refreshing -> DetailHistoryLoadState.LOADING
                     DetailActivityHistoryPhase.Ready -> DetailHistoryLoadState.READY
                     DetailActivityHistoryPhase.Failed -> DetailHistoryLoadState.FAILED
                 }
+            }
         }
     val revisionSource =
         when (revisionState) {

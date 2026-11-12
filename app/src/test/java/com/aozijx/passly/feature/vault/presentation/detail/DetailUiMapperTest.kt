@@ -10,7 +10,6 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
@@ -24,6 +23,7 @@ import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -31,6 +31,9 @@ import com.aozijx.passly.domain.entry.policy.EntryTagValidationError
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.otp.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.otp.presentation.displayCodeOrPlaceholder
+import com.aozijx.passly.feature.vault.otp.presentation.toOtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityHistoryState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotRefreshPhase
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
@@ -47,9 +50,6 @@ import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryDe
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistoryIcon
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHistorySheetUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailNotesUiState
-import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
-import com.aozijx.passly.feature.vault.otp.presentation.displayCodeOrPlaceholder
-import com.aozijx.passly.feature.vault.otp.presentation.toOtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
@@ -342,12 +342,13 @@ class DetailUiMapperTest {
     @Test
     fun otpMapperPreservesVolatileOtpState() {
         val ui =
-            OtpCodeState.TimedReady(
-                code = "123456",
-                nextCode = "654321",
-                windowEndMillis = 30_000L,
-                periodSeconds = 30,
-            ).toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true)
+            OtpCodeState
+                .TimedReady(
+                    code = "123456",
+                    nextCode = "654321",
+                    windowEndMillis = 30_000L,
+                    periodSeconds = 30,
+                ).toOtpUiState(OtpPresentation.Applicable(OtpType.TOTP), showCode = true)
 
         require(ui is OtpUiState.TimedReady)
         assertEquals("123 456", ui.currentCode)
@@ -483,7 +484,10 @@ class DetailUiMapperTest {
         val cases =
             listOf(
                 typedEntry(EntryType.LOGIN, LoginCredential()) to DetailBodySectionUiModel.Credential::class,
-                typedEntry(EntryType.OTP, OtpCredential(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP"))) to DetailBodySectionUiModel.Otp::class,
+                typedEntry(
+                    EntryType.OTP,
+                    OtpCredential(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP")),
+                ) to DetailBodySectionUiModel.Otp::class,
                 typedEntry(EntryType.BANK_CARD, CardCredential()) to DetailBodySectionUiModel.BankCard::class,
                 typedEntry(EntryType.ID_CARD, IdentityCredential(idNumber = "id")) to DetailBodySectionUiModel.Identity::class,
                 typedEntry(EntryType.SSH_KEY, SshCredential(publicKey = "public")) to DetailBodySectionUiModel.Ssh::class,
@@ -627,18 +631,17 @@ class DetailUiMapperTest {
     private fun typedEntry(
         type: EntryType,
         credential: EntryCredential,
-    ) =
-        Entry(
-            identity =
-                EntryIdentity(
-                    id = EntryId("detail-${type.name}"),
-                    type = type,
-                    version = EntryVersion.INITIAL,
-                    timestamps = EntryTimestamps(1L),
-                ),
-            profile = EntryProfile(title = type.name),
-            secret = EntrySecret(credential = credential),
-        )
+    ) = Entry(
+        identity =
+            EntryIdentity(
+                id = EntryId("detail-${type.name}"),
+                type = type,
+                version = EntryVersion.INITIAL,
+                timestamps = EntryTimestamps(1L),
+            ),
+        profile = EntryProfile(title = type.name),
+        secret = EntrySecret(credential = credential),
+    )
 
     private fun readyState(entry: Entry) = DetailUiState(snapshotState = DetailSnapshotState.Content(entry))
 

@@ -2,13 +2,13 @@ package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
-import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationConfig
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
@@ -1250,8 +1250,20 @@ class OtpCodeRuntimeTest {
             val config = material.config
             codeGenerator(
                 when (config) {
-                    is OtpGenerationConfig.Totp -> OtpConfig.Totp(secret, config.algorithm, config.digits, config.periodSeconds, config.encoding, variant = config.variant)
-                    is OtpGenerationConfig.Hotp -> OtpConfig.Hotp(secret, config.algorithm, config.digits, config.counter, config.encoding)
+                    is OtpGenerationConfig.Totp -> {
+                        OtpConfig.Totp(
+                            secret,
+                            config.algorithm,
+                            config.digits,
+                            config.periodSeconds,
+                            config.encoding,
+                            variant = config.variant,
+                        )
+                    }
+
+                    is OtpGenerationConfig.Hotp -> {
+                        OtpConfig.Hotp(secret, config.algorithm, config.digits, config.counter, config.encoding)
+                    }
                 },
             )
         },

@@ -27,8 +27,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * TOTP 状态协调器。
@@ -62,7 +62,10 @@ internal class OtpCodeRuntime(
 
     /** Cached config contains no seed and is safe to retain for scheduling. */
     private sealed interface OtpSchedule {
-        data class Timed(val periodSeconds: Int, val timeStep: Long) : OtpSchedule
+        data class Timed(
+            val periodSeconds: Int,
+            val timeStep: Long,
+        ) : OtpSchedule
 
         data object Counter : OtpSchedule
     }
@@ -227,7 +230,9 @@ internal class OtpCodeRuntime(
                         OtpCodeState.Failed(nextResult.error)
                     }
 
-                    is OtpResult.CounterSuccess -> OtpCodeState.Failed(OtpGenerationError.InvalidCounter)
+                    is OtpResult.CounterSuccess -> {
+                        OtpCodeState.Failed(OtpGenerationError.InvalidCounter)
+                    }
                 }
             }
 
@@ -235,7 +240,9 @@ internal class OtpCodeRuntime(
                 OtpCodeState.Failed(genResult.error)
             }
 
-            is OtpResult.CounterSuccess -> OtpCodeState.Failed(OtpGenerationError.InvalidCounter)
+            is OtpResult.CounterSuccess -> {
+                OtpCodeState.Failed(OtpGenerationError.InvalidCounter)
+            }
         }
 
     private fun retryable(error: OtpGenerationError): Boolean = error is OtpGenerationError.CryptoError
@@ -274,10 +281,11 @@ internal class OtpCodeRuntime(
         entryId: String,
         event: OtpActivationRecoveryEvent,
     ) {
-        val next = OtpActivationRecoveryReducer.reduce(
-            state = activationRecovery[entryId] ?: OtpActivationRecovery.Active,
-            event = event,
-        )
+        val next =
+            OtpActivationRecoveryReducer.reduce(
+                state = activationRecovery[entryId] ?: OtpActivationRecovery.Active,
+                event = event,
+            )
         if (next == OtpActivationRecovery.Active) {
             activationRecovery.remove(entryId)
         } else {
@@ -288,8 +296,7 @@ internal class OtpCodeRuntime(
     private fun isAwaitingFreshAuthentication(entryId: String): Boolean =
         activationRecovery[entryId] == OtpActivationRecovery.AwaitingFreshAuthentication
 
-    private fun isPermanentlyFailed(entryId: String): Boolean =
-        activationRecovery[entryId] == OtpActivationRecovery.PermanentlyFailed
+    private fun isPermanentlyFailed(entryId: String): Boolean = activationRecovery[entryId] == OtpActivationRecovery.PermanentlyFailed
 
     private fun markPermanentFailure(entryId: String) {
         schedules.remove(entryId)
@@ -306,8 +313,7 @@ internal class OtpCodeRuntime(
         activationRecovery
             .filter { (entryId, state) ->
                 state is OtpActivationRecovery.RetryScheduled && state.atMillis <= nowMillis && isRequested(entryId)
-            }
-            .keys
+            }.keys
             .toList()
             .forEach { entryId ->
                 transitionRecovery(entryId, OtpActivationRecoveryEvent.RetryElapsed)
@@ -327,8 +333,9 @@ internal class OtpCodeRuntime(
         return try {
             hotpOperationMutex.withLock {
                 if (!isCurrent(entryId, token)) return@withLock OtpResult.Failure(OtpGenerationError.InvalidSecret)
-                val preview = states.value[entryId] as? OtpCodeState.HotpReady
-                    ?: return@withLock OtpResult.Failure(OtpGenerationError.InvalidSecret)
+                val preview =
+                    states.value[entryId] as? OtpCodeState.HotpReady
+                        ?: return@withLock OtpResult.Failure(OtpGenerationError.InvalidSecret)
                 when (val result = consumeHotpCode(entryId, preview.counter)) {
                     is OtpResult.CounterSuccess -> {
                         val nextCounter = result.nextCounter
@@ -350,17 +357,21 @@ internal class OtpCodeRuntime(
                         } else {
                             _states.update {
                                 it +
-                                    (entryId to
-                                        OtpCodeState.Failed(
-                                            error = result.error,
-                                            canRollbackPrevious = lastHotpNextCounters[entryId] != null,
-                                        ))
+                                    (
+                                        entryId to
+                                            OtpCodeState.Failed(
+                                                error = result.error,
+                                                canRollbackPrevious = lastHotpNextCounters[entryId] != null,
+                                            )
+                                    )
                             }
                         }
                         result
                     }
 
-                    is OtpResult.Success -> OtpResult.Failure(OtpGenerationError.InvalidCounter)
+                    is OtpResult.Success -> {
+                        OtpResult.Failure(OtpGenerationError.InvalidCounter)
+                    }
                 }
             }
         } catch (_: FreshAuthenticationRequiredException) {
@@ -580,25 +591,28 @@ internal class OtpCodeRuntime(
             if (!canRollbackPrevious) lastHotpNextCounters.remove(entryId)
             val state =
                 when (val result = codeGenerator(material, counter)) {
-                    is OtpResult.Success ->
+                    is OtpResult.Success -> {
                         OtpCodeState.HotpReady(
                             code = result.code,
                             counter = counter,
                             canRollbackPrevious = canRollbackPrevious,
                         )
+                    }
 
-                    is OtpResult.CounterSuccess ->
+                    is OtpResult.CounterSuccess -> {
                         OtpCodeState.HotpReady(
                             code = result.code,
                             counter = counter,
                             canRollbackPrevious = canRollbackPrevious,
                         )
+                    }
 
-                    is OtpResult.Failure ->
+                    is OtpResult.Failure -> {
                         OtpCodeState.Failed(
                             error = result.error,
                             canRollbackPrevious = canRollbackPrevious,
                         )
+                    }
                 }
             if (!isCurrent(entryId, token)) return
             schedules[entryId] = OtpSchedule.Counter
@@ -780,9 +794,10 @@ internal class OtpCodeRuntime(
         if (wasRequested && sessionUnlocked) scope.launch { activateTrackedEntry(entryId) }
     }
 
-    override suspend fun vaultReplaced() = withContext(NonCancellable + stateDispatcher) {
-        leases.keys.toList().forEach(::entryChanged)
-    }
+    override suspend fun vaultReplaced() =
+        withContext(NonCancellable + stateDispatcher) {
+            leases.keys.toList().forEach(::entryChanged)
+        }
 
     private companion object {
         const val MAX_COPY_WINDOW_ATTEMPTS = 2

@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 
 /**
  * One selectable appearance for a vault list card.
