@@ -6,7 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DefaultPermissionRequestArbiter
+internal class DefaultPermissionRequestArbiter
     @Inject
     constructor() : PermissionRequestArbiter {
         private var activeOwner: String? = null

@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class PermissionModule {
+internal abstract class PermissionModule {
     @Binds
     @Singleton
     abstract fun bindStatusReader(impl: AndroidPermissionStatusReader): PermissionStatusReader

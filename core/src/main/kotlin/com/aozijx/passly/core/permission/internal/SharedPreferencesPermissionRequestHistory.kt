@@ -9,7 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SharedPreferencesPermissionRequestHistory
+internal class SharedPreferencesPermissionRequestHistory
     @Inject
     constructor(
         @ApplicationContext context: Context,
