@@ -21,11 +21,10 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
  * ```
  *
  * [authorize] 负责：
- * 1. 读取 [com.aozijx.passly.domain.access.policy.AuthenticationPolicy] 确定策略
- * 2. 委托 [AuthenticationManager] 按认证目的执行认证编排
- * 3. 签发内部 [AuthorizationPermit]
- * 4. 在闭包内执行敏感操作
- * 5. 操作完成后使 Permit 失效
+ * 1. 委托 [AuthenticationManager] 按认证目的执行认证编排
+ * 2. 签发仅适用于指定 scope 的内部 [AuthorizationPermit]
+ * 3. 在闭包内执行敏感操作
+ * 4. 操作完成后使 Permit 失效
  *
  * 实现应确保闭包执行期间会话不会被锁定。
  */
