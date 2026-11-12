@@ -46,6 +46,9 @@ session transition event 由 `SessionEventSink` best-effort 记录，普通遥�
 的 `SEAL` 事件，但 session 仍保持 SEALED，且资源结果不由日志采集决定。生产的 `DatabaseSessionEventLogger` 将事件转为
 结构化 Logger 记录；`DefaultLogger` 隔离普通日志 sink 错误，Runtime 边界继续处理 Logger 其余普通异常。
 
+`RuntimeSessionManager.observe()` 在持有 session lease 时收集资源 Flow；`SessionLeaseGate.observe()` 用 Runtime 注入的
+`ioDispatcher` 执行上游收集，与资源 open/close 共用同一执行上下文，不另行硬编码全局 IO dispatcher。
+
 恢复码走独立流程：`RECOVER_AUTH_METHODS` 解封同一个 DEK 后只发布 `RecoveryMode`，不会发布普通
 `Authenticated`。恢复页面不挂载 Vault 导航，只能重建主认证、用新备份密码执行 `RECOVERY_EXPORT`，或退出锁定。
 

@@ -741,6 +741,37 @@ class RuntimeSessionManagerTest {
         }
 
     @Test
+    fun `observation uses the configured IO dispatcher`() =
+        runBlocking {
+            val observationDispatcher =
+                Executors
+                    .newSingleThreadExecutor { task -> Thread(task, "session-observation-test") }
+                    .asCoroutineDispatcher()
+            try {
+                val observedThread = AtomicReference<String>()
+                val manager =
+                    RuntimeSessionManager(
+                        resource = FakeResource(),
+                        keySource = SessionKeySource { byteArrayOf(9) },
+                        ioDispatcher = observationDispatcher,
+                    )
+                manager.unlock()
+
+                manager
+                    .observe {
+                        flow {
+                            observedThread.set(Thread.currentThread().name)
+                            emit(Unit)
+                        }
+                    }.collect()
+
+                assertTrue(requireNotNull(observedThread.get()).startsWith("session-observation-test"))
+            } finally {
+                observationDispatcher.close()
+            }
+        }
+
+    @Test
     fun `seal waits for active lease to drain before closing resource`() =
         runBlocking {
             val leaseStarted = CompletableDeferred<Unit>()

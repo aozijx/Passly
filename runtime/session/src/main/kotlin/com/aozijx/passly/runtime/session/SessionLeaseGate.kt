@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -73,7 +72,7 @@ internal class SessionLeaseGate<Handle : Any>(
             } finally {
                 releaseLease(owner)
             }
-        }.flowOn(Dispatchers.IO)
+        }.flowOn(ioDispatcher)
 
     suspend fun resumeIfOpen(): Boolean =
         resourceMutex.withLock {
