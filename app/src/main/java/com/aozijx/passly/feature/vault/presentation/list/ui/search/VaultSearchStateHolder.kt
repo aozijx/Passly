@@ -30,8 +30,6 @@ class VaultSearchStateHolder internal constructor(
         previousSearch = search
     }
 
-    fun queryChanged(query: String) = onQueryChange(query)
-
     fun focusChanged(focused: Boolean) {
         val nextState = uiState.onFocusChanged(focused, currentSearch().query)
         uiState = nextState

@@ -49,7 +49,7 @@ internal fun VaultSearchHeader(
             VaultSearchBar(
                 query = uiState.search.query,
                 isEditing = searchStateHolder.uiState.isEditing,
-                onQueryChange = searchStateHolder::queryChanged,
+                onQueryChange = { onAction(VaultUiAction.SearchQueryChanged(it)) },
                 onSearch = searchStateHolder::submit,
                 onFocusChanged = searchStateHolder::focusChanged,
                 modifier = Modifier.fillMaxWidth(),
