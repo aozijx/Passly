@@ -60,7 +60,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 
 ### Task 32：明确 Vault 列表 ViewModel 的工作流边界并补宿主行为覆盖
 - [ ] 补齐授权撤销期间操作及其余 page owner 交接/迟到结果行为；`VaultListUiMapperTest` 与 `VaultQueryGenerationTest` 只覆盖纯列表映射和查询代际转换，不能代替 ViewModel 的协程和 `PageEffects` 所有权合同。
-- [ ] 补齐 `VaultRoute` / NavHost 的实际 owner 转场验收：图级 `VaultViewModel` 通过 `WhileSubscribed` OTP state flow 持有幂等 lease，列表行和 `DetailRoute` 的可见 collector 分别控制其订阅与释放。旧 `VaultOtpRequestEffectTest` 仍调用已删除的 `onAcquireOtp` 参数，且重复验证 `VaultViewModelTest.otpLeaseLifetimeFollowsEachActiveUiStateCollection` 已覆盖的 ViewModel 合同，已删除；该单测不证明真实 Compose/导航转场。剩余需覆盖 Trash/Detail 转场、owner 替换、撤权时 effect collector 与 Paging/OTP 订阅不重复；设备运行与状态管理文档核对仍待完成。
+- [ ] 补齐 `VaultRoute` / NavHost 的实际 owner 转场验收：覆盖 Trash/Detail 转场、owner 替换，以及撤权时 effect collector 与 Paging/OTP 订阅不重复；设备运行与状态管理文档核对仍待完成。当前图级 ViewModel、列表行与 Detail 的状态及 OTP lease 合同见[专题页](../../../product/vault/otp-runtime.md)和[owner 审查记录](../../reviews/2026-11-11-vault-list-owner-followup.md)；已删除的旧测试与重复 ViewModel 用例不再作为待办描述。
 
 当前列表状态、命令和图级 OTP lease 合同见[列表与搜索专题](../../../product/vault/list-and-search.md#代码位置)；实现与历史验证证据见[Vault 列表 owner 审查记录](../../reviews/2026-11-11-vault-list-owner-followup.md)。本 Task 只保留撤权/owner 交接与真实 Route/NavHost 转场验收。
 
