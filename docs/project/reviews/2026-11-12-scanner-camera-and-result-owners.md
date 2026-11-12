@@ -1,6 +1,6 @@
 # Scanner 相机与结果确认 owner 审查
 
-**范围：** 复核 Task 84 中的 `ScannerCameraHost` 和 `ScannerResultSession`，同时检查 App 并发计划里相机资源生命周期条目的当前状态。结论关闭 Task 84 的 owner 分类候选；相机 host 的实际生命周期行为仍需测试或设备验收，结果 handoff 的组合验证仍由产品文档记录。
+**范围：** 复核 Task 84 中的 `ScannerCameraHost` 和 `ScannerResultSession`，同时检查 App 并发计划里相机资源生命周期条目的当前状态。结论关闭 Task 84 的 owner 分类候选；相机 host 的实际生命周期行为由并发计划跟踪，Scanner 与各业务 owner 的 handoff 组合验收由[Scanner 行为与设备计划](../work/plans/2026-11-06-scanner-entry-and-framing.md)跟踪，合同留在产品文档。
 
 ## ScannerCameraHost
 

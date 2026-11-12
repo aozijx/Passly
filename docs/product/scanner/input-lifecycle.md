@@ -1,6 +1,6 @@
 # 扫描输入与生命周期
 
-状态：相机/图片主链路已实现；`Work.HostPaused` 与显式 `Work.Stopped` 已区分，仍待 Route/Activity Result 关闭竞态、图片解码器取消/客户端清理、候选几何自动化覆盖及设备坐标验收。
+状态：相机/图片主链路已实现；`Work.HostPaused` 与显式 `Work.Stopped` 已区分。剩余 Route、解码器、候选几何和设备验收见[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)；Camera Host 资源生命周期验收由[并发计划 Task 4](../../project/work/plans/2026-11-06-app-architecture-concurrency-todo.md#task-4)跟踪。
 
 相机帧和相册图片都产生原始扫码文本，但输入资源及取消合同不同。`ScannerCameraHost` 持有 CameraX/ML Kit 与 `ImageProxy`；`ScannerViewModel` 持有扫描任务 owner、扫描 UI state、单个带消费确认的反馈状态及剪贴板写入；`ScannerRoute` 持有相册选择、生命周期 effect 与 owner 提供的结果计划。扫码层不解析内容类型，调用方在自己的业务入口转换。
 
@@ -22,19 +22,19 @@
 
 默认解码器 `BarcodeImageDecoder.decode(ref)` 以 `withContext(Dispatchers.IO)` 调用 `InputImage.fromFilePath(context, ref.value.toUri())`，之后通过 `suspendCancellableCoroutine` 创建 ML Kit client 并调用 `scanner.process(image)`。完成 listener 先关闭 client；若 continuation 已取消就丢弃结果，否则把首个非空值变为 `Decoded(rawValue)`，无值返回 `NoBarcode`，Task 失败返回 `Failed(error)`。回到 ViewModel 后先执行 `currentCoroutineContext().ensureActive()` 并比较 `work === owner`，再把文本交给 `completeScan(rawValue)` 或把图片失败反馈加入 UI state；这样旧图片的迟到回调不能更新新任务。
 
-`BarcodeImageDecoder` 在协程取消时通过 `invokeOnCancellation` 关闭 ML Kit client；完成 listener 与注册异常路径共享原子 close guard，确保 client 最多关闭一次。注册时单独传播 `CancellationException`，普通异常映射为 `Failed`，fatal `Error` 清理后继续传播。完成 listener 在构造结果前检查 continuation 是否仍 active，避免取消后的迟到回调读取或发布识别文本。该合同目前只有静态源码检查；尚无可注入的 ML Kit client seam，也未覆盖成功/失败 Task、注册异常、取消后迟到回调和 fatal `Error`。
+`BarcodeImageDecoder` 在协程取消时通过 `invokeOnCancellation` 关闭 ML Kit client；完成 listener 与注册异常路径共享原子 close guard，确保 client 最多关闭一次。注册时单独传播 `CancellationException`，普通异常映射为 `Failed`，fatal `Error` 清理后继续传播。完成 listener 在构造结果前检查 continuation 是否仍 active，避免取消后的迟到回调读取或发布识别文本。目前没有可注入的 ML Kit client seam，client/Task/listener 行为测试缺口由[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)跟踪。
 
 ## 生命周期与敏感状态
 
 `collectScannerRouteFeedback()` 在宿主 `STARTED` 时派发 `HostStarted`，消费单个 `uiState.feedback` 并回传 `FeedbackConsumed(id)`；离开该状态派发 `HostStopped` 并清除待处理反馈。`ScannerViewModel.pauseForHost()` 轮换 owner：显示结果可保留，纯扫描和图片处理中状态转 `Stopped` 并记录为 `Work.HostPaused`；宿主恢复后重新开始扫描。若相册结果在宿主仍暂停时到达，`DecodeImage` 可以从 `Work.HostPaused` 接管为新 owner。显式 `StopScanning` 则记录为 `Work.Stopped`，迟到的照片结果和 `HostStarted` 都不能重建 owner；`onCleared()` 设为 `Work.Destroyed`，拒绝所有后续输入。
 
-`ScannerViewModelTest` 分别覆盖显式停止、销毁后的迟到输入拒绝，以及宿主暂停期间 picker 结果接管 owner；HostStarted 只恢复 `Work.HostPaused`。这些回归断言和实现已更新，但本轮尚未运行测试。仍待验收：Route/Activity Result 与显式关闭的交错、overlay 退出动画期间快速重开、Route 与 owner callback 联合覆盖；候选序列（无值/空白/框外候选后接框内有效码）和几何边界的确定性测试；旋转方向与取景裁剪的真实设备检查。已存在的 ViewModel、Route 反馈消费与 CameraX session 测试不等于以上组合行为已通过，本轮没有运行测试或设备验收。复制文本同样在当前 owner scope 中运行，传给 `SensitiveClipboardWriter.writeSensitiveIf(text) { work === owner }` 的资格闭包会在平台写入前再次核对 owner。
+`ScannerViewModelTest` 分别覆盖显式停止、销毁后的迟到输入拒绝，以及宿主暂停期间 picker 结果接管 owner；HostStarted 只恢复 `Work.HostPaused`。Route/Activity Result、显式关闭、overlay 快速重开、owner callback 交错和候选几何边界尚无组合回归，具体范围见[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)。复制文本同样在当前 owner scope 中运行，传给 `SensitiveClipboardWriter.writeSensitiveIf(text) { work === owner }` 的资格闭包会在平台写入前再次核对 owner。
 
-复制成功、图片识别失败和扫码成功震动由 `ScannerViewModel` 作为带递增 ID 的单个 `feedback` 存入 sealed UI state；Route 仅在 `STARTED` 时执行平台反馈并确认消费，宿主停止时清除未消费项，避免后台重放。反馈只含类型和 ID，不含扫码文本；普通异常详情不进入 Toast。`rememberImagePicker` 的 Activity Result callback 派发 `DecodeImage(ImageRef(uri.toString()))`；`collectScannerRouteFeedback()` 在生命周期进入 `STARTED` 时派发 `HostStarted`。源码没有建立这两个回调的先后屏障，不能假设照片结果一定在恢复 effect 之后到达。ViewModel 已允许 `HostPaused` 接管有效图片结果，并拒绝显式 `Stopped`/`Destroyed` 后的输入；Route/Activity Result 与关闭交错、overlay 快速重开仍待联合行为覆盖。CameraHost 内的原始回调不直接写库或持久化扫描内容。
+复制成功、图片识别失败和扫码成功震动由 `ScannerViewModel` 作为带递增 ID 的单个 `feedback` 存入 sealed UI state；Route 仅在 `STARTED` 时执行平台反馈并确认消费，宿主停止时清除未消费项，避免后台重放。反馈只含类型和 ID，不含扫码文本；普通异常详情不进入 Toast。`rememberImagePicker` 的 Activity Result callback 派发 `DecodeImage(ImageRef(uri.toString()))`；`collectScannerRouteFeedback()` 在生命周期进入 `STARTED` 时派发 `HostStarted`。源码没有建立这两个回调的先后屏障，不能假设照片结果一定在恢复 effect 之后到达。ViewModel 已允许 `HostPaused` 接管有效图片结果，并拒绝显式 `Stopped`/`Destroyed` 后的输入；该回调与关闭/重开交错由[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)跟踪。CameraHost 内的原始回调不直接写库或持久化扫描内容。
 
-任务 owner、迟到图片结果和宿主暂停行为由 [`ScannerViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/viewmodel/ScannerViewModelTest.kt) 覆盖；Route 生命周期与反馈消费由 [`ScannerRouteFeedbackTest`](../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/route/ScannerRouteFeedbackTest.kt) 覆盖。它们使用注入的 decode lambda 验证 ViewModel 编排，不调用真正的 ML Kit client；`BarcodeImageDecoder` client 清理与 Task/listener 边界尚无专用自动化测试。
+任务 owner、迟到图片结果和宿主暂停行为由 [`ScannerViewModelTest`](../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/viewmodel/ScannerViewModelTest.kt) 覆盖；Route 生命周期与反馈消费由 [`ScannerRouteFeedbackTest`](../../../app/src/test/java/com/aozijx/passly/feature/scanner/presentation/route/ScannerRouteFeedbackTest.kt) 覆盖。它们使用注入的 decode lambda 验证 ViewModel 编排，不调用真正的 ML Kit client；`BarcodeImageDecoder` client 清理与 Task/listener 边界暂无专用自动化测试，待办见[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)。
 
-相机坐标矩阵按 [CameraX 输出变换说明](https://developer.android.com/media/camera/camerax/transform-output)从 crop rect 和 rotation 映射；共享 [`ViewPort`](https://developer.android.com/reference/androidx/camera/view/PreviewView#getViewPort()) 使 Preview 与 ImageAnalysis 使用同一可视裁剪。ML Kit 将条码坐标定义在输入图像中，并提供 [`cornerPoints`](https://developers.google.com/android/reference/com/google/mlkit/vision/barcode/common/Barcode#getCornerPoints())；当前规则要求四个角都通过 [`RectF.contains(x, y)`](https://developer.android.com/reference/android/graphics/RectF#contains(float,%20float))，因此右/下边界不包含。设备上的旋转方向和取景裁剪仍待实机验证。
+相机坐标矩阵按 [CameraX 输出变换说明](https://developer.android.com/media/camera/camerax/transform-output)从 crop rect 和 rotation 映射；共享 [`ViewPort`](https://developer.android.com/reference/androidx/camera/view/PreviewView#getViewPort()) 使 Preview 与 ImageAnalysis 使用同一可视裁剪。ML Kit 将条码坐标定义在输入图像中，并提供 [`cornerPoints`](https://developers.google.com/android/reference/com/google/mlkit/vision/barcode/common/Barcode#getCornerPoints())；当前规则要求四个角都通过 [`RectF.contains(x, y)`](https://developer.android.com/reference/android/graphics/RectF#contains(float,%20float))，因此右/下边界不包含。旋转方向和取景裁剪的设备验收见[Scanner 行为与设备计划](../../project/work/plans/2026-11-06-scanner-entry-and-framing.md)。
 
 ## 代码位置
 

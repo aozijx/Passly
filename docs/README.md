@@ -155,7 +155,7 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 - [应用架构与并发设计 TODO](project/work/plans/2026-11-06-app-architecture-concurrency-todo.md)
 - [Diagnostics 写入与 flush 可靠性跟进](project/work/plans/2026-11-06-passly-diagnostics-reliability-followup.md)
-- [Scanner 相机取景框设备验收](project/work/plans/2026-11-06-scanner-entry-and-framing.md)
+- [Scanner 行为与设备验收](project/work/plans/2026-11-06-scanner-entry-and-framing.md)
 - [OTP 审查待办](project/work/plans/2026-11-06-passly-otp-review-followups.md)
 - [Security 审查待办](project/work/plans/2026-11-06-passly-security-scan-followups.md)
 - [Vault 搜索审查待办](project/work/plans/2026-11-06-passly-vault-search-review-followups.md)
