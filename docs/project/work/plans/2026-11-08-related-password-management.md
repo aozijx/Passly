@@ -2,7 +2,7 @@
 
 状态：绑定与解绑实现已完成；只剩 Compose 设备交互验收。
 
-当前用户合同、页面状态和代码 owner 见[条目编辑与写入](../../../product/vault/entry-editor-and-persistence.md#详情页密码关联)。单元测试、Room 事务与静态架构验证已有记录；本计划只跟踪尚未执行的仪器运行。
+当前用户合同、实现函数和单元/Room/Compose 测试源码见[条目编辑与写入](../../../product/vault/entry-editor-and-persistence.md#详情页密码关联)。本计划只跟踪尚未执行的设备验收；测试源码或编译记录不代表设备交互已验证。
 
 ## 待完成
 
