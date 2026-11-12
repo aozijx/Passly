@@ -35,7 +35,4 @@ interface SecretFieldQueryDao {
         """,
     )
     suspend fun getKeys(entryId: String): List<String>
-
-    @Query("SELECT EXISTS(SELECT 1 FROM entry_secret_fields WHERE entryId = :entryId)")
-    suspend fun exists(entryId: String): Boolean
 }
