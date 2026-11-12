@@ -1,9 +1,10 @@
 package com.aozijx.passly.app.platform.permission
 
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
-import com.aozijx.passly.core.permission.internal.DefaultPermissionRequestArbiter
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.RuntimePermission
+import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
+import com.aozijx.passly.core.permission.request.PermissionRequestLease
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -13,7 +14,7 @@ import org.junit.Test
 class PermissionRequestSessionTest {
     @Test
     fun `closing pending host frees global lease and ignores late result`() {
-        val arbiter = DefaultPermissionRequestArbiter()
+        val arbiter = TestPermissionRequestArbiter()
         val session = PermissionRequestSession("scanner", arbiter, History())
         assertEquals(
             PermissionRequestStart.Launched,
@@ -39,7 +40,7 @@ class PermissionRequestSessionTest {
     @Test
     fun `history failure and launcher failure both release lease`() {
         for (failHistory in listOf(false, true)) {
-            val arbiter = DefaultPermissionRequestArbiter()
+            val arbiter = TestPermissionRequestArbiter()
             val session = PermissionRequestSession("scanner", arbiter, History(failHistory))
             assertThrows(IllegalStateException::class.java) {
                 session.request(RuntimePermission.CAMERA, "camera") { error("synthetic launch failure") }
@@ -50,7 +51,7 @@ class PermissionRequestSessionTest {
 
     @Test
     fun `unavailable launcher can retry without leaving a pending request`() {
-        val session = PermissionRequestSession("scanner", DefaultPermissionRequestArbiter(), History())
+        val session = PermissionRequestSession("scanner", TestPermissionRequestArbiter(), History())
         assertEquals(
             PermissionRequestStart.HostUnavailable,
             session.request(RuntimePermission.CAMERA, "camera") {
@@ -74,7 +75,7 @@ class PermissionRequestSessionTest {
 
     @Test
     fun `result releases lease before rationale and consumer can fail`() {
-        val arbiter = DefaultPermissionRequestArbiter()
+        val arbiter = TestPermissionRequestArbiter()
         val history = History()
         val session = PermissionRequestSession("scanner", arbiter, history)
         session.request(RuntimePermission.CAMERA, "camera") { PermissionRequestStart.Launched }
@@ -104,6 +105,24 @@ class PermissionRequestSessionTest {
         override fun markRequested(permission: RuntimePermission) {
             check(!fail) { "synthetic history failure" }
             permissions += permission
+        }
+    }
+
+    private class TestPermissionRequestArbiter : PermissionRequestArbiter {
+        private var isLocked = false
+
+        override fun tryAcquire(owner: String): PermissionRequestLease? {
+            if (isLocked) return null
+            isLocked = true
+            return object : PermissionRequestLease {
+                private var released = false
+
+                override fun release() {
+                    if (released) return
+                    released = true
+                    isLocked = false
+                }
+            }
         }
     }
 }

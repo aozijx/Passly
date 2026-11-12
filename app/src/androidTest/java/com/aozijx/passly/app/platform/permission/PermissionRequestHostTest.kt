@@ -11,11 +11,12 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.core.app.ActivityOptionsCompat
 import com.aozijx.passly.core.permission.contract.PermissionRequestHistory
 import com.aozijx.passly.core.permission.contract.PermissionStatusReader
-import com.aozijx.passly.core.permission.internal.DefaultPermissionRequestArbiter
 import com.aozijx.passly.core.permission.model.PermissionRequestOutcome
 import com.aozijx.passly.core.permission.model.PermissionRequestStart
 import com.aozijx.passly.core.permission.model.PermissionStatus
 import com.aozijx.passly.core.permission.model.RuntimePermission
+import com.aozijx.passly.core.permission.request.PermissionRequestArbiter
+import com.aozijx.passly.core.permission.request.PermissionRequestLease
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -29,7 +30,7 @@ class PermissionRequestHostTest {
         val owner = mutableStateOf("first")
         val visible = mutableStateOf(true)
         val registry = RecordingRegistry()
-        val arbiter = DefaultPermissionRequestArbiter()
+        val arbiter = TestPermissionRequestArbiter()
         val services = services(arbiter)
         val hosts = mutableMapOf<String, PermissionRequestHost>()
         val results = mutableListOf<Pair<String, PermissionRequestOutcome>>()
@@ -83,7 +84,7 @@ class PermissionRequestHostTest {
         }
     }
 
-    private fun services(arbiter: DefaultPermissionRequestArbiter) =
+    private fun services(arbiter: PermissionRequestArbiter) =
         PermissionServices(
             statusReader = PermissionStatusReader { PermissionStatus.DENIED },
             requestArbiter = arbiter,
@@ -94,6 +95,24 @@ class PermissionRequestHostTest {
                     override fun markRequested(permission: RuntimePermission) = Unit
                 },
         )
+
+    private class TestPermissionRequestArbiter : PermissionRequestArbiter {
+        private var isLocked = false
+
+        override fun tryAcquire(owner: String): PermissionRequestLease? {
+            if (isLocked) return null
+            isLocked = true
+            return object : PermissionRequestLease {
+                private var released = false
+
+                override fun release() {
+                    if (released) return
+                    released = true
+                    isLocked = false
+                }
+            }
+        }
+    }
 
     private fun registryOwner(registry: ActivityResultRegistry) =
         object : ActivityResultRegistryOwner {
