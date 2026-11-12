@@ -81,8 +81,9 @@ class DefaultLogger(
     private val processSessionProvider: ProcessSessionProvider,
     private val secureSessionProvider: SecureSessionProvider,
     private val aggregator: EventAggregator? = null,
-    private val traceTokenRegistry: TraceTokenRegistry = TraceTokenRegistry(timeSource::elapsedRealtimeMs),
 ) : Logger {
+    private val traceTokenRegistry = TraceTokenRegistry(timeSource::elapsedRealtimeMs)
+
     override fun debug(
         event: EventKey,
         fields: LogFields,

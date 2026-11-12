@@ -63,8 +63,9 @@ fun interface LogSanitizer {
 class PrivacyPolicy(
     private val identifierHasher: IdentifierHasher,
     private val violationBehavior: ContractViolationBehavior,
-    private val exceptionSnapshotFactory: ExceptionSnapshotFactory = ExceptionSnapshotFactory(),
 ) : LogSanitizer {
+    private val exceptionSnapshotFactory = ExceptionSnapshotFactory()
+
     override fun sanitize(
         event: PendingLogEvent,
         context: SanitizationContext,

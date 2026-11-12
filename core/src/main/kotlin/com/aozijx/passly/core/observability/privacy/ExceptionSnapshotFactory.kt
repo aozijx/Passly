@@ -21,7 +21,7 @@ private val METHOD_NAME_PATTERN = Regex("[A-Za-z0-9_$<>-]+")
 private val SOURCE_FILE_PATTERN = Regex("[A-Za-z][A-Za-z0-9_$-]{0,95}\\.(?:kt|java)")
 private val EXCEPTION_TYPE_PATTERN = Regex("^[A-Za-z][A-Za-z0-9_$]{0,63}$")
 
-class ExceptionSnapshotFactory {
+internal class ExceptionSnapshotFactory {
     fun create(
         throwable: Throwable,
         kind: ExceptionKind = ExceptionKind.UNKNOWN,

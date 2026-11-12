@@ -15,7 +15,7 @@ value class TraceToken(
     }
 }
 
-class TraceTokenRegistry(
+internal class TraceTokenRegistry(
     private val nowMs: () -> Long,
     private val tokenFactory: () -> TraceToken = {
         TraceToken(UUID.randomUUID().toString().replace("-", ""))
