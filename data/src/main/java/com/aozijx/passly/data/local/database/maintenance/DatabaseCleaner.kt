@@ -8,7 +8,7 @@ import javax.inject.Singleton
 /**
  * 清空应用数据库中用户数据表的结果。
  */
-data class DatabaseClearResult(
+internal data class DatabaseClearResult(
     val entriesDeleted: Int = 0,
     val secretsDeleted: Int = 0,
     val revisionsDeleted: Int = 0,

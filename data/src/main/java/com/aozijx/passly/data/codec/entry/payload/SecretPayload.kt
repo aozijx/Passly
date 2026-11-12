@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * The reset development schema starts again at payload version 1.
  */
 @Serializable
-data class SecretPayload(
+internal data class SecretPayload(
     val login: LoginCredentialPayload? = null,
     val notes: String? = null,
     val card: CardCredentialPayload? = null,

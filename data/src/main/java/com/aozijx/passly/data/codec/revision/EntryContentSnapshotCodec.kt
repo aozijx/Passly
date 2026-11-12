@@ -26,7 +26,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.Serializable
 
-data class EntryContentSnapshot(
+internal data class EntryContentSnapshot(
     val summaryJson: ByteArray,
     val secretJson: ByteArray,
     val relationsJson: ByteArray,
@@ -87,7 +87,7 @@ private data class EntryLinkSnapshot(
     val updatedAt: Long,
 )
 
-data class DecodedEntryContentSnapshot(
+internal data class DecodedEntryContentSnapshot(
     val summary: EntryProfile,
     val secret: EntrySecret,
     val links: List<EntryLink>,

@@ -12,7 +12,7 @@ import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class SensitiveFieldCipherSnapshot(
+internal data class SensitiveFieldCipherSnapshot(
     val key: SensitiveFieldKey,
     val valueCipher: ByteArray,
     val keyVersion: Int,
