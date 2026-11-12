@@ -61,8 +61,7 @@
 ### Task 4：逐处审查同步桥接和生命周期终止
 
 - [ ] 验收 [`ManualAccessibilityFillService.onDestroy()`](../../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/accessibility/ManualAccessibilityFillService.kt) 的同步 teardown：确认两处 `runBlocking` 所在回调线程、等待上限与返回保证；覆盖失败日志或一个 interaction 的锁失败是否会中断后续清理并跳过 `scope.cancel()` / `super.onDestroy()`。先验证系统回调与资源后果，再决定是否调整失败隔离或 teardown 收尾。源码调用链及待验证失败路径见[Service teardown 审查](../../reviews/2026-11-12-accessibility-service-destroy.md)。
-- [ ] 核对 `AutofillResultDelivery.commitResult()` 的同步提交与清理合同：检查 callback 异常、诊断失败、取消、fatal `Error`、completion scope 取消和无界等待。Activity claim 只在显式 marker 后终结；宿主级配置重建及 callback 部分副作用后失败由[Autofill Task 21](2026-11-07-passly-autofill-followups.md#task-21)唯一维护。已实现合同见[Autofill 填充流程](../../../product/autofill/fill-flow.md)；既有模块测试与运行验收证据见[Autofill 宿主验收记录](../../reviews/2026-11-08-autofill-host-validation.md)。
-  - 同步 `runBlocking` 的调用线程与最长等待、completion scope 被取消时 barrier/lease 的处置仍待验证；不要把普通诊断失败的恢复能力扩大描述为覆盖 fatal `Error`。
+- [ ] 验收 `AutofillResultDelivery.commitResult()` 尚未覆盖的同步边界：核实 `runBlocking` 调用线程与最长等待，并验证 completion scope 取消时 completion barrier 和 lease 如何终止。`AutofillResultDeliveryTest` 已覆盖 callback 异常后的 barrier 释放与重试、普通 trace 失败后的已提交收尾，以及 fatal trace `Error` 收尾后原样传播；宿主 callback 部分副作用失败仍由[Autofill Task 21](2026-11-07-passly-autofill-followups.md#task-21)唯一维护。实现合同见[Autofill 填充流程](../../../product/autofill/fill-flow.md)，测试边界见[测试逻辑维护审查](../../reviews/2026-11-11-test-logic-maintenance-review.md)，运行证据见[Autofill 宿主验收记录](../../reviews/2026-11-08-autofill-host-validation.md)。
 - [ ] 审计 `ObservabilityRuntimeController` 中 `runBlocking` 的位置和调用线程（生命周期 flush、前次退出摘要、崩溃捕获）。保留 crash/lifecycle 尾声所需的同步可观测性，同时避免普通页面路径无界等待；fatal 错误不可被普通诊断失败吞掉。
 - [ ] 对其余生产 `runBlocking` 做全量闭包搜索；按“不可避免的同步边界”“能改为 suspend/异步 owner”“测试专用”分类，检查主线程、锁重入、dispatcher starvation、超时、取消及调用结束后的资源状态。不是所有 `runBlocking` 都属于缺陷。
 
