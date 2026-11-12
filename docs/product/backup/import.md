@@ -1,6 +1,6 @@
 # Backup 导入规划、事务与文件恢复
 
-状态：当前实现（代码核对：2026-11-07）。
+状态：当前实现（代码核对：2026-11-12）。
 
 ## 导入规划与事务
 
@@ -13,11 +13,24 @@ Passly 的 `resourcesBase64` 和 Bitwarden 的 `folders` 可出现在判别字�
 
 Passly JSON 使用 Jackson Core 保留不超过 16 MiB 的 canonical document，并增量解码每项 Base64 资源；Bitwarden
 每次只缓冲一个有大小上限的 JSON record，再映射为 canonical records。加密 Adapter 将分块 GCM 解密流接到
-`BackupZipCodec`；每个数据块先通过 tag 验证才交给 ZIP reader。ZIP 中央目录读完后，Importer 继续排空同一解密流，
+`BackupZipCodec`；每个数据块先通过 tag 验证才交给 ZIP reader。ZIP 条目读完后，Importer 继续排空同一解密流，
 直至 terminal 统计、terminal tag 和物理 EOF 全部验证成功，然后解析文档并执行
 `BackupImportPlanner.plan(bundle, strategy)`。旧单块 v1 payload 不作为兼容路径接受。
+GCM 认证标签验证失败时显示“密码不正确或文件损坏”；认证失败本身无法区分错误密码与文件被修改。
+加密流截断分别记录 `BACKUP_CONTAINER_HEADER_TRUNCATED`、`BACKUP_RECORD_HEADER_TRUNCATED`、
+`BACKUP_RECORD_DATA_TRUNCATED` 和 `BACKUP_TERMINAL_MISSING`。资源校验分别记录
+`BACKUP_RESOURCE_MANIFEST_MISMATCH`、`BACKUP_RESOURCE_REFERENCE_MISMATCH`、`BACKUP_RESOURCE_SIZE_MISMATCH` 和
+`BACKUP_RESOURCE_DIGEST_MISMATCH`，这些原因适用于原生 JSON 与加密归档。加密 ZIP 区分
+`BACKUP_ZIP_DOCUMENT_MISSING`、`BACKUP_ZIP_DUPLICATE_ENTRY`、`BACKUP_ZIP_INVALID_ENTRY` 和 `BACKUP_ZIP_MALFORMED`。
+原生文档校验区分 `BACKUP_DOCUMENT_FORMAT_UNSUPPORTED`、`BACKUP_DOCUMENT_VERSION_UNSUPPORTED`、
+`BACKUP_DOCUMENT_DUPLICATE_ENTRY_ID`、`BACKUP_DOCUMENT_DUPLICATE_RESOURCE_ID`、
+`BACKUP_DOCUMENT_DUPLICATE_LINK_ID` 与 `BACKUP_DOCUMENT_MALFORMED`。严格导入、兼容导入和导出校验共用结构规则。
+上述稳定错误码和原因码只在 `config/observability/error-catalog.json` 定义，由 Gradle 生成 Core 类型、
+`core:common` 错误码常量及错误码文档。`BackupArchiveServiceImpl` 将原因码写入 `backup.operation.phase`，
+不记录文件名、ZIP 路径、条目 ID、资源 ID、密码或内容。ViewModel 仅传递原因码，
+`BackupNoticeMapper` 负责选择用户提示码；可替换的中英文提示集中在 `strings_backup.xml`，UI 不展示内部原因码。
 
-解码成功后 Service 才调用 `BackupSnapshotGateway.restore(bundle, mode)`。返回的 restore 计数与
+解码成功且源输入流关闭成功后 Service 才调用 `BackupSnapshotGateway.restore(bundle, mode)`；若关闭失败，已解码资源会被擦除且不会开始恢复。返回的 restore 计数与
 `bundle.compatibilitySummary` 合并为 `BackupImportResult`。无论 restore 成功或失败，Service 清零资源数组并关闭
 输入流。每次导入在 `backup_import` trace span 中记录开始和成功耗时；失败由 `AppErrorReporter` 以
 `BACKUP` 分类及 `backup_import` operation 上报。日志不包含密码、URI、文档字段或资源内容。取消和 fatal `Error`
@@ -58,6 +71,7 @@ Bitwarden 银行卡的完整合法年月经 Domain `CardExpiry` 统一为 `MM/YY
 或替换失败会立即补偿，未成功的补偿会保留在 journal 中供本次恢复流程重试。Room 事务失败时仍以原事务异常
 为主，普通文件回滚异常作为 suppressed 信息附加；回滚中的 fatal `Error` 优先传播并保留事务异常。Room 提交后才清理旧文件；提交后的清理失败会记录并保留残留文件，
 不会再回滚已提交的数据库。清理失败的日志使用 best-effort 报告：普通 logger 异常不会覆盖已提交结果，取消与 fatal `Error` 仍传播。
+若回滚时旧文件副本已丢失，journal 报错并保留当前目标，避免把两份文件都删除；该异常仍交由恢复流程报告。
 对应行为由 `BestEffortBackupCleanupLoggingTest` 覆盖。后续成功的 `OVERWRITE` 会清理未被恢复条目引用的残留资源文件。进程重启后不能仅凭
 `.previous` 文件名安全判断事务是否提交，因此不会无条件删除这类文件；要保证跨进程恢复需要持久化事务记录。
 两种介质不能提供真正跨介质 ACID，进程在极短替换窗口被系统强杀仍是已知限制。

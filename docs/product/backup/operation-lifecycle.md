@@ -16,6 +16,8 @@
 
 若归档服务返回导出失败且补偿删除也失败，`DefaultBackupOperationGateway` 保留原导出 `AppError` 作为操作失败状态，并返回带有清理异常的 `ExportCleanupFailed` 结果；页面发送专门提示，告知不完整文件可能仍在备份位置。删除返回 `false` 与普通删除异常都按此处理。取消和 fatal `Error` 仍传播；`deleteOnFailure == false` 时不会尝试删除调用方指定目标。
 
+归档服务在同一 trace 中记录 `backup.operation.phase`：导出快照就绪、开始及完成写入，导入格式选择、解码完成、开始恢复和恢复返回。快照与解码阶段只附带条目数和资源数；日志不包含密码、URI 或业务内容。阶段和完成日志的普通写入异常不会改变操作结果，取消和 fatal `Error` 仍传播。最后一个阶段可用于缩小失败范围，恢复返回阶段表示持久化调用已成功返回。
+
 
 ## 代码位置
 

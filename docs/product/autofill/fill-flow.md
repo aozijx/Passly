@@ -40,8 +40,9 @@ Inline 仍由输入法决定。无障碍入口不尝试根据浏览器包名猜�
 ## Legacy 结构解析与字段分类
 
 `AutofillStructureParser` 只负责从 Android `AssistStructure` 抽取可编辑字段的静态元数据和值，不判断
-username/password/OTP 语义。`LegacyPlatformAdapter` 将结果映射为平台无关的 `AutofillRequest`，随后仅由
-`HeuristicMatchStrategy` 的规则链分类字段，避免解析层和策略层各维护一套关键词规则。
+username/password/OTP 语义。`ParsedStructure.toAutofillRequest()` 将结果映射为平台无关的 `AutofillRequest`，随后仅由
+`HeuristicMatchStrategy` 的规则链分类字段，避免解析层和策略层各维护一套关键词规则。该映射由
+[`AutofillRequestMapping.kt`](../../../feature/autofill/src/main/java/com/aozijx/passly/feature/autofill/legacy/service/mapping/AutofillRequestMapping.kt) 实现。
 
 结构遍历在 Autofill 后台协程中执行，并使用迭代式先序遍历；单次请求最多访问 10,000 个节点、最多下探 64 层，
 避免复杂页面或异常 WebView 造成回调线程卡顿或递归栈溢出。限制不会改变限制范围内的窗口和节点顺序。

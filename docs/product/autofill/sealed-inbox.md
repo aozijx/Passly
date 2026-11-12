@@ -50,9 +50,11 @@ draft quarantine。成功解码的草稿按 `draftImporter.get().import(draft)` 
 `encodedRecord` 缓冲。没有已有 material 时，先在 Default dispatcher 内通过
 `dekManager.withDek(keyMaterialCodec::generateAndWrap)` 生成并封装材料，再调用
 `bootstrapStore.saveAutofillInboxKeyMaterial(material)` 持久化。
-`CancellationException` 从 provisioner 原样传播；其他 provision 阶段的 `Exception` 被转换为脱敏的 degraded
-diagnostic 并吞掉，因此已经发布的 Vault 解锁状态不会因 Inbox 维护失败回滚。单条 record 的格式/解密异常
-只导致该 record quarantine；导入的 `Retry` 停止遍历但不标记本轮失败日志，也不删除未处理记录。
+`CancellationException` 从 provisioner 原样传播；其他 provision 阶段的 `Exception` 被转换为 degraded diagnostic
+并吞掉，因此已经发布的 Vault 解锁状态不会因 Inbox 维护失败回滚。已有 key material 的解码/私钥验证失败使用
+`INTEGRITY_FAILURE`，日志保留原始异常类型和脱敏堆栈；读取或变更 Bootstrap/record store 失败使用
+`STORAGE_FAILURE`，DEK/其他处理失败保留对应的未知原因和真实异常分类。不能把所有已有 key 路径上的错误都归为完整性错误。
+单条 record 的格式/解密异常只导致该 record quarantine；导入的 `Retry` 停止遍历但不标记本轮失败日志，也不删除未处理记录。
 
 导入 adapter `AutofillInboxCredentialImporter.import(draft)` 将 `draft.draft` 和稳定幂等键 `draft.draftId`
 原样传给 `SaveAutofillCredential(draft.draft, draft.draftId)`；`Saved` 映射为 `Imported`，`InvalidDraft`

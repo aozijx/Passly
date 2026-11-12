@@ -66,6 +66,22 @@ OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节�
 
 `OtpCodeRuntimeTest` 中易被误判为重复的 HOTP copy 异常测试分别走已激活 schedule 的 `generateHotpCode()` 分支和无 lease 状态下的 on-demand material 分支；前者校验 activation token，后者在 consume 后复核 copy token/session epoch，因此保留。其余定时复制、下一窗口预生成、隐藏条目按需复制、HOTP 计数提交、session lock、lease 最终释放、并发配置读取及旧 generation 丢弃也属于独立状态/副作用边界。当前 `OtpCodeRuntime` 与测试文件都仍有工作区修改，本次只做逻辑复核，不拆分或迁移其仍在变化的 fixture；Task 27 的真实 Route/NavHost 行为验收仍未完成。
 
+## Vault OTP 映射断言去重（2026-11-12）
+
+`VaultListUiMapperTest` 原本还包含 timed 与 HOTP runtime 状态到 `OtpUiState` 的投影断言，但这两条只调用 OTP state mapper，并未覆盖 `VaultListUiMapper`；同一映射 owner 已由专属 `OtpUiStateMapperTest` 覆盖，包含 timed current/next code 与进度、HOTP 不生成 next code、pending/failed、hidden/not-applicable/not-requested。已从 Vault list mapper 测试移除这两条重复场景与相应 imports，保留该文件真正验证的 list projection 合同。2026-11-12 最新 `:app:compileDebugUnitTestKotlin` 未能验证本改动：失败发生于 `:app:compileDebugKotlin`，当前生产工作区 OTP UI 合并存在 `OtpPresentation`/`OtpType` 调用合同、`OtpUiState` 派生属性、Detail 映射及 card style 不一致，Backup 编译也有未解析错误类型/常量；测试源码尚未到达编译阶段。待对应生产变更收敛后重跑相关测试；本批改动未提交。
+
+## Backup Archive Service 与 Operation Gateway 测试 owner 复核（2026-11-12）
+
+复核 `BackupArchiveServiceImplTest` 与 `DefaultBackupOperationGatewayTest` 的相似异常用例后未合并：前者验证 Archive Service 的文件流 close、解码 bundle 资源清零、restore commit 后日志失败/取消/fatal 的结果合同，以及 encrypted terminal 缺失时不 restore；后者验证 authorization/storage 异常映射、SAF 导出目标创建和失败文件删除、调用方所有权开关、操作密码副本清零及清理失败如何保留/附加原异常。两处对取消和 fatal 的覆盖分别约束 Archive 内部事务与 Gateway 外部文件/授权副作用，删除任一组都会丢失不同 owner 的边界断言。静态阅读未发现可安全删并的测试；App 生产编译当前失败，未执行这两个测试类。
+
+## RuntimeSessionManager 大测试类逻辑复核（2026-11-12）
+
+`RuntimeSessionManagerTest` 虽有 900 行左右，测试按 session lifecycle 与 lease drain owner 覆盖 open/resume/soft-lock/seal、key 获取/open/close 错误分类、key 清零、telemetry 普通错误/取消/fatal 对每类转场结果的影响、活动 lease 正常排空、超时后取消写入，以及非协作写入仍存活时资源延迟关闭。表面相似的 `DRAIN_TIMEOUT` telemetry 场景分别约束普通异常继续收尾，和取消/fatal 仍执行 lease cancellation/resource close；转场矩阵不覆盖 lease drain，二者也不重复。没有因行数拆分或删除场景。`:runtime:session:test --rerun-tasks --no-parallel --max-workers=2` 于 2026-11-12 实际执行通过；XML 汇总 34 tests、0 failures、0 errors、0 skipped。`UP-TO-DATE` 首次调用不计作执行证据。
+
+## Security session lifecycle 测试与 Runtime session 去重检查（2026-11-12）
+
+`VaultSessionControllerLifecycleTest` 与 `RuntimeSessionManagerTest` 的 close/cancel/fatal 用例分别验证安全编排和底层资源 lease：Security owner 还需完成认证状态撤权、permit revoke、DEK/sensitive key 清除、reset/recovery 交接及失败后重试。其同名附近的“调用者取消 lock”与“sessionManager.seal 自身抛 CancellationException”区分取消来源；soft-lock cancellation 也保留 SOFT_LOCKED 终态，不能与 seal 合并。没有发现可安全删除的跨类重复测试。`:security:testDebugUnitTest --rerun-tasks --no-parallel --max-workers=2` 于 2026-11-12 实际执行通过；XML 汇总 180 tests、0 failures、0 errors、0 skipped。
+
 ## More 菜单 UI 测试复核
 
 按 `moreMenu`/More 菜单语义检索全项目 `*Test.kt`，只有一个 `VaultTopBarMenuTest`，没有重复的 More 菜单测试文件或测试方法。该测试经同一顶栏弹出菜单检查 Scanner/Settings 路由、排序动作和动画首帧 popup 可测量性，属于一个真实 UI owner 的不同可观察结果；目前证据不支持删除或合并其他测试。
@@ -98,3 +114,10 @@ Core 中易混淆的场景分别绑定到不同边界：clipboard scheduler 的�
 ## Task 73 历史质量修正
 
 2026-11-07：`DetailViewModelTest` 中旧 CREATE/Lifecycle fixture 改为 AUTOFILL，重试回归确认订阅两次后进入 Ready；`ScannerResultCard` 的 Modifier 位置调整后，Entry 拆分阶段的 lint 任务成功退出。旧的 2026-11-02 失败统计不代表当前状态。本记录归档此前计划中的执行结果，本轮未重跑该定向测试或 lint。
+
+## HOTP 事务 AndroidTest 逻辑复核（2026-11-11）
+
+`:data:compileDebugAndroidTestKotlin` 首次重跑发现 `HotpCodeConsumptionTransactionTest` 有 5 处直接调用未传入生产接口新增的 `expectedCounter`。按 `HotpCodeConsumptionTransaction.consume()` 的合同，现有成功、失败、缺失/非 OTP 与无关敏感字段用例均显式提供期望计数；新增陈旧计数场景断言返回 `CounterChanged`、不调用 generator、持久 counter 不变。`:data:compileDebugAndroidTestKotlin` 使用 fresh single-use Gradle daemon 后通过。第一次重跑中的 KSP cache corruption 与复用 daemon 后的 `Storage already registered` 属于构建缓存/进程状态错误，不是测试断言失败。连接的 Huawei OXF-AN00 `/data/user/0` 只余 616 MB，之前 App instrumentation 安装失败；本测试只验证源码编译，未在设备执行。
+## OTP Runtime 测试 API 与耗尽态复核（2026-11-11）
+
+App 单测源集编译先揭示 `OtpCodeRuntimeTest` 中 3 处过时使用：HOTP consume 测试端口已改为 `(entryId, expectedCounter)`，测试 helper 仍声明单参数回调；耗尽态用例还直接调用了私有 `generateHotpCode()`。已统一 helper/fake 签名，让计数消费用例断言 Runtime 传入的期望计数，并将耗尽态用例改为通过公开 `codeForCopy()` 验证“无可复制码且 state 为 `CounterExhausted`”。`:app:compileDebugUnitTestKotlin` 通过；定向 `OtpCodeRuntimeTest` XML 报告为 42 tests、0 failures、0 errors、0 skipped。该结果只覆盖此 Runtime 单测类，不代表 Detail 全类或全仓逻辑审查完成。

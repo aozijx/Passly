@@ -22,6 +22,10 @@ Detail 标签编辑以 `DetailTagEditorState` 作为 Route/Composable 消费的�
 
 原维护计划记录这些改动的生产、单测与 AndroidTest 源集编译及 `verifyArchitecture` 通过，测试未运行；本记录本次只核对当前声明和专题文档，没有重跑这些命令。Vault 的剩余 Route、Trash、导航状态和跨层依赖审计仍开放，由主维护计划 Task 32、42、83、84 跟踪。
 
+## 2026-11-12 Trash Flow 恢复 owner 补充
+
+`TrashViewModel` 将普通 `deletedEntries` 查询异常映射为可见的 `TrashContentState.Failed`；`RetryLoad` 只在失败态新建一次冷 Flow 订阅，之后继续接收仓库更新。每次订阅使用 ticket 隔离旧结果，页面关闭或 ViewModel 销毁时取消读取并清理页面状态；取消和 fatal `Error` 不作为可重试页面失败。合同与生产入口已补到[列表与搜索](../../product/vault/list-and-search.md#代码位置)。当前 `TrashViewModelTest` 源码覆盖首次及后续读取失败、连续重试、读取发出数据后的失败、取消、fatal 传播和销毁后的迟到数据；本次仅核对测试定义，未重跑测试。
+
 ## 后续事项
 
 跨 Feature 的 ViewModel 职责审计仍由维护 TODO 的 Task 83 跟踪；本次 Vault 页面审查只关闭其 Vault 子范围，不代替 Task 83 的整体验收。

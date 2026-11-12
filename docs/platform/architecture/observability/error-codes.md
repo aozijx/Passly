@@ -50,6 +50,12 @@
 | `VAULT_ENTRY_CREATE_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A vault entry could not be created. |
 | `VAULT_ENTRY_UPDATE_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A vault entry could not be updated. |
 
+### Backup
+
+| Code | Default reason | Exposure | Description |
+|---|---|---|---|
+| `BACKUP_FAILED` | `UNKNOWN_FAILURE` | INTERNAL | A backup import or export operation failed. |
+
 ## Reasons
 
 | Code | Description |
@@ -98,3 +104,25 @@
 | `NOT_FOUND` | The requested vault object no longer exists. |
 | `CONFLICT` | The operation conflicted with a newer vault state. |
 | `KEYSTORE_UNAVAILABLE` | The Android keystore biometric key operation failed. |
+| `BACKUP_AUTHENTICATION_FAILED` | Encrypted backup authentication failed; the password may be incorrect or the file may be damaged. |
+| `BACKUP_CONTAINER_HEADER_TRUNCATED` | The encrypted backup container header ended before all required bytes were read. |
+| `BACKUP_RECORD_HEADER_TRUNCATED` | An encrypted backup record header ended before all required bytes were read. |
+| `BACKUP_RECORD_DATA_TRUNCATED` | An encrypted backup record payload ended before all required bytes were read. |
+| `BACKUP_TERMINAL_MISSING` | The encrypted backup is missing its authenticated terminal record. |
+| `BACKUP_RESOURCE_MANIFEST_MISMATCH` | Declared backup resources do not match the resources present in the archive. |
+| `BACKUP_RESOURCE_REFERENCE_MISMATCH` | Backup entries reference a resource that is absent from the validated resource set. |
+| `BACKUP_RESOURCE_SIZE_MISMATCH` | A backup resource size does not match its declared size. |
+| `BACKUP_RESOURCE_DIGEST_MISMATCH` | A backup resource digest does not match its content. |
+| `BACKUP_ZIP_DOCUMENT_MISSING` | The backup ZIP does not contain the required document entry. |
+| `BACKUP_ZIP_DUPLICATE_ENTRY` | The backup ZIP contains duplicate entry names. |
+| `BACKUP_ZIP_INVALID_ENTRY` | The backup ZIP contains an invalid or unsupported entry path. |
+| `BACKUP_DOCUMENT_FORMAT_UNSUPPORTED` | The backup document format identifier is unsupported. |
+| `BACKUP_DOCUMENT_VERSION_UNSUPPORTED` | The backup document version is unsupported. |
+| `BACKUP_DOCUMENT_DUPLICATE_ENTRY_ID` | The backup document contains duplicate entry identifiers. |
+| `BACKUP_DOCUMENT_DUPLICATE_RESOURCE_ID` | The backup document contains duplicate resource identifiers. |
+| `BACKUP_DOCUMENT_DUPLICATE_LINK_ID` | The backup document contains duplicate link identifiers. |
+| `BACKUP_DOCUMENT_MALFORMED` | The backup document could not be decoded as a supported document. |
+| `BACKUP_PASSWORD_REQUIRED` | The selected backup format requires a non-empty password. |
+| `BACKUP_FORMAT_UNSUPPORTED` | The requested backup format is not supported by the installed application. |
+| `BACKUP_CONTENT_UNSUPPORTED` | The backup contains a feature or record that this importer does not support. |
+| `BACKUP_ZIP_MALFORMED` | The encrypted backup ZIP structure could not be read. |
