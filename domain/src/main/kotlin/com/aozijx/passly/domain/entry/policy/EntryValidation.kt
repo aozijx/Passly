@@ -79,14 +79,11 @@ object EntryValidation {
             invalid(FieldKey.OTP_SECRET, EntryViolationCode.REQUIRED)
             return
         }
-        for (field in OtpConfigValidation.validate(config)) {
-            val code =
-                if (field == FieldKey.OTP_SECRET && config.secret.isNullOrBlank()) {
-                    EntryViolationCode.REQUIRED
-                } else {
-                    EntryViolationCode.INVALID_FORMAT
-                }
-            invalid(field, code)
+        val secret = config.secret
+        if (secret == null) {
+            invalid(FieldKey.OTP_SECRET, EntryViolationCode.REQUIRED)
+        } else if (!OtpConfigValidation.isSecretValid(secret, config.encoding)) {
+            invalid(FieldKey.OTP_SECRET, EntryViolationCode.INVALID_FORMAT)
         }
     }
 

@@ -99,7 +99,7 @@ internal object KeyedEntryArchiveMapper {
                     )
                 }
             }
-        require(OtpConfigValidation.validate(config).isEmpty()) { "Invalid OTP archive configuration" }
+        require(OtpConfigValidation.isSecretValid(config.secret, config.encoding)) { "Invalid OTP archive secret" }
         return config
     }
 

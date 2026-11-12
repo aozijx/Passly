@@ -2,62 +2,47 @@ package com.aozijx.passly.domain.entry.otp
 
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
-import com.aozijx.passly.domain.entry.model.otp.TotpVariant
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
-/** Checks usable configuration without rewriting stored secret or identity metadata. */
+/** Checks user supplied OTP parameters and encoded secret material without rewriting the input. */
 object OtpConfigValidation {
-    fun validate(config: OtpConfig): Set<FieldKey> {
-        val invalid =
-            when (config) {
-                is OtpConfig.Totp -> {
-                    when (config.variant) {
-                        TotpVariant.STANDARD -> validateTotp(config.algorithm, config.digits, config.periodSeconds)
-                        TotpVariant.STEAM -> validateSteam(config.algorithm, config.digits, config.periodSeconds)
-                    }
-                }
-
-                is OtpConfig.Hotp -> {
-                    validateHotp(config.algorithm, config.digits, config.counter)
-                }
-            }.toMutableSet()
-        val secret = config.secret
-        if (secret == null) {
-            invalid += FieldKey.OTP_SECRET
-        } else {
-            try {
-                OtpSecretCodec.decode(secret, config.encoding).fill(0)
-            } catch (_: OtpGenerationError) {
-                invalid += FieldKey.OTP_SECRET
-            }
+    fun isSecretValid(
+        secret: String?,
+        encoding: OtpSecretEncoding,
+    ): Boolean {
+        if (secret == null) return false
+        return try {
+            OtpSecretCodec.decode(secret, encoding).fill(0)
+            true
+        } catch (_: OtpGenerationError) {
+            false
         }
-        return invalid.toSet()
     }
 
     fun validateTotp(
         algorithm: OtpHashAlgorithm,
-        digits: Int,
-        periodSeconds: Int,
+        digits: Int?,
+        periodSeconds: Int?,
     ): Set<FieldKey> =
         buildSet {
-            if (digits !in TotpDefinition.allowedDigits) add(FieldKey.OTP_DIGITS)
-            if (periodSeconds <= 0) add(FieldKey.OTP_PERIOD)
+            if (digits == null || digits !in TotpDefinition.allowedDigits) add(FieldKey.OTP_DIGITS)
+            if (periodSeconds == null || periodSeconds <= 0) add(FieldKey.OTP_PERIOD)
             if (algorithm !in TotpDefinition.supportedAlgorithms) add(FieldKey.OTP_ALGORITHM)
         }
 
     fun validateHotp(
         algorithm: OtpHashAlgorithm,
-        digits: Int,
-        counter: Long,
+        digits: Int?,
+        counter: Long?,
     ): Set<FieldKey> =
         buildSet {
-            if (digits !in HotpDefinition.allowedDigits) add(FieldKey.OTP_DIGITS)
-            if (counter < 0L) add(FieldKey.OTP_COUNTER)
+            if (digits == null || digits !in HotpDefinition.allowedDigits) add(FieldKey.OTP_DIGITS)
+            if (counter == null || counter < 0L) add(FieldKey.OTP_COUNTER)
             if (algorithm !in HotpDefinition.supportedAlgorithms) add(FieldKey.OTP_ALGORITHM)
         }
 

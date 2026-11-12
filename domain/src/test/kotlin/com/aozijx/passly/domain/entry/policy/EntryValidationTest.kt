@@ -50,24 +50,16 @@ class EntryValidationTest {
     }
 
     @Test
-    fun `otp rejects malformed secrets for both encodings`() {
+    fun `otp rejects malformed secrets for every encoding and variant`() {
         for (encoding in OtpSecretEncoding.entries) {
             assertEquals(
                 setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.INVALID_FORMAT)),
                 otpViolations(OtpConfig.Totp(secret = "invalid!", encoding = encoding)),
             )
         }
-    }
-
-    @Test
-    fun `otp reports parameter violations from the shared configuration rules`() {
-        assertEquals(
-            setOf(EntryViolation(FieldKey.OTP_DIGITS, EntryViolationCode.INVALID_FORMAT)),
-            otpViolations(OtpConfig.Totp(secret = "MY", digits = 5)),
-        )
         assertEquals(
             setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.INVALID_FORMAT)),
-            otpViolations(SteamDefinition.configuration(secret = "MY")),
+            otpViolations(SteamDefinition.configuration(secret = "invalid!")),
         )
     }
 

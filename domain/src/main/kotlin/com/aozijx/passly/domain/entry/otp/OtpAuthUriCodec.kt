@@ -158,7 +158,7 @@ object OtpAuthUriCodec {
     ): OtpUriFormatResult =
         try {
             val definition = OtpTypeDefinitions[config.type]
-            require(OtpConfigValidation.validate(config).isEmpty())
+            require(OtpConfigValidation.isSecretValid(config.secret, config.encoding))
             val issuer =
                 config.issuer?.takeIf(String::isNotBlank)
                     ?: definition.issuerAlias

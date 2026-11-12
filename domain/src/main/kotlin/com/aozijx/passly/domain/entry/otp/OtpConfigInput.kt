@@ -1,13 +1,11 @@
 package com.aozijx.passly.domain.entry.otp
 
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
-import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
 /** Raw inputs are algorithm-specific, so an irrelevant period or counter cannot be carried. */
@@ -75,13 +73,7 @@ private fun OtpConfigInput.Totp.parseTotp(): OtpConfigInputResult {
     val parsedPeriod = periodSeconds.trim().toIntOrNull()
     val invalid =
         buildSet {
-            if (parsedDigits == null) add(FieldKey.OTP_DIGITS)
-            if (parsedPeriod == null) add(FieldKey.OTP_PERIOD)
-            if (parsedDigits != null && parsedPeriod != null) {
-                addAll(OtpConfigValidation.validateTotp(algorithm, parsedDigits, parsedPeriod))
-            } else if (algorithm !in TotpDefinition.supportedAlgorithms) {
-                add(FieldKey.OTP_ALGORITHM)
-            }
+            addAll(OtpConfigValidation.validateTotp(algorithm, parsedDigits, parsedPeriod))
         }
     val normalizedSecret = secret.normalizeSecret(encoding) ?: return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
     if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)
@@ -103,13 +95,7 @@ private fun OtpConfigInput.Hotp.parseHotp(): OtpConfigInputResult {
     val parsedCounter = counter.trim().toLongOrNull()
     val invalid =
         buildSet {
-            if (parsedDigits == null) add(FieldKey.OTP_DIGITS)
-            if (parsedCounter == null) add(FieldKey.OTP_COUNTER)
-            if (parsedDigits != null && parsedCounter != null) {
-                addAll(OtpConfigValidation.validateHotp(algorithm, parsedDigits, parsedCounter))
-            } else if (algorithm !in HotpDefinition.supportedAlgorithms) {
-                add(FieldKey.OTP_ALGORITHM)
-            }
+            addAll(OtpConfigValidation.validateHotp(algorithm, parsedDigits, parsedCounter))
         }
     val normalizedSecret = secret.normalizeSecret(encoding) ?: return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
     if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)

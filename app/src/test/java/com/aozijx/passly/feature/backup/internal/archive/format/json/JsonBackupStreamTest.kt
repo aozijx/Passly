@@ -28,7 +28,21 @@ class JsonBackupStreamTest {
             format = BackupDocument.FORMAT,
             version = BackupDocument.CURRENT_VERSION,
             exportedAt = 1,
-            entries = listOf(BackupEntryRecord(id = "entry", type = "login", revision = 1, createdAt = 1, updatedAt = 1, fields = listOf(BackupFieldRecord("title", BackupFieldValue.text("title"))))),
+            entries =
+                listOf(
+                    BackupEntryRecord(
+                        id = "entry",
+                        type = "login",
+                        revision = 1,
+                        createdAt = 1,
+                        updatedAt = 1,
+                        fields =
+                            listOf(
+                                BackupFieldRecord("title", BackupFieldValue.text("title")),
+                                BackupFieldRecord("password", BackupFieldValue.text("password")),
+                            ),
+                    ),
+                ),
             resources = listOf(BackupResourceRecord(id = "icon", entryId = "entry", kind = BackupResourceKind.ICON, size = 3, sha256 = BackupBundleValidator.sha256Hex(content))),
         )
         val payload = """{"document":${BackupJson.encodeToString(document)},"resourcesBase64":{"icon":"AwIB"}}"""
