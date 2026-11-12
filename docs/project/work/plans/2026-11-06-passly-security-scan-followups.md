@@ -13,7 +13,7 @@
 - [ ] 若确认现策略有意，则在 `docs/platform/security/sensitive-data-access.md` 和详情/二维码相关文档中说明 Wi-Fi 内联显示限于完整解锁会话、而复制与 QR 另需授权的理由和边界，避免后续审查把既定策略误判为缺失授权。
 - [ ] 按决策更新锁定当前行为的测试或新增测试：策略选择前后分别验证 inline reveal、复制、QR、编辑加载，以及锁定后清理。若改变存储合同，再覆盖新格式 mapper round-trip、Revision/备份往返；旧开发格式明确拒绝，不静默读成空值。
 
-**当前证据（2026-11-06）：** `WifiEntryDefinition` 使用 `secret(FieldKey.PASSWORD)`；Domain 的 `SECRET` 与 `HIGH_SENSITIVITY` 是不同访问级别。`RevealEntryFieldsUseCaseTest` 明确名为 `wifi password is read as low sensitivity without field authorization`，验证该读取不触发字段授权；mapper 测试也锁定 Wi-Fi 密码留在加密 aggregate。Detail 路径要求完整安全会话并在锁定时清理状态，copy 与 QR 则各有额外授权。独立复核确认上述行为，但未发现能证明内联 reveal 违反既定安全策略的合同。因此这是待裁定的策略一致性候选，而非已验证漏洞。
+**当前实现与待决策项：** 当前显示、复制和二维码导出的授权路径见[敏感数据访问合同](../../../platform/security/sensitive-data-access.md)。已有测试验证 Wi-Fi 密码可在无字段级授权时作为低敏字段读取。现有证据没有证明内联 reveal 违反已确定的安全策略；本项仍是策略一致性候选，而非已验证漏洞。
 
 **验收：** 写明策略决定及依据；相关 Domain/Data/App 单测和文档一致。若改存储合同，检查调用者和跨层数据流、事务失败及新格式数据保留；旧开发数据如不兼容，给出明确重置/重新安装说明，不在运行时静默删库。持久化 key、Room schema 版本及备份格式版本保持 1。
 

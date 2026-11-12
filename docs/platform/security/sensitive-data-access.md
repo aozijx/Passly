@@ -40,6 +40,12 @@ UI 类型实际支持的字段放入 `DetailUiState.revealedFields`。新增 Ent
 并在编辑期间绑定同一个认证对象；锁定、会话切换或页面关闭会取消待处理加载并清空表单。Wi-Fi 密码在加密 bundle 中，
 仅经完整会话读取。其他 EntryType 不提供完整表单编辑。
 
+Wi-Fi 密码的详情显示、复制和二维码导出当前采用不同授权路径。`WifiEntryDefinition` 将 `PASSWORD` 定义为
+`SECRET`，并保存在加密 bundle；详情字段 reveal 从已解锁的 Entry 读取该值，不申请字段级 `REVEAL` permit。
+复制因该字段没有独立敏感存储键，走全局 `COPY_SECRET` 授权；二维码导出走全局 `REVEAL_SECRET` 授权，
+并在授权范围内读取 bundle。这里记录的是当前实现，不预设这些路径是否应统一；是否要求 Wi-Fi 内联显示进行新鲜认证
+仍待产品/安全策略裁定，见[安全扫描遗留问题 Task 1](../../project/work/plans/2026-11-06-passly-security-scan-followups.md#task-1)。
+
 编辑表单清空表示失去 Store/UI state 对对象的引用，不等于 JVM 字符串内存的确定擦除。`LoadEditableEntryUseCase.invoke()`
 把每个 `SensitiveValue` 先转换为临时 `CharArray`，再通过 `String(chars)` 放入 Entry/表单；`finally` 只覆盖临时数组，
 不可变 String 的副本由运行时回收。锁定和页面关闭会尽快释放这些可控引用，但不声称覆盖所有 JVM 副本；降低敏感值在
@@ -81,5 +87,8 @@ Passly 复制敏感内容时使用敏感剪贴板标记。应用进入后台或�
 | --- | --- | --- |
 | 声明字段读取授权端口 | `SensitiveFieldRepository` | [`SensitiveFieldRepository.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/SensitiveFieldRepository.kt) |
 | 按字段读取或揭示加密内容 | `RoomSensitiveFieldRepository.revealMany()`、`SecretFieldStore.readField()` | [`RoomSensitiveFieldRepository.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/RoomSensitiveFieldRepository.kt)、[`SecretFieldStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/SecretFieldStore.kt) |
+| 详情页按字段访问控制 reveal | `RevealEntryFieldsUseCase.reveal()` | [`RevealEntryFieldsUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/RevealEntryFieldsUseCase.kt) |
+| 复制字段时选择字段级或全局授权 | `CopyEntryFieldUseCase.invoke()` | [`CopyEntryFieldUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/entry/CopyEntryFieldUseCase.kt) |
+| 导出 Wi-Fi 与 OTP 二维码 | `ExportEntryQrUseCase.invoke()` | [`ExportEntryQrUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/ExportEntryQrUseCase.kt) |
 | 为完整表单读取并授权现存高敏字段 | `LoadEditableEntryUseCase.invoke()`、`Entry.withRevealedField()`、`SensitiveValue.toTransientString()` | [`LoadEditableEntryUseCase.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/detail/LoadEditableEntryUseCase.kt) |
 | 驱动详情页字段揭示状态 | `DetailViewModel`、`DetailRevealStore` | [`DetailViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailViewModel.kt)、[`DetailRevealStore.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRevealStore.kt) |
