@@ -186,9 +186,13 @@ StateFlow 或 SavedState。Credential 与 Legacy Activity 均用 `AutofillActivi
 不可取消收尾中执行。失败会立即反馈给当前调用，并将 pending obligation 交给 lease 的进程级 retry owner；重试
 采用 1 秒起步、最多 60 秒的指数退避，等待期间不持有 lease mutex。新交互的 readiness gate 在 pending lock
 未完成时拒绝继续，Autofill 不会借用尚未锁定的临时会话。因此取消发生在等待 session mutex 之前或期间都不能
-静默丢失锁定责任。Accessibility Activity 的 `onDestroy()`
-只发起 ViewModel 清理，不在主线程 `runBlocking` 等待数据库封存；清理进入 `NonCancellable + Dispatchers.IO`
-后可跨 ViewModel 清除继续完成。
+静默丢失锁定责任。
+
+无障碍填充页面由 `AutofillAuthActivity` 承载；`AccessibilityAutofillEntry` 观察宿主销毁，在 Activity 正在结束时调用
+`AccessibilityFillViewModel.cancel()`。ViewModel 取消当前页面任务，并在 `NonCancellable + Dispatchers.IO` 中清理
+interaction，因此该 Activity 不会在主线程同步等待 session lock。无障碍系统服务有独立生命周期：
+`ManualAccessibilityFillService.onDestroy()` 会同步结束 Accessibility interactions，具体等待与失败收尾仍待验收，
+见[并发计划的 Service teardown 审查](../../project/reviews/2026-11-12-accessibility-service-destroy.md)。
 
 这保证 Android 收到结果以前不会关库，同时填充完成后再次点击输入框会从全新锁定状态开始。Android 没有确认字段
 实际写入的回调时，日志不能伪造 `field_filled`。

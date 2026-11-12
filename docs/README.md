@@ -167,6 +167,7 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 
 - [AppNotice host owner 审查](project/reviews/2026-11-12-app-notice-host-owner.md)
 - [AppThemeSettings owner 审查](project/reviews/2026-11-12-app-theme-settings-owner.md)
+- [Accessibility Service teardown 审查](project/reviews/2026-11-12-accessibility-service-destroy.md)
 - [数据库重试与可恢复读取审查](project/reviews/2026-11-12-database-retry-and-recoverable-reads.md)
 - [PageEffects owner 审查](project/reviews/2026-11-12-page-effects-owner.md)
 - [Scanner 相机与结果 owner 审查](project/reviews/2026-11-12-scanner-camera-and-result-owners.md)
