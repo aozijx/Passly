@@ -19,5 +19,4 @@ class EntryLinkPolicyTest {
         assertEquals(EntryLinkKind.RECOVERY_ASSOCIATION, EntryLinkPolicy.classify(EntryType.RECOVERY_CODE, EntryType.LOGIN))
         assertEquals(EntryLinkKind.RECOVERY_ASSOCIATION, EntryLinkPolicy.classify(EntryType.LOGIN, EntryType.RECOVERY_CODE))
     }
-
 }

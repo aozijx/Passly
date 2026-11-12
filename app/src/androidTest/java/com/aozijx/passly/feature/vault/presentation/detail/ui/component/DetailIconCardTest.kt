@@ -35,7 +35,9 @@ class DetailIconCardTest {
                 iconDescriptionRes = R.string.vault_detail_favicon_default,
             )
         val title =
-            InstrumentationRegistry.getInstrumentation().targetContext
+            InstrumentationRegistry
+                .getInstrumentation()
+                .targetContext
                 .getString(R.string.vault_detail_favicon_title)
         compose.setContent {
             MaterialTheme {

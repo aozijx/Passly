@@ -23,10 +23,10 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrFormatResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadFormatter
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
-import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.toDetailPageUiState

@@ -24,23 +24,37 @@ class EntryAccountGraph(
             when (EntryLinkPolicy.classify(firstType, secondType)) {
                 EntryLinkKind.ACCOUNT_MEMBERSHIP -> {
                     val (memberId, accountId) =
-                        if (firstType == EntryType.ACCOUNT) link.secondEntryId to link.firstEntryId
-                        else link.firstEntryId to link.secondEntryId
+                        if (firstType == EntryType.ACCOUNT) {
+                            link.secondEntryId to link.firstEntryId
+                        } else {
+                            link.firstEntryId to link.secondEntryId
+                        }
                     memberships[memberId] = accountId
                 }
+
                 EntryLinkKind.OTP_ASSOCIATION -> {
                     val (otpId, loginId) =
-                        if (firstType == EntryType.OTP) link.firstEntryId to link.secondEntryId
-                        else link.secondEntryId to link.firstEntryId
+                        if (firstType == EntryType.OTP) {
+                            link.firstEntryId to link.secondEntryId
+                        } else {
+                            link.secondEntryId to link.firstEntryId
+                        }
                     otps[otpId] = loginId
                 }
+
                 EntryLinkKind.RECOVERY_ASSOCIATION -> {
                     val (recoveryId, targetId) =
-                        if (firstType == EntryType.RECOVERY_CODE) link.firstEntryId to link.secondEntryId
-                        else link.secondEntryId to link.firstEntryId
+                        if (firstType == EntryType.RECOVERY_CODE) {
+                            link.firstEntryId to link.secondEntryId
+                        } else {
+                            link.secondEntryId to link.firstEntryId
+                        }
                     recoveries[recoveryId] = targetId
                 }
-                EntryLinkKind.RELATED_ENTRIES -> Unit
+
+                EntryLinkKind.RELATED_ENTRIES -> {
+                    Unit
+                }
             }
         }
         memberToAccount = memberships
