@@ -14,6 +14,7 @@
 - 有有效网页域名时，候选查询与保存关联只使用该域名，不把浏览器 application ID 作为网站凭据关联。无网页域名时才按 application ID 查询/保存。DAO 的子串结果仍须经过 Domain 精确或 PSL 可注册域名校验；候选只返回匹配条目，没有未关联条目回退，最多返回 10 条。
 - 候选阶段只读元数据；密码和 OTP 只在最终选择验证后按单条读取。
 - Legacy 网页 Autofill 的 `AssistStructure.ViewNode.webDomain` 是请求中的来源 claim；当前不验证 Digital Asset Links、调用方签名或浏览器签名，不能视为已认证 origin。网页请求首轮只返回通用确认操作，不返回候选账户；用户确认实际应用标签/包名和网页 host 后才查询候选，选中后还须确认条目和账号，之后才读取 secret。两次确认绑定 process-local interaction、精确规范 scope、条目和当前认证 session generation；锁定或换 session 后拒绝旧确认。结构中出现多个规范 host、有效与无效 claim 混合，或含可见网页 claim 的结构遍历被截断时拒绝；没有网页 claim 的原生请求仍按包名 scope 处理。
+- 无关联测试应用可通过自定义 ViewStructure 提供其他网站的 `webDomain`；API 36 攻击结构验收证明系统会传递该 claim。Passly provider 的真实确认/选择攻击路径仍需端到端验收，历史测试边界见[网页来源攻击审查](../../project/reviews/2026-11-12-autofill-origin-security-validation.md)。
 - `AutofillAuthenticated` 是窄权限会话，不授权普通 Vault 列表、编辑、备份或设置。
 - 结果提交边界必须包含 `setResult + finish`；提交开始后禁止 lease 新借用，`finish` 返回后才能关闭临时会话。
 - 最后一个已提交结果完成时必须过期未提交结果的遗留 interaction，关闭期间的新请求等待锁定完成。

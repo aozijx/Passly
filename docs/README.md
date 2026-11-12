@@ -191,6 +191,7 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 - [设置资源归属与本地化审查](project/reviews/2026-11-08-app-settings-resource-cohesion.md)
 - [文档分类与路径重组验收](project/reviews/2026-11-11-functional-docs-reorganization.md)
 - [Autofill 宿主与字段交付验收](project/reviews/2026-11-08-autofill-host-validation.md)
+- [Autofill 网页来源 claim 攻击与防护验收](project/reviews/2026-11-12-autofill-origin-security-validation.md)
 - [兼容、弃用与冗余清理审查](project/reviews/2026-11-08-compatibility-deprecated-redundancy-cleanup.md)
 - [Domain 边界与 Entry 标签策略审查](project/reviews/2026-11-07-domain-boundary-scan.md)
 - [Backup Data Port 迁移审查记录](project/reviews/2026-11-07-backup-data-port-migration.md)

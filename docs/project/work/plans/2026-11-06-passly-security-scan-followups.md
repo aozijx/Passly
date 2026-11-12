@@ -67,13 +67,10 @@ Task 3 继续 **retained**，属于尚未闭合的资源边界；本轮没有新
 **当前调用链证据：** `AutofillStructureParser` 汇总整棵 `AssistStructure` 中全部非空 `node.webDomain`，按规范 host 比较；多 host、有效与无效 claim 混合，或含可见网页 claim 的有界遍历被截断都会标记为歧义并在候选查询前失败。当前实现不验证 DAL、应用签名或可信浏览器签名，所以网页 claim 仍属于未验证输入。`DiscoverAutofillCandidates` 在公开任何候选 metadata 前先返回通用确认操作；用户查看应用标签/包名和域名并确认后，才按域名查询候选。选中后再展示条目和账号并要求二次确认；interaction 中的确认绑定规范 scope、条目 ID 和当前认证 session generation。`ResolveAutofillSelection` 在 resolver 读取 secret 前再次验证确认及 session generation；Fresh Authentication 失效会取消该 Legacy web interaction。平台交付前再次校验 session、scope、entry 并原子 claim，回调失败时释放 claim。`LegacyAutofillEntry.deliverLegacyResult()` 构造平台返回值，App `AutofillAuthActivity` 执行最终 `setResult`/`finish`。
 
 **攻击前提：** 普通恶意应用已安装、用户启用 Passly Autofill、库中有其冒充站点的条目，并主动选择/完成所需认证。高影响但有这些前提，故定为中严重度；不是无需交互的静默提取。系统 BIND 权限、严格域名匹配和普通解锁认证均不能证明目标应用拥有自报域名。Credential Manager 目前拒绝 populated origin，本问题限 Legacy 网页路径。
-- [ ] 使用无关联测试 App 的自定义 ViewStructure 冒充已有站点，证明正常选择/认证不能越过 origin 控制。覆盖合法签名浏览器、关联 App、确认/取消、scope 替换和 API 31/当前 API。
+**当前实现与验收证据：** 正式来源策略与防护见[Autofill 安全合同](../../../platform/security/autofill.md)；域名伪报攻击结构、API 36 与单测验收边界见[网页来源攻击审查](../../reviews/2026-11-12-autofill-origin-security-validation.md)。这些证据验证系统可传递伪造 claim 和现有确认边界，不等同于 Passly provider 端到端攻击验收。
 
-**2026-11-07 实现进度：** `AutofillWebOriginResolverTest` 覆盖同 host 规范化、不同 host 歧义、无效 claim，以及截断结构中有/无可见网页 claim 的处理；独立候选复核确认该规则不会拒绝无 claim 的原生请求，并保持可见网页 claim 的截断结构 fail-closed。`DiscoverAutofillCandidatesTest.websiteCandidateSearchUsesDomainWithoutBrowserPackageAssociation` 使用无关联攻击包名和可命中网站候选，验证确认前零查询、确认后只按域名查询并返回候选；`ResolveAutofillSelectionTest` 覆盖未确认条目和跨 session generation 的 secret 读取拒绝；`AutofillWebConfirmationTest` 覆盖 entry membership、scope、单次交付 claim 与终态；`LegacyResponseFactoryInstrumentedTest` 覆盖首屏 response 只含通用确认操作，不含候选标题。当前 main-source 快照 `:feature:autofill:testDebugUnitTest` 152 项通过；`:feature:autofill:compileDebugAndroidTestKotlin` 与 `verifyArchitecture` 也在该快照通过。真实攻击方 ViewStructure 验收见下方 API 36 记录；Passly provider 认证后的确认/取消交互和 API 31 设备验证仍未完成，故 Task 6 保持打开。
-
-**2026-11-07 API 36 结构注入验收：** 新增 AndroidTest APK 内的独立攻击方包 `com.aozijx.passly.feature.autofill.test`，其 `AutofillOriginAttackActivity` 通过自定义 `EditText.onProvideAutofillStructure()` 将 `login.example.com` 写入系统 `ViewStructure`；测试 APK 没有 `asset_statements` manifest 声明。临时启用的 `CaptureAutofillService` 收到系统 `FillRequest` 后由生产 `AutofillStructureParser` 解析，验证 Activity package 仍是攻击方包、webDomain 保留为伪报 host、结构包含至少两个可编辑字段且没有多 origin 歧义。`AutofillOriginAttackInstrumentedTest` 在 Pixel_8_Pro API 36 通过 1/1；随后完整 `:feature:autofill:connectedDebugAndroidTest` 在同一设备通过 13/13（PendingIntent 2 项、响应工厂 10 项、攻击结构 1 项）。`secure/autofill_service` 在 `finally` 后恢复到 Passly Debug Legacy 服务。该证据证明未关联测试包可以向系统结构声明别站 host，不证明 Passly provider 已在真实 App/认证交互中阻止绕过；还需用同一攻击方直接验收 Passly provider 的未确认与确认流程，并在 API 31 与当前 API 覆盖关联/可信调用方和 scope/取消情形。此前 capture Service 返回空 `FillResponse` 曾触发平台参数异常，现改为合法无数据响应；首次失败报告保留在 Gradle 报告目录。
-
-**2026-11-07 API 31 设备检查：** 当前 `D:\AndroidSDK\system-images\android-31` 目录为空，未找到 `avdmanager` 或 `sdkmanager`；因此本机尚无可启动的 API 31 system image，未运行该级别测试。API 31 验收仍是待办，不能从 API 36 结果外推。
+- [ ] 用无关联攻击方通过 Passly provider 实际走完认证、候选展示和选择，验证确认、取消、scope/owner 替换，以及关联 App 与可信浏览器路径不会绕过来源控制。
+- [ ] 在 API 31 和当前 Android API 执行 provider 端到端验证；API 31 设备缺口及最近环境检查见上述审查记录。
 
 <a id="task-7"></a>
 
