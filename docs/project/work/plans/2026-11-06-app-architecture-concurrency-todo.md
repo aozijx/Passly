@@ -1,8 +1,6 @@
 # Passly 应用架构与并发设计 TODO
 
 > **状态：** 调查与提案阶段。此文件是新建的独立待办；不替代 [统一 Presentation 架构与 ViewModel 审计](2026-10-30-passly-maintainability-todo.md) 中的既有条目。当前工作假设是保留模块化分层 MVVM + UDF，按证据整理并发 owner 和局部模式，不先做全局架构迁移。
->
-> **工作区基线：** 2026-11-06 当前源码与文档。仓库有其他未提交修改；执行时先检查 `git status`，逐文件复核，不覆盖或回滚并行工作。
 
 ## 目标
 
@@ -15,17 +13,19 @@
 
 不以线程数、GoF 模式数量、UseCase 数量或新 Gradle 模块数量衡量架构质量。不建立全局 EventBus、万能 Coordinator/Manager 或第二份业务状态真相源。
 
-## 当前架构基线
+## 创建时架构快照（2026-11-06）
 
-- 当前 Gradle 模块包括 `:app`、`:core`、`:core:common`、`:data`、`:domain`、`:runtime:session`、`:security`、`:feature:autofill`。Autofill 已抽为独立 Android library；该模块直接依赖 `:core`、`:domain`、`:runtime:session`，`:app` 显式依赖它。App 保留共享认证 Activity 宿主与窄平台适配，其余业务 Feature 主要仍在 App 包内。权威依赖白名单见 [`build.gradle.kts`](../../../../build.gradle.kts) 中的 `verifyModuleBoundaries` 配置。
-- 当前主结构是分层 MVVM + 单向数据流：UI → Route/ViewModel → Feature UseCase/应用流程（按需要）→ Domain port → Data Repository；Security 拥有认证和安全会话编排，Runtime Session 拥有资源无关的会话状态机。
-- 当前项目版本目录记录 Kotlin `2.3.20`、kotlinx.coroutines `1.11.0`。线程切换现状并不统一：一部分操作接收注入的 `CoroutineDispatcher`（例如 Backup dispatcher、`RuntimeSessionManager`），多处实现直接引用 `Dispatchers.IO/Default`。
-- 页面任务主要由 `viewModelScope` 管理；Application、Security singleton 与 Android Service 有多个独立 `SupervisorJob` Scope。KDF、加密日志写入和 CameraX 分析分别使用专用单线程 Executor/线程池。
-- 生产代码存在 `runBlocking` 桥接：`ManualAccessibilityFillService.onDestroy()`、`AutofillResultDelivery` 的同步平台提交与 lease 收尾，以及 `ObservabilityRuntimeController` 生命周期/崩溃记录路径。它们各有同步顺序和资源合同，审计结论应逐处形成，不做机械删除。
+以下是计划建立时对源码、模块图和依赖的检索摘要，用来说明提案背景，不是当前工作树清单。继续本计划时应以生产实现、Gradle 配置和正式架构文档重新核对具体候选。
+
+- 当时的 Gradle 模块包括 `:app`、`:core`、`:core:common`、`:data`、`:domain`、`:runtime:session`、`:security`、`:feature:autofill`。Autofill 已抽为独立 Android library；该模块直接依赖 `:core`、`:domain`、`:runtime:session`，`:app` 显式依赖它。App 保留共享认证 Activity 宿主与窄平台适配，其余业务 Feature 主要仍在 App 包内。依赖白名单见 [`build.gradle.kts`](../../../../build.gradle.kts) 中的 `verifyModuleBoundaries` 配置。
+- 当时的主结构是分层 MVVM + 单向数据流：UI → Route/ViewModel → Feature UseCase/应用流程（按需要）→ Domain port → Data Repository；Security 拥有认证和安全会话编排，Runtime Session 拥有资源无关的会话状态机。
+- 当时版本目录记录 Kotlin `2.3.20`、kotlinx.coroutines `1.11.0`。线程切换并不统一：部分操作接收注入的 `CoroutineDispatcher`（例如 Backup dispatcher、`RuntimeSessionManager`），多处实现直接引用 `Dispatchers.IO/Default`。
+- 当时页面任务主要由 `viewModelScope` 管理；Application、Security singleton 与 Android Service 有多个独立 `SupervisorJob` Scope。KDF、加密日志写入和 CameraX 分析分别使用专用单线程 Executor/线程池。
+- 当时生产代码存在 `runBlocking` 桥接：`ManualAccessibilityFillService.onDestroy()`、`AutofillResultDelivery` 的同步平台提交与 lease 收尾，以及 `ObservabilityRuntimeController` 生命周期/崩溃记录路径。它们各有同步顺序和资源合同，审计结论应逐处形成，不做机械删除。
 - `:runtime:session` 是纯 Kotlin/JVM Library，`api(:domain)` 并实现协程 session gate/lease 状态机；它不是 Android Runtime（ART）、Android Service 或 OS process。`Security` 与 `Data` 都依赖该资源无关合同，以避免双方相互依赖。
-- 本次检索未发现 Manifest `android:process` 声明；Legacy Autofill、Accessibility 和 Credential Provider 服务默认与应用其他组件在同一进程。`:data` 当前用 AndroidX `dataStore` 单进程 delegate，`DatabaseProvider` 默认 Room builder 未启用 multi-instance invalidation。贸然把服务改到独立进程会要求显式处理 Application/Hilt 重初始化、数据库/DataStore 多进程合同、session/lease 状态和 IPC。
-- 日志已经分层：`core` 定义记录/Store 接口，`data` 持有加密日志存储，`app` 持有 logger 组合、crash capture 和生命周期协调。`EncryptedLogRecordStore` 使用有界单线程 `ThreadPoolExecutor`，append 后调用 `fd.sync()`；uncaught crash handler 会限时 flush，失败后使用独立 emergency-write 路径。独立进程只能提供一定故障隔离，不能保证进程存活，也不能替代持久队列、同步写入和进程死亡验证。
-- 本次目录与依赖检索未发现 WorkManager 依赖或调用；是否需要持久后台任务要由具体业务的进程死亡合同决定，不作为全局并发改造的前置条件。
+- 当时检索未发现 Manifest `android:process` 声明；Legacy Autofill、Accessibility 和 Credential Provider 服务默认与应用其他组件在同一进程。`:data` 使用 AndroidX `dataStore` 单进程 delegate，`DatabaseProvider` 默认 Room builder 未启用 multi-instance invalidation。贸然把服务改到独立进程会要求显式处理 Application/Hilt 重初始化、数据库/DataStore 多进程合同、session/lease 状态和 IPC。
+- 日志按层分工：`core` 定义记录/Store 接口，`data` 持有加密日志存储，`app` 持有 logger 组合、crash capture 和生命周期协调。`EncryptedLogRecordStore` 使用有界单线程 `ThreadPoolExecutor`，append 后调用 `fd.sync()`；uncaught crash handler 会限时 flush，失败后使用独立 emergency-write 路径。独立进程只能提供一定故障隔离，不能保证进程存活，也不能替代持久队列、同步写入和进程死亡验证。
+- 当时目录与依赖检索未发现 WorkManager 依赖或调用；是否需要持久后台任务应由具体业务的进程死亡合同决定，不作为全局并发改造的前置条件。
 
 ## 执行入口与去重（2026-11-07）
 
