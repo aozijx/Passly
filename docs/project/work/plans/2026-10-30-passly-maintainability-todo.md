@@ -48,7 +48,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 <a id="task-42"></a>
 
 ### Task 42：验收完整表单编辑的 Route/NavHost 失败交接
-- [ ] 补齐并执行 Compose Route/NavHost 或设备宿主验收：Detail 预加载失败 Toast 的可见性、重复点击重试、STOPPED 时取消及条目/认证 owner 替换后丢弃迟到反馈；完整编辑导航失败后的提示与 seed 清理；编辑器无效/已消费 seed 的返回后重试；配置重建与迟到 callback。已有 JVM 行为、Session/Coordinator 测试不证明真实宿主交互。已完成实现合同及历史验收见[完整表单编辑边界审查](../../reviews/2026-11-11-full-form-editing-boundaries.md)。
+- [ ] 补齐并执行 Compose Route/NavHost 或设备宿主验收：Detail 预加载失败 Toast 的可见性、重复点击重试、STOPPED 时取消及条目/认证 owner 替换后丢弃迟到反馈；完整编辑导航失败后的提示与 seed 清理；编辑器无效/已消费 seed 的返回后重试；配置重建与迟到 callback。已有 JVM 行为、Session/Coordinator 测试不证明真实宿主交互。已完成实现合同及历史验收见[完整表单编辑边界审查](../../reviews/2026-11-11-full-form-editing-boundaries.md)与[seed Coordinator owner 审查](../../reviews/2026-11-08-vault-presentation-boundaries.md#2026-11-12-entryeditorseedcoordinator-owner-审查)。
 
 
 <a id="task-40"></a>
@@ -114,7 +114,7 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 - [ ] 沿具体 Route/宿主核对专项流程 owner：Scanner `Work.Active` 与 reducer/UI state、反馈消费确认及宿主暂停恢复/owner 替换/停止清理；Autofill Settings 的偏好与系统服务 Flow 独立失败恢复、页面退出后的旧 effect 丢弃及写入期间状态变化；Backup 文档选择 request ID 与页面 owner、退出重入/迟到回调/执行中关闭及凭据擦除/提交结果；Unlock 认证、尝试刷新和首次密码设置的 owner、取消/fatal 清理及页面反馈。相机识别、decoder、结果交付和 Recovery Code 提交恢复分别由 Scanner 专题、Autofill Task 21 与本 Task 前项维护，不复制范围。
 - [ ] 对 Settings、Shell、Diagnostics、Database Reset 和 Recovery Mode 的其余 ViewModel 按状态真相源、合法状态、长 Flow 失败重订阅、任务取消、敏感清理及 Route effect 核对。`StorageSettingsViewModel` 已审查并保留，证据见[边界审查](../../reviews/2026-11-11-storage-settings-viewmodel-boundary.md)。
 - [ ] 审查分散在层外/文件外的 Coordinator、Session、Store 和 helper。
-  - **待审候选：** `DatabaseSessionRetryCoordinator`、`SecureDatabaseResetCoordinator`、`EntryEditorSeedCoordinator`、`AppPasswordDialogCoordinator`、`PermissionRequestSession`、`AccessibilityFillSessionStore`、`ScannerCameraHost`、`ScannerResultSession`、`RecoverableRead` 与 `PageEffects`。
+  - **待审候选：** `DatabaseSessionRetryCoordinator`、`SecureDatabaseResetCoordinator`、`AccessibilityFillSessionStore`、`ScannerCameraHost`、`ScannerResultSession`、`RecoverableRead` 与 `PageEffects`。
   - **审查要求：** 为每项记录真实创建者、生命周期、共享者、状态真相源及所处 Gradle module；合并重复机制或移除纯桥接前，证明职责不受配置重建、Route、系统 callback、认证/锁定 owner 或其他调用方需要。已完成项的合同和取舍保留在对应专题页及[Vault owner 审查记录](../../reviews/2026-11-08-vault-presentation-boundaries.md)，不在活动计划重复列出。
 - [ ] 对每个 ViewModel 依赖分类并验证层边界：可观察的 Domain/Repository 数据、完整业务动作 UseCase/Interactor、窄应用端口、Presentation 状态 owner、平台/持久化实现。继续禁止 ViewModel 间依赖及直接 DAO/Room/Data Entity/具体文件实现；明确哪些 `feature.*.data` 或 `feature.*.internal` 类型实际是跨层实现泄漏，避免仅按 `internal` 包名搬移。核查 `verifyArchitecture` 当前 ViewModel 门禁与 `ViewModelDependencyVerifier` 的覆盖范围；若新增静态边界，只针对已证实错误依赖设计白名单/反例测试，不把合法 Repository Flow 或窄业务端口误禁。
 - [ ] 将本轮的稳定规则同步到 `docs/platform/architecture/viewmodel-ownership.md`、`docs/platform/architecture/package-boundaries.md`、`docs/engineering/development/maintenance-boundaries.md` 及必要功能文档，并使本 TODO 保留未迁移清单与决策证据。迁移需要分批按 Feature 执行；每次必须减少原 ViewModel 的独立业务职责、状态、异步任务组或实现依赖，而不是只变短文件。覆盖取消/重试/离页迟到结果/配置重建/会话锁定/持久提交点/敏感清理；运行对应 ViewModel/Route/宿主测试、相关模块门禁、`verifyArchitecture` 和 `git diff --check`。
@@ -181,7 +181,7 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 ### Task 22：验收通知权限重建与启动失败交接
 
-- [ ] 设备验收 `AppCompatDelegate.setApplicationLocales()` 配置重建与系统授权/拒绝弹窗组合，并确认 PermissionRequestHost arbiter lease 最终释放。分别断言 grant 经 `completeRuntimePermissionRequest(request)` 依据当前 pending owner 处理，deny 经 `onAction(RuntimePermissionDenied(request))` 按 token/`enableWhenGranted` 处理；验证新 Route 重绑 owner、旧 host/session 关闭后不会产生重复提交或过期反馈。现有 `PermissionRequestHostTest` 已覆盖宿主替换、旧结果拒绝、`HostUnavailable` 与 lease 收尾；这些 helper/宿主用例不能代替真实 Activity recreation。
+- [ ] 设备验收 `AppCompatDelegate.setApplicationLocales()` 配置重建与系统授权/拒绝弹窗组合，并确认 PermissionRequestHost arbiter lease 最终释放。分别断言 grant 经 `completeRuntimePermissionRequest(request)` 依据当前 pending owner 处理，deny 经 `onAction(RuntimePermissionDenied(request))` 按 token/`enableWhenGranted` 处理；验证新 Route 重绑 owner、旧 host/session 关闭后不会产生重复提交或过期反馈。共享 `PermissionRequestSession` 与进程级 arbiter 的边界已审查，见[权限中心架构](../../../platform/architecture/permission-center.md)；现有 `PermissionRequestHostTest` 已覆盖宿主替换、旧结果拒绝、`HostUnavailable` 与 lease 收尾，但这些用例不能代替真实 Activity recreation。
 - [ ] 补 `NotificationsRoute` 与 `PermissionRequestHost` 的联动回归，验证通知权限 `Busy` / `HostUnavailable` 各自提示、未启动后新 token 重试及 pending 清理；通用 `PermissionRequestSessionTest` 已覆盖 Busy/HostUnavailable 与 lease 生命周期，ViewModel 未启动重试见[审查记录](../../reviews/2026-11-11-notification-permission-not-started.md)，不重复增加同层 helper 测试。
 
 配置重建、token 与页面 owner 的当前实现见[通知权限审查记录](../../reviews/2026-11-11-notification-permission-not-started.md#配置重建与页面-owner)和[通知设置专题](../../../product/settings/notification-settings.md)；此 Task 只保留 locale/系统弹窗设备组合及 Busy/HostUnavailable Route/host 行为验收。
@@ -195,7 +195,7 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 
 ### Task 29：验收 App Password 草稿的真实宿主生命周期清理
 
-- [ ] 在连接设备或 AVD 后运行 `AppPasswordDialogCoordinatorLifecycleTest`，记录 API 与结果；再以真实 Activity 配置重建验证草稿按认证文档规定清空。现有 Coordinator/ViewModel 单测覆盖迟到输入、授权和操作结果 owner；Compose 仪器测试覆盖 Route 从组合中移除后清空旧 Coordinator、重新组合后建立空状态，但尚未设备执行，也不模拟 Activity recreation。实现合同和覆盖边界见[App Password 对话框生命周期审查](../../reviews/2026-11-11-app-password-dialog-lifecycle.md)。
+- [ ] 在连接设备或 AVD 后运行 `AppPasswordDialogCoordinatorLifecycleTest`，记录 API 与结果；再以真实 Activity 配置重建验证草稿按认证文档规定清空。现有 Coordinator/ViewModel 单测覆盖迟到输入、授权和操作结果 owner；Compose 仪器测试覆盖 Route 从组合中移除后清空旧 Coordinator、重新组合后建立空状态，但尚未设备执行，也不模拟 Activity recreation。Coordinator 的局部 state、敏感草稿和 `DisposableEffect` owner 已完成结构审查并保留，见[App Password 对话框生命周期审查](../../reviews/2026-11-11-app-password-dialog-lifecycle.md)。
 
 <a id="task-31"></a>
 

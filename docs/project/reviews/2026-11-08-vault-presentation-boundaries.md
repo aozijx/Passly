@@ -56,6 +56,12 @@ Detail 标签编辑以 `DetailTagEditorState` 作为 Route/Composable 消费的�
 
 `DetailRevealStore` 由 `DetailViewModel` 持有字段明文的擦除责任，`DetailUiState.revealedFields` 仅作为显示投影；隐藏、复制后清除、访问关闭或撤权时清理实际 `SensitiveValue`。`DetailRevisionRevealStore` 则由 `DetailRevisionWorkflow` 独立持有历史敏感值，供历史 reveal projection 使用并在值替换、页面关闭或清理时擦除。两者的 owner 不同，不合并成共享全局 Store；正式边界见[敏感数据读取与显示](../../platform/security/sensitive-data-access.md)和[条目修订历史](../../product/vault/entry-revision-history.md)。`DetailQrSessionTest`、`DetailRevealStoreTest` 与 `DetailRevisionRevealStoreTest` 源码分别覆盖请求撤销/擦除和 Store 擦除。本次仅核对源码，未重跑测试。
 
+## 2026-11-12 EntryEditorSeedCoordinator owner 审查
+
+`VaultGraphRegistration` 以 Vault graph 的 `NavBackStackEntry` 获取 `EntryEditorSeedCoordinator`，同一 graph owner 将它交给详情导航与各编辑目的地的 seed 消费/丢弃闭包。`onEditFullForm()` 经 `VaultNavigation` 调用 `navigateWithSeed()`；Coordinator 核对完整访问和认证对象，按 token 暂存完整 `Entry`，导航参数只带 token。`EntryEditorSeedStore` 以同步单槽保存 seed，token 匹配才允许消费或补偿清理；Coordinator 观察认证状态，在锁定/身份替换/自身销毁时清理未消费 seed。导航取消和 fatal `Error` 清理后继续传播，普通异常按原 token 清理并返回失败，旧导航不能清掉新 seed。
+
+保留该 Coordinator 与 graph-owned Store：它持有跨详情/编辑目的地的一次性交接、认证有效期和导航失败补偿；将其塞回 Route 会重复这些跨目的地责任，也会扩大 Route 对敏感 seed 的持有。当前完整合同见[完整表单编辑专题](../../product/vault/full-form-editing.md)。`EntryEditorSeedCoordinatorTest` 覆盖撤权/重认证、ViewModel 销毁、锁定、导航失败、旧 token 和取消/fatal 收尾；`EntryEditorSeedStoreTest` 覆盖单次消费、替换 token 和清理。本次核对源码与测试源码，未重跑；真实 Route/NavHost 导航与配置重建仍由主维护计划 Task 42 验收。
+
 ## 后续事项
 
 跨 Feature 的 ViewModel 职责审计仍由维护 TODO 的 Task 83 跟踪；本次 Vault 页面审查只关闭其 Vault 子范围，不代替 Task 83 的整体验收。

@@ -37,8 +37,9 @@ flowchart LR
 - feature 只能使用 `RuntimePermission`，不得拼写 `Manifest.permission` 或创建自己的 launcher。
 - `PermissionStatusReader` 返回 `GRANTED`、`DENIED` 或版本不适用的 `NOT_APPLICABLE`。
 - `PermissionRequestArbiter` 在整个进程中只允许一个系统权限弹窗 owner 持有 lease。
-- `PermissionRequestSession` 在主线程持有宿主的 `Idle / Pending / Closed` 状态与租约。
+- `PermissionRequestSession` 在主线程持有单个 host 的 `Idle / Pending / Closed` 状态和租约；它处理请求启动、结果消费与宿主关闭。
   正常结果在读取 rationale 和通知 feature 前释放租约；历史记录失败、launcher 失败以及宿主离开 Composition 都会释放。
+  `PermissionRequestArbiter` 只负责进程级弹窗互斥，Session 负责各 host 的请求和迟到结果隔离；不把两者合成一个全局状态 owner，也不让 Feature 复制 arbiter/session。
   已关闭宿主返回 `HostUnavailable`，重复关闭与迟到结果不会释放新宿主的租约，也不能再次通知 feature。
 - `rememberPermissionRequestHost` 按 owner、Activity 和服务依赖创建会话，并按会话隔离 Activity Result 注册。
   更换宿主会注销旧 launcher 并关闭旧会话；旧结果不会消费新请求。已失效 launcher 的平台异常返回 `HostUnavailable`，
