@@ -93,18 +93,12 @@ Task 3 继续 **retained**，属于尚未闭合的资源边界；本轮没有新
 
 ## Task 9：首次创建并固定设备 Argon2id 参数
 
-**状态：代码已接入；全新安装的一次性校准、持久化、认证路径读取及首次设置提示已实现。App 主源码编译通过；设备校准仍待验证。**
-
-**当前事实：** 全新安装进入应用时测量 64 MiB/3 次基线，选择参数并原子保存到 `bootstrap.pb`。主密码和恢复码共用该配置，解锁不校准。加密备份 v1 使用独立头部参数。没有参数回退或试参路径。
-
-**参数公开：** memory、iterations、parallelism、算法版本、salt 不属于秘密。允许读取它们是正常设计；攻击者通常本就知道应用默认值。安全目标是强口令、足够派生成本、参数完整性和派生前资源约束，不能把隐藏参数当安全边界。
+**状态：** 首次校准、参数持久化与认证路径读取已接入。当前参数合同见[密钥管理专题](../../../platform/security/key-management.md#参数与清理的已知边界)；此前编译、测试和 lint 结果见[参数接入审查记录](../../reviews/2026-11-12-authentication-kdf-parameter-rollout.md)。
 
 - [ ] 做真实低内存和热状态设备验证，确认 128 MiB 选择不会造成进程内存压力；测量启动等待时间和 KDF 串行并发预算。
 - [ ] 新信封写入成功为 commit point；提交前失败不得覆盖当前有效信封，提交后取消/availability refresh 失败按持久事实恢复。资源不足时明确报告失败，不静默改参。
 - [ ] 验证新参数往返、进程重启后读取、参数篡改/缺失/超限在派生前拒绝、新合同下不变的 Vault DEK、改密失败重试和敏感缓冲清理。
 - [ ] 为 `ProtoVaultBootstrapStore` 增加真实 DataStore 持久化往返及并发首次写入测试；当前纯参数与信封 AAD 测试未覆盖 Proto 字段 10 的落盘、重启读取和 first-writer-wins 合同。
-
-**本次验证：** `:domain:test` 187 项、`:core:testDebugUnitTest` 80 项、`:security:testDebugUnitTest` 149 项及 `:data:testDebugUnitTest` 通过；`:core:ktlintCheck`、`:security:ktlintCheck`、`:data:ktlintCheck`、`verifyArchitecture`、`:app:processDebugResources`、`:app:compileDebugKotlin` 通过。App 单测编译被并行 Autofill 迁移下 `RecoveryModeBoundaryTest` 访问 `internal StartAutofillInteraction` 的错误阻断。全仓 KtLint 被其他工作流的 Autofill、Scanner、诊断文件问题阻断；本次改动文件在报告中无违例。无连接设备，未做首次启动时长、低内存和实际解锁仪器验证。
 
 <a id="task-10"></a>
 

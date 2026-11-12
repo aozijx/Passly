@@ -172,6 +172,7 @@ ADR 记录决策原因，平台/功能专题页说明当前实现。已发布 AD
 - [PageEffects owner 审查](project/reviews/2026-11-12-page-effects-owner.md)
 - [Scanner 相机与结果 owner 审查](project/reviews/2026-11-12-scanner-camera-and-result-owners.md)
 - [安全数据库重置 owner 审查](project/reviews/2026-11-12-secure-database-reset-owner.md)
+- [认证 KDF 参数首次接入审查](project/reviews/2026-11-12-authentication-kdf-parameter-rollout.md)
 - [数据库撤权线性化审查](project/reviews/2026-11-11-database-revocation-linearization.md)
 - [Vault 列表 owner 收敛审查](project/reviews/2026-11-11-vault-list-owner-followup.md)
 - [附件 GC 与提交后取消审查](project/reviews/2026-11-11-attachment-gc-postcommit-review.md)
