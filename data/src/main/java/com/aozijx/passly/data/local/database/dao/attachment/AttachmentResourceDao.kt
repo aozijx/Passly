@@ -29,18 +29,6 @@ interface AttachmentResourceDao {
     )
     suspend fun getUnreferenced(): List<AttachmentResourceEntity>
 
-    @Query("UPDATE attachment_resources SET lifecycleState = :state WHERE resourceId IN (:resourceIds)")
-    suspend fun updateState(
-        resourceIds: List<String>,
-        state: String,
-    ): Int
-
-    @Query("UPDATE attachment_resources SET lifecycleState = :state WHERE resourceId = :resourceId")
-    suspend fun updateState(
-        resourceId: String,
-        state: String,
-    ): Int
-
     @Query(
         """
         UPDATE attachment_resources
