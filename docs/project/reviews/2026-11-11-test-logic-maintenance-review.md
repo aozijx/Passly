@@ -28,6 +28,10 @@ OTP generation、Runtime lease/失效和旧 Detail 刷新测试迁移的细节�
 
 历史执行记录：Task 34/36 的 `:data:compileDebugKotlin`、`:data:compileDebugAndroidTestKotlin`、`verifyArchitecture` 与目标文件 `git diff --check` 曾通过；初始化编排定向 JVM 5/5、`:data:testDebugUnitTest` 177/177 与 `:data:compileDebugAndroidTestKotlin` 曾通过。上述均为计划中记录的 2026-11-08/11-11 结果，本次未重跑；Android instrumentation 未在设备执行，仍由主计划 Task 34/36 跟踪。
 
+<a id="task-34-36-device-install-attempt"></a>
+
+2026-11-11 随后连接 Huawei OXF-AN00 尝试 App instrumentation 时，设备 `/data/user/0` 仅余 616 MB，安装因 `Requested internal only, but not enough space` 失败；因此 Room/Revision instrumentation 当次没有执行。Data AndroidTest 源集编译已通过。此为当次设备环境记录，不代表当前可用空间或后续运行结果。
+
 ## 历史验证边界
 
 主计划迁移前的 2026-11-11 记录报告了全 JVM 测试通过及 App/Core/Data/Security/Autofill AndroidTest 源集编译通过；同一记录说明没有连接设备，Android instrumentation 未执行。此处保留为当日历史执行记录，本次归档没有重跑测试；不能据此判定全仓测试逻辑审查完成或设备行为通过。

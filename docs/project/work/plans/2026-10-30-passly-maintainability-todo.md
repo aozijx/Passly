@@ -143,14 +143,14 @@ Session 撤权顺序、数据库准入与 Room observation 的当前合同，以
 <a id="task-34"></a>
 
 ### Task 34：验收 Activity 查询与修订恢复的 Room 行为
-- [ ] 在有足够可用空间的设备上运行 `RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest`。2026-11-11 Huawei OXF-AN00 可连接但 `/data/user/0` 仅余 616 MB；App instrumentation 安装报 `Requested internal only, but not enough space`，因此本项设备运行尚未验证；Data AndroidTest 源集编译已通过。
+- [ ] 在设备上运行 `RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest`，记录设备/API 和 SQLCipher 行为。此前的安装失败证据见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#task-34-36-device-install-attempt)。
 
 实现调用闭包、Activity DAO 收敛及历史构建验证见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#activity-与-revision-dao-收敛证据)；本项只跟踪尚未运行的 Room/修订恢复设备验收。
 
 <a id="task-36"></a>
 
 ### Task 36：验收修订 DAO 生命周期与重建行为
-- [ ] 在可用设备上运行 Revision DAO 专属 instrumentation：`EntryRevisionLifecycleDaoTest` 与 `EntryRevisionHistoryRebuilderTest`。`RoomObservationSessionTest` 和 `EntryUpdateAndRevisionRestoreTransactionTest` 由 Task 34 跟踪，避免在两项中重复记同一设备运行；2026-11-11 Huawei OXF-AN00 可连接但 `/data/user/0` 仅余 616 MB，App instrumentation 安装报 `Requested internal only, but not enough space`；Data AndroidTest 源集编译已通过，设备运行时数据库行为尚未验证。
+- [ ] 在设备上运行 Revision DAO 专属 instrumentation：`EntryRevisionLifecycleDaoTest` 与 `EntryRevisionHistoryRebuilderTest`，记录设备/API 和结果。`RoomObservationSessionTest` 与 `EntryUpdateAndRevisionRestoreTransactionTest` 由 Task 34 跟踪；此前的安装失败证据见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#task-34-36-device-install-attempt)。
 
 Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#activity-与-revision-dao-收敛证据)；本项只跟踪尚未运行的 Data instrumentation 设备验收。
 
