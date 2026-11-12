@@ -3,8 +3,8 @@ package com.aozijx.passly.domain.entry.policy
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
@@ -97,16 +97,20 @@ class DefaultEntryFieldReader : EntryFieldReader {
             }
 
             FieldKey.OTP_DIGITS -> {
-                otp?.digits?.toString()
+                when (otp) {
+                    is OtpConfig.Totp -> otp.digits.toString()
+                    is OtpConfig.Hotp -> otp.digits.toString()
+                    is OtpConfig.Steam -> SteamDefinition.DIGITS.toString()
+                    null -> null
+                }
             }
 
             FieldKey.OTP_ALGORITHM -> {
-                otp?.algorithm?.let { algorithm ->
-                    when (algorithm) {
-                        OtpHashAlgorithm.SHA1 -> "SHA1"
-                        OtpHashAlgorithm.SHA256 -> "SHA256"
-                        OtpHashAlgorithm.SHA512 -> "SHA512"
-                    }
+                when (otp) {
+                    is OtpConfig.Totp -> otp.algorithm.storageKey()
+                    is OtpConfig.Hotp -> otp.algorithm.storageKey()
+                    is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm.storageKey()
+                    null -> null
                 }
             }
 
@@ -237,3 +241,10 @@ class DefaultEntryFieldReader : EntryFieldReader {
         }
     }
 }
+
+private fun OtpHashAlgorithm.storageKey(): String =
+    when (this) {
+        OtpHashAlgorithm.SHA1 -> "SHA1"
+        OtpHashAlgorithm.SHA256 -> "SHA256"
+        OtpHashAlgorithm.SHA512 -> "SHA512"
+    }

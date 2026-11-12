@@ -19,15 +19,17 @@ class OtpFormFeedbackTest {
         val feedback =
             OtpFormState(
                 secret = "!",
-                type = OtpType.HOTP,
-                counter = "not a number",
-                digits = "3",
+                configuration = OtpFormConfiguration.Hotp(counter = "not a number", digits = "3"),
             ).feedback
 
         assertEquals(OtpFieldFeedbackUiState.Invalid, feedback.secret)
-        assertEquals(OtpFieldFeedbackUiState.Invalid, feedback.counter)
-        assertEquals(OtpFieldFeedbackUiState.Hidden, feedback.period)
-        assertEquals(OtpFieldFeedbackUiState.Invalid, feedback.digits)
+        assertEquals(
+            OtpConfigurationFeedbackUiState.Hotp(
+                digits = OtpFieldFeedbackUiState.Invalid,
+                counter = OtpFieldFeedbackUiState.Invalid,
+            ),
+            feedback.configuration,
+        )
     }
 
     @Test
@@ -35,20 +37,24 @@ class OtpFormFeedbackTest {
         val feedback =
             OtpFormState(
                 secret = "JBSWY3DPEHPK3PXP",
-                period = "0",
-                digits = "9",
+                configuration = OtpFormConfiguration.Totp(periodSeconds = "0", digits = "9"),
             ).feedback
 
         assertEquals(OtpFieldFeedbackUiState.Hidden, feedback.secret)
-        assertEquals(OtpFieldFeedbackUiState.Hidden, feedback.counter)
-        assertEquals(OtpFieldFeedbackUiState.Invalid, feedback.period)
-        assertEquals(OtpFieldFeedbackUiState.Invalid, feedback.digits)
+        assertEquals(
+            OtpConfigurationFeedbackUiState.Totp(
+                digits = OtpFieldFeedbackUiState.Invalid,
+                period = OtpFieldFeedbackUiState.Invalid,
+            ),
+            feedback.configuration,
+        )
     }
 
     @Test
     fun `valid configuration has no field feedback`() {
         val feedback = OtpFormState(secret = "JBSWY3DPEHPK3PXP").feedback
 
-        assertEquals(OtpFormFeedbackUiState(), feedback)
+        assertEquals(OtpFieldFeedbackUiState.Hidden, feedback.secret)
+        assertEquals(OtpConfigurationFeedbackUiState.Totp(), feedback.configuration)
     }
 }

@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
-import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
@@ -48,12 +48,15 @@ class OtpFormMapperTest {
         assertEquals("Example", form.issuer)
         assertEquals("ada", form.accountName)
         assertEquals("JBSWY3DPEHPK3PXP", form.secret)
-        assertEquals("30", form.period)
-        assertEquals("8", form.digits)
-        assertEquals(OtpType.HOTP, form.type)
-        assertEquals(OtpHashAlgorithm.SHA512, form.algorithm)
-        assertEquals(OtpSecretEncoding.BASE32, form.encoding)
-        assertEquals("99", form.counter)
+        assertEquals(
+            OtpFormConfiguration.Hotp(
+                algorithm = OtpHashAlgorithm.SHA512,
+                digits = "8",
+                counter = "99",
+                encoding = OtpSecretEncoding.BASE32,
+            ),
+            form.configuration,
+        )
         assertEquals("", form.uriText)
         assertEquals("note", form.notes)
         assertEquals("work", form.tags)
@@ -79,11 +82,13 @@ class OtpFormMapperTest {
                 issuer = " Example Inc ",
                 accountName = " user@example.com ",
                 secret = " Zm9v ",
-                period = "60",
-                digits = "8",
-                algorithm = OtpHashAlgorithm.SHA256,
-                encoding = OtpSecretEncoding.BASE64,
-                counter = "99",
+                configuration =
+                    OtpFormConfiguration.Totp(
+                        periodSeconds = "60",
+                        digits = "8",
+                        algorithm = OtpHashAlgorithm.SHA256,
+                        encoding = OtpSecretEncoding.BASE64,
+                    ),
                 tags = " work, otp ",
                 notes = " primary token ",
             ).toEntryDraft()
@@ -109,8 +114,7 @@ class OtpFormMapperTest {
             OtpFormState(
                 title = "HOTP",
                 secret = "JBSWY3DPEHPK3PXP",
-                type = OtpType.HOTP,
-                counter = Long.MAX_VALUE.toString(),
+                configuration = OtpFormConfiguration.Hotp(counter = Long.MAX_VALUE.toString()),
             ).toEntryDraft()
 
         assertEquals(EntryDraftValue.LongNumber(Long.MAX_VALUE), draft[FieldKey.OTP_COUNTER])
@@ -123,9 +127,7 @@ class OtpFormMapperTest {
             OtpFormState(
                 title = "Steam",
                 secret = "JBSWY3DPEHPK3PXP",
-                type = OtpType.STEAM,
-                algorithm = OtpHashAlgorithm.SHA1,
-                digits = "5",
+                configuration = OtpFormConfiguration.Steam(),
             ).toEntryDraft()
 
         assertEquals(EntryDraftValue.Number(5), draft[FieldKey.OTP_DIGITS])
@@ -137,11 +139,13 @@ class OtpFormMapperTest {
     @Test
     fun toEntryDraft_rejectsInvalidNumbersInsteadOfDefaulting() {
         val valid = OtpFormState(title = "OTP", secret = "JBSWY3DPEHPK3PXP")
-        for (form in listOf(
-            valid.copy(period = "bad"),
-            valid.copy(digits = "bad"),
-            valid.copy(type = OtpType.HOTP, counter = "bad"),
-        )) {
+        val invalidForms =
+            listOf(
+                valid.copy(configuration = OtpFormConfiguration.Totp(periodSeconds = "bad")),
+                valid.copy(configuration = OtpFormConfiguration.Totp(digits = "bad")),
+                valid.copy(configuration = OtpFormConfiguration.Hotp(counter = "bad")),
+            )
+        for (form in invalidForms) {
             assertThrows(IllegalArgumentException::class.java) { form.toEntryDraft() }
         }
     }

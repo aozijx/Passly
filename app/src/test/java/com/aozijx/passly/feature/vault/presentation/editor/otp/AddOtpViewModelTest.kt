@@ -272,12 +272,12 @@ class AddOtpViewModelTest {
             val valid = OtpFormState(title = "Mail", secret = "JBSWY3DPEHPK3PXP")
             val invalidForms =
                 listOf(
-                    valid.copy(period = "broken"),
-                    valid.copy(period = ""),
-                    valid.copy(digits = "broken"),
-                    valid.copy(digits = "9"),
-                    valid.copy(type = OtpType.HOTP, counter = "broken"),
-                    valid.copy(type = OtpType.HOTP, counter = ""),
+                    valid.copy(configuration = OtpFormConfiguration.Totp(periodSeconds = "broken")),
+                    valid.copy(configuration = OtpFormConfiguration.Totp(periodSeconds = "")),
+                    valid.copy(configuration = OtpFormConfiguration.Totp(digits = "broken")),
+                    valid.copy(configuration = OtpFormConfiguration.Totp(digits = "9")),
+                    valid.copy(configuration = OtpFormConfiguration.Hotp(counter = "broken")),
+                    valid.copy(configuration = OtpFormConfiguration.Hotp(counter = "")),
                     valid.copy(secret = "INVALID!"),
                 )
             for (form in invalidForms) {
@@ -315,8 +315,7 @@ class AddOtpViewModelTest {
                 OtpFormState(
                     title = "Mail",
                     secret = " my====== ",
-                    digits = "7",
-                    period = "60",
+                    configuration = OtpFormConfiguration.Totp(digits = "7", periodSeconds = "60"),
                 ),
             )
             viewModel.onAction(AddOtpAction.Save)
@@ -330,8 +329,8 @@ class AddOtpViewModelTest {
                         ?.config,
                 )
             assertEquals("MY", config.secret)
-            assertEquals(7, config.digits)
-            assertEquals(60, (config as OtpConfig.Totp).periodSeconds)
+            assertEquals(7, (config as OtpConfig.Totp).digits)
+            assertEquals(60, config.periodSeconds)
             assertEquals("", viewModel.uiState.value.form.secret)
         }
 
@@ -411,11 +410,12 @@ class AddOtpViewModelTest {
             )
 
         val roundTripped = requireNotNull(entry.secret.otp?.config)
+        val roundTrippedHotp = roundTripped as OtpConfig.Hotp
         assertEquals(config.type, roundTripped.type)
         assertEquals(config.secret, roundTripped.secret)
-        assertEquals(config.algorithm, roundTripped.algorithm)
-        assertEquals(config.digits, roundTripped.digits)
-        assertEquals(config.counter, (roundTripped as OtpConfig.Hotp).counter)
+        assertEquals(config.algorithm, roundTrippedHotp.algorithm)
+        assertEquals(config.digits, roundTrippedHotp.digits)
+        assertEquals(config.counter, roundTrippedHotp.counter)
         assertEquals(config.encoding, roundTripped.encoding)
         assertEquals(config.issuer, roundTripped.issuer)
         assertEquals(config.accountName, roundTripped.accountName)
@@ -428,9 +428,9 @@ class AddOtpViewModelTest {
         viewModel.onAction(AddOtpAction.TitleChanged("OTP"))
         viewModel.onAction(AddOtpAction.SecretChanged("MY"))
         viewModel.onAction(AddOtpAction.TypeChanged(OtpType.STEAM))
-        assertEquals("5", viewModel.uiState.value.form.digits)
+        assertTrue(viewModel.uiState.value.form.configuration is OtpFormConfiguration.Steam)
         viewModel.onAction(AddOtpAction.TypeChanged(OtpType.HOTP))
-        assertEquals("6", viewModel.uiState.value.form.digits)
+        assertEquals("6", (viewModel.uiState.value.form.configuration as OtpFormConfiguration.Hotp).digits)
         assertTrue(viewModel.uiState.value.canSave)
     }
 
@@ -451,11 +451,24 @@ class AddOtpViewModelTest {
         onAction(AddOtpAction.AccountNameChanged(form.accountName))
         onAction(AddOtpAction.SecretChanged(form.secret))
         onAction(AddOtpAction.TypeChanged(form.type))
-        onAction(AddOtpAction.AlgorithmChanged(form.algorithm))
-        onAction(AddOtpAction.EncodingChanged(form.encoding))
-        onAction(AddOtpAction.PeriodChanged(form.period))
-        onAction(AddOtpAction.DigitsChanged(form.digits))
-        onAction(AddOtpAction.CounterChanged(form.counter))
+        onAction(AddOtpAction.EncodingChanged(form.configuration.encoding))
+        when (val configuration = form.configuration) {
+            is OtpFormConfiguration.Totp -> {
+                onAction(AddOtpAction.AlgorithmChanged(configuration.algorithm))
+                onAction(AddOtpAction.PeriodChanged(configuration.periodSeconds))
+                onAction(AddOtpAction.DigitsChanged(configuration.digits))
+            }
+
+            is OtpFormConfiguration.Hotp -> {
+                onAction(AddOtpAction.AlgorithmChanged(configuration.algorithm))
+                onAction(AddOtpAction.DigitsChanged(configuration.digits))
+                onAction(AddOtpAction.CounterChanged(configuration.counter))
+            }
+
+            is OtpFormConfiguration.Steam -> {
+                Unit
+            }
+        }
         onAction(AddOtpAction.UriChanged(form.uriText))
     }
 

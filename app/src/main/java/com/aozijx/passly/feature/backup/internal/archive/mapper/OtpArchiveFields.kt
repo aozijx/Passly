@@ -34,13 +34,13 @@ internal fun OtpConfig.toOtpArchiveFields(): List<BackupFieldRecord> =
             }
         put(FieldKey.OTP_TYPE, BackupFieldValue.text(typeKey))
         putText(FieldKey.OTP_SECRET, secret)
-        val algorithmKey =
-            when (algorithm) {
-                OtpHashAlgorithm.SHA1 -> "sha1"
-                OtpHashAlgorithm.SHA256 -> "sha256"
-                OtpHashAlgorithm.SHA512 -> "sha512"
+        val (algorithm, digits) =
+            when (this@toOtpArchiveFields) {
+                is OtpConfig.Totp -> algorithm to digits
+                is OtpConfig.Hotp -> algorithm to digits
+                is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm to SteamDefinition.DIGITS
             }
-        put(FieldKey.OTP_ALGORITHM, BackupFieldValue.text(algorithmKey))
+        put(FieldKey.OTP_ALGORITHM, BackupFieldValue.text(algorithm.archiveKey))
         put(FieldKey.OTP_DIGITS, BackupFieldValue.integer(digits))
         when (this@toOtpArchiveFields) {
             is OtpConfig.Totp -> put(FieldKey.OTP_PERIOD, BackupFieldValue.integer(periodSeconds))
@@ -56,3 +56,11 @@ internal fun OtpConfig.toOtpArchiveFields(): List<BackupFieldRecord> =
         putText(FieldKey.OTP_ISSUER, issuer)
         putText(FieldKey.OTP_ACCOUNT_NAME, accountName)
     }
+
+private val OtpHashAlgorithm.archiveKey: String
+    get() =
+        when (this) {
+            OtpHashAlgorithm.SHA1 -> "sha1"
+            OtpHashAlgorithm.SHA256 -> "sha256"
+            OtpHashAlgorithm.SHA512 -> "sha512"
+        }

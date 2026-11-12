@@ -11,7 +11,9 @@ enum class OtpOutputFormat {
     STEAM_ALPHABET,
 }
 
-enum class OtpAuthUriKind(val schemeAuthority: String) {
+enum class OtpAuthUriKind(
+    val schemeAuthority: String,
+) {
     TIME_BASED("totp"),
     COUNTER_BASED("hotp"),
 }
@@ -30,18 +32,17 @@ enum class OtpSecretEncoding {
 /** Configuration variants contain only the parameters their OTP algorithm consumes. */
 sealed interface OtpConfig {
     val type: OtpType
+
     /** Null means the secret remains in separate field-level encrypted storage. */
     val secret: String?
-    val algorithm: OtpHashAlgorithm
-    val digits: Int
     val encoding: OtpSecretEncoding
     val issuer: String?
     val accountName: String?
 
     data class Totp(
         override val secret: String? = null,
-        override val algorithm: OtpHashAlgorithm = TotpDefinition.defaultAlgorithm,
-        override val digits: Int = TotpDefinition.DEFAULT_DIGITS,
+        val algorithm: OtpHashAlgorithm = TotpDefinition.defaultAlgorithm,
+        val digits: Int = TotpDefinition.DEFAULT_DIGITS,
         val periodSeconds: Int = TotpDefinition.DEFAULT_PERIOD_SECONDS,
         override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
         override val issuer: String? = null,
@@ -55,10 +56,11 @@ sealed interface OtpConfig {
             require(periodSeconds > 0) { "TOTP period must be positive" }
         }
     }
+
     data class Hotp(
         override val secret: String? = null,
-        override val algorithm: OtpHashAlgorithm = HotpDefinition.defaultAlgorithm,
-        override val digits: Int = HotpDefinition.DEFAULT_DIGITS,
+        val algorithm: OtpHashAlgorithm = HotpDefinition.defaultAlgorithm,
+        val digits: Int = HotpDefinition.DEFAULT_DIGITS,
         val counter: Long = HotpDefinition.INITIAL_COUNTER,
         override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
         override val issuer: String? = null,
@@ -80,8 +82,6 @@ sealed interface OtpConfig {
         override val accountName: String? = null,
     ) : OtpConfig {
         override val type = OtpType.STEAM
-        override val algorithm = SteamDefinition.defaultAlgorithm
-        override val digits = SteamDefinition.DIGITS
 
         init {
             require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }

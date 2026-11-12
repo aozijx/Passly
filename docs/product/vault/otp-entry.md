@@ -5,7 +5,7 @@
 手动输入经 Domain 的 `OtpConfigInput.parse` 返回 `Valid(config)` 或 `Invalid(fields)`；页面状态、草稿映射和最终写入使用同一规则。数字输入为空、损坏或溢出时禁止保存，不补成默认配置。初始表单的 6 位、30 秒和计数器 0
 是可见的初始值，用户清空后必须重新填写。
 
-`OtpConfig` 是算法专属的互斥模型：`Totp` 必须有正周期，`Hotp` 必须有非负计数器，`Steam` 的 SHA1、5 位和 30 秒规则由类型固定派生。运行时生成参数也按这三种算法分别建模；新增 OTP 算法应新增自己的配置与派生分支，不把专属字段塞回可空联合参数。Data 只在既有序列化 DTO 边界把类型参数映射到 nullable 的历史存储列，其他层不依赖这些存储形状。
+`OtpConfig` 是算法专属的互斥模型：`Totp` 只携带算法、位数和周期，`Hotp` 只携带算法、位数和计数器，`Steam` 不携带可配置算法或位数，其固定值由 `SteamDefinition` 派生。Domain 输入和 Presentation 表单也分别用 TOTP、HOTP、Steam 变体承载原始字段，不再同时保存周期与计数器。每种 OTP 的默认值、可用算法、位数规则及配置文件分属自己的定义；新增类型应拥有自己的配置和派生逻辑，再接入稳定类型键、归档和 UI 的穷尽映射。Data 只在序列化 DTO 边界把每种配置映射到现有 nullable 存储列，其他层不依赖这些存储形状。
 
 - TOTP/HOTP：位数为 6–8，保留项目的 7 位支持。
 - TOTP：周期为可表示为 Int 的正整数秒数；不读取隐藏的 HOTP counter。
@@ -33,7 +33,7 @@ URI/扫码提示只保留当前输入请求的最新结果，在消费时核对�
 
 OTP 编辑表单通过字段级 `AddOtpAction.FormMutation` 修改当前状态，不从 Composable 回传整份 `OtpFormState`。`AddOtpViewModel` 先验证 `EditorWriteSession` 和编辑阶段，再由 `OtpFormReducer.reduce(current.form, mutation)` 产生下一状态。切换 OTP 类型时集中应用 Steam、TOTP、HOTP 默认值；手动 URI 与扫码解析成功则使用 `ConfigApplied` 映射配置，非法 URI 保留用户已输入字段。更新已有 OTP 并成功写入后，ViewModel 调用 `OtpCodeRuntimePort.entryChanged(entryId)` 使活动 Runtime 重新读取配置；新建条目不走这条编辑失效路径。
 
-表单由 `OtpFormState` 投影类型专属字段能力：只有 HOTP 使用 counter 字段，Steam 禁止编辑固定参数；Composable 读取这些属性，不重复按 OTP 类型维护另一套启用判断。表单值和页面加载/保存阶段由 `AddOtpEditorUiState` 持有。
+`OtpFormState.configuration` 直接持有互斥的 TOTP、HOTP 或 Steam 表单值；对应 Composable 只读取该变体并显示它拥有的字段。Steam 没有可编辑算法参数，因此不渲染周期、计数器、算法或位数输入。表单值和页面加载/保存阶段由 `AddOtpEditorUiState` 持有。
 
 创建和归档读取共用 Domain 的参数规则；原生恢复校验合法性后保留密钥表示和身份元数据，
 不套用手动输入的规范化。没有批量改写既有条目。归档缺省参数与兼容隔离见[Passly Archive v1](../backup/passly-archive-v1.md)。

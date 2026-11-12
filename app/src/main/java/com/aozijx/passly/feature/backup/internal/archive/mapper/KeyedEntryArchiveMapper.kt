@@ -23,12 +23,13 @@ import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
+import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
-import com.aozijx.passly.domain.entry.model.otp.OtpFactorDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
 import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 import com.aozijx.passly.feature.backup.internal.archive.BackupArchiveKeyRegistry
 import com.aozijx.passly.feature.backup.internal.archive.model.BackupCustomFieldValue
@@ -55,27 +56,43 @@ internal object KeyedEntryArchiveMapper {
     fun readOtpConfig(fields: Map<String, BackupFieldValue>): OtpConfig {
         val type = fields.text(FieldKey.OTP_TYPE).toOtpType()
         val algorithm = fields.text(FieldKey.OTP_ALGORITHM).toOtpAlgorithm()
-        val digits = fields.integer(FieldKey.OTP_DIGITS) ?: OtpTypeDefinitions[type].defaultDigits
-        val period = fields.integer(FieldKey.OTP_PERIOD)
-        val counter = fields.long(FieldKey.OTP_COUNTER)
-        val factor = OtpTypeDefinitions[type].factor
-        val parsedPeriod =
-            when (factor) {
-                is OtpFactorDefinition.Time -> period ?: factor.defaultPeriodSeconds
-                is OtpFactorDefinition.Counter -> period
-            }
-        val parsedCounter = counter
-        val invalidParameters = OtpConfigValidation.validateParameters(type, algorithm, digits, parsedPeriod, parsedCounter)
-        require(invalidParameters.isEmpty()) { "Invalid OTP archive parameters" }
         val secret = fields.text(FieldKey.OTP_SECRET)
         val encoding = fields.text(FieldKey.OTP_ENCODING).toOtpEncoding()
         val issuer = fields.text(FieldKey.OTP_ISSUER)
         val accountName = fields.text(FieldKey.OTP_ACCOUNT_NAME)
+        val period = fields.integer(FieldKey.OTP_PERIOD)
+        val counter = fields.long(FieldKey.OTP_COUNTER)
         val config =
             when (type) {
-                OtpType.TOTP -> OtpConfig.Totp(secret, algorithm, digits, requireNotNull(parsedPeriod), encoding, issuer, accountName)
-                OtpType.HOTP -> OtpConfig.Hotp(secret, algorithm, digits, requireNotNull(parsedCounter), encoding, issuer, accountName)
-                OtpType.STEAM -> OtpConfig.Steam(secret, encoding, issuer, accountName)
+                OtpType.TOTP -> {
+                    val digits = fields.integer(FieldKey.OTP_DIGITS) ?: TotpDefinition.DEFAULT_DIGITS
+                    val totpPeriod = period ?: TotpDefinition.DEFAULT_PERIOD_SECONDS
+                    val invalid = OtpConfigValidation.validateTotp(algorithm, digits, totpPeriod)
+                    require(counter == null && invalid.isEmpty()) { "Invalid TOTP archive parameters" }
+                    OtpConfig.Totp(secret, algorithm, digits, totpPeriod, encoding, issuer, accountName)
+                }
+
+                OtpType.HOTP -> {
+                    val digits = fields.integer(FieldKey.OTP_DIGITS) ?: HotpDefinition.DEFAULT_DIGITS
+                    val hotpCounter = requireNotNull(counter) { "HOTP archive counter is missing" }
+                    val invalid = OtpConfigValidation.validateHotp(algorithm, digits, hotpCounter)
+                    require(period == null && invalid.isEmpty()) { "Invalid HOTP archive parameters" }
+                    OtpConfig.Hotp(secret, algorithm, digits, hotpCounter, encoding, issuer, accountName)
+                }
+
+                OtpType.STEAM -> {
+                    val digits = fields.integer(FieldKey.OTP_DIGITS) ?: SteamDefinition.DIGITS
+                    val steamPeriod = period ?: SteamDefinition.PERIOD_SECONDS
+                    val invalid =
+                        buildSet {
+                            if (digits != SteamDefinition.DIGITS) add(FieldKey.OTP_DIGITS)
+                            if (steamPeriod != SteamDefinition.PERIOD_SECONDS) add(FieldKey.OTP_PERIOD)
+                            if (algorithm !in SteamDefinition.supportedAlgorithms) add(FieldKey.OTP_ALGORITHM)
+                            if (counter != null) add(FieldKey.OTP_COUNTER)
+                        }
+                    require(invalid.isEmpty()) { "Invalid Steam archive parameters" }
+                    OtpConfig.Steam(secret, encoding, issuer, accountName)
+                }
             }
         require(OtpConfigValidation.validate(config).isEmpty()) { "Invalid OTP archive configuration" }
         return config

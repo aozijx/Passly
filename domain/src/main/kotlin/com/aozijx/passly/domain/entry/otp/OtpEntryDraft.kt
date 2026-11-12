@@ -5,8 +5,8 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
 /** A creation draft from an existing configuration; identity metadata is not form-normalized. */
@@ -21,17 +21,29 @@ fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft
                 FieldKey.OTP_SECRET,
                 EntryDraftValue.Text(requireNotNull(secret) { "OTP secret is unavailable" }),
             ).withValue(definition, FieldKey.OTP_TYPE, EntryDraftValue.Text(OtpTypeDefinitions[type].key))
-            .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digits))
-            .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(algorithm.name))
             .withValue(definition, FieldKey.OTP_ENCODING, EntryDraftValue.Text(encoding.name))
 
     draft =
         when (this) {
-            is OtpConfig.Totp -> draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(periodSeconds))
-            is OtpConfig.Hotp -> draft.withValue(definition, FieldKey.OTP_COUNTER, EntryDraftValue.LongNumber(counter))
+            is OtpConfig.Totp -> {
+                draft
+                    .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digits))
+                    .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(algorithm.name))
+                    .withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(periodSeconds))
+            }
+
+            is OtpConfig.Hotp -> {
+                draft
+                    .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(digits))
+                    .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(algorithm.name))
+                    .withValue(definition, FieldKey.OTP_COUNTER, EntryDraftValue.LongNumber(counter))
+            }
+
             is OtpConfig.Steam -> {
-                val period = SteamDefinition.PERIOD_SECONDS
-                draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(period))
+                draft
+                    .withValue(definition, FieldKey.OTP_DIGITS, EntryDraftValue.Number(SteamDefinition.DIGITS))
+                    .withValue(definition, FieldKey.OTP_ALGORITHM, EntryDraftValue.Text(SteamDefinition.defaultAlgorithm.name))
+                    .withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(SteamDefinition.PERIOD_SECONDS))
             }
         }
     issuer?.takeIf(String::isNotBlank)?.let {
@@ -44,9 +56,7 @@ fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft
 }
 
 /** Display-only trimming must not change the stored issuer or account. */
-fun OtpConfig.suggestedEntryTitle(
-    fallback: String = OtpTypeDefinitions[type].defaultEntryTitle,
-): String =
+fun OtpConfig.suggestedEntryTitle(fallback: String = OtpTypeDefinitions[type].defaultEntryTitle): String =
     listOfNotNull(
         issuer?.trim()?.takeIf(String::isNotEmpty),
         accountName?.trim()?.takeIf(String::isNotEmpty),

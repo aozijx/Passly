@@ -15,13 +15,15 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
+import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpFactorDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
+import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
 
 /** Pure conversion with input checks; callers own complete credential validation, identity creation, access and persistence. */
 class EntryDraftMaterializer {
@@ -92,35 +94,55 @@ class EntryDraftMaterializer {
         identity: EntryIdentity,
     ): Entry {
         val type = draft.otpType()
-        val algorithm = draft.otpAlgorithm()
         val encoding = draft.otpEncoding()
-        val typeDefinition = OtpTypeDefinitions[type]
-        val factor = typeDefinition.factor
-        val digits = draft.number(FieldKey.OTP_DIGITS) ?: typeDefinition.defaultDigits
-        val period =
-            when (factor) {
-                is OtpFactorDefinition.Time -> draft.number(FieldKey.OTP_PERIOD) ?: factor.defaultPeriodSeconds
-                is OtpFactorDefinition.Counter -> null
-            }
-        val counter =
-            when (factor) {
-                is OtpFactorDefinition.Time -> null
-                is OtpFactorDefinition.Counter -> draft.longNumber(FieldKey.OTP_COUNTER) ?: factor.initialValue
-            }
-        val invalidParameters = OtpConfigValidation.validateParameters(type, algorithm, digits, period, counter)
-        if (invalidParameters.isNotEmpty()) throw InvalidEntryDraft(invalidParameters)
         val secret = draft.text(FieldKey.OTP_SECRET)
         val issuer = draft.text(FieldKey.OTP_ISSUER)
         val accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME)
         val config =
             when (type) {
-                OtpType.TOTP ->
-                    OtpConfig.Totp(secret, algorithm, digits, requireNotNull(period), encoding, issuer, accountName)
+                OtpType.TOTP -> {
+                    val algorithm = draft.otpAlgorithm()
+                    val digits = draft.number(FieldKey.OTP_DIGITS) ?: TotpDefinition.DEFAULT_DIGITS
+                    val period = draft.number(FieldKey.OTP_PERIOD) ?: TotpDefinition.DEFAULT_PERIOD_SECONDS
+                    val invalid =
+                        buildSet {
+                            addAll(OtpConfigValidation.validateTotp(algorithm, digits, period))
+                            if (draft.longNumber(FieldKey.OTP_COUNTER) != null) add(FieldKey.OTP_COUNTER)
+                        }
+                    if (invalid.isNotEmpty()) throw InvalidEntryDraft(invalid)
+                    OtpConfig.Totp(secret, algorithm, digits, period, encoding, issuer, accountName)
+                }
 
-                OtpType.HOTP ->
-                    OtpConfig.Hotp(secret, algorithm, digits, requireNotNull(counter), encoding, issuer, accountName)
+                OtpType.HOTP -> {
+                    val algorithm = draft.otpAlgorithm()
+                    val digits = draft.number(FieldKey.OTP_DIGITS) ?: HotpDefinition.DEFAULT_DIGITS
+                    val counter = draft.longNumber(FieldKey.OTP_COUNTER) ?: HotpDefinition.INITIAL_COUNTER
+                    val invalid =
+                        buildSet {
+                            addAll(OtpConfigValidation.validateHotp(algorithm, digits, counter))
+                            if (draft.number(FieldKey.OTP_PERIOD) != null) add(FieldKey.OTP_PERIOD)
+                        }
+                    if (invalid.isNotEmpty()) throw InvalidEntryDraft(invalid)
+                    OtpConfig.Hotp(secret, algorithm, digits, counter, encoding, issuer, accountName)
+                }
 
-                OtpType.STEAM -> OtpConfig.Steam(secret, encoding, issuer, accountName)
+                OtpType.STEAM -> {
+                    val invalid =
+                        buildSet {
+                            if (draft.text(FieldKey.OTP_ALGORITHM)?.let { it != SteamDefinition.defaultAlgorithm.name } == true) {
+                                add(FieldKey.OTP_ALGORITHM)
+                            }
+                            if (draft.number(FieldKey.OTP_DIGITS)?.let { it != SteamDefinition.DIGITS } == true) {
+                                add(FieldKey.OTP_DIGITS)
+                            }
+                            if (draft.number(FieldKey.OTP_PERIOD)?.let { it != SteamDefinition.PERIOD_SECONDS } == true) {
+                                add(FieldKey.OTP_PERIOD)
+                            }
+                            if (draft.longNumber(FieldKey.OTP_COUNTER) != null) add(FieldKey.OTP_COUNTER)
+                        }
+                    if (invalid.isNotEmpty()) throw InvalidEntryDraft(invalid)
+                    OtpConfig.Steam(secret, encoding, issuer, accountName)
+                }
             }
         return Entry(
             identity = identity,

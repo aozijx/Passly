@@ -1,91 +1,59 @@
 package com.aozijx.passly.domain.entry.otp
 
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpFactorDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
-import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
 import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
-/** Unparsed user input. Empty or malformed numbers never acquire fallback values. */
-data class OtpConfigInput(
-    val secret: String,
-    val type: OtpType = OtpType.TOTP,
-    val algorithm: OtpHashAlgorithm = OtpHashAlgorithm.SHA1,
-    val digits: String = TotpDefinition.DEFAULT_DIGITS.toString(),
-    val period: String = TotpDefinition.DEFAULT_PERIOD_SECONDS.toString(),
-    val counter: String = HotpDefinition.INITIAL_COUNTER.toString(),
-    val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
-    val issuer: String = "",
-    val accountName: String = "",
-) {
-    override fun toString() = "OtpConfigInput(***)"
+/** Raw inputs are algorithm-specific, so an irrelevant period or counter cannot be carried. */
+sealed interface OtpConfigInput {
+    val secret: String
+    val encoding: OtpSecretEncoding
+    val issuer: String
+    val accountName: String
 
-    fun parse(): OtpConfigInputResult {
-        val parsedDigits = digits.trim().toIntOrNull()
-        val definition = OtpTypeDefinitions[type]
-        val parsedPeriod = (definition.factor as? OtpFactorDefinition.Time)?.let { period.trim().toIntOrNull() }
-        val parsedCounter = (definition.factor as? OtpFactorDefinition.Counter)?.let { counter.trim().toLongOrNull() }
-        val invalid = OtpConfigValidation.validateParameters(type, algorithm, parsedDigits, parsedPeriod, parsedCounter)
+    fun parse(): OtpConfigInputResult =
+        when (this) {
+            is Totp -> parseTotp()
+            is Hotp -> parseHotp()
+            is Steam -> parseSteam()
+        }
 
-        val normalizedSecret =
-            try {
-                when (encoding) {
-                    OtpSecretEncoding.BASE32 -> {
-                        OtpSecretCodec.canonicalBase32(
-                            secret.filterNot(Char::isWhitespace),
-                            encoding,
-                        )
-                    }
+    data class Totp(
+        override val secret: String,
+        val algorithm: OtpHashAlgorithm,
+        val digits: String,
+        val periodSeconds: String,
+        override val encoding: OtpSecretEncoding,
+        override val issuer: String,
+        override val accountName: String,
+    ) : OtpConfigInput {
+        override fun toString() = "Totp(***)"
+    }
 
-                    OtpSecretEncoding.BASE64 -> {
-                        secret.trim().also { OtpSecretCodec.decode(it, encoding).fill(0) }
-                    }
-                }
-            } catch (_: OtpGenerationError) {
-                return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
-            }
-        if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)
-        val normalizedIssuer = issuer.trim().takeIf(String::isNotEmpty)
-        val normalizedAccountName = accountName.trim().takeIf(String::isNotEmpty)
-        val config =
-            when (type) {
-                OtpType.TOTP ->
-                    OtpConfig.Totp(
-                        secret = normalizedSecret,
-                        algorithm = algorithm,
-                        digits = requireNotNull(parsedDigits),
-                        periodSeconds = requireNotNull(parsedPeriod),
-                        encoding = encoding,
-                        issuer = normalizedIssuer,
-                        accountName = normalizedAccountName,
-                    )
+    data class Hotp(
+        override val secret: String,
+        val algorithm: OtpHashAlgorithm,
+        val digits: String,
+        val counter: String,
+        override val encoding: OtpSecretEncoding,
+        override val issuer: String,
+        override val accountName: String,
+    ) : OtpConfigInput {
+        override fun toString() = "Hotp(***)"
+    }
 
-                OtpType.HOTP ->
-                    OtpConfig.Hotp(
-                        secret = normalizedSecret,
-                        algorithm = algorithm,
-                        digits = requireNotNull(parsedDigits),
-                        counter = requireNotNull(parsedCounter),
-                        encoding = encoding,
-                        issuer = normalizedIssuer,
-                        accountName = normalizedAccountName,
-                    )
-
-                OtpType.STEAM ->
-                    OtpConfig.Steam(
-                        secret = normalizedSecret,
-                        encoding = encoding,
-                        issuer = normalizedIssuer,
-                        accountName = normalizedAccountName,
-                    )
-            }
-        return OtpConfigInputResult.Valid(config)
+    data class Steam(
+        override val secret: String,
+        override val encoding: OtpSecretEncoding,
+        override val issuer: String,
+        override val accountName: String,
+    ) : OtpConfigInput {
+        override fun toString() = "Steam(***)"
     }
 }
 
@@ -100,3 +68,83 @@ sealed interface OtpConfigInputResult {
         val fields: Set<FieldKey>,
     ) : OtpConfigInputResult
 }
+
+private fun OtpConfigInput.Totp.parseTotp(): OtpConfigInputResult {
+    val parsedDigits = digits.trim().toIntOrNull()
+    val parsedPeriod = periodSeconds.trim().toIntOrNull()
+    val invalid =
+        buildSet {
+            if (parsedDigits == null) add(FieldKey.OTP_DIGITS)
+            if (parsedPeriod == null) add(FieldKey.OTP_PERIOD)
+            if (parsedDigits != null && parsedPeriod != null) {
+                addAll(OtpConfigValidation.validateTotp(algorithm, parsedDigits, parsedPeriod))
+            } else if (algorithm !in TotpDefinition.supportedAlgorithms) {
+                add(FieldKey.OTP_ALGORITHM)
+            }
+        }
+    val normalizedSecret = secret.normalizeSecret(encoding) ?: return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
+    if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)
+    return OtpConfigInputResult.Valid(
+        OtpConfig.Totp(
+            secret = normalizedSecret,
+            algorithm = algorithm,
+            digits = requireNotNull(parsedDigits),
+            periodSeconds = requireNotNull(parsedPeriod),
+            encoding = encoding,
+            issuer = issuer.normalizedMetadata(),
+            accountName = accountName.normalizedMetadata(),
+        ),
+    )
+}
+
+private fun OtpConfigInput.Hotp.parseHotp(): OtpConfigInputResult {
+    val parsedDigits = digits.trim().toIntOrNull()
+    val parsedCounter = counter.trim().toLongOrNull()
+    val invalid =
+        buildSet {
+            if (parsedDigits == null) add(FieldKey.OTP_DIGITS)
+            if (parsedCounter == null) add(FieldKey.OTP_COUNTER)
+            if (parsedDigits != null && parsedCounter != null) {
+                addAll(OtpConfigValidation.validateHotp(algorithm, parsedDigits, parsedCounter))
+            } else if (algorithm !in HotpDefinition.supportedAlgorithms) {
+                add(FieldKey.OTP_ALGORITHM)
+            }
+        }
+    val normalizedSecret = secret.normalizeSecret(encoding) ?: return OtpConfigInputResult.Invalid(invalid + FieldKey.OTP_SECRET)
+    if (invalid.isNotEmpty()) return OtpConfigInputResult.Invalid(invalid)
+    return OtpConfigInputResult.Valid(
+        OtpConfig.Hotp(
+            secret = normalizedSecret,
+            algorithm = algorithm,
+            digits = requireNotNull(parsedDigits),
+            counter = requireNotNull(parsedCounter),
+            encoding = encoding,
+            issuer = issuer.normalizedMetadata(),
+            accountName = accountName.normalizedMetadata(),
+        ),
+    )
+}
+
+private fun OtpConfigInput.Steam.parseSteam(): OtpConfigInputResult {
+    val normalizedSecret = secret.normalizeSecret(encoding) ?: return OtpConfigInputResult.Invalid(setOf(FieldKey.OTP_SECRET))
+    return OtpConfigInputResult.Valid(
+        OtpConfig.Steam(
+            secret = normalizedSecret,
+            encoding = encoding,
+            issuer = issuer.normalizedMetadata(),
+            accountName = accountName.normalizedMetadata(),
+        ),
+    )
+}
+
+private fun String.normalizeSecret(encoding: OtpSecretEncoding): String? =
+    try {
+        when (encoding) {
+            OtpSecretEncoding.BASE32 -> OtpSecretCodec.canonicalBase32(filterNot(Char::isWhitespace), encoding)
+            OtpSecretEncoding.BASE64 -> trim().also { OtpSecretCodec.decode(it, encoding).fill(0) }
+        }
+    } catch (_: OtpGenerationError) {
+        null
+    }
+
+private fun String.normalizedMetadata(): String? = trim().takeIf(String::isNotEmpty)

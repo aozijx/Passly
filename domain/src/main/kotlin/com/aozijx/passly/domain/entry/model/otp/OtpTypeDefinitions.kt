@@ -18,29 +18,24 @@ object OtpTypeDefinitions {
         issuer: String?,
     ): OtpTypeDefinition? =
         definitions.values.firstOrNull { definition ->
-            definition.factor.authUriKind == kind &&
+            definition.authUriKind == kind &&
                 definition.issuerAlias?.equals(issuer, ignoreCase = true) == true
         } ?: definitions.values.firstOrNull { definition ->
-            definition.factor.authUriKind == kind && definition.issuerAlias == null
+            definition.authUriKind == kind && definition.issuerAlias == null
         }
 }
 
 private fun validateDefinitions(definitions: List<OtpTypeDefinition>) {
-    val duplicates = definitions.groupingBy(OtpTypeDefinition::type).eachCount().filterValues { it > 1 }.keys
+    val duplicates =
+        definitions
+            .groupingBy(OtpTypeDefinition::type)
+            .eachCount()
+            .filterValues { it > 1 }
+            .keys
     require(duplicates.isEmpty()) { "OTP type definitions must be unique: $duplicates" }
-    require(definitions.all { definition ->
-        definition.key.isNotBlank() && definition.defaultEntryTitle.isNotBlank() &&
-            definition.defaultDigits in definition.allowedDigits &&
-            definition.defaultAlgorithm in definition.supportedAlgorithms && definition.supportedAlgorithms.isNotEmpty()
-    }) { "OTP type definition is invalid" }
-    require(definitions.all { definition ->
-        when (definition.factor) {
-            is OtpFactorDefinition.Time -> OtpConfigParameter.COUNTER !in definition.editableParameters
-            is OtpFactorDefinition.Counter ->
-                OtpConfigParameter.COUNTER in definition.editableParameters &&
-                    OtpConfigParameter.PERIOD !in definition.editableParameters
-        }
-    }) { "OTP type parameter capabilities do not match its factor" }
+    require(definitions.all { it.key.isNotBlank() && it.defaultEntryTitle.isNotBlank() }) {
+        "OTP type identity is invalid"
+    }
 
     val missing = OtpType.entries.toSet() - definitions.map(OtpTypeDefinition::type).toSet()
     require(missing.isEmpty()) { "OTP type definitions are missing: $missing" }

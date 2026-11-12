@@ -250,6 +250,12 @@ object EntrySecretMapper {
         }
 
     private fun OtpConfig.toPayload(): OtpConfigPayload {
+        val (algorithm, digits) =
+            when (this) {
+                is OtpConfig.Totp -> algorithm to digits
+                is OtpConfig.Hotp -> algorithm to digits
+                is OtpConfig.Steam -> SteamDefinition.defaultAlgorithm to SteamDefinition.DIGITS
+            }
         val movingFactor = when (this) {
             is OtpConfig.Totp -> periodSeconds to null
             is OtpConfig.Hotp -> null to counter

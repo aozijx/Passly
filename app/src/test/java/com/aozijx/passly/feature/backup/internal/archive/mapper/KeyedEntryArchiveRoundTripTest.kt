@@ -178,23 +178,29 @@ class KeyedEntryArchiveRoundTripTest {
                 }
             }
         configs.forEachIndexed { index, config ->
-                    val entry =
-                        Entry(
-                            identity =
-                                EntryIdentity(
-                                    id = EntryId("otp-$index"),
-                                    type = EntryType.OTP,
-                                    timestamps = EntryTimestamps(1L),
-                                ),
-                            profile = EntryProfile(title = "OTP"),
-                            secret = EntrySecret(credential = OtpCredential(config)),
-                        )
+            val entry =
+                Entry(
+                    identity =
+                        EntryIdentity(
+                            id = EntryId("otp-$index"),
+                            type = EntryType.OTP,
+                            timestamps = EntryTimestamps(1L),
+                        ),
+                    profile = EntryProfile(title = "OTP"),
+                    secret = EntrySecret(credential = OtpCredential(config)),
+                )
 
-                    val record = mapper.toRecord(entry)
-                    assertEquals(config.type.toArchiveKey(), record.fieldText("otp_type"))
-                    assertEquals(config.algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
-                    assertEquals(config.encoding.toArchiveKey(), record.fieldText("otp_encoding"))
-                    assertEquals(entry, mapper.toEntry(record))
+            val record = mapper.toRecord(entry)
+            assertEquals(config.type.toArchiveKey(), record.fieldText("otp_type"))
+            val algorithm =
+                when (config) {
+                    is OtpConfig.Totp -> config.algorithm
+                    is OtpConfig.Hotp -> config.algorithm
+                    is OtpConfig.Steam -> OtpHashAlgorithm.SHA1
+                }
+            assertEquals(algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
+            assertEquals(config.encoding.toArchiveKey(), record.fieldText("otp_encoding"))
+            assertEquals(entry, mapper.toEntry(record))
         }
     }
 
