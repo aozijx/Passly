@@ -635,7 +635,7 @@ class DetailViewModel
                 DetailUiAction.OpenPasswordBinding,
                 DetailUiAction.RetryPasswordBinding,
                 -> {
-                    openPasswordBinding()
+                    passwordRelationsWorkflow.open()
                 }
 
                 is DetailUiAction.PasswordBindingSearchChanged -> {
@@ -663,8 +663,6 @@ class DetailViewModel
                 }
             }
         }
-
-        private fun openPasswordBinding() = passwordRelationsWorkflow.open()
 
         private fun activateSshPrivateKey() {
             val fieldKey = FieldKey.SSH_KEY
