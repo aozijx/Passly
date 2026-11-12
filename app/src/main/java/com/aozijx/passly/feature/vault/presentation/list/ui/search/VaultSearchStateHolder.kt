@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 
 @Stable
-class VaultSearchStateHolder internal constructor(
+internal class VaultSearchStateHolder(
     initialState: VaultSearchState,
     initialSearch: VaultSearchInput,
     private val currentSearch: () -> VaultSearchInput,

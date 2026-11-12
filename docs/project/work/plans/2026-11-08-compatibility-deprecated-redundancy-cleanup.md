@@ -42,3 +42,4 @@
 - Domain ports 定向扫描未发现只有声明、没有生产实现/消费者的接口；所有低引用接口至少有所属模块绑定与生产使用。这个结果与本轮移除的非-port `AuthenticationPolicy` 分开记录，其他模块端口仍待查。
 - Vault 搜索状态持有器的 `queryChanged()` 只转发同一个 `SearchQueryChanged` action，且没有独立状态行为；由 `VaultSearchHeader` 直接发出 action，清除查询仍由持有器负责保持其退出搜索状态的行为。删除转发入口，保留管理焦点、搜索生命周期和返回键状态的持有器。核对范围为 Vault 搜索持有器及调用点；未运行测试或构建。
 - Detail ViewModel 私有 `openPasswordBinding()` 是单调用点的一行 `passwordRelationsWorkflow.open()` 转发，没有额外检查或状态处理；在两个打开/重试 action 分支直接调用 workflow 并删除 helper。`DetailPasswordRelationsWorkflow.open()` 的任务和会话校验行为保持不变；未运行测试或构建。
+- `VaultSearchStateHolder` 仅由 `:app` 的 Vault Screen/TopBar 生产代码和同模块测试使用；没有跨 Gradle 模块调用或平台反射/注册合同，构造与 remember 工厂原已为 `internal`。将类收窄为 `internal`，使其状态 API 不再泄漏为 App 模块公共类型；未运行构建或测试。
