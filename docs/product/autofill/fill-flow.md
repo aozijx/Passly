@@ -153,8 +153,8 @@ Compose 路由将工作流状态映射为显式的 `Hidden` 或 `Candidates` 显
 nullable 候选列表或组合函数提前返回表达“当前不显示 UI”。Legacy 填充 ViewModel 每个 Activity 请求只接受一次
 初始化，并在启动认证/发现协程前同步进入 `Loading`；候选选择与网页确认也先从对应展示态同步转为 `Loading`，
 重复点击不会并发解析同一 interaction。Reducer 只接受合法阶段转换，终态后的迟到结果不能重新打开候选、确认或
-加载状态。失败保留 `AutofillFillFailure` 的阶段类型，并与用户取消分开；只有平台 Service 边界将安全固定文案
-传给 `FillCallback.onFailure(CharSequence)`，文本不参与内部状态判断。
+加载状态。失败保留 `AutofillFillFailure` 的阶段类型，并与用户取消分开；Legacy Activity 边界将失败映射为
+`Activity.RESULT_CANCELED`，内部失败类型不转换成平台文案或泄漏异常消息。
 
 BottomSheet 显示选择账号标题和候选数量；返回键或点按外部区域会取消 interaction。Legacy picker
 Activity 在结果尚未提交给 Android 时离开前台，会取消认证、发现或选择任务并释放本轮 Autofill lease（配置变更除外），避免后台任务继续占用临时会话。

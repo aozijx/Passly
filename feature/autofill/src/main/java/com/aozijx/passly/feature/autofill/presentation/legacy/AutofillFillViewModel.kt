@@ -388,24 +388,35 @@ internal class AutofillFillViewModel
             diagnostic: Enum<*> = failure,
         ) {
             var cleanupFailure: Exception? = null
+            var cleanupCancellation: CancellationException? = null
+            var cleanupError: Error? = null
             withContext(NonCancellable) {
                 try {
                     finishInteraction.cancel(request.interactionId)
                 } catch (cancelled: CancellationException) {
-                    throw cancelled
+                    cleanupCancellation = cancelled
+                } catch (error: Error) {
+                    cleanupError = error
                 } catch (exception: Exception) {
                     cleanupFailure = exception
                 }
                 try {
                     traceContinuations.discard(request.interactionId.value)
                 } catch (cancelled: CancellationException) {
-                    throw cancelled
+                    cleanupCancellation?.addSuppressed(cancelled) ?: run { cleanupCancellation = cancelled }
+                } catch (error: Error) {
+                    cleanupError?.addSuppressed(error) ?: run { cleanupError = error }
                 } catch (exception: Exception) {
                     cleanupFailure?.addSuppressed(exception) ?: run { cleanupFailure = exception }
                 } finally {
                     mutate(AutofillFillMutation.Completed(AutofillFillResult.Failed(failure)))
                 }
             }
+            cleanupError?.let { fatalError ->
+                cleanupCancellation?.let(fatalError::addSuppressed)
+                throw fatalError
+            }
+            cleanupCancellation?.let { throw it }
             if (error == null) {
                 logger.log(
                     LogStatements.Autofill.discoveryUnavailable(
