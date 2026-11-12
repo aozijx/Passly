@@ -159,7 +159,13 @@ Revision DAO 调用闭包、已完成代码收敛与初始化编排 JVM 验证�
 ### Task 74：按测试对象优化单测结构与重复装配
 - [ ] Detail 生产 owner 稳定后再评估是否拆分 `DetailViewModelTest.kt`；本轮检查了 favicon/敏感字段、编辑准备、package picker、activity/revision history、snapshot 与 revision restore 工作流。相似的失败/重试、取消、fatal、session lock 与 entry replacement 保护不同 owner 和终态，未发现可安全删除的重复场景。由于当前 Detail owner 仍在变更，先不搬动宽 fixture；稳定后按独立工作流和生命周期职责决定，不以行数拆分。判断记录见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md#detailviewmodeltest-拆分评估)。
 - [ ] 继续全仓 `src/test` 与 `src/androidTest` 逻辑审查，逐项追踪生产 owner、断言输入/状态/副作用及失败/取消清理。已审查模块、各测试保留/删除理由和验证记录见[测试逻辑清理审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)；全仓审查仍未完成。
-- [ ] 当前 App 生产编译恢复后，定向编译并运行 `VaultListUiMapperTest`、`OtpUiStateMapperTest`、`BackupArchiveServiceImplTest` 和 `DefaultBackupOperationGatewayTest`，验证最近 OTP 映射测试迁移及相关测试源集。此前编译失败与静态复核结论见[审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)；源代码检查不能替代这项执行验证。
+- [ ] 当前 App 生产编译恢复后，定向编译并运行以下 JVM 测试，验证 OTP 映射测试迁移及 Backup owner 覆盖能通过生产与测试源集编译：
+  - [`VaultListUiMapperTest`](../../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultListUiMapperTest.kt)
+  - [`OtpUiStateMapperTest`](../../../../app/src/test/java/com/aozijx/passly/feature/vault/presentation/list/VaultOtpUiStateMapperTest.kt)
+  - [`BackupArchiveServiceImplTest`](../../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/archive/BackupArchiveServiceImplTest.kt)
+  - [`DefaultBackupOperationGatewayTest`](../../../../app/src/test/java/com/aozijx/passly/feature/backup/internal/operation/DefaultBackupOperationGatewayTest.kt)
+
+  最新编译未到测试源集；失败原因与静态复核结论见[审查记录](../../reviews/2026-11-11-test-logic-maintenance-review.md)。源代码检查不能替代这项执行验证。
 
 <a id="task-75"></a>
 
