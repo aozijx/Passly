@@ -68,13 +68,11 @@ class EntrySecretMapperTest {
         val secret =
             EntrySecret(
                 OtpCredential(
-                    OtpConfig(
-                        type = OtpType.TOTP,
+                    OtpConfig.Totp(
                         secret = "otp-secret",
                         algorithm = OtpHashAlgorithm.SHA1,
                         digits = 6,
                         periodSeconds = 30,
-                        counter = null,
                     ),
                 ),
             )

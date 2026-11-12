@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpConfigParameter
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
@@ -62,7 +63,7 @@ fun OtpConfigForm(
             onValueChange = { onAction(AddOtpAction.AlgorithmChanged(it)) },
             options = OtpHashAlgorithm.entries,
             label = stringResource(R.string.totp_algorithm),
-            enabled = state.allowsParameterEditing,
+            enabled = state.canEdit(OtpConfigParameter.ALGORITHM),
             optionLabel = { stringResource(it.labelResource) },
         )
         Row(
@@ -78,13 +79,14 @@ fun OtpConfigForm(
                     keyboardType = KeyboardType.Number,
                     isError = feedback.counter.isInvalid,
                     supportingText = feedback.counter.supportingText(R.string.otp_counter_invalid),
+                    enabled = state.canEdit(OtpConfigParameter.COUNTER),
                 )
             } else {
                 NextFocusTextField(
                     value = state.period,
                     onValueChange = { onAction(AddOtpAction.PeriodChanged(it)) },
                     label = stringResource(R.string.totp_period),
-                    enabled = state.allowsParameterEditing,
+                    enabled = state.canEdit(OtpConfigParameter.PERIOD),
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
                     isError = feedback.period.isInvalid,
@@ -97,7 +99,7 @@ fun OtpConfigForm(
                 label = stringResource(R.string.totp_digits),
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Number,
-                enabled = state.allowsParameterEditing,
+                enabled = state.canEdit(OtpConfigParameter.DIGITS),
                 isError = feedback.digits.isInvalid,
                 supportingText = feedback.digits.supportingText(R.string.otp_digits_invalid),
             )
@@ -108,6 +110,7 @@ fun OtpConfigForm(
             options = OtpSecretEncoding.entries,
             label = stringResource(R.string.otp_secret_encoding),
             modifier = Modifier.fillMaxWidth(),
+            enabled = state.canEdit(OtpConfigParameter.ENCODING),
             optionLabel = { stringResource(it.labelResource) },
         )
     }

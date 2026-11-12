@@ -5,7 +5,7 @@ import com.aozijx.passly.domain.entry.model.EntryDraftValue
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 
@@ -26,10 +26,13 @@ fun OtpConfig.toNewEntryDraft(title: String = suggestedEntryTitle()): EntryDraft
             .withValue(definition, FieldKey.OTP_ENCODING, EntryDraftValue.Text(encoding.name))
 
     draft =
-        if (OtpTypeDefinitions[type].movingFactor == OtpMovingFactor.COUNTER) {
-            draft.withValue(definition, FieldKey.OTP_COUNTER, EntryDraftValue.LongNumber(counter))
-        } else {
-            draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(periodSeconds))
+        when (this) {
+            is OtpConfig.Totp -> draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(periodSeconds))
+            is OtpConfig.Hotp -> draft.withValue(definition, FieldKey.OTP_COUNTER, EntryDraftValue.LongNumber(counter))
+            is OtpConfig.Steam -> {
+                val period = SteamDefinition.PERIOD_SECONDS
+                draft.withValue(definition, FieldKey.OTP_PERIOD, EntryDraftValue.Number(period))
+            }
         }
     issuer?.takeIf(String::isNotBlank)?.let {
         draft = draft.withValue(definition, FieldKey.OTP_ISSUER, EntryDraftValue.Text(it))

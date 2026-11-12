@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.model.otp.withSecret
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriFormatResult
 import com.aozijx.passly.domain.entry.policy.WifiQrFormatResult
@@ -100,7 +101,7 @@ internal class ExportEntryQrUseCase
                                                 when (
                                                     val formatted =
                                                         OtpAuthUriCodec.format(
-                                                            config.copy(secret = String(chars)),
+                                                            config.withSecret(String(chars)),
                                                             entry.title,
                                                         )
                                                 ) {

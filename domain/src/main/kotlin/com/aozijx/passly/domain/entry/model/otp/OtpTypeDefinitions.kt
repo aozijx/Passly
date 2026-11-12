@@ -1,47 +1,11 @@
 package com.aozijx.passly.domain.entry.model.otp
 
-/** Complete Domain catalog; each type contributes its rules once. */
+/** Built-in definition registry. A new OTP type adds its own definition and config variant. */
 object OtpTypeDefinitions {
     private val definitions =
-        buildOtpTypeDefinitionIndex(
-            listOf(
-                OtpTypeDefinition(
-                    type = OtpType.TOTP,
-                    key = "TOTP",
-                    defaultEntryTitle = "TOTP",
-                    movingFactor = OtpMovingFactor.TIME,
-                    allowedDigits = 6..8,
-                    defaultDigits = 6,
-                    defaultPeriodSeconds = DEFAULT_PERIOD_SECONDS,
-                    authUriKind = OtpAuthUriKind.TIME_BASED,
-                ),
-                OtpTypeDefinition(
-                    type = OtpType.HOTP,
-                    key = "HOTP",
-                    defaultEntryTitle = "HOTP",
-                    movingFactor = OtpMovingFactor.COUNTER,
-                    allowedDigits = 6..8,
-                    defaultDigits = 6,
-                    defaultPeriodSeconds = null,
-                    defaultCounter = 0L,
-                    authUriKind = OtpAuthUriKind.COUNTER_BASED,
-                ),
-                OtpTypeDefinition(
-                    type = OtpType.STEAM,
-                    key = "STEAM",
-                    defaultEntryTitle = "Steam",
-                    movingFactor = OtpMovingFactor.TIME,
-                    allowedDigits = 5..5,
-                    defaultDigits = 5,
-                    defaultPeriodSeconds = STEAM_PERIOD_SECONDS,
-                    fixedPeriodSeconds = STEAM_PERIOD_SECONDS,
-                    fixedAlgorithm = OtpHashAlgorithm.SHA1,
-                    outputFormat = OtpOutputFormat.STEAM_ALPHABET,
-                    authUriKind = OtpAuthUriKind.TIME_BASED,
-                    issuerAlias = "Steam",
-                ),
-            ),
-        )
+        listOf(TotpDefinition, HotpDefinition, SteamDefinition)
+            .also(::validateDefinitions)
+            .associateBy(OtpTypeDefinition::type)
 
     val all: Collection<OtpTypeDefinition> get() = definitions.values
 
@@ -54,27 +18,30 @@ object OtpTypeDefinitions {
         issuer: String?,
     ): OtpTypeDefinition? =
         definitions.values.firstOrNull { definition ->
-            definition.authUriKind == kind &&
+            definition.factor.authUriKind == kind &&
                 definition.issuerAlias?.equals(issuer, ignoreCase = true) == true
         } ?: definitions.values.firstOrNull { definition ->
-            definition.authUriKind == kind && definition.issuerAlias == null
+            definition.factor.authUriKind == kind && definition.issuerAlias == null
         }
-
-    private const val DEFAULT_PERIOD_SECONDS = 30
-    private const val STEAM_PERIOD_SECONDS = 30
 }
 
-private fun buildOtpTypeDefinitionIndex(
-    definitions: List<OtpTypeDefinition>,
-): Map<OtpType, OtpTypeDefinition> {
-    val duplicateTypes = definitions.groupingBy(OtpTypeDefinition::type).eachCount().filterValues { it > 1 }.keys
-    require(duplicateTypes.isEmpty()) { "OTP type catalog contains duplicate registrations: $duplicateTypes" }
+private fun validateDefinitions(definitions: List<OtpTypeDefinition>) {
+    val duplicates = definitions.groupingBy(OtpTypeDefinition::type).eachCount().filterValues { it > 1 }.keys
+    require(duplicates.isEmpty()) { "OTP type definitions must be unique: $duplicates" }
+    require(definitions.all { definition ->
+        definition.key.isNotBlank() && definition.defaultEntryTitle.isNotBlank() &&
+            definition.defaultDigits in definition.allowedDigits &&
+            definition.defaultAlgorithm in definition.supportedAlgorithms && definition.supportedAlgorithms.isNotEmpty()
+    }) { "OTP type definition is invalid" }
+    require(definitions.all { definition ->
+        when (definition.factor) {
+            is OtpFactorDefinition.Time -> OtpConfigParameter.COUNTER !in definition.editableParameters
+            is OtpFactorDefinition.Counter ->
+                OtpConfigParameter.COUNTER in definition.editableParameters &&
+                    OtpConfigParameter.PERIOD !in definition.editableParameters
+        }
+    }) { "OTP type parameter capabilities do not match its factor" }
 
-    val byType = definitions.associateBy(OtpTypeDefinition::type)
-    val missingTypes = OtpType.entries.toSet() - byType.keys
-    val unexpectedTypes = byType.keys - OtpType.entries.toSet()
-    require(missingTypes.isEmpty() && unexpectedTypes.isEmpty()) {
-        "OTP type catalog coverage mismatch; missing=$missingTypes, unexpected=$unexpectedTypes"
-    }
-    return byType
+    val missing = OtpType.entries.toSet() - definitions.map(OtpTypeDefinition::type).toSet()
+    require(missing.isEmpty()) { "OTP type definitions are missing: $missing" }
 }

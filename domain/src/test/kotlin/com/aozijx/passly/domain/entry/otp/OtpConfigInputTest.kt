@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.otp
 
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
@@ -17,7 +18,7 @@ class OtpConfigInputTest {
         val config = (input.copy(digits = "7", period = "60").parse() as OtpConfigInputResult.Valid).config
         assertEquals("MY", config.secret)
         assertEquals(7, config.digits)
-        assertEquals(60, config.periodSeconds)
+        assertEquals(60, (config as OtpConfig.Totp).periodSeconds)
         assertEquals("Bank", config.issuer)
         assertEquals("alice", config.accountName)
     }
@@ -44,8 +45,7 @@ class OtpConfigInputTest {
                         .copy(type = OtpType.HOTP, counter = counter.toString(), period = "unused")
                         .parse() as OtpConfigInputResult.Valid
                 ).config
-            assertEquals(counter, config.counter)
-            assertEquals(null, config.periodSeconds)
+            assertEquals(counter, (config as OtpConfig.Hotp).counter)
         }
     }
 

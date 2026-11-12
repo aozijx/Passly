@@ -2,13 +2,15 @@ package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpConfigParameter
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigInput
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
+import com.aozijx.passly.domain.entry.model.otp.OtpFactorDefinition
+import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
-import com.aozijx.passly.feature.vault.otp.presentation.plugin
+import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
 
 /** OTP form values. Save progress and errors belong to the page ViewModel state. */
 data class OtpFormState(
@@ -16,12 +18,12 @@ data class OtpFormState(
     val issuer: String = "",
     val accountName: String = "",
     val secret: String = "",
-    val period: String = "30",
-    val digits: String = "6",
+    val period: String = TotpDefinition.DEFAULT_PERIOD_SECONDS.toString(),
+    val digits: String = TotpDefinition.DEFAULT_DIGITS.toString(),
     val type: OtpType = OtpType.TOTP,
     val algorithm: OtpHashAlgorithm = OtpHashAlgorithm.SHA1,
     val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
-    val counter: String = "0",
+    val counter: String = HotpDefinition.INITIAL_COUNTER.toString(),
     val uriText: String = "",
     val notes: String = "",
     val tags: String = "",
@@ -42,9 +44,9 @@ data class OtpFormState(
 
     val isValid: Boolean get() = title.isNotBlank() && configInput.parse() is OtpConfigInputResult.Valid
 
-    val usesCounterField: Boolean get() = OtpTypeDefinitions[type].movingFactor == OtpMovingFactor.COUNTER
+    val usesCounterField: Boolean get() = OtpTypeDefinitions[type].factor is OtpFactorDefinition.Counter
 
-    val allowsParameterEditing: Boolean get() = type.plugin().parameterEditingAllowed
+    fun canEdit(parameter: OtpConfigParameter): Boolean = parameter in OtpTypeDefinitions[type].editableParameters
 
     val feedback: OtpFormFeedbackUiState
         get() = configInput.parse().toFeedbackUiState(secretHasInput = secret.isNotEmpty())

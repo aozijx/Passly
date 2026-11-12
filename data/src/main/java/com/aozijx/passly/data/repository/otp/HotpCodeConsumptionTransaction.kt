@@ -6,7 +6,6 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
@@ -33,11 +32,8 @@ internal class HotpCodeConsumptionTransaction
                     ?.takeIf { it.deletedAt == null && it.entryType == EntryType.OTP }
                     ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
             val bundle = secretFieldStore.readBundle(db, entryId, entry.entryType)
-            val storedConfig =
-                bundle.otp
-                    ?.config
-                    ?.takeIf { it.type == OtpType.HOTP }
-                    ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
+            val storedConfig = bundle.otp?.config as? OtpConfig.Hotp
+                ?: return OtpResult.Failure(OtpGenerationError.InvalidSecret)
             if (storedConfig.counter != expectedCounter) {
                 return OtpResult.Failure(OtpGenerationError.CounterChanged)
             }

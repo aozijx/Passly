@@ -8,9 +8,8 @@ internal fun OtpCodeState?.toOtpUiState(
     showCode: Boolean,
 ): OtpUiState {
     val type = (presentation as? OtpPresentation.Applicable)?.type ?: return OtpUiState.NotApplicable
-    val plugin = type.plugin()
     if (!showCode) return OtpUiState.Hidden
-    return this?.toUiModel(plugin.formatter) ?: OtpUiState.NotRequested
+    return this?.toUiModel(type::formatCode) ?: OtpUiState.NotRequested
 }
 
 internal fun OtpCodeState?.toOtpUiState(
@@ -19,25 +18,38 @@ internal fun OtpCodeState?.toOtpUiState(
 ): OtpUiState {
     if (type == null) return OtpUiState.NotApplicable
     if (!showCode) return OtpUiState.Hidden
-    return this?.toUiModel(type.plugin().formatter) ?: OtpUiState.NotRequested
+    return this?.toUiModel(type::formatCode) ?: OtpUiState.NotRequested
 }
 
-private fun OtpCodeState.toUiModel(formatter: OtpCodeFormatter): OtpUiState =
+private fun OtpCodeState.toUiModel(formatter: (String) -> String): OtpUiState =
     when (this) {
         OtpCodeState.Pending -> OtpUiState.Pending
         is OtpCodeState.TimedReady ->
             OtpUiState.TimedReady(
-                currentCode = formatter.format(code),
-                nextCode = formatter.format(nextCode),
+                currentCode = formatter(code),
+                nextCode = formatter(nextCode),
                 progress = progress,
                 windowEndMillis = windowEndMillis,
                 periodSeconds = periodSeconds,
             )
         is OtpCodeState.HotpReady ->
             OtpUiState.HotpReady(
-                currentCode = formatter.format(code),
+                currentCode = formatter(code),
                 counter = counter,
                 canRollbackPrevious = canRollbackPrevious,
             )
         is OtpCodeState.Failed -> OtpUiState.Failed(canRollbackPrevious)
 }
+
+private fun OtpType.formatCode(code: String): String =
+    when (this) {
+        OtpType.TOTP, OtpType.HOTP -> code.groupNumericCode()
+        OtpType.STEAM -> code
+    }
+
+private fun String.groupNumericCode(): String =
+    when (length) {
+        6 -> "${take(3)} ${drop(3)}"
+        8 -> "${take(4)} ${drop(4)}"
+        else -> chunked(3).joinToString(" ")
+    }

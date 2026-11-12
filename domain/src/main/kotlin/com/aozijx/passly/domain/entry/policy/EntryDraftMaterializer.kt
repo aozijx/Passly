@@ -16,8 +16,8 @@ import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpFactorDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigValidation
@@ -95,33 +95,33 @@ class EntryDraftMaterializer {
         val algorithm = draft.otpAlgorithm()
         val encoding = draft.otpEncoding()
         val typeDefinition = OtpTypeDefinitions[type]
+        val factor = typeDefinition.factor
         val digits = draft.number(FieldKey.OTP_DIGITS) ?: typeDefinition.defaultDigits
         val period =
-            if (typeDefinition.movingFactor == OtpMovingFactor.COUNTER) {
-                null
-            } else {
-                draft.number(FieldKey.OTP_PERIOD) ?: typeDefinition.defaultPeriodSeconds
+            when (factor) {
+                is OtpFactorDefinition.Time -> draft.number(FieldKey.OTP_PERIOD) ?: factor.defaultPeriodSeconds
+                is OtpFactorDefinition.Counter -> null
             }
         val counter =
-            if (typeDefinition.movingFactor == OtpMovingFactor.COUNTER) {
-                draft.longNumber(FieldKey.OTP_COUNTER) ?: typeDefinition.defaultCounter
-            } else {
-                null
+            when (factor) {
+                is OtpFactorDefinition.Time -> null
+                is OtpFactorDefinition.Counter -> draft.longNumber(FieldKey.OTP_COUNTER) ?: factor.initialValue
             }
         val invalidParameters = OtpConfigValidation.validateParameters(type, algorithm, digits, period, counter)
         if (invalidParameters.isNotEmpty()) throw InvalidEntryDraft(invalidParameters)
+        val secret = draft.text(FieldKey.OTP_SECRET)
+        val issuer = draft.text(FieldKey.OTP_ISSUER)
+        val accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME)
         val config =
-            OtpConfig(
-                type = type,
-                secret = draft.text(FieldKey.OTP_SECRET),
-                algorithm = algorithm,
-                digits = digits,
-                periodSeconds = period,
-                counter = counter,
-                encoding = encoding,
-                issuer = draft.text(FieldKey.OTP_ISSUER),
-                accountName = draft.text(FieldKey.OTP_ACCOUNT_NAME),
-            )
+            when (type) {
+                OtpType.TOTP ->
+                    OtpConfig.Totp(secret, algorithm, digits, requireNotNull(period), encoding, issuer, accountName)
+
+                OtpType.HOTP ->
+                    OtpConfig.Hotp(secret, algorithm, digits, requireNotNull(counter), encoding, issuer, accountName)
+
+                OtpType.STEAM -> OtpConfig.Steam(secret, encoding, issuer, accountName)
+            }
         return Entry(
             identity = identity,
             profile = draft.profile(),

@@ -5,18 +5,19 @@ import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.otp.OtpCodeState
 import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
-import com.aozijx.passly.feature.vault.otp.presentation.OtpTypePlugins
 import com.aozijx.passly.feature.vault.otp.presentation.toOtpUiState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class OtpUiStateMapperTest {
     @Test
-    fun everyDomainOtpTypeHasExactlyOnePresentationPlugin() {
-        val plugins = OtpType.entries.map(OtpTypePlugins::get)
+    fun `keeps steam code formatting specific to its algorithm`() {
+        val state = OtpCodeState.TimedReady("ABCDE", "FGHIJ", 0.5f, 30_000L, 30)
 
-        assertEquals(OtpType.entries.toSet(), plugins.map { it.type }.toSet())
-        assertEquals(plugins.size, plugins.map { it.type }.toSet().size)
+        assertEquals(
+            OtpUiState.TimedReady("ABCDE", "FGHIJ", 0.5f, 30_000L, 30),
+            state.toOtpUiState(OtpType.STEAM, showCode = true),
+        )
     }
 
     @Test

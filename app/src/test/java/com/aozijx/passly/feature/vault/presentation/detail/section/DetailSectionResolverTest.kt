@@ -52,7 +52,7 @@ class DetailSectionResolverTest {
             DetailSectionResolver.resolve(
                 entry(
                     type = EntryType.OTP,
-                    secret = EntrySecret(credential = OtpCredential(OtpConfig(secret = "secret"))),
+                    secret = EntrySecret(credential = OtpCredential(OtpConfig.Totp(secret = "secret"))),
                 ),
             )
 

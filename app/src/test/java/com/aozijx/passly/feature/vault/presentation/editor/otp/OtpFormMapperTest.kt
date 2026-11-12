@@ -11,6 +11,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
@@ -24,12 +25,10 @@ class OtpFormMapperTest {
     @Test
     fun fromEntryRestoresCompleteOtpConfigurationForEditing() {
         val config =
-            com.aozijx.passly.domain.entry.model.otp.OtpConfig(
-                type = OtpType.HOTP,
+            OtpConfig.Hotp(
                 secret = "JBSWY3DPEHPK3PXP",
                 algorithm = OtpHashAlgorithm.SHA512,
                 digits = 8,
-                periodSeconds = null,
                 counter = 99,
                 encoding = OtpSecretEncoding.BASE32,
                 issuer = "Example",

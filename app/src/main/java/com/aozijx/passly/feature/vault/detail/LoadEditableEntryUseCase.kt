@@ -17,6 +17,7 @@ import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.model.otp.withSecret
 import com.aozijx.passly.domain.entry.policy.EntryTypeDefinitions
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
@@ -178,7 +179,7 @@ internal class LoadEditableEntryUseCase
                 EntryType.OTP -> {
                     if (field == FieldKey.OTP_SECRET) {
                         val credential = secret.otp ?: return null
-                        copy(secret = secret.copy(credential = OtpCredential(credential.config.copy(secret = value))))
+                        copy(secret = secret.copy(credential = OtpCredential(credential.config.withSecret(value))))
                     } else {
                         null
                     }

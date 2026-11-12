@@ -61,7 +61,7 @@ class EntryFormEditorTest {
     @Test
     fun appliesOtpCardAndWifiForms() {
         val originalOtp =
-            entry(EntryType.OTP, OtpCredential(OtpConfig(type = OtpType.TOTP, secret = "JBSWY3DPEHPK3PXP")))
+            entry(EntryType.OTP, OtpCredential(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP")))
         val otp =
             apply(
                 originalOtp,

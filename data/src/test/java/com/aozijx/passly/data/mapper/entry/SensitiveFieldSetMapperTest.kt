@@ -88,7 +88,7 @@ class SensitiveFieldSetMapperTest {
     @Test
     fun `OTP rejects blank secrets before they can enter field mapping`() {
         listOf("", " ", "\t\n").forEach { blank ->
-            assertThrows(IllegalArgumentException::class.java) { OtpCredential(OtpConfig(secret = blank)) }
+            assertThrows(IllegalArgumentException::class.java) { OtpCredential(OtpConfig.Totp(secret = blank)) }
         }
     }
 
@@ -162,9 +162,9 @@ class SensitiveFieldSetMapperTest {
                 PasskeyCredential(rpId = "rp"),
             ),
             Triple(
-                OtpCredential(OtpConfig(secret = "otp", issuer = "issuer")),
+                OtpCredential(OtpConfig.Totp(secret = "otp", issuer = "issuer")),
                 mapOf(SensitiveFieldKey.OTP_SECRET to "otp"),
-                OtpCredential(OtpConfig(issuer = "issuer")),
+                OtpCredential(OtpConfig.Totp(issuer = "issuer")),
             ),
         )
 

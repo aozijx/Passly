@@ -39,9 +39,9 @@ class OtpArchiveValidationTest {
                     ?.config,
             )
 
-        assertEquals(600, config.periodSeconds)
+        assertEquals(600, (config as OtpConfig.Totp).periodSeconds)
         assertEquals(
-            generateOtp(OtpConfig(secret = SECRET, periodSeconds = 600), 1234567),
+            generateOtp(OtpConfig.Totp(secret = SECRET, periodSeconds = 600), 1234567),
             generateOtp(config, 1234567),
         )
     }
@@ -58,12 +58,12 @@ class OtpArchiveValidationTest {
                     ?.config,
             )
 
-        assertEquals(OtpConfig(secret = SECRET), config)
+        assertEquals(OtpConfig.Totp(secret = SECRET), config)
 
         val steam = otp("steam-defaults", field("otp_type", BackupFieldValue.text("steam")))
         BackupBundleValidator.validate(bundle(steam), requireResourceData = false)
         assertEquals(
-            OtpConfig.steamDefaults(SECRET),
+            OtpConfig.Steam(secret = SECRET),
             mapper
                 .toEntry(steam)
                 .secret.otp

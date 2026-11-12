@@ -169,7 +169,7 @@ class ExportOtpQrAuthorizationTest {
                 EntrySecret(
                     credential =
                         OtpCredential(
-                            OtpConfig(
+                            OtpConfig.Totp(
                                 secret = null,
                                 encoding = encoding,
                                 issuer = "Issuer",

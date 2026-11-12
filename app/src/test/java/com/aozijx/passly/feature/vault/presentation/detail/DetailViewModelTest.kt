@@ -1835,8 +1835,7 @@ class DetailViewModelTest {
             )
 
         fun otpConfig(secret: String) =
-            OtpConfig(
-                type = OtpType.TOTP,
+            OtpConfig.Totp(
                 secret = secret,
                 digits = 6,
                 periodSeconds = 30,

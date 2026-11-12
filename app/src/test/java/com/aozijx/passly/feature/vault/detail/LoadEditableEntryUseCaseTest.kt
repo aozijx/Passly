@@ -115,7 +115,7 @@ class LoadEditableEntryUseCaseTest {
     @Test
     fun loadsOtpHighSensitivityValueAndWifiBundleValueIntoTheirOwnCredentialTypes() =
         runTest {
-            val otp = Harness(entry(EntryType.OTP, OtpCredential(OtpConfig(secret = null))), setOf(SensitiveFieldKey.OTP_SECRET))
+            val otp = Harness(entry(EntryType.OTP, OtpCredential(OtpConfig.Totp(secret = null))), setOf(SensitiveFieldKey.OTP_SECRET))
             otp.repository.values[SensitiveFieldKey.OTP_SECRET] = "JBSWY3DPEHPK3PXP"
             val wifi = Harness(entry(EntryType.WIFI, WifiCredential("network", password = "wifi-secret")), emptySet())
 

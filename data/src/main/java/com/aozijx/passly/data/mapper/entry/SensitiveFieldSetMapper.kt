@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.credential.EntryCredential
 import com.aozijx.passly.domain.entry.model.credential.IdentityCredential
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
+import com.aozijx.passly.domain.entry.model.otp.withSecret
 import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
@@ -143,7 +144,7 @@ internal fun EntrySecret.toBundleSecret(): EntrySecret {
             }
 
             is OtpCredential -> {
-                value.copy(config = value.config.copy(secret = null))
+                value.copy(config = value.config.withSecret(null))
             }
         }
     return copy(credential = credential)
@@ -196,7 +197,7 @@ internal fun EntrySecret.mergeSensitiveFields(fields: Map<SensitiveFieldKey, Str
 
             is OtpCredential -> {
                 fields[SensitiveFieldKey.OTP_SECRET]?.let {
-                    value.copy(config = value.config.copy(secret = it))
+                    value.copy(config = value.config.withSecret(it))
                 } ?: value
             }
         }

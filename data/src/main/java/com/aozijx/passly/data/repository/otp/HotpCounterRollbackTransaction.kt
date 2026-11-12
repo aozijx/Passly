@@ -4,7 +4,7 @@ import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import javax.inject.Inject
 
 /** Rewinds one HOTP counter only while it still points at the value produced by the last copy. */
@@ -26,11 +26,8 @@ internal class HotpCounterRollbackTransaction
                     ?.takeIf { it.deletedAt == null && it.entryType == EntryType.OTP }
                     ?: return false
             val bundle = secretFieldStore.readBundle(db, entryId, entry.entryType)
-            val config =
-                bundle.otp
-                    ?.config
-                    ?.takeIf { it.type == OtpType.HOTP && it.counter == expectedCurrentCounter }
-                    ?: return false
+            val config = bundle.otp?.config as? OtpConfig.Hotp ?: return false
+            if (config.counter != expectedCurrentCounter) return false
 
             secretFieldStore.updateExisting(
                 db,

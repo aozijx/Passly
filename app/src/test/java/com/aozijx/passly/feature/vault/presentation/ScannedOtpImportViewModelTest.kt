@@ -49,7 +49,7 @@ class ScannedOtpImportViewModelTest {
                     }
                 }
             val viewModel = model(repository, access, this)
-            val confirmation = launch { viewModel.importScannedOtp(OtpConfig(secret = "MY")) }
+            val confirmation = launch { viewModel.importScannedOtp(OtpConfig.Totp(secret = "MY")) }
             runCurrent()
             withTimeout(1_000) { started.await() }
 
@@ -76,7 +76,7 @@ class ScannedOtpImportViewModelTest {
                 }
             val viewModel = model(repository, access, this)
             var result: Boolean? = null
-            val confirmation = launch { result = viewModel.importScannedOtp(OtpConfig(secret = "MY")) }
+            val confirmation = launch { result = viewModel.importScannedOtp(OtpConfig.Totp(secret = "MY")) }
             runCurrent()
             withTimeout(1_000) { started.await() }
             access.authenticationState.value = AuthenticationState.Locked
@@ -103,7 +103,7 @@ class ScannedOtpImportViewModelTest {
             var completed: Boolean? = null
             val confirmation =
                 launch {
-                    completed = viewModel.importScannedOtp(OtpConfig(secret = "MY"))
+                    completed = viewModel.importScannedOtp(OtpConfig.Totp(secret = "MY"))
                 }
             runCurrent()
 
@@ -132,7 +132,7 @@ class ScannedOtpImportViewModelTest {
             val first =
                 async {
                     firstSession.confirm {
-                        if (viewModel.importScannedOtp(OtpConfig(secret = "MY"))) {
+                        if (viewModel.importScannedOtp(OtpConfig.Totp(secret = "MY"))) {
                             ScannerResultHandling.Handled
                         } else {
                             ScannerResultHandling.Rejected
@@ -144,7 +144,7 @@ class ScannedOtpImportViewModelTest {
             val secondSession = ScannerResultSession()
             val secondResult =
                 secondSession.confirm {
-                    if (viewModel.importScannedOtp(OtpConfig(secret = "MY"))) {
+                    if (viewModel.importScannedOtp(OtpConfig.Totp(secret = "MY"))) {
                         ScannerResultHandling.Handled
                     } else {
                         ScannerResultHandling.Rejected
@@ -174,7 +174,7 @@ class ScannedOtpImportViewModelTest {
             val viewModel = model(repository, access, this)
             val result =
                 async(start = kotlinx.coroutines.CoroutineStart.UNDISPATCHED) {
-                    viewModel.importScannedOtp(OtpConfig(secret = "MY"))
+                    viewModel.importScannedOtp(OtpConfig.Totp(secret = "MY"))
                 }
             access.authenticationState.value = AuthenticationState.Locked
             runCurrent()

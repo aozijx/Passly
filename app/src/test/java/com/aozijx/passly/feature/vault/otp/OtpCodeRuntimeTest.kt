@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredExceptio
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationConfig
@@ -112,7 +113,7 @@ class OtpCodeRuntimeTest {
             val runtime =
                 testRuntime(
                     scope = backgroundScope,
-                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1) },
+                    loadOtpConfig = { OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = 1) },
                     codeGenerator = { generateTestOtp(it) },
                     consumeHotpCode = { _, _ -> throw IllegalStateException("temporary HOTP transaction failure") },
                 )
@@ -128,7 +129,7 @@ class OtpCodeRuntimeTest {
             val runtime =
                 testRuntime(
                     scope = backgroundScope,
-                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1) },
+                    loadOtpConfig = { OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = 1) },
                     codeGenerator = { generateTestOtp(it) },
                     consumeHotpCode = { _, _ -> throw IllegalStateException("temporary HOTP transaction failure") },
                 )
@@ -173,7 +174,7 @@ class OtpCodeRuntimeTest {
                     otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
                     codeGenerator = { _, _ -> OtpResult.Success("unused") },
                     loadOtpMaterial = {
-                        generationMaterialForTest(OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1))
+                        generationMaterialForTest(OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = 1))
                     },
                     consumeHotpCode = { _, _ ->
                         consumptionStarted.complete(Unit)
@@ -202,7 +203,7 @@ class OtpCodeRuntimeTest {
                 val runtime =
                     testRuntime(
                         scope = backgroundScope,
-                        loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1) },
+                        loadOtpConfig = { OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = 1) },
                         codeGenerator = { generateTestOtp(it) },
                         consumeHotpCode = { _, _ -> throw failure },
                     )
@@ -367,12 +368,12 @@ class OtpCodeRuntimeTest {
             val coordinator =
                 testRuntime(
                     scope = backgroundScope,
-                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE) },
+                    loadOtpConfig = { OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE) },
                     codeGenerator = { generateTestOtp(it) },
                     consumeHotpCode = { _, expectedCounter ->
                         assertEquals(Long.MAX_VALUE, expectedCounter)
                         generateTestOtp(
-                            OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = expectedCounter),
+                            OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = expectedCounter),
                         )
                     },
                 )
@@ -550,7 +551,7 @@ class OtpCodeRuntimeTest {
     fun `Steam pre-generates current and next window codes`() =
         runTest {
             val seed = "JBSWY3DPEHPK3PXP".toByteArray()
-            val material = OtpGenerationMaterial(OtpConfig.steamDefaults("unused").toGenerationConfig(), seed)
+            val material = OtpGenerationMaterial(OtpConfig.Steam(secret = "unused").toGenerationConfig(), seed)
             val runtime =
                 OtpCodeRuntime(
                     scope = backgroundScope,
@@ -648,7 +649,7 @@ class OtpCodeRuntimeTest {
             val coordinator =
                 testRuntime(
                     scope = backgroundScope,
-                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "secret", counter = counter) },
+                    loadOtpConfig = { OtpConfig.Hotp(secret = "secret", counter = counter) },
                     codeGenerator = {
                         preGenerated++
                         OtpResult.Success("unused")
@@ -680,7 +681,7 @@ class OtpCodeRuntimeTest {
             val coordinator =
                 testRuntime(
                     scope = backgroundScope,
-                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "secret", counter = 7) },
+                    loadOtpConfig = { OtpConfig.Hotp(secret = "secret", counter = 7) },
                     codeGenerator = { OtpResult.Success("unused") },
                     consumeHotpCode = { _, _ ->
                         consumptionStarted.complete(Unit)
@@ -983,8 +984,7 @@ class OtpCodeRuntimeTest {
                     scope = scope,
                     loadOtpConfig = {
                         configGate.await()
-                        OtpConfig(
-                            type = OtpType.TOTP,
+                        OtpConfig.Totp(
                             secret = "JBSWY3DPEHPK3PXP",
                             digits = 6,
                             periodSeconds = 30,
@@ -1135,11 +1135,8 @@ class OtpCodeRuntimeTest {
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val storedConfig =
-                OtpConfig(
-                    type = OtpType.STEAM,
+                OtpConfig.Steam(
                     secret = "JBSWY3DPEHPK3PXP",
-                    digits = 5,
-                    periodSeconds = 30,
                     encoding = OtpSecretEncoding.BASE32,
                 )
             var loadedEntryId: String? = null
@@ -1163,10 +1160,10 @@ class OtpCodeRuntimeTest {
                 runtime.acquire("steam-entry")
 
                 assertEquals("steam-entry", loadedEntryId)
-                assertEquals(OtpType.STEAM, generatedConfig?.type)
+                assertTrue(generatedConfig is OtpGenerationConfig.Steam)
                 assertEquals(OtpHashAlgorithm.SHA1, generatedConfig?.algorithm)
                 assertEquals(5, generatedConfig?.digits)
-                assertEquals(30, generatedConfig?.periodSeconds)
+                assertEquals(OtpOutputFormat.STEAM_ALPHABET, generatedConfig?.outputFormat)
                 assertEquals(OtpSecretEncoding.BASE32, generatedConfig?.encoding)
                 assertEquals("38CTQ", runtime.readyCode("steam-entry"))
             } finally {
@@ -1199,8 +1196,7 @@ class OtpCodeRuntimeTest {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             var loadCount = 0
             val config =
-                OtpConfig(
-                    type = OtpType.TOTP,
+                OtpConfig.Totp(
                     secret = "JBSWY3DPEHPK3PXP",
                     digits = 6,
                     periodSeconds = 30,
@@ -1242,16 +1238,14 @@ class OtpCodeRuntimeTest {
         otpRuntimePolicyReader = otpRuntimePolicyReader,
         loadOtpMaterial = { entryId -> loadOtpConfig(entryId)?.let(::testMaterial) },
         codeGenerator = { material, _ ->
+            val secret = String(material.secretBytes, Charsets.UTF_8)
+            val config = material.config
             codeGenerator(
-                OtpConfig(
-                    type = material.config.type,
-                    secret = String(material.secretBytes, Charsets.UTF_8),
-                    algorithm = material.config.algorithm,
-                    digits = material.config.digits,
-                    periodSeconds = material.config.periodSeconds,
-                    counter = material.config.counter,
-                    encoding = material.config.encoding,
-                ),
+                when (config) {
+                    is OtpGenerationConfig.Totp -> OtpConfig.Totp(secret, config.algorithm, config.digits, config.periodSeconds, config.encoding)
+                    is OtpGenerationConfig.Hotp -> OtpConfig.Hotp(secret, config.algorithm, config.digits, config.counter, config.encoding)
+                    is OtpGenerationConfig.Steam -> OtpConfig.Steam(secret, config.encoding)
+                },
             )
         },
         consumeHotpCode = consumeHotpCode,
@@ -1312,7 +1306,7 @@ class OtpCodeRuntimeTest {
                         loadOtpConfig = {
                             loadCount++
                             if (loadCount == 1) {
-                                OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 7)
+                                OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", counter = 7)
                             } else {
                                 validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
                             }
@@ -1340,8 +1334,7 @@ class OtpCodeRuntimeTest {
         }
 
     private fun validTotpConfig() =
-        OtpConfig(
-            type = OtpType.TOTP,
+        OtpConfig.Totp(
             secret = "JBSWY3DPEHPK3PXP",
             digits = 6,
             periodSeconds = 30,

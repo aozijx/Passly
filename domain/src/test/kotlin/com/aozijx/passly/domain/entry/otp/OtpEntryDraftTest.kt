@@ -18,8 +18,7 @@ class OtpEntryDraftTest {
     @Test
     fun scannedTotpPreservesConfigAndBuildsDisplayTitle() {
         val draft =
-            OtpConfig(
-                type = OtpType.TOTP,
+            OtpConfig.Totp(
                 secret = "secret",
                 algorithm = OtpHashAlgorithm.SHA256,
                 digits = 8,
@@ -40,7 +39,7 @@ class OtpEntryDraftTest {
     @Test
     fun `title preserves colons and materialization preserves complete config`() {
         val config =
-            OtpConfig(
+            OtpConfig.Totp(
                 secret = "Zm9v",
                 encoding = OtpSecretEncoding.BASE64,
                 algorithm = OtpHashAlgorithm.SHA512,
@@ -61,8 +60,8 @@ class OtpEntryDraftTest {
 
     @Test
     fun `fallback title follows otp type when identity is absent`() {
-        val hotp = OtpConfig(type = OtpType.HOTP, secret = "MY", counter = Long.MAX_VALUE, periodSeconds = null)
-        val steam = OtpConfig.steamDefaults("MY")
+        val hotp = OtpConfig.Hotp(secret = "MY", counter = Long.MAX_VALUE, )
+        val steam = OtpConfig.Steam(secret = "MY")
         assertEquals(EntryDraftValue.Text("HOTP"), hotp.toNewEntryDraft()[FieldKey.TITLE])
         assertEquals(EntryDraftValue.Text("Steam"), steam.toNewEntryDraft()[FieldKey.TITLE])
     }
@@ -70,11 +69,9 @@ class OtpEntryDraftTest {
     @Test
     fun scannedHotpPreservesCounterWithoutPeriod() {
         val draft =
-            OtpConfig(
-                type = OtpType.HOTP,
+            OtpConfig.Hotp(
                 secret = "secret",
                 counter = 42L,
-                periodSeconds = null,
                 accountName = "alice",
             ).toNewEntryDraft()
 

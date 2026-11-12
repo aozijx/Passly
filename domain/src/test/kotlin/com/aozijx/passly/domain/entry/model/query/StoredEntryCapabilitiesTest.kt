@@ -24,7 +24,7 @@ class StoredEntryCapabilitiesTest {
 
     @Test
     fun otpPresenceSurvivesRedactedBundleUsedForProfileUpdate() {
-        val bundle = EntrySecret(OtpCredential(OtpConfig(secret = null)))
+        val bundle = EntrySecret(OtpCredential(OtpConfig.Totp(secret = null)))
         val actual = EntryCapabilities.fromStoredSecret(bundle, setOf(SensitiveFieldKey.OTP_SECRET))
         assertTrue(EntryCapability.OTP in actual)
     }
@@ -32,7 +32,7 @@ class StoredEntryCapabilitiesTest {
     @Test
     fun clearedRowsRemoveCapabilitiesEvenIfAnOldPlaintextValueIsAvailable() {
         val oldPassword = EntrySecret(LoginCredential(password = "stale"))
-        val oldOtp = EntrySecret(OtpCredential(OtpConfig(secret = "MY")))
+        val oldOtp = EntrySecret(OtpCredential(OtpConfig.Totp(secret = "MY")))
         assertFalse(EntryCapability.PASSWORD in EntryCapabilities.fromStoredSecret(oldPassword, emptySet()))
         assertFalse(EntryCapability.OTP in EntryCapabilities.fromStoredSecret(oldOtp, emptySet()))
     }

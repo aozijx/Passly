@@ -50,7 +50,7 @@ class OtpAuthUriCodecTest {
     @Test
     fun `format encodes each component once and prefers account metadata over display title`() {
         val config =
-            OtpConfig(
+            OtpConfig.Totp(
                 secret = SECRET,
                 algorithm = OtpHashAlgorithm.SHA256,
                 digits = 8,
@@ -71,7 +71,7 @@ class OtpAuthUriCodecTest {
     @Test
     fun `base64 export becomes base32 without changing the RFC totp code`() {
         val config =
-            OtpConfig(
+            OtpConfig.Totp(
                 secret = Base64.getEncoder().encodeToString("12345678901234567890".toByteArray()),
                 encoding = OtpSecretEncoding.BASE64,
                 digits = 8,
@@ -90,10 +90,9 @@ class OtpAuthUriCodecTest {
     @Test
     fun `hotp requires an explicit nonnegative counter and preserves long precision`() {
         val counter = 9_007_199_254_740_993L
-        val config = parsed("otpauth://hotp/alice?secret=$SECRET&counter=$counter")
+        val config = parsed("otpauth://hotp/alice?secret=$SECRET&counter=$counter") as OtpConfig.Hotp
         assertEquals(OtpType.HOTP, config.type)
         assertEquals(counter, config.counter)
-        assertEquals(null, config.periodSeconds)
         assertEquals(config, parsed(formatted(config, "alice")))
 
         listOf("", "&counter=", "&counter=-1", "&counter=invalid", "&counter=9223372036854775808")
@@ -145,7 +144,7 @@ class OtpAuthUriCodecTest {
 
     @Test
     fun `defaults apply only to absent values and seven digit otp remains supported`() {
-        val config = parsed("OTPAUTH://TOTP/alice?secret=$SECRET")
+        val config = parsed("OTPAUTH://TOTP/alice?secret=$SECRET") as OtpConfig.Totp
         assertEquals(OtpHashAlgorithm.SHA1, config.algorithm)
         assertEquals(6, config.digits)
         assertEquals(30, config.periodSeconds)
@@ -155,7 +154,7 @@ class OtpAuthUriCodecTest {
 
     @Test
     fun `steam marker round trips with explicit algorithm digits and period`() {
-        val config = OtpConfig.steamDefaults(SECRET, "Steam").copy(accountName = "alice")
+        val config = OtpConfig.Steam(secret = SECRET, issuer = "Steam", accountName = "alice")
         assertEquals(config, parsed(formatted(config, "Display title")))
         assertEquals(OtpType.STEAM, parsed("otpauth://totp/Steam:alice?secret=$SECRET").type)
         listOf("algorithm=SHA256", "period=60", "digits=6").forEach { parameter ->
@@ -169,22 +168,21 @@ class OtpAuthUriCodecTest {
     @Test
     fun `invalid export configuration cannot emit a uri`() {
         listOf(
-            OtpConfig(secret = null),
-            OtpConfig(secret = "MZ"),
-            OtpConfig(secret = "!", encoding = OtpSecretEncoding.BASE64),
-            OtpConfig(secret = SECRET, issuer = "Example:Other"),
-            OtpConfig(secret = SECRET, accountName = "alice:other"),
-            OtpConfig(secret = SECRET, issuer = "Steam"),
-            OtpConfig.steamDefaults(SECRET).copy(algorithm = OtpHashAlgorithm.SHA256),
+            OtpConfig.Totp(secret = null),
+            OtpConfig.Totp(secret = "MZ"),
+            OtpConfig.Totp(secret = "!", encoding = OtpSecretEncoding.BASE64),
+            OtpConfig.Totp(secret = SECRET, issuer = "Example:Other"),
+            OtpConfig.Totp(secret = SECRET, accountName = "alice:other"),
+            OtpConfig.Totp(secret = SECRET, issuer = "Steam"),
         ).forEach { config ->
             assertEquals(OtpUriFormatResult.InvalidConfiguration, OtpAuthUriCodec.format(config, "alice"))
         }
-        assertEquals(OtpUriFormatResult.InvalidConfiguration, OtpAuthUriCodec.format(OtpConfig(secret = SECRET), ""))
+        assertEquals(OtpUriFormatResult.InvalidConfiguration, OtpAuthUriCodec.format(OtpConfig.Totp(secret = SECRET), ""))
     }
 
     @Test
     fun `display title fallback removes the matching issuer prefix only once`() {
-        val config = parsed(formatted(OtpConfig(secret = SECRET, issuer = "Example"), "Example: alice+tag"))
+        val config = parsed(formatted(OtpConfig.Totp(secret = SECRET, issuer = "Example"), "Example: alice+tag"))
         assertEquals("Example", config.issuer)
         assertEquals("alice+tag", config.accountName)
     }

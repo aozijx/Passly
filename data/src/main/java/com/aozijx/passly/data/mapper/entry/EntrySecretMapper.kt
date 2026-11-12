@@ -30,6 +30,10 @@ import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityTypeParseResult
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
+import com.aozijx.passly.domain.entry.model.otp.TotpDefinition
 
 object EntrySecretMapper {
     fun toPayload(
@@ -245,31 +249,53 @@ object EntrySecretMapper {
             if (otp != null) add(EntryCredentialKind.OTP)
         }
 
-    private fun OtpConfig.toPayload() =
-        OtpConfigPayload(
+    private fun OtpConfig.toPayload(): OtpConfigPayload {
+        val movingFactor = when (this) {
+            is OtpConfig.Totp -> periodSeconds to null
+            is OtpConfig.Hotp -> null to counter
+            is OtpConfig.Steam -> SteamDefinition.PERIOD_SECONDS to null
+        }
+        return OtpConfigPayload(
             type = type.toStorageKey(),
             secret = secret,
             algorithm = algorithm.toStorageKey(),
             digits = digits,
-            periodSeconds = periodSeconds,
-            counter = counter,
+            periodSeconds = movingFactor.first,
+            counter = movingFactor.second,
             encoding = encoding.toStorageKey(),
             issuer = issuer,
             accountName = accountName,
         )
+    }
 
-    private fun OtpConfigPayload.toDomain() =
-        OtpConfig(
-            type = otpTypeFromStorageKey(type),
-            secret = secret,
-            algorithm = otpHashAlgorithmFromStorageKey(algorithm),
-            digits = digits,
-            periodSeconds = periodSeconds,
-            counter = counter,
-            encoding = otpSecretEncodingFromStorageKey(encoding),
-            issuer = issuer,
-            accountName = accountName,
-        )
+    private fun OtpConfigPayload.toDomain(): OtpConfig {
+        val otpType = otpTypeFromStorageKey(type)
+        val algorithm = otpHashAlgorithmFromStorageKey(algorithm)
+        val encoding = otpSecretEncodingFromStorageKey(encoding)
+        return when (otpType) {
+            OtpType.TOTP ->
+                OtpConfig.Totp(
+                    secret,
+                    algorithm,
+                    digits,
+                    periodSeconds ?: TotpDefinition.DEFAULT_PERIOD_SECONDS,
+                    encoding,
+                    issuer,
+                    accountName,
+                )
+            OtpType.HOTP ->
+                OtpConfig.Hotp(
+                    secret,
+                    algorithm,
+                    digits,
+                    counter ?: HotpDefinition.INITIAL_COUNTER,
+                    encoding,
+                    issuer,
+                    accountName,
+                )
+            OtpType.STEAM -> OtpConfig.Steam(secret, encoding, issuer, accountName)
+        }
+    }
 
     private fun String?.requireWifiSecurityType(): WifiSecurityType =
         when (val result = WifiSecurityType.parseStoredValue(this)) {

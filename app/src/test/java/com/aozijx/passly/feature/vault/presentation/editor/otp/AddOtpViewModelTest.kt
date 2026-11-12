@@ -78,7 +78,7 @@ class AddOtpViewModelTest {
     @Test
     fun `scanner editor and direct creation share complete identity title`() {
         val model = createViewModel()
-        val config = OtpConfig(secret = "MY", issuer = " Example: West ", accountName = " alice:admin ")
+        val config = OtpConfig.Totp(secret = "MY", issuer = " Example: West ", accountName = " alice:admin ")
         assertTrue(model.tryApplyScannedConfig(config))
         val directTitle = (config.toNewEntryDraft()[FieldKey.TITLE] as EntryDraftValue.Text).value
         assertEquals(directTitle, model.uiState.value.form.title)
@@ -89,7 +89,7 @@ class AddOtpViewModelTest {
     fun `scan without identity keeps the existing editor title`() {
         val model = createViewModel()
         model.onAction(AddOtpAction.TitleChanged("My title"))
-        assertTrue(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
+        assertTrue(model.tryApplyScannedConfig(OtpConfig.Totp(secret = "MY")))
         assertEquals("My title", model.uiState.value.form.title)
     }
 
@@ -98,7 +98,7 @@ class AddOtpViewModelTest {
         runTest {
             val session = MutableSession()
             val model = createViewModel(createEntryUseCase(session = session), session)
-            val config = OtpConfig(secret = "MY")
+            val config = OtpConfig.Totp(secret = "MY")
             session.state.value = AuthenticationState.Locked
             runCurrent()
             assertFalse(model.tryApplyScannedConfig(config))
@@ -125,7 +125,7 @@ class AddOtpViewModelTest {
             model.onAction(AddOtpAction.SecretChanged("JBSWY3DPEHPK3PXP"))
             model.onAction(AddOtpAction.Save)
             runCurrent()
-            assertFalse(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
+            assertFalse(model.tryApplyScannedConfig(OtpConfig.Totp(secret = "MY")))
             assertEquals("JBSWY3DPEHPK3PXP", model.uiState.value.form.secret)
             val events = mutableListOf<Unit>()
             backgroundScope.launch { model.uriAppliedFeedback.collect { events += it } }
@@ -211,7 +211,7 @@ class AddOtpViewModelTest {
                         EntrySecret(
                             credential =
                                 com.aozijx.passly.domain.entry.model.credential.OtpCredential(
-                                    OtpConfig(secret = null),
+                                    OtpConfig.Totp(secret = null),
                                 ),
                         ),
                 )
@@ -230,7 +230,7 @@ class AddOtpViewModelTest {
                     codeGenerator = { _, _ -> OtpResult.Success("123456") },
                     loadOtpMaterial = {
                         generationLoads++
-                        OtpGenerationMaterial(OtpConfig(secret = secret).toGenerationConfig(), secret.toByteArray())
+                        OtpGenerationMaterial(OtpConfig.Totp(secret = secret).toGenerationConfig(), secret.toByteArray())
                     },
                     currentTimeMillis = { 1_000L },
                 )
@@ -331,7 +331,7 @@ class AddOtpViewModelTest {
                 )
             assertEquals("MY", config.secret)
             assertEquals(7, config.digits)
-            assertEquals(60, config.periodSeconds)
+            assertEquals(60, (config as OtpConfig.Totp).periodSeconds)
             assertEquals("", viewModel.uiState.value.form.secret)
         }
 
@@ -388,12 +388,10 @@ class AddOtpViewModelTest {
     fun scannedHotp_roundTripsThroughFormDraftAndMaterializer() {
         val viewModel = createViewModel()
         val config =
-            OtpConfig(
-                type = OtpType.HOTP,
+            OtpConfig.Hotp(
                 secret = "Zm9v",
                 algorithm = OtpHashAlgorithm.SHA512,
                 digits = 8,
-                periodSeconds = null,
                 counter = Long.MAX_VALUE,
                 encoding = OtpSecretEncoding.BASE64,
                 issuer = "Example",
@@ -417,8 +415,7 @@ class AddOtpViewModelTest {
         assertEquals(config.secret, roundTripped.secret)
         assertEquals(config.algorithm, roundTripped.algorithm)
         assertEquals(config.digits, roundTripped.digits)
-        assertNull(roundTripped.periodSeconds)
-        assertEquals(config.counter, roundTripped.counter)
+        assertEquals(config.counter, (roundTripped as OtpConfig.Hotp).counter)
         assertEquals(config.encoding, roundTripped.encoding)
         assertEquals(config.issuer, roundTripped.issuer)
         assertEquals(config.accountName, roundTripped.accountName)

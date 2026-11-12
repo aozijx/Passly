@@ -138,8 +138,7 @@ class KeyedEntryArchiveRoundTripTest {
                     EntrySecret(
                         credential =
                             OtpCredential(
-                                OtpConfig(
-                                    type = OtpType.TOTP,
+                                OtpConfig.Totp(
                                     secret = "JBSWY3DPEHPK3PXP",
                                     algorithm = OtpHashAlgorithm.SHA256,
                                     digits = 8,
@@ -166,24 +165,24 @@ class KeyedEntryArchiveRoundTripTest {
 
     @Test
     fun otpRoundTripPreservesEveryTypeAlgorithmAndEncoding() {
-        OtpType.entries.forEach { type ->
-            OtpHashAlgorithm.entries.forEach { algorithm ->
-                OtpSecretEncoding.entries.forEach { encoding ->
-                    val config =
-                        OtpConfig(
-                            type = type,
-                            secret = "JBSWY3DPEHPK3PXP",
-                            algorithm = algorithm,
-                            digits = if (type == OtpType.STEAM) 5 else 6,
-                            periodSeconds = if (type == OtpType.HOTP) null else 30,
-                            counter = if (type == OtpType.HOTP) 7L else null,
-                            encoding = encoding,
-                        )
+        val configs =
+            buildList {
+                OtpHashAlgorithm.entries.forEach { algorithm ->
+                    OtpSecretEncoding.entries.forEach { encoding ->
+                        add(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP", algorithm = algorithm, encoding = encoding))
+                        add(OtpConfig.Hotp(secret = "JBSWY3DPEHPK3PXP", algorithm = algorithm, counter = 7L, encoding = encoding))
+                        if (algorithm == OtpHashAlgorithm.SHA1) {
+                            add(OtpConfig.Steam(secret = "JBSWY3DPEHPK3PXP", encoding = encoding))
+                        }
+                    }
+                }
+            }
+        configs.forEachIndexed { index, config ->
                     val entry =
                         Entry(
                             identity =
                                 EntryIdentity(
-                                    id = EntryId("otp-${type.ordinal}-${algorithm.ordinal}-${encoding.ordinal}"),
+                                    id = EntryId("otp-$index"),
                                     type = EntryType.OTP,
                                     timestamps = EntryTimestamps(1L),
                                 ),
@@ -192,16 +191,10 @@ class KeyedEntryArchiveRoundTripTest {
                         )
 
                     val record = mapper.toRecord(entry)
-                    assertEquals(type.toArchiveKey(), record.fieldText("otp_type"))
-                    assertEquals(algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
-                    assertEquals(encoding.toArchiveKey(), record.fieldText("otp_encoding"))
-                    if (type == OtpType.STEAM && algorithm != OtpHashAlgorithm.SHA1) {
-                        assertThrows(IllegalArgumentException::class.java) { mapper.toEntry(record) }
-                    } else {
-                        assertEquals(entry, mapper.toEntry(record))
-                    }
-                }
-            }
+                    assertEquals(config.type.toArchiveKey(), record.fieldText("otp_type"))
+                    assertEquals(config.algorithm.toArchiveKey(), record.fieldText("otp_algorithm"))
+                    assertEquals(config.encoding.toArchiveKey(), record.fieldText("otp_encoding"))
+                    assertEquals(entry, mapper.toEntry(record))
         }
     }
 

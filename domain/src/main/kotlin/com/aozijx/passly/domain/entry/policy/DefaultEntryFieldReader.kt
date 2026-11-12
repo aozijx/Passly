@@ -4,9 +4,11 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 
 /** Reads existing scalar values without authorization, decryption or presentation formatting. */
 class DefaultEntryFieldReader : EntryFieldReader {
@@ -83,11 +85,15 @@ class DefaultEntryFieldReader : EntryFieldReader {
             }
 
             FieldKey.OTP_PERIOD -> {
-                otp?.periodSeconds?.toString()
+                when (otp) {
+                    is OtpConfig.Totp -> otp.periodSeconds.toString()
+                    is OtpConfig.Steam -> SteamDefinition.PERIOD_SECONDS.toString()
+                    is OtpConfig.Hotp, null -> null
+                }
             }
 
             FieldKey.OTP_COUNTER -> {
-                otp?.counter?.toString()
+                (otp as? OtpConfig.Hotp)?.counter?.toString()
             }
 
             FieldKey.OTP_DIGITS -> {

@@ -69,6 +69,7 @@ import com.aozijx.passly.feature.vault.otp.generationMaterialForTest
 import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -295,11 +296,7 @@ class VaultViewModelTest {
             val viewModel = createViewModel(gate, clipboardValues, ReadyOtpConfigRepository)
             val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
             val owner = viewModel.onPageEntered()
-            val otpStateCollector =
-                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    viewModel.otpStates.collect()
-                }
-            val otpLease = viewModel.acquireOtp(ENTRY_ID.value)
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value)
 
             try {
                 runCurrent()
@@ -318,8 +315,8 @@ class VaultViewModelTest {
                 )
             } finally {
                 gate.resume.complete(Unit)
-                otpLease.close()
                 otpStateCollector.cancel()
+                runCurrent()
                 viewModelStore.clear()
             }
         }
@@ -338,11 +335,7 @@ class VaultViewModelTest {
                 )
             val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
             val owner = viewModel.onPageEntered()
-            val otpStateCollector =
-                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    viewModel.otpStates.collect()
-                }
-            val otpLease = viewModel.acquireOtp(ENTRY_ID.value)
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value)
 
             try {
                 runCurrent()
@@ -357,32 +350,35 @@ class VaultViewModelTest {
                 assertNull(viewModel.otpStates.value[ENTRY_ID.value])
             } finally {
                 gate.resume.complete(Unit)
-                otpLease.close()
                 viewModel.onPageExited(owner)
                 otpStateCollector.cancel()
+                runCurrent()
                 viewModelStore.clear()
             }
         }
 
     @Test
-    fun otpLeaseIsOwnedByEachActiveUiOwner() =
+    fun otpLeaseLifetimeFollowsEachActiveUiStateCollection() =
         runTest(mainDispatcherRule.testDispatcher) {
             val runtime = RecordingOtpRuntime()
             val viewModel = createViewModel(PausingAuthorizationGate(), mutableListOf(), otpRuntime = runtime)
             val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
 
-            val firstOwner = viewModel.acquireOtp(ENTRY_ID.value)
-            val secondOwner = viewModel.acquireOtp(ENTRY_ID.value)
-            val otherEntry = viewModel.acquireOtp("entry-2")
+            val firstOwner = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value)
+            val secondOwner = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value)
+            val otherEntry = backgroundScope.collectOtpState(viewModel, "entry-2")
+            runCurrent()
 
             assertEquals(listOf(ENTRY_ID.value, ENTRY_ID.value, "entry-2"), runtime.acquired)
             assertEquals(emptyList<String>(), runtime.released)
 
-            firstOwner.close()
+            firstOwner.cancel()
+            runCurrent()
             assertEquals(listOf(ENTRY_ID.value), runtime.released)
 
-            secondOwner.close()
-            otherEntry.close()
+            secondOwner.cancel()
+            otherEntry.cancel()
+            runCurrent()
             assertEquals(listOf(ENTRY_ID.value, ENTRY_ID.value, "entry-2"), runtime.released)
             viewModelStore.clear()
         }
@@ -470,7 +466,7 @@ class VaultViewModelTest {
             val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
             viewModel.onPageEntered()
 
-            val otpLease = viewModel.acquireOtp(ENTRY_ID.value)
+            val otpStateCollector = backgroundScope.collectOtpState(viewModel, ENTRY_ID.value)
             runCurrent()
             viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
             gate.started.await()
@@ -480,7 +476,8 @@ class VaultViewModelTest {
             assertEquals(listOf(ENTRY_ID), movedEntries)
             assertEquals(emptyList<String>(), runtime.released)
             assertEquals(listOf(ENTRY_ID.value), runtime.removed)
-            otpLease.close()
+            otpStateCollector.cancel()
+            runCurrent()
             assertEquals(listOf(ENTRY_ID.value), runtime.released)
             viewModelStore.clear()
             assertEquals(listOf(ENTRY_ID.value), runtime.released)
@@ -829,6 +826,18 @@ class VaultViewModelTest {
             }
         }
 
+    private fun CoroutineScope.collectOtpState(
+        viewModel: VaultViewModel,
+        entryId: String,
+    ) = launch {
+        viewModel
+            .otpUiStateFlow(
+                entryId = entryId,
+                otpPresentation = OtpPresentation.Applicable(OtpType.TOTP),
+                showCode = true,
+            ).collect()
+    }
+
     private fun createViewModel(
         gate: AuthorizationGate,
         clipboardValues: MutableList<String>,
@@ -1068,7 +1077,7 @@ class VaultViewModelTest {
     }
 
     private object ReadyOtpConfigRepository : OtpConfigRepository {
-        override suspend fun getGenerationMaterial(entryId: String) = generationMaterialForTest(OtpConfig(secret = "JBSWY3DPEHPK3PXP"))
+        override suspend fun getGenerationMaterial(entryId: String) = generationMaterialForTest(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP"))
 
         override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long): OtpResult =
             OtpResult.Failure(OtpGenerationError.InvalidSecret)

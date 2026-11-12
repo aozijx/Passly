@@ -9,6 +9,7 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import org.junit.Assert.assertEquals
@@ -72,11 +73,10 @@ class EntryDraftMaterializerTest {
                 identity(EntryType.OTP),
             )
 
-        val config = requireNotNull(entry.secret.otp?.config)
+        val config = requireNotNull(entry.secret.otp?.config) as OtpConfig.Totp
         assertEquals(OtpType.TOTP, config.type)
         assertEquals(6, config.digits)
         assertEquals(30, config.periodSeconds)
-        assertNull(config.counter)
     }
 
     @Test
@@ -162,11 +162,10 @@ class EntryDraftMaterializerTest {
                 identity = identity(EntryType.OTP),
             )
 
-        val config = requireNotNull(entry.secret.otp?.config)
+        val config = requireNotNull(entry.secret.otp?.config) as OtpConfig.Hotp
         assertEquals(OtpType.HOTP, config.type)
         assertEquals("ABC 123", config.secret)
         assertEquals(Long.MAX_VALUE, config.counter)
-        assertNull(config.periodSeconds)
         assertEquals(8, config.digits)
         assertEquals(OtpHashAlgorithm.SHA512, config.algorithm)
         assertEquals(OtpSecretEncoding.BASE64, config.encoding)

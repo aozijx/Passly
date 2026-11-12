@@ -53,7 +53,7 @@ class EntryValidationTest {
         for (encoding in OtpSecretEncoding.entries) {
             assertEquals(
                 setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.INVALID_FORMAT)),
-                otpViolations(OtpConfig(secret = "invalid!", encoding = encoding)),
+                otpViolations(OtpConfig.Totp(secret = "invalid!", encoding = encoding)),
             )
         }
     }
@@ -62,19 +62,15 @@ class EntryValidationTest {
     fun `otp reports parameter violations from the shared configuration rules`() {
         assertEquals(
             setOf(EntryViolation(FieldKey.OTP_DIGITS, EntryViolationCode.INVALID_FORMAT)),
-            otpViolations(OtpConfig(secret = "MY", digits = 5)),
+            otpViolations(OtpConfig.Totp(secret = "MY", digits = 5)),
         )
         assertEquals(
             setOf(FieldKey.OTP_DIGITS, FieldKey.OTP_PERIOD, FieldKey.OTP_ALGORITHM)
                 .mapTo(linkedSetOf()) { EntryViolation(it, EntryViolationCode.INVALID_FORMAT) },
             otpViolations(
-                OtpConfig(
-                    type = OtpType.STEAM,
+                OtpConfig.Steam(
                     secret = "MY",
-                    digits = 6,
-                    periodSeconds = 60,
-                    algorithm = OtpHashAlgorithm.SHA256,
-                ),
+                    ),
             ),
         )
     }
@@ -83,14 +79,14 @@ class EntryValidationTest {
     fun `missing otp secret retains the required violation`() {
         assertEquals(
             setOf(EntryViolation(FieldKey.OTP_SECRET, EntryViolationCode.REQUIRED)),
-            otpViolations(OtpConfig(secret = null)),
+            otpViolations(OtpConfig.Totp(secret = null)),
         )
     }
 
     @Test
     fun `valid otp configuration is checked without rewriting its representation`() {
         val config =
-            OtpConfig(
+            OtpConfig.Totp(
                 secret = " Zg== ",
                 encoding = OtpSecretEncoding.BASE64,
                 issuer = " Issuer ",

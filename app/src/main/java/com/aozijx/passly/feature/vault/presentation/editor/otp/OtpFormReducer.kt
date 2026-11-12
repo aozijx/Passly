@@ -1,9 +1,12 @@
 package com.aozijx.passly.feature.vault.presentation.editor.otp
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpConfigParameter
+import com.aozijx.passly.domain.entry.model.otp.OtpFactorDefinition
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.otp.HotpDefinition
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
 import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 
@@ -30,24 +33,25 @@ internal object OtpFormReducer {
     private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState {
         val definition = OtpTypeDefinitions[type]
         val validDigits = digits.toIntOrNull()?.takeIf(definition.allowedDigits::contains)
-        return when (definition.movingFactor) {
-            OtpMovingFactor.TIME ->
+        return when (val factor = definition.factor) {
+            is OtpFactorDefinition.Time ->
                 copy(
                     type = type,
                     digits = (validDigits ?: definition.defaultDigits).toString(),
                     period =
-                        (definition.fixedPeriodSeconds
-                            ?: period.toIntOrNull()?.takeIf { it > 0 }
-                            ?: checkNotNull(definition.defaultPeriodSeconds)).toString(),
-                    algorithm = definition.fixedAlgorithm ?: algorithm,
+                        (period.toIntOrNull()?.takeIf { it > 0 }
+                            ?.takeIf { OtpConfigParameter.PERIOD in definition.editableParameters }
+                            ?: factor.defaultPeriodSeconds).toString(),
+                    algorithm =
+                        if (OtpConfigParameter.ALGORITHM in definition.editableParameters) algorithm else definition.defaultAlgorithm,
                 )
 
-            OtpMovingFactor.COUNTER ->
+            is OtpFactorDefinition.Counter ->
                 copy(
                     type = type,
                     digits = (validDigits ?: definition.defaultDigits).toString(),
                     counter = counter.toLongOrNull()?.takeIf { it >= 0L }?.toString()
-                        ?: checkNotNull(definition.defaultCounter).toString(),
+                        ?: factor.initialValue.toString(),
                 )
         }
     }
@@ -59,8 +63,12 @@ internal object OtpFormReducer {
             secret = config.secret.orEmpty(),
             issuer = config.issuer.orEmpty(),
             digits = config.digits.toString(),
-            period = (config.periodSeconds ?: OtpTypeDefinitions[config.type].defaultPeriodSeconds ?: 30).toString(),
-            counter = (config.counter ?: OtpTypeDefinitions[config.type].defaultCounter ?: 0L).toString(),
+            period = when (config) {
+                is OtpConfig.Totp -> config.periodSeconds.toString()
+                is OtpConfig.Steam -> SteamDefinition.PERIOD_SECONDS.toString()
+                is OtpConfig.Hotp -> period
+            },
+            counter = (config as? OtpConfig.Hotp)?.counter?.toString() ?: HotpDefinition.INITIAL_COUNTER.toString(),
             algorithm = config.algorithm,
             encoding = config.encoding,
         ).withTypeDefaults(config.type)

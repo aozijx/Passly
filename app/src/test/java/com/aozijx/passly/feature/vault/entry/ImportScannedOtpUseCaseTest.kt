@@ -36,14 +36,12 @@ class ImportScannedOtpUseCaseTest {
     fun `direct import persists full hotp config with readable complete title`() =
         runTest {
             val config =
-                OtpConfig(
-                    type = OtpType.HOTP,
+                OtpConfig.Hotp(
                     secret = "Zm9v",
                     encoding = OtpSecretEncoding.BASE64,
                     algorithm = OtpHashAlgorithm.SHA256,
                     digits = 8,
                     counter = Long.MAX_VALUE,
-                    periodSeconds = null,
                     issuer = " Operations: West ",
                     accountName = " alice:admin ",
                 )
@@ -59,7 +57,7 @@ class ImportScannedOtpUseCaseTest {
         runTest {
             val stored = CompletableDeferred<AppResult<EntryId>>()
             val repository = Repository { stored.await() }
-            val result = async { importer(repository)(OtpConfig(secret = "MY")) }
+            val result = async { importer(repository)(OtpConfig.Totp(secret = "MY")) }
             runCurrent()
             assertEquals(1, repository.calls)
             assertFalse(result.isCompleted)
@@ -70,16 +68,16 @@ class ImportScannedOtpUseCaseTest {
     @Test
     fun `failed writes and unexpected storage errors are rejected`() =
         runTest {
-            assertFalse(importer(Repository { AppResult.Failure(ValidationError()) })(OtpConfig(secret = "MY")))
-            assertFalse(importer(Repository { error("storage unavailable") })(OtpConfig(secret = "MY")))
+            assertFalse(importer(Repository { AppResult.Failure(ValidationError()) })(OtpConfig.Totp(secret = "MY")))
+            assertFalse(importer(Repository { error("storage unavailable") })(OtpConfig.Totp(secret = "MY")))
         }
 
     @Test
     fun `locked session and unavailable secret never reach persistence`() =
         runTest {
             val repository = Repository { AppResult.Success(EntryId("saved")) }
-            assertFalse(importer(repository, AuthenticationState.Locked)(OtpConfig(secret = "MY")))
-            assertFalse(importer(repository)(OtpConfig(secret = null)))
+            assertFalse(importer(repository, AuthenticationState.Locked)(OtpConfig.Totp(secret = "MY")))
+            assertFalse(importer(repository)(OtpConfig.Totp(secret = null)))
             assertEquals(0, repository.calls)
         }
 
@@ -88,7 +86,7 @@ class ImportScannedOtpUseCaseTest {
         runTest {
             val result =
                 async {
-                    importer(Repository { throw CancellationException("cancelled") })(OtpConfig(secret = "MY"))
+                    importer(Repository { throw CancellationException("cancelled") })(OtpConfig.Totp(secret = "MY"))
                 }
             try {
                 result.await()

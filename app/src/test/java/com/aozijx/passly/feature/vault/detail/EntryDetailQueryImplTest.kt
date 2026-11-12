@@ -233,7 +233,7 @@ class EntryDetailQueryImplTest {
         secret =
             when (type) {
                 EntryType.LOGIN -> EntrySecret(LoginCredential())
-                EntryType.OTP -> EntrySecret(OtpCredential(OtpConfig()))
+                EntryType.OTP -> EntrySecret(OtpCredential(OtpConfig.Totp()))
                 else -> EntrySecret()
             },
     )

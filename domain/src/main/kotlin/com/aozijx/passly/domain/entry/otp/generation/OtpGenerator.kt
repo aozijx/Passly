@@ -2,9 +2,7 @@ package com.aozijx.passly.domain.entry.otp.generation
 
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
 import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
-import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -16,7 +14,6 @@ object OtpGenerator {
     private const val HMAC_SHA1 = "HmacSHA1"
     private const val HMAC_SHA256 = "HmacSHA256"
     private const val HMAC_SHA512 = "HmacSHA512"
-    private const val DEFAULT_PERIOD_SECONDS = 30
 
     fun generate(
         material: OtpGenerationMaterial,
@@ -25,9 +22,9 @@ object OtpGenerator {
     ): OtpResult =
         try {
             val config = material.config
-            when (OtpTypeDefinitions[config.type].movingFactor) {
-                OtpMovingFactor.TIME -> generateTimed(config, material.secretBytes, timestamp)
-                OtpMovingFactor.COUNTER -> generateCounterBased(config, material.secretBytes, overrideCounter ?: config.counter)
+            when (config) {
+                is OtpGenerationConfig.Timed -> generateTimed(config, material.secretBytes, timestamp)
+                is OtpGenerationConfig.Hotp -> generateCounterBased(config, material.secretBytes, overrideCounter ?: config.counter)
             }
         } catch (e: OtpGenerationError) {
             OtpResult.Failure(e)
@@ -36,27 +33,24 @@ object OtpGenerator {
         }
 
     private fun generateTimed(
-        config: OtpGenerationConfig,
+        config: OtpGenerationConfig.Timed,
         secretBytes: ByteArray,
         timestamp: Long,
     ): OtpResult {
-        val definition = OtpTypeDefinitions[config.type]
-        val period = definition.fixedPeriodSeconds ?: config.periodSeconds?.coerceAtLeast(1) ?: DEFAULT_PERIOD_SECONDS
-        val timeWindow = timestamp / period
+        val timeWindow = timestamp / config.periodSeconds
         return computeOtp(config, secretBytes, timeWindow, config.digits)
     }
 
     private fun generateCounterBased(
         config: OtpGenerationConfig,
         secretBytes: ByteArray,
-        counter: Long?,
+        counter: Long,
     ): OtpResult {
-        val c = counter ?: return OtpResult.Failure(OtpGenerationError.InvalidCounter)
-        if (c < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
-        if (c == Long.MAX_VALUE) return OtpResult.Failure(OtpGenerationError.CounterExhausted)
-        val result = computeOtp(config, secretBytes, c, config.digits)
+        if (counter < 0) return OtpResult.Failure(OtpGenerationError.InvalidCounter)
+        if (counter == Long.MAX_VALUE) return OtpResult.Failure(OtpGenerationError.CounterExhausted)
+        val result = computeOtp(config, secretBytes, counter, config.digits)
         return if (result is OtpResult.Success) {
-            OtpResult.Success(code = result.code, nextCounter = c + 1)
+            OtpResult.Success(code = result.code, nextCounter = counter + 1)
         } else {
             result
         }
@@ -70,8 +64,7 @@ object OtpGenerator {
     ): OtpResult {
         val decoded = OtpSecretCodec.decode(secretBytes, config.encoding)
         try {
-            val definition = OtpTypeDefinitions[config.type]
-            val algorithm = definition.fixedAlgorithm ?: config.algorithm
+            val algorithm = config.algorithm
             val hmacAlgo =
                 when (algorithm) {
                     OtpHashAlgorithm.SHA1 -> HMAC_SHA1
@@ -96,7 +89,7 @@ object OtpGenerator {
                             ((hash[offset + 2].toInt() and 0xff) shl 8) or
                             (hash[offset + 3].toInt() and 0xff)
                     val code =
-                        if (definition.outputFormat == OtpOutputFormat.STEAM_ALPHABET) {
+                        if (config.outputFormat == OtpOutputFormat.STEAM_ALPHABET) {
                             formatSteamCode(binary)
                         } else {
                             val divisor = POWERS_OF_10[digits.coerceIn(1, POWERS_OF_10.size - 1)]

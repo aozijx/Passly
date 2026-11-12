@@ -479,7 +479,7 @@ class DetailUiMapperTest {
         val cases =
             listOf(
                 typedEntry(EntryType.LOGIN, LoginCredential()) to DetailBodySectionUiModel.Credential::class,
-                typedEntry(EntryType.OTP, OtpCredential(OtpConfig(secret = "JBSWY3DPEHPK3PXP"))) to DetailBodySectionUiModel.Otp::class,
+                typedEntry(EntryType.OTP, OtpCredential(OtpConfig.Totp(secret = "JBSWY3DPEHPK3PXP"))) to DetailBodySectionUiModel.Otp::class,
                 typedEntry(EntryType.BANK_CARD, CardCredential()) to DetailBodySectionUiModel.BankCard::class,
                 typedEntry(EntryType.ID_CARD, IdentityCredential(idNumber = "id")) to DetailBodySectionUiModel.Identity::class,
                 typedEntry(EntryType.SSH_KEY, SshCredential(publicKey = "public")) to DetailBodySectionUiModel.Ssh::class,

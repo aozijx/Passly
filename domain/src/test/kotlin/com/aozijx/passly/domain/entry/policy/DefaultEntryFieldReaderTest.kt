@@ -74,10 +74,8 @@ class DefaultEntryFieldReaderTest {
                 secret =
                     EntrySecret(
                         OtpCredential(
-                            OtpConfig(
-                                type = OtpType.HOTP,
+                            OtpConfig.Hotp(
                                 counter = 17,
-                                periodSeconds = null,
                                 digits = 8,
                                 algorithm = OtpHashAlgorithm.SHA512,
                                 encoding = OtpSecretEncoding.BASE64,

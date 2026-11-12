@@ -318,11 +318,11 @@ internal class BitwardenJsonImportAdapter
 
                     OtpUriParseResult.NotOtp -> {
                         if (trimmed.startsWith("steam://", ignoreCase = true)) {
-                            OtpConfig.steamDefaults(
+                            OtpConfig.Steam(
                                 OtpSecretCodec.canonicalBase32(trimmed.drop("steam://".length), OtpSecretEncoding.BASE32),
                             )
                         } else {
-                            OtpConfig(
+                            OtpConfig.Totp(
                                 secret =
                                     OtpSecretCodec.canonicalBase32(
                                         trimmed.filterNot(Char::isWhitespace),

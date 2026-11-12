@@ -1,15 +1,9 @@
 package com.aozijx.passly.domain.entry.model.otp
 
-
 enum class OtpType {
     TOTP,
     HOTP,
     STEAM,
-}
-
-enum class OtpMovingFactor {
-    TIME,
-    COUNTER,
 }
 
 enum class OtpOutputFormat {
@@ -33,55 +27,72 @@ enum class OtpSecretEncoding {
     BASE64,
 }
 
-data class OtpConfig(
-    val type: OtpType = OtpType.TOTP,
-    /**
-     * `null` means the secret is stored as a separate field-level ciphertext and has not been
-     * decrypted yet. Callers that generate codes must obtain the value first (field reveal or
-     * complete read).
-     */
-    val secret: String? = null,
-    val algorithm: OtpHashAlgorithm = OtpHashAlgorithm.SHA1,
-    val digits: Int = 6,
-    val periodSeconds: Int? = 30,
-    val counter: Long? = null,
-    val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
-    val issuer: String? = null,
-    val accountName: String? = null,
-) {
-    init {
-        require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
-        val definition = OtpTypeDefinitions[type]
-        require(digits in definition.allowedDigits) { "OTP digits are not supported by $type" }
-        require(periodSeconds == null || periodSeconds > 0) { "OTP period must be positive" }
-        require(counter == null || counter >= 0) { "OTP counter cannot be negative" }
-        require(definition.movingFactor == OtpMovingFactor.COUNTER || periodSeconds != null) {
-            "Time-based OTP requires a period"
+/** Configuration variants contain only the parameters their OTP algorithm consumes. */
+sealed interface OtpConfig {
+    val type: OtpType
+    /** Null means the secret remains in separate field-level encrypted storage. */
+    val secret: String?
+    val algorithm: OtpHashAlgorithm
+    val digits: Int
+    val encoding: OtpSecretEncoding
+    val issuer: String?
+    val accountName: String?
+
+    data class Totp(
+        override val secret: String? = null,
+        override val algorithm: OtpHashAlgorithm = TotpDefinition.defaultAlgorithm,
+        override val digits: Int = TotpDefinition.DEFAULT_DIGITS,
+        val periodSeconds: Int = TotpDefinition.DEFAULT_PERIOD_SECONDS,
+        override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
+        override val issuer: String? = null,
+        override val accountName: String? = null,
+    ) : OtpConfig {
+        override val type = OtpType.TOTP
+
+        init {
+            require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
+            require(digits in TotpDefinition.allowedDigits) { "TOTP digits are unsupported" }
+            require(periodSeconds > 0) { "TOTP period must be positive" }
         }
-        require(definition.movingFactor == OtpMovingFactor.TIME || counter != null) {
-            "Counter-based OTP requires a counter"
-        }
-        require(definition.fixedPeriodSeconds == null || periodSeconds == definition.fixedPeriodSeconds) {
-            "OTP type $type requires a fixed period"
-        }
-        require(definition.fixedAlgorithm == null || algorithm == definition.fixedAlgorithm) {
-            "OTP type $type requires a fixed algorithm"
+    }
+    data class Hotp(
+        override val secret: String? = null,
+        override val algorithm: OtpHashAlgorithm = HotpDefinition.defaultAlgorithm,
+        override val digits: Int = HotpDefinition.DEFAULT_DIGITS,
+        val counter: Long = HotpDefinition.INITIAL_COUNTER,
+        override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
+        override val issuer: String? = null,
+        override val accountName: String? = null,
+    ) : OtpConfig {
+        override val type = OtpType.HOTP
+
+        init {
+            require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
+            require(digits in HotpDefinition.allowedDigits) { "HOTP digits are unsupported" }
+            require(counter >= 0L) { "HOTP counter cannot be negative" }
         }
     }
 
-    companion object {
-        fun steamDefaults(
-            secret: String,
-            issuer: String? = null,
-        ): OtpConfig =
-            OtpConfig(
-                type = OtpType.STEAM,
-                secret = secret,
-                algorithm = OtpHashAlgorithm.SHA1,
-                digits = 5,
-                periodSeconds = 30,
-                encoding = OtpSecretEncoding.BASE32,
-                issuer = issuer,
-            )
+    data class Steam(
+        override val secret: String? = null,
+        override val encoding: OtpSecretEncoding = OtpSecretEncoding.BASE32,
+        override val issuer: String? = null,
+        override val accountName: String? = null,
+    ) : OtpConfig {
+        override val type = OtpType.STEAM
+        override val algorithm = SteamDefinition.defaultAlgorithm
+        override val digits = SteamDefinition.DIGITS
+
+        init {
+            require(secret == null || secret.isNotBlank()) { "OTP secret cannot be blank" }
+        }
     }
 }
+
+/** Returns the same algorithm-specific configuration with a replaced secret value. */
+fun OtpConfig.withSecret(secret: String?): OtpConfig =
+    when (this) {
+        is OtpConfig.Totp -> copy(secret = secret)
+        is OtpConfig.Hotp -> copy(secret = secret)
+        is OtpConfig.Steam -> copy(secret = secret)
+    }

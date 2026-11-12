@@ -25,6 +25,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationConfig
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -75,7 +76,8 @@ class HotpCodeConsumptionTransactionTest {
             val result =
                 database.withTransaction {
                     transaction.consume(database, ENTRY_ID, expectedCounter = 7) { material ->
-                        OtpResult.Success(code = "123456", nextCounter = checkNotNull(material.config.counter) + 1)
+                        val counter = (material.config as OtpGenerationConfig.Hotp).counter
+                        OtpResult.Success(code = "123456", nextCounter = counter + 1)
                     }
                 }
 
@@ -86,7 +88,7 @@ class HotpCodeConsumptionTransactionTest {
                     .readBundle(database, ENTRY_ID, EntryType.OTP)
                     .otp
                     ?.config
-                    ?.counter,
+                    ?.let { (it as OtpConfig.Hotp).counter },
             )
             assertEquals(1, database.entryQueryDao().getById(ENTRY_ID)?.version)
             assertTrue(
@@ -113,7 +115,7 @@ class HotpCodeConsumptionTransactionTest {
                     .readBundle(database, ENTRY_ID, EntryType.OTP)
                     .otp
                     ?.config
-                    ?.counter,
+                    ?.let { (it as OtpConfig.Hotp).counter },
             )
         }
 
@@ -180,14 +182,13 @@ class HotpCodeConsumptionTransactionTest {
                     .readBundle(database, ENTRY_ID, EntryType.OTP)
                     .otp
                     ?.config
-                    ?.counter,
+                    ?.let { (it as OtpConfig.Hotp).counter },
             )
         }
 
     private suspend fun seed(counter: Long) {
         val config =
-            OtpConfig(
-                type = OtpType.HOTP,
+            OtpConfig.Hotp(
                 secret = null,
                 counter = counter,
             )

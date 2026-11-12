@@ -21,8 +21,7 @@ class OtpGeneratorTest {
     @Test
     fun `hotp - RFC 4226 测试向量`() {
         val config =
-            OtpConfig(
-                type = OtpType.HOTP,
+            OtpConfig.Hotp(
                 secret = SECRET_20,
                 algorithm = OtpHashAlgorithm.SHA1,
                 digits = 6,
@@ -55,7 +54,7 @@ class OtpGeneratorTest {
 
     @Test
     fun `hotp exhausted stored or overridden counter cannot return wrapped next counter`() {
-        val config = OtpConfig(type = OtpType.HOTP, secret = SECRET_20, counter = Long.MAX_VALUE)
+        val config = OtpConfig.Hotp(secret = SECRET_20, counter = Long.MAX_VALUE)
 
         val exhausted = OtpResult.Failure(OtpGenerationError.CounterExhausted)
         assertEquals(exhausted, generate(config))
@@ -65,7 +64,7 @@ class OtpGeneratorTest {
 
     @Test
     fun `hotp last advanceable counter returns largest representable next counter`() {
-        val config = OtpConfig(type = OtpType.HOTP, secret = SECRET_20, counter = Long.MAX_VALUE - 1)
+        val config = OtpConfig.Hotp(secret = SECRET_20, counter = Long.MAX_VALUE - 1)
         val result = generate(config)
 
         assertTrue(result is OtpResult.Success)
@@ -96,8 +95,7 @@ class OtpGeneratorTest {
 
         for ((algorithm, secret, expectedCodes) in cases) {
             val config =
-                OtpConfig(
-                    type = OtpType.TOTP,
+                OtpConfig.Totp(
                     secret = secret,
                     algorithm = algorithm,
                     digits = 8,
@@ -119,7 +117,7 @@ class OtpGeneratorTest {
         val seed = original.clone()
         val material =
             OtpGenerationMaterial(
-                OtpConfig(type = OtpType.TOTP, secret = null, digits = 8, encoding = OtpSecretEncoding.BASE32).toGenerationConfig(),
+                OtpConfig.Totp(secret = null, digits = 8, encoding = OtpSecretEncoding.BASE32).toGenerationConfig(),
                 seed,
             )
 
@@ -150,7 +148,7 @@ class OtpGeneratorTest {
     @Test
     fun `steam - 固定样例`() {
         val secret = "JBSWY3DPEHPK3PXP"
-        val config = OtpConfig.steamDefaults(secret)
+        val config = OtpConfig.Steam(secret = secret)
 
         val result = generate(config, timestamp = 1000000L)
         assertTrue(result is OtpResult.Success)
@@ -168,7 +166,7 @@ class OtpGeneratorTest {
     @Test
     fun `base32 rejects malformed padding instead of generating a code`() {
         for (secret in listOf("JBSW=Y3DPEHPK3PXP", "JBSWY3DP=", "MZ======")) {
-            val config = OtpConfig(secret = secret, encoding = OtpSecretEncoding.BASE32)
+            val config = OtpConfig.Totp(secret = secret, encoding = OtpSecretEncoding.BASE32)
 
             assertEquals(OtpResult.Failure(OtpGenerationError.InvalidSecret), generate(config))
         }
@@ -189,8 +187,7 @@ private fun generateByteSeed(
 ): OtpResult {
     val material =
         OtpGenerationMaterial(
-            OtpConfig(
-                type = OtpType.TOTP,
+            OtpConfig.Totp(
                 secret = null,
                 digits = 8,
                 periodSeconds = 30,

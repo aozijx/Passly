@@ -2,9 +2,10 @@
 
 状态：当前实现。
 
-手动输入经 Domain 的 `OtpConfigInput.parse` 返回 `Valid(config)` 或 `Invalid(fields)`；页面状态与草稿映射
-使用同一规则。数字输入为空、损坏或溢出时禁止保存，不补成默认配置。初始表单的 6 位、30 秒和计数器 0
+手动输入经 Domain 的 `OtpConfigInput.parse` 返回 `Valid(config)` 或 `Invalid(fields)`；页面状态、草稿映射和最终写入使用同一规则。数字输入为空、损坏或溢出时禁止保存，不补成默认配置。初始表单的 6 位、30 秒和计数器 0
 是可见的初始值，用户清空后必须重新填写。
+
+`OtpConfig` 是算法专属的互斥模型：`Totp` 必须有正周期，`Hotp` 必须有非负计数器，`Steam` 的 SHA1、5 位和 30 秒规则由类型固定派生。运行时生成参数也按这三种算法分别建模；新增 OTP 算法应新增自己的配置与派生分支，不把专属字段塞回可空联合参数。Data 只在既有序列化 DTO 边界把类型参数映射到 nullable 的历史存储列，其他层不依赖这些存储形状。
 
 - TOTP/HOTP：位数为 6–8，保留项目的 7 位支持。
 - TOTP：周期为可表示为 Int 的正整数秒数；不读取隐藏的 HOTP counter。
@@ -59,7 +60,7 @@ OTP 编辑表单通过字段级 `AddOtpAction.FormMutation` 修改当前状态�
 | --- | --- | --- |
 | 校验编辑 owner 后把字段级 mutation 归约到当前 OTP 表单状态 | `AddOtpViewModel.onAction(FormMutation)`、`mutateForm()`、`OtpFormReducer.reduce()` | [`AddOtpAction.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpAction.kt)、[`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`OtpFormReducer.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormReducer.kt) |
 | 将编辑表单状态映射为新建草稿，解析配置、标题、备注与标签 | `OtpFormState.toEntryDraft()` | [`OtpFormMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormMapper.kt) |
-| 由表单状态投影 HOTP counter 字段及 OTP 参数编辑能力 | `OtpFormState.usesCounterField`、`allowsParameterEditing` | [`OtpFormState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormState.kt) |
+| 由表单状态投影 HOTP counter 字段及各 OTP 定义允许编辑的参数 | `OtpFormState.usesCounterField`、`canEdit(parameter)` | [`OtpFormState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/OtpFormState.kt) |
 | 处理 OTP 编辑页 Action，快照当前状态并在 Save 时提交草稿 | `AddOtpViewModel.onAction(AddOtpAction.Save)`、`save()`、`EditorWriteSession.save { current.form.toEntryDraft() }` | [`AddOtpViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/otp/AddOtpViewModel.kt)、[`EditorWriteSession.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/editor/EditorWriteSession.kt) |
 | 将新 OTP 配置转换为带默认标题的草稿 | `OtpConfig.toNewEntryDraft(title = suggestedEntryTitle())`、`OtpConfig.suggestedEntryTitle()` | [`OtpEntryDraft.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/otp/OtpEntryDraft.kt) |
 | 确认首页扫码导入的 owner、认证与访问状态并串行接收任务 | `ScannedOtpImportViewModel.importScannedOtp(config)` | [`ScannedOtpImportViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/ScannedOtpImportViewModel.kt) |

@@ -2,38 +2,48 @@ package com.aozijx.passly.domain.entry.otp.generation
 
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
+import com.aozijx.passly.domain.entry.model.otp.OtpOutputFormat
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
-import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
-import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
+import com.aozijx.passly.domain.entry.model.otp.SteamDefinition
 
-/** Non-sensitive OTP parameters required by the generation algorithm. */
-data class OtpGenerationConfig(
-    val type: OtpType,
-    val algorithm: OtpHashAlgorithm,
-    val digits: Int,
-    val periodSeconds: Int?,
-    val counter: Long?,
-    val encoding: OtpSecretEncoding,
-) {
-    init {
-        val definition = OtpTypeDefinitions[type]
-        require(digits in definition.allowedDigits)
-        require(periodSeconds == null || periodSeconds > 0)
-        require(counter == null || counter >= 0)
-        require(definition.movingFactor == OtpMovingFactor.COUNTER || periodSeconds != null)
-        require(definition.movingFactor == OtpMovingFactor.TIME || counter != null)
-        require(definition.fixedPeriodSeconds == null || periodSeconds == definition.fixedPeriodSeconds)
-        require(definition.fixedAlgorithm == null || algorithm == definition.fixedAlgorithm)
+/** Non-sensitive, type-specific parameters required by each OTP generation algorithm. */
+sealed interface OtpGenerationConfig {
+    val algorithm: OtpHashAlgorithm
+    val digits: Int
+    val encoding: OtpSecretEncoding
+    val outputFormat: OtpOutputFormat get() = OtpOutputFormat.DECIMAL
+
+    sealed interface Timed : OtpGenerationConfig {
+        val periodSeconds: Int
+    }
+
+    data class Totp(
+        override val algorithm: OtpHashAlgorithm,
+        override val digits: Int,
+        override val periodSeconds: Int,
+        override val encoding: OtpSecretEncoding,
+    ) : Timed
+
+    data class Hotp(
+        override val algorithm: OtpHashAlgorithm,
+        override val digits: Int,
+        val counter: Long,
+        override val encoding: OtpSecretEncoding,
+    ) : OtpGenerationConfig
+
+    data class Steam(
+        override val encoding: OtpSecretEncoding,
+    ) : Timed {
+        override val algorithm = SteamDefinition.defaultAlgorithm
+        override val digits = SteamDefinition.DIGITS
+        override val periodSeconds = SteamDefinition.PERIOD_SECONDS
+        override val outputFormat = OtpOutputFormat.STEAM_ALPHABET
     }
 }
 
 fun OtpConfig.toGenerationConfig(): OtpGenerationConfig =
-    OtpGenerationConfig(
-        type = type,
-        algorithm = algorithm,
-        digits = digits,
-        periodSeconds = periodSeconds,
-        counter = counter,
-        encoding = encoding,
-    )
+    when (this) {
+        is OtpConfig.Totp -> OtpGenerationConfig.Totp(algorithm, digits, periodSeconds, encoding)
+        is OtpConfig.Hotp -> OtpGenerationConfig.Hotp(algorithm, digits, counter, encoding)
+        is OtpConfig.Steam -> OtpGenerationConfig.Steam(encoding)
+    }

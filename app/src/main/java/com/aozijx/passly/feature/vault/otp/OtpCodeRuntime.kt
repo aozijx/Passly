@@ -2,11 +2,9 @@ package com.aozijx.passly.feature.vault.otp
 
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
-import com.aozijx.passly.domain.entry.model.otp.OtpMovingFactor
-import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationConfig
 import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
 import com.aozijx.passly.domain.entry.otp.generation.OtpResult
-import com.aozijx.passly.domain.entry.model.otp.OtpTypeDefinitions
 import com.aozijx.passly.domain.settings.model.OtpRuntimePolicy
 import com.aozijx.passly.domain.settings.port.OtpRuntimePolicySnapshotReader
 import com.aozijx.passly.runtime.session.SessionLockedException
@@ -63,11 +61,11 @@ internal class OtpCodeRuntime(
     override val states: StateFlow<Map<String, OtpCodeState>> = _states
 
     /** Cached config contains no seed and is safe to retain for scheduling. */
-    private data class OtpSchedule(
-        val kind: OtpMovingFactor,
-        val periodSeconds: Int,
-        val timeStep: Long,
-    )
+    private sealed interface OtpSchedule {
+        data class Timed(val periodSeconds: Int, val timeStep: Long) : OtpSchedule
+
+        data object Counter : OtpSchedule
+    }
 
     private val schedules = mutableMapOf<String, OtpSchedule>()
 
@@ -120,10 +118,10 @@ internal class OtpCodeRuntime(
             if (activationRecovery[entryId] == OtpActivationRecovery.PermanentlyFailed) continue
             val token = currentActivationToken(entryId) ?: continue
             if (!isCurrent(entryId, token)) continue
-            if (schedule.kind == OtpMovingFactor.COUNTER) continue
+            val timedSchedule = schedule as? OtpSchedule.Timed ?: continue
 
-            val movingFactor = nowSeconds / schedule.periodSeconds
-            if (movingFactor != schedule.timeStep) {
+            val movingFactor = nowSeconds / timedSchedule.periodSeconds
+            if (movingFactor != timedSchedule.timeStep) {
                 val existingMaterial = generationMaterials[entryId]
                 val config =
                     existingMaterial ?: try {
@@ -165,7 +163,7 @@ internal class OtpCodeRuntime(
                 }
                 try {
                     val generationMaterial =
-                        existingMaterial ?: if (OtpTypeDefinitions[config.config.type].movingFactor == OtpMovingFactor.COUNTER) {
+                        existingMaterial ?: if (config.config is OtpGenerationConfig.Hotp) {
                             config
                         } else {
                             config.copyForGeneration().also { generationMaterials[entryId] = it }
@@ -186,7 +184,7 @@ internal class OtpCodeRuntime(
             listOfNotNull(
                 schedules.values
                     .asSequence()
-                    .filter { it.kind == OtpMovingFactor.TIME }
+                    .filterIsInstance<OtpSchedule.Timed>()
                     .map { schedule -> (schedule.timeStep + 1) * schedule.periodSeconds * 1000L }
                     .minOrNull(),
                 activationRecovery.values
@@ -404,19 +402,20 @@ internal class OtpCodeRuntime(
             var policySnapshot: OtpRuntimePolicy? = null
             val nowSeconds = currentTimeMillis() / 1000
             val schedule = schedules[entryId]
-            if (schedule?.kind == OtpMovingFactor.COUNTER) {
+            if (schedule is OtpSchedule.Counter) {
                 return (generateHotpCode(entryId) as? OtpResult.Success)?.code
             }
             val ready = states.value[entryId] as? OtpCodeState.TimedReady
+            val timedSchedule = schedule as? OtpSchedule.Timed
             if (
-                ready != null && schedule != null &&
-                nowSeconds / schedule.periodSeconds == schedule.timeStep
+                ready != null && timedSchedule != null &&
+                nowSeconds / timedSchedule.periodSeconds == timedSchedule.timeStep
             ) {
                 val policy = otpRuntimePolicyReader.readOtpRuntimePolicySnapshot().also { policySnapshot = it }
                 val decisionSeconds = currentTimeMillis() / 1000
-                if (decisionSeconds / schedule.periodSeconds == schedule.timeStep) {
+                if (decisionSeconds / timedSchedule.periodSeconds == timedSchedule.timeStep) {
                     val code =
-                        if (shouldCopyNextWindow(decisionSeconds, schedule.periodSeconds, policy)) {
+                        if (shouldCopyNextWindow(decisionSeconds, timedSchedule.periodSeconds, policy)) {
                             ready.nextCode
                         } else {
                             ready.code
@@ -429,14 +428,18 @@ internal class OtpCodeRuntime(
             val material = cachedMaterial ?: loadOtpMaterial(entryId) ?: return null
             try {
                 if (!sessionUnlocked) return null
-                if (OtpTypeDefinitions[material.config.type].movingFactor == OtpMovingFactor.COUNTER) {
-                    val expectedCounter = material.config.counter ?: return null
+                val generationConfig = material.config
+                if (generationConfig is OtpGenerationConfig.Hotp) {
+                    val expectedCounter = generationConfig.counter
                     val result = consumeHotpCode(entryId, expectedCounter)
                     if (!isCopyRequestCurrent(entryId, copyToken, copySessionEpoch)) return null
                     return (result as? OtpResult.Success)?.code
                 }
-                val typeDefinition = OtpTypeDefinitions[material.config.type]
-                val period = typeDefinition.fixedPeriodSeconds ?: material.config.periodSeconds?.coerceAtLeast(1) ?: 30
+                val period =
+                    when (generationConfig) {
+                        is OtpGenerationConfig.Timed -> generationConfig.periodSeconds
+                        is OtpGenerationConfig.Hotp -> return null
+                    }
                 val policy = policySnapshot ?: otpRuntimePolicyReader.readOtpRuntimePolicySnapshot()
                 val generationMaterial = if (cachedMaterial != null) material.copyForGeneration() else material
                 val code =
@@ -548,7 +551,7 @@ internal class OtpCodeRuntime(
             val nowSeconds = currentTimeMillis() / 1000
             try {
                 val generationMaterial =
-                    existingMaterial ?: if (OtpTypeDefinitions[config.config.type].movingFactor == OtpMovingFactor.COUNTER) {
+                    existingMaterial ?: if (config.config is OtpGenerationConfig.Hotp) {
                         config
                     } else {
                         config.copyForGeneration().also { generationMaterials[entryId] = it }
@@ -574,10 +577,9 @@ internal class OtpCodeRuntime(
         token: ActivationToken,
     ) {
         val config = material.config
-        val typeDefinition = OtpTypeDefinitions[config.type]
-        if (typeDefinition.movingFactor == OtpMovingFactor.COUNTER) {
+        if (config is OtpGenerationConfig.Hotp) {
             if (!isCurrent(entryId, token)) return
-            val counter = config.counter ?: 0L
+            val counter = config.counter
             val canRollbackPrevious = lastHotpNextCounters[entryId] == counter
             if (!canRollbackPrevious) lastHotpNextCounters.remove(entryId)
             val state =
@@ -596,25 +598,19 @@ internal class OtpCodeRuntime(
                         )
                 }
             if (!isCurrent(entryId, token)) return
-            schedules[entryId] =
-                OtpSchedule(
-                    kind = OtpMovingFactor.COUNTER,
-                    periodSeconds = 1,
-                    timeStep = counter,
-                )
+            schedules[entryId] = OtpSchedule.Counter
             _states.update { it + (entryId to state) }
             recordStateOutcome(entryId, state)
             wakeTicker()
             return
         }
 
-        val period = typeDefinition.fixedPeriodSeconds ?: config.periodSeconds?.coerceAtLeast(1) ?: 30
-        val schedule =
-            OtpSchedule(
-                kind = typeDefinition.movingFactor,
-                periodSeconds = period,
-                timeStep = nowSeconds / period,
-            )
+        val period =
+            when (config) {
+                is OtpGenerationConfig.Timed -> config.periodSeconds
+                is OtpGenerationConfig.Hotp -> return
+            }
+        val schedule = OtpSchedule.Timed(periodSeconds = period, timeStep = nowSeconds / period)
         val generationCopy = material.copyForGeneration()
         val state =
             try {
