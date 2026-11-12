@@ -16,16 +16,16 @@ import com.aozijx.passly.domain.access.model.LockTrigger
 import com.aozijx.passly.domain.access.model.SessionLockRequest
 import com.aozijx.passly.domain.access.policy.AppPasswordPolicy
 import com.aozijx.passly.domain.access.port.AuthenticationManager
+import com.aozijx.passly.domain.access.port.AuthenticationKdfParameterSource
 import com.aozijx.passly.domain.access.port.AuthenticationMethodProvisioner
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenance
 import com.aozijx.passly.domain.access.port.AuthenticationRuntimeMaintenanceResult
 import com.aozijx.passly.domain.access.port.VaultBootstrapStore
-import com.aozijx.passly.security.authentication.flow.AuthenticationAvailabilityResolver
+import com.aozijx.passly.security.authentication.flow.AuthenticationAvailabilityResolverPort
 import com.aozijx.passly.security.authentication.host.AuthenticationHostRegistry
 import com.aozijx.passly.security.authentication.method.biometric.RotateBiometricKeyUseCase
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.envelope.EnvelopeManager
-import com.aozijx.passly.security.session.VaultSessionController
 import com.aozijx.passly.security.session.finishRecoveryPasswordProvisioning
 import com.github.f4b6a3.uuid.UuidCreator
 import javax.crypto.Cipher
@@ -41,15 +41,15 @@ internal class DefaultAuthenticationMethodProvisioner
     @Inject
     constructor(
         private val kdfRunner: KdfRunner,
-        private val kdfConfiguration: DeviceKdfConfiguration,
+        private val kdfConfiguration: AuthenticationKdfParameterSource,
         private val dekManager: DekManager,
-        private val session: VaultSessionController,
+        private val session: AuthenticationProvisioningSession,
         private val authenticationManager: AuthenticationManager,
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val hostRegistry: AuthenticationHostRegistry,
         private val rotateBiometricKey: RotateBiometricKeyUseCase,
         private val runtimeMaintenance: AuthenticationRuntimeMaintenance,
-        private val availabilityResolver: AuthenticationAvailabilityResolver,
+        private val availabilityResolver: AuthenticationAvailabilityResolverPort,
     ) : AuthenticationMethodProvisioner {
         override suspend fun authorizeAppPasswordManagement(): AuthenticationResult =
             authenticationManager.authenticate(

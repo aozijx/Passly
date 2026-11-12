@@ -20,6 +20,7 @@ import com.aozijx.passly.domain.settings.port.IdleTimeoutSettings
 import com.aozijx.passly.runtime.session.DatabaseSessionLifecycle
 import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.security.authentication.method.credential.OwnedBytes
+import com.aozijx.passly.security.authentication.method.credential.AuthenticationProvisioningSession
 import com.aozijx.passly.security.autofill.inbox.AutofillInboxKeyProvisioning
 import com.aozijx.passly.security.dek.DekManager
 import com.aozijx.passly.security.dek.DekUnlockResult
@@ -60,6 +61,7 @@ internal class VaultSessionController
         private val idleTimeoutSettings: IdleTimeoutSettings,
         private val autofillInboxKeyProvisioning: AutofillInboxKeyProvisioning,
     ) : SecureSessionAccessState,
+        AuthenticationProvisioningSession,
         SessionActivityReporter,
         SessionVisibilityController,
         DatabaseSessionFailureState,
@@ -250,7 +252,7 @@ internal class VaultSessionController
          * 用于生物识别路径。冷启动时 DEK 已由 BiometricMethodExecutor 写入，
          * 但仍必须在发布 Authenticated 前真正打开数据库。
          */
-        suspend fun markAuthenticated(purpose: AuthenticationPurpose): Boolean =
+        override suspend fun markAuthenticated(purpose: AuthenticationPurpose): Boolean =
             mutex.withLock {
                 if (lockStateManager.state == SecureSessionState.UNLOCKED) {
                     if (mutableAuthenticationState.value is AuthenticationState.RecoveryMode) {
@@ -438,7 +440,7 @@ internal class VaultSessionController
          * - SEALED（AUTOFILL_REQUEST_FINISHED / BACKGROUND / INTEGRITY_FAILURE / APP_EXIT）：
          *   排干 + 关库 + 擦 DEK
          */
-        suspend fun lock(request: SessionLockRequest) {
+        override suspend fun lock(request: SessionLockRequest) {
             var fatalForCaller: Error? = null
             try {
                 securityEvents.traceLock(

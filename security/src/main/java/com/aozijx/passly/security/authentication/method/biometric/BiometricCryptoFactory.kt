@@ -35,15 +35,31 @@ internal sealed interface BiometricCryptoPreparation {
     ) : BiometricCryptoPreparation
 }
 
+internal interface BiometricCryptoGateway {
+    fun baseAlias(): String
+
+    fun createDecrypt(
+        alias: String,
+        iv: ByteArray,
+    ): BiometricCryptoPreparation
+
+    fun createEncrypt(
+        alias: String,
+        invalidateOnEnrollment: Boolean,
+    ): BiometricCryptoPreparation
+
+    fun deleteAlias(alias: String): Boolean
+}
+
 @Singleton
 internal class BiometricCryptoFactory
     @Inject
     constructor(
         @param:ApplicationContext private val context: Context,
-    ) {
-        internal fun baseAlias(): String = "${context.packageName}.${CryptoConfig.KEYSTORE_ALIAS_SUFFIX}"
+    ) : BiometricCryptoGateway {
+        override fun baseAlias(): String = "${context.packageName}.${CryptoConfig.KEYSTORE_ALIAS_SUFFIX}"
 
-        internal fun createDecrypt(
+        override fun createDecrypt(
             alias: String,
             iv: ByteArray,
         ): BiometricCryptoPreparation =
@@ -68,7 +84,7 @@ internal class BiometricCryptoFactory
                 BiometricCryptoPreparation.Invalid(error)
             }
 
-        internal fun createEncrypt(
+        override fun createEncrypt(
             alias: String,
             invalidateOnEnrollment: Boolean,
         ): BiometricCryptoPreparation =
@@ -101,7 +117,7 @@ internal class BiometricCryptoFactory
                 BiometricCryptoPreparation.Invalid(error)
             }
 
-        internal fun deleteAlias(alias: String): Boolean =
+        override fun deleteAlias(alias: String): Boolean =
             attemptBiometricAliasDeletion {
                 val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
                 if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)

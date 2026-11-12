@@ -17,13 +17,19 @@ import kotlinx.coroutines.withContext
  * 共用同一套判断逻辑，避免各处散落不一致的可用性检查。
  */
 @Singleton
+internal interface AuthenticationAvailabilityResolverPort {
+    suspend fun resolve(): AuthenticationMethods
+
+    suspend fun hasAlternativePrimaryFactor(excluding: EnvelopeType): Boolean
+}
+
 internal class AuthenticationAvailabilityResolver
     @Inject
     constructor(
         private val vaultBootstrapStore: VaultBootstrapStore,
         private val biometricManager: BiometricManager,
-    ) {
-        suspend fun resolve(): AuthenticationMethods =
+    ) : AuthenticationAvailabilityResolverPort {
+        override suspend fun resolve(): AuthenticationMethods =
             withContext(Dispatchers.Default) {
                 val credentials = vaultBootstrapStore.loadAuthenticationCredentialSnapshot()
                 credentials.toAuthenticationMethods(
@@ -35,7 +41,7 @@ internal class AuthenticationAvailabilityResolver
             }
 
         /** 是否存在除 [method] 之外的其他可用 primary factor。 */
-        suspend fun hasAlternativePrimaryFactor(excluding: EnvelopeType): Boolean =
+        override suspend fun hasAlternativePrimaryFactor(excluding: EnvelopeType): Boolean =
             resolve().let { availability ->
                 when (excluding) {
                     EnvelopeType.APP_PASSWORD -> AuthenticationMethod.BIOMETRIC in availability

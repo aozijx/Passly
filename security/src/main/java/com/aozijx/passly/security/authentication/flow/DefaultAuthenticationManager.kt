@@ -56,7 +56,7 @@ internal class DefaultAuthenticationManager
         private val credentialExecutor: CredentialMethodExecutor,
         private val session: VaultSessionController,
         private val settingsSource: SecuritySettingsSource,
-        private val availabilityResolver: AuthenticationAvailabilityResolver,
+        private val availabilityResolver: AuthenticationAvailabilityResolverPort,
         private val sensitiveDataKeyManager: SensitiveDataKeyManager,
         private val securityEvents: SecuritySessionEventLogger,
     ) : AuthenticationManager {

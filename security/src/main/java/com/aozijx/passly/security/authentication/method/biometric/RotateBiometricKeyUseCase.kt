@@ -33,7 +33,7 @@ internal class RotateBiometricKeyUseCase
     @Inject
     constructor(
         private val vaultBootstrapStore: VaultBootstrapStore,
-        private val cryptoFactory: BiometricCryptoFactory,
+        private val cryptoFactory: BiometricCryptoGateway,
         private val dekManager: DekManager,
         private val runtimeMaintenance: AuthenticationRuntimeMaintenance,
     ) {

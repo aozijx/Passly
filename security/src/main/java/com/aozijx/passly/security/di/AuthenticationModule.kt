@@ -19,8 +19,13 @@ import com.aozijx.passly.domain.access.port.SessionLockController
 import com.aozijx.passly.domain.access.port.SessionVisibilityController
 import com.aozijx.passly.domain.autofill.port.AutofillInboxQueue
 import com.aozijx.passly.security.authentication.flow.DefaultAuthenticationManager
+import com.aozijx.passly.security.authentication.flow.AuthenticationAvailabilityResolver
+import com.aozijx.passly.security.authentication.flow.AuthenticationAvailabilityResolverPort
+import com.aozijx.passly.security.authentication.method.biometric.BiometricCryptoFactory
+import com.aozijx.passly.security.authentication.method.biometric.BiometricCryptoGateway
 import com.aozijx.passly.security.authentication.method.biometric.BiometricRotationReconciler
 import com.aozijx.passly.security.authentication.method.credential.CredentialAttemptLimiter
+import com.aozijx.passly.security.authentication.method.credential.AuthenticationProvisioningSession
 import com.aozijx.passly.security.authentication.method.credential.DefaultAuthenticationMethodProvisioner
 import com.aozijx.passly.security.authentication.method.credential.DefaultRecoveryCodeDraftFactory
 import com.aozijx.passly.security.authentication.method.credential.DefaultRecoveryCredentialGenerator
@@ -66,6 +71,14 @@ internal abstract class AuthenticationModule {
 
     @Binds
     @Singleton
+    abstract fun bindAuthenticationAvailabilityResolver(impl: AuthenticationAvailabilityResolver): AuthenticationAvailabilityResolverPort
+
+    @Binds
+    @Singleton
+    abstract fun bindBiometricCryptoGateway(impl: BiometricCryptoFactory): BiometricCryptoGateway
+
+    @Binds
+    @Singleton
     abstract fun bindAuthenticationRequester(impl: DefaultAuthenticationManager): AuthenticationRequester
 
     @Binds
@@ -83,6 +96,10 @@ internal abstract class AuthenticationModule {
     @Binds
     @Singleton
     abstract fun bindAuthenticationMethodProvisioner(impl: DefaultAuthenticationMethodProvisioner): AuthenticationMethodProvisioner
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthenticationProvisioningSession(impl: VaultSessionController): AuthenticationProvisioningSession
 
     @Binds
     @Singleton

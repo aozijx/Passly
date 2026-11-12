@@ -26,7 +26,7 @@ internal class BiometricMethodExecutor
     @Inject
     constructor(
         private val vaultBootstrapStore: VaultBootstrapStore,
-        private val cryptoFactory: BiometricCryptoFactory,
+        private val cryptoFactory: BiometricCryptoGateway,
         private val dekManager: DekManager,
         private val session: VaultSessionController,
         private val logger: Logger,
