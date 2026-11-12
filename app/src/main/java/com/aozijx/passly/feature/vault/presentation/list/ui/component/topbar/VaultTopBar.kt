@@ -23,8 +23,8 @@ import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
-import com.aozijx.passly.feature.vault.presentation.list.ui.search.isEditing
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.VaultSearchStateHolder
+import com.aozijx.passly.feature.vault.presentation.list.ui.search.isEditing
 import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
 @Composable
@@ -76,7 +76,10 @@ fun VaultTopBar(
             },
         )
         when (val selection = uiState.menu.categorySelection) {
-            VaultCategorySelection.All -> Unit
+            VaultCategorySelection.All -> {
+                Unit
+            }
+
             is VaultCategorySelection.Selected -> {
                 InputChip(
                     selected = true,

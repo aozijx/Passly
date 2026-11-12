@@ -22,10 +22,7 @@ class VaultSearchStateTest {
 
     @Test
     fun `initial focus loss cannot cancel a pending focus request`() {
-        var state =
-            VaultSearchState
-                .initial(VaultSearchInput.Closed)
-                .startEditing()
+        var state: VaultSearchState = VaultSearchState.Editing()
 
         state = state.onFocusChanged(focused = false, query = "")
 
@@ -50,29 +47,22 @@ class VaultSearchStateTest {
     @Test
     fun `gesture reset cannot cancel editing after pull threshold`() {
         val state =
-            VaultSearchState
-                .initial(VaultSearchInput.Closed)
-                .onPullProgressChanged(0.9f)
-                .startEditing()
-                .onPullProgressChanged(0f)
+            VaultSearchState.Editing().onPullProgressChanged(0f)
 
         assertEquals(VaultSearchState.Editing(), state)
     }
 
     @Test
-    fun `settling and pausing preserve non blank results without editing focus`() {
+    fun `settling preserves non blank results without editing focus`() {
         val editing =
             VaultSearchState
-                .initial(VaultSearchInput.Open("mail"))
-                .startEditing()
+                .Editing()
                 .onFocusChanged(focused = true, query = "mail")
 
-        val submitted = editing.settle(query = "mail")
-        val paused = editing.onScreenPaused(query = "mail")
+        val submitted = settle(query = "mail")
 
         assertEquals(VaultSearchState.Results, submitted)
-        assertEquals(VaultSearchState.Results, paused)
-        assertFalse(paused.isEditing)
+        assertFalse(submitted.isEditing)
     }
 
     @Test

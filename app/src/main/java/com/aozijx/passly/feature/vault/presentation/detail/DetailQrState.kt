@@ -1,6 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.feature.vault.detail.EntryQrKind
+import com.aozijx.passly.core.platform.qr.QrCodeMatrix
+
+enum class EntryQrKind { Otp, Wifi }
 
 sealed interface DetailQrState {
     data object Hidden : DetailQrState
@@ -15,7 +17,7 @@ sealed interface DetailQrState {
 
     data class Ready(
         val kind: EntryQrKind,
-        val content: DetailQrPayload,
+        val matrix: QrCodeMatrix,
     ) : DetailQrState
 
     data class Failed(

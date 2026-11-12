@@ -20,7 +20,9 @@ sealed interface VaultSearchInput {
         override val isActive = false
     }
 
-    data class Open(override val query: String) : VaultSearchInput {
+    data class Open(
+        override val query: String,
+    ) : VaultSearchInput {
         override val isActive = true
     }
 }

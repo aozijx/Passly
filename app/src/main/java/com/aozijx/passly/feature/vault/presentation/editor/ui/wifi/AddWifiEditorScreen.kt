@@ -20,7 +20,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
@@ -64,13 +63,6 @@ fun AddWifiEditorScreen(
                 value = form.ssid,
                 onValueChange = { onAction(AddWifiAction.SsidChanged(it)) },
                 label = stringResource(R.string.wifi_ssid),
-                isError = FieldKey.WIFI_SSID in state.fieldErrors,
-                supportingText =
-                    if (FieldKey.WIFI_SSID in state.fieldErrors) {
-                        { Text(stringResource(R.string.wifi_ssid_required)) }
-                    } else {
-                        null
-                    },
                 trailingIcon = {
                     TextButton(
                         onClick = {
@@ -91,7 +83,7 @@ fun AddWifiEditorScreen(
 
         WifiFormFields(
             form = form,
-            fieldErrors = state.fieldErrors,
+            passwordFeedback = state.passwordFeedback,
             onAction = onAction,
         )
 

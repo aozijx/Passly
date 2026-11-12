@@ -21,8 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.paging.PagingData
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.OtpLease
+import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.fab.VaultFab
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.list.VaultListBody
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultMenuUiState
@@ -31,13 +36,11 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.Vau
 import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.OrderedNestedScrollConnection
 import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.rememberFabVisibilityNestedScrollConnection
 import com.aozijx.passly.feature.vault.presentation.list.ui.gesture.rememberPullToSearchNestedScrollConnection
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListScreenUiModel
-import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
 import com.aozijx.passly.feature.vault.presentation.list.ui.search.rememberVaultSearchStateHolder
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,12 +49,13 @@ fun VaultScreen(
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
-    otpStateProvider: VaultOtpStateProvider,
+    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
+    onAcquireOtp: (String) -> OtpLease,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onAction: (VaultUiAction) -> Unit,
     onRouteRequest: (VaultRouteRequest) -> Unit,
-    onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
+    onAddTypeSelected: (AddType) -> Unit,
 ) {
     var isFabVisible by rememberSaveable { mutableStateOf(true) }
     val fabVisibilityConnection =
@@ -160,7 +164,8 @@ fun VaultScreen(
             scrollBehavior = scrollBehavior,
             entries = entries,
             onItemAction = onItemAction,
-            otpStateProvider = otpStateProvider,
+            otpUiStateFlow = otpUiStateFlow,
+            onAcquireOtp = onAcquireOtp,
             onAction = onAction,
             contentPadding = padding,
         )

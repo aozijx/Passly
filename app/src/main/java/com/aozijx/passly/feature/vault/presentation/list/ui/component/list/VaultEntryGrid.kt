@@ -35,18 +35,22 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.adaptive.LocalPasslyAdaptiveLayout
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.OtpLease
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun VaultEntryGrid(
     content: VaultListContentUiModel,
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
-    otpStateProvider: VaultOtpStateProvider,
+    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
+    onAcquireOtp: (String) -> OtpLease,
     gridState: LazyGridState,
     modifier: Modifier = Modifier,
 ) {
@@ -102,7 +106,8 @@ internal fun VaultEntryGrid(
                             item = item,
                             onAction = onItemAction,
                             content = content,
-                            otpStateProvider = otpStateProvider,
+                            otpUiStateFlow = otpUiStateFlow,
+                            onAcquireOtp = onAcquireOtp,
                             animateInitialAppearance = playInitialEntryAnimation,
                             modifier =
                                 Modifier

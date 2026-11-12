@@ -6,6 +6,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.OtpConfigInput
 import com.aozijx.passly.domain.entry.otp.OtpConfigInputResult
+import com.aozijx.passly.feature.vault.otp.presentation.OtpEditorPolicy
+import com.aozijx.passly.feature.vault.otp.presentation.plugin
 
 /** OTP form values. Save progress and errors belong to the page ViewModel state. */
 data class OtpFormState(
@@ -39,19 +41,49 @@ data class OtpFormState(
 
     val isValid: Boolean get() = title.isNotBlank() && configInput.parse() is OtpConfigInputResult.Valid
 
-    val usesCounterField: Boolean get() = type == OtpType.HOTP
+    val usesCounterField: Boolean get() = type.plugin().editorPolicy is OtpEditorPolicy.Counter
 
-    val allowsParameterEditing: Boolean get() = type != OtpType.STEAM
+    val allowsParameterEditing: Boolean
+        get() =
+            when (val policy = type.plugin().editorPolicy) {
+                is OtpEditorPolicy.FixedTimed -> false
+                is OtpEditorPolicy.Timed -> policy.parameterEditingAllowed
+                is OtpEditorPolicy.Counter -> true
+            }
 
-    val invalidFields: Set<FieldKey>
-        get() = configInput.parse().invalidFields()
-
-    val secretHasInputError: Boolean
-        get() = secret.isNotEmpty() && FieldKey.OTP_SECRET in invalidFields
+    val feedback: OtpFormFeedbackUiState
+        get() = configInput.parse().toFeedbackUiState(secretHasInput = secret.isNotEmpty())
 }
 
-private fun OtpConfigInputResult.invalidFields(): Set<FieldKey> =
+enum class OtpFieldFeedbackUiState { Hidden, Invalid }
+
+data class OtpFormFeedbackUiState(
+    val secret: OtpFieldFeedbackUiState = OtpFieldFeedbackUiState.Hidden,
+    val counter: OtpFieldFeedbackUiState = OtpFieldFeedbackUiState.Hidden,
+    val period: OtpFieldFeedbackUiState = OtpFieldFeedbackUiState.Hidden,
+    val digits: OtpFieldFeedbackUiState = OtpFieldFeedbackUiState.Hidden,
+)
+
+private fun OtpConfigInputResult.toFeedbackUiState(secretHasInput: Boolean): OtpFormFeedbackUiState =
     when (this) {
-        is OtpConfigInputResult.Invalid -> fields
-        is OtpConfigInputResult.Valid -> emptySet()
+        is OtpConfigInputResult.Invalid -> {
+            OtpFormFeedbackUiState(
+                secret =
+                    if (secretHasInput && FieldKey.OTP_SECRET in fields) {
+                        OtpFieldFeedbackUiState.Invalid
+                    } else {
+                        OtpFieldFeedbackUiState.Hidden
+                    },
+                counter = fields.feedback(FieldKey.OTP_COUNTER),
+                period = fields.feedback(FieldKey.OTP_PERIOD),
+                digits = fields.feedback(FieldKey.OTP_DIGITS),
+            )
+        }
+
+        is OtpConfigInputResult.Valid -> {
+            OtpFormFeedbackUiState()
+        }
     }
+
+private fun Set<FieldKey>.feedback(field: FieldKey): OtpFieldFeedbackUiState =
+    if (field in this) OtpFieldFeedbackUiState.Invalid else OtpFieldFeedbackUiState.Hidden

@@ -27,15 +27,17 @@ sealed interface DetailTagEditorState {
 
 internal fun EntryTagValidationError.toTagEditorValidationUiState(): TagEditorValidationUiState.Invalid =
     when (this) {
-        is EntryTagValidationError.TooMany ->
+        is EntryTagValidationError.TooMany -> {
             TagEditorValidationUiState.Invalid(
                 pluralResourceId = R.plurals.vault_detail_tag_too_many,
                 quantity = maximum,
             )
+        }
 
-        is EntryTagValidationError.TooLong ->
+        is EntryTagValidationError.TooLong -> {
             TagEditorValidationUiState.Invalid(
                 pluralResourceId = R.plurals.vault_detail_tag_too_long,
                 quantity = maximum,
             )
-}
+        }
+    }

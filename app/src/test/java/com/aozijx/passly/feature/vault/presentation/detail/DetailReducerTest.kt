@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -11,13 +12,14 @@ import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
+import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
+import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.OwnedChars
-import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
-import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTitleUiState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,13 +31,14 @@ class DetailReducerTest {
     @Test
     fun passwordUnlinkMutationUpdatesTheCurrentState() {
         val confirming =
-            RelatedPasswordUnlinkUiState.AwaitingConfirmation(
+            RelatedPasswordUnlinkUiState.Open(
                 target = RelatedPasswordUnlinkTargetUiModel("target", "link", "Target"),
+                phase = RelatedPasswordUnlinkPhase.AwaitingConfirmation,
             )
 
         val updated =
             DetailReducer.reduce(
-                DetailUiState(snapshotState = DetailSnapshotState.Ready(entry("current"))),
+                DetailUiState(snapshotState = DetailSnapshotState.Content(entry("current"))),
                 DetailMutation.PasswordUnlinkStateChanged(confirming),
             )
 
@@ -49,7 +52,7 @@ class DetailReducerTest {
         val otherEntry = entry("other")
         val relatedPassword = RelatedPasswordEntry(EntryLinkId("link"), EntryId("target"), "Target", "user")
         val relations = EntryRelationsSnapshot(listOf(accountEntry), listOf(otherEntry), listOf(relatedPassword))
-        val initial = DetailUiState(snapshotState = DetailSnapshotState.Ready(current))
+        val initial = DetailUiState(snapshotState = DetailSnapshotState.Content(current))
 
         val updated =
             DetailReducer.reduce(
@@ -73,20 +76,28 @@ class DetailReducerTest {
         val latest = entry("Canonical")
         val saving =
             DetailUiState(
-                snapshotState = DetailSnapshotState.Ready(entry("Before")),
+                snapshotState = DetailSnapshotState.Content(entry("Before")),
                 fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, " Canonical "),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
         val presented = DetailReducer.reduce(saving, DetailMutation.EntryPresented(presentation(latest, emptyList())))
-        val completed = DetailReducer.reduce(presented, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
-        assertFalse(completed.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("Canonical", detailHeaderUiModel(latest, completed).editedTitle)
+        val completed =
+            DetailReducer.reduce(
+                presented,
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Title, "Canonical"),
+            )
+        assertFalse(completed.fieldEdits.edit(DetailDraftKey.Title) is DetailFieldEdit.Editing)
+        assertEquals(DetailTitleUiState.Display("Canonical"), detailHeaderUiModel(latest, completed).title)
     }
 
     @Test
     fun `late entry presentation does not reopen a cancelled title edit`() {
         val latest = entry("Stored title")
-        val editing = DetailUiState(snapshotState = DetailSnapshotState.Ready(latest), fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Abandoned draft"))
+        val editing =
+            DetailUiState(
+                snapshotState = DetailSnapshotState.Content(latest),
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Abandoned draft"),
+            )
         val cancelled = DetailReducer.reduce(editing, DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
         val actual =
             DetailReducer.reduce(
@@ -96,8 +107,8 @@ class DetailReducerTest {
                 ),
             )
 
-        assertFalse(actual.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("Stored title", detailHeaderUiModel(latest, actual).editedTitle)
+        assertFalse(actual.fieldEdits.edit(DetailDraftKey.Title) is DetailFieldEdit.Editing)
+        assertEquals(DetailTitleUiState.Display("Stored title"), detailHeaderUiModel(latest, actual).title)
     }
 
     @Test
@@ -114,14 +125,18 @@ class DetailReducerTest {
                 ),
             )
 
-        assertEquals(" Actual SSID ", detailHeaderUiModel(wifi, actual).editedTitle)
-        assertEquals(DetailSnapshotState.Ready(wifi), actual.snapshotState)
+        assertEquals(DetailTitleUiState.Display(" Actual SSID "), detailHeaderUiModel(wifi, actual).title)
+        assertEquals(DetailSnapshotState.Content(wifi), actual.snapshotState)
     }
 
     @Test
     fun `presenting a saved entry keeps an active title draft`() {
         val latest = entry("Stored title")
-        val state = DetailUiState(snapshotState = DetailSnapshotState.Ready(latest), fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Local draft"))
+        val state =
+            DetailUiState(
+                snapshotState = DetailSnapshotState.Content(latest),
+                fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "Local draft"),
+            )
         val actual =
             DetailReducer.reduce(
                 state,
@@ -130,8 +145,10 @@ class DetailReducerTest {
                 ),
             )
 
-        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("Local draft", actual.fieldEdits.draft(DetailDraftKey.Title))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "Local draft", draft = "Local draft"),
+            actual.fieldEdits.edit(DetailDraftKey.Title),
+        )
     }
 
     @Test
@@ -139,7 +156,7 @@ class DetailReducerTest {
         val entry = entry(title = "Original")
         val started =
             DetailReducer.reduce(
-                DetailUiState(snapshotState = DetailSnapshotState.Ready(entry)),
+                DetailUiState(snapshotState = DetailSnapshotState.Content(entry)),
                 DetailMutation.FieldEditingStarted(DetailDraftKey.Title, "Original"),
             )
         val changed =
@@ -149,10 +166,12 @@ class DetailReducerTest {
             )
         val cancelled = DetailReducer.reduce(changed, DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
 
-        assertTrue(started.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("Original", started.fieldEdits.draft(DetailDraftKey.Title))
-        assertEquals("Draft", changed.fieldEdits.draft(DetailDraftKey.Title))
-        assertFalse(cancelled.fieldEdits.isEditing(DetailDraftKey.Title))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "Original", draft = "Original"),
+            started.fieldEdits.edit(DetailDraftKey.Title),
+        )
+        assertEquals("Draft", (changed.fieldEdits.edit(DetailDraftKey.Title) as DetailFieldEdit.Editing).draft)
+        assertFalse(cancelled.fieldEdits.edit(DetailDraftKey.Title) is DetailFieldEdit.Editing)
     }
 
     @Test
@@ -177,16 +196,21 @@ class DetailReducerTest {
         val saved =
             DetailReducer.reduce(
                 saving,
-                DetailMutation.SaveSucceeded(
+                DetailMutation.SaveSucceeded.DraftSaved(
                     DetailEditCompletion.Field(FieldKey.PASSWORD),
+                    "new",
                 ),
             )
 
-        assertTrue(started.fieldEdits.isEditing(FieldKey.PASSWORD))
-        assertEquals("old", started.fieldEdits.draft(FieldKey.PASSWORD))
-        assertEquals("new", changed.fieldEdits.draft(FieldKey.PASSWORD))
-        assertFalse(saved.fieldEdits.isEditing(FieldKey.PASSWORD))
-        assertEquals("", saved.fieldEdits.draft(FieldKey.PASSWORD))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "old", draft = "old"),
+            started.fieldEdits.edit(DetailDraftKey.EntryField(FieldKey.PASSWORD)),
+        )
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "old", draft = "new"),
+            changed.fieldEdits.edit(DetailDraftKey.EntryField(FieldKey.PASSWORD)),
+        )
+        assertEquals(DetailFieldEdit.NotEditing, saved.fieldEdits.edit(DetailDraftKey.EntryField(FieldKey.PASSWORD)))
     }
 
     @Test
@@ -204,23 +228,25 @@ class DetailReducerTest {
                 DetailMutation.SaveFailed(completion),
             )
 
-        assertTrue(failed.fieldEdits.isEditing(FieldKey.CARD_CVV))
-        assertEquals("123", failed.fieldEdits.draft(FieldKey.CARD_CVV))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "123", draft = "123"),
+            failed.fieldEdits.edit(DetailDraftKey.EntryField(FieldKey.CARD_CVV)),
+        )
     }
 
     @Test
-    fun `revealed field mutation adds and wipes individual values`() {
+    fun `revealed field mutations add and clear individual values`() {
         val cvv = OwnedChars.fromString("123")
         try {
             val revealed =
                 DetailReducer.reduce(
                     DetailUiState(),
-                    DetailMutation.RevealedFieldChanged(FieldKey.CARD_CVV, cvv),
+                    DetailMutation.RevealedFieldAdded(FieldKey.CARD_CVV, cvv),
                 )
             val hidden =
                 DetailReducer.reduce(
                     revealed,
-                    DetailMutation.RevealedFieldChanged(FieldKey.CARD_CVV, null),
+                    DetailMutation.RevealedFieldCleared(FieldKey.CARD_CVV),
                 )
 
             assertEquals("123", String(revealed.revealed(FieldKey.CARD_CVV)!!.toCharArray()))
@@ -253,7 +279,7 @@ class DetailReducerTest {
 
             assertTrue(presented.isAccessHistoryEnabled)
             assertEquals("secret", String(presented.revealed(FieldKey.PASSWORD)!!.toCharArray()))
-            assertEquals(DetailSnapshotState.Ready(entry("Updated")), presented.snapshotState)
+            assertEquals(DetailSnapshotState.Content(entry("Updated")), presented.snapshotState)
             assertEquals(listOf(DetailSectionKey.CREDENTIAL, DetailSectionKey.NOTES), presented.sections)
         } finally {
             password.wipe()
@@ -267,7 +293,7 @@ class DetailReducerTest {
             val cleared =
                 DetailReducer.reduce(
                     DetailUiState(
-                        snapshotState = DetailSnapshotState.Ready(entry("Secret")),
+                        snapshotState = DetailSnapshotState.Content(entry("Secret")),
                         revealedFields = mapOf(FieldKey.PASSWORD to password),
                         saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
                     ),
@@ -287,13 +313,13 @@ class DetailReducerTest {
                 label = "Browser",
                 packageName = "com.example.browser",
             )
-        val state = DetailUiState(snapshotState = DetailSnapshotState.Ready(entry("Current")))
+        val state = DetailUiState(snapshotState = DetailSnapshotState.Content(entry("Current")))
 
         val associated =
             DetailReducer.reduce(
                 state,
                 DetailMutation.EntryPresented(
-                    presentation = presentation((state.snapshotState as DetailSnapshotState.Ready).entry, listOf(item)),
+                    presentation = presentation((state.snapshotState as DetailSnapshotState.Content).entry, listOf(item)),
                 ),
             )
         val stalePicker =
@@ -326,7 +352,7 @@ class DetailReducerTest {
 
         val actual =
             DetailReducer.reduce(
-                DetailUiState(snapshotState = DetailSnapshotState.Ready(entry("Current"))),
+                DetailUiState(snapshotState = DetailSnapshotState.Content(entry("Current"))),
                 DetailMutation.PackagePickerAppsChanged(EntryId("entry-1"), listOf(item)),
             )
 
@@ -340,12 +366,18 @@ class DetailReducerTest {
             DetailReducer.reduce(
                 DetailUiState(),
                 DetailMutation.FaviconEditorOpened(
-                    DetailFaviconSource.BuiltIn("security.key", "primary"),
+                    DetailFaviconSource.BuiltIn(
+                        "security.key",
+                        DetailFaviconSource.ColorSelection.Token("primary"),
+                    ),
                 ),
             )
 
         val editor = actual.faviconEditor as DetailFaviconEditorState.Open
-        assertEquals(DetailFaviconSource.BuiltIn("security.key", "primary"), editor.source)
+        assertEquals(
+            DetailFaviconSource.BuiltIn("security.key", DetailFaviconSource.ColorSelection.Token("primary")),
+            editor.source,
+        )
         assertFalse(editor.dirty)
     }
 
@@ -354,7 +386,11 @@ class DetailReducerTest {
         val editor =
             DetailFaviconEditorState.Open(
                 initialSource = DetailFaviconSource.InferredDefault,
-                source = DetailFaviconSource.BuiltIn("finance.bank", "secondary"),
+                source =
+                    DetailFaviconSource.BuiltIn(
+                        "finance.bank",
+                        DetailFaviconSource.ColorSelection.Token("secondary"),
+                    ),
             )
         val requested =
             DetailFaviconEditorReducer.reduce(
@@ -375,14 +411,14 @@ class DetailReducerTest {
         val succeeded =
             DetailReducer.reduce(
                 saving,
-                DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
+                DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Icon),
             )
 
         val failedEditor = failed.faviconEditor as DetailFaviconEditorState.Open
         assertTrue(requested.showDiscardConfirmation)
         assertEquals(editor.source, failedEditor.source)
         assertEquals(
-            DetailFaviconWorkState.Failed(DetailFaviconProcessingError.SAVE_FAILED),
+            DetailFaviconWorkState.Failed(R.string.vault_detail_favicon_error_save_failed),
             failedEditor.work,
         )
         assertEquals(DetailFaviconEditorState.Closed, succeeded.faviconEditor)
@@ -395,7 +431,7 @@ class DetailReducerTest {
                 faviconEditor =
                     DetailFaviconEditorState.Open(
                         initialSource = DetailFaviconSource.InferredDefault,
-                        work = DetailFaviconWorkState.Failed(DetailFaviconProcessingError.SAVE_FAILED),
+                        work = DetailFaviconWorkState.Failed(R.string.vault_detail_favicon_error_save_failed),
                     ),
             )
 
@@ -427,7 +463,7 @@ class DetailReducerTest {
                     saveState = DetailSaveState.Saving(DetailEditCompletion.Icon),
                     faviconEditor = promoted,
                 ),
-                DetailMutation.SaveSucceeded(DetailEditCompletion.Icon),
+                DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Icon),
             )
 
         assertEquals(DetailFaviconEditorState.Closed, saved.faviconEditor)
@@ -451,7 +487,7 @@ class DetailReducerTest {
         val failed = DetailReducer.reduce(saving, DetailMutation.SaveFailed(DetailEditCompletion.Tags))
         val edited = DetailReducer.reduce(failed, DetailMutation.TagInputChanged("Try again"))
         assertEquals("Try again", (edited.tagEditor as DetailTagEditorState.Open).input)
-        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded(DetailEditCompletion.Tags))
+        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Tags))
         assertEquals(DetailTagEditorState.Closed, succeeded.tagEditor)
     }
 
@@ -499,7 +535,7 @@ class DetailReducerTest {
             )
 
         val failed = DetailReducer.reduce(saving, DetailMutation.SaveFailed(DetailEditCompletion.Tags))
-        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded(DetailEditCompletion.Tags))
+        val succeeded = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Tags))
 
         assertEquals(setOf("Personal"), (failed.tagEditor as DetailTagEditorState.Open).draftTags)
         assertEquals(DetailTagEditorState.Closed, succeeded.tagEditor)

@@ -24,11 +24,11 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.core.ui.components.markdown.PasslyMarkdownDocument
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailNotesUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailNotesUiState
 
 @Composable
 fun NotesSection(
-    model: DetailNotesUiModel,
+    state: DetailNotesUiState,
     onEditStarted: () -> Unit,
     onNotesChanged: (String) -> Unit,
     onNotesSaved: (String) -> Unit,
@@ -43,51 +43,74 @@ fun NotesSection(
     }
 
     InfoGroupCard(title = notesLabel) {
-        if (model.isEditing) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedTextField(
-                    value = model.editedNotes,
-                    onValueChange = onNotesChanged,
-                    label = { Text(notesLabel) },
-                    modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
-                    singleLine = false,
-                    minLines = 3,
-                    maxLines = 10,
-                    placeholder = { Text(addNotesPlaceholder) },
-                )
-                TextButton(
-                    onClick = {
-                        onNotesSaved(model.editedNotes)
-                    },
-                    modifier = Modifier.align(Alignment.End),
+        when (state) {
+            is DetailNotesUiState.Editing -> {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(Icons.Default.Check, null)
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.save))
+                    OutlinedTextField(
+                        value = state.draft,
+                        onValueChange = onNotesChanged,
+                        label = { Text(notesLabel) },
+                        modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
+                        singleLine = false,
+                        minLines = 3,
+                        maxLines = 10,
+                        placeholder = { Text(addNotesPlaceholder) },
+                    )
+                    TextButton(
+                        onClick = { onNotesSaved(state.draft) },
+                        modifier = Modifier.align(Alignment.End),
+                    ) {
+                        Icon(Icons.Default.Check, null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.save))
+                    }
                 }
             }
-        } else {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .combinedClickable(
-                            onLongClick = startEditing,
-                            onClick = { /* 不做任何事，只有长按触发 */ },
-                        ).padding(16.dp),
-            ) {
-                PasslyMarkdownDocument(
-                    content = model.notes,
-                    modifier = Modifier.fillMaxWidth(),
-                    onLongClick = startEditing,
-                    emptyContent = {
-                        Text(text = noNotesLabel, style = MaterialTheme.typography.bodyMedium)
-                    },
+
+            DetailNotesUiState.NotSet -> {
+                NotesDisplay(
+                    content = null,
+                    noNotesLabel = noNotesLabel,
+                    startEditing = startEditing,
+                )
+            }
+
+            is DetailNotesUiState.Markdown -> {
+                NotesDisplay(
+                    content = state.content,
+                    noNotesLabel = noNotesLabel,
+                    startEditing = startEditing,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun NotesDisplay(
+    content: String?,
+    noNotesLabel: String,
+    startEditing: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onLongClick = startEditing,
+                    onClick = {},
+                ).padding(16.dp),
+    ) {
+        PasslyMarkdownDocument(
+            content = content,
+            modifier = Modifier.fillMaxWidth(),
+            onLongClick = startEditing,
+            emptyContent = {
+                Text(text = noNotesLabel, style = MaterialTheme.typography.bodyMedium)
+            },
+        )
     }
 }

@@ -20,8 +20,11 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
 
     draft =
         when (val selection = cardTypeSelection) {
-            CardTypeSelection.Unselected -> draft
-            is CardTypeSelection.Selected ->
+            CardTypeSelection.Unselected -> {
+                draft
+            }
+
+            is CardTypeSelection.Selected -> {
                 draft.withValue(
                     definition,
                     FieldKey.CARD_TYPE,
@@ -32,6 +35,7 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
                         },
                     ),
                 )
+            }
         }
     draft = draft.withOptionalText(definition, FieldKey.CARD_HOLDER, cardholder)
     draft = draft.withOptionalText(definition, FieldKey.CARD_CVV, cardCvv)
@@ -45,13 +49,17 @@ fun AddBankCardFormState.toEntryDraft(): EntryDraft {
     draft = draft.withOptionalText(definition, FieldKey.NOTES, notes)
     draft =
         when (val selection = cardExpirySelection) {
-            CardExpirySelection.NotSet -> draft
-            is CardExpirySelection.Selected ->
+            CardExpirySelection.NotSet -> {
+                draft
+            }
+
+            is CardExpirySelection.Selected -> {
                 draft.withValue(
                     definition,
                     FieldKey.CARD_EXPIRATION,
                     EntryDraftValue.Text(selection.expiry.storageValue),
                 )
+            }
         }
     return draft.withTags(definition, tags)
 }

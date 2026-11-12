@@ -35,7 +35,7 @@ fun SeedPhraseSection(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DetailValueCard(
             title = stringResource(R.string.seed_phrase_title),
-            value = state.revealedTextOrNull().orEmpty(),
+            value = state.revealedText(),
             isRevealed = state.isRevealed,
             onCopy = onCopy,
             onRevealClick = onReveal.takeIf { state.isRevealed },
@@ -43,6 +43,7 @@ fun SeedPhraseSection(
 
         when (state) {
             is DetailSeedPhraseUiModel.RevealedWords -> SeedWordsCard(state.words)
+
             DetailSeedPhraseUiModel.Absent,
             DetailSeedPhraseUiModel.Hidden,
             DetailSeedPhraseUiModel.RevealedWithoutWords,
@@ -56,11 +57,11 @@ fun SeedPhraseSection(
 }
 
 @Composable
-private fun DetailSeedPhraseUiModel.revealedTextOrNull(): String? =
+private fun DetailSeedPhraseUiModel.revealedText(): String =
     when (this) {
         DetailSeedPhraseUiModel.Absent,
         DetailSeedPhraseUiModel.Hidden,
-        -> null
+        -> ""
 
         DetailSeedPhraseUiModel.RevealedWithoutWords,
         is DetailSeedPhraseUiModel.RevealedWords,

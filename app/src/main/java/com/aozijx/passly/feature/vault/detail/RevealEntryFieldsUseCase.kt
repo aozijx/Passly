@@ -97,7 +97,11 @@ internal class RevealEntryFieldsUseCase
                         definition[fieldKey]?.access == EntryFieldAccess.SECRET
                     }
                 if (revealedHighSensitivity || (recordLowSensitivityAccess && revealedLowSensitivity)) {
-                    activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
+                    activityRecorder.recordUsage(
+                        entryId = entry.id.value,
+                        type = ActivityType.REVEAL_FIELDS,
+                        affectedFields = values.keys,
+                    )
                 }
                 transferred = true
                 return values

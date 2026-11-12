@@ -28,18 +28,22 @@
     <string name="vault_card_style_default">Standard</string>
     <string name="vault_card_style_password">Password card</string>
     <string name="vault_card_style_totp">One-time code</string>
+    <string name="vault_hotp_previous_code">Previous</string>
 
     <!-- Entry history -->
-    <string name="vault_detail_history_label">Activity log</string>
-    <string name="vault_detail_history_updates">Changes</string>
-    <string name="vault_detail_history_empty_filtered">No records</string>
+    <string name="vault_detail_history_label">History</string>
+    <string name="vault_detail_history_filter_all">All</string>
+    <string name="vault_detail_history_filter_content">Content changes</string>
+    <string name="vault_detail_history_filter_lifecycle">Lifecycle</string>
+    <string name="vault_detail_history_filter_usage">Usage</string>
     <string name="vault_detail_activity_create">Created</string>
     <string name="vault_detail_activity_update">Updated</string>
     <string name="vault_detail_activity_delete">Deleted</string>
     <string name="vault_detail_activity_restore">Restored from trash</string>
     <string name="vault_detail_activity_autofill">Autofilled</string>
-    <string name="vault_detail_activity_copy_password">Password copied</string>
-    <string name="vault_detail_activity_copy_username">Username copied</string>
+    <string name="vault_detail_activity_copy_field">Field copied</string>
+    <string name="vault_detail_activity_copy_otp_code">One-time code copied</string>
+    <string name="vault_detail_activity_reveal_fields">Viewed sensitive fields</string>
     <string name="vault_detail_activity_view">Viewed</string>
     <string name="vault_detail_activity_export">Exported</string>
     <string name="vault_detail_activity_import">Imported</string>
@@ -72,8 +76,6 @@
     <string name="wifi_encryption">Security type</string>
     <string name="wifi_hidden">Hidden network</string>
     <string name="wifi_security_open">Open network</string>
-    <string name="wifi_ssid_required">Enter a Wi-Fi name</string>
-    <string name="wifi_password_required">Enter a Wi-Fi password</string>
     <string name="wifi_password_invalid">The password does not match the selected security type</string>
 
     <!-- Bank card -->
@@ -129,11 +131,16 @@
     <string name="vault_detail_tag_discard_action">Discard</string>
     <string name="vault_detail_tag_keep_editing">Keep editing</string>
     <string name="vault_detail_favicon_title">Icon</string>
-    <string name="vault_detail_favicon_edit">Edit icon</string>
     <string name="vault_detail_favicon_default">Default icon</string>
     <string name="vault_detail_favicon_built_in">Built-in icon</string>
     <string name="vault_detail_favicon_custom_image">Custom image</string>
     <string name="vault_detail_favicon_library">Icon library</string>
+    <string name="vault_detail_favicon_color_automatic">Automatic color</string>
+    <string name="vault_detail_favicon_color_primary">Primary color</string>
+    <string name="vault_detail_favicon_color_secondary">Secondary color</string>
+    <string name="vault_detail_favicon_color_tertiary">Tertiary color</string>
+    <string name="vault_detail_favicon_color_error">Error color</string>
+    <string name="vault_detail_favicon_color_neutral">Neutral color</string>
     <string name="vault_detail_favicon_image_url">Image URL</string>
     <string name="vault_detail_favicon_choose_image">Choose image</string>
     <string name="vault_detail_favicon_download">Download image</string>
@@ -144,7 +151,9 @@
     <string name="vault_detail_favicon_keep_editing">Keep editing</string>
     <string name="vault_detail_favicon_crop_title">Crop icon</string>
     <string name="vault_detail_favicon_crop_hint">Pinch to zoom and drag the image. The square area will be saved as the icon.</string>
+    <string name="vault_detail_favicon_gif_crop_hint">GIF animation will be preserved. Cropping GIFs is not supported yet; use the original image.</string>
     <string name="vault_detail_favicon_no_crop">Use without cropping</string>
+    <string name="vault_detail_favicon_gif_use">Keep GIF animation</string>
     <string name="vault_detail_favicon_crop_use">Crop and use</string>
     <string name="vault_detail_favicon_error_invalid_url">Enter a valid HTTPS image URL</string>
     <string name="vault_detail_favicon_error_url_not_allowed">This address cannot be accessed for security reasons</string>

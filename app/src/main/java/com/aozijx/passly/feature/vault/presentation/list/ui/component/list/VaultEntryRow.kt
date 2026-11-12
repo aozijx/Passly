@@ -21,37 +21,39 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionContainer
 import com.aozijx.passly.core.ui.components.widgets.SwipeActionSpec
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle.CardStyleRegistry
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListContentUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun VaultEntryRow(
     item: VaultListItemUiModel,
     onAction: (VaultListItemAction) -> Unit,
     content: VaultListContentUiModel,
-    otpStateProvider: VaultOtpStateProvider,
+    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
+    onAcquireOtp: (String) -> OtpLease,
     animateInitialAppearance: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val totpState =
         observeVaultOtpState(
             entryId = item.id,
-            otpKind = item.otpKind,
-            provider = otpStateProvider,
+            otpPresentation = item.otpPresentation,
+            otpUiStateFlow = otpUiStateFlow,
             showCode = content.showTotpCode,
+            onAcquireOtp = onAcquireOtp,
         )
     val cardStyle =
         remember(
             item.entryType,
             item.hasPassword,
-            item.otpKind,
+            item.otpPresentation,
             content.cardPresentations,
         ) {
             CardStyleRegistry.resolveStyle(item, content.cardPresentations)
@@ -124,22 +126,21 @@ internal fun VaultEntryRow(
 @Composable
 internal fun observeVaultOtpState(
     entryId: String,
-    otpKind: VaultOtpKindUiModel,
-    provider: VaultOtpStateProvider,
+    otpPresentation: OtpPresentation,
+    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
     showCode: Boolean,
-): VaultOtpUiState {
-    DisposableEffect(entryId, otpKind, showCode, provider) {
-        provider.subscribe(entryId, otpKind, showCode)
-        onDispose { provider.unsubscribe(entryId, otpKind, showCode) }
+    onAcquireOtp: (String) -> OtpLease,
+): OtpUiState {
+    val shouldAcquireOtp = otpPresentation is OtpPresentation.Applicable && showCode
+    val currentOnAcquireOtp by rememberUpdatedState(onAcquireOtp)
+    DisposableEffect(entryId, shouldAcquireOtp) {
+        val lease = if (shouldAcquireOtp) currentOnAcquireOtp(entryId) else null
+        onDispose { lease?.close() }
     }
-    val stateFlow =
-        remember(entryId, otpKind, showCode, provider) {
-            provider.state(entryId, otpKind, showCode).distinctUntilChanged()
-        }
-    val current by
-        stateFlow.collectAsStateWithLifecycle(
-            initialValue = provider.initialState(entryId, otpKind, showCode),
-        )
+    val stateFlow = remember(entryId, otpPresentation, showCode, otpUiStateFlow) {
+        otpUiStateFlow(entryId, otpPresentation, showCode)
+    }
+    val current by stateFlow.collectAsStateWithLifecycle()
     return current
 }
 

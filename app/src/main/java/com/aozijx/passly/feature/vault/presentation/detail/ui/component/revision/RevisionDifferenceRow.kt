@@ -11,13 +11,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.FieldKey
-import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
-import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
-import com.aozijx.passly.feature.vault.presentation.common.labelRes
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceContentUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionDifferenceUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionFieldLabelUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionRevealActionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRevisionValueUiModel
 import java.text.DateFormat
 import java.util.Date
@@ -28,131 +26,55 @@ internal fun RevisionDifferenceRow(
     onAction: (DetailUiAction) -> Unit,
     revealEnabled: Boolean = true,
 ) {
-    val sensitive = difference.field as? RevisionFieldId.Sensitive
-    val protected =
-        sensitive != null || difference.field is RevisionFieldId.ProtectedField ||
-            difference.field is RevisionFieldId.ProtectedCustomField
     ListItem(
-        overlineContent = {
-            Text(
-                stringResource(
-                    when (difference.kind) {
-                        RevisionDifferenceKind.ADDED -> R.string.revision_change_added
-                        RevisionDifferenceKind.REMOVED -> R.string.revision_change_removed
-                        RevisionDifferenceKind.CHANGED -> R.string.revision_change_changed
-                        RevisionDifferenceKind.UNCHANGED -> R.string.revision_change_unchanged
-                    },
-                ),
-            )
-        },
+        overlineContent = { Text(stringResource(difference.changeLabelRes)) },
         supportingContent = {
-            if (protected) {
-                val revealed = difference.revealedValue?.useChars(::String)
-                Text(revealed ?: stringResource(R.string.revision_protected_value_hidden))
-            } else {
-                Column {
-                    Text(stringResource(R.string.revision_before_value, revisionValue(difference.before)))
-                    Text(stringResource(R.string.revision_after_value, revisionValue(difference.after)))
+            when (val content = difference.content) {
+                is DetailRevisionDifferenceContentUiState.Values -> {
+                    Column {
+                        Text(stringResource(R.string.revision_before_value, revisionValue(content.before)))
+                        Text(stringResource(R.string.revision_after_value, revisionValue(content.after)))
+                    }
+                }
+
+                DetailRevisionDifferenceContentUiState.ProtectedHidden -> {
+                    Text(stringResource(R.string.revision_protected_value_hidden))
+                }
+
+                is DetailRevisionDifferenceContentUiState.ProtectedRevealed -> {
+                    Text(content.value.useChars(::String))
                 }
             }
         },
         trailingContent =
-            sensitive?.takeUnless { difference.kind == RevisionDifferenceKind.ADDED }?.let { field ->
-                @Composable {
-                    TextButton(enabled = revealEnabled, onClick = { onAction(DetailUiAction.RevealRevisionField(field.key)) }) {
-                        Text(stringResource(R.string.revision_reveal_action))
+            when (val revealAction = difference.revealAction) {
+                DetailRevisionRevealActionUiState.Unavailable -> {
+                    null
+                }
+
+                is DetailRevisionRevealActionUiState.Available -> {
+                    @Composable {
+                        TextButton(
+                            enabled = revealEnabled,
+                            onClick = { onAction(DetailUiAction.RevealRevisionField(revealAction.fieldKey)) },
+                        ) {
+                            Text(stringResource(R.string.revision_reveal_action))
+                        }
                     }
                 }
             },
         colors = ListItemDefaults.colors(),
         elevation = ListItemDefaults.elevation(),
-    ) { Text(revisionFieldLabel(difference.field)) }
+    ) {
+        Text(difference.label.resolve())
+    }
 }
 
 @Composable
-private fun revisionFieldLabel(field: RevisionFieldId): String =
-    when (field) {
-        RevisionFieldId.Title -> {
-            stringResource(FieldKey.TITLE.labelRes())
-        }
-
-        RevisionFieldId.Username -> {
-            stringResource(FieldKey.USERNAME.labelRes())
-        }
-
-        RevisionFieldId.PrimaryUrl -> {
-            stringResource(FieldKey.PRIMARY_URL.labelRes())
-        }
-
-        RevisionFieldId.Domains -> {
-            stringResource(FieldKey.DOMAINS.labelRes())
-        }
-
-        RevisionFieldId.ApplicationIds -> {
-            stringResource(FieldKey.APPLICATION_IDS.labelRes())
-        }
-
-        RevisionFieldId.Icon -> {
-            stringResource(R.string.revision_field_icon)
-        }
-
-        RevisionFieldId.Favorite -> {
-            stringResource(FieldKey.FAVORITE.labelRes())
-        }
-
-        RevisionFieldId.Tags -> {
-            stringResource(FieldKey.TAGS.labelRes())
-        }
-
-        RevisionFieldId.ExpiresAt -> {
-            stringResource(FieldKey.EXPIRES_AT.labelRes())
-        }
-
-        RevisionFieldId.Notes -> {
-            stringResource(FieldKey.NOTES.labelRes())
-        }
-
-        RevisionFieldId.Attachments -> {
-            stringResource(R.string.revision_field_attachments)
-        }
-
-        RevisionFieldId.Links -> {
-            stringResource(R.string.revision_field_links)
-        }
-
-        is RevisionFieldId.CredentialField -> {
-            stringResource(field.key.labelRes())
-        }
-
-        is RevisionFieldId.ProtectedField -> {
-            stringResource(field.key.labelRes())
-        }
-
-        is RevisionFieldId.CustomField -> {
-            stringResource(R.string.revision_custom_field_label, field.name)
-        }
-
-        is RevisionFieldId.ProtectedCustomField -> {
-            stringResource(R.string.revision_custom_field_label, field.name)
-        }
-
-        is RevisionFieldId.Sensitive -> {
-            stringResource(
-                when (field.key) {
-                    SensitiveFieldKey.PASSWORD -> FieldKey.PASSWORD
-                    SensitiveFieldKey.CARD_NUMBER -> FieldKey.CARD_NUMBER
-                    SensitiveFieldKey.CARD_CVV -> FieldKey.CARD_CVV
-                    SensitiveFieldKey.CARD_PAYMENT_PIN -> FieldKey.PAYMENT_PIN
-                    SensitiveFieldKey.IDENTITY_NUMBER -> FieldKey.ID_NUMBER
-                    SensitiveFieldKey.SEED_PHRASE -> FieldKey.SEED_PHRASE
-                    SensitiveFieldKey.RECOVERY_CODES -> FieldKey.RECOVERY_CODES
-                    SensitiveFieldKey.SSH_PRIVATE_KEY -> FieldKey.SSH_KEY
-                    SensitiveFieldKey.SSH_PASSPHRASE -> FieldKey.SSH_PASSPHRASE
-                    SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE -> FieldKey.PASSKEY_DATA
-                    SensitiveFieldKey.OTP_SECRET -> FieldKey.OTP_SECRET
-                }.labelRes(),
-            )
-        }
+private fun DetailRevisionFieldLabelUiState.resolve(): String =
+    when (this) {
+        is DetailRevisionFieldLabelUiState.Resource -> stringResource(resource)
+        is DetailRevisionFieldLabelUiState.Named -> stringResource(resource, name)
     }
 
 @Composable

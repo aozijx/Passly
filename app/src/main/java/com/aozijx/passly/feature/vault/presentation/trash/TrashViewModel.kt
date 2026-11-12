@@ -167,34 +167,34 @@ internal class TrashViewModel
         ) {
             mutate(started)
             val session = sheetSession
-            val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
-                try {
-                    val result =
-                        try {
-                            operation()
-                        } catch (cancelled: CancellationException) {
-                            throw cancelled
-                        } catch (failure: Exception) {
-                            if (isCurrentSession(session)) {
-                                mutate(TrashMutation.ActionFailed(failure.toUiErrorMessage(fallback)))
+            val job =
+                viewModelScope.launch(start = CoroutineStart.LAZY) {
+                    try {
+                        val result =
+                            try {
+                                operation()
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                if (isCurrentSession(session)) {
+                                    mutate(TrashMutation.ActionFailed(failure.toUiErrorMessage(fallback)))
+                                }
+                                return@launch
                             }
-                            return@launch
+                        currentCoroutineContext().ensureActive()
+                        if (isCurrentSession(session)) applyResult(result, fallback)
+                    } finally {
+                        if (isCurrentSession(session)) {
+                            operationJob = null
+                            mutate(finished)
                         }
-                    currentCoroutineContext().ensureActive()
-                    if (isCurrentSession(session)) applyResult(result, fallback)
-                } finally {
-                    if (isCurrentSession(session)) {
-                        operationJob = null
-                        mutate(finished)
                     }
                 }
-            }
             operationJob = job
             job.start()
         }
 
-        private fun isCurrentSession(session: Long): Boolean =
-            sheetSession == session && observation is Observation.Active
+        private fun isCurrentSession(session: Long): Boolean = sheetSession == session && observation is Observation.Active
 
         private fun applyResult(
             result: TrashCommandResult,

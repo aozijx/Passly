@@ -15,6 +15,9 @@ sealed class OtpGenerationError : Throwable() {
     /** 计数器已到达 Long 上限，无法提供可持久化的下一计数器。 */
     data object CounterExhausted : OtpGenerationError()
 
+    /** HOTP counter changed after the displayed code was generated. */
+    data object CounterChanged : OtpGenerationError()
+
     /** 加密/HMAC 运行时错误。 */
     data class CryptoError(
         override val cause: Throwable,

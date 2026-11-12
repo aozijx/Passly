@@ -1,6 +1,7 @@
 package com.aozijx.passly.domain.entry.model.activity
 
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.github.f4b6a3.uuid.UuidCreator
 
 sealed interface EntryActivityContext {
@@ -18,6 +19,7 @@ data class EntryActivity(
     val entryId: String,
     val activityType: ActivityType,
     val context: EntryActivityContext = if (activityType.isUsage) EntryActivityContext.Usage else EntryActivityContext.Lifecycle,
+    val affectedFields: Set<FieldKey> = emptySet(),
     val createdAt: Long = System.currentTimeMillis(),
 ) {
     init {
@@ -28,5 +30,11 @@ data class EntryActivity(
                 is EntryActivityContext.ContentRevision -> activityType.isContentChange
             },
         ) { "Activity context must match its event type" }
+        require(
+            when (activityType) {
+                ActivityType.REVEAL_FIELDS, ActivityType.COPY_FIELD -> affectedFields.isNotEmpty()
+                else -> affectedFields.isEmpty()
+            },
+        ) { "Affected fields must match the activity type" }
     }
 }

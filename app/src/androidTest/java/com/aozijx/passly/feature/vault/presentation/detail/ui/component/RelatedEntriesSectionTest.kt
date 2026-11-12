@@ -12,17 +12,18 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
+import androidx.test.platform.app.InstrumentationRegistry
+import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
-import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkPhase
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkTargetUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedEntrySectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedPasswordSectionUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailRelatedSectionsUiModel
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.R
-import androidx.test.platform.app.InstrumentationRegistry
+import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedEntryUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordRowUnlinkUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.RelatedPasswordUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
@@ -66,8 +67,9 @@ class RelatedEntriesSectionTest {
         showSection(
             actions = actions,
             unlinkState =
-                RelatedPasswordUnlinkUiState.Failed(
-                    RelatedPasswordUnlinkTargetUiModel("target", "link", "Portal"),
+                RelatedPasswordUnlinkUiState.Open(
+                    target = RelatedPasswordUnlinkTargetUiModel("target", "link", "Portal"),
+                    phase = RelatedPasswordUnlinkPhase.Failed,
                 ),
         )
 
@@ -80,8 +82,17 @@ class RelatedEntriesSectionTest {
     @Test
     fun accountGroupAndDirectRelationRenderSeparately() {
         showSection(
-            accounts = listOf(RelatedEntryUiModel("account", "Shared item", EntryType.LOGIN)),
-            passwords = listOf(RelatedPasswordUiModel("link", "target", "Shared item", "person")),
+            accounts = listOf(RelatedEntryUiModel("account", "Shared item", R.string.entry_type_login)),
+            passwords =
+                listOf(
+                    RelatedPasswordUiModel(
+                        linkId = "link",
+                        targetEntryId = "target",
+                        title = "Shared item",
+                        username = "person",
+                        unlinkActionState = RelatedPasswordRowUnlinkUiState.Available,
+                    ),
+                ),
         )
 
         compose.onAllNodesWithText("Shared item").assertCountEquals(2)
@@ -90,7 +101,7 @@ class RelatedEntriesSectionTest {
 
     @Test
     fun accountGroupRowHasNoUnlinkAccessibilityAction() {
-        showSection(accounts = listOf(RelatedEntryUiModel("account", "Account row", EntryType.LOGIN)))
+        showSection(accounts = listOf(RelatedEntryUiModel("account", "Account row", R.string.entry_type_login)))
 
         compose.onNodeWithTag("related-entry-row-account").assertHasClickAction()
         val config = compose.onNodeWithTag("related-entry-row-account").fetchSemanticsNode().config
@@ -102,8 +113,12 @@ class RelatedEntriesSectionTest {
         val actions = mutableListOf<DetailUiAction>()
         showSection(actions = actions)
 
-        val customAction = compose.onNodeWithTag("related-password-row-target")
-            .fetchSemanticsNode().config[SemanticsActions.CustomActions].single()
+        val customAction =
+            compose
+                .onNodeWithTag("related-password-row-target")
+                .fetchSemanticsNode()
+                .config[SemanticsActions.CustomActions]
+                .single()
         customAction.action()
 
         compose.runOnIdle {
@@ -118,7 +133,16 @@ class RelatedEntriesSectionTest {
         actions: MutableList<DetailUiAction> = mutableListOf(),
         accounts: List<RelatedEntryUiModel> = emptyList(),
         other: List<RelatedEntryUiModel> = emptyList(),
-        passwords: List<RelatedPasswordUiModel> = listOf(RelatedPasswordUiModel("link", "target", "Portal", "person")),
+        passwords: List<RelatedPasswordUiModel> =
+            listOf(
+                RelatedPasswordUiModel(
+                    linkId = "link",
+                    targetEntryId = "target",
+                    title = "Portal",
+                    username = "person",
+                    unlinkActionState = RelatedPasswordRowUnlinkUiState.Available,
+                ),
+            ),
         unlinkState: RelatedPasswordUnlinkUiState = RelatedPasswordUnlinkUiState.Closed,
     ) {
         compose.setContent {
@@ -146,8 +170,9 @@ class RelatedEntriesSectionTest {
     }
 
     private fun confirming() =
-        RelatedPasswordUnlinkUiState.AwaitingConfirmation(
-            RelatedPasswordUnlinkTargetUiModel("target", "link", "Portal"),
+        RelatedPasswordUnlinkUiState.Open(
+            target = RelatedPasswordUnlinkTargetUiModel("target", "link", "Portal"),
+            phase = RelatedPasswordUnlinkPhase.AwaitingConfirmation,
         )
 
     private fun text(resourceId: Int) = InstrumentationRegistry.getInstrumentation().targetContext.getString(resourceId)

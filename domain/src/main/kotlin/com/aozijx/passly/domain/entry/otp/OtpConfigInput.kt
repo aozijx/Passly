@@ -6,6 +6,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
 /** Unparsed user input. Empty or malformed numbers never acquire fallback values. */
 data class OtpConfigInput(

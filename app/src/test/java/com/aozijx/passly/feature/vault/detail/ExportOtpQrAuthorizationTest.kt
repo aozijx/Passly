@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.credential.OtpCredential
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
@@ -50,7 +51,6 @@ class ExportOtpQrAuthorizationTest {
                     result.content.wipe()
                 }
 
-            assertEquals(EntryQrKind.Otp, result.kind)
             assertEquals(listOf("authenticate", "reveal", "record"), events)
             assertTrue(uri.startsWith("otpauth://totp/"))
             assertTrue(uri.contains("secret=JBSWY3DPEHPK3PXP"))
@@ -143,9 +143,10 @@ class ExportOtpQrAuthorizationTest {
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ): AppResult<Unit> {
             assertEquals("otp-1", entryId)
-            assertEquals(ActivityType.VIEW, type)
+            assertEquals(ActivityType.EXPORT, type)
             events += "record"
             return AppResult.Success(Unit)
         }

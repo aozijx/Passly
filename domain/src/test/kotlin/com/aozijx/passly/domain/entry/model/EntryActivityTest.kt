@@ -1,5 +1,6 @@
 package com.aozijx.passly.domain.entry.model
 
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.activity.EntryActivityContext
@@ -27,6 +28,25 @@ class EntryActivityTest {
             entryId = "entry",
             activityType = ActivityType.AUTOFILL,
             context = EntryActivityContext.ContentRevision(EntryVersion(2)),
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `field copy must identify at least one copied field`() {
+        EntryActivity(entryId = "entry", activityType = ActivityType.COPY_FIELD)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `field reveal must identify at least one revealed field`() {
+        EntryActivity(entryId = "entry", activityType = ActivityType.REVEAL_FIELDS)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `view activity cannot claim affected fields`() {
+        EntryActivity(
+            entryId = "entry",
+            activityType = ActivityType.VIEW,
+            affectedFields = setOf(FieldKey.TITLE),
         )
     }
 }

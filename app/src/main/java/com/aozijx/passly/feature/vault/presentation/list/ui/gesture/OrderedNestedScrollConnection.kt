@@ -6,7 +6,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
 
 /** Dispatches each nested-scroll phase in order, passing each connection only the unconsumed delta. */
-internal class OrderedNestedScrollConnection(connections: List<NestedScrollConnection>) : NestedScrollConnection {
+internal class OrderedNestedScrollConnection(
+    connections: List<NestedScrollConnection>,
+) : NestedScrollConnection {
     private val connections = connections.toList()
 
     init {

@@ -10,9 +10,9 @@ class DetailRevealStoreTest {
     fun `hiding a revealed field wipes its owned value`() {
         val store = DetailRevealStore()
         val secret = OwnedChars.fromString("secret")
-        store.replace(FieldKey.PASSWORD, secret)
+        store.add(FieldKey.PASSWORD, secret)
 
-        store.replace(FieldKey.PASSWORD, null)
+        store.remove(FieldKey.PASSWORD)
 
         assertTrue(secret.isWiped)
     }
@@ -22,9 +22,9 @@ class DetailRevealStoreTest {
         val store = DetailRevealStore()
         val first = OwnedChars.fromString("first")
         val second = OwnedChars.fromString("second")
-        store.replace(FieldKey.PASSWORD, first)
+        store.add(FieldKey.PASSWORD, first)
 
-        store.replace(FieldKey.PASSWORD, second)
+        store.add(FieldKey.PASSWORD, second)
         assertTrue(first.isWiped)
 
         store.clear()

@@ -15,11 +15,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,7 +35,7 @@ class EditorWriteSessionTest {
         runTest {
             val fixture = Fixture(backgroundScope) { AppResult.Failure(Conflict()) }
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             fixture.save()
             runCurrent()
             assertEquals(listOf(EditorSaveEffect.Failed), effects)
@@ -61,7 +62,7 @@ class EditorWriteSessionTest {
             fixture.access.lock()
             fixture.access.authenticate(1L)
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             runCurrent()
             assertTrue(effects.isEmpty())
             assertTrue(fixture.session.canEdit())
@@ -99,7 +100,7 @@ class EditorWriteSessionTest {
                     AppResult.Success(EntryId("created"))
                 }
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             fixture.save()
             runCurrent()
             fixture.access.lock()
@@ -154,7 +155,7 @@ class EditorWriteSessionTest {
             runCurrent()
             fixture.access.authenticate(2L)
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             runCurrent()
             assertTrue(effects.isEmpty())
         }
@@ -168,7 +169,7 @@ class EditorWriteSessionTest {
             assertTrue(fixture.session.canEdit())
             fixture.form = "new form"
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             runCurrent()
             assertTrue(effects.isEmpty())
             assertEquals("new form", fixture.form)
@@ -189,7 +190,7 @@ class EditorWriteSessionTest {
             fixture.save()
             runCurrent()
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             runCurrent()
             assertEquals(listOf(EditorSaveEffect.Saved), effects)
             assertEquals("", fixture.form)
@@ -200,7 +201,7 @@ class EditorWriteSessionTest {
         runTest {
             val fixture = Fixture(backgroundScope) { throw CancellationException() }
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             fixture.save()
             runCurrent()
             assertFalse(fixture.saving)
@@ -214,7 +215,7 @@ class EditorWriteSessionTest {
         runTest {
             val fixture = Fixture(backgroundScope) { error("synthetic private input") }
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { fixture.session.effects.toList(effects) }
+            backgroundScope.launch { fixture.session.effects.collect { effects += it } }
             fixture.save()
             runCurrent()
             assertEquals(listOf(EditorSaveEffect.Failed), effects)

@@ -1,7 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.FieldKey
 
 sealed interface DetailEffect {
     data class ContentCopied(

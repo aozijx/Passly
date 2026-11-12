@@ -30,6 +30,7 @@ import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -122,7 +123,7 @@ class AddBankCardViewModelTest {
                 }
             val model = createViewModel(createEntryUseCase(repository), AuthenticatedSession)
             val effects = mutableListOf<EditorSaveEffect>()
-            backgroundScope.launch { model.effects.toList(effects) }
+            backgroundScope.launch { model.effects.collect { effects += it } }
             model.onAction(AddBankCardAction.TitleChanged("Card"))
             model.onAction(AddBankCardAction.CardNumberChanged("4111111111111111"))
             model.onAction(AddBankCardAction.CvvChanged("12"))

@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.core.platform.qr.QrCodeMatrix
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.Entry
@@ -12,16 +13,17 @@ import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.feature.vault.detail.EntryQrExportResult
-import com.aozijx.passly.feature.vault.detail.EntryQrKind
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -72,58 +74,45 @@ class DetailQrSessionTest {
         runTest {
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                DetailQrSession(backgroundScope, Access(), StandardTestDispatcher(testScheduler)) { _, onAuthorized ->
                     onAuthorized()
-                    EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
+                    EntryQrExportResult.Ready(content)
                 }
             session.request(entry())
             runCurrent()
+            val matrix = (session.state.value as DetailQrState.Ready).matrix
 
             backgroundScope.cancel()
             runCurrent()
 
             assertTrue(content.isEmpty)
+            assertFalse(matrix.anyDarkModule())
             assertEquals(DetailQrState.Hidden, session.state.value)
             session.request(entry())
             assertEquals(DetailQrState.Hidden, session.state.value)
         }
 
     @Test
-    fun `closing content also clears derived resources including late registration`() {
-        val owned = OwnedChars.fromString("WIFI:synthetic")
-        val content = DetailQrPayload(owned)
-        var cleanups = 0
-        content.onClose { cleanups++ }
-
-        content.close()
-        content.close()
-        content.onClose { cleanups++ }
-
-        assertTrue(owned.isEmpty)
-        assertEquals(2, cleanups)
-    }
-
-    @Test
-    fun `dismissal wipes the displayed payload`() =
+    fun `dismissal wipes the displayed matrix and source content`() =
         runTest {
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                DetailQrSession(backgroundScope, Access(), StandardTestDispatcher(testScheduler)) { _, onAuthorized ->
                     onAuthorized()
-                    EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
+                    EntryQrExportResult.Ready(content)
                 }
 
             session.request(entry())
             runCurrent()
-            assertTrue(session.state.value is DetailQrState.Ready)
-            val ready = session.state.value as DetailQrState.Ready
-            assertEquals("WIFI:synthetic", ready.content.useChars(::String))
+            val matrix = (session.state.value as DetailQrState.Ready).matrix
+            assertTrue(matrix.anyDarkModule())
+            assertTrue(content.isEmpty)
 
             session.close()
 
             assertEquals(DetailQrState.Hidden, session.state.value)
             assertTrue(content.isEmpty)
-            assertTrue(ready.content.isEmpty)
+            assertFalse(matrix.anyDarkModule())
         }
 
     @Test
@@ -132,18 +121,20 @@ class DetailQrSessionTest {
             val access = Access()
             val content = OwnedChars.fromString("WIFI:synthetic")
             val session =
-                DetailQrSession(backgroundScope, access) { _, onAuthorized ->
+                DetailQrSession(backgroundScope, access, StandardTestDispatcher(testScheduler)) { _, onAuthorized ->
                     onAuthorized()
-                    EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
+                    EntryQrExportResult.Ready(content)
                 }
             session.request(entry())
             runCurrent()
+            val matrix = (session.state.value as DetailQrState.Ready).matrix
 
             access.authenticationState.value = AuthenticationState.Locked
             runCurrent()
 
             assertEquals(DetailQrState.Hidden, session.state.value)
             assertTrue(content.isEmpty)
+            assertFalse(matrix.anyDarkModule())
         }
 
     @Test
@@ -161,7 +152,7 @@ class DetailQrSessionTest {
             assertEquals(DetailQrState.Loading(EntryQrKind.Wifi), session.state.value)
 
             session.close()
-            result.complete(EntryQrExportResult.Ready(EntryQrKind.Wifi, content))
+            result.complete(EntryQrExportResult.Ready(content))
             runCurrent()
 
             assertEquals(DetailQrState.Hidden, session.state.value)
@@ -192,20 +183,42 @@ class DetailQrSessionTest {
         runTest {
             val contents = mutableListOf<OwnedChars>()
             val session =
-                DetailQrSession(backgroundScope, Access()) { _, onAuthorized ->
+                DetailQrSession(backgroundScope, Access(), StandardTestDispatcher(testScheduler)) { _, onAuthorized ->
                     onAuthorized()
                     val content = OwnedChars.fromString("WIFI:${contents.size}").also(contents::add)
-                    EntryQrExportResult.Ready(EntryQrKind.Wifi, content)
+                    EntryQrExportResult.Ready(content)
                 }
             session.request(entry())
             runCurrent()
+            val previousMatrix = (session.state.value as DetailQrState.Ready).matrix
+
+            session.request(entry())
+            runCurrent()
+            val currentMatrix = (session.state.value as DetailQrState.Ready).matrix
+
+            assertEquals(2, contents.size)
+            assertTrue(contents.all(OwnedChars::isEmpty))
+            assertFalse(previousMatrix.anyDarkModule())
+            assertTrue(currentMatrix.anyDarkModule())
+            session.close()
+            assertFalse(currentMatrix.anyDarkModule())
+        }
+
+    @Test
+    fun `empty exported content fails and is wiped`() =
+        runTest {
+            val content = OwnedChars.fromString("")
+            val session =
+                DetailQrSession(backgroundScope, Access(), StandardTestDispatcher(testScheduler)) { _, onAuthorized ->
+                    onAuthorized()
+                    EntryQrExportResult.Ready(content)
+                }
 
             session.request(entry())
             runCurrent()
 
-            assertEquals(2, contents.size)
-            assertTrue(contents.first().isEmpty)
-            assertTrue(!contents.last().isEmpty)
+            assertEquals(DetailQrState.Failed(EntryQrKind.Wifi), session.state.value)
+            assertTrue(content.isEmpty)
             session.close()
         }
 
@@ -245,4 +258,9 @@ class DetailQrSessionTest {
             profile = EntryProfile(title = "Office"),
             secret = EntrySecret(credential = WifiCredential(ssid = "Office")),
         )
+
+    private fun QrCodeMatrix.anyDarkModule(): Boolean =
+        (0 until height).any { row ->
+            (0 until width).any { column -> isDark(column, row) }
+        }
 }

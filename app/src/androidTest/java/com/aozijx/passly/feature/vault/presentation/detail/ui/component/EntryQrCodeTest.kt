@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
+import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.qr.QrCodeEncoder
+import com.aozijx.passly.core.platform.qr.QrCodeMatrix
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
@@ -21,13 +23,13 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrFormatResult
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import com.aozijx.passly.domain.entry.policy.WifiQrPayloadFormatter
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiState
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionKey
 import com.aozijx.passly.feature.vault.presentation.detail.toDetailPageUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPageUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.DetailBody
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.RGBLuminanceSource
@@ -48,24 +50,35 @@ class EntryQrCodeTest {
     fun unicodeNetworkCodeDecodesFromRealBitmapWithIndependentWifiParser() {
         val payload = WifiQrPayload("办公室;West\\Wing", "pa:ss;word,\\\"", WifiSecurityType.WpaPersonal, true)
         val formatted = WifiQrPayloadFormatter.format(payload) as WifiQrFormatResult.Formatted
-        val bitmap = requireNotNull(QrCodeEncoder.encode(formatted.content.toCharArray()))
-        val pixels = IntArray(bitmap.width * bitmap.height)
+        val content = formatted.content.toCharArray()
+        val matrix =
+            try {
+                requireNotNull(QrCodeEncoder.encodeMatrix(content))
+            } finally {
+                content.fill('\u0000')
+            }
         try {
-            bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-            val decoded =
-                QRCodeReader().decode(
-                    BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bitmap.width, bitmap.height, pixels))),
-                )
-            val wifi = ResultParser.parseResult(decoded) as WifiParsedResult
+            val bitmap = matrix.toBitmap(scale = 8)
+            val pixels = IntArray(bitmap.width * bitmap.height)
+            try {
+                bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+                val decoded =
+                    QRCodeReader().decode(
+                        BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bitmap.width, bitmap.height, pixels))),
+                    )
+                val wifi = ResultParser.parseResult(decoded) as WifiParsedResult
 
-            assertEquals(formatted.content, decoded.text)
-            assertEquals(payload.ssid, wifi.ssid)
-            assertEquals(payload.password, wifi.password)
-            assertTrue(wifi.isHidden)
+                assertEquals(formatted.content, decoded.text)
+                assertEquals(payload.ssid, wifi.ssid)
+                assertEquals(payload.password, wifi.password)
+                assertTrue(wifi.isHidden)
+            } finally {
+                pixels.fill(0)
+                bitmap.eraseColor(Color.WHITE)
+                bitmap.recycle()
+            }
         } finally {
-            pixels.fill(0)
-            bitmap.eraseColor(Color.WHITE)
-            bitmap.recycle()
+            matrix.close()
         }
     }
 
@@ -78,18 +91,24 @@ class EntryQrCodeTest {
                 secret = EntrySecret(credential = WifiCredential("Office", "password")),
             )
         val model =
-            (toDetailPageUiState(
-                DetailUiState(
-                    snapshotState = DetailSnapshotState.Ready(entry),
-                    sections = listOf(DetailSectionKey.CREDENTIAL),
-                ),
-                OtpCodeState.NotRequested,
-            ) as DetailPageUiState.Content).presentation
+            (
+                toDetailPageUiState(
+                    DetailUiState(
+                        snapshotState = DetailSnapshotState.Content(entry),
+                        sections = listOf(DetailSectionKey.CREDENTIAL),
+                    ),
+                ) as DetailPageUiState.Content
+            ).presentation
         val actions = mutableListOf<DetailUiAction>()
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         composeRule.setContent {
             MaterialTheme {
-                DetailBody(model.content, onAction = actions::add, onOpenRelatedEntry = {})
+                DetailBody(
+                    model.content,
+                    otpState = OtpUiState.NotRequested,
+                    onAction = actions::add,
+                    onOpenRelatedEntry = {},
+                )
             }
         }
 
@@ -98,5 +117,29 @@ class EntryQrCodeTest {
             .assertIsDisplayed()
             .performClick()
         composeRule.runOnIdle { assertEquals(listOf(DetailUiAction.ShowEntryQr), actions) }
+    }
+
+    private fun QrCodeMatrix.toBitmap(scale: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(width * scale, height * scale, Bitmap.Config.RGB_565)
+        val pixels = IntArray(bitmap.width * bitmap.height) { Color.WHITE }
+        try {
+            for (row in 0 until height) {
+                for (column in 0 until width) {
+                    if (!isDark(column, row)) continue
+                    for (y in row * scale until (row + 1) * scale) {
+                        for (x in column * scale until (column + 1) * scale) {
+                            pixels[y * bitmap.width + x] = Color.BLACK
+                        }
+                    }
+                }
+            }
+            bitmap.setPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+            return bitmap
+        } catch (failure: Throwable) {
+            bitmap.recycle()
+            throw failure
+        } finally {
+            pixels.fill(Color.WHITE)
+        }
     }
 }

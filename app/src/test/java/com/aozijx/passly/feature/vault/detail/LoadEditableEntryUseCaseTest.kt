@@ -19,6 +19,7 @@ import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.credential.CardCredential
 import com.aozijx.passly.domain.entry.model.credential.EntryCredential
@@ -63,7 +64,8 @@ class LoadEditableEntryUseCaseTest {
                 ),
                 harness.gate.scope,
             )
-            assertEquals(listOf(ActivityType.VIEW), harness.recorder.activities)
+            assertEquals(listOf(ActivityType.REVEAL_FIELDS), harness.recorder.activities)
+            assertEquals(listOf(setOf(FieldKey.PASSWORD)), harness.recorder.affectedFields)
         }
 
     @Test
@@ -103,6 +105,11 @@ class LoadEditableEntryUseCaseTest {
                     ?.paymentPin,
             )
             assertEquals(keys, (harness.gate.scope as AuthorizationScope.SensitiveFields).fieldKeys)
+            assertEquals(listOf(ActivityType.REVEAL_FIELDS), harness.recorder.activities)
+            assertEquals(
+                listOf(setOf(FieldKey.CARD_NUMBER, FieldKey.CARD_CVV, FieldKey.PAYMENT_PIN)),
+                harness.recorder.affectedFields,
+            )
         }
 
     @Test
@@ -126,7 +133,10 @@ class LoadEditableEntryUseCaseTest {
                 loadedWifi.entry.secret.wifi
                     ?.password,
             )
+            assertEquals(listOf(ActivityType.REVEAL_FIELDS), otp.recorder.activities)
+            assertEquals(listOf(setOf(FieldKey.OTP_SECRET)), otp.recorder.affectedFields)
             assertEquals(listOf(ActivityType.VIEW), wifi.recorder.activities)
+            assertEquals(listOf(emptySet<FieldKey>()), wifi.recorder.affectedFields)
         }
 
     @Test
@@ -254,12 +264,15 @@ class LoadEditableEntryUseCaseTest {
 
     private class TestActivityRecorder : ActivityRecorder {
         val activities = mutableListOf<ActivityType>()
+        val affectedFields = mutableListOf<Set<FieldKey>>()
 
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ): AppResult<Unit> {
             activities += type
+            this.affectedFields += affectedFields
             return AppResult.Success(Unit)
         }
 

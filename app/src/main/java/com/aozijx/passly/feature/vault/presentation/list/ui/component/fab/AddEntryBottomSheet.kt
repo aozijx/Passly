@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,6 +26,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -34,7 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
+import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.descriptionRes
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.icon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
@@ -42,50 +46,54 @@ import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEntryBottomSheet(
-    options: List<VaultAddTypeUiModel>,
+    options: List<AddType>,
     onDismiss: () -> Unit,
-    onSelectType: (VaultAddTypeUiModel) -> Unit,
+    onSelectType: (AddType) -> Unit,
 ) {
+    val optionRows = remember(options) { options.chunked(2) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
-        Column(
+        LazyColumn(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp)),
+                    .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.vault_fab_add_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(20.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                options.chunked(2).forEach { types ->
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        types.forEach { type ->
-                            TypeCard(
-                                type = type,
-                                onClick = {
-                                    onSelectType(type)
-                                    onDismiss()
-                                },
-                                modifier =
-                                    Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight(),
-                            )
-                        }
+            item {
+                Column {
+                    Text(
+                        text = stringResource(R.string.vault_fab_add_title),
+                        style = passlySheetTitleStyle(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+            items(optionRows, key = { types -> types.first() }) { types ->
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    types.forEach { type ->
+                        TypeCard(
+                            type = type,
+                            onClick = {
+                                onSelectType(type)
+                                onDismiss()
+                            },
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                        )
                     }
                 }
             }
@@ -95,7 +103,7 @@ fun AddEntryBottomSheet(
 
 @Composable
 private fun TypeCard(
-    type: VaultAddTypeUiModel,
+    type: AddType,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

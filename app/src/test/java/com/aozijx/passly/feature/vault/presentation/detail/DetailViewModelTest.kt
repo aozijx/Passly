@@ -9,7 +9,6 @@ import com.aozijx.passly.core.platform.media.FaviconEditorResource
 import com.aozijx.passly.core.platform.media.FaviconImageProcessor
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppDirectory
 import com.aozijx.passly.core.platform.packageinfo.InstalledAppMetadata
-import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
@@ -18,19 +17,19 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryAssociations
+import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
@@ -45,6 +44,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
@@ -52,46 +52,47 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveF
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.otp.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
 import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.policy.EntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityQueryRepository
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
-import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
-import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.EntryTagQuery
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
-import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.sensitive.OwnedChars
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.detail.EntryDetailQueryImpl
-import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.detail.ExportEntryQrUseCase
 import com.aozijx.passly.feature.vault.detail.LoadEditableEntryUseCase
-import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.detail.RelatedPasswordOperationsImpl
-import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
+import com.aozijx.passly.feature.vault.detail.RevealEntryFieldsUseCase
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
+import com.aozijx.passly.feature.vault.entry.RollbackHotpCounterUseCase
+import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
+import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.history.CompareEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.ObserveEntryRevisionMetadataUseCase
 import com.aozijx.passly.feature.vault.history.RestoreEntryRevisionUseCase
 import com.aozijx.passly.feature.vault.history.RevealRevisionFieldsUseCase
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.feature.vault.otp.OtpCodeState
+import com.aozijx.passly.feature.vault.otp.createTestOtpRuntime
+import com.aozijx.passly.feature.vault.otp.generationMaterialForTest
+import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionComparisonPhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionListState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionPage
-import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionWorkflowFactory
-import com.aozijx.passly.runtime.session.SecureSessionState
 import com.aozijx.passly.runtime.session.SessionLockedException
-import com.aozijx.passly.runtime.session.SessionStateProvider
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CancellationException
@@ -120,6 +121,51 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DetailViewModelTest {
+    @Test
+    fun faviconSelectionActionsUpdateSourceInTheViewModelStateOwner() =
+        runTest {
+            val fixture =
+                Fixture(
+                    initialEntry =
+                        currentEntry().let { entry ->
+                            entry.copy(
+                                profile =
+                                    entry.profile.copy(
+                                        icon = EntryIcon(name = "finance.bank", color = "secondary"),
+                                    ),
+                            )
+                        },
+                )
+            val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            try {
+                fixture.viewModel.load(ENTRY_ID.value)
+                runCurrent()
+                fixture.viewModel.onAction(DetailUiAction.OpenFaviconEditor)
+                fixture.viewModel.onAction(DetailUiAction.SelectFaviconIcon("security.key"))
+
+                assertEquals(
+                    DetailFaviconSource.BuiltIn(
+                        "security.key",
+                        DetailFaviconSource.ColorSelection.Token("secondary"),
+                    ),
+                    (fixture.viewModel.uiState.value.faviconEditor as DetailFaviconEditorState.Open).source,
+                )
+
+                fixture.viewModel.onAction(
+                    DetailUiAction.SelectFaviconColor(DetailFaviconSource.ColorSelection.Automatic),
+                )
+                assertEquals(
+                    DetailFaviconSource.BuiltIn(
+                        "security.key",
+                        DetailFaviconSource.ColorSelection.Automatic,
+                    ),
+                    (fixture.viewModel.uiState.value.faviconEditor as DetailFaviconEditorState.Open).source,
+                )
+            } finally {
+                store.clear()
+            }
+        }
+
     @Test
     fun sshPrivateKeyActivationRevealsThenCopiesFromCurrentState() =
         runTest {
@@ -166,12 +212,18 @@ class DetailViewModelTest {
                 fixture.viewModel.onAction(DetailUiAction.ActivateSshPrivateKey)
                 runCurrent()
                 assertEquals(1, revealCount)
-                assertTrue(fixture.viewModel.uiState.value.revealed(FieldKey.SSH_KEY) != null)
+                assertTrue(
+                    fixture.viewModel.uiState.value
+                        .revealed(FieldKey.SSH_KEY) != null,
+                )
 
                 fixture.viewModel.onAction(DetailUiAction.ActivateSshPrivateKey)
                 runCurrent()
                 assertEquals(listOf(SSH_PRIVATE_KEY), copiedValues)
-                assertTrue(fixture.viewModel.uiState.value.revealed(FieldKey.SSH_KEY) == null)
+                assertTrue(
+                    fixture.viewModel.uiState.value
+                        .revealed(FieldKey.SSH_KEY) == null,
+                )
             } finally {
                 store.clear()
             }
@@ -185,17 +237,28 @@ class DetailViewModelTest {
             try {
                 fixture.viewModel.load(ENTRY_ID.value)
                 runCurrent()
-                val version = fixture.viewModel.uiState.value.snapshotState.entryOrNull()?.version
+                val version =
+                    fixture.viewModel.uiState.value.snapshotState
+                        .entryOrNull()
+                        ?.version
 
                 fixture.viewModel.onAction(DetailUiAction.StartFieldEdit(DetailField.USERNAME))
                 fixture.viewModel.onAction(DetailUiAction.SaveField(DetailField.USERNAME, "latest-user"))
                 runCurrent()
 
-                assertEquals(version, fixture.viewModel.uiState.value.snapshotState.entryOrNull()?.version)
+                assertEquals(
+                    version,
+                    fixture.viewModel.uiState.value.snapshotState
+                        .entryOrNull()
+                        ?.version,
+                )
                 assertEquals(DetailSaveState.Idle, fixture.viewModel.uiState.value.saveState)
                 assertEquals(
                     "latest-user",
-                    fixture.viewModel.uiState.value.fieldEdits.draft(DetailField.USERNAME.draftKey),
+                    (
+                        fixture.viewModel.uiState.value.fieldEdits
+                            .edit(DetailField.USERNAME.draftKey) as DetailFieldEdit.Editing
+                    ).draft,
                 )
             } finally {
                 store.clear()
@@ -206,13 +269,15 @@ class DetailViewModelTest {
     fun `saved login can bind another saved login from its detail page`() =
         runTest {
             val links = MutableEntryLinks()
-            val fixture = Fixture(
-                entryLinkRepository = links,
-                passwordItems = listOf(
-                    passwordItem(ENTRY_ID, "Current title"),
-                    passwordItem(OTHER_ENTRY_ID, "Other title"),
-                ),
-            )
+            val fixture =
+                Fixture(
+                    entryLinkRepository = links,
+                    passwordItems =
+                        listOf(
+                            passwordItem(ENTRY_ID, "Current title"),
+                            passwordItem(OTHER_ENTRY_ID, "Other title"),
+                        ),
+                )
             val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
             try {
                 fixture.viewModel.load(ENTRY_ID.value)
@@ -226,7 +291,11 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertEquals(EntryRelationType.RELATED_TO, links.saved.single().relationType)
-                assertEquals(listOf(OTHER_ENTRY_ID), fixture.viewModel.uiState.value.relatedPasswords.map { it.targetEntryId })
+                assertEquals(
+                    listOf(OTHER_ENTRY_ID),
+                    fixture.viewModel.uiState.value.relatedPasswords
+                        .map { it.targetEntryId },
+                )
                 assertEquals(RelatedPasswordBindingUiState.Closed, fixture.viewModel.uiState.value.passwordBinding)
             } finally {
                 store.clear()
@@ -316,43 +385,6 @@ class DetailViewModelTest {
         }
 
     @Test
-    fun `returning to OTP detail clears old code while reloading current config`() =
-        runTest {
-            val reloadGate = CompletableDeferred<Unit>()
-            val repository =
-                MutableOtpConfigRepository(
-                    config = otpConfig("JBSWY3DPEHPK3PXP"),
-                    blockReadNumber = 2,
-                    readGate = reloadGate,
-                )
-            val fixture = Fixture(initialEntry = otpEntry(), otpConfigRepository = repository)
-            val store = ViewModelStore()
-            try {
-                store.put("detail", fixture.viewModel)
-                fixture.viewModel.load(ENTRY_ID.value)
-                runCurrent()
-                val oldCode =
-                    fixture.viewModel.otpState.value as? OtpCodeState.Ready
-                        ?: error("Expected the initial OTP code")
-
-                repository.config = otpConfig("MFRGGZDFMZTWQ2LK")
-                fixture.viewModel.refreshOtpConfiguration()
-                runCurrent()
-
-                assertEquals(OtpCodeState.NotRequested, fixture.viewModel.otpState.value)
-                assertEquals(2, repository.readCount)
-
-                reloadGate.complete(Unit)
-                runCurrent()
-
-                val refreshedCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
-                assertTrue(oldCode.code != refreshedCode.code)
-            } finally {
-                store.clear()
-            }
-        }
-
-    @Test
     fun `successful OTP revision restore clears and reloads detail code`() =
         runTest {
             val reloadGate = CompletableDeferred<Unit>()
@@ -370,10 +402,13 @@ class DetailViewModelTest {
                 )
             fixture.revisions.onRestoreCommitted = { repository.config = otpConfig("MFRGGZDFMZTWQ2LK") }
             val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            val otpLease = fixture.otpRuntime.acquire(ENTRY_ID.value)
             try {
                 fixture.viewModel.load(ENTRY_ID.value)
                 runCurrent()
-                val oldCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                val oldCode =
+                    fixture.otpRuntime.states.value
+                        .getValue(ENTRY_ID.value) as OtpCodeState.Ready
                 fixture.viewModel.onAction(DetailUiAction.OpenRevisionHistory)
                 runCurrent()
                 fixture.viewModel.onAction(DetailUiAction.SelectRevision(REVISION_ID.value))
@@ -386,15 +421,18 @@ class DetailViewModelTest {
                 runCurrent()
 
                 assertTrue(fixture.revisions.restoreCompleted)
-                assertEquals(OtpCodeState.NotRequested, fixture.viewModel.otpState.value)
+                assertEquals(null, fixture.otpRuntime.states.value[ENTRY_ID.value])
                 assertEquals(2, repository.readCount)
 
                 reloadGate.complete(Unit)
                 runCurrent()
 
-                val restoredCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                val restoredCode =
+                    fixture.otpRuntime.states.value
+                        .getValue(ENTRY_ID.value) as OtpCodeState.Ready
                 assertTrue(oldCode.code != restoredCode.code)
             } finally {
+                otpLease.close()
                 reloadGate.complete(Unit)
                 fixture.revisions.releasePostCommitCleanup.complete(Unit)
                 store.clear()
@@ -413,10 +451,13 @@ class DetailViewModelTest {
             val fixture = Fixture(initialEntry = otpEntry(), otpConfigRepository = repository)
             fixture.revisions.failRestore = true
             val store = ViewModelStore().apply { put("detail", fixture.viewModel) }
+            val otpLease = fixture.otpRuntime.acquire(ENTRY_ID.value)
             try {
                 fixture.viewModel.load(ENTRY_ID.value)
                 runCurrent()
-                val originalCode = fixture.viewModel.otpState.value as OtpCodeState.Ready
+                val originalCode =
+                    fixture.otpRuntime.states.value
+                        .getValue(ENTRY_ID.value) as OtpCodeState.Ready
                 fixture.viewModel.onAction(DetailUiAction.OpenRevisionHistory)
                 runCurrent()
                 fixture.viewModel.onAction(DetailUiAction.SelectRevision(REVISION_ID.value))
@@ -425,10 +466,17 @@ class DetailViewModelTest {
                 fixture.viewModel.onAction(DetailUiAction.ConfirmRevisionRestore)
                 runCurrent()
 
-                assertTrue(originalCode.code == (fixture.viewModel.otpState.value as OtpCodeState.Ready).code)
+                assertTrue(
+                    originalCode.code ==
+                        (
+                            fixture.otpRuntime.states.value
+                                .getValue(ENTRY_ID.value) as OtpCodeState.Ready
+                        ).code,
+                )
                 assertEquals(1, repository.readCount)
                 assertEquals(1, fixture.revisions.restoreCalls)
             } finally {
+                otpLease.close()
                 store.clear()
             }
         }
@@ -501,7 +549,8 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    model.uiState.value.snapshotState.entryOrNull()
+                    model.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
                 assertFalse(model.uiState.value.packagePickerApps is AppPackagePickerUiState.Failed)
@@ -594,16 +643,62 @@ class DetailViewModelTest {
             try {
                 model.load(ENTRY_ID.value)
                 runCurrent()
-                assertEquals(listOf(activity), model.uiState.value.activityHistory.activities)
-                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Failed)
+                assertEquals(
+                    DetailActivityHistoryState.Content(
+                        activities = listOf(activity),
+                        phase = DetailActivityHistoryPhase.Failed,
+                    ),
+                    model.uiState.value.activityHistory,
+                )
                 assertEquals(1, subscriptions)
 
                 model.onAction(DetailUiAction.RetryActivityHistory)
                 runCurrent()
 
                 assertEquals(2, subscriptions)
-                assertEquals(emptyList<EntryActivity>(), model.uiState.value.activityHistory.activities)
-                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Ready)
+                assertEquals(
+                    DetailActivityHistoryState.Content(
+                        activities = emptyList(),
+                        phase = DetailActivityHistoryPhase.Ready,
+                    ),
+                    model.uiState.value.activityHistory,
+                )
+            } finally {
+                store.clear()
+            }
+        }
+
+    @Test
+    fun activityHistoryFailureBeforeFirstEmissionUsesAnExplicitFailedState() =
+        runTest {
+            var subscriptions = 0
+            val fixture =
+                Fixture(
+                    activityQueryRepository =
+                        object : ActivityQueryRepository {
+                            override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
+                                if (++subscriptions == 1) {
+                                    flow { throw IllegalStateException("history query failed") }
+                                } else {
+                                    flowOf(emptyList())
+                                }
+                        },
+                )
+            val model = fixture.viewModel
+            val store = ViewModelStore().apply { put("detail", model) }
+            try {
+                model.load(ENTRY_ID.value)
+                runCurrent()
+
+                assertEquals(DetailActivityHistoryState.Failed, model.uiState.value.activityHistory)
+
+                model.onAction(DetailUiAction.RetryActivityHistory)
+                runCurrent()
+
+                assertEquals(
+                    DetailActivityHistoryState.Content(emptyList(), DetailActivityHistoryPhase.Ready),
+                    model.uiState.value.activityHistory,
+                )
             } finally {
                 store.clear()
             }
@@ -688,12 +783,21 @@ class DetailViewModelTest {
     @Test
     fun activityHistorySessionLockIsNotReportedAsQueryFailure() =
         runTest {
+            val activity =
+                EntryActivity(
+                    entryId = ENTRY_ID.value,
+                    activityType = ActivityType.AUTOFILL,
+                    createdAt = 10L,
+                )
             val fixture =
                 Fixture(
                     activityQueryRepository =
                         object : ActivityQueryRepository {
                             override fun observeByEntryId(entryId: String): Flow<List<EntryActivity>> =
-                                flow { throw SessionLockedException() }
+                                flow {
+                                    emit(listOf(activity))
+                                    throw SessionLockedException()
+                                }
                         },
                 )
             val model = fixture.viewModel
@@ -702,7 +806,19 @@ class DetailViewModelTest {
                 model.load(ENTRY_ID.value)
                 runCurrent()
 
-                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Loading)
+                assertEquals(
+                    DetailActivityHistoryState.Content(
+                        activities = listOf(activity),
+                        phase = DetailActivityHistoryPhase.Ready,
+                    ),
+                    model.uiState.value.activityHistory,
+                )
+
+                fixture.access.lock()
+                runCurrent()
+
+                assertEquals(DetailSnapshotState.Loading, model.uiState.value.snapshotState)
+                assertEquals(DetailActivityHistoryState.Loading, model.uiState.value.activityHistory)
             } finally {
                 store.clear()
             }
@@ -742,10 +858,14 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    model.uiState.value.snapshotState.entryOrNull()
+                    model.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
-                assertTrue(model.uiState.value.activityHistory is DetailActivityHistoryState.Ready)
+                assertEquals(
+                    DetailActivityHistoryState.Content(emptyList(), DetailActivityHistoryPhase.Ready),
+                    model.uiState.value.activityHistory,
+                )
             } finally {
                 releaseOldObserver.complete(Unit)
                 store.clear()
@@ -854,10 +974,11 @@ class DetailViewModelTest {
                 model.onAction(DetailUiAction.RetryDetailLoad)
                 runCurrent()
 
-                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
+                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Content)
                 assertEquals(
                     "Current title",
-                    model.uiState.value.snapshotState.entryOrNull()
+                    model.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
             } finally {
@@ -873,6 +994,7 @@ class DetailViewModelTest {
                     entryQueryRepository = {
                         object : EntryQueryRepository {
                             override suspend fun getById(entryId: EntryId): Entry? = null
+
                             override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
                         }
                     },
@@ -954,6 +1076,7 @@ class DetailViewModelTest {
                     entryQueryRepository = {
                         object : EntryQueryRepository {
                             override suspend fun getById(entryId: EntryId): Entry? = awaitCancellation()
+
                             override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
                         }
                     },
@@ -983,6 +1106,7 @@ class DetailViewModelTest {
                             entryQueryRepository = {
                                 object : EntryQueryRepository {
                                     override suspend fun getById(entryId: EntryId): Entry? = throw fatal
+
                                     override suspend fun getByIds(entryIds: List<EntryId>) = emptyList<Entry>()
                                 }
                             },
@@ -1037,10 +1161,11 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    model.uiState.value.snapshotState.entryOrNull()
+                    model.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
-                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
+                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Content)
             } finally {
                 releaseOldQuery.complete(Unit)
                 store.clear()
@@ -1077,10 +1202,14 @@ class DetailViewModelTest {
 
                 assertTrue(fixture.revisions.restoreCompleted)
                 assertEquals(1, fixture.revisions.restoreCalls)
-                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.RefreshFailedAfterRestore)
+                assertEquals(
+                    DetailSnapshotRefreshPhase.Failed,
+                    (model.uiState.value.snapshotState as DetailSnapshotState.Content).refreshPhase,
+                )
                 assertEquals(
                     "Current title",
-                    model.uiState.value.snapshotState.entryOrNull()
+                    model.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
                 val revisions = model.uiState.value.revisions as DetailRevisionState.Open
@@ -1089,10 +1218,14 @@ class DetailViewModelTest {
                 model.onAction(DetailUiAction.RetrySnapshotRefresh)
                 runCurrent()
 
-                assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
+                assertEquals(
+                    DetailSnapshotRefreshPhase.Current,
+                    (model.uiState.value.snapshotState as DetailSnapshotState.Content).refreshPhase,
+                )
                 assertEquals(
                     "Restored title",
-                    model.uiState.value.snapshotState.entryOrNull()
+                    model.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
                 assertEquals(1, fixture.revisions.restoreCalls)
@@ -1138,7 +1271,8 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Restored title",
-                    viewModel.uiState.value.snapshotState.entryOrNull()
+                    viewModel.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
                 assertTrue(fixture.revisions.restoreCompleted)
@@ -1175,7 +1309,8 @@ class DetailViewModelTest {
                 assertTrue(fixture.revisions.restoreCompleted)
                 assertEquals(
                     "Restored title",
-                    viewModel.uiState.value.snapshotState.entryOrNull()
+                    viewModel.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
             } finally {
@@ -1200,7 +1335,8 @@ class DetailViewModelTest {
 
                 assertEquals(
                     "Other title",
-                    viewModel.uiState.value.snapshotState.entryOrNull()
+                    viewModel.uiState.value.snapshotState
+                        .entryOrNull()
                         ?.title,
                 )
                 assertTrue(fixture.revisions.restoreCompleted)
@@ -1253,10 +1389,11 @@ class DetailViewModelTest {
             model.onAction(DetailUiAction.RetryDetailLoad)
             runCurrent()
 
-            assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Ready)
+            assertTrue(model.uiState.value.snapshotState is DetailSnapshotState.Content)
             assertEquals(
                 "Current title",
-                model.uiState.value.snapshotState.entryOrNull()
+                model.uiState.value.snapshotState
+                    .entryOrNull()
                     ?.title,
             )
         } finally {
@@ -1288,10 +1425,9 @@ class DetailViewModelTest {
         private val activity = NoOpActivityRecorder
         private val fieldReader: EntryFieldReader = DefaultEntryFieldReader()
         private val clipboard = clipboardWriter
-        private val sessionProvider = UnlockedSessionProvider()
-        private val freshness = FreshnessState()
         private val installedAppDirectory = installedApps
         private val favicon = UnusedFaviconImageProcessor
+        val otpRuntime = createTestOtpRuntime(otpConfigRepository)
 
         val viewModel =
             DetailViewModel(
@@ -1313,6 +1449,7 @@ class DetailViewModelTest {
                         activity,
                     ),
                 copyOtpCodeUseCase = CopyOtpCodeUseCase(authGate, clipboard, activity),
+                rollbackHotpCounterUseCase = RollbackHotpCounterUseCase(authGate, otpRuntime),
                 faviconImageProcessor = favicon,
                 presentationLoader =
                     DetailPresentationLoader(
@@ -1326,9 +1463,14 @@ class DetailViewModelTest {
                         revealFields = RevealRevisionFieldsUseCase(revisions, authGate),
                         restoreRevision = RestoreEntryRevisionUseCase(revisions, entries, sensitive, authGate),
                     ),
-                relatedPasswordOperations = RelatedPasswordOperationsImpl(TestPasswordListQueryRepository(passwordItems), entryLinkRepository, testLogger()),
+                relatedPasswordOperations =
+                    RelatedPasswordOperationsImpl(
+                        TestPasswordListQueryRepository(passwordItems),
+                        entryLinkRepository,
+                        testLogger(),
+                    ),
                 logger = testLogger(),
-                otpCodeRuntimeFactory = OtpCodeRuntimeFactory(otpConfigRepository, sessionProvider, freshness),
+                otpRuntime = otpRuntime,
             )
     }
 
@@ -1407,17 +1549,26 @@ class DetailViewModelTest {
         val saved = mutableListOf<EntryLink>()
 
         override fun observeAll(): Flow<List<EntryLink>> = flowOf(saved)
-        override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> = flowOf(saved.filter {
-            it.sourceEntryId == entryId || it.targetEntryId == entryId
-        })
+
+        override fun observeLinks(entryId: EntryId): Flow<List<EntryLink>> =
+            flowOf(
+                saved.filter {
+                    it.sourceEntryId == entryId || it.targetEntryId == entryId
+                },
+            )
+
         override suspend fun getAll(): List<EntryLink> = saved.toList()
-        override suspend fun getLinks(entryId: EntryId): List<EntryLink> = saved.filter {
-            it.sourceEntryId == entryId || it.targetEntryId == entryId
-        }
+
+        override suspend fun getLinks(entryId: EntryId): List<EntryLink> =
+            saved.filter {
+                it.sourceEntryId == entryId || it.targetEntryId == entryId
+            }
+
         override suspend fun upsert(link: EntryLink): AppResult<Unit> {
             saved += link
             return AppResult.Success(Unit)
         }
+
         override suspend fun delete(linkId: EntryLinkId): AppResult<Unit> = AppResult.Success(Unit)
     }
 
@@ -1540,6 +1691,7 @@ class DetailViewModelTest {
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ) = AppResult.Success(Unit)
 
         override suspend fun deleteByEntryId(entryId: String) = Unit
@@ -1584,9 +1736,12 @@ class DetailViewModelTest {
         }
 
     private object NoOtpConfigRepository : OtpConfigRepository {
-        override suspend fun getConfig(entryId: String): OtpConfig? = null
+        override suspend fun getGenerationMaterial(entryId: String): OtpGenerationMaterial? = null
 
-        override suspend fun consumeHotpCode(entryId: String) = OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long) =
+            OtpResult.Failure(OtpGenerationError.InvalidSecret)
+
+        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long) = false
     }
 
     private class MutableOtpConfigRepository(
@@ -1596,30 +1751,29 @@ class DetailViewModelTest {
     ) : OtpConfigRepository {
         var readCount = 0
 
-        override suspend fun getConfig(entryId: String): OtpConfig {
+        override suspend fun getGenerationMaterial(entryId: String): OtpGenerationMaterial {
             readCount++
             if (readCount == blockReadNumber) readGate.await()
-            return config
+            return generationMaterialForTest(config)
         }
 
-        override suspend fun consumeHotpCode(entryId: String) = OtpResult.Failure(OtpGenerationError.InvalidSecret)
-    }
+        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long) =
+            OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
-    private class UnlockedSessionProvider : SessionStateProvider {
-        override val lockStateFlow = MutableStateFlow(SecureSessionState.UNLOCKED)
-        override val lockGenerationFlow = MutableStateFlow(0L)
-        override val lockState get() = lockStateFlow.value
-    }
-
-    private class FreshnessState : SensitiveKeyFreshnessState {
-        override val generation: StateFlow<Long> = MutableStateFlow(0L)
+        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long) = false
     }
 
     private class AuthenticatedAccess : SecureSessionAccessState {
-        override val authenticationState: StateFlow<AuthenticationState> =
-            MutableStateFlow(AuthenticationState.Authenticated(1L))
+        private val mutableAuthenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
+        override val authenticationState: StateFlow<AuthenticationState> = mutableAuthenticationState
+        private var unlocked = true
 
-        override fun isUnlocked() = true
+        override fun isUnlocked() = unlocked
+
+        fun lock() {
+            unlocked = false
+            mutableAuthenticationState.value = AuthenticationState.Locked
+        }
     }
 
     private object UnusedFaviconImageProcessor : FaviconImageProcessor {
@@ -1665,7 +1819,10 @@ class DetailViewModelTest {
 
         const val SSH_PRIVATE_KEY = "private-key"
 
-        fun passwordItem(id: EntryId, title: String) = EntryListItem(
+        fun passwordItem(
+            id: EntryId,
+            title: String,
+        ) = EntryListItem(
             identity = EntryIdentity(id, EntryType.LOGIN, timestamps = EntryTimestamps(1L)),
             profile = EntryProfile(title),
         )

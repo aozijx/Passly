@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -41,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashBottomSheetUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryListUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryRowOperation
@@ -101,12 +101,10 @@ internal fun TrashBottomSheet(
             }
 
             when (val entries = state.entries) {
-                TrashEntryListUiState.Loading -> {
-                    TrashLoading()
-                }
-
-                TrashEntryListUiState.Emptying -> {
-                    TrashLoading()
+                TrashEntryListUiState.Loading,
+                TrashEntryListUiState.Emptying,
+                -> {
+                    TrashLoading(modifier = Modifier.weight(1f))
                 }
 
                 is TrashEntryListUiState.LoadFailed -> {
@@ -137,7 +135,10 @@ internal fun TrashBottomSheet(
                     ) {
                         items(entries.entries, key = { entry -> entry.id }) { entry ->
                             when (entry.operation) {
-                                TrashEntryRowOperation.Running -> TrashEntryOperationLoading()
+                                TrashEntryRowOperation.Running -> {
+                                    TrashEntryOperationLoading()
+                                }
+
                                 TrashEntryRowOperation.Idle -> {
                                     TrashEntryCard(
                                         entry = entry,
@@ -249,8 +250,7 @@ private fun TrashHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.vault_trash_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = passlySheetTitleStyle(),
             )
         }
         if (count > 0) {
@@ -306,12 +306,11 @@ private fun TrashHeader(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun TrashLoading() {
+private fun TrashLoading(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
-                .heightIn(min = 240.dp)
                 .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {

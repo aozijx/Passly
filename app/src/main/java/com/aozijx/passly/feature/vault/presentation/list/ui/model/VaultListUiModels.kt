@@ -2,6 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.list.ui.model
 
 import androidx.compose.runtime.Immutable
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
 import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
@@ -48,8 +49,8 @@ data class VaultListToolbarUiModel(
 @Immutable
 data class VaultListNavigationUiModel(
     val filters: List<VaultFilterOptionUiModel>,
-    val creationOptions: List<VaultAddTypeUiModel>,
-    val fabMenuOptions: List<VaultAddTypeUiModel>,
+    val creationOptions: List<AddType>,
+    val fabMenuOptions: List<AddType>,
 ) {
     val allFiltersSelected: Boolean
         get() = filters.none(VaultFilterOptionUiModel::selected)
@@ -60,7 +61,7 @@ data class VaultListNavigationUiModel(
 
 @Immutable
 data class VaultFilterOptionUiModel(
-    val type: VaultAddTypeUiModel,
+    val type: AddType,
     val selected: Boolean,
 )
 

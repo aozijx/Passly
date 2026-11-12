@@ -167,6 +167,8 @@
     <string name="settings_interface_card_style_section">保险库卡片样式</string>
     <string name="settings_interface_card_style_toggle">展开或收起%1$s样式</string>
     <string name="settings_interface_card_style_section_toggle">展开或收起保险库卡片样式</string>
+    <string name="settings_interface_copy_next_totp_near_expiry">临近结束时复制下一次验证码</string>
+    <string name="settings_interface_copy_next_totp_near_expiry_description">当前验证码剩余 3 秒内点击复制时，复制下一时间段的验证码</string>
     <string name="settings_interface_save_failed">无法保存界面设置，请重试</string>
     <!-- Autofill -->
     <!-- Autofill presentation -->

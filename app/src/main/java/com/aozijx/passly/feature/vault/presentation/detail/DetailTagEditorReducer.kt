@@ -10,18 +10,10 @@ internal object DetailTagEditorReducer {
     ): DetailTagEditorState =
         when (mutation) {
             is DetailMutation.TagEditorOpened -> {
-                val tags =
-                    when (val normalized = EntryTagPolicy.normalize(mutation.currentTags)) {
-                        is EntryTagNormalizationResult.Valid -> normalized.tags
-                        is EntryTagNormalizationResult.Invalid -> mutation.currentTags
-                    }
-                DetailTagEditorState.Open(
-                    initialTags = tags,
-                    availableTags = mutation.availableTags,
-                )
+                mutation.toEditorState()
             }
 
-            else -> {
+            is DetailTagEditorEditMutation -> {
                 when (state) {
                     DetailTagEditorState.Closed -> state
                     is DetailTagEditorState.Open -> reduceOpen(state, mutation)
@@ -29,15 +21,23 @@ internal object DetailTagEditorReducer {
             }
         }
 
+    private fun DetailMutation.TagEditorOpened.toEditorState(): DetailTagEditorState.Open {
+        val tags =
+            when (val normalized = EntryTagPolicy.normalize(currentTags)) {
+                is EntryTagNormalizationResult.Valid -> normalized.tags
+                is EntryTagNormalizationResult.Invalid -> currentTags
+            }
+        return DetailTagEditorState.Open(
+            initialTags = tags,
+            availableTags = availableTags,
+        )
+    }
+
     private fun reduceOpen(
         state: DetailTagEditorState.Open,
-        mutation: DetailTagEditorMutation,
+        mutation: DetailTagEditorEditMutation,
     ): DetailTagEditorState =
         when (mutation) {
-            is DetailMutation.TagEditorOpened -> {
-                state
-            }
-
             is DetailMutation.TagInputChanged -> {
                 state.copy(
                     input = mutation.value,

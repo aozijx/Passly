@@ -37,7 +37,8 @@ class CreateEntryUseCase internal constructor(
     private val clock: () -> Long,
     private val logger: Logger,
     private val monotonicClock: () -> Long,
-) : EntryCreation, AutofillEntryCreation {
+) : EntryCreation,
+    AutofillEntryCreation {
     @Inject
     constructor(
         entryCommandRepository: EntryCommandRepository,

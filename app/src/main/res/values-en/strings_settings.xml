@@ -170,6 +170,8 @@
     <string name="settings_interface_card_style_section">Vault card style</string>
     <string name="settings_interface_card_style_toggle">Toggle %1$s styles</string>
     <string name="settings_interface_card_style_section_toggle">Toggle vault card styles</string>
+    <string name="settings_interface_copy_next_totp_near_expiry">Copy next code near expiry</string>
+    <string name="settings_interface_copy_next_totp_near_expiry_description">Copy the next time window\'s code when fewer than 3 seconds remain</string>
     <string name="settings_interface_save_failed">Could not save interface settings. Try again.</string>
     <!-- Autofill -->
     <!-- Autofill presentation -->

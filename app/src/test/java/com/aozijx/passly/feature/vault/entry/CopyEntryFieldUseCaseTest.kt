@@ -45,7 +45,8 @@ class CopyEntryFieldUseCaseTest {
             assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), fixture.gate.scope)
             assertEquals(listOf("alice"), fixture.clipboard.values)
             assertEquals(1, fixture.query.reads)
-            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_USERNAME), fixture.activityRecorder.activities)
+            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_FIELD), fixture.activityRecorder.activities)
+            assertEquals(listOf(setOf(FieldKey.USERNAME)), fixture.activityRecorder.affectedFields)
         }
 
     @Test
@@ -69,7 +70,8 @@ class CopyEntryFieldUseCaseTest {
             assertEquals(listOf("secret"), fixture.clipboard.values)
             assertTrue(value.isEmpty)
             assertEquals(0, fixture.query.reads)
-            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_PASSWORD), fixture.activityRecorder.activities)
+            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_FIELD), fixture.activityRecorder.activities)
+            assertEquals(listOf(setOf(FieldKey.PASSWORD)), fixture.activityRecorder.affectedFields)
         }
 
     @Test
@@ -162,7 +164,8 @@ class CopyEntryFieldUseCaseTest {
             assertEquals(AuthorizationScope.Global(AuthenticationPurpose.COPY_SECRET), gate.scope)
             assertEquals(1, reads)
             assertEquals(listOf("123456"), clipboard.values)
-            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_PASSWORD), activityRecorder.activities)
+            assertEquals(listOf(ENTRY_ID.value to ActivityType.COPY_OTP_CODE), activityRecorder.activities)
+            assertEquals(listOf(emptySet<FieldKey>()), activityRecorder.affectedFields)
         }
 
     @Test
@@ -305,12 +308,15 @@ class CopyEntryFieldUseCaseTest {
 
     private class RecordingActivityRecorder : ActivityRecorder {
         val activities = mutableListOf<Pair<String, ActivityType>>()
+        val affectedFields = mutableListOf<Set<FieldKey>>()
 
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ): AppResult<Unit> {
             activities += entryId to type
+            this.affectedFields += affectedFields
             return AppResult.Success(Unit)
         }
 

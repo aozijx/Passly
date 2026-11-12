@@ -1,19 +1,23 @@
 package com.aozijx.passly.feature.vault.presentation.detail.model
 
+import androidx.annotation.StringRes
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
-import com.aozijx.passly.domain.entry.model.history.RevisionDifferenceKind
 import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
-import com.aozijx.passly.feature.vault.presentation.detail.DetailActivityFilter
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailHistoryFilter
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
+import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotRefreshPhase
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordBindingUiState
 import com.aozijx.passly.feature.vault.presentation.detail.RelatedPasswordUnlinkUiState
-import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 
 data class DetailPresentationModel(
+    val entryId: String,
     val header: DetailHeaderUiModel,
     val content: DetailBodyUiModel,
     val overlays: DetailEditorOverlaysUiModel,
@@ -31,8 +35,6 @@ sealed interface DetailPageUiState {
     ) : DetailPageUiState
 }
 
-enum class DetailSnapshotRefreshUiState { Current, Refreshing, Failed }
-
 data class DetailBodyUiModel(
     val icon: DetailIconCardUiModel,
     val sections: List<DetailBodySectionUiModel>,
@@ -43,11 +45,9 @@ data class DetailBodyUiModel(
     val associations: DetailAssociatedInfoUiModel,
     val associatedApps: DetailAssociatedAppsUiState,
     val packagePickerApps: AppPackagePickerUiState<AppPackagePickerItemUiModel>,
-    val notes: DetailNotesUiModel,
+    val notes: DetailNotesUiState,
     val metadata: DetailMetadataUiModel,
-    val activityFilter: DetailActivityFilter,
-    val activityHistory: DetailActivityHistoryUiState,
-    val snapshotRefreshState: DetailSnapshotRefreshUiState,
+    val snapshotRefreshPhase: DetailSnapshotRefreshPhase,
 )
 
 sealed interface DetailBodySectionUiModel {
@@ -62,7 +62,7 @@ sealed interface DetailBodySectionUiModel {
     data object WifiQr : DetailBodySectionUiModel
 
     data class Otp(
-        val state: DetailOtpUiModel,
+        val type: OtpType,
     ) : DetailBodySectionUiModel
 
     data class BankCard(
@@ -84,30 +84,6 @@ sealed interface DetailBodySectionUiModel {
     data class Passkey(
         val state: DetailPasskeyUiModel,
     ) : DetailBodySectionUiModel
-}
-
-sealed interface DetailActivityHistoryUiState {
-    data object Loading : DetailActivityHistoryUiState
-
-    data object ReadyEmpty : DetailActivityHistoryUiState
-
-    data class ReadyItems(
-        val activities: List<DetailActivityUiModel>,
-    ) : DetailActivityHistoryUiState {
-        init {
-            require(activities.isNotEmpty())
-        }
-    }
-
-    data object FailedEmpty : DetailActivityHistoryUiState
-
-    data class FailedItems(
-        val activities: List<DetailActivityUiModel>,
-    ) : DetailActivityHistoryUiState {
-        init {
-            require(activities.isNotEmpty())
-        }
-    }
 }
 
 data class DetailRelatedSectionsUiModel(
@@ -177,8 +153,8 @@ sealed interface DetailSeedPhraseUiModel {
 }
 
 data class DetailPasskeyUiModel(
-    val data: ProtectedDetailFieldUiState,
-    val hardwareKeyInfo: String?,
+    val data: DetailPasskeyDataUiState,
+    val hardwareKeyInfo: DetailHardwareKeyInfoUiState,
 )
 
 data class DetailEditorOverlaysUiModel(
@@ -186,23 +162,57 @@ data class DetailEditorOverlaysUiModel(
     val faviconEditor: DetailFaviconEditorState,
     val savingTags: Boolean,
     val savingIcon: Boolean,
-    val revisionHistory: DetailRevisionSheetUiModel,
+    val history: DetailHistorySheetUiModel,
 )
 
 data class DetailRevisionItemUiModel(
     val id: String,
     val version: Int,
+    val storedVersion: Int,
     val createdAtMs: Long,
     val change: RevisionChange,
+    val changedFields: List<DetailRevisionFieldLabelUiState>,
 )
 
 data class DetailRevisionDifferenceUiModel(
     val field: RevisionFieldId,
-    val kind: RevisionDifferenceKind,
-    val before: DetailRevisionValueUiModel,
-    val after: DetailRevisionValueUiModel,
-    val revealedValue: ScopedSensitiveText? = null,
+    val label: DetailRevisionFieldLabelUiState,
+    @get:StringRes val changeLabelRes: Int,
+    val content: DetailRevisionDifferenceContentUiState,
+    val revealAction: DetailRevisionRevealActionUiState,
 )
+
+sealed interface DetailRevisionFieldLabelUiState {
+    data class Resource(
+        @get:StringRes @param:StringRes val resource: Int,
+    ) : DetailRevisionFieldLabelUiState
+
+    data class Named(
+        @get:StringRes @param:StringRes val resource: Int,
+        val name: String,
+    ) : DetailRevisionFieldLabelUiState
+}
+
+sealed interface DetailRevisionDifferenceContentUiState {
+    data class Values(
+        val before: DetailRevisionValueUiModel,
+        val after: DetailRevisionValueUiModel,
+    ) : DetailRevisionDifferenceContentUiState
+
+    data object ProtectedHidden : DetailRevisionDifferenceContentUiState
+
+    data class ProtectedRevealed(
+        val value: ScopedSensitiveText,
+    ) : DetailRevisionDifferenceContentUiState
+}
+
+sealed interface DetailRevisionRevealActionUiState {
+    data object Unavailable : DetailRevisionRevealActionUiState
+
+    data class Available(
+        val fieldKey: SensitiveFieldKey,
+    ) : DetailRevisionRevealActionUiState
+}
 
 sealed interface DetailRevisionValueUiModel {
     data object Absent : DetailRevisionValueUiModel
@@ -238,45 +248,61 @@ sealed interface DetailRevisionValueUiModel {
     }
 }
 
-sealed interface DetailRevisionSheetUiModel {
-    data object Hidden : DetailRevisionSheetUiModel
+sealed interface DetailHistorySheetUiModel {
+    data object Hidden : DetailHistorySheetUiModel
 
     data class ListPage(
-        val content: DetailRevisionListUiState,
-    ) : DetailRevisionSheetUiModel
+        val content: DetailHistoryListUiState,
+    ) : DetailHistorySheetUiModel
 
     data class ComparisonPage(
         val revisionId: String,
         val content: DetailRevisionComparisonUiState,
-    ) : DetailRevisionSheetUiModel
+    ) : DetailHistorySheetUiModel
 }
 
-sealed interface DetailRevisionListUiState {
-    data object Loading : DetailRevisionListUiState
+data class DetailHistoryListUiState(
+    val filter: DetailHistoryFilter,
+    val items: List<DetailHistoryItemUiModel>,
+    val activitySource: DetailHistoryLoadState,
+    val revisionSource: DetailHistoryLoadState,
+) {
+    val isLoading: Boolean
+        get() = activitySource == DetailHistoryLoadState.LOADING || revisionSource == DetailHistoryLoadState.LOADING
 
-    data object ReadyEmpty : DetailRevisionListUiState
-
-    data class ReadyItems(
-        val revisions: List<DetailRevisionItemUiModel>,
-    ) : DetailRevisionListUiState {
-        init {
-            require(revisions.isNotEmpty())
-        }
-    }
-
-    data object Failed : DetailRevisionListUiState
+    val isEmptyResult: Boolean
+        get() =
+            items.isEmpty() && activitySource == DetailHistoryLoadState.READY &&
+                revisionSource == DetailHistoryLoadState.READY
 }
+
+enum class DetailHistoryLoadState { LOADING, READY, FAILED }
 
 sealed interface DetailRevisionComparisonUiState {
     data object Loading : DetailRevisionComparisonUiState
 
     data class Ready(
-        val differences: List<DetailRevisionDifferenceUiModel>,
+        val content: DetailRevisionComparisonContentUiState,
         val restore: DetailRevisionRestorePhase,
     ) : DetailRevisionComparisonUiState
 
     data object Failed : DetailRevisionComparisonUiState
 }
+
+sealed interface DetailRevisionComparisonContentUiState {
+    data object NoChanges : DetailRevisionComparisonContentUiState
+
+    data class Changes(
+        val differences: List<DetailRevisionDifferenceUiModel>,
+    ) : DetailRevisionComparisonContentUiState {
+        init {
+            require(differences.isNotEmpty())
+        }
+    }
+}
+
+val DetailRevisionComparisonUiState.Ready.restoreEnabled: Boolean
+    get() = restore == DetailRevisionRestorePhase.Idle && content is DetailRevisionComparisonContentUiState.Changes
 
 val DetailRevisionComparisonUiState.restoreInProgress: Boolean
     get() =
@@ -288,24 +314,26 @@ val DetailRevisionComparisonUiState.restoreInProgress: Boolean
             is DetailRevisionComparisonUiState.Ready -> restore == DetailRevisionRestorePhase.Restoring
         }
 
-val DetailRevisionSheetUiModel.blocksDismissal: Boolean
+val DetailHistorySheetUiModel.blocksDismissal: Boolean
     get() =
         when (this) {
-            DetailRevisionSheetUiModel.Hidden,
-            is DetailRevisionSheetUiModel.ListPage,
+            DetailHistorySheetUiModel.Hidden,
+            is DetailHistorySheetUiModel.ListPage,
             -> false
 
-            is DetailRevisionSheetUiModel.ComparisonPage -> content.restoreInProgress
+            is DetailHistorySheetUiModel.ComparisonPage -> content.restoreInProgress
         }
 
-val DetailRevisionSheetUiModel.restoreConfirmationVisible: Boolean
+val DetailHistorySheetUiModel.restoreConfirmationVisible: Boolean
     get() =
         when (this) {
-            DetailRevisionSheetUiModel.Hidden,
-            is DetailRevisionSheetUiModel.ListPage,
-            -> false
+            DetailHistorySheetUiModel.Hidden,
+            is DetailHistorySheetUiModel.ListPage,
+            -> {
+                false
+            }
 
-            is DetailRevisionSheetUiModel.ComparisonPage ->
+            is DetailHistorySheetUiModel.ComparisonPage -> {
                 when (val comparison = content) {
                     DetailRevisionComparisonUiState.Loading,
                     DetailRevisionComparisonUiState.Failed,
@@ -313,4 +341,5 @@ val DetailRevisionSheetUiModel.restoreConfirmationVisible: Boolean
 
                     is DetailRevisionComparisonUiState.Ready -> comparison.restore == DetailRevisionRestorePhase.Confirming
                 }
+            }
         }

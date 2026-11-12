@@ -3,9 +3,10 @@ package com.aozijx.passly.feature.vault.presentation.detail.history
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
-import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionSummary
 import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -16,7 +17,7 @@ class DetailRevisionReducerTest {
         val state =
             DetailRevisionState.Open(
                 entryId = EntryId("entry"),
-                revisions = DetailRevisionListState.Ready(listOf(metadata())),
+                revisions = DetailRevisionListState.Ready(listOf(summary())),
                 page =
                     DetailRevisionPage.Comparison(
                         revisionId = "revision",
@@ -84,7 +85,7 @@ class DetailRevisionReducerTest {
                 DetailRevisionState.Closed,
                 DetailRevisionMutation.Opened(EntryId("entry")),
             )
-        val listed = DetailRevisionReducer.reduce(opened, DetailRevisionMutation.MetadataChanged("entry", listOf(metadata())))
+        val listed = DetailRevisionReducer.reduce(opened, DetailRevisionMutation.MetadataChanged("entry", listOf(summary())))
         val selected = DetailRevisionReducer.reduce(listed, DetailRevisionMutation.ComparisonStarted("entry", "revision"))
         val backed = DetailRevisionReducer.reduce(selected, DetailRevisionMutation.BackToList)
         val closed = DetailRevisionReducer.reduce(backed, DetailRevisionMutation.Closed)
@@ -111,10 +112,47 @@ class DetailRevisionReducerTest {
         val result =
             DetailRevisionReducer.reduce(
                 state,
-                DetailRevisionMutation.MetadataChanged("other", listOf(metadata())),
+                DetailRevisionMutation.MetadataChanged("other", listOf(summary())),
             )
 
         assertEquals(state, result)
+    }
+
+    @Test
+    fun metadataAndComparisonFailuresUpdateOnlyTheirOwnStates() {
+        val state =
+            DetailRevisionState.Open(
+                entryId = EntryId("entry"),
+                revisions = DetailRevisionListState.Ready(listOf(summary())),
+                page = DetailRevisionPage.Comparison("revision"),
+            )
+
+        val metadataFailed =
+            DetailRevisionReducer.reduce(
+                state,
+                DetailRevisionMutation.MetadataFailed("entry", DetailRevisionFailure.UNEXPECTED),
+            ) as DetailRevisionState.Open
+        assertEquals(DetailRevisionListState.Failed(DetailRevisionFailure.UNEXPECTED), metadataFailed.revisions)
+        assertEquals(DetailRevisionPage.Comparison("revision"), metadataFailed.page)
+
+        val comparisonFailed =
+            DetailRevisionReducer.reduce(
+                state,
+                DetailRevisionMutation.ComparisonFailed("entry", "revision", DetailRevisionFailure.STALE),
+            ) as DetailRevisionState.Open
+        assertEquals(DetailRevisionListState.Ready(listOf(summary())), comparisonFailed.revisions)
+        assertEquals(
+            DetailRevisionComparisonPhase.Failed(DetailRevisionFailure.STALE),
+            (comparisonFailed.page as DetailRevisionPage.Comparison).phase,
+        )
+
+        assertEquals(
+            state,
+            DetailRevisionReducer.reduce(
+                state,
+                DetailRevisionMutation.ComparisonFailed("entry", "stale-revision", DetailRevisionFailure.MISSING),
+            ),
+        )
     }
 
     private fun metadata() =
@@ -125,4 +163,6 @@ class DetailRevisionReducerTest {
             createdAtMs = 1L,
             change = RevisionChange.VALUE_CHANGED,
         )
+
+    private fun summary() = EntryRevisionSummary(metadata(), emptySet())
 }

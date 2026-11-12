@@ -18,8 +18,8 @@ import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
-import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
+import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -142,7 +142,9 @@ class AddPasswordViewModel
             if (!writeSession.canEdit()) return
             if (_uiState.value.availableApps.catalogLoaded ||
                 associatedAppsLoadJob?.isActive == true
-            ) return
+            ) {
+                return
+            }
             val authentication = secureSessionAccessState.authenticationState.value
             _uiState.value = _uiState.value.copy(availableApps = AppPackagePickerUiState.Loading)
             associatedAppsLoadJob =

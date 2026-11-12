@@ -38,7 +38,9 @@ class DetailRevealSelectionTest {
         assertEquals(setOf(DetailField.SSH_PASSPHRASE), state.sshFieldsToReveal())
     }
 
-    private class TestSensitiveValue(private val value: String) : SensitiveValue {
+    private class TestSensitiveValue(
+        private val value: String,
+    ) : SensitiveValue {
         override val isEmpty: Boolean get() = value.isEmpty()
 
         override fun toCharArray(): CharArray = value.toCharArray()

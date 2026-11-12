@@ -106,18 +106,43 @@ internal class DetailWorkSession(
                 }
                 if (isCurrent(token) && currentCoroutineContext().isActive) {
                     onMutation(
-                        DetailMutation.SaveSucceeded(
-                            completion = completion,
-                            savedFieldValue =
-                                when {
-                                    edit is EntryEdit.SetFieldValue -> {
-                                        fieldReader.getFieldValue(result.data, edit.fieldKey).orEmpty()
-                                    }
+                        when (completion) {
+                            DetailEditCompletion.Title ->
+                                DetailMutation.SaveSucceeded.DraftSaved(
+                                    DetailEditCompletion.Title,
+                                    result.data.detailDisplayTitle,
+                                )
 
-                                    completion == DetailEditCompletion.Title -> result.data.detailDisplayTitle
-                                    else -> null
-                                },
-                        ),
+                            DetailEditCompletion.Notes ->
+                                DetailMutation.SaveSucceeded.DraftSaved(
+                                    DetailEditCompletion.Notes,
+                                    result.data.secret.notes.orEmpty(),
+                                )
+
+                            DetailEditCompletion.Domain ->
+                                DetailMutation.SaveSucceeded.DraftSaved(
+                                    DetailEditCompletion.Domain,
+                                    result.data.associations.primaryUrl.orEmpty(),
+                                )
+
+                            is DetailEditCompletion.Field ->
+                                DetailMutation.SaveSucceeded.DraftSaved(
+                                    completion,
+                                    fieldReader.getFieldValue(result.data, completion.key).orEmpty(),
+                                )
+
+                            DetailEditCompletion.Favorite ->
+                                DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Favorite)
+
+                            DetailEditCompletion.Applications ->
+                                DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Applications)
+
+                            DetailEditCompletion.Tags ->
+                                DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Tags)
+
+                            DetailEditCompletion.Icon ->
+                                DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Icon)
+                        },
                     )
                 }
             }

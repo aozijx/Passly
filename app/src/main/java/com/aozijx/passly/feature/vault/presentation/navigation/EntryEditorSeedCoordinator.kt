@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.OperationCode
 import com.aozijx.passly.core.observability.Reasons
-import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.feature.vault.entry.EditorSeedToken
@@ -86,10 +86,11 @@ internal class EntryEditorSeedCoordinator
             ownership = Ownership.Staged(authentication)
             val token = store.stage(seed)
             try {
-                val route = routeForToken(token) ?: run {
-                    discard(token)
-                    return EntryEditorSeedNavigationResult.UnsupportedDestination
-                }
+                val route =
+                    routeForToken(token) ?: run {
+                        discard(token)
+                        return EntryEditorSeedNavigationResult.UnsupportedDestination
+                    }
                 navigate(route)
                 return EntryEditorSeedNavigationResult.Navigated
             } catch (cancelled: CancellationException) {

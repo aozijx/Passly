@@ -123,7 +123,11 @@ internal class LoadEditableEntryUseCase
                     ) {
                         return EditableEntryLoadResult.Unavailable
                     }
-                    activityRecorder.recordUsage(entryId.value, ActivityType.VIEW)
+                    activityRecorder.recordUsage(
+                        entryId = entryId.value,
+                        type = ActivityType.REVEAL_FIELDS,
+                        affectedFields = fieldsBySensitiveKey.values.toSet(),
+                    )
                     if (!hasCurrentAccess(currentAuthentication)) {
                         EditableEntryLoadResult.Unavailable
                     } else {

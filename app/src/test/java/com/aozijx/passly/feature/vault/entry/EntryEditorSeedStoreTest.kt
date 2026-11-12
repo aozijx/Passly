@@ -4,6 +4,7 @@ import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class EntryEditorSeedStoreTest {
@@ -11,6 +12,15 @@ class EntryEditorSeedStoreTest {
         EntryEditorSeed.Wifi(
             WifiQrPayload("Office", "secret-password", WifiSecurityType.WpaPersonal, false),
         )
+
+    @Test
+    fun `token parser rejects blank values and preserves valid token`() {
+        assertNull(EditorSeedToken.parseOrNull("  "))
+
+        val token = EditorSeedToken.new()
+
+        assertEquals(token, EditorSeedToken.parseOrNull(token.value))
+    }
 
     @Test
     fun `staged seed is consumed exactly once`() {

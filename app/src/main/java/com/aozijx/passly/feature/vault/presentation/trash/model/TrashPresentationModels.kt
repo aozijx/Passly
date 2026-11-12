@@ -1,32 +1,43 @@
 package com.aozijx.passly.feature.vault.presentation.trash.model
 
 import androidx.annotation.StringRes
-import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
-import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconUiModel
 
 internal data class TrashEntryUiModel(
     val id: String,
     val version: Int,
     val operation: TrashEntryRowOperation,
     val title: String,
-    val entryType: EntryType,
-    val supportingText: String?,
-    val deletedAtEpochMs: Long?,
-    val associatedDomain: String?,
-    val associatedAppPackage: String?,
-    val iconName: String?,
-    val iconCustomPath: String?,
-    val iconImageModel: LocalIconImageModel?,
-    val visualCategory: EntryVisualCategory,
+    @field:StringRes val entryTypeLabelRes: Int,
+    val supportingText: TrashSupportingTextUiState,
+    val deletedAt: TrashDeletedAtUiState,
+    val icon: VaultItemIconUiModel,
 )
+
+internal sealed interface TrashSupportingTextUiState {
+    data object Absent : TrashSupportingTextUiState
+
+    data class Value(
+        val text: String,
+    ) : TrashSupportingTextUiState
+}
+
+internal sealed interface TrashDeletedAtUiState {
+    data object Unavailable : TrashDeletedAtUiState
+
+    data class Recorded(
+        val epochMillis: Long,
+    ) : TrashDeletedAtUiState
+}
 
 internal enum class TrashEntryRowOperation { Idle, Running }
 
 internal sealed interface TrashErrorUiState {
     data object Hidden : TrashErrorUiState
 
-    data class OperationFailed(@field:StringRes val messageResource: Int) : TrashErrorUiState
+    data class OperationFailed(
+        @field:StringRes val messageResource: Int,
+    ) : TrashErrorUiState
 }
 
 internal sealed interface TrashEntryListUiState {
@@ -34,7 +45,9 @@ internal sealed interface TrashEntryListUiState {
 
     data object Emptying : TrashEntryListUiState
 
-    data class LoadFailed(@field:StringRes val messageResource: Int) : TrashEntryListUiState
+    data class LoadFailed(
+        @field:StringRes val messageResource: Int,
+    ) : TrashEntryListUiState
 
     data object Empty : TrashEntryListUiState
 

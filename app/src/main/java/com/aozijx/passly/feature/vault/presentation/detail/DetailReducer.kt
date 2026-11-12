@@ -1,16 +1,20 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import androidx.annotation.StringRes
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
+import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionMutation
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionReducer
 
 internal sealed interface DetailTagEditorMutation : DetailMutation
+
+internal sealed interface DetailTagEditorEditMutation : DetailTagEditorMutation
 
 internal sealed interface DetailFaviconEditorMutation : DetailMutation
 
@@ -51,9 +55,13 @@ internal sealed interface DetailMutation {
         val key: DetailDraftKey,
     ) : DetailMutation
 
-    data class RevealedFieldChanged(
+    data class RevealedFieldAdded(
         val key: FieldKey,
-        val value: SensitiveValue?,
+        val value: SensitiveValue,
+    ) : DetailMutation
+
+    data class RevealedFieldCleared(
+        val key: FieldKey,
     ) : DetailMutation
 
     data object RevealedFieldsCleared : DetailMutation
@@ -71,8 +79,8 @@ internal sealed interface DetailMutation {
         val entryId: EntryId,
     ) : DetailMutation
 
-    data class ActivityFilterChanged(
-        val filter: DetailActivityFilter,
+    data class HistoryFilterChanged(
+        val filter: DetailHistoryFilter,
     ) : DetailMutation
 
     data class PackagePickerAppsChanged(
@@ -113,11 +121,19 @@ internal sealed interface DetailMutation {
         val completion: DetailEditCompletion,
     ) : DetailMutation
 
-    data class SaveSucceeded(
-        val completion: DetailEditCompletion,
-        val savedFieldValue: String? = null,
-    ) : DetailMutation {
-        override fun toString() = "SaveSucceeded($completion, ***)"
+    sealed interface SaveSucceeded : DetailMutation {
+        val completion: DetailEditCompletion
+
+        data class DraftSaved(
+            override val completion: DetailEditCompletion.Draft,
+            val persistedValue: String,
+        ) : SaveSucceeded {
+            override fun toString() = "SaveSucceeded.DraftSaved($completion, ***)"
+        }
+
+        data class OtherSaved(
+            override val completion: DetailEditCompletion.Other,
+        ) : SaveSucceeded
     }
 
     data class SaveFailed(
@@ -135,21 +151,21 @@ internal sealed interface DetailMutation {
 
     data class TagInputChanged(
         val value: String,
-    ) : DetailTagEditorMutation
+    ) : DetailTagEditorEditMutation
 
     data class TagSubmitted(
         val value: String,
-    ) : DetailTagEditorMutation
+    ) : DetailTagEditorEditMutation
 
     data class TagRemoved(
         val value: String,
-    ) : DetailTagEditorMutation
+    ) : DetailTagEditorEditMutation
 
-    data object TagEditorDismissRequested : DetailTagEditorMutation
+    data object TagEditorDismissRequested : DetailTagEditorEditMutation
 
-    data object TagEditorDiscardConfirmed : DetailTagEditorMutation
+    data object TagEditorDiscardConfirmed : DetailTagEditorEditMutation
 
-    data object TagEditorDiscardCancelled : DetailTagEditorMutation
+    data object TagEditorDiscardCancelled : DetailTagEditorEditMutation
 
     data class FaviconEditorOpened(
         val source: DetailFaviconSource,
@@ -182,7 +198,7 @@ internal sealed interface DetailMutation {
     ) : DetailFaviconEditorMutation
 
     data class FaviconProcessingFailed(
-        val error: DetailFaviconProcessingError,
+        @get:StringRes val messageRes: Int,
     ) : DetailFaviconEditorMutation
 
     data object FaviconCropCancelled : DetailFaviconEditorMutation
@@ -244,7 +260,7 @@ internal object DetailReducer {
                     val presentation = snapshot.presentation
                     val entryChanged = state.snapshotState.entryOrNull()?.id != presentation.entry.id
                     state.copy(
-                        snapshotState = DetailSnapshotState.Ready(presentation.entry),
+                        snapshotState = DetailSnapshotState.Content(presentation.entry),
                         sections = presentation.sections,
                         associatedApps = presentation.associatedApps,
                         sensitiveFieldKeys = presentation.sensitiveFieldKeys,
@@ -254,7 +270,7 @@ internal object DetailReducer {
                         passwordUnlink = RelatedPasswordUnlinkUiState.Closed,
                         activityHistory =
                             if (entryChanged) {
-                                DetailActivityHistoryState.Loading(emptyList())
+                                DetailActivityHistoryState.Loading
                             } else {
                                 state.activityHistory
                             },
@@ -289,7 +305,7 @@ internal object DetailReducer {
                     sensitiveFieldKeys = presentation.sensitiveFieldKeys,
                     activityHistory =
                         if (entryChanged) {
-                            DetailActivityHistoryState.Loading(emptyList())
+                            DetailActivityHistoryState.Loading
                         } else {
                             state.activityHistory
                         },
@@ -310,10 +326,11 @@ internal object DetailReducer {
             }
 
             is DetailMutation.FieldDraftChanged -> {
+                val edit = state.fieldEdits.edit(mutation.key)
                 state.copy(
                     fieldEdits = state.fieldEdits.update(mutation.key, mutation.value),
                     saveState =
-                        if (state.fieldEdits.isEditing(mutation.key) && state.fieldEdits.draft(mutation.key) != mutation.value) {
+                        if (edit is DetailFieldEdit.Editing && edit.draft != mutation.value) {
                             state.saveState.draftChanged(mutation.key.completion())
                         } else {
                             state.saveState
@@ -328,15 +345,12 @@ internal object DetailReducer {
                 )
             }
 
-            is DetailMutation.RevealedFieldChanged -> {
-                state.copy(
-                    revealedFields =
-                        if (mutation.value == null) {
-                            state.revealedFields - mutation.key
-                        } else {
-                            state.revealedFields + (mutation.key to mutation.value)
-                        },
-                )
+            is DetailMutation.RevealedFieldAdded -> {
+                state.copy(revealedFields = state.revealedFields + (mutation.key to mutation.value))
+            }
+
+            is DetailMutation.RevealedFieldCleared -> {
+                state.copy(revealedFields = state.revealedFields - mutation.key)
             }
 
             DetailMutation.RevealedFieldsCleared -> {
@@ -345,7 +359,13 @@ internal object DetailReducer {
 
             is DetailMutation.HistoryChanged -> {
                 if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
-                    state.copy(activityHistory = DetailActivityHistoryState.Ready(mutation.history))
+                    state.copy(
+                        activityHistory =
+                            DetailActivityHistoryState.Content(
+                                activities = mutation.history,
+                                phase = DetailActivityHistoryPhase.Ready,
+                            ),
+                    )
                 } else {
                     state
                 }
@@ -353,7 +373,7 @@ internal object DetailReducer {
 
             is DetailMutation.HistoryLoadStarted -> {
                 if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
-                    state.copy(activityHistory = DetailActivityHistoryState.Loading(state.activityHistory.activities))
+                    state.copy(activityHistory = state.activityHistory.refreshStarted())
                 } else {
                     state
                 }
@@ -361,14 +381,14 @@ internal object DetailReducer {
 
             is DetailMutation.HistoryLoadFailed -> {
                 if (state.snapshotState.entryOrNull()?.id == mutation.entryId) {
-                    state.copy(activityHistory = DetailActivityHistoryState.Failed(state.activityHistory.activities))
+                    state.copy(activityHistory = state.activityHistory.refreshFailed())
                 } else {
                     state
                 }
             }
 
-            is DetailMutation.ActivityFilterChanged -> {
-                state.copy(activityFilter = mutation.filter)
+            is DetailMutation.HistoryFilterChanged -> {
+                state.copy(historyFilter = mutation.filter)
             }
 
             is DetailMutation.PackagePickerAppsChanged -> {
@@ -445,50 +465,22 @@ internal object DetailReducer {
                 if (saving.completion != mutation.completion) {
                     state
                 } else {
-                    val finishDraft = !saving.draftChanged
+                    val fieldEdits =
+                        when (mutation) {
+                            is DetailMutation.SaveSucceeded.DraftSaved -> {
+                                val key = mutation.completion.draftKey()
+                                if (saving.draftChanged) {
+                                    state.fieldEdits.rebase(key, mutation.persistedValue)
+                                } else {
+                                    state.fieldEdits.finish(key)
+                                }
+                            }
+
+                            is DetailMutation.SaveSucceeded.OtherSaved -> state.fieldEdits
+                        }
                     state.copy(
                         saveState = DetailSaveState.Idle,
-                        fieldEdits =
-                            if (finishDraft) {
-                                when (mutation.completion) {
-                                    DetailEditCompletion.Title -> {
-                                        state.fieldEdits.finish(DetailDraftKey.Title)
-                                    }
-
-                                    is DetailEditCompletion.Field -> {
-                                        state.fieldEdits.finish(DetailDraftKey.EntryField(mutation.completion.key))
-                                    }
-
-                                    DetailEditCompletion.Notes -> {
-                                        state.fieldEdits.finish(DetailDraftKey.Notes)
-                                    }
-
-                                    DetailEditCompletion.Domain -> {
-                                        state.fieldEdits.finish(DetailDraftKey.Domain)
-                                    }
-
-                                    DetailEditCompletion.Favorite,
-                                    DetailEditCompletion.Applications,
-                                    DetailEditCompletion.Tags,
-                                    DetailEditCompletion.Icon,
-                                    -> {
-                                        state.fieldEdits
-                                    }
-                                }
-                            } else if (mutation.completion is DetailEditCompletion.Field) {
-                                mutation.savedFieldValue?.let { savedValue ->
-                                    state.fieldEdits.rebase(
-                                        DetailDraftKey.EntryField(mutation.completion.key),
-                                        savedValue,
-                                    )
-                                } ?: state.fieldEdits
-                            } else if (mutation.completion == DetailEditCompletion.Title) {
-                                mutation.savedFieldValue?.let { savedValue ->
-                                    state.fieldEdits.rebase(DetailDraftKey.Title, savedValue)
-                                } ?: state.fieldEdits
-                            } else {
-                                state.fieldEdits
-                            },
+                        fieldEdits = fieldEdits,
                         tagEditor =
                             if (mutation.completion == DetailEditCompletion.Tags) {
                                 DetailTagEditorState.Closed
@@ -528,7 +520,7 @@ internal object DetailReducer {
                                             work =
                                                 editor.work as? DetailFaviconWorkState.Failed
                                                     ?: DetailFaviconWorkState.Failed(
-                                                        DetailFaviconProcessingError.SAVE_FAILED,
+                                                        R.string.vault_detail_favicon_error_save_failed,
                                                     ),
                                         )
                                     }
@@ -587,5 +579,13 @@ internal object DetailReducer {
             DetailDraftKey.Notes -> DetailEditCompletion.Notes
             DetailDraftKey.Domain -> DetailEditCompletion.Domain
             is DetailDraftKey.EntryField -> DetailEditCompletion.Field(fieldKey)
+        }
+
+    private fun DetailEditCompletion.Draft.draftKey(): DetailDraftKey =
+        when (this) {
+            DetailEditCompletion.Title -> DetailDraftKey.Title
+            DetailEditCompletion.Notes -> DetailDraftKey.Notes
+            DetailEditCompletion.Domain -> DetailDraftKey.Domain
+            is DetailEditCompletion.Field -> DetailDraftKey.EntryField(key)
         }
 }

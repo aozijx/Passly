@@ -7,6 +7,30 @@ import org.junit.Test
 
 class DetailTagEditorReducerTest {
     @Test
+    fun openingAgainReplacesThePreviousDraftWithTheCurrentEntryTags() {
+        val previous =
+            DetailTagEditorState.Open(
+                initialTags = setOf("Old"),
+                draftTags = setOf("Unsaved"),
+                input = "temporary",
+            )
+
+        val actual =
+            DetailTagEditorReducer.reduce(
+                previous,
+                DetailMutation.TagEditorOpened(
+                    currentTags = setOf("Work"),
+                    availableTags = setOf("Work", "Personal"),
+                ),
+            ) as DetailTagEditorState.Open
+
+        assertEquals(setOf("Work"), actual.initialTags)
+        assertEquals(setOf("Work"), actual.draftTags)
+        assertEquals(setOf("Work", "Personal"), actual.availableTags)
+        assertEquals("", actual.input)
+    }
+
+    @Test
     fun `closed editor ignores mutations until it is opened`() {
         assertEquals(
             DetailTagEditorState.Closed,
@@ -101,5 +125,4 @@ class DetailTagEditorReducerTest {
         assertTrue(requested.showDiscardConfirmation)
         assertEquals(DetailTagEditorState.Closed, discarded)
     }
-
 }

@@ -134,7 +134,9 @@ internal class DetailRevisionWorkflow internal constructor(
                         )
                     }
 
-                    else -> publishFailure(state.entryId, rawRevisionId, result)
+                    else -> {
+                        publishComparisonFailure(state.entryId, rawRevisionId, result)
+                    }
                 }
             }
     }
@@ -168,8 +170,13 @@ internal class DetailRevisionWorkflow internal constructor(
                         if (workSession.isCurrent(token)) publishRevealsSnapshot()
                     }
 
-                    RevisionOperationResult.Cancelled -> Unit
-                    else -> publishFailure(state.entryId, revisionId.value, result)
+                    RevisionOperationResult.Cancelled -> {
+                        Unit
+                    }
+
+                    else -> {
+                        publishComparisonFailure(state.entryId, revisionId.value, result)
+                    }
                 }
             }
     }
@@ -194,8 +201,13 @@ internal class DetailRevisionWorkflow internal constructor(
                         onRestoreSucceeded(state.entryId, token)
                     }
 
-                    RevisionOperationResult.Cancelled -> publishMutation(DetailRevisionMutation.RestoreAborted)
-                    else -> publishFailure(state.entryId, revisionId.value, result)
+                    RevisionOperationResult.Cancelled -> {
+                        publishMutation(DetailRevisionMutation.RestoreAborted)
+                    }
+
+                    else -> {
+                        publishComparisonFailure(state.entryId, revisionId.value, result)
+                    }
                 }
             }
     }
@@ -219,11 +231,13 @@ internal class DetailRevisionWorkflow internal constructor(
                         when (val observation = observeMetadata(entryId)) {
                             is com.aozijx.passly.core.error.result.AppResult.Failure -> {
                                 if (!workSession.isCurrent(token) || generation != observationGeneration) return@launch
-                                publishFailure(entryId, null, RevisionOperationResult.Failed(observation.error))
+                                publishMetadataFailure(entryId, RevisionOperationResult.Failed(observation.error))
                                 return@launch
                             }
 
-                            is com.aozijx.passly.core.error.result.AppResult.Success -> observation.data
+                            is com.aozijx.passly.core.error.result.AppResult.Success -> {
+                                observation.data
+                            }
                         }
                     metadata.collect { revisions ->
                         if (!workSession.isCurrent(token) || generation != observationGeneration) return@collect
@@ -236,9 +250,8 @@ internal class DetailRevisionWorkflow internal constructor(
                 } catch (_: Exception) {
                     if (workSession.isCurrent(token) && generation == observationGeneration) {
                         publishMutation(
-                            DetailRevisionMutation.Failed(
+                            DetailRevisionMutation.MetadataFailed(
                                 entryId.value,
-                                null,
                                 DetailRevisionFailure.UNEXPECTED,
                             ),
                         )
@@ -247,21 +260,35 @@ internal class DetailRevisionWorkflow internal constructor(
             }
     }
 
-    private fun publishFailure(
+    private fun publishMetadataFailure(
         entryId: EntryId,
-        revisionId: String?,
         result: RevisionOperationResult<*>,
     ) {
-        val failure =
-            when (result) {
-                RevisionOperationResult.Missing -> DetailRevisionFailure.MISSING
-                RevisionOperationResult.Stale -> DetailRevisionFailure.STALE
-                RevisionOperationResult.InvalidSnapshot -> DetailRevisionFailure.INVALID
-                is RevisionOperationResult.AuthenticationDenied -> DetailRevisionFailure.AUTHENTICATION
-                else -> DetailRevisionFailure.UNEXPECTED
-            }
-        publishMutation(DetailRevisionMutation.Failed(entryId.value, revisionId, failure))
+        publishMutation(DetailRevisionMutation.MetadataFailed(entryId.value, result.toDetailRevisionFailure()))
     }
+
+    private fun publishComparisonFailure(
+        entryId: EntryId,
+        revisionId: String,
+        result: RevisionOperationResult<*>,
+    ) {
+        publishMutation(
+            DetailRevisionMutation.ComparisonFailed(
+                entryId = entryId.value,
+                revisionId = revisionId,
+                failure = result.toDetailRevisionFailure(),
+            ),
+        )
+    }
+
+    private fun RevisionOperationResult<*>.toDetailRevisionFailure(): DetailRevisionFailure =
+        when (this) {
+            RevisionOperationResult.Missing -> DetailRevisionFailure.MISSING
+            RevisionOperationResult.Stale -> DetailRevisionFailure.STALE
+            RevisionOperationResult.InvalidSnapshot -> DetailRevisionFailure.INVALID
+            is RevisionOperationResult.AuthenticationDenied -> DetailRevisionFailure.AUTHENTICATION
+            else -> DetailRevisionFailure.UNEXPECTED
+        }
 
     private fun cancelObservation() {
         observationGeneration++

@@ -4,17 +4,24 @@ import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.EntryProfile
+import com.aozijx.passly.domain.entry.model.EntrySecret
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionSummary
 import com.aozijx.passly.domain.entry.model.history.RedactedEntryRevision
+import com.aozijx.passly.domain.entry.model.history.RevisionChange
+import com.aozijx.passly.domain.entry.model.history.RevisionFieldId
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -31,7 +38,7 @@ class ObserveEntryRevisionMetadataUseCaseTest {
             val result = useCase(ENTRY_ID)
 
             assertEquals(listOf("initialize", "observe:${ENTRY_ID.value}"), calls)
-            assertEquals(emptyList<EntryRevisionMetadata>(), (result as AppResult.Success).data.first())
+            assertEquals(emptyList<EntryRevisionSummary>(), (result as AppResult.Success).data.first())
         }
 
     @Test
@@ -45,6 +52,37 @@ class ObserveEntryRevisionMetadataUseCaseTest {
 
             assertEquals(AppResult.Failure(failure), result)
             assertEquals(listOf("initialize"), calls)
+        }
+
+    @Test
+    fun `observed summaries include the current revision and annotate each version transition`() =
+        runTest {
+            val old = revision("old", version = 1, title = "Old title")
+            val current = revision("current", version = 2, title = "Current title")
+            val calls = mutableListOf<String>()
+            val repository =
+                object : EntryRevisionRepository by UnusedRevisionRepository {
+                    override fun observeMetadata(entryId: EntryId): Flow<List<EntryRevisionMetadata>> {
+                        calls += "observe:${entryId.value}"
+                        return flowOf(listOf(old.metadata, current.metadata))
+                    }
+
+                    override suspend fun loadRedacted(
+                        entryId: EntryId,
+                        revisionId: EntryRevisionId,
+                    ): AppResult<RedactedEntryRevision> {
+                        calls += "load:${revisionId.value}"
+                        return AppResult.Success(mapOf(old.metadata.id to old, current.metadata.id to current).getValue(revisionId))
+                    }
+                }
+
+            val result = ObserveEntryRevisionMetadataUseCase(repository)(ENTRY_ID)
+            val summaries = (result as AppResult.Success).data.first()
+
+            assertEquals(listOf("observe:${ENTRY_ID.value}", "load:old", "load:current"), calls)
+            assertEquals(listOf("current", "old"), summaries.map { it.metadata.id.value })
+            assertEquals(setOf(RevisionFieldId.Title), summaries.first().changedFields)
+            assertEquals(emptySet<RevisionFieldId>(), summaries.last().changedFields)
         }
 
     @Test
@@ -108,6 +146,24 @@ class ObserveEntryRevisionMetadataUseCaseTest {
             permit: AuthorizationPermit?,
         ): AppResult<EntryVersion> = error("Unused")
     }
+
+    private fun revision(
+        id: String,
+        version: Int,
+        title: String,
+    ) = RedactedEntryRevision(
+        metadata =
+            EntryRevisionMetadata(
+                id = EntryRevisionId(id),
+                entryId = ENTRY_ID,
+                version = EntryVersion(version),
+                createdAtMs = version.toLong(),
+                change = RevisionChange.VALUE_CHANGED,
+            ),
+        type = EntryType.LOGIN,
+        profile = EntryProfile(title = title),
+        secret = EntrySecret(credential = LoginCredential()),
+    )
 
     private companion object {
         val ENTRY_ID = EntryId("entry-1")

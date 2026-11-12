@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.preferences.proto.EntryHierarchyDisplayModePreference
 import com.aozijx.passly.data.preferences.proto.EntryCardPresentationPreference
+import com.aozijx.passly.data.preferences.proto.EntryHierarchyDisplayModePreference
 import com.aozijx.passly.data.preferences.proto.SortDirectionPreference
 import com.aozijx.passly.data.preferences.proto.VaultSortFieldPreference
 import com.aozijx.passly.data.preferences.proto.VaultSortPreference
@@ -10,9 +10,9 @@ import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.domain.settings.model.LibraryViewSettings
-import com.aozijx.passly.domain.settings.model.EntryCardPresentation
 import com.aozijx.passly.domain.settings.model.CardDensity
+import com.aozijx.passly.domain.settings.model.EntryCardPresentation
+import com.aozijx.passly.domain.settings.model.LibraryViewSettings
 
 internal fun VaultSortFieldPreference.toDomain(): EntrySortField =
     when (this) {

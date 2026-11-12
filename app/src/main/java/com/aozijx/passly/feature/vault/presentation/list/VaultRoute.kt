@@ -22,13 +22,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aozijx.passly.R
-import com.aozijx.passly.app.settings.RecoverableReadState
 import com.aozijx.passly.feature.scanner.presentation.integration.ScannerOverlay
 import com.aozijx.passly.feature.scanner.presentation.integration.ScannerPrimaryActionLabel
 import com.aozijx.passly.feature.scanner.presentation.integration.ScannerResultHandling
@@ -40,8 +36,6 @@ import com.aozijx.passly.feature.vault.presentation.common.copyLabelRes
 import com.aozijx.passly.feature.vault.presentation.list.action.VaultCopyRequest
 import com.aozijx.passly.feature.vault.presentation.list.action.handleSwipeAction
 import com.aozijx.passly.feature.vault.presentation.list.action.resolveCopyRequest
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiState
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayViewModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultScreen
 import com.aozijx.passly.feature.vault.presentation.list.ui.VaultSystemBarsEffect
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
@@ -72,14 +66,9 @@ internal fun VaultRoute(
     val context = LocalContext.current
     val resources = LocalResources.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        vaultViewModel.refreshVisibleOtp()
-    }
     val uiState by vaultViewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val vaultDisplayViewModel: VaultDisplayViewModel = hiltViewModel()
-    val vaultDisplayState by vaultDisplayViewModel.config.collectAsStateWithLifecycle()
-    val librarySettingsState by vaultViewModel.librarySettingsState.collectAsStateWithLifecycle()
+    val vaultDisplayState by vaultViewModel.displayState.collectAsStateWithLifecycle()
     val vaultDisplayConfig =
         when (val state = vaultDisplayState) {
             VaultDisplayUiState.Loading -> {
@@ -87,11 +76,10 @@ internal fun VaultRoute(
                 return
             }
 
-            is VaultDisplayUiState.Failed -> {
+            VaultDisplayUiState.Failed -> {
                 SettingsReadFailureContent(
                     onRetry = {
-                        vaultDisplayViewModel.retry()
-                        vaultViewModel.retryLibrarySettings()
+                        vaultViewModel.retrySettings()
                     },
                 )
                 return
@@ -101,29 +89,7 @@ internal fun VaultRoute(
                 state
             }
         }
-    val librarySettings =
-        when (val state = librarySettingsState) {
-            RecoverableReadState.Loading -> {
-                VaultPageLoading()
-                return
-            }
-
-            is RecoverableReadState.Failed -> {
-                SettingsReadFailureContent(
-                    onRetry = {
-                        vaultDisplayViewModel.retry()
-                        vaultViewModel.retryLibrarySettings()
-                    },
-                )
-                return
-            }
-
-            is RecoverableReadState.Ready -> {
-                state.value
-            }
-        }
-
-    val renderState = uiState.toUiModel(vaultDisplayConfig, librarySettings.sort)
+    val renderState = uiState.toUiModel(vaultDisplayConfig)
     val onItemAction: (VaultListItemAction) -> Unit = { action ->
         when (action) {
             is VaultListItemAction.Clicked -> {
@@ -163,16 +129,9 @@ internal fun VaultRoute(
             }
         }
     }
-    val otpStateProvider =
-        rememberVaultOtpStateProvider(
-            states = vaultViewModel.totpStatesFlow,
-            onSubscribe = vaultViewModel::subscribeVisibleOtp,
-            onUnsubscribe = vaultViewModel::unsubscribeVisibleOtp,
-        )
-
     VaultSystemBarsEffect(
         scrollBehavior = scrollBehavior,
-        hideSystemBars = vaultDisplayConfig.layout.hideSystemBars,
+        hideSystemBars = vaultDisplayConfig.hideSystemBars,
     )
     val totpLabel = stringResource(R.string.vault_detail_totp_label)
     val fieldCopiedFormat = stringResource(R.string.field_copy_success_message)
@@ -203,7 +162,8 @@ internal fun VaultRoute(
         scrollBehavior = scrollBehavior,
         entries = vaultViewModel.entries,
         onItemAction = onItemAction,
-        otpStateProvider = otpStateProvider,
+        otpUiStateFlow = remember(vaultViewModel) { vaultViewModel::otpUiStateFlow },
+        onAcquireOtp = remember(vaultViewModel) { vaultViewModel::acquireOtp },
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         onAction = vaultViewModel::onAction,
@@ -219,7 +179,7 @@ internal fun VaultRoute(
             }
         },
         onAddTypeSelected = { type ->
-            navigation.navigate(VaultDestinationRequest.OpenEditor(type.featureType))
+            navigation.navigate(VaultDestinationRequest.OpenEditor(type))
         },
     )
 

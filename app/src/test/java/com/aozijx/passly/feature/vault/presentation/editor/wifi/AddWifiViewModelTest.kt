@@ -16,7 +16,6 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
@@ -64,7 +63,13 @@ class AddWifiViewModelTest {
             val fixture = EditableEntryUseCaseFixture(entry)
             val model =
                 AddWifiViewModel(
-                    CreateEntryUseCase(RecordingRepository(), fixture.access, EntryDraftMaterializer(), NoOpAutofillEntryWriter, testLogger()),
+                    CreateEntryUseCase(
+                        RecordingRepository(),
+                        fixture.access,
+                        EntryDraftMaterializer(),
+                        NoOpAutofillEntryWriter,
+                        testLogger(),
+                    ),
                     fixture.access,
                     editEntry = fixture.editor,
                 )
@@ -349,7 +354,7 @@ class AddWifiViewModelTest {
         val state = viewModel(RecordingRepository()).uiState.value
 
         assertFalse(state.canSave)
-        assertTrue(state.fieldErrors.isEmpty())
+        assertEquals(WifiPasswordFeedbackUiState.Hidden, state.passwordFeedback)
     }
 
     @Test
@@ -360,15 +365,12 @@ class AddWifiViewModelTest {
         viewModel.onAction(AddWifiAction.PasswordChanged("short"))
 
         assertFalse(viewModel.uiState.value.canSave)
-        assertTrue(FieldKey.PASSWORD in viewModel.uiState.value.fieldErrors)
+        assertEquals(WifiPasswordFeedbackUiState.Invalid, viewModel.uiState.value.passwordFeedback)
 
         viewModel.onAction(AddWifiAction.PasswordChanged("password"))
 
         assertTrue(viewModel.uiState.value.canSave)
-        assertTrue(
-            viewModel.uiState.value.fieldErrors
-                .isEmpty(),
-        )
+        assertEquals(WifiPasswordFeedbackUiState.Hidden, viewModel.uiState.value.passwordFeedback)
     }
 
     @Test

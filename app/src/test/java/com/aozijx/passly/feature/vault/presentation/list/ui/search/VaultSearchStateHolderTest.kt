@@ -69,4 +69,23 @@ class VaultSearchStateHolderTest {
         assertFalse(searchActive)
         assertEquals(VaultSearchState.Browsing, holder.uiState)
     }
+
+    @Test
+    fun `pausing settles active search while preserving non blank results`() {
+        var searchActive = true
+        val holder =
+            VaultSearchStateHolder(
+                initialState = VaultSearchState.Editing(),
+                initialSearch = VaultSearchInput.Open("mail"),
+                currentSearch = { if (searchActive) VaultSearchInput.Open("mail") else VaultSearchInput.Closed },
+                onQueryChange = {},
+                onSearchActiveChange = { searchActive = it },
+                onExpandBars = {},
+            )
+
+        holder.pause()
+
+        assertTrue(searchActive)
+        assertEquals(VaultSearchState.Results, holder.uiState)
+    }
 }

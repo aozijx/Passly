@@ -22,11 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.presentation.ui.rememberOtpWindowProgress
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
-import com.aozijx.passly.feature.vault.presentation.list.model.displayCodeOrPlaceholder
-import com.aozijx.passly.feature.vault.presentation.list.model.progress
-import com.aozijx.passly.feature.vault.presentation.list.model.shouldDisplayCode
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.otp.presentation.displayCodeOrPlaceholder
+import com.aozijx.passly.feature.vault.otp.presentation.shouldDisplayCode
+import com.aozijx.passly.feature.vault.presentation.list.preview.CardStylePreviewFixtures
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 @Composable
@@ -76,12 +78,16 @@ fun DefaultItem(
 @Composable
 fun DefaultOtpItem(
     entry: VaultListItemUiModel,
-    totpState: VaultOtpUiState,
+    totpState: OtpUiState,
     onClick: () -> Unit,
 ) {
-    val progress = totpState.progress
+    val progressState =
+        rememberOtpWindowProgress(
+            state = totpState,
+            expiringThreshold = CardStyleTokens.Totp.LOW_PROGRESS_THRESHOLD,
+        )
     val progressColor =
-        if (totpState is VaultOtpUiState.Ready && progress < CardStyleTokens.Totp.LOW_PROGRESS_THRESHOLD) {
+        if (totpState is OtpUiState.TimedReady && progressState.isExpiring.value) {
             MaterialTheme.colorScheme.error
         } else {
             MaterialTheme.colorScheme.primary
@@ -125,7 +131,7 @@ fun DefaultOtpItem(
             }
 
             CircularProgressIndicator(
-                progress = { progress },
+                progress = { progressState.progress.value },
                 modifier = Modifier.size(24.dp),
                 strokeWidth = 3.dp,
                 color = progressColor,
@@ -159,11 +165,11 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState,
+        totpState: OtpUiState,
         onClick: () -> Unit,
     ) {
         when {
-            entry.otpKind.isApplicable -> {
+            entry.otpPresentation is OtpPresentation.Applicable -> {
                 DefaultOtpItem(
                     entry = entry,
                     totpState = totpState,
@@ -178,9 +184,12 @@ internal object DefaultVaultCardStyle : VaultCardStyleComponent {
     }
 
     @Composable
-    override fun Preview(entryType: EntryType, onClick: () -> Unit) {
+    override fun Preview(
+        entryType: EntryType,
+        onClick: () -> Unit,
+    ) {
         val entry = CardStylePreviewFixtures.defaultEntry(entryType)
-        if (entryType == EntryType.OTP) {
+        if (entry.otpPresentation is OtpPresentation.Applicable) {
             DefaultOtpItem(
                 entry = entry,
                 totpState = CardStylePreviewFixtures.otpState,

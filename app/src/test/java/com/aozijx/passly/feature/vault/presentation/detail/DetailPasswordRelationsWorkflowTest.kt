@@ -14,6 +14,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
@@ -22,9 +23,8 @@ import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
+import com.aozijx.passly.domain.entry.port.EntryLinkRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
@@ -64,8 +64,9 @@ class DetailPasswordRelationsWorkflowTest {
 
             fixture.workflow.requestUnlink(EntryId("target"), EntryLinkId("source-target"))
             assertEquals(
-                RelatedPasswordUnlinkUiState.AwaitingConfirmation(
-                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                RelatedPasswordUnlinkUiState.Open(
+                    target = RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                    phase = RelatedPasswordUnlinkPhase.AwaitingConfirmation,
                 ),
                 fixture.unlinkState,
             )
@@ -119,14 +120,18 @@ class DetailPasswordRelationsWorkflowTest {
             runCurrent()
 
             assertEquals(
-                RelatedPasswordUnlinkUiState.Failed(
-                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                RelatedPasswordUnlinkUiState.Open(
+                    target = RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                    phase = RelatedPasswordUnlinkPhase.Failed,
                 ),
                 fixture.unlinkState,
             )
             assertEquals(1, fixture.links.deleteAttempts)
             assertEquals(1, fixture.relationUpdates)
-            assertEquals(listOf(RelatedPasswordEntry(EntryLinkId("source-target"), EntryId("target"), "target", "")), fixture.currentRelatedPasswords)
+            assertEquals(
+                listOf(RelatedPasswordEntry(EntryLinkId("source-target"), EntryId("target"), "target", "")),
+                fixture.currentRelatedPasswords,
+            )
 
             fixture.links.failDelete = false
             fixture.workflow.confirmUnlink()
@@ -151,8 +156,9 @@ class DetailPasswordRelationsWorkflowTest {
 
             assertEquals(1, fixture.links.deleteAttempts)
             assertEquals(
-                RelatedPasswordUnlinkUiState.Removing(
-                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                RelatedPasswordUnlinkUiState.Open(
+                    target = RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                    phase = RelatedPasswordUnlinkPhase.Removing,
                 ),
                 fixture.unlinkState,
             )
@@ -199,13 +205,18 @@ class DetailPasswordRelationsWorkflowTest {
             runCurrent()
 
             assertEquals(
-                RelatedPasswordUnlinkUiState.Failed(
-                    RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                RelatedPasswordUnlinkUiState.Open(
+                    target = RelatedPasswordUnlinkTargetUiModel("target", "source-target", "target"),
+                    phase = RelatedPasswordUnlinkPhase.Failed,
                 ),
                 fixture.unlinkState,
             )
             assertEquals(1, fixture.logger.events.size)
-            assertTrue(fixture.logger.events.single().throwable is IllegalStateException)
+            assertTrue(
+                fixture.logger.events
+                    .single()
+                    .throwable is IllegalStateException,
+            )
 
             fixture.failRelationRefresh = false
             fixture.workflow.confirmUnlink()
@@ -244,7 +255,7 @@ class DetailPasswordRelationsWorkflowTest {
         }
 
     @Test
-    fun dismissingPickerCancelsPendingCandidateRequestAndClosesState() =
+    fun dismissingPickerKeepsCandidateRequestRunningWithoutReopeningSheet() =
         runTest {
             val gate = CompletableDeferred<List<EntryListItem>>()
             val fixture = Fixture(backgroundScope, gate)
@@ -399,13 +410,22 @@ class DetailPasswordRelationsWorkflowTest {
                     ),
                 publish = { mutation ->
                     when (mutation) {
-                        is DetailMutation.PasswordBindingStateChanged -> bindingState = mutation.state
-                        is DetailMutation.PasswordUnlinkStateChanged -> unlinkState = mutation.state
+                        is DetailMutation.PasswordBindingStateChanged -> {
+                            bindingState = mutation.state
+                        }
+
+                        is DetailMutation.PasswordUnlinkStateChanged -> {
+                            unlinkState = mutation.state
+                        }
+
                         is DetailMutation.RelationsChanged -> {
                             relationUpdates++
                             currentRelatedPasswords = mutation.relations.relatedPasswords
                         }
-                        else -> Unit
+
+                        else -> {
+                            Unit
+                        }
                     }
                 },
             )

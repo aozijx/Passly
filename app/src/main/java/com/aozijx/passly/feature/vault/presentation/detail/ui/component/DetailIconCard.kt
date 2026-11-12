@@ -3,11 +3,6 @@ package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +23,7 @@ fun DetailIconCard(
 ) {
     val iconDescription = stringResource(model.iconDescriptionRes)
     Surface(
+        onClick = onEdit,
         modifier = modifier,
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -39,11 +35,7 @@ fun DetailIconCard(
         ) {
             VaultItemIcon(
                 modifier = Modifier,
-                iconName = model.iconName,
-                customImageModel = model.iconImageModel,
-                associatedAppPackage = model.associatedAppPackage,
-                visualCategory = model.visualCategory,
-                iconColor = model.iconColor,
+                model = model.icon,
             )
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -54,12 +46,6 @@ fun DetailIconCard(
                     text = iconDescription,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            FilledTonalIconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.vault_detail_favicon_edit),
                 )
             }
         }

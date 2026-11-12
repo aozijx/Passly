@@ -9,15 +9,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.aozijx.passly.feature.vault.presentation.detail.DetailQrState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentationModel
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailHistorySheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailTopBar
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.EntryQrSheet
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySheet
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPresentationModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     model: DetailPresentationModel,
+    otpState: OtpUiState,
     qrState: DetailQrState,
     onBack: () -> Unit,
     onAction: (DetailUiAction) -> Unit,
@@ -43,6 +45,7 @@ fun DetailScreen(
     ) { innerPadding ->
         DetailBody(
             model = model.content,
+            otpState = otpState,
             onAction = onAction,
             onOpenRelatedEntry = onOpenRelatedEntry,
             modifier = Modifier.padding(innerPadding),
@@ -56,8 +59,8 @@ fun DetailScreen(
         onAction = onAction,
         onFaviconUploadRequested = onFaviconUploadRequested,
     )
-    RevisionHistorySheet(
-        model = model.overlays.revisionHistory,
+    DetailHistorySheet(
+        model = model.overlays.history,
         onAction = onAction,
     )
 }

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.R
+import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
 
 internal enum class VaultIconCategory {
     FINANCE,

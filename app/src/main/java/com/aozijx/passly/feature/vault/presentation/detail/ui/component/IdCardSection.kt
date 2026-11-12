@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityNumberUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 
 @Composable
 fun IdCardSection(
@@ -19,18 +19,19 @@ fun IdCardSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        val idNumber = model.idNumber
         val idNumberValue =
-            when (val idNumber = model.idNumber) {
-                ProtectedDetailFieldUiState.Absent -> stringResource(R.string.not_set)
-                ProtectedDetailFieldUiState.Hidden -> ""
-                is ProtectedDetailFieldUiState.Revealed -> idNumber.value
+            when (idNumber) {
+                DetailIdentityNumberUiState.Absent -> stringResource(R.string.not_set)
+                DetailIdentityNumberUiState.Hidden -> ""
+                is DetailIdentityNumberUiState.Revealed -> idNumber.value
             }
         DetailValueCard(
             title = stringResource(R.string.id_number),
             value = idNumberValue,
-            isRevealed = model.idNumber !is ProtectedDetailFieldUiState.Hidden,
+            isRevealed = idNumber !is DetailIdentityNumberUiState.Hidden,
             onCopy = onIdNumberCopy,
-            onRevealClick = onIdNumberReveal,
+            onRevealClick = onIdNumberReveal.takeIf { idNumber !is DetailIdentityNumberUiState.Absent },
         )
         DetailValueCard(
             title = stringResource(R.string.vault_detail_username),

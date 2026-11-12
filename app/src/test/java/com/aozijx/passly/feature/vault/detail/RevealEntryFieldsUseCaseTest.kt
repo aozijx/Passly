@@ -30,8 +30,8 @@ import com.aozijx.passly.domain.sensitive.OwnedChars
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -96,7 +96,8 @@ class RevealEntryFieldsUseCaseTest {
                 gate.scope,
             )
             assertTrue(reader.keys.isEmpty())
-            assertEquals(listOf(ActivityType.VIEW), recorder.activities)
+            assertEquals(listOf(ActivityType.REVEAL_FIELDS), recorder.activities)
+            assertEquals(listOf(setOf(FieldKey.PASSWORD)), recorder.affectedFields)
         }
 
     @Test
@@ -302,12 +303,15 @@ class RevealEntryFieldsUseCaseTest {
         private val failure: Throwable? = null,
     ) : ActivityRecorder {
         val activities = mutableListOf<ActivityType>()
+        val affectedFields = mutableListOf<Set<FieldKey>>()
 
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ): AppResult<Unit> {
             activities += type
+            this.affectedFields += affectedFields
             failure?.let { throw it }
             return AppResult.Success(Unit)
         }

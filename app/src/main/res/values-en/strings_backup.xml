@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="backup_export_success">Export successful</string>
+    <string name="backup_import_success">Import successful (icons will sync in background)</string>
+    <string name="backup_import_success_summary" tools:ignore="PluralsCandidate">Import complete: %1$d imported, %2$d existing, %3$d skipped, %4$d fields ignored, %5$d links pruned, %6$d resources pruned</string>
+    <string name="backup_error_unknown">Operation failed: Unknown error</string>
+    <string name="backup_import_authentication_failed">The backup password is incorrect or the backup file is damaged. Check the password and file and try again.</string>
+    <string name="backup_directory_permission_ok">Backup directory write permission is available</string>
+    <string name="backup_directory_permission_failed">Backup directory write test failed. Please reselect the directory.</string>
+    <string name="backup_export_cleanup_failed">Export failed and the incomplete file could not be deleted. Check the backup location and remove any partial file.</string>
+</resources>

@@ -22,18 +22,27 @@ import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
 import com.aozijx.passly.domain.entry.otp.toNewEntryDraft
 import com.aozijx.passly.domain.entry.policy.EntryDraftMaterializer
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntime
+import com.aozijx.passly.feature.vault.otp.defaultOtpRuntimePolicyReader
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorSaveEffect
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -55,8 +64,16 @@ class AddOtpViewModelTest {
         session: SecureSessionAccessState = AuthenticatedSession,
     ): AddOtpViewModel {
         val editFixture = EditableEntryUseCaseFixture.unsupportedEntry()
-        return AddOtpViewModel(create, session, editFixture.editor)
+        return AddOtpViewModel(create, session, editFixture.editor, emptyOtpRuntime())
     }
+
+    private fun emptyOtpRuntime() =
+        OtpCodeRuntime(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+            otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+            codeGenerator = { _, _ -> OtpResult.Success("unused") },
+            loadOtpMaterial = { null },
+        )
 
     @Test
     fun `scanner editor and direct creation share complete identity title`() {
@@ -111,7 +128,7 @@ class AddOtpViewModelTest {
             assertFalse(model.tryApplyScannedConfig(OtpConfig(secret = "MY")))
             assertEquals("JBSWY3DPEHPK3PXP", model.uiState.value.form.secret)
             val events = mutableListOf<Unit>()
-            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
+            backgroundScope.launch { model.uriAppliedFeedback.collect { events += it } }
             runCurrent()
             assertTrue(events.isEmpty())
             release.complete(Unit)
@@ -129,7 +146,7 @@ class AddOtpViewModelTest {
             session.state.value = AuthenticationState.Authenticated(2L)
             runCurrent()
             val events = mutableListOf<Unit>()
-            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
+            backgroundScope.launch { model.uriAppliedFeedback.collect { events += it } }
             runCurrent()
             assertTrue(events.isEmpty())
         }
@@ -141,7 +158,7 @@ class AddOtpViewModelTest {
             model.onAction(AddOtpAction.UriChanged(VALID_URI))
             model.onAction(AddOtpAction.TitleChanged("New draft"))
             val events = mutableListOf<Unit>()
-            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
+            backgroundScope.launch { model.uriAppliedFeedback.collect { events += it } }
             runCurrent()
             assertTrue(events.isEmpty())
         }
@@ -154,7 +171,7 @@ class AddOtpViewModelTest {
             model.onAction(AddOtpAction.UriChanged(VALID_URI))
             model.onAction(AddOtpAction.UriChanged(VALID_URI))
             val events = mutableListOf<Unit>()
-            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
+            backgroundScope.launch { model.uriAppliedFeedback.collect { events += it } }
             runCurrent()
             assertEquals(listOf(Unit), events)
         }
@@ -170,7 +187,7 @@ class AddOtpViewModelTest {
                 clear()
             }
             val events = mutableListOf<Unit>()
-            backgroundScope.launch { model.uriAppliedFeedback.toList(events) }
+            backgroundScope.launch { model.uriAppliedFeedback.collect { events += it } }
             runCurrent()
             assertTrue(events.isEmpty())
         }
@@ -205,13 +222,29 @@ class AddOtpViewModelTest {
                     setOf(SensitiveFieldKey.OTP_SECRET),
                     mapOf(SensitiveFieldKey.OTP_SECRET to secret),
                 )
+            var generationLoads = 0
+            val otpRuntime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    codeGenerator = { _, _ -> OtpResult.Success("123456") },
+                    loadOtpMaterial = {
+                        generationLoads++
+                        OtpGenerationMaterial(OtpConfig(secret = secret).toGenerationConfig(), secret.toByteArray())
+                    },
+                    currentTimeMillis = { 1_000L },
+                )
             val model =
                 AddOtpViewModel(
                     createEntryUseCase(session = fixture.access),
                     fixture.access,
                     editEntry = fixture.editor,
+                    otpRuntime = otpRuntime,
                 )
 
+            val lease = otpRuntime.acquire(entry.id.value)
+            runCurrent()
+            assertEquals(1, generationLoads)
             model.loadExistingEntry(fixture.editableSeed(entry.id))
             advanceUntilIdle()
             assertEquals(EditorLoadPhase.Ready, model.uiState.value.loadPhase)
@@ -220,6 +253,7 @@ class AddOtpViewModelTest {
             model.onAction(AddOtpAction.IssuerChanged("Updated issuer"))
             model.onAction(AddOtpAction.Save)
             advanceUntilIdle()
+            runCurrent()
             assertEquals(
                 "Updated issuer",
                 fixture.query.current
@@ -228,6 +262,8 @@ class AddOtpViewModelTest {
                     ?.config
                     ?.issuer,
             )
+            assertEquals("a successful OTP edit invalidates and reloads active runtime material", 2, generationLoads)
+            lease.close()
         }
 
     @Test

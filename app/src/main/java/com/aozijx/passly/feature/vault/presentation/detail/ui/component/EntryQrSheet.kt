@@ -1,9 +1,7 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import android.graphics.Bitmap
-import android.graphics.Color
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,21 +22,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.core.platform.qr.QrCodeEncoder
-import com.aozijx.passly.feature.vault.detail.EntryQrKind
-import com.aozijx.passly.feature.vault.presentation.detail.DetailQrPayload
+import com.aozijx.passly.core.platform.qr.QrCodeMatrix
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.vault.presentation.detail.DetailQrState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.withContext
+import com.aozijx.passly.feature.vault.presentation.detail.EntryQrKind
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +72,7 @@ fun EntryQrSheet(
                         EntryQrKind.Wifi -> R.string.vault_wifi_qr_title
                     },
                 ),
-                style = MaterialTheme.typography.headlineSmall,
+                style = passlySheetTitleStyle(),
             )
             Text(
                 stringResource(
@@ -107,69 +104,43 @@ fun EntryQrSheet(
                         is DetailQrState.Authorizing -> Unit
                         is DetailQrState.Loading -> CircularWavyProgressIndicator()
                         is DetailQrState.Failed -> Text(stringResource(R.string.vault_qr_generation_failed))
-                        is DetailQrState.Ready -> EntryQrImage(state.content)
+                        is DetailQrState.Ready -> EntryQrImage(state.matrix)
                     }
                 }
             }
         }
     }
-}
-
-private sealed interface RenderedQr {
-    data object Loading : RenderedQr
-
-    data class Ready(
-        val bitmap: Bitmap,
-    ) : RenderedQr
-
-    data object Failed : RenderedQr
 }
 
 @Composable
-private fun EntryQrImage(content: DetailQrPayload) {
-    val rendered by produceState<RenderedQr>(RenderedQr.Loading, content) {
-        var owned: Bitmap? = null
-        var cleanup: AutoCloseable? = null
-        try {
-            withContext(Dispatchers.Default) {
-                owned =
-                    content.useChars { chars ->
-                        QrCodeEncoder.encode(chars)
-                    }
-            }
-            owned?.let { bitmap ->
-                cleanup =
-                    content.onClose {
-                        if (!bitmap.isRecycled) bitmap.eraseColor(Color.WHITE)
-                    }
-            }
-            value = owned?.let(RenderedQr::Ready) ?: RenderedQr.Failed
-            awaitCancellation()
-        } finally {
-            cleanup?.close()
-            owned?.let { bitmap ->
-                if (!bitmap.isRecycled) {
-                    bitmap.eraseColor(Color.WHITE)
-                    bitmap.recycle()
+private fun EntryQrImage(matrix: QrCodeMatrix) {
+    val description = stringResource(R.string.vault_qr_image)
+    Canvas(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .semantics { contentDescription = description },
+    ) {
+        drawRect(Color.White)
+        val moduleWidth = size.width / matrix.width
+        val moduleHeight = size.height / matrix.height
+        val path = Path()
+        for (row in 0 until matrix.height) {
+            for (column in 0 until matrix.width) {
+                if (matrix.isDark(column, row)) {
+                    val left = column * moduleWidth
+                    val top = row * moduleHeight
+                    path.addRect(
+                        Rect(
+                            left = left,
+                            top = top,
+                            right = left + moduleWidth,
+                            bottom = top + moduleHeight,
+                        ),
+                    )
                 }
             }
         }
-    }
-    when (val current = rendered) {
-        RenderedQr.Loading -> {
-            CircularWavyProgressIndicator()
-        }
-
-        is RenderedQr.Ready -> {
-            Image(
-                bitmap = current.bitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.vault_qr_image),
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        RenderedQr.Failed -> {
-            Text(stringResource(R.string.vault_qr_generation_failed))
-        }
+        drawPath(path, Color.Black)
     }
 }

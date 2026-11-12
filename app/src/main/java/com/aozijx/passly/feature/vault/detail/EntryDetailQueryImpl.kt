@@ -3,13 +3,13 @@ package com.aozijx.passly.feature.vault.detail
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.query.EntryDetailData
+import com.aozijx.passly.domain.entry.model.query.EntryDetailSnapshot
+import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
-import com.aozijx.passly.domain.entry.model.query.EntryDetailData
-import com.aozijx.passly.domain.entry.model.query.EntryDetailSnapshot
-import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
 import com.aozijx.passly.domain.entry.policy.EntryAccountGraph
 import com.aozijx.passly.domain.entry.port.EntryDetailQuery
 import com.aozijx.passly.domain.entry.port.EntryLinkRepository
@@ -122,7 +122,8 @@ private fun resolveDirectRelatedEntryIds(
     entryId: EntryId,
     links: List<EntryLink>,
 ): List<EntryId> =
-    links.asSequence()
+    links
+        .asSequence()
         .filter { it.relationType == EntryRelationType.RELATED_TO }
         .mapNotNull { it.otherEndpoint(entryId) }
         .distinct()

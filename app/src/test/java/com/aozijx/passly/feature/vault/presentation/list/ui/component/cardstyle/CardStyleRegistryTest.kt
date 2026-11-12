@@ -1,14 +1,17 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemCategoryLabel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
-import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardDensityUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
+import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.entryvisual.vaultItemIconUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -24,7 +27,7 @@ class CardStyleRegistryTest {
     @Test fun `mixed login keeps one primary card even when it also has otp`() {
         val style =
             CardStyleRegistry.resolveStyle(
-                entry(hasPassword = true, otpKind = VaultOtpKindUiModel.STANDARD),
+                entry(hasPassword = true, otpType = OtpType.TOTP),
                 listOf(presentation("login", "password"), presentation("otp", "totp")),
             )
         assertSame(PasswordVaultCardStyle, style)
@@ -33,13 +36,16 @@ class CardStyleRegistryTest {
     @Test fun `login cannot select otp style even when entry has an otp field`() {
         assertSame(
             DefaultVaultCardStyle,
-            CardStyleRegistry.resolveStyle(entry(otpKind = VaultOtpKindUiModel.STANDARD), listOf(presentation("login", "totp"))),
+            CardStyleRegistry.resolveStyle(entry(otpType = OtpType.TOTP), listOf(presentation("login", "totp"))),
         )
     }
 
     @Test fun `capability mismatches and unknown keys fall back to default`() {
         assertSame(DefaultVaultCardStyle, CardStyleRegistry.resolveStyle(entry(hasPassword = true), listOf(presentation("login", "totp"))))
-        assertSame(DefaultVaultCardStyle, CardStyleRegistry.resolveStyle(entry(otpKind = VaultOtpKindUiModel.STANDARD), listOf(presentation("login", "password"))))
+        assertSame(
+            DefaultVaultCardStyle,
+            CardStyleRegistry.resolveStyle(entry(otpType = OtpType.TOTP), listOf(presentation("login", "password"))),
+        )
         assertSame(
             DefaultVaultCardStyle,
             CardStyleRegistry.resolveStyle(entry(hasPassword = true), listOf(presentation("login", "unknown"))),
@@ -48,6 +54,13 @@ class CardStyleRegistryTest {
 
     @Test fun `all style components are discoverable through the registry`() {
         assertEquals(listOf("default", "password", "totp"), CardStyleRegistry.styles.map(VaultCardStyleComponent::key))
+        assertSame(PasswordVaultCardStyle, CardStyleRegistry.styleFor(EntryType.LOGIN, "password"))
+    }
+
+    @Test fun `configured style lookup normalizes keys and rejects unsupported entry types`() {
+        assertSame(PasswordVaultCardStyle, CardStyleRegistry.configuredStyleFor(EntryType.LOGIN, "PASSWORD"))
+        assertSame(DefaultVaultCardStyle, CardStyleRegistry.configuredStyleFor(EntryType.OTP, "password"))
+        assertSame(DefaultVaultCardStyle, CardStyleRegistry.configuredStyleFor(EntryType.LOGIN, "unknown"))
     }
 
     @Test
@@ -99,24 +112,18 @@ class CardStyleRegistryTest {
 
     private fun entry(
         hasPassword: Boolean = false,
-        otpKind: VaultOtpKindUiModel = VaultOtpKindUiModel.NOT_APPLICABLE,
+        otpType: OtpType? = null,
     ) = VaultListItemUiModel(
         id = "entry",
         entryType = EntryType.LOGIN,
         title = "Example",
         username = "user",
-        categoryLabel = VaultListItemCategoryLabel.EntryTypeName(EntryType.LOGIN),
+        categoryLabel = VaultListItemCategoryLabel.EntryTypeName(R.string.entry_type_login),
         favorite = false,
-        associatedDomain = null,
-        associatedAppPackage = null,
-        iconName = null,
-        iconCustomPath = null,
-        iconImageModel = null,
-        visualCategory = EntryVisualCategory.ACCOUNT,
+        icon = vaultItemIconUiModel(null, null, associatedAppPackage = null, visualCategory = EntryVisualCategory.ACCOUNT),
         hasPassword = hasPassword,
-        otpKind = otpKind,
-        otpPreview = null,
-        passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(EntryType.LOGIN),
+        otpPresentation = otpType?.let(OtpPresentation::Applicable) ?: OtpPresentation.NotApplicable,
+        passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(R.string.entry_type_login),
         passwordCardSupportingText = VaultPasswordCardSupportingTextUiModel.PROTECTED,
     )
 

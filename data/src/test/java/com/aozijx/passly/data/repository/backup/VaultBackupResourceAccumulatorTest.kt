@@ -55,14 +55,16 @@ class VaultBackupResourceAccumulatorTest {
             maxTotalResourceBytes = maxTotalBytes,
         )
 
-    private fun resource(id: String, content: ByteArray) =
-        VaultBackupResource(
-            id = id,
-            entryId = EntryId("entry"),
-            kind = VaultBackupResourceKind.ATTACHMENT,
-            fileName = "$id.txt",
-            mimeType = "text/plain",
-            createdAt = null,
-            content = content,
-        )
+    private fun resource(
+        id: String,
+        content: ByteArray,
+    ) = VaultBackupResource(
+        id = id,
+        entryId = EntryId("entry"),
+        kind = VaultBackupResourceKind.ATTACHMENT,
+        fileName = "$id.txt",
+        mimeType = "text/plain",
+        createdAt = null,
+        content = content,
+    )
 }

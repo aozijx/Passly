@@ -6,8 +6,9 @@ enum class ActivityType(
     val isContentChange: Boolean = false,
 ) {
     VIEW(isUsage = true),
-    COPY_USERNAME(isUsage = true),
-    COPY_PASSWORD(isUsage = true),
+    REVEAL_FIELDS(isUsage = true),
+    COPY_FIELD(isUsage = true),
+    COPY_OTP_CODE(isUsage = true),
     AUTOFILL(isUsage = true),
     EXPORT(isUsage = true),
     IMPORT(isUsage = true),

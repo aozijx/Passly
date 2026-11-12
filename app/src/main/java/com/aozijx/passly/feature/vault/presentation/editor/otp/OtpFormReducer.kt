@@ -4,6 +4,8 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.otp.suggestedEntryTitle
+import com.aozijx.passly.feature.vault.otp.presentation.OtpEditorPolicy
+import com.aozijx.passly.feature.vault.otp.presentation.plugin
 
 internal object OtpFormReducer {
     fun reduce(
@@ -26,22 +28,27 @@ internal object OtpFormReducer {
         }
 
     private fun OtpFormState.withTypeDefaults(type: OtpType): OtpFormState =
-        copy(
-            type = type,
-            digits =
-                when (type) {
-                    OtpType.STEAM -> "5"
-                    OtpType.TOTP, OtpType.HOTP -> if (digits == "5") "6" else digits
-                },
-            period =
-                when (type) {
-                    OtpType.STEAM -> "30"
-                    OtpType.TOTP -> period.ifBlank { "30" }
-                    OtpType.HOTP -> period
-                },
-            algorithm = if (type == OtpType.STEAM) OtpHashAlgorithm.SHA1 else algorithm,
-            counter = if (type == OtpType.HOTP) counter.ifBlank { "0" } else counter,
-        )
+        when (val policy = type.plugin().editorPolicy) {
+            is OtpEditorPolicy.Timed ->
+                copy(
+                    type = type,
+                    digits = digits.takeUnless(policy.digitsToReset::contains) ?: policy.defaultDigits,
+                    period = period.ifBlank { policy.defaultPeriod },
+                )
+            is OtpEditorPolicy.Counter ->
+                copy(
+                    type = type,
+                    digits = digits.takeUnless(policy.digitsToReset::contains) ?: policy.defaultDigits,
+                    counter = counter.ifBlank { policy.defaultCounter },
+                )
+            is OtpEditorPolicy.FixedTimed ->
+                copy(
+                    type = type,
+                    digits = policy.digits,
+                    period = policy.period,
+                    algorithm = policy.algorithm,
+                )
+        }
 
     private fun OtpFormState.withConfig(config: OtpConfig): OtpFormState =
         copy(
@@ -55,4 +62,5 @@ internal object OtpFormReducer {
             algorithm = config.algorithm,
             encoding = config.encoding,
         ).withTypeDefaults(config.type)
+
 }

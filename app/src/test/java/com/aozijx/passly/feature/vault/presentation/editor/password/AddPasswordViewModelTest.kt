@@ -24,6 +24,7 @@ import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.feature.vault.detail.EditableEntryUseCaseFixture
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
+import com.aozijx.passly.feature.vault.presentation.common.search
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.testing.MainDispatcherRule
 import com.aozijx.passly.testing.testLogger
@@ -255,6 +256,23 @@ class AddPasswordViewModelTest {
                     .label,
             )
         }
+
+    @Test
+    fun `search with no matches keeps the selected installed app resolved`() {
+        val selectedApp = AppPackagePickerItemUiModel("Mail", "com.example.mail")
+        val availableApps =
+            AppPackagePickerUiState
+                .fromInstalledApps(
+                    listOf(selectedApp, AppPackagePickerItemUiModel("Calendar", "com.example.calendar")),
+                ).search("missing", AppPackagePickerItemUiModel::label, AppPackagePickerItemUiModel::packageName)
+        val state =
+            AddPasswordUiState(
+                form = AddPasswordFormState(associatedAppSelection = AssociatedAppSelection.Selected(selectedApp.packageName)),
+                availableApps = availableApps,
+            )
+
+        assertEquals(AssociatedAppDisplayState.Installed(selectedApp), state.associatedAppDisplayState)
+    }
 
     @Test
     fun `associated app picker propagates fatal errors`() {

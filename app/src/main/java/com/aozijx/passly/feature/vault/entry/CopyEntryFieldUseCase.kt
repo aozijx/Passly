@@ -80,7 +80,11 @@ internal class CopyEntryFieldUseCase
                     -> CopyEntryFieldResult.NotAuthorized
                 }
             if (result == CopyEntryFieldResult.Copied && canWrite()) {
-                activityRecorder.recordUsage(entryId.value, fieldKey.copyActivityType())
+                activityRecorder.recordUsage(
+                    entryId = entryId.value,
+                    type = ActivityType.COPY_FIELD,
+                    affectedFields = setOf(fieldKey),
+                )
             }
             return result
         }
@@ -118,12 +122,6 @@ internal class CopyEntryFieldUseCase
                 revealed.value.wipe()
             }
         }
-
-        private fun FieldKey.copyActivityType(): ActivityType =
-            when (this) {
-                FieldKey.USERNAME, FieldKey.CARD_HOLDER, FieldKey.WIFI_SSID -> ActivityType.COPY_USERNAME
-                else -> ActivityType.COPY_PASSWORD
-            }
     }
 
 internal class CopyOtpCodeUseCase
@@ -163,7 +161,7 @@ internal class CopyOtpCodeUseCase
                     -> CopyEntryFieldResult.NotAuthorized
                 }
             if (result == CopyEntryFieldResult.Copied && canWrite()) {
-                activityRecorder.recordUsage(entryId.value, ActivityType.COPY_PASSWORD)
+                activityRecorder.recordUsage(entryId.value, ActivityType.COPY_OTP_CODE)
             }
             return result
         }

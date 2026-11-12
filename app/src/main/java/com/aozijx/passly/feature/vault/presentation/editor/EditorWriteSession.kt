@@ -184,7 +184,8 @@ enum class EditorLoadPhase {
     NotRequested,
     Loading,
     Ready,
-    Failed;
+    Failed,
+    ;
 
     val allowsSaving: Boolean
         get() =

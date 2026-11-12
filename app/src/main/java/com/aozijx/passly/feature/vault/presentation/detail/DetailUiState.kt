@@ -3,8 +3,8 @@ package com.aozijx.passly.feature.vault.presentation.detail
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.EntryActivity
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerUiState
 import com.aozijx.passly.feature.vault.presentation.detail.history.DetailRevisionState
@@ -15,8 +15,8 @@ data class DetailUiState(
     val isAccessHistoryEnabled: Boolean = false,
     val revealedFields: Map<FieldKey, SensitiveValue> = emptyMap(),
     val sensitiveFieldKeys: Set<SensitiveFieldKey> = emptySet(),
-    val activityHistory: DetailActivityHistoryState = DetailActivityHistoryState.Loading(emptyList()),
-    val activityFilter: DetailActivityFilter = DetailActivityFilter.ALL,
+    val activityHistory: DetailActivityHistoryState = DetailActivityHistoryState.Loading,
+    val historyFilter: DetailHistoryFilter = DetailHistoryFilter.ALL,
     val accountGroupEntries: List<Entry> = emptyList(),
     val otherRelatedEntries: List<Entry> = emptyList(),
     val relatedPasswords: List<RelatedPasswordEntry> = emptyList(),
@@ -35,42 +35,60 @@ data class DetailUiState(
 }
 
 sealed interface DetailActivityHistoryState {
-    val activities: List<EntryActivity>
+    data object Loading : DetailActivityHistoryState
 
-    data class Loading(
-        override val activities: List<EntryActivity>,
-    ) : DetailActivityHistoryState
+    data object Failed : DetailActivityHistoryState
 
-    data class Ready(
-        override val activities: List<EntryActivity>,
-    ) : DetailActivityHistoryState
-
-    data class Failed(
-        override val activities: List<EntryActivity>,
+    data class Content(
+        val activities: List<EntryActivity>,
+        val phase: DetailActivityHistoryPhase,
     ) : DetailActivityHistoryState
 }
 
-enum class DetailActivityFilter { ALL, ACTIONS, AUTOFILL }
+enum class DetailActivityHistoryPhase { Refreshing, Ready, Failed }
+
+internal val DetailActivityHistoryState.hasFailed: Boolean
+    get() =
+        when (this) {
+            DetailActivityHistoryState.Loading -> false
+            DetailActivityHistoryState.Failed -> true
+            is DetailActivityHistoryState.Content -> phase == DetailActivityHistoryPhase.Failed
+        }
+
+internal fun DetailActivityHistoryState.refreshStarted(): DetailActivityHistoryState =
+    when (this) {
+        DetailActivityHistoryState.Loading,
+        DetailActivityHistoryState.Failed,
+        -> DetailActivityHistoryState.Loading
+
+        is DetailActivityHistoryState.Content -> copy(phase = DetailActivityHistoryPhase.Refreshing)
+    }
+
+internal fun DetailActivityHistoryState.refreshFailed(): DetailActivityHistoryState =
+    when (this) {
+        DetailActivityHistoryState.Loading,
+        DetailActivityHistoryState.Failed,
+        -> DetailActivityHistoryState.Failed
+
+        is DetailActivityHistoryState.Content -> copy(phase = DetailActivityHistoryPhase.Failed)
+    }
+
+enum class DetailHistoryFilter { ALL, CONTENT_CHANGES, LIFECYCLE, USAGE }
 
 sealed interface DetailSnapshotState {
     data object Loading : DetailSnapshotState
-
-    data class Ready(
-        val entry: Entry,
-    ) : DetailSnapshotState
 
     data object NotFound : DetailSnapshotState
 
     data object Failed : DetailSnapshotState
 
-    data class RefreshingAfterRestore(
+    data class Content(
         val entry: Entry,
-    ) : DetailSnapshotState
-
-    data class RefreshFailedAfterRestore(
-        val entry: Entry,
+        val refreshPhase: DetailSnapshotRefreshPhase = DetailSnapshotRefreshPhase.Current,
     ) : DetailSnapshotState
 }
+
+enum class DetailSnapshotRefreshPhase { Current, Refreshing, Failed }
 
 internal fun DetailSnapshotState.entryOrNull(): Entry? =
     when (this) {
@@ -79,11 +97,7 @@ internal fun DetailSnapshotState.entryOrNull(): Entry? =
         DetailSnapshotState.Failed,
         -> null
 
-        is DetailSnapshotState.Ready -> entry
-
-        is DetailSnapshotState.RefreshingAfterRestore -> entry
-
-        is DetailSnapshotState.RefreshFailedAfterRestore -> entry
+        is DetailSnapshotState.Content -> entry
     }
 
 internal fun DetailSnapshotState.withEntry(entry: Entry): DetailSnapshotState =
@@ -91,22 +105,15 @@ internal fun DetailSnapshotState.withEntry(entry: Entry): DetailSnapshotState =
         DetailSnapshotState.Loading,
         DetailSnapshotState.NotFound,
         DetailSnapshotState.Failed,
-        -> DetailSnapshotState.Ready(entry)
+        -> DetailSnapshotState.Content(entry)
 
-        is DetailSnapshotState.Ready -> copy(entry = entry)
-
-        is DetailSnapshotState.RefreshingAfterRestore -> copy(entry = entry)
-
-        is DetailSnapshotState.RefreshFailedAfterRestore -> copy(entry = entry)
+        is DetailSnapshotState.Content -> copy(entry = entry)
     }
 
 internal fun DetailSnapshotState.refreshStarted(): DetailSnapshotState =
     when (this) {
-        is DetailSnapshotState.Ready -> DetailSnapshotState.RefreshingAfterRestore(entry)
+        is DetailSnapshotState.Content -> copy(refreshPhase = DetailSnapshotRefreshPhase.Refreshing)
 
-        is DetailSnapshotState.RefreshFailedAfterRestore -> DetailSnapshotState.RefreshingAfterRestore(entry)
-
-        is DetailSnapshotState.RefreshingAfterRestore,
         DetailSnapshotState.Loading,
         DetailSnapshotState.NotFound,
         DetailSnapshotState.Failed,
@@ -115,73 +122,92 @@ internal fun DetailSnapshotState.refreshStarted(): DetailSnapshotState =
 
 internal fun DetailSnapshotState.refreshFailed(): DetailSnapshotState =
     when (this) {
-        is DetailSnapshotState.RefreshingAfterRestore -> DetailSnapshotState.RefreshFailedAfterRestore(entry)
-        else -> this
+        is DetailSnapshotState.Content -> {
+            if (refreshPhase == DetailSnapshotRefreshPhase.Refreshing) {
+                copy(refreshPhase = DetailSnapshotRefreshPhase.Failed)
+            } else {
+                this
+            }
+        }
+
+        DetailSnapshotState.Loading,
+        DetailSnapshotState.NotFound,
+        DetailSnapshotState.Failed,
+        -> {
+            this
+        }
     }
+
+internal val DetailSnapshotState.canRetryRefresh: Boolean
+    get() = this is DetailSnapshotState.Content && refreshPhase == DetailSnapshotRefreshPhase.Failed
 
 @ConsistentCopyVisibility
 data class DetailFieldEditState private constructor(
-    private val drafts: Map<DetailDraftKey, DetailFieldEditDraft>,
+    private val edits: Map<DetailDraftKey, DetailFieldEdit.Editing>,
 ) {
     constructor() : this(emptyMap())
 
-    fun isEditing(key: DetailDraftKey): Boolean = key in drafts
-
-    fun draft(key: DetailDraftKey): String = drafts[key]?.value.orEmpty()
-
-    fun initialValue(key: DetailDraftKey): String? = drafts[key]?.initialValue
+    fun edit(key: DetailDraftKey): DetailFieldEdit = edits[key] ?: DetailFieldEdit.NotEditing
 
     fun start(
         key: DetailDraftKey,
         initialValue: String,
-    ): DetailFieldEditState = copy(drafts = drafts + (key to DetailFieldEditDraft(initialValue, initialValue)))
+    ): DetailFieldEditState = copy(edits = edits + (key to DetailFieldEdit.Editing(initialValue, initialValue)))
 
     fun update(
         key: DetailDraftKey,
         value: String,
     ): DetailFieldEditState =
-        drafts[key]?.let { draft ->
-            copy(drafts = drafts + (key to draft.copy(value = value)))
+        edits[key]?.let { edit ->
+            copy(edits = edits + (key to edit.copy(draft = value)))
         } ?: this
 
     fun rebase(
         key: DetailDraftKey,
         initialValue: String,
     ): DetailFieldEditState =
-        drafts[key]?.let { draft ->
-            copy(drafts = drafts + (key to draft.copy(initialValue = initialValue)))
+        edits[key]?.let { edit ->
+            copy(edits = edits + (key to edit.copy(initialValue = initialValue)))
         } ?: this
 
-    fun finish(key: DetailDraftKey): DetailFieldEditState = copy(drafts = drafts - key)
+    fun finish(key: DetailDraftKey): DetailFieldEditState = copy(edits = edits - key)
 
-    override fun toString(): String = "DetailFieldEditState(editingKeys=${drafts.keys})"
+    override fun toString(): String = "DetailFieldEditState(editingKeys=${edits.keys})"
 }
 
-private data class DetailFieldEditDraft(
-    val initialValue: String,
-    val value: String,
-) {
-    override fun toString() = "DetailFieldEditDraft(***)"
+sealed interface DetailFieldEdit {
+    data object NotEditing : DetailFieldEdit
+
+    data class Editing(
+        val initialValue: String,
+        val draft: String,
+    ) : DetailFieldEdit {
+        override fun toString(): String = "DetailFieldEdit.Editing(***)"
+    }
 }
 
 sealed interface DetailEditCompletion {
-    data object Title : DetailEditCompletion
+    sealed interface Draft : DetailEditCompletion
 
-    data object Favorite : DetailEditCompletion
+    sealed interface Other : DetailEditCompletion
 
-    data object Notes : DetailEditCompletion
+    data object Title : Draft
 
-    data object Domain : DetailEditCompletion
+    data object Notes : Draft
 
-    data object Applications : DetailEditCompletion
-
-    data object Tags : DetailEditCompletion
-
-    data object Icon : DetailEditCompletion
+    data object Domain : Draft
 
     data class Field(
         val key: FieldKey,
-    ) : DetailEditCompletion
+    ) : Draft
+
+    data object Favorite : Other
+
+    data object Applications : Other
+
+    data object Tags : Other
+
+    data object Icon : Other
 }
 
 sealed interface DetailSaveState {

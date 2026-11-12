@@ -32,10 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashDeletedAtUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryUiModel
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashSupportingTextUiState
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
-import com.aozijx.passly.presentation.shared.entry.labelRes
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -45,17 +45,6 @@ internal fun TrashEntryCard(
     onRestore: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val deletedLabel =
-        entry.deletedAtEpochMs
-            ?.let { deletedAt ->
-                DateUtils
-                    .getRelativeTimeSpanString(
-                        deletedAt,
-                        System.currentTimeMillis(),
-                        DateUtils.MINUTE_IN_MILLIS,
-                    ).toString()
-            }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -82,10 +71,7 @@ internal fun TrashEntryCard(
                         contentAlignment = Alignment.Center,
                     ) {
                         VaultItemIcon(
-                            iconName = entry.iconName,
-                            customImageModel = entry.iconImageModel,
-                            associatedAppPackage = entry.associatedAppPackage,
-                            visualCategory = entry.visualCategory,
+                            model = entry.icon,
                         )
                     }
                 }
@@ -98,15 +84,21 @@ internal fun TrashEntryCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    entry.supportingText?.let { supportingText ->
-                        Spacer(modifier = Modifier.size(3.dp))
-                        Text(
-                            text = supportingText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    when (val supportingText = entry.supportingText) {
+                        TrashSupportingTextUiState.Absent -> {
+                            Unit
+                        }
+
+                        is TrashSupportingTextUiState.Value -> {
+                            Spacer(modifier = Modifier.size(3.dp))
+                            Text(
+                                text = supportingText.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.size(7.dp))
                     Row(
@@ -119,19 +111,32 @@ internal fun TrashEntryCard(
                             shape = MaterialTheme.shapes.small,
                         ) {
                             Text(
-                                text = stringResource(entry.entryType.labelRes),
+                                text = stringResource(entry.entryTypeLabelRes),
                                 style = MaterialTheme.typography.labelMedium,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                         }
-                        deletedLabel?.let { label ->
-                            Text(
-                                text = stringResource(R.string.vault_trash_deleted_at, label),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                        when (val deletedAt = entry.deletedAt) {
+                            TrashDeletedAtUiState.Unavailable -> {
+                                Unit
+                            }
+
+                            is TrashDeletedAtUiState.Recorded -> {
+                                val relativeTime =
+                                    DateUtils
+                                        .getRelativeTimeSpanString(
+                                            deletedAt.epochMillis,
+                                            System.currentTimeMillis(),
+                                            DateUtils.MINUTE_IN_MILLIS,
+                                        ).toString()
+                                Text(
+                                    text = stringResource(R.string.vault_trash_deleted_at, relativeTime),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }

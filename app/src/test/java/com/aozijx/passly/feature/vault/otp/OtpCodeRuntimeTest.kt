@@ -3,21 +3,29 @@ package com.aozijx.passly.feature.vault.otp
 import com.aozijx.passly.domain.access.model.FreshAuthenticationRequiredException
 import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
+import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
-import com.aozijx.passly.domain.entry.otp.OtpGenerator
-import com.aozijx.passly.domain.entry.otp.OtpResult
-import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationConfig
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
+import com.aozijx.passly.domain.settings.model.OtpRuntimePolicy
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicySnapshotReader
 import com.aozijx.passly.runtime.session.SessionLockedException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceTimeBy
@@ -25,53 +33,643 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OtpCodeRuntimeTest {
     @Test
+    fun `runtime owns one collection of each application signal`() =
+        runTest {
+            var unlockCollectors = 0
+            var authenticationCollectors = 0
+            val signals =
+                OtpRuntimeSignals(
+                    unlocked =
+                        flow {
+                            unlockCollectors++
+                            emit(true)
+                            awaitCancellation()
+                        },
+                    freshAuthentication =
+                        flow {
+                            authenticationCollectors++
+                            awaitCancellation()
+                        },
+                )
+            val runtime =
+                testRuntime(scope = backgroundScope, loadOtpConfig = { validTotpConfig() }, codeGenerator = { OtpResult.Success("unused") })
+
+            runtime.start(signals)
+            runtime.start(signals)
+            runCurrent()
+
+            assertEquals(1, unlockCollectors)
+            assertEquals(1, authenticationCollectors)
+        }
+
+    @Test
+    fun `copy reads policy on demand and retries a failed read on the next action`() =
+        runTest {
+            var nowMillis = 26_000L
+            var policyReads = 0
+            var generatedCodes = 0
+            val policyReader =
+                object : OtpRuntimePolicySnapshotReader {
+                    override suspend fun readOtpRuntimePolicySnapshot(): OtpRuntimePolicy {
+                        policyReads++
+                        if (policyReads == 1) throw IllegalStateException("temporary settings read failure")
+                        return OtpRuntimePolicy(copyNextTotpNearExpiry = true)
+                    }
+                }
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { nowMillis },
+                    loadOtpConfig = { validTotpConfig() },
+                    codeGenerator = {
+                        generatedCodes++
+                        OtpResult.Success("code-$generatedCodes")
+                    },
+                    otpRuntimePolicyReader = policyReader,
+                )
+            runtime.acquire("settings-retry")
+            runCurrent()
+
+            assertEquals(0, policyReads)
+            assertNull(runtime.codeForCopy("settings-retry"))
+            assertEquals(1, policyReads)
+
+            nowMillis = 27_000L
+            assertEquals("code-2", runtime.codeForCopy("settings-retry"))
+            assertEquals(2, policyReads)
+        }
+
+    @Test
+    fun `HOTP copy maps a transient consume exception to unavailable`() =
+        runTest {
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1) },
+                    codeGenerator = { generateTestOtp(it) },
+                    consumeHotpCode = { _, _ -> throw IllegalStateException("temporary HOTP transaction failure") },
+                )
+            runtime.acquire("hotp-copy-error")
+            runCurrent()
+
+            assertNull(runtime.codeForCopy("hotp-copy-error"))
+        }
+
+    @Test
+    fun `on-demand HOTP copy maps a transient consume exception to unavailable`() =
+        runTest {
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1) },
+                    codeGenerator = { generateTestOtp(it) },
+                    consumeHotpCode = { _, _ -> throw IllegalStateException("temporary HOTP transaction failure") },
+                )
+
+            assertNull(runtime.codeForCopy("hotp-on-demand-error"))
+        }
+
+    @Test
+    fun `on-demand TOTP copy does not return a code after session locks during generation`() =
+        runTest {
+            val generationStarted = CompletableDeferred<Unit>()
+            val generationGate = CompletableDeferred<OtpResult>()
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { 27_000L },
+                    loadOtpMaterial = { generationMaterialForTest(validTotpConfig()) },
+                    codeGenerator = { _, _ ->
+                        generationStarted.complete(Unit)
+                        generationGate.await()
+                    },
+                )
+            val copy = async { runtime.codeForCopy("unleased") }
+            runCurrent()
+            generationStarted.await()
+
+            runtime.onSessionStateChanged(unlocked = false)
+            generationGate.complete(OtpResult.Success("123456"))
+
+            assertNull(copy.await())
+        }
+
+    @Test
+    fun `on-demand HOTP copy does not return a code after session locks during consumption`() =
+        runTest {
+            val consumptionStarted = CompletableDeferred<Unit>()
+            val consumptionGate = CompletableDeferred<OtpResult>()
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    codeGenerator = { _, _ -> OtpResult.Success("unused") },
+                    loadOtpMaterial = {
+                        generationMaterialForTest(OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1))
+                    },
+                    consumeHotpCode = { _, _ ->
+                        consumptionStarted.complete(Unit)
+                        consumptionGate.await()
+                    },
+                )
+            val copy = async { runtime.codeForCopy("unleased-hotp") }
+            runCurrent()
+            consumptionStarted.await()
+
+            runtime.onSessionStateChanged(unlocked = false)
+            consumptionGate.complete(OtpResult.Success("123456"))
+
+            assertNull(copy.await())
+        }
+
+    @Test
+    fun `HOTP copy propagates cancellation and fatal errors`() =
+        runTest {
+            val failures =
+                listOf(
+                    CancellationException("HOTP copy cancelled"),
+                    AssertionError("fatal HOTP consume failure"),
+                )
+            failures.forEachIndexed { index, failure ->
+                val runtime =
+                    testRuntime(
+                        scope = backgroundScope,
+                        loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = 1) },
+                        codeGenerator = { generateTestOtp(it) },
+                        consumeHotpCode = { _, _ -> throw failure },
+                    )
+                runtime.acquire("hotp-propagation-$index")
+                runCurrent()
+
+                val thrown =
+                    try {
+                        runtime.codeForCopy("hotp-propagation-$index")
+                        null
+                    } catch (caught: Throwable) {
+                        caught
+                    }
+                assertTrue(thrown === failure)
+            }
+        }
+
+    @Test
+    fun `closing leases is idempotent and final owner stops automatic retry`() =
+        runTest {
+            var loadCount = 0
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { testScheduler.currentTime },
+                    loadOtpConfig = {
+                        loadCount++
+                        throw IllegalStateException("temporary read failure")
+                    },
+                    codeGenerator = { OtpResult.Success("unused") },
+                )
+            runtime.start(OtpRuntimeSignals.NONE)
+            val first = runtime.acquire("leased")
+            val second = runtime.acquire("leased")
+            runCurrent()
+            assertEquals(1, loadCount)
+
+            first.close()
+            first.close()
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(2, loadCount)
+
+            second.close()
+            advanceTimeBy(30_000)
+            runCurrent()
+            assertEquals(2, loadCount)
+            assertEquals(null, runtime.states.value["leased"])
+        }
+
+    @Test
+    fun `crypto generation retry reuses seed and entry changes reload configuration`() =
+        runTest {
+            var nowMillis = 0L
+            var loadCount = 0
+            var generationCount = 0
+            var config = validTotpConfig()
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { nowMillis },
+                    loadOtpConfig = {
+                        loadCount++
+                        config
+                    },
+                    codeGenerator = {
+                        generationCount++
+                        if (generationCount == 1) {
+                            OtpResult.Failure(OtpGenerationError.CryptoError(IllegalStateException("temporary crypto error")))
+                        } else {
+                            generateTestOtp(it)
+                        }
+                    },
+                )
+            runtime.start(OtpRuntimeSignals.NONE)
+            runtime.acquire("crypto-retry")
+            runCurrent()
+            assertEquals(OtpCodeState.Pending, runtime.states.value["crypto-retry"])
+
+            nowMillis = 1_000
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertTrue(runtime.states.value["crypto-retry"] is OtpCodeState.Ready)
+            assertEquals(1, loadCount)
+
+            config = validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
+            runtime.entryChanged("crypto-retry")
+            runCurrent()
+            assertTrue(runtime.states.value["crypto-retry"] is OtpCodeState.Ready)
+            assertEquals(2, loadCount)
+        }
+
+    @Test
+    fun `permanent invalid seed is not retried each tick and entry change restarts generation`() =
+        runTest {
+            var loadCount = 0
+            var config = validTotpConfig().copy(secret = "!")
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { testScheduler.currentTime },
+                    loadOtpConfig = {
+                        loadCount++
+                        config
+                    },
+                    codeGenerator = { generateTestOtp(it) },
+                )
+            runtime.start(OtpRuntimeSignals.NONE)
+            runtime.acquire("permanent-failure")
+            runCurrent()
+            assertEquals(OtpCodeState.Failed(OtpGenerationError.InvalidSecret), runtime.states.value["permanent-failure"])
+
+            advanceTimeBy(60_000)
+            runCurrent()
+            assertEquals(1, loadCount)
+
+            config = validTotpConfig()
+            runtime.entryChanged("permanent-failure")
+            runCurrent()
+            assertTrue(runtime.states.value["permanent-failure"] is OtpCodeState.Ready)
+            assertEquals(2, loadCount)
+        }
+
+    @Test
+    fun `transient reads retry automatically with backoff and without a page refresh`() =
+        runTest {
+            var loadCount = 0
+            val runtime =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { testScheduler.currentTime },
+                    loadOtpConfig = {
+                        loadCount++
+                        if (loadCount < 3) throw IllegalStateException("temporary read failure")
+                        validTotpConfig()
+                    },
+                    codeGenerator = { OtpResult.Success("654321") },
+                )
+            runtime.start(OtpRuntimeSignals.NONE)
+            runtime.acquire("auto-retry")
+            runCurrent()
+            assertEquals(1, loadCount)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(2, loadCount)
+
+            advanceTimeBy(1_999)
+            runCurrent()
+            assertEquals("backoff should prevent a one-second retry loop", 2, loadCount)
+
+            advanceTimeBy(1)
+            runCurrent()
+            assertEquals(3, loadCount)
+            assertEquals("654321", runtime.readyCode("auto-retry"))
+            assertEquals("654321", runtime.codeForCopy("auto-retry"))
+        }
+
+    @Test
     fun `exhausted HOTP counter becomes failed state without publishing a code`() =
+        runTest {
+            val coordinator =
+                testRuntime(
+                    scope = backgroundScope,
+                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE) },
+                    codeGenerator = { generateTestOtp(it) },
+                    consumeHotpCode = { _, expectedCounter ->
+                        assertEquals(Long.MAX_VALUE, expectedCounter)
+                        generateTestOtp(
+                            OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = expectedCounter),
+                        )
+                    },
+                )
+            coordinator.acquire("exhausted")
+            runCurrent()
+            val result = coordinator.codeForCopy("exhausted")
+
+            assertNull(result)
+            assertEquals(OtpCodeState.Failed(OtpGenerationError.CounterExhausted), coordinator.states.value["exhausted"])
+        }
+
+    @Test
+    fun `copy selection follows the latest policy snapshot in the final three seconds`() =
+        runTest {
+            var nowMillis = 26_000L
+            var loads = 0
+            var generated = 0
+            val policy = MutableStateFlow(OtpRuntimePolicy())
+            val policyReader =
+                object : OtpRuntimePolicySnapshotReader {
+                    override suspend fun readOtpRuntimePolicySnapshot() = policy.value
+                }
+            val coordinator =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { nowMillis },
+                    loadOtpConfig = {
+                        loads++
+                        validTotpConfig()
+                    },
+                    codeGenerator = {
+                        generated++
+                        OtpResult.Success("code-$generated")
+                    },
+                    otpRuntimePolicyReader = policyReader,
+                )
+
+            coordinator.acquire("near-expiry")
+            runCurrent()
+            val initial = coordinator.states.value.getValue("near-expiry") as OtpCodeState.TimedReady
+            assertEquals("code-1", initial.code)
+            assertEquals("code-2", initial.nextCode)
+            assertEquals("code-1", coordinator.codeForCopy("near-expiry"))
+
+            nowMillis = 27_000L
+            coordinator.refreshStates(nowSeconds = 27)
+            assertEquals("code-2", coordinator.codeForCopy("near-expiry"))
+
+            policy.value = OtpRuntimePolicy(copyNextTotpNearExpiry = false)
+            assertEquals("code-1", coordinator.codeForCopy("near-expiry"))
+            assertEquals(1, loads)
+        }
+
+    @Test
+    fun `copy uses current time when cached phase has not ticked yet`() =
+        runTest {
+            var nowMillis = 26_000L
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { nowMillis },
+                    loadOtpMaterial = { testMaterial(validTotpConfig()) },
+                    codeGenerator = { _, timestamp -> OtpResult.Success("at-$timestamp") },
+                )
+            runtime.acquire("delayed-tick")
+            runCurrent()
+
+            nowMillis = 28_000L
+
+            assertEquals("at-30", runtime.codeForCopy("delayed-tick"))
+        }
+
+    @Test
+    fun `copy uses the retained seed when cached schedule belongs to an earlier window`() =
+        runTest {
+            var nowMillis = 29_000L
+            var loads = 0
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { nowMillis },
+                    loadOtpMaterial = {
+                        loads++
+                        testMaterial(validTotpConfig())
+                    },
+                    codeGenerator = { _, timestamp -> OtpResult.Success("at-$timestamp") },
+                )
+            runtime.acquire("delayed-window-refresh")
+            runCurrent()
+
+            nowMillis = 57_000L
+
+            assertEquals("at-60", runtime.codeForCopy("delayed-window-refresh"))
+            assertEquals(1, loads)
+        }
+
+    @Test
+    fun `on-demand copy recalculates if generation crosses a time window`() =
+        runTest {
+            var nowMillis = 29_999L
+            var generated = 0
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { nowMillis },
+                    loadOtpMaterial = { testMaterial(validTotpConfig()) },
+                    codeGenerator = { _, timestamp ->
+                        generated++
+                        if (generated == 1) nowMillis = 30_000L
+                        OtpResult.Success("at-$timestamp")
+                    },
+                )
+
+            assertEquals("at-30", runtime.codeForCopy("window-race"))
+            assertEquals(3, generated)
+        }
+
+    @Test
+    fun `time window transition promotes next and reuses the lease seed`() =
+        runTest {
+            var nowMillis = 29_000L
+            var loads = 0
+            var generated = 0
+            val coordinator =
+                testRuntime(
+                    scope = backgroundScope,
+                    currentTimeMillis = { nowMillis },
+                    loadOtpConfig = {
+                        loads++
+                        validTotpConfig()
+                    },
+                    codeGenerator = {
+                        generated++
+                        OtpResult.Success("code-$generated")
+                    },
+                )
+            coordinator.acquire("window")
+            runCurrent()
+            val before = coordinator.states.value.getValue("window") as OtpCodeState.TimedReady
+            assertEquals("code-1", before.code)
+            assertEquals("code-2", before.nextCode)
+
+            nowMillis = 30_000L
+            coordinator.refreshStates(nowSeconds = 30)
+            val after = coordinator.states.value.getValue("window") as OtpCodeState.TimedReady
+            assertEquals("code-3", after.code)
+            assertEquals("code-4", after.nextCode)
+            assertEquals(1, loads)
+        }
+
+    @Test
+    fun `custom TOTP period applies the final three second copy phase`() =
         runTest {
             val coordinator =
                 OtpCodeRuntime(
                     scope = backgroundScope,
-                    loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE) },
-                    codeGenerator = { OtpGenerator.generate(it) },
-                    consumeHotpCode = {
-                        OtpGenerator.generate(
-                            OtpConfig(type = OtpType.HOTP, secret = "JBSWY3DPEHPK3PXP", counter = Long.MAX_VALUE),
-                        )
-                    },
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { 7_000L },
+                    loadOtpMaterial = { generationMaterialForTest(validTotpConfig().copy(periodSeconds = 10)) },
+                    codeGenerator = { _, timestamp -> OtpResult.Success("at-$timestamp") },
                 )
-            coordinator.subscribe("exhausted")
+            coordinator.acquire("custom-period")
             runCurrent()
-            val result = coordinator.generateHotpCode("exhausted")
 
-            assertEquals(OtpResult.Failure(OtpGenerationError.CounterExhausted), result)
-            assertEquals(OtpCodeState.Failed(OtpGenerationError.CounterExhausted), coordinator.states.value["exhausted"])
+            val state = coordinator.states.value.getValue("custom-period") as OtpCodeState.TimedReady
+            assertEquals("at-7", state.code)
+            assertEquals("at-10", state.nextCode)
+            assertEquals("at-10", coordinator.codeForCopy("custom-period"))
+        }
+
+    @Test
+    fun `Steam pre-generates current and next window codes`() =
+        runTest {
+            val seed = "JBSWY3DPEHPK3PXP".toByteArray()
+            val material = OtpGenerationMaterial(OtpConfig.steamDefaults("unused").toGenerationConfig(), seed)
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { 27_000L },
+                    loadOtpMaterial = { material },
+                    codeGenerator = { value, timestamp -> OtpGenerator.generate(value, timestamp = timestamp) },
+                )
+            runtime.acquire("steam")
+            runCurrent()
+
+            val state = runtime.states.value.getValue("steam") as OtpCodeState.TimedReady
+            assertEquals(5, state.code.length)
+            assertEquals(5, state.nextCode.length)
+            assertTrue(state.code != state.nextCode)
+            assertTrue(seed.all { it == 0.toByte() })
+        }
+
+    @Test
+    fun `generation failure still clears caller-owned seed material`() =
+        runTest {
+            val seed = "JBSWY3DPEHPK3PXP".toByteArray()
+            val fatal = AssertionError("code generation failed")
+            val reported = mutableListOf<Throwable>()
+            val scope =
+                CoroutineScope(
+                    SupervisorJob() + Dispatchers.Unconfined + CoroutineExceptionHandler { _, failure -> reported += failure },
+                )
+            val runtime =
+                OtpCodeRuntime(
+                    scope = scope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    loadOtpMaterial = { OtpGenerationMaterial(validTotpConfig().toGenerationConfig(), seed) },
+                    codeGenerator = { _, _ -> throw fatal },
+                )
+
+            runtime.acquire("failure")
+
+            assertTrue(seed.all { it == 0.toByte() })
+            assertEquals(listOf(fatal), reported)
+            scope.cancel()
+        }
+
+    @Test
+    fun `overlapping leases retain shared state until the final owner releases`() =
+        runBlocking {
+            var loads = 0
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            val coordinator =
+                testRuntime(
+                    scope = scope,
+                    loadOtpConfig = {
+                        loads++
+                        validTotpConfig()
+                    },
+                    codeGenerator = { OtpResult.Success("654321") },
+                )
+            val detailLease = coordinator.acquire("shared")
+            val secondDetailLease = coordinator.acquire("shared")
+            val listLease = coordinator.acquire("shared")
+            assertEquals(1, loads)
+            detailLease.close()
+            listLease.close()
+            assertEquals("654321", coordinator.readyCode("shared"))
+            secondDetailLease.close()
+            assertEquals(null, coordinator.states.value["shared"])
+            scope.cancel()
+        }
+
+    @Test
+    fun `copy for hidden OTP loads and clears seed without retaining runtime state`() =
+        runTest {
+            val nowSeconds = 27L
+            val seed = "JBSWY3DPEHPK3PXP".toByteArray()
+            val material = OtpGenerationMaterial(validTotpConfig().toGenerationConfig(), seed)
+            val runtime =
+                OtpCodeRuntime(
+                    scope = backgroundScope,
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    currentTimeMillis = { nowSeconds * 1_000 },
+                    loadOtpMaterial = { material },
+                    codeGenerator = { _, timestamp -> OtpResult.Success("window-$timestamp") },
+                )
+
+            assertEquals("window-30", runtime.codeForCopy("hidden"))
+            assertTrue(seed.all { it == 0.toByte() })
+            assertEquals(emptyMap<String, OtpCodeState>(), runtime.states.value)
         }
 
     @Test
     fun `copying HOTP consumes and returns a fresh code each time`() =
         runTest {
             var counter = 7L
+            var preGenerated = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = backgroundScope,
                     loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "secret", counter = counter) },
-                    codeGenerator = { OtpResult.Success("unused") },
-                    consumeHotpCode = {
-                        val usedCounter = counter++
+                    codeGenerator = {
+                        preGenerated++
+                        OtpResult.Success("unused")
+                    },
+                    consumeHotpCode = { _, expectedCounter ->
+                        assertEquals(counter, expectedCounter)
+                        val usedCounter = expectedCounter
+                        counter = expectedCounter + 1
                         OtpResult.Success("code-$usedCounter", nextCounter = counter)
                     },
                 )
-            coordinator.subscribe("hotp")
+            coordinator.acquire("hotp")
             runCurrent()
+            assertEquals(1, preGenerated)
 
             assertEquals("code-7", coordinator.codeForCopy("hotp"))
             assertEquals("code-8", coordinator.codeForCopy("hotp"))
-            assertEquals(OtpCodeState.Ready("code-8", 0f), coordinator.states.value["hotp"])
+            assertEquals(
+                OtpCodeState.HotpReady("unused", counter = 9, canRollbackPrevious = true),
+                coordinator.states.value["hotp"],
+            )
         }
 
     @Test
@@ -80,21 +678,21 @@ class OtpCodeRuntimeTest {
             val consumptionStarted = CompletableDeferred<Unit>()
             val finishConsumption = CompletableDeferred<OtpResult>()
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = backgroundScope,
                     loadOtpConfig = { OtpConfig(type = OtpType.HOTP, secret = "secret", counter = 7) },
                     codeGenerator = { OtpResult.Success("unused") },
-                    consumeHotpCode = {
+                    consumeHotpCode = { _, _ ->
                         consumptionStarted.complete(Unit)
                         finishConsumption.await()
                     },
                 )
-            coordinator.subscribe("hotp")
+            coordinator.acquire("hotp")
             runCurrent()
             val pendingCopy = async { coordinator.codeForCopy("hotp") }
             consumptionStarted.await()
 
-            coordinator.clearAllSensitiveState()
+            coordinator.onSessionStateChanged(unlocked = false)
             finishConsumption.complete(OtpResult.Success("123456", nextCounter = 8))
 
             assertEquals(null, pendingCopy.await())
@@ -114,7 +712,7 @@ class OtpCodeRuntimeTest {
         runTest {
             var loadCount = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = backgroundScope,
                     loadOtpConfig = {
                         loadCount++
@@ -123,8 +721,8 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("123456") },
                 )
 
-            coordinator.subscribe("paused-entry")
-            coordinator.start()
+            coordinator.acquire("paused-entry")
+            coordinator.start(OtpRuntimeSignals.NONE)
             runCurrent()
             advanceTimeBy(2_500)
             runCurrent()
@@ -133,34 +731,41 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `failed moving factor reload clears stale code and retries on the next refresh`() =
+    fun `failed moving factor generation retries automatically from the lease seed`() =
         runTest {
-            val nowSeconds = 30L
             var loadCount = 0
+            var generationCount = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = backgroundScope,
-                    currentTimeMillis = { nowSeconds * 1_000 },
+                    currentTimeMillis = { testScheduler.currentTime },
                     loadOtpConfig = {
                         loadCount++
-                        if (loadCount == 2) throw IllegalStateException("temporary config read failure")
-                        validTotpConfig()
+                        validTotpConfig().copy(periodSeconds = 1)
                     },
-                    codeGenerator = { OtpResult.Success("code-$loadCount") },
+                    codeGenerator = {
+                        generationCount++
+                        if (generationCount == 3) {
+                            OtpResult.Failure(OtpGenerationError.CryptoError(IllegalStateException("temporary crypto failure")))
+                        } else {
+                            OtpResult.Success("code-$generationCount")
+                        }
+                    },
                 )
-            coordinator.subscribe("reload-entry")
+            coordinator.start(OtpRuntimeSignals.NONE)
+            coordinator.acquire("reload-entry")
             runCurrent()
-            val initialMovingFactor = nowSeconds / 30
+            assertEquals("code-1", coordinator.readyCode("reload-entry"))
 
-            coordinator.refreshStates(nowSeconds = (initialMovingFactor + 1) * 30)
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(1, loadCount)
+            assertEquals(OtpCodeState.Pending, coordinator.states.value["reload-entry"])
 
-            assertEquals(null, coordinator.codeForCopy("reload-entry"))
-            assertEquals(null, coordinator.states.value["reload-entry"])
-
-            coordinator.refreshStates(nowSeconds = (initialMovingFactor + 2) * 30)
-
-            assertEquals("code-3", coordinator.codeForCopy("reload-entry"))
-            assertEquals(3, loadCount)
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(1, loadCount)
+            assertEquals("code-4", coordinator.readyCode("reload-entry"))
         }
 
     @Test
@@ -168,69 +773,52 @@ class OtpCodeRuntimeTest {
         runTest {
             var nowMillis = 0L
             val loadCounts = mutableMapOf<String, Int>()
+            val generationCounts = mutableMapOf<String, Int>()
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = backgroundScope,
                     currentTimeMillis = { nowMillis },
                     loadOtpConfig = { entryId ->
                         val loadCount = (loadCounts[entryId] ?: 0) + 1
                         loadCounts[entryId] = loadCount
-                        if (entryId == "failing-entry" && loadCount == 2) {
-                            throw IllegalStateException("temporary config read failure")
-                        }
                         validTotpConfig().copy(
                             secret = "$entryId-$loadCount",
                             periodSeconds = 1,
                         )
                     },
-                    codeGenerator = { OtpResult.Success(requireNotNull(it.secret)) },
+                    codeGenerator = { config ->
+                        val secret = requireNotNull(config.secret)
+                        val generated = (generationCounts[secret] ?: 0) + 1
+                        generationCounts[secret] = generated
+                        if (secret.startsWith("failing-entry") && generated == 3) {
+                            OtpResult.Failure(OtpGenerationError.CryptoError(IllegalStateException("temporary crypto failure")))
+                        } else {
+                            OtpResult.Success(secret)
+                        }
+                    },
                 )
-            coordinator.subscribe("failing-entry")
-            coordinator.subscribe("healthy-entry")
+            coordinator.acquire("failing-entry")
+            coordinator.acquire("healthy-entry")
             runCurrent()
-            coordinator.start()
+            coordinator.start(OtpRuntimeSignals.NONE)
 
             nowMillis = 1_000
             advanceTimeBy(1_000)
             runCurrent()
 
             assertEquals(null, coordinator.readyCode("failing-entry"))
-            assertEquals("healthy-entry-2", coordinator.readyCode("healthy-entry"))
+            assertEquals("healthy-entry-1", coordinator.readyCode("healthy-entry"))
 
             nowMillis = 2_000
             advanceTimeBy(1_000)
             runCurrent()
 
-            assertEquals("failing-entry-3", coordinator.readyCode("failing-entry"))
-            assertEquals("healthy-entry-3", coordinator.readyCode("healthy-entry"))
+            assertEquals("failing-entry-1", coordinator.readyCode("failing-entry"))
+            assertEquals("healthy-entry-1", coordinator.readyCode("healthy-entry"))
         }
 
     @Test
-    fun `ordinary subscription activation read failure can be retried`() =
-        runTest {
-            var loadCount = 0
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = backgroundScope,
-                    loadOtpConfig = {
-                        loadCount++
-                        if (loadCount == 1) throw IllegalStateException("temporary config read failure")
-                        validTotpConfig()
-                    },
-                    codeGenerator = { OtpResult.Success("654321") },
-                )
-
-            coordinator.subscribe("activation-retry")
-            runCurrent()
-            coordinator.refreshRequestedEntries()
-            runCurrent()
-
-            assertEquals(2, loadCount)
-            assertEquals("654321", coordinator.codeForCopy("activation-retry"))
-        }
-
-    @Test
-    fun `subscription activation propagates fatal errors and leaves cancellation unhandled`() =
+    fun `lease activation propagates fatal errors and leaves cancellation unhandled`() =
         runTest {
             val fatal = AssertionError("fatal OTP config failure")
             val cancellation = CancellationException("activation cancelled")
@@ -242,20 +830,20 @@ class OtpCodeRuntimeTest {
                         CoroutineExceptionHandler { _, failure -> reported += failure },
                 )
             val cancelledRuntime =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = activationScope,
                     loadOtpConfig = { throw cancellation },
                     codeGenerator = { OtpResult.Success("unused") },
                 )
             val fatalRuntime =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = activationScope,
                     loadOtpConfig = { throw fatal },
                     codeGenerator = { OtpResult.Success("unused") },
                 )
 
-            cancelledRuntime.subscribe("cancelled")
-            fatalRuntime.subscribe("fatal")
+            cancelledRuntime.acquire("cancelled")
+            fatalRuntime.acquire("fatal")
 
             assertEquals(listOf(fatal), reported)
             assertEquals(emptyMap<String, OtpCodeState>(), cancelledRuntime.states.value)
@@ -263,12 +851,12 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `fresh authentication signal resumes an unchanged visible subscription`() =
+    fun `fresh authentication signal resumes an unchanged active lease`() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             var freshAuthenticationAvailable = false
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = {
                         if (!freshAuthenticationAvailable) throw FreshAuthenticationRequiredException()
@@ -277,7 +865,7 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("654321") },
                 )
 
-            coordinator.subscribe("still-visible-entry")
+            coordinator.acquire("still-visible-entry")
             assertEquals(null, coordinator.states.value["still-visible-entry"])
 
             freshAuthenticationAvailable = true
@@ -289,75 +877,13 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `visible subscriptions activate once and clear after final release`() =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            var loadCount = 0
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = scope,
-                    loadOtpConfig = {
-                        loadCount++
-                        OtpConfig(
-                            type = OtpType.TOTP,
-                            secret = "JBSWY3DPEHPK3PXP",
-                            digits = 6,
-                            periodSeconds = 30,
-                            encoding = OtpSecretEncoding.BASE32,
-                        )
-                    },
-                    codeGenerator = { OtpResult.Success("123456") },
-                )
-
-            coordinator.subscribe("visible-entry")
-            coordinator.subscribe("visible-entry")
-
-            assertEquals(1, loadCount)
-            assertEquals("123456", coordinator.readyCode("visible-entry"))
-
-            coordinator.unsubscribe("visible-entry")
-            assertEquals("123456", coordinator.readyCode("visible-entry"))
-
-            coordinator.unsubscribe("visible-entry")
-            assertEquals(null, coordinator.states.value["visible-entry"])
-            scope.cancel()
-        }
-
-    @Test
-    fun `releasing list subscription keeps explicitly activated detail entry`() =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            val coordinator =
-                OtpCodeRuntime(
-                    scope = scope,
-                    loadOtpConfig = {
-                        OtpConfig(
-                            type = OtpType.TOTP,
-                            secret = "JBSWY3DPEHPK3PXP",
-                            digits = 6,
-                            periodSeconds = 30,
-                            encoding = OtpSecretEncoding.BASE32,
-                        )
-                    },
-                    codeGenerator = { OtpResult.Success("654321") },
-                )
-
-            coordinator.autoUnlock("shared-entry")
-            coordinator.subscribe("shared-entry")
-            coordinator.unsubscribe("shared-entry")
-
-            assertEquals("654321", coordinator.readyCode("shared-entry"))
-            scope.cancel()
-        }
-
-    @Test
     fun `changed visible entry reloads config without becoming permanently active`() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             var loadCount = 0
             var config = validTotpConfig()
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = {
                         loadCount++
@@ -366,13 +892,13 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("code-$loadCount") },
                 )
 
-            coordinator.subscribe("visible-entry")
+            val lease = coordinator.acquire("visible-entry")
             config = validTotpConfig().copy(secret = "MFRGGZDFMZTWQ2LK")
             coordinator.entryChanged("visible-entry")
 
             assertEquals(2, loadCount)
             assertEquals("code-2", coordinator.readyCode("visible-entry"))
-            coordinator.unsubscribe("visible-entry")
+            lease.close()
             assertEquals(null, coordinator.states.value["visible-entry"])
             scope.cancel()
         }
@@ -384,7 +910,7 @@ class OtpCodeRuntimeTest {
             val configGate = CompletableDeferred<Unit>()
             var loadCount = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     currentTimeMillis = { 0L },
                     loadOtpConfig = {
@@ -395,9 +921,9 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("123456") },
                 )
 
-            coordinator.subscribe("pending-entry")
+            coordinator.acquire("pending-entry")
             runCurrent()
-            coordinator.start()
+            coordinator.start(OtpRuntimeSignals.NONE)
             advanceTimeBy(1_000)
             runCurrent()
             val loadsWhilePending = loadCount
@@ -417,7 +943,7 @@ class OtpCodeRuntimeTest {
             val oldConfig = validTotpConfig()
             val newConfig = oldConfig.copy(secret = "MFRGGZDFMZTWQ2LK")
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = {
                         loadCount++
@@ -428,14 +954,14 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("code-$loadCount") },
                 )
 
-            coordinator.subscribe("changing-entry")
+            val lease = coordinator.acquire("changing-entry")
             coordinator.entryChanged("changing-entry")
             oldConfigGate.complete(Unit)
             yield()
 
             assertEquals(2, loadCount)
             assertEquals("code-2", coordinator.readyCode("changing-entry"))
-            coordinator.unsubscribe("changing-entry")
+            lease.close()
             scope.cancel()
         }
 
@@ -448,20 +974,12 @@ class OtpCodeRuntimeTest {
     }
 
     @Test
-    fun `stale refresh authorization failures cannot clear a newer config`() {
-        listOf<() -> Exception>(
-            { FreshAuthenticationRequiredException() },
-            { SessionLockedException("stale refresh") },
-        ).forEach(::assertStaleRefreshFailureKeepsNewCode)
-    }
-
-    @Test
     fun `release before config load completes does not leave orphan refresh state`() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val configGate = CompletableDeferred<Unit>()
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = {
                         configGate.await()
@@ -476,8 +994,8 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("123456") },
                 )
 
-            coordinator.subscribe("gone-entry")
-            coordinator.unsubscribe("gone-entry")
+            val lease = coordinator.acquire("gone-entry")
+            lease.close()
             configGate.complete(Unit)
             yield()
 
@@ -492,7 +1010,7 @@ class OtpCodeRuntimeTest {
             val generationStarted = CompletableDeferred<Unit>()
             val generationGate = CompletableDeferred<Unit>()
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = { validTotpConfig() },
                     codeGenerator = {
@@ -502,9 +1020,9 @@ class OtpCodeRuntimeTest {
                     },
                 )
 
-            coordinator.subscribe("gone-during-generation")
+            val lease = coordinator.acquire("gone-during-generation")
             generationStarted.await()
-            coordinator.unsubscribe("gone-during-generation")
+            lease.close()
             generationGate.complete(Unit)
             yield()
 
@@ -519,7 +1037,7 @@ class OtpCodeRuntimeTest {
             val generationStarted = CompletableDeferred<Unit>()
             val generationGate = CompletableDeferred<Unit>()
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = { validTotpConfig() },
                     codeGenerator = {
@@ -529,7 +1047,7 @@ class OtpCodeRuntimeTest {
                     },
                 )
 
-            coordinator.subscribe("locked-during-generation")
+            coordinator.acquire("locked-during-generation")
             generationStarted.await()
             coordinator.onSessionStateChanged(unlocked = false)
             generationGate.complete(Unit)
@@ -547,7 +1065,7 @@ class OtpCodeRuntimeTest {
             val oldGenerationGate = CompletableDeferred<Unit>()
             var generationCount = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = { validTotpConfig() },
                     codeGenerator = {
@@ -562,7 +1080,7 @@ class OtpCodeRuntimeTest {
                     },
                 )
 
-            coordinator.subscribe("lock-cycle-entry")
+            coordinator.acquire("lock-cycle-entry")
             oldGenerationStarted.await()
             coordinator.onSessionStateChanged(unlocked = false)
             coordinator.onSessionStateChanged(unlocked = true)
@@ -576,14 +1094,14 @@ class OtpCodeRuntimeTest {
         }
 
     @Test
-    fun `disposed generation cannot overwrite a new subscription lifecycle`() =
+    fun `disposed generation cannot overwrite a new lease lifecycle`() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val oldGenerationStarted = CompletableDeferred<Unit>()
             val oldGenerationGate = CompletableDeferred<Unit>()
             var generationCount = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = { validTotpConfig() },
                     codeGenerator = {
@@ -598,21 +1116,22 @@ class OtpCodeRuntimeTest {
                     },
                 )
 
-            coordinator.subscribe("resubscribed-entry")
+            val oldLease = coordinator.acquire("replaced-lease-entry")
             oldGenerationStarted.await()
-            coordinator.unsubscribe("resubscribed-entry")
-            coordinator.subscribe("resubscribed-entry")
-            assertEquals("222222", coordinator.readyCode("resubscribed-entry"))
+            oldLease.close()
+            val replacementLease = coordinator.acquire("replaced-lease-entry")
+            assertEquals("222222", coordinator.readyCode("replaced-lease-entry"))
 
             oldGenerationGate.complete(Unit)
             yield()
 
-            assertEquals("222222", coordinator.readyCode("resubscribed-entry"))
+            assertEquals("222222", coordinator.readyCode("replaced-lease-entry"))
+            replacementLease.close()
             scope.cancel()
         }
 
     @Test
-    fun `subscription loads complete Steam config by entry id`() =
+    fun `lease activation generates Steam code from persisted material by entry id`() =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val storedConfig =
@@ -622,32 +1141,37 @@ class OtpCodeRuntimeTest {
                     digits = 5,
                     periodSeconds = 30,
                     encoding = OtpSecretEncoding.BASE32,
-                    issuer = "Steam",
                 )
             var loadedEntryId: String? = null
-            var generatedConfig: OtpConfig? = null
-            val coordinator =
+            var generatedConfig: OtpGenerationConfig? = null
+            val runtime =
                 OtpCodeRuntime(
                     scope = scope,
-                    loadOtpConfig = { entryId ->
+                    currentTimeMillis = { 1_000_000_000L },
+                    otpRuntimePolicyReader = defaultOtpRuntimePolicyReader(),
+                    loadOtpMaterial = { entryId ->
                         loadedEntryId = entryId
-                        storedConfig
+                        generationMaterialForTest(storedConfig)
                     },
-                    codeGenerator = { config ->
-                        generatedConfig = config
-                        OtpResult.Success("38CTQ")
+                    codeGenerator = { material, timestamp ->
+                        generatedConfig = material.config
+                        OtpGenerator.generate(material, timestamp = timestamp)
                     },
                 )
 
-            coordinator.subscribe("steam-entry")
+            try {
+                runtime.acquire("steam-entry")
 
-            assertEquals("steam-entry", loadedEntryId)
-            assertNotNull(generatedConfig)
-            assertEquals(OtpType.STEAM, generatedConfig?.type)
-            assertEquals(OtpSecretEncoding.BASE32, generatedConfig?.encoding)
-            assertEquals("JBSWY3DPEHPK3PXP", generatedConfig?.secret)
-            assertEquals("38CTQ", coordinator.readyCode("steam-entry"))
-            scope.cancel()
+                assertEquals("steam-entry", loadedEntryId)
+                assertEquals(OtpType.STEAM, generatedConfig?.type)
+                assertEquals(OtpHashAlgorithm.SHA1, generatedConfig?.algorithm)
+                assertEquals(5, generatedConfig?.digits)
+                assertEquals(30, generatedConfig?.periodSeconds)
+                assertEquals(OtpSecretEncoding.BASE32, generatedConfig?.encoding)
+                assertEquals("38CTQ", runtime.readyCode("steam-entry"))
+            } finally {
+                scope.cancel()
+            }
         }
 
     @Test
@@ -655,7 +1179,7 @@ class OtpCodeRuntimeTest {
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = {
                         throw SessionLockedException("Session is SOFT_LOCKED")
@@ -663,7 +1187,7 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("123456") },
                 )
 
-            coordinator.subscribe("locked-entry")
+            coordinator.acquire("locked-entry")
 
             assertEquals(emptyMap<String, OtpCodeState>(), coordinator.states.value)
             scope.cancel()
@@ -683,7 +1207,7 @@ class OtpCodeRuntimeTest {
                     encoding = OtpSecretEncoding.BASE32,
                 )
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     initiallyUnlocked = false,
                     loadOtpConfig = {
@@ -693,7 +1217,7 @@ class OtpCodeRuntimeTest {
                     codeGenerator = { OtpResult.Success("123456") },
                 )
 
-            coordinator.autoUnlock("pending-entry")
+            coordinator.acquire("pending-entry")
             assertEquals(0, loadCount)
 
             coordinator.onSessionStateChanged(unlocked = true)
@@ -705,13 +1229,51 @@ class OtpCodeRuntimeTest {
 
     private fun OtpCodeRuntime.readyCode(entryId: String): String? = (states.value[entryId] as? OtpCodeState.Ready)?.code
 
+    private fun testRuntime(
+        scope: CoroutineScope,
+        loadOtpConfig: suspend (String) -> OtpConfig?,
+        codeGenerator: suspend (OtpConfig) -> OtpResult,
+        consumeHotpCode: suspend (String, Long) -> OtpResult = { _, _ -> OtpResult.Failure(OtpGenerationError.InvalidSecret) },
+        initiallyUnlocked: Boolean = true,
+        currentTimeMillis: () -> Long = System::currentTimeMillis,
+        otpRuntimePolicyReader: OtpRuntimePolicySnapshotReader = defaultOtpRuntimePolicyReader(),
+    ) = OtpCodeRuntime(
+        scope = scope,
+        otpRuntimePolicyReader = otpRuntimePolicyReader,
+        loadOtpMaterial = { entryId -> loadOtpConfig(entryId)?.let(::testMaterial) },
+        codeGenerator = { material, _ ->
+            codeGenerator(
+                OtpConfig(
+                    type = material.config.type,
+                    secret = String(material.secretBytes, Charsets.UTF_8),
+                    algorithm = material.config.algorithm,
+                    digits = material.config.digits,
+                    periodSeconds = material.config.periodSeconds,
+                    counter = material.config.counter,
+                    encoding = material.config.encoding,
+                ),
+            )
+        },
+        consumeHotpCode = consumeHotpCode,
+        initiallyUnlocked = initiallyUnlocked,
+        currentTimeMillis = currentTimeMillis,
+    )
+
+    private fun testMaterial(config: OtpConfig) =
+        OtpGenerationMaterial(
+            config = config.toGenerationConfig(),
+            secretBytes = config.secret?.toByteArray(Charsets.UTF_8) ?: byteArrayOf(),
+        )
+
+    private fun generateTestOtp(config: OtpConfig): OtpResult = testMaterial(config).use { material -> OtpGenerator.generate(material) }
+
     private fun assertStaleConfigReadFailureKeepsNewCode(failure: Exception) =
         runBlocking {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
             val oldConfigGate = CompletableDeferred<Unit>()
             var loadCount = 0
             val coordinator =
-                OtpCodeRuntime(
+                testRuntime(
                     scope = scope,
                     loadOtpConfig = {
                         loadCount++
@@ -725,49 +1287,13 @@ class OtpCodeRuntimeTest {
                 )
 
             try {
-                coordinator.subscribe("stale-config-entry")
+                coordinator.acquire("stale-config-entry")
                 coordinator.entryChanged("stale-config-entry")
                 assertEquals("code-2", coordinator.readyCode("stale-config-entry"))
                 oldConfigGate.complete(Unit)
                 yield()
 
                 assertEquals("code-2", coordinator.readyCode("stale-config-entry"))
-            } finally {
-                scope.cancel()
-            }
-        }
-
-    private fun assertStaleRefreshFailureKeepsNewCode(failure: () -> Exception) =
-        runBlocking {
-            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
-            try {
-                val nowSeconds = 30L
-                val staleReadGate = CompletableDeferred<Unit>()
-                var loadCount = 0
-                val coordinator =
-                    OtpCodeRuntime(
-                        scope = scope,
-                        currentTimeMillis = { nowSeconds * 1_000 },
-                        loadOtpConfig = {
-                            loadCount++
-                            if (loadCount == 2) {
-                                staleReadGate.await()
-                                throw failure()
-                            }
-                            validTotpConfig().copy(secret = if (loadCount == 1) "JBSWY3DPEHPK3PXP" else "MFRGGZDFMZTWQ2LK")
-                        },
-                        codeGenerator = { OtpResult.Success("code-$loadCount") },
-                    )
-                coordinator.subscribe("refresh-entry")
-                val nextMovingFactor = (nowSeconds / 30 + 1) * 30
-                val oldRefresh = scope.launch { coordinator.refreshStates(nextMovingFactor) }
-                coordinator.entryChanged("refresh-entry")
-
-                assertEquals("code-3", coordinator.readyCode("refresh-entry"))
-                staleReadGate.complete(Unit)
-                oldRefresh.join()
-
-                assertEquals("code-3", coordinator.readyCode("refresh-entry"))
             } finally {
                 scope.cancel()
             }
@@ -781,7 +1307,7 @@ class OtpCodeRuntimeTest {
                 val consumeStarted = CompletableDeferred<Unit>()
                 var loadCount = 0
                 val coordinator =
-                    OtpCodeRuntime(
+                    testRuntime(
                         scope = scope,
                         loadOtpConfig = {
                             loadCount++
@@ -792,13 +1318,13 @@ class OtpCodeRuntimeTest {
                             }
                         },
                         codeGenerator = { OtpResult.Success("code-$loadCount") },
-                        consumeHotpCode = {
+                        consumeHotpCode = { _, _ ->
                             consumeStarted.complete(Unit)
                             consumeGate.await()
                             throw failure()
                         },
                     )
-                coordinator.subscribe("changing-HOTP-entry")
+                coordinator.acquire("changing-HOTP-entry")
                 val staleCopy = scope.async { coordinator.codeForCopy("changing-HOTP-entry") }
                 consumeStarted.await()
 

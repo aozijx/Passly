@@ -18,6 +18,7 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
@@ -165,6 +166,7 @@ internal class EditableEntryUseCaseFixture(
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ) = AppResult.Success(Unit)
 
         override suspend fun deleteByEntryId(entryId: String) = Unit

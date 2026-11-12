@@ -1,7 +1,7 @@
 package com.aozijx.passly.data.repository.settings
 
-import com.aozijx.passly.data.preferences.proto.EntryHierarchyDisplayModePreference
 import com.aozijx.passly.data.preferences.proto.EntryCardPresentationPreference
+import com.aozijx.passly.data.preferences.proto.EntryHierarchyDisplayModePreference
 import com.aozijx.passly.data.preferences.proto.VaultSortFieldPreference
 import com.aozijx.passly.data.preferences.proto.VaultSortPreference
 import com.aozijx.passly.data.preferences.proto.VaultViewPreferences
@@ -58,16 +58,15 @@ class LibraryProtoMappingsTest {
     private fun presentation(
         entryTypeKey: String,
         variantKey: String,
-    ) =
-        EntryCardPresentation(
-            entryTypeKey = entryTypeKey,
-            variantKey = variantKey,
-            density = CardDensity.STANDARD,
-            showIcon = true,
-            showFavorite = true,
-            showSecondaryText = true,
-            showQuickAction = true,
-        )
+    ) = EntryCardPresentation(
+        entryTypeKey = entryTypeKey,
+        variantKey = variantKey,
+        density = CardDensity.STANDARD,
+        showIcon = true,
+        showFavorite = true,
+        showSecondaryText = true,
+        showQuickAction = true,
+    )
 
     @Test
     fun `unspecified hierarchy is rejected instead of becoming collapsed`() {

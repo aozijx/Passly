@@ -17,21 +17,8 @@ value class EditorSeedToken(
     companion object {
         fun new(): EditorSeedToken = EditorSeedToken(UUID.randomUUID().toString())
 
-        fun parse(value: String): EditorSeedTokenParseResult =
-            if (value.isBlank()) {
-                EditorSeedTokenParseResult.Invalid
-            } else {
-                EditorSeedTokenParseResult.Valid(EditorSeedToken(value))
-            }
+        fun parseOrNull(value: String): EditorSeedToken? = value.takeIf(String::isNotBlank)?.let(::EditorSeedToken)
     }
-}
-
-sealed interface EditorSeedTokenParseResult {
-    data class Valid(
-        val token: EditorSeedToken,
-    ) : EditorSeedTokenParseResult
-
-    data object Invalid : EditorSeedTokenParseResult
 }
 
 sealed interface EntryEditorSeed {

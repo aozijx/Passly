@@ -2,7 +2,7 @@ package com.aozijx.passly.feature.vault.presentation.detail.history
 
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionDifference
-import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionSummary
 import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 
 internal sealed interface DetailRevisionMutation {
@@ -14,7 +14,7 @@ internal sealed interface DetailRevisionMutation {
 
     data class MetadataChanged(
         val entryId: String,
-        val revisions: List<EntryRevisionMetadata>,
+        val revisions: List<EntryRevisionSummary>,
     ) : DetailRevisionMutation
 
     data class ComparisonStarted(
@@ -28,9 +28,14 @@ internal sealed interface DetailRevisionMutation {
         val differences: List<EntryRevisionDifference>,
     ) : DetailRevisionMutation
 
-    data class Failed(
+    data class MetadataFailed(
         val entryId: String,
-        val revisionId: String?,
+        val failure: DetailRevisionFailure,
+    ) : DetailRevisionMutation
+
+    data class ComparisonFailed(
+        val entryId: String,
+        val revisionId: String,
         val failure: DetailRevisionFailure,
     ) : DetailRevisionMutation
 
@@ -89,15 +94,15 @@ internal object DetailRevisionReducer {
                 }
             }
 
-            is DetailRevisionMutation.Failed -> {
-                if (mutation.revisionId == null) {
-                    state.updateOpen(mutation.entryId) {
-                        copy(revisions = DetailRevisionListState.Failed(mutation.failure))
-                    }
-                } else {
-                    state.updateComparison(mutation.entryId, mutation.revisionId) {
-                        copy(phase = DetailRevisionComparisonPhase.Failed(mutation.failure))
-                    }
+            is DetailRevisionMutation.MetadataFailed -> {
+                state.updateOpen(mutation.entryId) {
+                    copy(revisions = DetailRevisionListState.Failed(mutation.failure))
+                }
+            }
+
+            is DetailRevisionMutation.ComparisonFailed -> {
+                state.updateComparison(mutation.entryId, mutation.revisionId) {
+                    copy(phase = DetailRevisionComparisonPhase.Failed(mutation.failure))
                 }
             }
 

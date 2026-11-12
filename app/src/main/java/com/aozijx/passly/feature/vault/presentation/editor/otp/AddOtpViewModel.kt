@@ -15,11 +15,12 @@ import com.aozijx.passly.domain.entry.port.EntryCreation
 import com.aozijx.passly.feature.vault.entry.EditEntryUseCase
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
-import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
+import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -38,6 +39,7 @@ class AddOtpViewModel
         createEntryUseCase: EntryCreation,
         private val secureSessionAccessState: SecureSessionAccessState,
         private val editEntry: EditEntryUseCase,
+        private val otpRuntime: OtpCodeRuntimePort,
     ) : ViewModel() {
         private sealed interface FeedbackScope {
             data object Closed : FeedbackScope
@@ -71,7 +73,9 @@ class AddOtpViewModel
                     if (entryId == null) {
                         createEntryUseCase(draft)
                     } else {
-                        editEntry.edit(entryId, EntryEdit.ReplaceForm(draft))
+                        editEntry.edit(entryId, EntryEdit.ReplaceForm(draft)).also { result ->
+                            if (result is AppResult.Success) otpRuntime.entryChanged(entryId.value)
+                        }
                     }
                 },
                 onSaving = { _uiState.value = _uiState.value.copy(isSaving = true) },
@@ -150,7 +154,9 @@ class AddOtpViewModel
                 OtpUriParseResult.NotOtp,
                 OtpUriParseResult.Malformed,
                 OtpUriParseResult.Unsupported,
-                -> Unit
+                -> {
+                    Unit
+                }
             }
         }
 

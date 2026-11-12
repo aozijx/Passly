@@ -1,19 +1,19 @@
 # Vault 列表、搜索与排序
 
-状态：当前实现（代码核对：2026-11-06）。
+状态：当前实现（代码核对：2026-11-12）。
 
 列表只查询可展示摘要；密码、OTP secret、私钥等高敏值通过明确授权的窄入口按需读取。
 修订历史是可恢复的版本快照，访问活动记录查看、复制和 Autofill 等行为，两者不是同一数据源；
 具体合同见[条目修订历史](entry-revision-history.md)。备份、回收站和数据库维护不复用主列表的 Paging 配置，
 分别遵守自己的事务和授权边界。创建表单、四种类型的完整编辑、详情逐项编辑及当前未覆盖的类型见[条目编辑器与写入架构](entry-editor-and-persistence.md)。
 
-列表行的 OTP 类型由非空 `VaultOtpKindUiModel` 表达（不适用、标准 OTP、Steam）；展示阶段由互斥的 `VaultOtpUiState` 表达不适用、隐藏、未请求、等待、定时码就绪、HOTP 就绪或失败。行只在类型适用且用户允许显示时代为请求激活；类型判断与运行状态不再由 nullable kind 和独立 `hasOtp` 组合。
+列表条目保留 Domain `OtpType?`，并在投影时只对具有 OTP capability 的条目暴露该类型。共享 `OtpUiState` 表达不适用、隐藏、未请求、等待、定时码就绪、HOTP 就绪或失败。行仅在 OTP 类型存在且用户允许显示时 acquire 自己的 Runtime lease；离开组合或关闭展示时释放 lease。运行状态与列表分页模型分开收集。HOTP 与 TOTP/Steam 一样可在 Vault 列表展示。
 
 ## 回收站读取
 
 从 Settings 点击回收站时直接显示模态底部表单，不新增导航目的地；关闭后仍停留在 Settings。
-弹层使用当前导航栈条目提供 Hilt ViewModel 的 SavedState owner。弹层进入组合时启动回收站订阅，关闭或离开组合时取消；
-ViewModel 可随 Settings 条目保留，下次打开时重新加载。
+弹层使用当前导航栈条目提供 Hilt ViewModel 的 SavedState owner。首次创建 ViewModel 时开始回收站订阅；弹层离开组合时取消并重置，
+ViewModel 可随 Settings 条目保留，下次打开由 `onSheetOpened()` 重建订阅。
 
 回收站单独订阅 `EntryListQueryRepository.deletedEntries`。普通查询异常进入明确的失败状态并显示重试入口；
 `CancellationException` 与 fatal `Error` 原样传播，不转成可重试的页面失败。
@@ -97,7 +97,7 @@ EXPANDED 先用根条目的收藏和排序值定位组，再在组内先显示�
 UI 回调链。Scanner overlay 由 Route 持有；扫描出的 Wi-Fi seed 通过一次性非敏感 token 进入编辑页，不放入
 Vault ViewModel 或可保存状态。
 
-Vault 页面由单个 [`VaultViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) 持有设置读取、查询和列表交互状态。界面、库和交互设置经同一个可恢复读取产生 `VaultDisplayUiState`；[`VaultSettingsSnapshot`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultSettingsSnapshot.kt) 将设置投影为扁平展示状态并提供查询所需的库设置视图，Route 只有一个加载/失败/重试入口。
+Vault 页面由单个 [`VaultViewModel`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) 持有设置读取、查询和列表交互状态。Library 设置有独立可恢复读取，专门驱动 Paging 查询；界面、Library 与交互设置组合为 `VaultDisplayUiState`。[`VaultSettingsSnapshot`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultSettingsSnapshot.kt) 携带 Library read 状态并投影扁平展示配置，因此界面/交互设置读取失败不会把可用的 Library 查询标成不可用。Route 的失败重试同时重启相关设置读取。
 
 ## 滑动默认值
 
@@ -117,10 +117,12 @@ Proto 当前默认关闭滑动操作；启用后左滑复制密码、右滑删�
 
 | 职责 | 类/函数 | 源码文件 |
 | --- | --- | --- |
+| 启动、替换与重试回收站 cold Flow 订阅；用 observation ticket 拒绝旧结果 | `TrashRoute` 生命周期回调、`TrashViewModel.onSheetOpened()` / `onSheetClosed()`、`observeTrash()`、`RetryLoad` | [`TrashRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/trash/TrashRoute.kt)、[`TrashViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/trash/TrashViewModel.kt) |
+| 将加载失败与空列表映射为不同展示状态 | `TrashUiMapper.map()`、`TrashContentState.Failed` / `Empty` | [`TrashUiMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/trash/TrashUiMapper.kt)、[`TrashContract.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/trash/TrashContract.kt) |
 | 列表查询条件与排序规则 | `EntryListQuery`、`EntrySort` | [`EntryListQuery.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntryListQuery.kt)、[`EntrySort.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/model/query/EntrySort.kt) |
 | 构造 SQLite 分类与分页查询 | `buildEntryCategoryQuery()`、`buildEntryPagingQuery()` | [`EntryPagingQueryFactory.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/query/EntryPagingQueryFactory.kt) |
 | Session 可读期间创建/重建 Room Pager | `RoomEntryPagingStore.pages()`、`observeFullVaultWhenReadable()` | [`RoomEntryPagingStore.kt`](../../../data/src/main/java/com/aozijx/passly/data/repository/entry/paging/RoomEntryPagingStore.kt)、[`AppDatabaseSession.kt`](../../../data/src/main/java/com/aozijx/passly/data/local/database/session/AppDatabaseSession.kt) |
 | 查询输入、筛选/排序合成为 Domain 查询并防抖/去重 | `queryInputs()`、`buildRecoverableVaultQueryGenerations()`、`VaultQueryGeneration` | [`VaultQueryGeneration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt) |
 | 查询代际传递给 Domain 分页端口并缓存 | `switchRecoverableQueryGenerations(unavailable, load)`；`VaultViewModel.entries` 调用 `EntryPagingRepository.pages(query, ENTRY_PAGING_CONFIG)`，再映射 `EntryListItem::toUiModel` 并 `cachedIn(viewModelScope)` | [`EntryPagingRepository.kt`](../../../domain/src/main/kotlin/com/aozijx/passly/domain/entry/port/EntryPagingRepository.kt)、[`VaultQueryGeneration.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultQueryGeneration.kt)、[`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
-| 列表动作与图级 OTP 激活 owner | `VaultViewModel.onAction()`、幂等 `retainOtp(entryId)`；行只请求激活，Vault 图 ViewModel 在销毁时统一关闭保留的 lease | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt) |
-| 将列表条目映射为非空 OTP 类型并投影互斥的验证码 UI 状态 | `EntryListItem.toUiModel()`、`VaultListItemUiModel.otpKind`、`VaultOtpStateProvider.state()`、`VaultOtpUiState` | [`VaultListUiMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultListUiMapper.kt)、[`VaultListItemUiModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/model/VaultListItemUiModel.kt)、[`VaultOtpStateProvider.state()`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultOtpStateProvider.kt)、[`VaultOtpUiState`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/model/VaultOtpStateProvider.kt) |
+| 列表行与 Detail 各自持有 Vault 图 Runtime 的条目 lease | `VaultViewModel.acquireOtp(entryId)`；Row/Detail 的 `DisposableEffect` 在可见时 acquire、退出或停用时 close | [`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt)、[`VaultEntryRow.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/ui/component/list/VaultEntryRow.kt)、[`DetailRoute.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/detail/DetailRoute.kt) |
+| 将列表条目映射为可空 Domain OTP 类型，由 Vault ViewModel 投影每个条目的互斥验证码 UI 状态 | `EntryListItem.toUiModel()`、`VaultViewModel.otpUiStateFlow()`、`OtpUiState` | [`VaultListUiMapper.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultListUiMapper.kt)、[`VaultViewModel.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/presentation/list/VaultViewModel.kt)、[`OtpUiState.kt`](../../../app/src/main/java/com/aozijx/passly/feature/vault/otp/presentation/OtpUiState.kt) |

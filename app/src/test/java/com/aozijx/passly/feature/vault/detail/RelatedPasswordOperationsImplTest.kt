@@ -17,8 +17,8 @@ import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.testing.RecordingTestLogger
 import com.aozijx.passly.testing.testLogger
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -76,14 +76,17 @@ class RelatedPasswordOperationsImplTest {
     fun unlinkRejectsInactiveOrNonLoginEndpoints() =
         runTest {
             val source = password("source")
-            val inactive = password("inactive").copy(
-                identity = password("inactive").identity.copy(
-                    timestamps = EntryTimestamps(createdAtMs = 1L, deletedAtMs = 2L),
-                ),
-            )
-            val nonLogin = password("card").copy(
-                identity = password("card").identity.copy(type = EntryType.BANK_CARD),
-            )
+            val inactive =
+                password("inactive").copy(
+                    identity =
+                        password("inactive").identity.copy(
+                            timestamps = EntryTimestamps(createdAtMs = 1L, deletedAtMs = 2L),
+                        ),
+                )
+            val nonLogin =
+                password("card").copy(
+                    identity = password("card").identity.copy(type = EntryType.BANK_CARD),
+                )
             val inactiveLink = relatedLink("source", "inactive")
             val nonLoginLink = relatedLink("source", "card")
             val repository = TestEntries(listOf(source, password("target"), inactive, nonLogin))
@@ -127,7 +130,15 @@ class RelatedPasswordOperationsImplTest {
             val edge = relatedLink("source", "target")
             val repositoryFailure = IllegalStateException("delete failed")
             val logger = RecordingTestLogger()
-            val links = TestLinks(listOf(edge), deleteResult = AppResult.Failure(com.aozijx.passly.core.error.model.ValidationError()))
+            val links =
+                TestLinks(
+                    listOf(edge),
+                    deleteResult =
+                        AppResult.Failure(
+                            com.aozijx.passly.core.error.model
+                                .ValidationError(),
+                        ),
+                )
             val binding = RelatedPasswordOperationsImpl(repository, links, logger)
 
             val result = binding.unlink(EntryId("source"), EntryId("target"), edge.id)
@@ -140,9 +151,10 @@ class RelatedPasswordOperationsImplTest {
             val cancellationFailure = CancellationException("cancelled")
             val cancellingLinks = TestLinks(listOf(edge), deleteFailure = cancellationFailure)
             val cancellingBinding = RelatedPasswordOperationsImpl(repository, cancellingLinks, logger)
-            val cancellation = runCatching {
-                cancellingBinding.unlink(EntryId("source"), EntryId("target"), edge.id)
-            }.exceptionOrNull()
+            val cancellation =
+                runCatching {
+                    cancellingBinding.unlink(EntryId("source"), EntryId("target"), edge.id)
+                }.exceptionOrNull()
 
             assertSame(cancellationFailure, cancellation)
             assertEquals(1, logger.events.size)
@@ -263,13 +275,12 @@ class RelatedPasswordOperationsImplTest {
         fun relatedLink(
             first: String,
             second: String,
-        ) =
-            EntryLink.create(
-                id = EntryLinkId("$first-$second"),
-                sourceEntryId = EntryId(first),
-                targetEntryId = EntryId(second),
-                relationType = EntryRelationType.RELATED_TO,
-                createdAt = 1L,
-            )
+        ) = EntryLink.create(
+            id = EntryLinkId("$first-$second"),
+            sourceEntryId = EntryId(first),
+            targetEntryId = EntryId(second),
+            relationType = EntryRelationType.RELATED_TO,
+            createdAt = 1L,
+        )
     }
 }

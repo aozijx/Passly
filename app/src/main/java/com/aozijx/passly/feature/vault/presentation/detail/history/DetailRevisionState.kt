@@ -1,9 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.detail.history
 
-import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.history.EntryRevisionDifference
-import com.aozijx.passly.domain.entry.model.history.EntryRevisionMetadata
+import com.aozijx.passly.domain.entry.model.history.EntryRevisionSummary
+import com.aozijx.passly.feature.vault.presentation.detail.DetailRevisionRestorePhase
 
 enum class DetailRevisionFailure { MISSING, STALE, INVALID, AUTHENTICATION, UNEXPECTED }
 
@@ -21,7 +21,7 @@ sealed interface DetailRevisionListState {
     data object Loading : DetailRevisionListState
 
     data class Ready(
-        val revisions: List<EntryRevisionMetadata>,
+        val revisions: List<EntryRevisionSummary>,
     ) : DetailRevisionListState
 
     data class Failed(

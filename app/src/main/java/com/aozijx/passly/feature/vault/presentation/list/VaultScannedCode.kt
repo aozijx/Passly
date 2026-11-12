@@ -35,9 +35,10 @@ internal fun resolveVaultScannedCode(value: String): VaultScannedCode =
 
 private fun String.toScannedWebUri(): URI? =
     try {
-        URI(this).takeIf { uri ->
-            uri.scheme.equals("http", ignoreCase = true) || uri.scheme.equals("https", ignoreCase = true)
-        }?.takeIf { !it.host.isNullOrBlank() }
+        URI(this)
+            .takeIf { uri ->
+                uri.scheme.equals("http", ignoreCase = true) || uri.scheme.equals("https", ignoreCase = true)
+            }?.takeIf { !it.host.isNullOrBlank() }
     } catch (_: URISyntaxException) {
         null
     }

@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
+import androidx.lifecycle.ViewModelStore
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.lifecycle.ViewModelStore
 import com.aozijx.passly.R
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
@@ -14,7 +14,6 @@ import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
-import com.aozijx.passly.domain.access.port.SensitiveKeyFreshnessState
 import com.aozijx.passly.domain.clipboard.port.SensitiveClipboardWriter
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -27,18 +26,22 @@ import com.aozijx.passly.domain.entry.model.EntryUpdate
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
+import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
-import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.entry.otp.OtpResult
-import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
-import com.aozijx.passly.domain.entry.model.otp.OtpConfig
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
 import com.aozijx.passly.domain.entry.port.ActivityRecorder
 import com.aozijx.passly.domain.entry.port.EntryCommandRepository
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
@@ -46,19 +49,27 @@ import com.aozijx.passly.domain.entry.port.EntryPagingRepository
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.OtpConfigRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
-import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
+import com.aozijx.passly.domain.settings.model.InteractionSettings
+import com.aozijx.passly.domain.settings.model.InterfaceSettings
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.domain.settings.port.CorruptSettingsDataException
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
 import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.model.entryTypes
-import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
-import com.aozijx.passly.feature.vault.model.OtpCodeState
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
+import com.aozijx.passly.feature.vault.otp.OtpCodeState
+import com.aozijx.passly.feature.vault.otp.OtpLease
+import com.aozijx.passly.feature.vault.otp.createTestOtpRuntime
+import com.aozijx.passly.feature.vault.otp.generationMaterialForTest
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
-import com.aozijx.passly.runtime.session.SecureSessionState
-import com.aozijx.passly.runtime.session.SessionStateProvider
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -72,7 +83,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -82,7 +92,9 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class VaultViewModelTest {
     @get:Rule
-    val mainDispatcherRule = com.aozijx.passly.testing.MainDispatcherRule()
+    val mainDispatcherRule =
+        com.aozijx.passly.testing
+            .MainDispatcherRule()
 
     @Test
     fun categoryQueryFailureDoesNotEscapeTheViewModelScope() =
@@ -285,13 +297,13 @@ class VaultViewModelTest {
             val owner = viewModel.onPageEntered()
             val otpStateCollector =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    viewModel.totpStatesFlow.collect()
+                    viewModel.otpStates.collect()
                 }
+            val otpLease = viewModel.acquireOtp(ENTRY_ID.value)
 
             try {
-                viewModel.subscribeVisibleOtp(ENTRY_ID.value)
                 runCurrent()
-                assertTrue(viewModel.totpStatesFlow.value[ENTRY_ID.value] is OtpCodeState.Ready)
+                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.Ready)
 
                 viewModel.onAction(VaultUiAction.CopyOtp(ENTRY_ID.value))
                 gate.started.await()
@@ -300,15 +312,20 @@ class VaultViewModelTest {
                 runCurrent()
 
                 assertTrue("a departed page must not write its pending OTP", clipboardValues.isEmpty())
+                assertTrue(
+                    "Vault graph retains OTP state across row and page transitions",
+                    viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.Ready,
+                )
             } finally {
                 gate.resume.complete(Unit)
+                otpLease.close()
                 otpStateCollector.cancel()
                 viewModelStore.clear()
             }
         }
 
     @Test
-    fun completedDeleteClearsVisibleOtpAndDoesNotReactivateItOnRefresh() =
+    fun completedDeleteClearsRetainedOtp() =
         runTest(mainDispatcherRule.testDispatcher) {
             val gate = PausingAuthorizationGate()
             val deletedEntries = mutableListOf<EntryId>()
@@ -323,13 +340,13 @@ class VaultViewModelTest {
             val owner = viewModel.onPageEntered()
             val otpStateCollector =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    viewModel.totpStatesFlow.collect()
+                    viewModel.otpStates.collect()
                 }
+            val otpLease = viewModel.acquireOtp(ENTRY_ID.value)
 
             try {
-                viewModel.subscribeVisibleOtp(ENTRY_ID.value)
                 runCurrent()
-                assertTrue(viewModel.totpStatesFlow.value[ENTRY_ID.value] is OtpCodeState.Ready)
+                assertTrue(viewModel.otpStates.value[ENTRY_ID.value] is OtpCodeState.Ready)
 
                 viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
                 gate.started.await()
@@ -337,18 +354,136 @@ class VaultViewModelTest {
                 runCurrent()
 
                 assertEquals(listOf(ENTRY_ID), deletedEntries)
-                assertNull(viewModel.totpStatesFlow.value[ENTRY_ID.value])
-
-                viewModel.refreshVisibleOtp()
-                runCurrent()
-
-                assertNull("deleted OTP must not be reactivated by page refresh", viewModel.totpStatesFlow.value[ENTRY_ID.value])
+                assertNull(viewModel.otpStates.value[ENTRY_ID.value])
             } finally {
                 gate.resume.complete(Unit)
+                otpLease.close()
                 viewModel.onPageExited(owner)
                 otpStateCollector.cancel()
                 viewModelStore.clear()
             }
+        }
+
+    @Test
+    fun otpLeaseIsOwnedByEachActiveUiOwner() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val runtime = RecordingOtpRuntime()
+            val viewModel = createViewModel(PausingAuthorizationGate(), mutableListOf(), otpRuntime = runtime)
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+
+            val firstOwner = viewModel.acquireOtp(ENTRY_ID.value)
+            val secondOwner = viewModel.acquireOtp(ENTRY_ID.value)
+            val otherEntry = viewModel.acquireOtp("entry-2")
+
+            assertEquals(listOf(ENTRY_ID.value, ENTRY_ID.value, "entry-2"), runtime.acquired)
+            assertEquals(emptyList<String>(), runtime.released)
+
+            firstOwner.close()
+            assertEquals(listOf(ENTRY_ID.value), runtime.released)
+
+            secondOwner.close()
+            otherEntry.close()
+            assertEquals(listOf(ENTRY_ID.value, ENTRY_ID.value, "entry-2"), runtime.released)
+            viewModelStore.clear()
+        }
+
+    @Test
+    fun otpUiStateFlowProjectsOnlyItsEntryAndUpdatesWithRuntimeState() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val runtime = RecordingOtpRuntime()
+            runtime.states.value =
+                mapOf(
+                    ENTRY_ID.value to
+                        OtpCodeState.TimedReady(
+                            code = "123456",
+                            nextCode = "654321",
+                            progress = 0.5f,
+                            windowEndMillis = 30_000L,
+                            periodSeconds = 30,
+                        ),
+                    "other-entry" to OtpCodeState.Pending,
+                )
+            val viewModel = createViewModel(PausingAuthorizationGate(), mutableListOf(), otpRuntime = runtime)
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val otpState =
+                viewModel.otpUiStateFlow(
+                    entryId = ENTRY_ID.value,
+                    otpPresentation = OtpPresentation.Applicable(OtpType.TOTP),
+                    showCode = true,
+                )
+            val observedStates = mutableListOf<OtpUiState>()
+            val collector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    otpState.collect { state -> observedStates += state }
+                }
+
+            assertEquals(
+                OtpUiState.TimedReady(
+                    currentCode = "123 456",
+                    nextCode = "654 321",
+                    progress = 0.5f,
+                    windowEndMillis = 30_000L,
+                    periodSeconds = 30,
+                ),
+                otpState.value,
+            )
+
+            runtime.states.value =
+                runtime.states.value + ("other-entry" to OtpCodeState.Failed(OtpGenerationError.InvalidSecret))
+            runCurrent()
+            assertEquals(1, observedStates.size)
+
+            runtime.states.value = runtime.states.value + (ENTRY_ID.value to OtpCodeState.Pending)
+            runCurrent()
+
+            assertEquals(OtpUiState.Pending, otpState.value)
+            assertEquals(
+                listOf(
+                    OtpUiState.TimedReady(
+                        currentCode = "123 456",
+                        nextCode = "654 321",
+                        progress = 0.5f,
+                        windowEndMillis = 30_000L,
+                        periodSeconds = 30,
+                    ),
+                    OtpUiState.Pending,
+                ),
+                observedStates,
+            )
+            collector.cancel()
+            viewModelStore.clear()
+        }
+
+    @Test
+    fun deletingEntryInvalidatesItsOtpStateWhileTheUiLeaseIsOpen() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val runtime = RecordingOtpRuntime()
+            val gate = PausingAuthorizationGate()
+            val movedEntries = mutableListOf<EntryId>()
+            val viewModel =
+                createViewModel(
+                    gate,
+                    mutableListOf(),
+                    otpRuntime = runtime,
+                    onMoveToTrash = movedEntries::add,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            viewModel.onPageEntered()
+
+            val otpLease = viewModel.acquireOtp(ENTRY_ID.value)
+            runCurrent()
+            viewModel.onAction(VaultUiAction.QuickDelete(ENTRY_ID.value))
+            gate.started.await()
+            gate.resume.complete(Unit)
+            runCurrent()
+
+            assertEquals(listOf(ENTRY_ID), movedEntries)
+            assertEquals(emptyList<String>(), runtime.released)
+            assertEquals(listOf(ENTRY_ID.value), runtime.removed)
+            otpLease.close()
+            assertEquals(listOf(ENTRY_ID.value), runtime.released)
+            viewModelStore.clear()
+            assertEquals(listOf(ENTRY_ID.value), runtime.released)
         }
 
     @Test
@@ -475,6 +610,133 @@ class VaultViewModelTest {
         }
 
     @Test
+    fun displaySettingsUseTheSameRecoverableReadAndRetryAsTheVaultQuery() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            var attempts = 0
+            val librarySettings =
+                flow {
+                    attempts++
+                    if (attempts == 1) throw CorruptSettingsDataException(IllegalStateException())
+                    emit(sampleLibrarySettings())
+                    kotlinx.coroutines.awaitCancellation()
+                }
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    librarySettings = librarySettings,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val displayCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.displayState.collect()
+                }
+
+            try {
+                runCurrent()
+                assertEquals(VaultDisplayUiState.Failed, viewModel.displayState.value)
+                viewModel.retrySettings()
+                runCurrent()
+
+                assertEquals(2, attempts)
+                assertEquals(
+                    VaultDisplayUiState.Ready(
+                        hideSystemBars = false,
+                        collapseTopBarOnScroll = true,
+                        collapseQuickFilterBarOnScroll = true,
+                        entryCardPresentations = emptyList(),
+                        isSwipeEnabled = true,
+                        isPullToSearchEnabled = false,
+                        swipeLeftAction = SwipeActionType.DELETE,
+                        swipeRightAction = SwipeActionType.COPY_PASSWORD,
+                        sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                    ),
+                    viewModel.displayState.value,
+                )
+            } finally {
+                displayCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun displaySettingsStayLoadingUntilEveryPersistedSourceEmits() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val interfaceSettings = MutableSharedFlow<InterfaceSettings>()
+            val librarySettings = MutableSharedFlow<LibraryViewSettings>()
+            val interactionSettings = MutableSharedFlow<InteractionSettings>()
+            val viewModel =
+                createViewModel(
+                    PausingAuthorizationGate(),
+                    mutableListOf(),
+                    librarySettings = librarySettings,
+                    interfaceSettings = interfaceSettings,
+                    interactionSettings = interactionSettings,
+                )
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val displayCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.displayState.collect()
+                }
+
+            try {
+                runCurrent()
+                assertEquals(VaultDisplayUiState.Loading, viewModel.displayState.value)
+
+                interfaceSettings.emit(sampleInterfaceSettings())
+                librarySettings.emit(sampleLibrarySettings())
+                runCurrent()
+                assertEquals(VaultDisplayUiState.Loading, viewModel.displayState.value)
+
+                interactionSettings.emit(sampleInteractionSettings())
+                runCurrent()
+                assertEquals(
+                    VaultDisplayUiState.Ready(
+                        hideSystemBars = false,
+                        collapseTopBarOnScroll = true,
+                        collapseQuickFilterBarOnScroll = true,
+                        entryCardPresentations = emptyList(),
+                        isSwipeEnabled = true,
+                        isPullToSearchEnabled = false,
+                        swipeLeftAction = SwipeActionType.DELETE,
+                        swipeRightAction = SwipeActionType.COPY_PASSWORD,
+                        sort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC),
+                    ),
+                    viewModel.displayState.value,
+                )
+            } finally {
+                displayCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
+    fun hierarchyModeChangesDoNotAlterTheDisplayProjection() =
+        runTest(mainDispatcherRule.testDispatcher) {
+            val settings = MutableStateFlow(sampleLibrarySettings())
+            val viewModel = createViewModel(PausingAuthorizationGate(), mutableListOf(), librarySettings = settings)
+            val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
+            val displayCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.displayState.collect {}
+                }
+
+            try {
+                runCurrent()
+                val initial = viewModel.displayState.value
+                assertTrue(initial is VaultDisplayUiState.Ready)
+
+                settings.value = settings.value.copy(entryHierarchyDisplayMode = EntryHierarchyDisplayMode.EXPANDED)
+                runCurrent()
+
+                assertEquals(initial, viewModel.displayState.value)
+            } finally {
+                displayCollector.cancel()
+                viewModelStore.clear()
+            }
+        }
+
+    @Test
     fun sortPreferenceFailureShowsCurrentPageFeedbackWithoutChangingSelectedSort() =
         runTest(mainDispatcherRule.testDispatcher) {
             val currentSort = EntrySort(EntrySortField.CREATED_AT, SortDirection.DESC)
@@ -496,6 +758,10 @@ class VaultViewModelTest {
             val viewModelStore = ViewModelStore().apply { put("vault", viewModel) }
             val owner = viewModel.onPageEntered()
             val effects = Channel<VaultEffect>(Channel.UNLIMITED)
+            val settingsCollector =
+                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                    viewModel.displayState.collect()
+                }
             val effectCollector =
                 backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
                     viewModel.effects.collect { effects.send(it) }
@@ -512,6 +778,7 @@ class VaultViewModelTest {
                 assertNull(effects.tryReceive().getOrNull())
             } finally {
                 viewModel.onPageExited(owner)
+                settingsCollector.cancel()
                 effectCollector.cancel()
                 viewModelStore.clear()
             }
@@ -569,6 +836,9 @@ class VaultViewModelTest {
         onMoveToTrash: (EntryId) -> Unit = {},
         availableCategories: Flow<List<String>> = flowOf(emptyList()),
         librarySettings: Flow<LibraryViewSettings> = flowOf(sampleLibrarySettings()),
+        interfaceSettings: Flow<InterfaceSettings> = flowOf(sampleInterfaceSettings()),
+        interactionSettings: Flow<InteractionSettings> = flowOf(sampleInteractionSettings()),
+        otpRuntime: OtpCodeRuntimePort? = null,
         onPageQuery: (EntryListQuery) -> Unit = {},
         setSort: suspend (EntrySort) -> Unit = {},
         moveToTrashResult: AppResult<Unit> = AppResult.Success(Unit),
@@ -580,14 +850,9 @@ class VaultViewModelTest {
         val activity = TestActivityRecorder
         val sensitiveFields = EmptySensitiveFields
         val settings = TestSettingsRepository(librarySettings, setSort)
-        val otpFactory =
-            OtpCodeRuntimeFactory(
-                otpConfigRepository = otpConfigRepository,
-                sessionStateProvider = TestSessionStateProvider,
-                sensitiveKeyFreshnessState = TestSensitiveKeyFreshnessState,
-            )
+        val otpRuntime = otpRuntime ?: createTestOtpRuntime(otpConfigRepository)
         return VaultViewModel(
-                entryListQueryRepository = TestEntryListQueryRepository(availableCategories),
+            entryListQueryRepository = TestEntryListQueryRepository(availableCategories),
             entryPagingRepository =
                 object : EntryPagingRepository {
                     override fun pages(
@@ -599,6 +864,8 @@ class VaultViewModelTest {
                     }
                 },
             settingsRepository = settings,
+            interfaceSettingsRepository = TestInterfaceSettingsRepository(interfaceSettings),
+            interactionSettingsSource = TestInteractionSettingsSource(interactionSettings),
             entryCommandWorkflowFactory =
                 VaultEntryCommandWorkflowFactory(
                     secureSessionAccessState = access,
@@ -614,9 +881,64 @@ class VaultViewModelTest {
                         ),
                     copyOtpCode = CopyOtpCodeUseCase(gate, clipboard, activity),
                 ),
-            otpCodeRuntimeFactory = otpFactory,
+            otpRuntime = otpRuntime,
         )
     }
+
+    private class TestInterfaceSettingsRepository(
+        override val interfaceSettings: Flow<InterfaceSettings>,
+    ) : InterfaceSettingsRepository {
+        override suspend fun setHideSystemBars(enabled: Boolean) = Unit
+
+        override suspend fun setTopBarCollapsible(enabled: Boolean) = Unit
+
+        override suspend fun setQuickFilterBarCollapsible(enabled: Boolean) = Unit
+
+        override suspend fun setAppCornerRadius(radiusDp: Float) = Unit
+    }
+
+    private class TestInteractionSettingsSource(
+        override val interaction: Flow<InteractionSettings>,
+    ) : InteractionSettingsSource
+
+    private class RecordingOtpRuntime : OtpCodeRuntimePort {
+        override val states = MutableStateFlow<Map<String, OtpCodeState>>(emptyMap())
+        val acquired = mutableListOf<String>()
+        val released = mutableListOf<String>()
+        val removed = mutableListOf<String>()
+
+        override fun acquire(entryId: String): OtpLease {
+            acquired += entryId
+            return OtpLease { released += entryId }
+        }
+
+        override suspend fun codeForCopy(entryId: String): String? = null
+
+        override suspend fun rollbackLastHotpCounter(entryId: String): Boolean = false
+
+        override fun entryRemoved(entryId: String) {
+            removed += entryId
+            states.value -= entryId
+        }
+
+        override fun entryChanged(entryId: String) = Unit
+    }
+
+    private fun sampleInterfaceSettings() =
+        InterfaceSettings(
+            hideSystemBars = false,
+            collapseTopBarOnScroll = true,
+            collapseQuickFilterBarOnScroll = true,
+            appCornerRadiusDp = 16f,
+        )
+
+    private fun sampleInteractionSettings() =
+        InteractionSettings(
+            isSwipeEnabled = true,
+            isPullToSearchEnabled = false,
+            swipeLeftAction = SwipeActionType.DELETE,
+            swipeRightAction = SwipeActionType.COPY_PASSWORD,
+        )
 
     private class PausingAuthorizationGate : AuthorizationGate {
         val started = CompletableDeferred<Unit>()
@@ -642,7 +964,8 @@ class VaultViewModelTest {
     private class TestEntries(
         private val onMoveToTrash: (EntryId) -> Unit,
         private val moveToTrashResult: AppResult<Unit>,
-    ) : EntryQueryRepository, EntryCommandRepository {
+    ) : EntryQueryRepository,
+        EntryCommandRepository {
         override suspend fun getById(entryId: EntryId): Entry? = entry.takeIf { it.id == entryId }
 
         override suspend fun getByIds(entryIds: List<EntryId>): List<Entry> = entry.takeIf { it.id in entryIds }?.let(::listOf).orEmpty()
@@ -696,7 +1019,6 @@ class VaultViewModelTest {
         override val libraryViewSettings: Flow<LibraryViewSettings>,
         private val setSort: suspend (EntrySort) -> Unit,
     ) : LibraryViewSettingsRepository {
-
         override suspend fun setSort(sort: EntrySort) = setSort.invoke(sort)
 
         override suspend fun setEntryHierarchyDisplayMode(mode: EntryHierarchyDisplayMode) = Unit
@@ -728,6 +1050,7 @@ class VaultViewModelTest {
         override suspend fun recordUsage(
             entryId: String,
             type: ActivityType,
+            affectedFields: Set<FieldKey>,
         ) = AppResult.Success(Unit)
 
         override suspend fun deleteByEntryId(entryId: String) = Unit
@@ -736,25 +1059,21 @@ class VaultViewModelTest {
     }
 
     private object EmptyOtpConfigRepository : OtpConfigRepository {
-        override suspend fun getConfig(entryId: String): OtpConfig? = null
+        override suspend fun getGenerationMaterial(entryId: String): OtpGenerationMaterial? = null
 
-        override suspend fun consumeHotpCode(entryId: String): OtpResult = OtpResult.Failure(OtpGenerationError.InvalidSecret)
+        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long): OtpResult =
+            OtpResult.Failure(OtpGenerationError.InvalidSecret)
+
+        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long): Boolean = false
     }
 
     private object ReadyOtpConfigRepository : OtpConfigRepository {
-        override suspend fun getConfig(entryId: String) = OtpConfig(secret = "JBSWY3DPEHPK3PXP")
+        override suspend fun getGenerationMaterial(entryId: String) = generationMaterialForTest(OtpConfig(secret = "JBSWY3DPEHPK3PXP"))
 
-        override suspend fun consumeHotpCode(entryId: String): OtpResult = OtpResult.Failure(OtpGenerationError.InvalidSecret)
-    }
+        override suspend fun consumeHotpCode(entryId: String, expectedCounter: Long): OtpResult =
+            OtpResult.Failure(OtpGenerationError.InvalidSecret)
 
-    private object TestSessionStateProvider : SessionStateProvider {
-        override val lockState = SecureSessionState.UNLOCKED
-        override val lockStateFlow = MutableStateFlow(SecureSessionState.UNLOCKED)
-        override val lockGenerationFlow = MutableStateFlow(0L)
-    }
-
-    private object TestSensitiveKeyFreshnessState : SensitiveKeyFreshnessState {
-        override val generation: StateFlow<Long> = MutableStateFlow(0L)
+        override suspend fun rollbackHotpCounter(entryId: String, expectedCurrentCounter: Long): Boolean = false
     }
 
     private companion object {

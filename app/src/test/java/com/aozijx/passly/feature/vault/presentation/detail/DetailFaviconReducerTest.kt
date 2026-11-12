@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,7 +32,11 @@ class DetailFaviconReducerTest {
     fun selectingDefaultMakesBuiltInDraftDirty() {
         val opened =
             DetailFaviconEditorState.Open(
-                initialSource = DetailFaviconSource.BuiltIn("security.key", null),
+                initialSource =
+                    DetailFaviconSource.BuiltIn(
+                        "security.key",
+                        DetailFaviconSource.ColorSelection.Automatic,
+                    ),
             )
 
         val actual =
@@ -56,12 +61,12 @@ class DetailFaviconReducerTest {
         val actual =
             DetailFaviconEditorReducer.reduce(
                 state,
-                DetailMutation.FaviconProcessingFailed(DetailFaviconProcessingError.INVALID_IMAGE),
+                DetailMutation.FaviconProcessingFailed(R.string.vault_detail_favicon_error_invalid_image),
             ) as DetailFaviconEditorState.Open
 
         assertEquals(DetailFaviconCropInput.Ready("/private/staging/input"), actual.cropInput)
         assertEquals(
-            DetailFaviconWorkState.Failed(DetailFaviconProcessingError.INVALID_IMAGE),
+            DetailFaviconWorkState.Failed(R.string.vault_detail_favicon_error_invalid_image),
             actual.work,
         )
     }

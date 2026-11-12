@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultFilterOptionUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.icon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
@@ -30,7 +30,7 @@ fun VaultFilterBar(
     filters: List<VaultFilterOptionUiModel>,
     allFiltersSelected: Boolean,
     onClearFilters: () -> Unit,
-    onFilterToggled: (VaultAddTypeUiModel) -> Unit,
+    onFilterToggled: (AddType) -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),

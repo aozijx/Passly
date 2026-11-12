@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.domain.entry.model.credential.CardExpiry
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardExpirySelection
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.cardExpiryYearRange
@@ -119,8 +120,7 @@ private fun CardExpiryPickerSheet(
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.card_expiration),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    style = passlySheetTitleStyle(),
                     modifier = Modifier.weight(1f),
                 )
                 if (selection is CardExpirySelection.Selected) {
@@ -165,9 +165,13 @@ private fun CardExpirySelection.initialExpiry(
     years: List<Int>,
 ): CardExpiry =
     when (this) {
-        CardExpirySelection.NotSet -> CardExpiry(today.monthValue, today.year)
-        is CardExpirySelection.Selected ->
+        CardExpirySelection.NotSet -> {
+            CardExpiry(today.monthValue, today.year)
+        }
+
+        is CardExpirySelection.Selected -> {
             if (expiry.year in years) expiry else CardExpiry(today.monthValue, today.year)
+        }
     }
 
 @Composable

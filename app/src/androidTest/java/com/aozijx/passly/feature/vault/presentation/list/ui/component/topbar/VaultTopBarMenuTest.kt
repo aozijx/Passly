@@ -16,8 +16,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.aozijx.passly.R
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategoriesState
 import com.aozijx.passly.feature.vault.presentation.list.VaultCategorySelection
-import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 import com.aozijx.passly.feature.vault.presentation.list.VaultRouteRequest
+import com.aozijx.passly.feature.vault.presentation.list.VaultSearchInput
 import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultSortUiModel
@@ -128,13 +128,14 @@ class VaultTopBarMenuTest {
                     categoriesState = VaultCategoriesState.ReadyEmpty,
                     categorySelection = VaultCategorySelection.All,
                     selectedSort = VaultSortUiModel(VaultSortOption.CREATED_AT, descending = true),
-                    sortOptions = listOf(
-                        VaultSortOption.CREATED_AT,
-                        VaultSortOption.TITLE,
-                        VaultSortOption.UPDATED_AT,
-                        VaultSortOption.LAST_USED_AT,
-                        VaultSortOption.USAGE_FREQUENCY,
-                    ),
+                    sortOptions =
+                        listOf(
+                            VaultSortOption.CREATED_AT,
+                            VaultSortOption.TITLE,
+                            VaultSortOption.UPDATED_AT,
+                            VaultSortOption.LAST_USED_AT,
+                            VaultSortOption.USAGE_FREQUENCY,
+                        ),
                 ),
             collapseOnScroll = false,
             collapseQuickFilterOnScroll = false,

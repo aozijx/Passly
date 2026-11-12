@@ -5,13 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.aozijx.passly.R
 import com.aozijx.passly.app.settings.RecoverableRead
 import com.aozijx.passly.app.settings.RecoverableReadState
-import com.aozijx.passly.domain.settings.model.AppCornerRadiusConstraints
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicyRepository
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.writePreferenceWithFeedback
 import com.aozijx.passly.presentation.shared.event.PageEffects
-import com.aozijx.passly.feature.settings.presentation.ui.appearance.model.InterfaceUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +23,7 @@ class InterfaceSettingsViewModel
     constructor(
         private val settingsRepository: InterfaceSettingsRepository,
         private val librarySettingsRepository: LibraryViewSettingsRepository,
+        private val otpRuntimePolicyRepository: OtpRuntimePolicyRepository,
     ) : ViewModel() {
         private val pageEffects = PageEffects<UiErrorMessage>()
         val errors = pageEffects.effects
@@ -34,22 +34,14 @@ class InterfaceSettingsViewModel
                     combine(
                         settingsRepository.interfaceSettings,
                         librarySettingsRepository.libraryViewSettings,
-                    ) { prefs, librarySettings ->
-                        InterfaceUiModel(
-                            hideSystemBars = prefs.hideSystemBars,
-                            collapseTopBarOnScroll = prefs.collapseTopBarOnScroll,
-                            collapseQuickFilterBarOnScroll = prefs.collapseQuickFilterBarOnScroll,
-                            appCornerRadiusDp = prefs.appCornerRadiusDp,
-                            appCornerRadiusRange =
-                                AppCornerRadiusConstraints.MIN_DP..AppCornerRadiusConstraints.MAX_DP,
-                            entryHierarchyDisplayMode = librarySettings.entryHierarchyDisplayMode,
-                            entryCardPresentations = librarySettings.entryCardPresentations,
-                        )
+                        otpRuntimePolicyRepository.otpRuntimePolicy,
+                    ) { prefs, librarySettings, otpPolicy ->
+                        InterfaceSettingsUiMapper.map(prefs, librarySettings, otpPolicy)
                     },
                 scope = viewModelScope,
             )
 
-        val uiState: StateFlow<RecoverableReadState<InterfaceUiModel>> = settingsRead.state
+        val uiState: StateFlow<RecoverableReadState<InterfaceUiState>> = settingsRead.state
 
         fun onAction(action: InterfaceSettingsAction) {
             when (action) {
@@ -90,6 +82,12 @@ class InterfaceSettingsViewModel
                 is InterfaceSettingsAction.SetEntryCardPresentation -> {
                     saveSetting {
                         librarySettingsRepository.setEntryCardPresentation(action.presentation)
+                    }
+                }
+
+                is InterfaceSettingsAction.SetCopyNextTotpNearExpiry -> {
+                    saveSetting {
+                        otpRuntimePolicyRepository.setCopyNextTotpNearExpiry(action.enabled)
                     }
                 }
             }

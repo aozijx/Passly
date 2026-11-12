@@ -13,10 +13,15 @@ import com.aozijx.passly.domain.entry.model.query.EntryListItem
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.port.EntryListQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryPagingRepository
-import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
+import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimeFactory
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
+import com.aozijx.passly.feature.vault.otp.OtpCodeState
+import com.aozijx.passly.feature.vault.otp.OtpLease
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.otp.presentation.toOtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
 import com.aozijx.passly.presentation.shared.error.toUiErrorMessage
@@ -29,6 +34,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -42,8 +49,10 @@ class VaultViewModel
         private val entryListQueryRepository: EntryListQueryRepository,
         private val entryPagingRepository: EntryPagingRepository,
         private val settingsRepository: LibraryViewSettingsRepository,
+        interfaceSettingsRepository: InterfaceSettingsRepository,
+        interactionSettingsSource: InteractionSettingsSource,
         private val entryCommandWorkflowFactory: VaultEntryCommandWorkflowFactory,
-        otpCodeRuntimeFactory: OtpCodeRuntimeFactory,
+        private val otpRuntime: OtpCodeRuntimePort,
     ) : ViewModel() {
         private val pageEffects = PageEffects<VaultEffect>()
         val effects = pageEffects.effects
@@ -51,13 +60,12 @@ class VaultViewModel
         private val _uiState = MutableStateFlow(VaultUiState())
         val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
 
-        private val totp = otpCodeRuntimeFactory.create(viewModelScope)
-
         private val entryCommands =
             entryCommandWorkflowFactory.create(
                 scope = viewModelScope,
-                otpRuntime = totp,
+                otpRuntime = otpRuntime,
                 pageEffects = pageEffects,
+                onOtpEntryRemoved = ::onOtpEntryRemoved,
             )
 
         private val librarySettingsRead =
@@ -66,7 +74,23 @@ class VaultViewModel
                 scope = viewModelScope,
             )
 
-        val librarySettingsState = librarySettingsRead.state
+        private val displaySettingsRead =
+            RecoverableRead(
+                source =
+                    combine(
+                        interfaceSettingsRepository.interfaceSettings,
+                        librarySettingsRead.state,
+                        interactionSettingsSource.interaction,
+                        ::VaultSettingsSnapshot,
+                    ),
+                scope = viewModelScope,
+            )
+
+        val displayState: StateFlow<VaultDisplayUiState> =
+            displaySettingsRead.state
+                .map { it.toDisplayUiState() }
+                .distinctUntilChanged()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), VaultDisplayUiState.Loading)
 
         private val categoriesRead =
             RecoverableRead(
@@ -77,7 +101,7 @@ class VaultViewModel
         private val queryState: Flow<VaultQueryGeneration> =
             buildRecoverableVaultQueryGenerations(
                 uiStates = uiState,
-                librarySettings = librarySettingsState,
+                librarySettings = librarySettingsRead.state,
             )
 
         val entries: Flow<PagingData<VaultListItemUiModel>> =
@@ -88,13 +112,27 @@ class VaultViewModel
                 ).map { pagingData -> pagingData.map(EntryListItem::toUiModel) }
                 .cachedIn(viewModelScope)
 
-        /**
-         * OTP 状态（高频率变化，每秒更新）。
-         * 独立 Flow 避免 OTP 更新触发整个 UI 状态重组。
-         */
-        val totpStatesFlow: StateFlow<Map<String, OtpCodeState>> =
-            totp.states
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+        /** Runtime-owned OTP codes stay separate from the page state to avoid refreshing Paging UI. */
+        val otpStates: StateFlow<Map<String, OtpCodeState>> = otpRuntime.states
+
+        internal fun otpUiStateFlow(
+            entryId: String,
+            otpPresentation: OtpPresentation,
+            showCode: Boolean,
+        ): StateFlow<OtpUiState> {
+            val initialState = otpStates.value[entryId].toOtpUiState(otpPresentation, showCode)
+            if (otpPresentation !is OtpPresentation.Applicable || !showCode) {
+                return MutableStateFlow(initialState)
+            }
+            return otpStates
+                .map { states -> states[entryId].toOtpUiState(otpPresentation, showCode) }
+                .distinctUntilChanged()
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0),
+                    initialValue = initialState,
+                )
+        }
 
         // --- onAction 统一入口 ---
         fun onAction(action: VaultUiAction) {
@@ -178,7 +216,7 @@ class VaultViewModel
 
         private fun selectSortOption(option: VaultSortOption) {
             val currentSort =
-                (librarySettingsState.value as? RecoverableReadState.Ready)?.value?.sort ?: return
+                (librarySettingsRead.state.value as? RecoverableReadState.Ready)?.value?.sort ?: return
             val requestedSort =
                 if (currentSort.field == option.field) {
                     currentSort.toggled()
@@ -194,30 +232,27 @@ class VaultViewModel
             }
         }
 
-        fun subscribeVisibleOtp(entryId: String) {
-            totp.subscribe(entryId)
-        }
-
-        fun unsubscribeVisibleOtp(entryId: String) {
-            totp.unsubscribe(entryId)
-        }
-
-        fun refreshVisibleOtp() {
-            totp.refreshRequestedEntries()
-        }
+        internal fun acquireOtp(entryId: String): OtpLease = otpRuntime.acquire(entryId)
 
         init {
             viewModelScope.launch {
                 categoriesRead.state.collect { readState ->
                     val categories =
                         when (readState) {
-                            RecoverableReadState.Loading -> VaultCategoriesState.Loading
-                            is RecoverableReadState.Ready ->
+                            RecoverableReadState.Loading -> {
+                                VaultCategoriesState.Loading
+                            }
+
+                            is RecoverableReadState.Ready -> {
                                 readState.value
                                     .takeIf { it.isNotEmpty() }
                                     ?.let(VaultCategoriesState::Ready)
                                     ?: VaultCategoriesState.ReadyEmpty
-                            is RecoverableReadState.Failed -> VaultCategoriesState.Failed
+                            }
+
+                            is RecoverableReadState.Failed -> {
+                                VaultCategoriesState.Failed
+                            }
                         }
                     _uiState.update { it.copy(categories = categories) }
                 }
@@ -230,7 +265,14 @@ class VaultViewModel
             pageEffects.exit(owner)
         }
 
-        fun retryLibrarySettings() = librarySettingsRead.retry()
+        fun retrySettings() {
+            if (librarySettingsRead.state.value is RecoverableReadState.Failed) {
+                librarySettingsRead.retry()
+            }
+            if (displaySettingsRead.state.value is RecoverableReadState.Failed) {
+                displaySettingsRead.retry()
+            }
+        }
 
         private fun emitError(
             owner: Any,
@@ -239,8 +281,8 @@ class VaultViewModel
             pageEffects.tryEmit(owner, VaultEffect.ShowError(message))
         }
 
-        override fun onCleared() {
-            totp.clearAllSensitiveState()
+        private fun onOtpEntryRemoved(entryId: String) {
+            otpRuntime.entryRemoved(entryId)
         }
 
         private companion object {

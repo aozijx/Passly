@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
+import com.aozijx.passly.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -15,7 +16,7 @@ class DetailFaviconEditorStateTest {
                 selectedTab = DetailFaviconTab.CUSTOM_IMAGE,
                 work =
                     DetailFaviconWorkState.Failed(
-                        DetailFaviconProcessingError.INVALID_IMAGE,
+                        R.string.vault_detail_favicon_error_invalid_image,
                     ),
             )
 
@@ -25,10 +26,21 @@ class DetailFaviconEditorStateTest {
             actual.source,
         )
         assertEquals(DetailFaviconTab.CUSTOM_IMAGE, actual.selectedTab)
-        assertFalse(actual.canDownloadImageUrl)
+        assertFalse(actual.canSubmitImageUrl)
         assertEquals(
-            DetailFaviconWorkState.Failed(DetailFaviconProcessingError.INVALID_IMAGE),
+            DetailFaviconWorkState.Failed(R.string.vault_detail_favicon_error_invalid_image),
             actual.work,
         )
+    }
+
+    @Test
+    fun `nonempty image URL is submitted for validation by the processor`() {
+        val actual =
+            DetailFaviconEditorState.Open(
+                initialSource = DetailFaviconSource.InferredDefault,
+                imageUrl = "not a URL",
+            )
+
+        assertTrue(actual.canSubmitImageUrl)
     }
 }

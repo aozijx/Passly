@@ -1,13 +1,13 @@
 package com.aozijx.passly.feature.vault.presentation.navigation
 
 import androidx.lifecycle.ViewModelStore
+import com.aozijx.passly.core.observability.ErrorCodes
+import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
-import com.aozijx.passly.core.observability.Events
-import com.aozijx.passly.core.observability.ErrorCodes
-import com.aozijx.passly.core.observability.Reasons
 import com.aozijx.passly.feature.vault.entry.EditorSeedToken
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
@@ -19,10 +19,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -172,7 +172,10 @@ class EntryEditorSeedCoordinatorTest {
             try {
                 coordinator.navigateWithSeed(
                     seed,
-                    routeForToken = { cancelledToken = it; "cancel/${it.value}" },
+                    routeForToken = {
+                        cancelledToken = it
+                        "cancel/${it.value}"
+                    },
                     navigate = { throw cancellation },
                 )
                 null
@@ -186,7 +189,10 @@ class EntryEditorSeedCoordinatorTest {
             try {
                 coordinator.navigateWithSeed(
                     seed,
-                    routeForToken = { fatalToken = it; "fatal/${it.value}" },
+                    routeForToken = {
+                        fatalToken = it
+                        "fatal/${it.value}"
+                    },
                     navigate = { throw fatal },
                 )
                 null

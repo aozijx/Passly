@@ -55,7 +55,10 @@ internal class DetailFaviconSession(
                     when (use) {
                         PreparedImageUse.CROP_INPUT -> {
                             when (val input = editor.cropInput) {
-                                DetailFaviconCropInput.None -> Unit
+                                DetailFaviconCropInput.None -> {
+                                    Unit
+                                }
+
                                 is DetailFaviconCropInput.Ready -> {
                                     if (input.path != newPath) {
                                         discardOwned(FaviconEditorResource.StagedImage(input.path))
@@ -160,9 +163,11 @@ internal class DetailFaviconSession(
     private fun releaseOwnedResourcesExcept(replacement: DetailFaviconSource) {
         val abandoned =
             synchronized(resourceLock) {
-                ownedResources.filterNot { resource ->
-                    replacement is DetailFaviconSource.PrivateImage && resource.path == replacement.localPath
-                }.toSet().also(ownedResources::removeAll)
+                ownedResources
+                    .filterNot { resource ->
+                        replacement is DetailFaviconSource.PrivateImage && resource.path == replacement.localPath
+                    }.toSet()
+                    .also(ownedResources::removeAll)
             }
         if (abandoned.isNotEmpty()) files.discardEditorResources(abandoned)
     }

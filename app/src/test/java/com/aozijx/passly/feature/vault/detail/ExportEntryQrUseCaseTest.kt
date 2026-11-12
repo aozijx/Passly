@@ -16,6 +16,7 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntrySecret
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.credential.WifiCredential
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
@@ -41,7 +42,6 @@ class ExportEntryQrUseCaseTest {
             assertTrue(result is EntryQrExportResult.Ready)
             result as EntryQrExportResult.Ready
             try {
-                assertEquals(EntryQrKind.Wifi, result.kind)
                 assertEquals("WIFI:T:WPA;S:Office;P:fresh-password;H:true;;", result.content.toPlainString())
                 assertEquals(listOf("authorize", "readBundle", "record"), fixture.events)
             } finally {
@@ -167,9 +167,10 @@ class ExportEntryQrUseCaseTest {
                         override suspend fun recordUsage(
                             entryId: String,
                             type: ActivityType,
+                            affectedFields: Set<FieldKey>,
                         ): AppResult<Unit> {
                             events += "record"
-                            assertEquals(ActivityType.VIEW, type)
+                            assertEquals(ActivityType.EXPORT, type)
                             return AppResult.Success(Unit)
                         }
 

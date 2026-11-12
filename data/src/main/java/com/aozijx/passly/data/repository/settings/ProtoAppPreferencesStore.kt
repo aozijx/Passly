@@ -33,6 +33,7 @@ import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicyRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -49,6 +50,7 @@ internal class ProtoAppPreferencesStore
         InterfaceSettingsRepository,
         InteractionSettingsRepository,
         LibraryViewSettingsRepository,
+        OtpRuntimePolicyRepository,
         MessageSettingsRepository,
         DiagnosticsLogSettingsRepository {
         private val dataStore = context.applicationContext.appPreferencesDataStore
@@ -60,6 +62,7 @@ internal class ProtoAppPreferencesStore
         override val interaction = preferences.map { readInteraction(it.interaction) }
         override val autofillSettings = preferences.map { readAutofill(it.interaction.autofill) }
         override val libraryViewSettings = preferences.map { readVault(it.vaultView) }
+        override val otpRuntimePolicy = preferences.map { it.vaultView.toOtpRuntimePolicy() }
         override val messages = preferences.map { decodeMessageSettings(it.message) }
         override val diagnosticsLogRecordingMode =
             preferences.map {
@@ -111,6 +114,8 @@ internal class ProtoAppPreferencesStore
                 clearEntryCardPresentations()
                 addAllEntryCardPresentations(updated.map(EntryCardPresentation::toProto))
             }
+
+        override suspend fun setCopyNextTotpNearExpiry(enabled: Boolean) = updateVaultView { copyNextTotpNearExpiry = enabled }
 
         override suspend fun setSort(sort: EntrySort) = updateVaultView { this.sort = sort.toProtoSort() }
 

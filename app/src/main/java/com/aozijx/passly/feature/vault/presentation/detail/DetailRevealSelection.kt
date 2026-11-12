@@ -9,7 +9,10 @@ internal fun DetailUiState.bankCardFieldsToReveal(): Set<DetailField> =
             add(DetailField.CARD_NUMBER)
         }
         if (
-            (SensitiveFieldKey.CARD_CVV in sensitiveFieldKeys || fieldEdits.isEditing(FieldKey.CARD_CVV)) &&
+            (
+                SensitiveFieldKey.CARD_CVV in sensitiveFieldKeys ||
+                    fieldEdits.edit(DetailDraftKey.EntryField(FieldKey.CARD_CVV)) is DetailFieldEdit.Editing
+            ) &&
             revealed(FieldKey.CARD_CVV) == null
         ) {
             add(DetailField.CARD_CVV)

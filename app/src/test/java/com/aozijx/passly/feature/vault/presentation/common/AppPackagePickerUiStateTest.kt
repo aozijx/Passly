@@ -50,9 +50,10 @@ class AppPackagePickerUiStateTest {
     fun mappingPreservesQueryAndMapsFullCatalogAndVisibleResults() {
         val mail = App("Mail", "mail.example")
         val state =
-            AppPackagePickerUiState.fromInstalledApps(
-                listOf(mail, App("Calendar", "calendar.example")),
-            ).search("mail", App::label, App::packageName)
+            AppPackagePickerUiState
+                .fromInstalledApps(
+                    listOf(mail, App("Calendar", "calendar.example")),
+                ).search("mail", App::label, App::packageName)
 
         val mapped = state.mapItems { Item(it.label, it.packageName) } as AppPackagePickerUiState.Matches
 

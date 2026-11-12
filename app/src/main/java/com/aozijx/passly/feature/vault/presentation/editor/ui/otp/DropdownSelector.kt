@@ -27,7 +27,7 @@ fun <T> DropdownSelector(
     label: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    optionToString: (T) -> String = { it.toString() },
+    optionLabel: @Composable (T) -> String,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -37,7 +37,7 @@ fun <T> DropdownSelector(
         modifier = modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
-            value = optionToString(value),
+            value = optionLabel(value),
             onValueChange = {}, // 只读，不可手动编辑
             readOnly = true,
             label = { Text(label) },
@@ -58,7 +58,7 @@ fun <T> DropdownSelector(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(optionToString(option)) },
+                    text = { Text(optionLabel(option)) },
                     onClick = {
                         onValueChange(option)
                         expanded = false

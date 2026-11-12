@@ -15,8 +15,8 @@ import com.aozijx.passly.domain.entry.model.credential.LoginCredential
 import com.aozijx.passly.domain.entry.model.query.EntryDetailData
 import com.aozijx.passly.domain.entry.model.query.EntryDetailSnapshot
 import com.aozijx.passly.domain.entry.model.query.EntryRelationsSnapshot
-import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.relation.RelatedPasswordEntry
+import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.port.EntryDetailQuery
 import com.aozijx.passly.feature.vault.presentation.detail.section.DetailSectionResolver
 import kotlinx.coroutines.test.runTest
@@ -93,10 +93,11 @@ class DetailPresentationLoaderTest {
             )
         }
 
-    private fun loader(query: EntryDetailQuery = FakeEntryDetailQuery()) = DetailPresentationLoader(
-        sessionQuery = query,
-        installedAppDirectory = FakeInstalledAppDirectory(),
-    )
+    private fun loader(query: EntryDetailQuery = FakeEntryDetailQuery()) =
+        DetailPresentationLoader(
+            sessionQuery = query,
+            installedAppDirectory = FakeInstalledAppDirectory(),
+        )
 
     private fun entry(
         id: String,
@@ -152,5 +153,4 @@ class DetailPresentationLoaderTest {
                 InstalledAppMetadata("Second", "com.second"),
             )
     }
-
 }

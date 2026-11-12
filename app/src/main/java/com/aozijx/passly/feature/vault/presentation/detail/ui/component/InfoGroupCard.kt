@@ -22,31 +22,36 @@ fun InfoGroupCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, bottom = 8.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            titleTrailing?.invoke(this)
-        }
+        InfoGroupHeader(title = title, titleTrailing = titleTrailing)
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors =
                 CardDefaults.cardColors(
-                    containerColor =
-                        MaterialTheme.colorScheme.surfaceVariant.copy(
-                            alpha = 0.3f,
-                        ),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
             shape = MaterialTheme.shapes.large,
             content = content,
         )
+    }
+}
+
+@Composable
+internal fun InfoGroupHeader(
+    title: String,
+    titleTrailing: @Composable (RowScope.() -> Unit)? = null,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, bottom = 8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        titleTrailing?.invoke(this)
     }
 }

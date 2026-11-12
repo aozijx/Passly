@@ -3,9 +3,13 @@ package com.aozijx.passly.domain.entry.policy
 import java.util.Locale
 
 sealed interface EntryTagValidationError {
-    data class TooMany(val maximum: Int) : EntryTagValidationError
+    data class TooMany(
+        val maximum: Int,
+    ) : EntryTagValidationError
 
-    data class TooLong(val maximum: Int) : EntryTagValidationError
+    data class TooLong(
+        val maximum: Int,
+    ) : EntryTagValidationError
 }
 
 sealed interface EntryTagNormalizationResult {
@@ -13,7 +17,9 @@ sealed interface EntryTagNormalizationResult {
         val tags: Set<String>,
     ) : EntryTagNormalizationResult
 
-    data class Invalid(val error: EntryTagValidationError) : EntryTagNormalizationResult
+    data class Invalid(
+        val error: EntryTagValidationError,
+    ) : EntryTagNormalizationResult
 }
 
 /** Owns tag normalization and size constraints applied before Entry tag updates. */

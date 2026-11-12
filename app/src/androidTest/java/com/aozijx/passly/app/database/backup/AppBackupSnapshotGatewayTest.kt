@@ -17,7 +17,14 @@ import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.settings.model.OtpRuntimePolicy
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicySnapshotReader
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -60,7 +67,7 @@ class AppBackupSnapshotGatewayTest {
                         ),
                 )
             val store = RecordingVaultBackupStore(snapshot)
-            val gateway = AppBackupSnapshotGateway(store, context)
+            val gateway = AppBackupSnapshotGateway(store, context, emptyRuntime())
 
             val bundle =
                 gateway.read(
@@ -73,7 +80,12 @@ class AppBackupSnapshotGatewayTest {
                 )
 
             assertEquals(listOf("icon_entry-1", "attachment-1"), bundle.document.resources.map { it.id })
-            assertEquals(listOf("attachment-1"), bundle.document.entries.single().attachmentIds)
+            assertEquals(
+                listOf("attachment-1"),
+                bundle.document.entries
+                    .single()
+                    .attachmentIds,
+            )
             assertArrayEquals(iconBytes, bundle.resourceData.getValue("icon_entry-1"))
             assertArrayEquals(attachmentBytes, bundle.resourceData.getValue("attachment-1"))
             assertEquals(16 * 1024 * 1024L, store.readOptions?.maxResourceBytes)
@@ -91,6 +103,17 @@ class AppBackupSnapshotGatewayTest {
             profile = EntryProfile("Account"),
         )
 
+    private fun emptyRuntime() =
+        OtpCodeRuntime(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+            otpRuntimePolicyReader =
+                object : OtpRuntimePolicySnapshotReader {
+                    override suspend fun readOtpRuntimePolicySnapshot() = OtpRuntimePolicy()
+                },
+            codeGenerator = { _, _ -> OtpResult.Success("unused") },
+            loadOtpMaterial = { null },
+        )
+
     private class RecordingVaultBackupStore(
         private val snapshot: VaultBackupSnapshot,
     ) : VaultBackupStore {
@@ -104,7 +127,9 @@ class AppBackupSnapshotGatewayTest {
         override suspend fun restore(
             snapshot: VaultBackupSnapshot,
             mode: VaultBackupRestoreMode,
+            onCommitted: suspend () -> Unit,
         ): VaultBackupRestoreResult {
+            onCommitted()
             return VaultBackupRestoreResult(0, 0)
         }
     }

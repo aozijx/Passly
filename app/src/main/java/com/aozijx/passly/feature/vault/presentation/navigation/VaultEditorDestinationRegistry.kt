@@ -23,6 +23,8 @@ internal object VaultEditorDestinationRegistry {
 
     fun routeFor(type: AddType): String? = routes[type]
 
-    fun editRouteFor(type: EntryType, seedToken: String): String? =
-        editRouteFactories[type]?.invoke(seedToken)
+    fun editRouteFor(
+        type: EntryType,
+        seedToken: String,
+    ): String? = editRouteFactories[type]?.invoke(seedToken)
 }

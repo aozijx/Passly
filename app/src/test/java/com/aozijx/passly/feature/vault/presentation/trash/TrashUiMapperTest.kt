@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.trash
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -9,12 +10,15 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.EntryVersion
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashDeletedAtUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryListUiState
 import com.aozijx.passly.feature.vault.presentation.trash.model.TrashEntryRowOperation
-import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.feature.vault.presentation.trash.model.TrashSupportingTextUiState
+import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemAssociatedAppUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconImageUiState
 import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TrashUiMapperTest {
@@ -50,14 +54,35 @@ class TrashUiMapperTest {
         assertEquals(3, result.version)
         assertEquals(TrashEntryRowOperation.Idle, result.operation)
         assertEquals("Mail", result.title)
-        assertEquals(EntryType.LOGIN, result.entryType)
-        assertEquals("person@example.com", result.supportingText)
-        assertEquals(20L, result.deletedAtEpochMs)
-        assertEquals("example.com", result.associatedDomain)
-        assertEquals("com.example", result.associatedAppPackage)
-        assertNull(result.iconName)
-        assertEquals("icons/mail.png", result.iconCustomPath)
-        assertEquals(LocalIconImageModel("file://icons/mail.png"), result.iconImageModel)
-        assertEquals(EntryVisualCategory.EMAIL, result.visualCategory)
+        assertEquals(R.string.entry_type_login, result.entryTypeLabelRes)
+        assertEquals(TrashSupportingTextUiState.Value("person@example.com"), result.supportingText)
+        assertEquals(TrashDeletedAtUiState.Recorded(20L), result.deletedAt)
+        assertEquals(VaultItemAssociatedAppUiState.Package("com.example"), result.icon.associatedApp)
+        assertEquals(
+            VaultItemIconImageUiState.Custom(LocalIconImageModel("file://icons/mail.png")),
+            result.icon.image,
+        )
+        assertEquals(EntryVisualCategory.EMAIL, result.icon.visualCategory)
+    }
+
+    @Test
+    fun `maps missing supporting and deletion values explicitly`() {
+        val entry =
+            EntryListItem(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("entry-2"),
+                        type = EntryType.LOGIN,
+                        version = EntryVersion(1),
+                        timestamps = EntryTimestamps(10L),
+                    ),
+                profile = EntryProfile(title = "Mail", username = ""),
+            )
+
+        val screenState = TrashUiMapper.map(TrashUiState(content = TrashContentState.Items(listOf(entry))))
+        val result = (screenState.entries as TrashEntryListUiState.Items).entries.single()
+
+        assertEquals(TrashSupportingTextUiState.Absent, result.supportingText)
+        assertEquals(TrashDeletedAtUiState.Unavailable, result.deletedAt)
     }
 }

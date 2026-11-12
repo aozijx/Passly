@@ -38,15 +38,14 @@ fun DetailValueCard(
     onRevealClick: (() -> Unit)? = null,
 ) {
     val haptic = LocalHapticFeedback.current
-    val editAction = onLongPress?.takeIf { isRevealed }
     val interactionModifier =
-        if (onActivate == null && editAction == null) {
+        if (onActivate == null && onLongPress == null) {
             Modifier
         } else {
             Modifier.combinedClickable(
                 onClick = onActivate ?: {},
                 onLongClick =
-                    editAction?.let {
+                    onLongPress?.let {
                         {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             it()

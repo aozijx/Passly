@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 
 /** Checks usable configuration without rewriting stored secret or identity metadata. */
 object OtpConfigValidation {

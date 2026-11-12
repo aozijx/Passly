@@ -44,9 +44,7 @@ private object ImagePaletteCache {
 }
 
 @Composable
-fun rememberImagePaletteColors(
-    imageUri: String?,
-): ImagePaletteColors? {
+fun rememberImagePaletteColors(imageUri: String?): ImagePaletteColors? {
     val uri = imageUri?.takeIf(String::isNotBlank) ?: return null
     val context = LocalContext.current
     var colors by remember(uri) {

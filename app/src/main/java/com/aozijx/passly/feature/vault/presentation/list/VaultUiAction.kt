@@ -20,7 +20,9 @@ sealed interface VaultUiAction {
         val query: String,
     ) : VaultUiAction
 
-    data class CategorySelectionChanged(val selection: VaultCategorySelection) : VaultUiAction
+    data class CategorySelectionChanged(
+        val selection: VaultCategorySelection,
+    ) : VaultUiAction
 
     data class CategorySearchQueryChanged(
         val query: String,
@@ -28,7 +30,9 @@ sealed interface VaultUiAction {
 
     data object RetryCategories : VaultUiAction
 
-    data class SortOptionSelected(val option: VaultSortOption) : VaultUiAction
+    data class SortOptionSelected(
+        val option: VaultSortOption,
+    ) : VaultUiAction
 
     data class FilterToggled(
         val filter: AddType,

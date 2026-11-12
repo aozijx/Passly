@@ -7,12 +7,12 @@ import com.aozijx.passly.core.observability.LogStatements
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.platform.VaultResourcePaths
+import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.entity.AttachmentRefEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceEntity
 import com.aozijx.passly.data.local.database.entity.AttachmentResourceState
 import com.aozijx.passly.data.local.database.entity.EntryEntity
 import com.aozijx.passly.data.local.database.entity.EntryLinkEntity
-import com.aozijx.passly.data.local.database.AppDatabase
 import com.aozijx.passly.data.local.database.maintenance.clearAllVaultData
 import com.aozijx.passly.data.local.database.session.AppDatabaseSession
 import com.aozijx.passly.data.mapper.entry.EntryAssembler
@@ -29,10 +29,10 @@ import com.aozijx.passly.domain.backup.model.VaultBackupSnapshot
 import com.aozijx.passly.domain.backup.port.VaultBackupStore
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryId
+import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.relation.EntryLink
 import com.aozijx.passly.domain.entry.model.relation.EntryLinkId
 import com.aozijx.passly.domain.entry.model.relation.EntryRelationType
-import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -162,13 +162,24 @@ internal class RoomVaultBackupStore
         override suspend fun restore(
             snapshot: VaultBackupSnapshot,
             mode: VaultBackupRestoreMode,
+            onCommitted: suspend () -> Unit,
         ): VaultBackupRestoreResult =
             logger.inSpan(Operations.BackupRestore) {
                 attachmentGarbageCollector.withMutationLock {
-                    require(snapshot.entries.map { it.id }.distinct().size == snapshot.entries.size) {
+                    require(
+                        snapshot.entries
+                            .map { it.id }
+                            .distinct()
+                            .size == snapshot.entries.size,
+                    ) {
                         "Snapshot contains duplicate entry IDs"
                     }
-                    require(snapshot.resources.map { it.id }.distinct().size == snapshot.resources.size) {
+                    require(
+                        snapshot.resources
+                            .map { it.id }
+                            .distinct()
+                            .size == snapshot.resources.size,
+                    ) {
                         "Snapshot contains duplicate resource IDs"
                     }
                     val snapshotEntryIds = snapshot.entries.mapTo(hashSetOf()) { it.id }
@@ -185,7 +196,8 @@ internal class RoomVaultBackupStore
                             .filter { it.kind == VaultBackupResourceKind.ICON }
                             .groupingBy(VaultBackupResource::entryId)
                             .eachCount()
-                            .values.all { it == 1 },
+                            .values
+                            .all { it == 1 },
                     ) { "Snapshot contains duplicate entry icons" }
 
                     val resourcesByEntry = snapshot.resources.groupBy { it.entryId }
@@ -229,7 +241,10 @@ internal class RoomVaultBackupStore
                                         entryType = entry.type,
                                         version = entry.version.value,
                                         capabilityFlags = capabilityFlags,
-                                        otpType = entry.secret.otp?.config?.type,
+                                        otpType =
+                                            entry.secret.otp
+                                                ?.config
+                                                ?.type,
                                         title = profile.title,
                                         username = profile.username,
                                         primaryUrl = profile.associations.primaryUrl,
@@ -281,6 +296,10 @@ internal class RoomVaultBackupStore
                         }
                         throw error
                     }
+
+                    // The Room transaction is durable. Notify derived-state owners before
+                    // any post-commit file work can fail or observe cancellation.
+                    onCommitted()
 
                     try {
                         fileJournal.commit()
@@ -410,7 +429,8 @@ internal class RoomVaultBackupStore
         }
 
         private fun cleanupUnreferencedFiles(retainedCanonicalPaths: Set<String>) {
-            VaultResourcePaths.resourceDirectories(context)
+            VaultResourcePaths
+                .resourceDirectories(context)
                 .filter(File::isDirectory)
                 .forEach { root ->
                     root.walkBottomUp().forEach candidateLoop@{ candidate ->

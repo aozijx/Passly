@@ -30,14 +30,15 @@ import com.aozijx.passly.R
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
 import com.aozijx.passly.feature.vault.presentation.common.ui.AppPackagePickerBottomSheet
 import com.aozijx.passly.feature.vault.presentation.detail.DetailField
+import com.aozijx.passly.feature.vault.presentation.detail.DetailSnapshotRefreshPhase
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodySectionUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailBodyUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSnapshotRefreshUiState
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.ActivityTimelineSection
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.AssociatedInfoSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.BankCardSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.CredentialSection
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailHistorySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailIconCard
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.DetailScrollableContent
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.EntryTagsItem
@@ -48,27 +49,27 @@ import com.aozijx.passly.feature.vault.presentation.detail.ui.component.NotesSec
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.PasskeySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedEntriesSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RelatedPasswordPickerSheet
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.RevisionHistorySection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SeedPhraseSection
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.SshKeySection
-import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TotpSection
+import com.aozijx.passly.feature.vault.presentation.detail.ui.component.OtpSection
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DetailBody(
     model: DetailBodyUiModel,
+    otpState: OtpUiState,
     onAction: (DetailUiAction) -> Unit,
     onOpenRelatedEntry: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showPackagePicker by remember { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxSize()) {
-        when (model.snapshotRefreshState) {
-            DetailSnapshotRefreshUiState.Current -> {
+        when (model.snapshotRefreshPhase) {
+            DetailSnapshotRefreshPhase.Current -> {
                 Unit
             }
 
-            DetailSnapshotRefreshUiState.Refreshing -> {
+            DetailSnapshotRefreshPhase.Refreshing -> {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -82,7 +83,7 @@ fun DetailBody(
                 }
             }
 
-            DetailSnapshotRefreshUiState.Failed -> {
+            DetailSnapshotRefreshPhase.Failed -> {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
@@ -127,10 +128,12 @@ fun DetailBody(
 
                     is DetailBodySectionUiModel.Otp -> {
                         item {
-                            TotpSection(
-                                currentState = section.state,
+                            OtpSection(
+                                type = section.type,
+                                currentState = otpState,
                                 onQrClick = { onAction(DetailUiAction.ShowEntryQr) },
                                 onCodeClick = { onAction(DetailUiAction.CopyOtpCode) },
+                                onPreviousClick = { onAction(DetailUiAction.RollbackHotpCounter) },
                             )
                         }
                     }
@@ -218,7 +221,7 @@ fun DetailBody(
             }
             item {
                 NotesSection(
-                    model = model.notes,
+                    state = model.notes,
                     onEditStarted = { onAction(DetailUiAction.StartNotesEdit) },
                     onNotesChanged = { onAction(DetailUiAction.UpdateNotesDraft(it)) },
                     onNotesSaved = { onAction(DetailUiAction.SaveNotes) },
@@ -226,17 +229,9 @@ fun DetailBody(
             }
             item { MetadataSection(model.metadata) }
             item {
-                RevisionHistorySection {
+                DetailHistorySection {
                     onAction(DetailUiAction.OpenRevisionHistory)
                 }
-            }
-            item {
-                ActivityTimelineSection(
-                    selectedFilter = model.activityFilter,
-                    onFilterChanged = { onAction(DetailUiAction.ActivityFilterChanged(it)) },
-                    state = model.activityHistory,
-                    onRetry = { onAction(DetailUiAction.RetryActivityHistory) },
-                )
             }
         }
     }

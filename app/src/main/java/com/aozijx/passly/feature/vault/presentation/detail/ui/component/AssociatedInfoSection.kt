@@ -42,8 +42,10 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.common.AppPackagePickerItemUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedInfoUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedAppsUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedDomainUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedDomainValueUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailAssociatedInfoUiModel
 
 @Composable
 fun AssociatedInfoSection(
@@ -58,8 +60,9 @@ fun AssociatedInfoSection(
 ) {
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
-    var domainInput by remember(model.isEditingDomain) {
-        mutableStateOf(TextFieldValue(model.editedDomain))
+    val isEditingDomain = model.domain is DetailAssociatedDomainUiState.Editing
+    var domainInput by remember(isEditingDomain) {
+        mutableStateOf(TextFieldValue(model.domain.editDraftOrEmpty()))
     }
 
     Column(
@@ -67,12 +70,10 @@ fun AssociatedInfoSection(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AssociatedDomainCard(
-            value = model.domain,
+            state = model.domain,
             editedValue = domainInput,
-            editing = model.isEditingDomain,
             onLongClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                domainInput = TextFieldValue(model.domain.orEmpty())
                 onDomainEditStarted()
             },
             onValueChange = {
@@ -98,20 +99,20 @@ fun AssociatedInfoSection(
 
 @Composable
 private fun AssociatedDomainCard(
-    value: String?,
+    state: DetailAssociatedDomainUiState,
     editedValue: TextFieldValue,
-    editing: Boolean,
     onLongClick: () -> Unit,
     onValueChange: (TextFieldValue) -> Unit,
     onSave: () -> Unit,
 ) {
+    val isEditing = state is DetailAssociatedDomainUiState.Editing
     InfoGroupCard(title = stringResource(R.string.vault_detail_associated_domain)) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .then(
-                        if (editing) {
+                        if (isEditing) {
                             Modifier
                         } else {
                             Modifier.combinedClickable(onLongClick = onLongClick, onClick = {})
@@ -119,22 +120,37 @@ private fun AssociatedDomainCard(
                     ).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (editing) {
-                DomainEditor(
-                    value = editedValue,
-                    onValueChange = onValueChange,
-                    onDone = onSave,
-                )
-            } else {
-                Text(
-                    text = value ?: stringResource(R.string.not_set),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                )
+            when (state) {
+                is DetailAssociatedDomainUiState.Editing -> {
+                    DomainEditor(
+                        value = editedValue,
+                        onValueChange = onValueChange,
+                        onDone = onSave,
+                    )
+                }
+
+                is DetailAssociatedDomainUiState.Display -> {
+                    val text =
+                        when (val value = state.value) {
+                            DetailAssociatedDomainValueUiState.NotSet -> stringResource(R.string.not_set)
+                            is DetailAssociatedDomainValueUiState.Value -> value.text
+                        }
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
             }
         }
     }
 }
+
+private fun DetailAssociatedDomainUiState.editDraftOrEmpty(): String =
+    when (this) {
+        is DetailAssociatedDomainUiState.Display -> ""
+        is DetailAssociatedDomainUiState.Editing -> draft
+    }
 
 @Composable
 private fun AssociatedAppsCard(

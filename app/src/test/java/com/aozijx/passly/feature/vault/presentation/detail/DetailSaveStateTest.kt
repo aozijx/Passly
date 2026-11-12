@@ -23,8 +23,12 @@ class DetailSaveStateTest {
             )
         val repeatedNotes = DetailReducer.reduce(notes, DetailMutation.FieldDraftChanged(DetailDraftKey.Notes, "submitted"))
         assertEquals(notes, repeatedNotes)
-        val saved = DetailReducer.reduce(repeatedNotes, DetailMutation.SaveSucceeded(DetailEditCompletion.Notes))
-        assertFalse(saved.fieldEdits.isEditing(DetailDraftKey.Notes))
+        val saved =
+            DetailReducer.reduce(
+                repeatedNotes,
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Notes, "submitted"),
+            )
+        assertFalse(saved.fieldEdits.edit(DetailDraftKey.Notes) is DetailFieldEdit.Editing)
     }
 
     @Test
@@ -37,11 +41,18 @@ class DetailSaveStateTest {
         val changed = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(DetailDraftKey.Notes, "new draft"))
         val failed = DetailReducer.reduce(changed, DetailMutation.SaveFailed(DetailEditCompletion.Notes))
         assertEquals(DetailSaveState.Idle, failed.saveState)
-        assertEquals("new draft", failed.fieldEdits.draft(DetailDraftKey.Notes))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "submitted", draft = "new draft"),
+            failed.fieldEdits.edit(DetailDraftKey.Notes),
+        )
         val retry = DetailReducer.reduce(failed, DetailMutation.SaveStarted(DetailEditCompletion.Notes))
         assertEquals(DetailSaveState.Saving(DetailEditCompletion.Notes), retry.saveState)
-        val saved = DetailReducer.reduce(retry, DetailMutation.SaveSucceeded(DetailEditCompletion.Notes))
-        assertFalse(saved.fieldEdits.isEditing(DetailDraftKey.Notes))
+        val saved =
+            DetailReducer.reduce(
+                retry,
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Notes, "submitted"),
+            )
+        assertFalse(saved.fieldEdits.edit(DetailDraftKey.Notes) is DetailFieldEdit.Editing)
     }
 
     @Test
@@ -52,9 +63,16 @@ class DetailSaveStateTest {
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
             )
         val changed = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(DetailDraftKey.Domain, "new.example"))
-        val saved = DetailReducer.reduce(changed, DetailMutation.SaveSucceeded(DetailEditCompletion.Notes))
-        assertFalse(saved.fieldEdits.isEditing(DetailDraftKey.Notes))
-        assertEquals("new.example", saved.fieldEdits.draft(DetailDraftKey.Domain))
+        val saved =
+            DetailReducer.reduce(
+                changed,
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Notes, "submitted"),
+            )
+        assertFalse(saved.fieldEdits.edit(DetailDraftKey.Notes) is DetailFieldEdit.Editing)
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "old", draft = "new.example"),
+            saved.fieldEdits.edit(DetailDraftKey.Domain),
+        )
     }
 
     @Test
@@ -67,9 +85,15 @@ class DetailSaveStateTest {
         val cancelled = DetailReducer.reduce(saving, DetailMutation.FieldEditingCancelled(DetailDraftKey.Title))
         val reopened = DetailReducer.reduce(cancelled, DetailMutation.FieldEditingStarted(DetailDraftKey.Title, "submitted"))
         val changed = DetailReducer.reduce(reopened, DetailMutation.FieldDraftChanged(DetailDraftKey.Title, "submitted"))
-        val saved = DetailReducer.reduce(changed, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
-        assertTrue(saved.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("submitted", saved.fieldEdits.draft(DetailDraftKey.Title))
+        val saved =
+            DetailReducer.reduce(
+                changed,
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Title, "submitted"),
+            )
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "submitted", draft = "submitted"),
+            saved.fieldEdits.edit(DetailDraftKey.Title),
+        )
     }
 
     @Test
@@ -80,39 +104,57 @@ class DetailSaveStateTest {
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Title),
             )
         val changed = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(DetailDraftKey.Title, "new draft"))
-        val saved = DetailReducer.reduce(changed, DetailMutation.SaveSucceeded(DetailEditCompletion.Title))
-        assertTrue(saved.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("new draft", saved.fieldEdits.draft(DetailDraftKey.Title))
+        val saved =
+            DetailReducer.reduce(
+                changed,
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Title, "submitted"),
+            )
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "submitted", draft = "new draft"),
+            saved.fieldEdits.edit(DetailDraftKey.Title),
+        )
         assertEquals(DetailSaveState.Idle, saved.saveState)
     }
 
     @Test
     fun textDraftsChangedOrReopenedDuringSaveSurviveTheEarlierCompletion() {
-        val cases =
+        val cases: List<Triple<DetailDraftKey, DetailEditCompletion.Draft, String>> =
             listOf(
-                DetailDraftKey.Notes to DetailEditCompletion.Notes,
-                DetailDraftKey.Domain to DetailEditCompletion.Domain,
-                DetailDraftKey.EntryField(FieldKey.PASSWORD) to DetailEditCompletion.Field(FieldKey.PASSWORD),
+                Triple(DetailDraftKey.Notes, DetailEditCompletion.Notes, "saved notes"),
+                Triple(DetailDraftKey.Domain, DetailEditCompletion.Domain, "saved.example"),
+                Triple(
+                    DetailDraftKey.EntryField(FieldKey.PASSWORD),
+                    DetailEditCompletion.Field(FieldKey.PASSWORD),
+                    "saved password",
+                ),
             )
-        for ((key, completion) in cases) {
+        for ((key, completion, persistedValue) in cases) {
             val saving =
                 DetailUiState(
                     fieldEdits = DetailFieldEditState().start(key, "submitted"),
                     saveState = DetailSaveState.Saving(completion),
                 )
             val changed = DetailReducer.reduce(saving, DetailMutation.FieldDraftChanged(key, "new draft"))
-            val savedFieldValue = "submitted".takeIf { completion is DetailEditCompletion.Field }
             val saved =
                 DetailReducer.reduce(
                     changed,
-                    DetailMutation.SaveSucceeded(completion, savedFieldValue),
+                    DetailMutation.SaveSucceeded.DraftSaved(completion, persistedValue),
                 )
-            assertEquals("new draft", saved.fieldEdits.draft(key))
-            assertTrue(saved.fieldEdits.isEditing(key))
+            assertEquals(
+                DetailFieldEdit.Editing(initialValue = persistedValue, draft = "new draft"),
+                saved.fieldEdits.edit(key),
+            )
             val cancelled = DetailReducer.reduce(saving, DetailMutation.FieldEditingCancelled(key))
             val reopened = DetailReducer.reduce(cancelled, DetailMutation.FieldEditingStarted(key, "submitted"))
-            val completed = DetailReducer.reduce(reopened, DetailMutation.SaveSucceeded(completion))
-            assertTrue(completed.fieldEdits.isEditing(key))
+            val completed =
+                DetailReducer.reduce(
+                    reopened,
+                    DetailMutation.SaveSucceeded.DraftSaved(completion, persistedValue),
+                )
+            assertEquals(
+                DetailFieldEdit.Editing(initialValue = persistedValue, draft = "submitted"),
+                completed.fieldEdits.edit(key),
+            )
         }
     }
 
@@ -132,12 +174,13 @@ class DetailSaveStateTest {
         val saved =
             DetailReducer.reduce(
                 changedWhileSaving,
-                DetailMutation.SaveSucceeded(completion, savedFieldValue = "B"),
+                DetailMutation.SaveSucceeded.DraftSaved(completion, "B"),
             )
 
-        assertEquals("A", saved.fieldEdits.draft(key))
-        assertEquals("B", saved.fieldEdits.initialValue(key))
-        assertTrue(saved.fieldEdits.isEditing(key))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "B", draft = "A"),
+            saved.fieldEdits.edit(key),
+        )
     }
 
     @Test
@@ -147,9 +190,11 @@ class DetailSaveStateTest {
                 fieldEdits = DetailFieldEditState().start(DetailDraftKey.Domain, "unsaved.example"),
                 saveState = DetailSaveState.Saving(DetailEditCompletion.Applications),
             )
-        val saved = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded(DetailEditCompletion.Applications))
-        assertEquals("unsaved.example", saved.fieldEdits.draft(DetailDraftKey.Domain))
-        assertTrue(saved.fieldEdits.isEditing(DetailDraftKey.Domain))
+        val saved = DetailReducer.reduce(saving, DetailMutation.SaveSucceeded.OtherSaved(DetailEditCompletion.Applications))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "unsaved.example", draft = "unsaved.example"),
+            saved.fieldEdits.edit(DetailDraftKey.Domain),
+        )
     }
 
     @Test
@@ -182,8 +227,10 @@ class DetailSaveStateTest {
                 ),
             )
 
-        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("Draft title", actual.fieldEdits.draft(DetailDraftKey.Title))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "Draft title", draft = "Draft title"),
+            actual.fieldEdits.edit(DetailDraftKey.Title),
+        )
         assertEquals(
             DetailSaveState.Idle,
             actual.saveState,
@@ -201,10 +248,10 @@ class DetailSaveStateTest {
         val actual =
             DetailReducer.reduce(
                 state,
-                DetailMutation.SaveSucceeded(DetailEditCompletion.Title),
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Title, "Draft title"),
             )
 
-        assertFalse(actual.fieldEdits.isEditing(DetailDraftKey.Title))
+        assertFalse(actual.fieldEdits.edit(DetailDraftKey.Title) is DetailFieldEdit.Editing)
         assertEquals(DetailSaveState.Idle, actual.saveState)
     }
 
@@ -219,11 +266,13 @@ class DetailSaveStateTest {
         val actual =
             DetailReducer.reduce(
                 state,
-                DetailMutation.SaveSucceeded(DetailEditCompletion.Notes),
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Notes, "Draft notes"),
             )
 
-        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Title))
-        assertEquals("Draft title", actual.fieldEdits.draft(DetailDraftKey.Title))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "Draft title", draft = "Draft title"),
+            actual.fieldEdits.edit(DetailDraftKey.Title),
+        )
     }
 
     @Test
@@ -238,10 +287,10 @@ class DetailSaveStateTest {
                     fieldEdits = edits,
                     saveState = DetailSaveState.Saving(DetailEditCompletion.Notes),
                 ),
-                DetailMutation.SaveSucceeded(DetailEditCompletion.Notes),
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Notes, "draft notes"),
             )
-        assertFalse(notesSaved.fieldEdits.isEditing(DetailDraftKey.Notes))
-        assertTrue(notesSaved.fieldEdits.isEditing(DetailDraftKey.Domain))
+        assertFalse(notesSaved.fieldEdits.edit(DetailDraftKey.Notes) is DetailFieldEdit.Editing)
+        assertTrue(notesSaved.fieldEdits.edit(DetailDraftKey.Domain) is DetailFieldEdit.Editing)
 
         val domainSaved =
             DetailReducer.reduce(
@@ -249,10 +298,10 @@ class DetailSaveStateTest {
                     fieldEdits = edits,
                     saveState = DetailSaveState.Saving(DetailEditCompletion.Domain),
                 ),
-                DetailMutation.SaveSucceeded(DetailEditCompletion.Domain),
+                DetailMutation.SaveSucceeded.DraftSaved(DetailEditCompletion.Domain, "example.com"),
             )
-        assertTrue(domainSaved.fieldEdits.isEditing(DetailDraftKey.Notes))
-        assertFalse(domainSaved.fieldEdits.isEditing(DetailDraftKey.Domain))
+        assertTrue(domainSaved.fieldEdits.edit(DetailDraftKey.Notes) is DetailFieldEdit.Editing)
+        assertFalse(domainSaved.fieldEdits.edit(DetailDraftKey.Domain) is DetailFieldEdit.Editing)
     }
 
     @Test
@@ -269,8 +318,10 @@ class DetailSaveStateTest {
                 DetailMutation.SaveFailed(DetailEditCompletion.Notes),
             )
 
-        assertTrue(actual.fieldEdits.isEditing(DetailDraftKey.Notes))
-        assertEquals("draft notes", actual.fieldEdits.draft(DetailDraftKey.Notes))
+        assertEquals(
+            DetailFieldEdit.Editing(initialValue = "draft notes", draft = "draft notes"),
+            actual.fieldEdits.edit(DetailDraftKey.Notes),
+        )
         assertEquals(
             DetailSaveState.Idle,
             actual.saveState,

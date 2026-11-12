@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -43,6 +45,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagChipsUiState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.TagEditorValidationUiState
@@ -81,17 +84,21 @@ fun TagEditorSheet(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = stringResource(R.string.vault_detail_tags_title),
-                style = MaterialTheme.typography.headlineSmall,
+                style = passlySheetTitleStyle(),
             )
 
             when (val draftTags = state.draftTagsUiState) {
-                DetailTagChipsUiState.Empty -> Unit
+                DetailTagChipsUiState.Empty -> {
+                    Unit
+                }
+
                 is DetailTagChipsUiState.Items -> {
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -143,8 +150,11 @@ fun TagEditorSheet(
                 supportingText =
                     {
                         when (val validation = state.validation) {
-                            TagEditorValidationUiState.None -> Unit
-                            is TagEditorValidationUiState.Invalid ->
+                            TagEditorValidationUiState.None -> {
+                                Unit
+                            }
+
+                            is TagEditorValidationUiState.Invalid -> {
                                 Text(
                                     text =
                                         pluralStringResource(
@@ -153,6 +163,7 @@ fun TagEditorSheet(
                                             validation.quantity,
                                         ),
                                 )
+                            }
                         }
                     },
                 isError = state.validation is TagEditorValidationUiState.Invalid,
@@ -165,7 +176,10 @@ fun TagEditorSheet(
             )
 
             when (val suggestions = state.suggestionsUiState) {
-                DetailTagChipsUiState.Empty -> Unit
+                DetailTagChipsUiState.Empty -> {
+                    Unit
+                }
+
                 is DetailTagChipsUiState.Items -> {
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),

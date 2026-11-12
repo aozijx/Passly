@@ -14,13 +14,16 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.paging.PagingData
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
+import com.aozijx.passly.feature.vault.otp.OtpLease
 import com.aozijx.passly.feature.vault.presentation.list.VaultUiAction
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.ui.component.topbar.VaultFilterBar
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListItemAction
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultListScreenUiModel
-import com.aozijx.passly.feature.vault.presentation.list.VaultOtpStateProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun VaultListBody(
@@ -29,7 +32,8 @@ internal fun VaultListBody(
     scrollBehavior: TopAppBarScrollBehavior,
     entries: Flow<PagingData<VaultListItemUiModel>>,
     onItemAction: (VaultListItemAction) -> Unit,
-    otpStateProvider: VaultOtpStateProvider,
+    otpUiStateFlow: (String, OtpPresentation, Boolean) -> StateFlow<OtpUiState>,
+    onAcquireOtp: (String) -> OtpLease,
     onAction: (VaultUiAction) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
@@ -57,7 +61,7 @@ internal fun VaultListBody(
                 allFiltersSelected = state.navigation.allFiltersSelected,
                 onClearFilters = { onAction(VaultUiAction.ClearFilters) },
                 onFilterToggled = { filter ->
-                    onAction(VaultUiAction.FilterToggled(filter.featureType))
+                    onAction(VaultUiAction.FilterToggled(filter))
                 },
             )
         }
@@ -65,7 +69,8 @@ internal fun VaultListBody(
             content = state.content,
             entries = entries,
             onItemAction = onItemAction,
-            otpStateProvider = otpStateProvider,
+            otpUiStateFlow = otpUiStateFlow,
+            onAcquireOtp = onAcquireOtp,
             gridState = gridState,
             modifier =
                 Modifier

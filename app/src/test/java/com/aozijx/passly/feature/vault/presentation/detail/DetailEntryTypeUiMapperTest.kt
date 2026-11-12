@@ -14,12 +14,16 @@ import com.aozijx.passly.domain.entry.model.credential.PasskeyCredential
 import com.aozijx.passly.domain.entry.model.credential.SshCredential
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.sensitive.SensitiveValue
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHardwareKeyInfoUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailIdentityNumberUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyDataUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailPasskeyUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSeedPhraseUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshFingerprintUiState
-import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshPassphraseUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshPrivateKeyUiState
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DetailEntryTypeUiMapperTest {
@@ -28,18 +32,18 @@ class DetailEntryTypeUiMapperTest {
         val entry = entry(EntryType.ID_CARD, IdentityCredential(), username = "identity-user")
 
         assertEquals(
-            ProtectedDetailFieldUiState.Absent,
+            DetailIdentityNumberUiState.Absent,
             detailIdentityUiModel(entry, DetailFieldProjection(DetailUiState())).idNumber,
         )
         assertEquals(
-            ProtectedDetailFieldUiState.Hidden,
+            DetailIdentityNumberUiState.Hidden,
             detailIdentityUiModel(
                 entry,
                 DetailFieldProjection(DetailUiState(sensitiveFieldKeys = setOf(SensitiveFieldKey.IDENTITY_NUMBER))),
             ).idNumber,
         )
         assertEquals(
-            ProtectedDetailFieldUiState.Revealed("123-45"),
+            DetailIdentityNumberUiState.Revealed("123-45"),
             detailIdentityUiModel(
                 entry,
                 DetailFieldProjection(
@@ -65,8 +69,29 @@ class DetailEntryTypeUiMapperTest {
         val actual = detailSshUiModel(entry, state, DetailFieldProjection(state))
 
         assertEquals(DetailSshFingerprintUiState.Available("fingerprint"), actual.fingerprint)
-        assertEquals(ProtectedDetailFieldUiState.Hidden, actual.passphrase)
-        assertEquals(ProtectedDetailFieldUiState.Revealed("private-key"), actual.privateKey)
+        assertEquals(DetailSshPassphraseUiState.Hidden, actual.passphrase)
+        assertEquals(DetailSshPrivateKeyUiState.Revealed("private-key"), actual.privateKey)
+        assertEquals("private-key...", (actual.privateKey as DetailSshPrivateKeyUiState.Revealed).preview)
+        assertTrue(actual.canRevealMore)
+    }
+
+    @Test
+    fun `ssh mapper projects passphrase editing without losing reveal capability`() {
+        val entry = entry(EntryType.SSH_KEY, SshCredential())
+        val state =
+            DetailUiState(
+                sensitiveFieldKeys = setOf(SensitiveFieldKey.SSH_PASSPHRASE),
+                fieldEdits =
+                    DetailFieldEditState().start(
+                        DetailDraftKey.EntryField(FieldKey.SSH_PASSPHRASE),
+                        "draft",
+                    ),
+            )
+
+        val actual = detailSshUiModel(entry, state, DetailFieldProjection(state))
+
+        assertEquals(DetailSshPassphraseUiState.Editing("draft"), actual.passphrase)
+        assertTrue(actual.canRevealMore)
     }
 
     @Test
@@ -111,7 +136,17 @@ class DetailEntryTypeUiMapperTest {
         val hiddenState = DetailUiState(sensitiveFieldKeys = setOf(SensitiveFieldKey.PASSKEY_PRIVATE_REFERENCE))
 
         assertEquals(
-            DetailPasskeyUiModel(ProtectedDetailFieldUiState.Hidden, "YubiKey"),
+            DetailPasskeyDataUiState.Absent,
+            detailPasskeyUiModel(
+                entry(EntryType.PASSKEY, PasskeyCredential()),
+                DetailFieldProjection(DetailUiState()),
+            ).data,
+        )
+        assertEquals(
+            DetailPasskeyUiModel(
+                data = DetailPasskeyDataUiState.Hidden,
+                hardwareKeyInfo = DetailHardwareKeyInfoUiState.Available("YubiKey"),
+            ),
             detailPasskeyUiModel(hiddenEntry, DetailFieldProjection(hiddenState)),
         )
 
@@ -120,10 +155,11 @@ class DetailEntryTypeUiMapperTest {
                 revealedFields = mapOf(FieldKey.PASSKEY_DATA to TestSensitiveValue("private-reference")),
             )
         assertEquals(
-            ProtectedDetailFieldUiState.Revealed("private-reference"),
+            DetailPasskeyDataUiState.Revealed("private-reference"),
             detailPasskeyUiModel(hiddenEntry, DetailFieldProjection(revealedState)).data,
         )
-        assertNull(
+        assertEquals(
+            DetailHardwareKeyInfoUiState.NotSet,
             detailPasskeyUiModel(
                 entry(EntryType.PASSKEY, PasskeyCredential(hardwareKeyInfo = "  ")),
                 DetailFieldProjection(DetailUiState()),
@@ -135,12 +171,11 @@ class DetailEntryTypeUiMapperTest {
         type: EntryType,
         credential: EntryCredential,
         username: String = "",
-    ) =
-        Entry(
-            identity = EntryIdentity(EntryId(type.name), type, timestamps = EntryTimestamps(1L)),
-            profile = EntryProfile(title = type.name, username = username),
-            secret = EntrySecret(credential = credential),
-        )
+    ) = Entry(
+        identity = EntryIdentity(EntryId(type.name), type, timestamps = EntryTimestamps(1L)),
+        profile = EntryProfile(title = type.name, username = username),
+        secret = EntrySecret(credential = credential),
+    )
 
     private class TestSensitiveValue(
         private val value: String,

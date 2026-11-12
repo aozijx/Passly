@@ -12,5 +12,4 @@ object SensitiveRevisionRestorePolicy {
             addAll(currentFields)
             addAll(historicalFields)
         }
-
 }

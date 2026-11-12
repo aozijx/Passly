@@ -14,8 +14,8 @@ import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSession
 import com.aozijx.passly.feature.vault.presentation.editor.EditorWriteSessionClearReason
-import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.matchesCurrentAccess
+import com.aozijx.passly.feature.vault.presentation.editor.toEditorLoadPhase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow

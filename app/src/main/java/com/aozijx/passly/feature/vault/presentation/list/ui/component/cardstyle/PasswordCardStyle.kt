@@ -1,6 +1,5 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
-import com.aozijx.passly.domain.entry.model.EntryType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import com.aozijx.passly.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -25,17 +23,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
+import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
+import com.aozijx.passly.feature.vault.presentation.list.preview.CardStylePreviewFixtures
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
-import com.aozijx.passly.presentation.shared.entry.labelRes
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconImageUiState
 
 @Composable
 fun PasswordStyleVaultItem(
@@ -45,7 +46,7 @@ fun PasswordStyleVaultItem(
     val secondaryText =
         when (val value = entry.passwordCardSecondaryText) {
             is VaultPasswordCardSecondaryTextUiModel.Value -> value.text
-            is VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel -> stringResource(value.entryType.labelRes)
+            is VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel -> stringResource(value.labelResource)
         }
     val tertiaryText =
         stringResource(
@@ -55,26 +56,28 @@ fun PasswordStyleVaultItem(
                 VaultPasswordCardSupportingTextUiModel.PROTECTED -> R.string.vault_password_card_protected
             },
         )
-    val imageModel = entry.iconImageModel
+    val imageModel =
+        when (val image = entry.icon.image) {
+            VaultItemIconImageUiState.Default -> null
+            is VaultItemIconImageUiState.Custom -> image.model
+        }
     val corner = MaterialTheme.shapes.extraLarge
     val paletteColors = rememberImagePaletteColors(imageModel?.uri)
     val accentColor = paletteColors?.accent
     val overlayTop =
         (accentColor ?: MaterialTheme.colorScheme.primary).copy(
             alpha =
-                if (imageModel == null) {
-                    CardStyleTokens.Password.NO_IMAGE_TOP_OVERLAY_ALPHA
-                } else {
-                    CardStyleTokens.Password.WITH_IMAGE_TOP_OVERLAY_ALPHA
+                when (entry.icon.image) {
+                    VaultItemIconImageUiState.Default -> CardStyleTokens.Password.NO_IMAGE_TOP_OVERLAY_ALPHA
+                    is VaultItemIconImageUiState.Custom -> CardStyleTokens.Password.WITH_IMAGE_TOP_OVERLAY_ALPHA
                 },
         )
     val overlayBottom =
         MaterialTheme.colorScheme.surface.copy(
             alpha =
-                if (imageModel == null) {
-                    CardStyleTokens.Password.NO_IMAGE_BOTTOM_OVERLAY_ALPHA
-                } else {
-                    CardStyleTokens.Password.WITH_IMAGE_BOTTOM_OVERLAY_ALPHA
+                when (entry.icon.image) {
+                    VaultItemIconImageUiState.Default -> CardStyleTokens.Password.NO_IMAGE_BOTTOM_OVERLAY_ALPHA
+                    is VaultItemIconImageUiState.Custom -> CardStyleTokens.Password.WITH_IMAGE_BOTTOM_OVERLAY_ALPHA
                 },
         )
 
@@ -97,16 +100,22 @@ fun PasswordStyleVaultItem(
                     .fillMaxWidth()
                     .clip(corner),
         ) {
-            if (imageModel != null) {
-                AsyncImage(
-                    model = imageModel.uri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .alpha(CardStyleTokens.Password.IMAGE_OVERLAY_ALPHA),
-                )
+            when (val image = entry.icon.image) {
+                VaultItemIconImageUiState.Default -> {
+                    Unit
+                }
+
+                is VaultItemIconImageUiState.Custom -> {
+                    AsyncImage(
+                        model = image.model.uri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .alpha(CardStyleTokens.Password.IMAGE_OVERLAY_ALPHA),
+                    )
+                }
             }
             Box(
                 modifier =
@@ -173,14 +182,17 @@ internal object PasswordVaultCardStyle : VaultCardStyleComponent {
     @Composable
     override fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState,
+        totpState: OtpUiState,
         onClick: () -> Unit,
     ) {
         PasswordStyleVaultItem(entry = entry, onClick = onClick)
     }
 
     @Composable
-    override fun Preview(entryType: EntryType, onClick: () -> Unit) {
+    override fun Preview(
+        entryType: EntryType,
+        onClick: () -> Unit,
+    ) {
         PasswordStyleVaultItem(
             entry = CardStylePreviewFixtures.passwordEntry(entryType),
             onClick = onClick,

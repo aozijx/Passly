@@ -1,7 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.editor.wifi
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
+import com.aozijx.passly.domain.entry.policy.EntryViolation
 import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.domain.entry.policy.WifiCredentialValidation
 import com.aozijx.passly.domain.entry.policy.WifiQrPayload
@@ -15,7 +17,19 @@ data class AddWifiFormState(
     val isHidden: Boolean = false,
     val notes: String = "",
     val tags: String = "",
-)
+) {
+    val showsPasswordField: Boolean
+        get() = securityType != WifiSecurityType.Open
+}
+
+internal fun WifiSecurityType.labelResource(): Int =
+    when (this) {
+        WifiSecurityType.Open -> R.string.wifi_security_open
+        WifiSecurityType.Wep -> R.string.wifi_security_wep
+        WifiSecurityType.WpaPersonal -> R.string.wifi_security_wpa_personal
+    }
+
+enum class WifiPasswordFeedbackUiState { Hidden, Invalid }
 
 sealed interface AddWifiInitialContent {
     data object Blank : AddWifiInitialContent
@@ -36,23 +50,25 @@ data class AddWifiUiState(
     val isSaving: Boolean = false,
     val loadPhase: EditorLoadPhase = EditorLoadPhase.NotRequested,
 ) {
-    val fieldErrors: Map<FieldKey, EntryViolationCode>
-        get() = form.visibleFieldErrors()
+    val passwordFeedback: WifiPasswordFeedbackUiState
+        get() =
+            if (
+                form.showsPasswordField &&
+                form.validationViolations().any { it.field == FieldKey.PASSWORD && it.code != EntryViolationCode.REQUIRED }
+            ) {
+                WifiPasswordFeedbackUiState.Invalid
+            } else {
+                WifiPasswordFeedbackUiState.Hidden
+            }
 
     val canSave: Boolean
         get() =
-            form.fieldErrors().isEmpty() && !isSaving && loadPhase.allowsSaving
+            form.validationViolations().isEmpty() && !isSaving && loadPhase.allowsSaving
 }
 
-internal fun AddWifiFormState.fieldErrors(): Map<FieldKey, EntryViolationCode> =
-    buildMap {
-        WifiCredentialValidation
-            .validate(
-                ssid = ssid,
-                password = password.takeIf(String::isNotEmpty),
-                securityType = securityType,
-            ).forEach { put(it.field, it.code) }
-    }
-
-private fun AddWifiFormState.visibleFieldErrors(): Map<FieldKey, EntryViolationCode> =
-    fieldErrors().filterValues { it != EntryViolationCode.REQUIRED }
+internal fun AddWifiFormState.validationViolations(): Set<EntryViolation> =
+    WifiCredentialValidation.validate(
+        ssid = ssid,
+        password = password.takeIf(String::isNotEmpty),
+        securityType = securityType,
+    )

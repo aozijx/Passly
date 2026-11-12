@@ -24,7 +24,6 @@ object CardStyleTokens {
         const val WITH_IMAGE_BOTTOM_OVERLAY_ALPHA = 0.78f
 
         const val TERTIARY_TEXT_ALPHA = 0.78f
-
     }
 
     object Totp {
@@ -41,7 +40,6 @@ object CardStyleTokens {
         val codeFontSize = 20.sp
         val codeLetterSpacing = 1.sp
 
-        val progressRowSpacing = 6.dp
         val progressSize = 12.dp
         val progressStrokeWidth = 2.dp
         val lockIconSize = 28.dp

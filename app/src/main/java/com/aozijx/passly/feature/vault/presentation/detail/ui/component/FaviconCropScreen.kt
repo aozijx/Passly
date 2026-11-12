@@ -37,6 +37,7 @@ import com.aozijx.passly.presentation.shared.media.toLocalIconImageModel
 @Composable
 fun FaviconCropScreen(
     stagedPath: String,
+    isGif: Boolean,
     processing: Boolean,
     onCrop: (zoom: Float, offsetX: Float, offsetY: Float) -> Unit,
     onUseWithoutCrop: () -> Unit,
@@ -44,6 +45,31 @@ fun FaviconCropScreen(
 ) {
     var cropState by remember(stagedPath) { mutableStateOf(FaviconCropGestureState()) }
     var geometry by remember(stagedPath) { mutableStateOf(FaviconCropGeometry()) }
+    val cropGestureModifier =
+        if (isGif) {
+            Modifier
+        } else {
+            Modifier
+                .onSizeChanged { size ->
+                    geometry =
+                        geometry.copy(
+                            viewportWidth = size.width.toFloat(),
+                            viewportHeight = size.height.toFloat(),
+                        )
+                    cropState = FaviconCropTransform.clamp(cropState, geometry)
+                }.pointerInput(stagedPath) {
+                    detectTransformGestures { _, pan, gestureZoom, _ ->
+                        cropState =
+                            FaviconCropTransform.applyGesture(
+                                state = cropState,
+                                geometry = geometry,
+                                panX = pan.x,
+                                panY = pan.y,
+                                zoomChange = gestureZoom,
+                            )
+                    }
+                }
+        }
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -63,54 +89,51 @@ fun FaviconCropScreen(
                             .fillMaxWidth()
                             .aspectRatio(1f)
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                            .onSizeChanged { size ->
-                                geometry =
-                                    geometry.copy(
-                                        viewportWidth = size.width.toFloat(),
-                                        viewportHeight = size.height.toFloat(),
-                                    )
-                                cropState = FaviconCropTransform.clamp(cropState, geometry)
-                            }.pointerInput(stagedPath) {
-                                detectTransformGestures { _, pan, gestureZoom, _ ->
-                                    cropState =
-                                        FaviconCropTransform.applyGesture(
-                                            state = cropState,
-                                            geometry = geometry,
-                                            panX = pan.x,
-                                            panY = pan.y,
-                                            zoomChange = gestureZoom,
-                                        )
-                                }
-                            },
+                            .then(cropGestureModifier),
                     contentAlignment = Alignment.Center,
                 ) {
                     AsyncImage(
                         model = toLocalIconImageModel(stagedPath)?.uri,
                         contentDescription = null,
                         onSuccess = { success ->
-                            val drawable = success.result.drawable
-                            geometry =
-                                geometry.copy(
-                                    imageWidth = drawable.intrinsicWidth.coerceAtLeast(0).toFloat(),
-                                    imageHeight = drawable.intrinsicHeight.coerceAtLeast(0).toFloat(),
-                                )
-                            cropState = FaviconCropTransform.clamp(cropState, geometry)
+                            if (!isGif) {
+                                val drawable = success.result.drawable
+                                geometry =
+                                    geometry.copy(
+                                        imageWidth = drawable.intrinsicWidth.coerceAtLeast(0).toFloat(),
+                                        imageHeight = drawable.intrinsicHeight.coerceAtLeast(0).toFloat(),
+                                    )
+                                cropState = FaviconCropTransform.clamp(cropState, geometry)
+                            }
                         },
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .graphicsLayer {
-                                    scaleX = cropState.zoom
-                                    scaleY = cropState.zoom
-                                    translationX = cropState.offsetX
-                                    translationY = cropState.offsetY
-                                    clip = true
-                                },
-                        contentScale = ContentScale.Crop,
+                                .then(
+                                    if (isGif) {
+                                        Modifier
+                                    } else {
+                                        Modifier.graphicsLayer {
+                                            scaleX = cropState.zoom
+                                            scaleY = cropState.zoom
+                                            translationX = cropState.offsetX
+                                            translationY = cropState.offsetY
+                                            clip = true
+                                        }
+                                    },
+                                ),
+                        contentScale = if (isGif) ContentScale.Fit else ContentScale.Crop,
                     )
                 }
                 Text(
-                    text = stringResource(R.string.vault_detail_favicon_crop_hint),
+                    text =
+                        stringResource(
+                            if (isGif) {
+                                R.string.vault_detail_favicon_gif_crop_hint
+                            } else {
+                                R.string.vault_detail_favicon_crop_hint
+                            },
+                        ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(
@@ -125,20 +148,30 @@ fun FaviconCropScreen(
                         enabled = !processing,
                         modifier = Modifier.weight(1f),
                     ) {
-                        Text(stringResource(R.string.vault_detail_favicon_no_crop))
+                        Text(
+                            stringResource(
+                                if (isGif) {
+                                    R.string.vault_detail_favicon_gif_use
+                                } else {
+                                    R.string.vault_detail_favicon_no_crop
+                                },
+                            ),
+                        )
                     }
-                    Button(
-                        onClick = {
-                            val selection = FaviconCropTransform.toRequest(cropState, geometry)
-                            onCrop(
-                                selection.zoom,
-                                selection.offsetX,
-                                selection.offsetY,
-                            )
-                        },
-                        enabled = !processing,
-                    ) {
-                        Text(stringResource(R.string.vault_detail_favicon_crop_use))
+                    if (!isGif) {
+                        Button(
+                            onClick = {
+                                val selection = FaviconCropTransform.toRequest(cropState, geometry)
+                                onCrop(
+                                    selection.zoom,
+                                    selection.offsetX,
+                                    selection.offsetY,
+                                )
+                            },
+                            enabled = !processing,
+                        ) {
+                            Text(stringResource(R.string.vault_detail_favicon_crop_use))
+                        }
                     }
                 }
             }

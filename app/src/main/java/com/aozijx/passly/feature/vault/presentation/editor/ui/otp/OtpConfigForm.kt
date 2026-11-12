@@ -12,12 +12,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.feature.vault.presentation.editor.otp.AddOtpAction
+import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFieldFeedbackUiState
 import com.aozijx.passly.feature.vault.presentation.editor.otp.OtpFormState
+import com.aozijx.passly.feature.vault.presentation.editor.otp.labelResource
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,7 +28,7 @@ fun OtpConfigForm(
     onAction: (AddOtpAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val invalidFields = state.invalidFields
+    val feedback = state.feedback
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -37,19 +38,14 @@ fun OtpConfigForm(
             onValueChange = { onAction(AddOtpAction.TypeChanged(it)) },
             options = OtpType.entries,
             label = stringResource(R.string.otp_type),
-            optionToString = { it.name },
+            optionLabel = { stringResource(it.labelResource) },
         )
         NextFocusTextField(
             value = state.secret,
             onValueChange = { onAction(AddOtpAction.SecretChanged(it)) },
             label = stringResource(R.string.totp_secret),
-            isError = state.secretHasInputError,
-            supportingText =
-                if (state.secretHasInputError) {
-                    { Text(stringResource(R.string.otp_secret_invalid)) }
-                } else {
-                    null
-                },
+            isError = feedback.secret.isInvalid,
+            supportingText = feedback.secret.supportingText(R.string.otp_secret_invalid),
         )
         NextFocusTextField(
             value = state.issuer,
@@ -67,7 +63,7 @@ fun OtpConfigForm(
             options = OtpHashAlgorithm.entries,
             label = stringResource(R.string.totp_algorithm),
             enabled = state.allowsParameterEditing,
-            optionToString = { it.name },
+            optionLabel = { stringResource(it.labelResource) },
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -80,15 +76,8 @@ fun OtpConfigForm(
                     label = stringResource(R.string.otp_counter),
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
-                    isError = FieldKey.OTP_COUNTER in invalidFields,
-                    supportingText =
-                        if (FieldKey.OTP_COUNTER in
-                            invalidFields
-                        ) {
-                            ({ Text(stringResource(R.string.otp_counter_invalid)) })
-                        } else {
-                            null
-                        },
+                    isError = feedback.counter.isInvalid,
+                    supportingText = feedback.counter.supportingText(R.string.otp_counter_invalid),
                 )
             } else {
                 NextFocusTextField(
@@ -98,15 +87,8 @@ fun OtpConfigForm(
                     enabled = state.allowsParameterEditing,
                     modifier = Modifier.weight(1f),
                     keyboardType = KeyboardType.Number,
-                    isError = FieldKey.OTP_PERIOD in invalidFields,
-                    supportingText =
-                        if (FieldKey.OTP_PERIOD in
-                            invalidFields
-                        ) {
-                            ({ Text(stringResource(R.string.otp_period_invalid)) })
-                        } else {
-                            null
-                        },
+                    isError = feedback.period.isInvalid,
+                    supportingText = feedback.period.supportingText(R.string.otp_period_invalid),
                 )
             }
             NextFocusTextField(
@@ -116,15 +98,8 @@ fun OtpConfigForm(
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Number,
                 enabled = state.allowsParameterEditing,
-                isError = FieldKey.OTP_DIGITS in invalidFields,
-                supportingText =
-                    if (FieldKey.OTP_DIGITS in
-                        invalidFields
-                    ) {
-                        ({ Text(stringResource(R.string.otp_digits_invalid)) })
-                    } else {
-                        null
-                    },
+                isError = feedback.digits.isInvalid,
+                supportingText = feedback.digits.supportingText(R.string.otp_digits_invalid),
             )
         }
         DropdownSelector(
@@ -133,7 +108,22 @@ fun OtpConfigForm(
             options = OtpSecretEncoding.entries,
             label = stringResource(R.string.otp_secret_encoding),
             modifier = Modifier.fillMaxWidth(),
-            optionToString = { it.name },
+            optionLabel = { stringResource(it.labelResource) },
         )
     }
 }
+
+private val OtpFieldFeedbackUiState.isInvalid: Boolean
+    get() = this == OtpFieldFeedbackUiState.Invalid
+
+@Composable
+private fun OtpFieldFeedbackUiState.supportingText(messageRes: Int): (@Composable () -> Unit)? =
+    when (this) {
+        OtpFieldFeedbackUiState.Hidden -> {
+            null
+        }
+
+        OtpFieldFeedbackUiState.Invalid -> {
+            { Text(stringResource(messageRes)) }
+        }
+    }

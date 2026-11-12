@@ -10,8 +10,7 @@ import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldResult
 import com.aozijx.passly.feature.vault.entry.CopyEntryFieldUseCase
 import com.aozijx.passly.feature.vault.entry.CopyOtpCodeUseCase
-import com.aozijx.passly.feature.vault.model.OtpCodeState
-import com.aozijx.passly.feature.vault.otp.OtpCodeRuntime
+import com.aozijx.passly.feature.vault.otp.OtpCodeRuntimePort
 import com.aozijx.passly.feature.vault.trash.TrashCommandResult
 import com.aozijx.passly.feature.vault.trash.TrashCommandUseCase
 import com.aozijx.passly.presentation.shared.error.UiErrorMessage
@@ -31,18 +30,19 @@ internal class VaultEntryCommandWorkflowFactory
     ) {
         fun create(
             scope: CoroutineScope,
-            otpRuntime: OtpCodeRuntime,
+            otpRuntime: OtpCodeRuntimePort,
             pageEffects: PageEffects<VaultEffect>,
-        ) =
-            VaultEntryCommandWorkflow(
-                scope = scope,
-                secureSessionAccessState = secureSessionAccessState,
-                trashCommand = trashCommand,
-                copyEntryField = copyEntryField,
-                copyOtpCode = copyOtpCode,
-                otpRuntime = otpRuntime,
-                pageEffects = pageEffects,
-            )
+            onOtpEntryRemoved: (String) -> Unit,
+        ) = VaultEntryCommandWorkflow(
+            scope = scope,
+            secureSessionAccessState = secureSessionAccessState,
+            trashCommand = trashCommand,
+            copyEntryField = copyEntryField,
+            copyOtpCode = copyOtpCode,
+            otpRuntime = otpRuntime,
+            pageEffects = pageEffects,
+            onOtpEntryRemoved = onOtpEntryRemoved,
+        )
     }
 
 /** Owns Vault list commands whose delivery and side effects belong to one page visit. */
@@ -52,8 +52,9 @@ internal class VaultEntryCommandWorkflow(
     private val trashCommand: TrashCommandUseCase,
     private val copyEntryField: CopyEntryFieldUseCase,
     private val copyOtpCode: CopyOtpCodeUseCase,
-    private val otpRuntime: OtpCodeRuntime,
+    private val otpRuntime: OtpCodeRuntimePort,
     private val pageEffects: PageEffects<VaultEffect>,
+    private val onOtpEntryRemoved: (String) -> Unit,
 ) {
     private val deletingEntryIds = mutableSetOf<EntryId>()
 
@@ -99,7 +100,7 @@ internal class VaultEntryCommandWorkflow(
                     canDeliver = {
                         pageEffects.isActive(owner) && secureSessionAccessState.hasFullSecureSessionAccess()
                     },
-                    codeProvider = { (otpRuntime.states.value[entryId] as? OtpCodeState.Ready)?.code },
+                    codeProvider = { otpRuntime.codeForCopy(entryId) },
                 )
             ) {
                 CopyEntryFieldResult.Copied -> pageEffects.tryEmit(owner, VaultEffect.OtpCopied)
@@ -118,10 +119,12 @@ internal class VaultEntryCommandWorkflow(
             try {
                 when (val result = trashCommand.moveToTrash(entryId)) {
                     TrashCommandResult.Completed -> {
-                        otpRuntime.entryRemoved(entryId.value)
+                        onOtpEntryRemoved(entryId.value)
                     }
 
-                    TrashCommandResult.NotAuthorized -> Unit
+                    TrashCommandResult.NotAuthorized -> {
+                        Unit
+                    }
 
                     is TrashCommandResult.Failed -> {
                         pageEffects.tryEmit(

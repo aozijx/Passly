@@ -19,6 +19,7 @@ import com.aozijx.passly.feature.backup.internal.archive.model.BackupResourceKin
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupRestoreResult
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotGateway
 import com.aozijx.passly.feature.backup.internal.archive.snapshot.BackupSnapshotReadOptions
+import com.aozijx.passly.feature.vault.otp.OtpRuntimeInvalidator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +31,7 @@ internal class AppBackupSnapshotGateway
     constructor(
         private val vaultBackupStore: VaultBackupStore,
         @param:ApplicationContext private val context: Context,
+        private val otpRuntimeInvalidator: OtpRuntimeInvalidator,
     ) : BackupSnapshotGateway {
         override suspend fun read(options: BackupSnapshotReadOptions): BackupBundle {
             val snapshot =
@@ -55,7 +57,10 @@ internal class AppBackupSnapshotGateway
             )
         }
 
-        override suspend fun restore(bundle: BackupBundle, mode: ImportMode): BackupRestoreResult {
+        override suspend fun restore(
+            bundle: BackupBundle,
+            mode: ImportMode,
+        ): BackupRestoreResult {
             require(
                 mode != ImportMode.OVERWRITE ||
                     bundle.sourceEntryCount == 0 ||
@@ -65,9 +70,10 @@ internal class AppBackupSnapshotGateway
             val entries = bundle.document.entries.map(KeyedEntryArchiveMapper::toEntry)
             val links =
                 bundle.document.links.map { link ->
-                    val relation = requireNotNull(BackupArchiveKeyRegistry.relationType(link.relationType)) {
-                        "未知关系类型: ${link.relationType}"
-                    }
+                    val relation =
+                        requireNotNull(BackupArchiveKeyRegistry.relationType(link.relationType)) {
+                            "未知关系类型: ${link.relationType}"
+                        }
                     EntryLink.create(
                         id = EntryLinkId(link.id),
                         sourceEntryId = EntryId(link.sourceEntryId),
@@ -95,9 +101,10 @@ internal class AppBackupSnapshotGateway
                         fileName = record.fileName,
                         mimeType = record.mimeType,
                         createdAt = record.createdAt,
-                        content = requireNotNull(bundle.resourceData[record.id]) {
-                            "备份资源内容缺失: ${record.id}"
-                        },
+                        content =
+                            requireNotNull(bundle.resourceData[record.id]) {
+                                "备份资源内容缺失: ${record.id}"
+                            },
                     )
                 }
             val result =
@@ -106,6 +113,9 @@ internal class AppBackupSnapshotGateway
                     when (mode) {
                         ImportMode.APPEND -> VaultBackupRestoreMode.APPEND
                         ImportMode.OVERWRITE -> VaultBackupRestoreMode.OVERWRITE
+                    },
+                    onCommitted = {
+                        if (mode == ImportMode.OVERWRITE) otpRuntimeInvalidator.vaultReplaced()
                     },
                 )
             return BackupRestoreResult(result.importedEntryCount, result.existingEntryCount)

@@ -5,6 +5,7 @@ import com.aozijx.passly.domain.entry.model.otp.OtpGenerationError
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.generation.OtpSecretCodec
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.URLEncoder

@@ -29,19 +29,19 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.WifiSecurityType
-import com.aozijx.passly.domain.entry.policy.EntryViolationCode
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.EntryEditorSection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.NextFocusTextField
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.SensitiveFieldVisibilityButton
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiAction
 import com.aozijx.passly.feature.vault.presentation.editor.wifi.AddWifiFormState
+import com.aozijx.passly.feature.vault.presentation.editor.wifi.WifiPasswordFeedbackUiState
+import com.aozijx.passly.feature.vault.presentation.editor.wifi.labelResource
 
 @Composable
 internal fun WifiFormFields(
     form: AddWifiFormState,
-    fieldErrors: Map<FieldKey, EntryViolationCode>,
+    passwordFeedback: WifiPasswordFeedbackUiState,
     onAction: (AddWifiAction) -> Unit,
 ) {
     EntryEditorSection(title = stringResource(R.string.vault_editor_section_credentials)) {
@@ -49,8 +49,7 @@ internal fun WifiFormFields(
             selected = form.securityType,
             onSelected = { onAction(AddWifiAction.SecurityTypeChanged(it)) },
         )
-        if (form.securityType != WifiSecurityType.Open) {
-            val passwordError = fieldErrors[FieldKey.PASSWORD]
+        if (form.showsPasswordField) {
             NextFocusTextField(
                 value = form.password,
                 onValueChange = { onAction(AddWifiAction.PasswordChanged(it)) },
@@ -62,19 +61,17 @@ internal fun WifiFormFields(
                         PasswordVisualTransformation()
                     },
                 keyboardType = KeyboardType.Password,
-                isError = passwordError != null,
+                isError = passwordFeedback == WifiPasswordFeedbackUiState.Invalid,
                 supportingText =
-                    passwordError?.let { error ->
-                        {
-                            Text(
-                                stringResource(
-                                    if (error == EntryViolationCode.REQUIRED) {
-                                        R.string.wifi_password_required
-                                    } else {
-                                        R.string.wifi_password_invalid
-                                    },
-                                ),
-                            )
+                    when (passwordFeedback) {
+                        WifiPasswordFeedbackUiState.Hidden -> {
+                            null
+                        }
+
+                        WifiPasswordFeedbackUiState.Invalid -> {
+                            {
+                                Text(stringResource(R.string.wifi_password_invalid))
+                            }
                         }
                     },
                 trailingIcon = {
@@ -117,7 +114,7 @@ private fun WifiSecurityTypeDropdown(
         onExpandedChange = { expanded = it },
     ) {
         OutlinedTextField(
-            value = selected.label(),
+            value = stringResource(selected.labelResource()),
             onValueChange = {},
             readOnly = true,
             label = { Text(stringResource(R.string.wifi_encryption)) },
@@ -134,7 +131,7 @@ private fun WifiSecurityTypeDropdown(
         ) {
             WifiSecurityType.entries.forEach { securityType ->
                 DropdownMenuItem(
-                    text = { Text(securityType.label()) },
+                    text = { Text(stringResource(securityType.labelResource())) },
                     onClick = {
                         onSelected(securityType)
                         expanded = false
@@ -145,13 +142,3 @@ private fun WifiSecurityTypeDropdown(
         }
     }
 }
-
-@Composable
-private fun WifiSecurityType.label(): String =
-    stringResource(
-        when (this) {
-            WifiSecurityType.Open -> R.string.wifi_security_open
-            WifiSecurityType.Wep -> R.string.wifi_security_wep
-            WifiSecurityType.WpaPersonal -> R.string.wifi_security_wpa_personal
-        },
-    )

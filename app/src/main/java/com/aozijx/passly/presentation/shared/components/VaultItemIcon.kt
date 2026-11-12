@@ -12,69 +12,61 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.core.platform.packageinfo.rememberInstalledAppIconBitmap
-import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemAssociatedAppUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconGlyphUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconImageUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconTintUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconUiModel
 
 @Composable
 internal fun VaultItemIcon(
     modifier: Modifier = Modifier,
-    iconName: String?,
-    customImageModel: LocalIconImageModel?,
-    associatedAppPackage: String?,
-    visualCategory: EntryVisualCategory,
-    iconColor: String? = null,
-) = VaultItemIcon(
-    modifier = modifier,
-    iconName = iconName,
-    associatedAppPackage = associatedAppPackage,
-    visualCategory = visualCategory,
-    customImageModel = customImageModel,
-    iconColor = iconColor,
-    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-)
-
-@Composable
-private fun VaultItemIcon(
-    modifier: Modifier,
-    iconName: String?,
-    associatedAppPackage: String?,
-    visualCategory: EntryVisualCategory,
-    customImageModel: LocalIconImageModel?,
-    iconColor: String?,
-    tint: Color,
+    model: VaultItemIconUiModel,
 ) {
-    val appIconBitmap = rememberInstalledAppIconBitmap(associatedAppPackage)
+    val tint = MaterialTheme.colorScheme.onSecondaryContainer
+    val appIconBitmap =
+        when (val associatedApp = model.associatedApp) {
+            VaultItemAssociatedAppUiState.None -> null
+            is VaultItemAssociatedAppUiState.Package -> rememberInstalledAppIconBitmap(associatedApp.name)
+        }
     val appIconPainter =
         remember(appIconBitmap) {
             appIconBitmap?.let(::BitmapPainter)
         }
-    val explicitIconVector =
-        remember(iconName) { VaultIcons.findDefinition(iconName)?.imageVector }
-    val fallbackIconVector = explicitIconVector ?: VaultIcons.getIconByCategory(visualCategory)
+    val fallbackIconVector =
+        when (val glyph = model.glyph) {
+            is VaultItemIconGlyphUiState.Named -> glyph.imageVector
+            VaultItemIconGlyphUiState.CategoryFallback -> VaultIcons.getIconByCategory(model.visualCategory)
+        }
     val fallbackPainter = rememberVectorPainter(fallbackIconVector)
     val placeholderPainter = appIconPainter ?: fallbackPainter
+    val glyphTint =
+        when (val icon = model.glyph) {
+            VaultItemIconGlyphUiState.CategoryFallback -> {
+                tint
+            }
 
-    val customModel = customImageModel
-    val resolvedTint =
-        if (explicitIconVector != null && customModel == null) {
-            iconColorForStorageToken(iconColor, tint)
-        } else {
-            tint
+            is VaultItemIconGlyphUiState.Named -> {
+                when (val iconTint = icon.tint) {
+                    VaultItemIconTintUiState.ThemeDefault -> tint
+                    is VaultItemIconTintUiState.StorageToken -> iconColorForStorageToken(iconTint.value, tint)
+                }
+            }
         }
     Box(
         modifier = modifier.size(36.dp),
         contentAlignment = Alignment.Center,
     ) {
-        when {
-            customModel != null -> {
+        when (val image = model.image) {
+            is VaultItemIconImageUiState.Custom -> {
                 AsyncImage(
-                    model = customModel.uri,
+                    model = image.model.uri,
                     contentDescription = null,
                     modifier =
                         Modifier
@@ -86,25 +78,29 @@ private fun VaultItemIcon(
                 )
             }
 
-            appIconPainter != null -> {
-                Image(
-                    painter = appIconPainter,
-                    contentDescription = null,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                    contentScale = ContentScale.Fit,
-                )
-            }
+            VaultItemIconImageUiState.Default -> {
+                when (val appPainter = appIconPainter) {
+                    null -> {
+                        Icon(
+                            imageVector = fallbackIconVector,
+                            contentDescription = null,
+                            tint = glyphTint,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
 
-            else -> {
-                Icon(
-                    imageVector = fallbackIconVector,
-                    contentDescription = null,
-                    tint = resolvedTint,
-                    modifier = Modifier.size(24.dp),
-                )
+                    else -> {
+                        Image(
+                            painter = appPainter,
+                            contentDescription = null,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                }
             }
         }
     }

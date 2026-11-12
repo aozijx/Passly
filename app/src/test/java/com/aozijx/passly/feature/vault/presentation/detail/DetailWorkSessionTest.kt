@@ -10,8 +10,8 @@ import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.entry.model.credential.LoginCredential
-import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.DefaultEntryFieldReader
+import com.aozijx.passly.domain.entry.policy.EntryEdit
 import com.aozijx.passly.domain.entry.policy.EntryEditResult
 import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.sensitive.SensitiveValue
@@ -40,8 +40,10 @@ class DetailWorkSessionTest {
                     DetailUiState(fieldEdits = DetailFieldEditState().start(DetailDraftKey.Title, "new draft")),
                     fixture.mutations.first() as DetailMutation.EntryPresented,
                 )
-            assertTrue(presented.fieldEdits.isEditing(DetailDraftKey.Title))
-            assertEquals("new draft", presented.fieldEdits.draft(DetailDraftKey.Title))
+            assertEquals(
+                DetailFieldEdit.Editing(initialValue = "new draft", draft = "new draft"),
+                presented.fieldEdits.edit(DetailDraftKey.Title),
+            )
         }
 
     @Test
@@ -284,9 +286,9 @@ class DetailWorkSessionTest {
             try {
                 assertTrue(fixture.mutations[0] is DetailMutation.EntryPresented)
                 assertEquals(
-                    DetailMutation.SaveSucceeded(
+                    DetailMutation.SaveSucceeded.DraftSaved(
                         completion = DetailEditCompletion.Field(FieldKey.PASSWORD),
-                        savedFieldValue = "new-password",
+                        persistedValue = "new-password",
                     ),
                     fixture.mutations[1],
                 )
@@ -376,7 +378,9 @@ class DetailWorkSessionTest {
                             AppResult.Success(entry)
                         }
 
-                        is EntryEditResult.Invalid, EntryEditResult.Unsupported -> error("Test edit should be valid for this entry")
+                        is EntryEditResult.Invalid, EntryEditResult.Unsupported -> {
+                            error("Test edit should be valid for this entry")
+                        }
                     }
                 },
                 fieldReader = DefaultEntryFieldReader(),

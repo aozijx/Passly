@@ -50,7 +50,8 @@ internal fun AddPasswordFormState.fromEntry(entry: Entry): AddPasswordFormState 
         notes = entry.secret.notes.orEmpty(),
         tags = entry.tags.joinToString(", "),
         associatedAppSelection =
-            entry.associations.applicationIds.firstOrNull()
+            entry.associations.applicationIds
+                .firstOrNull()
                 ?.let(AssociatedAppSelection::Selected)
                 ?: AssociatedAppSelection.NotSelected,
         preservedAssociatedAppPackages =

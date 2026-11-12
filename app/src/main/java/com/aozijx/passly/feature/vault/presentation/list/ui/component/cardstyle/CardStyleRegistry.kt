@@ -1,8 +1,8 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
+import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultCardPresentationUiModel
 
 object CardStyleRegistry {
     /*
@@ -36,8 +36,23 @@ object CardStyleRegistry {
     val configurableEntryTypes: List<EntryType>
         get() = EntryType.entries.filter { stylesFor(it).size > 1 }
 
-    fun stylesFor(entryType: EntryType): List<VaultCardStyleComponent> =
-        registrations.filter { it.supportsEntryType(entryType) }
+    fun stylesFor(entryType: EntryType): List<VaultCardStyleComponent> = registrations.filter { it.supportsEntryType(entryType) }
+
+    fun styleFor(
+        entryType: EntryType,
+        styleKey: String,
+    ): VaultCardStyleComponent =
+        registrationsByKey
+            .getValue(styleKey.normalizedStyleKey())
+            .also { require(it.supportsEntryType(entryType)) }
+
+    fun configuredStyleFor(
+        entryType: EntryType,
+        styleKey: String?,
+    ): VaultCardStyleComponent =
+        registrationsByKey[styleKey.normalizedStyleKey()]
+            ?.takeIf { it.supportsEntryType(entryType) }
+            ?: defaultStyle
 
     fun entryTypeKey(entryType: EntryType): String =
         when (entryType) {
@@ -75,12 +90,9 @@ object CardStyleRegistry {
             presentations.firstOrNull {
                 it.entryTypeKey == entryTypeKey(entry.entryType)
             }
-        val requested =
-            registrationsByKey[presentation?.variantKey.normalizedStyleKey()]
-                ?: defaultStyle
-        return requested.takeIf {
-            it.supportsEntryType(entry.entryType) && it.supports(entry)
-        } ?: defaultStyle
+        return configuredStyleFor(entry.entryType, presentation?.variantKey)
+            .takeIf { it.supports(entry) }
+            ?: defaultStyle
     }
 
     private fun String?.normalizedStyleKey(): String = this?.trim()?.lowercase().orEmpty()

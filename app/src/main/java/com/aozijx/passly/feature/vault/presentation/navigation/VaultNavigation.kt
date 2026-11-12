@@ -64,11 +64,21 @@ internal class VaultNavigation(
                             navigate = navigateToSingleTopRoute,
                         )
                 ) {
-                    EntryEditorSeedNavigationResult.Navigated -> VaultNavigationResult.Navigated
-                    EntryEditorSeedNavigationResult.AccessDenied -> VaultNavigationResult.AccessDenied
-                    EntryEditorSeedNavigationResult.UnsupportedDestination -> VaultNavigationResult.UnsupportedDestination
-                    is EntryEditorSeedNavigationResult.NavigationFailed ->
+                    EntryEditorSeedNavigationResult.Navigated -> {
+                        VaultNavigationResult.Navigated
+                    }
+
+                    EntryEditorSeedNavigationResult.AccessDenied -> {
+                        VaultNavigationResult.AccessDenied
+                    }
+
+                    EntryEditorSeedNavigationResult.UnsupportedDestination -> {
+                        VaultNavigationResult.UnsupportedDestination
+                    }
+
+                    is EntryEditorSeedNavigationResult.NavigationFailed -> {
                         VaultNavigationResult.NavigationFailed(result.failure)
+                    }
                 }
             }
         }

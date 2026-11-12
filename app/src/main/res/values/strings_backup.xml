@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="backup_export_success">导出成功</string>
+    <string name="backup_import_success">导入成功，图标后台同步中</string>
+    <string name="backup_import_success_summary">导入完成：写入 %1$d，已存在 %2$d，跳过 %3$d，忽略字段 %4$d，裁剪关联 %5$d，裁剪资源 %6$d</string>
+    <string name="backup_error_unknown">操作失败：未知错误</string>
+    <string name="backup_import_authentication_failed">备份密码不正确或备份文件已损坏，请检查密码和文件后重试。</string>
+    <string name="backup_directory_permission_ok">目录写入权限正常</string>
+    <string name="backup_directory_permission_failed">目录写入失败，请重新选择</string>
+    <string name="backup_export_cleanup_failed">导出失败，未能删除不完整文件；请检查备份位置并手动删除残留文件</string>
+</resources>

@@ -1,5 +1,11 @@
 package com.aozijx.passly.presentation.shared.components
 
+import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemAssociatedAppUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconGlyphUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconImageUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconTintUiState
+import com.aozijx.passly.presentation.shared.entryvisual.vaultItemIconUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -46,5 +52,33 @@ class VaultIconsTest {
     @Test
     fun unknownKeyIsNotAStoredDefinition() {
         assertEquals(null, VaultIcons.findDefinition("missing.icon"))
+    }
+
+    @Test
+    fun iconProjectionResolvesStableKeysAndFallsBackForSearchAliases() {
+        val named =
+            vaultItemIconUiModel(
+                iconName = "communication.email",
+                customImagePath = null,
+                iconColor = "blue",
+                associatedAppPackage = " ",
+                visualCategory = EntryVisualCategory.EMAIL,
+            )
+        val alias =
+            vaultItemIconUiModel(
+                iconName = "mail",
+                customImagePath = null,
+                associatedAppPackage = null,
+                visualCategory = EntryVisualCategory.EMAIL,
+            )
+
+        assertEquals(VaultItemIconImageUiState.Default, named.image)
+        assertTrue(named.glyph is VaultItemIconGlyphUiState.Named)
+        assertEquals(
+            VaultItemIconTintUiState.StorageToken("blue"),
+            (named.glyph as VaultItemIconGlyphUiState.Named).tint,
+        )
+        assertEquals(VaultItemAssociatedAppUiState.None, named.associatedApp)
+        assertEquals(VaultItemIconGlyphUiState.CategoryFallback, alias.glyph)
     }
 }

@@ -9,9 +9,13 @@ enum class VaultSearchAction { MORE, CLEAR, NONE }
 sealed interface VaultSearchState {
     data object Browsing : VaultSearchState
 
-    data class Pulling(val progress: Float) : VaultSearchState
+    data class Pulling(
+        val progress: Float,
+    ) : VaultSearchState
 
-    data class Editing(val hasReceivedFocus: Boolean = false) : VaultSearchState
+    data class Editing(
+        val hasReceivedFocus: Boolean = false,
+    ) : VaultSearchState
 
     data object Results : VaultSearchState
 
@@ -37,7 +41,9 @@ val VaultSearchState.layoutProgress: Float
     get() =
         when (this) {
             is VaultSearchState.Pulling -> progress.coerceIn(0f, 1f)
+
             is VaultSearchState.Editing -> 1f
+
             VaultSearchState.Browsing,
             VaultSearchState.Results,
             -> 0f
@@ -53,46 +59,56 @@ fun VaultSearchState.action(search: VaultSearchInput): VaultSearchAction =
         VaultSearchState.Results,
         -> if (search.query.isNotEmpty()) VaultSearchAction.CLEAR else VaultSearchAction.NONE
     }
+
 fun VaultSearchState.onPullProgressChanged(progress: Float): VaultSearchState =
     when (this) {
         is VaultSearchState.Editing,
         VaultSearchState.Results,
-        -> this
+        -> {
+            this
+        }
 
         VaultSearchState.Browsing,
         is VaultSearchState.Pulling,
-        -> progress.coerceIn(0f, 1f).takeIf { it > 0f }?.let(VaultSearchState::Pulling) ?: VaultSearchState.Browsing
+        -> {
+            progress.coerceIn(0f, 1f).takeIf { it > 0f }?.let(VaultSearchState::Pulling)
+                ?: VaultSearchState.Browsing
+        }
     }
 
-fun VaultSearchState.startEditing(): VaultSearchState = VaultSearchState.Editing()
+fun startEditing(): VaultSearchState = VaultSearchState.Editing()
 
 fun VaultSearchState.onFocusChanged(
     focused: Boolean,
     query: String,
 ): VaultSearchState =
     when (this) {
-        is VaultSearchState.Editing ->
+        is VaultSearchState.Editing -> {
             when {
                 focused -> copy(hasReceivedFocus = true)
                 hasReceivedFocus -> settle(query)
                 else -> this
             }
+        }
 
         VaultSearchState.Browsing,
         is VaultSearchState.Pulling,
         VaultSearchState.Results,
-        -> this
+        -> {
+            this
+        }
     }
 
-fun VaultSearchState.settle(query: String): VaultSearchState =
+fun settle(query: String): VaultSearchState =
     query.takeIf(String::isNotBlank)?.let { VaultSearchState.Results } ?: VaultSearchState.Browsing
-
-fun VaultSearchState.onScreenPaused(query: String): VaultSearchState = settle(query)
 
 fun VaultSearchState.synchronize(search: VaultSearchInput): VaultSearchState =
     when (search) {
-        VaultSearchInput.Closed -> VaultSearchState.Browsing
-        is VaultSearchInput.Open ->
+        VaultSearchInput.Closed -> {
+            VaultSearchState.Browsing
+        }
+
+        is VaultSearchInput.Open -> {
             when (this) {
                 is VaultSearchState.Editing,
                 is VaultSearchState.Pulling,
@@ -102,6 +118,7 @@ fun VaultSearchState.synchronize(search: VaultSearchInput): VaultSearchState =
                 VaultSearchState.Results,
                 -> search.toSearchState()
             }
+        }
     }
 
 private fun VaultSearchInput.Open.toSearchState(): VaultSearchState =

@@ -1,12 +1,10 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui.component
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -22,28 +20,29 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalToggleButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ToggleButtonSize
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -54,15 +53,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
+import com.aozijx.passly.core.ui.components.passlySheetTitleStyle
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconProcessingError
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconSource.ColorSelection
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconTab
 import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
+import com.aozijx.passly.feature.vault.presentation.detail.toStorageToken
 import com.aozijx.passly.presentation.shared.components.VaultIconColorToken
 import com.aozijx.passly.presentation.shared.components.VaultIcons
 import com.aozijx.passly.presentation.shared.components.iconColorForStorageToken
@@ -76,7 +79,9 @@ fun FaviconEditorSheet(
     isSaving: Boolean,
     onTabSelected: (DetailFaviconTab) -> Unit,
     onSearchChanged: (String) -> Unit,
-    onSourceSelected: (DetailFaviconSource) -> Unit,
+    onDefaultSelected: () -> Unit,
+    onIconSelected: (String) -> Unit,
+    onColorSelected: (ColorSelection) -> Unit,
     onUploadRequested: () -> Unit,
     onImageUrlChanged: (String) -> Unit,
     onDownloadRequested: () -> Unit,
@@ -108,7 +113,6 @@ fun FaviconEditorSheet(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.92f)
                     .imePadding()
                     .navigationBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 12.dp),
@@ -119,20 +123,34 @@ fun FaviconEditorSheet(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 FaviconEditorHeader(state.source)
-                PrimaryTabRow(selectedTabIndex = state.selectedTab.ordinal) {
+                val iconLibraryLabel = stringResource(R.string.vault_detail_favicon_library)
+                val customImageLabel = stringResource(R.string.vault_detail_favicon_custom_image)
+                ButtonGroup(
+                    modifier = Modifier.fillMaxWidth(),
+                    overflowIndicator = { menuState ->
+                        ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                    },
+                ) {
                     DetailFaviconTab.entries.forEach { tab ->
-                        Tab(
-                            selected = state.selectedTab == tab,
-                            onClick = { onTabSelected(tab) },
-                            enabled = dismissAllowed,
-                            text = {
-                                Text(
-                                    when (tab) {
-                                        DetailFaviconTab.ICON_LIBRARY -> stringResource(R.string.vault_detail_favicon_library)
-                                        DetailFaviconTab.CUSTOM_IMAGE -> stringResource(R.string.vault_detail_favicon_custom_image)
-                                    },
-                                )
+                        val label =
+                            when (tab) {
+                                DetailFaviconTab.ICON_LIBRARY -> iconLibraryLabel
+                                DetailFaviconTab.CUSTOM_IMAGE -> customImageLabel
+                            }
+                        val icon =
+                            when (tab) {
+                                DetailFaviconTab.ICON_LIBRARY -> Icons.Default.Apps
+                                DetailFaviconTab.CUSTOM_IMAGE -> Icons.Default.Image
+                            }
+                        toggleableItem(
+                            checked = state.selectedTab == tab,
+                            label = label,
+                            onCheckedChange = { checked ->
+                                if (checked) onTabSelected(tab)
                             },
+                            icon = { Icon(imageVector = icon, contentDescription = null) },
+                            weight = 1f,
+                            enabled = dismissAllowed,
                         )
                     }
                 }
@@ -141,7 +159,8 @@ fun FaviconEditorSheet(
                         FaviconIconLibrary(
                             state = state,
                             onSearchChanged = onSearchChanged,
-                            onSourceSelected = onSourceSelected,
+                            onColorSelected = onColorSelected,
+                            onIconSelected = onIconSelected,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -157,19 +176,27 @@ fun FaviconEditorSheet(
                     }
                 }
             }
-            (state.work as? DetailFaviconWorkState.Failed)?.error?.let { error ->
-                Text(
-                    text = stringResource(error.messageRes()),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            when (val work = state.work) {
+                is DetailFaviconWorkState.Failed -> {
+                    Text(
+                        text = stringResource(work.messageRes),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+
+                DetailFaviconWorkState.Idle,
+                DetailFaviconWorkState.Processing,
+                -> {
+                    Unit
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
-                    onClick = { onSourceSelected(DetailFaviconSource.InferredDefault) },
+                    onClick = onDefaultSelected,
                     enabled = dismissAllowed,
                 ) {
                     Text(stringResource(R.string.vault_detail_favicon_restore_default))
@@ -249,7 +276,7 @@ private fun FaviconCustomImage(
         )
         Button(
             onClick = onDownloadRequested,
-            enabled = state.canDownloadImageUrl && !processing,
+            enabled = state.canSubmitImageUrl && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (processing) {
@@ -264,17 +291,6 @@ private fun FaviconCustomImage(
         }
     }
 }
-
-private fun DetailFaviconProcessingError.messageRes(): Int =
-    when (this) {
-        DetailFaviconProcessingError.INVALID_URL -> R.string.vault_detail_favicon_error_invalid_url
-        DetailFaviconProcessingError.URL_NOT_ALLOWED -> R.string.vault_detail_favicon_error_url_not_allowed
-        DetailFaviconProcessingError.DOWNLOAD_FAILED -> R.string.vault_detail_favicon_error_download_failed
-        DetailFaviconProcessingError.NOT_IMAGE -> R.string.vault_detail_favicon_error_not_image
-        DetailFaviconProcessingError.IMAGE_TOO_LARGE -> R.string.vault_detail_favicon_error_too_large
-        DetailFaviconProcessingError.INVALID_IMAGE -> R.string.vault_detail_favicon_error_invalid_image
-        DetailFaviconProcessingError.SAVE_FAILED -> R.string.vault_detail_favicon_error_save_failed
-    }
 
 @Composable
 private fun FaviconEditorHeader(source: DetailFaviconSource) {
@@ -321,7 +337,7 @@ private fun FaviconEditorHeader(source: DetailFaviconSource) {
                             imageVector = definition.imageVector,
                             contentDescription = null,
                             modifier = Modifier.size(32.dp),
-                            tint = iconColorForStorageToken(source.colorToken, MaterialTheme.colorScheme.onSurfaceVariant),
+                            tint = iconColorForStorageToken(source.color.toStorageToken(), MaterialTheme.colorScheme.onSurfaceVariant),
                         )
                     }
                 }
@@ -333,7 +349,7 @@ private fun FaviconEditorHeader(source: DetailFaviconSource) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.vault_detail_favicon_title),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = passlySheetTitleStyle(),
                 )
                 Text(
                     text = text,
@@ -349,7 +365,8 @@ private fun FaviconEditorHeader(source: DetailFaviconSource) {
 private fun FaviconIconLibrary(
     state: DetailFaviconEditorState.Open,
     onSearchChanged: (String) -> Unit,
-    onSourceSelected: (DetailFaviconSource) -> Unit,
+    onColorSelected: (ColorSelection) -> Unit,
+    onIconSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val selected = state.source as? DetailFaviconSource.BuiltIn
@@ -372,52 +389,79 @@ private fun FaviconIconLibrary(
         ) {
             items(state.matchingIcons, key = { it.key }) { definition ->
                 val isSelected = selected?.let { VaultIcons.findDefinition(it.key)?.key } == definition.key
-                Surface(
-                    onClick = {
-                        onSourceSelected(
-                            DetailFaviconSource.BuiltIn(definition.key, selected?.colorToken),
-                        )
+                FilledTonalToggleButton(
+                    checked = isSelected,
+                    onCheckedChange = { checked ->
+                        if (checked) onIconSelected(definition.key)
                     },
                     modifier = Modifier.size(52.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+                    buttonSize = ToggleButtonSize.ExtraSmall,
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = definition.imageVector,
-                            contentDescription = stringResource(definition.labelRes),
-                            tint = iconColorForStorageToken(selected?.colorToken, MaterialTheme.colorScheme.onSurfaceVariant),
-                        )
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.align(Alignment.BottomEnd).size(16.dp),
-                            )
+                    Icon(
+                        imageVector = definition.imageVector,
+                        contentDescription = stringResource(definition.labelRes),
+                        tint =
+                            iconColorForStorageToken(
+                                selected?.color?.toStorageToken(),
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                    )
+                }
+            }
+        }
+        val colors =
+            listOf(ColorSelection.Automatic to R.string.vault_detail_favicon_color_automatic) +
+                VaultIconColorToken.entries.map { token ->
+                    ColorSelection.Token(token.storageValue) to token.faviconColorLabelRes
+                }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            lazyRowItems(
+                colors,
+                key = { (selection, _) ->
+                    selection.toStorageToken()?.let { "color:$it" } ?: "color:automatic"
+                },
+            ) { (colorSelection, labelRes) ->
+                val color =
+                    iconColorForStorageToken(
+                        colorSelection.toStorageToken(),
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                val colorLabel = stringResource(labelRes)
+                FilledTonalToggleButton(
+                    checked = selected?.color == colorSelection,
+                    onCheckedChange = { checked ->
+                        if (checked) onColorSelected(colorSelection)
+                    },
+                    enabled = selected != null,
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .semantics { contentDescription = colorLabel },
+                    buttonSize = ToggleButtonSize.ExtraSmall,
+                ) {
+                    Surface(modifier = Modifier.size(20.dp), shape = CircleShape, color = color) {
+                        if (colorSelection == ColorSelection.Automatic) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "A",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.surface,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-        val tokens = listOf<String?>(null) + VaultIconColorToken.entries.map { it.storageValue }
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            lazyRowItems(tokens) { token ->
-                val color = iconColorForStorageToken(token, MaterialTheme.colorScheme.onSurfaceVariant)
-                FilterChip(
-                    selected = selected?.colorToken == token,
-                    onClick = {
-                        selected?.let {
-                            val stableKey = VaultIcons.findDefinition(it.key)?.key ?: it.key
-                            onSourceSelected(it.copy(key = stableKey, colorToken = token))
-                        }
-                    },
-                    label = { Text(if (token == null) "A" else "") },
-                    leadingIcon = {
-                        Surface(modifier = Modifier.size(18.dp), shape = CircleShape, color = color) {}
-                    },
-                )
-            }
-        }
     }
 }
+
+private val VaultIconColorToken.faviconColorLabelRes: Int
+    get() =
+        when (this) {
+            VaultIconColorToken.PRIMARY -> R.string.vault_detail_favicon_color_primary
+            VaultIconColorToken.SECONDARY -> R.string.vault_detail_favicon_color_secondary
+            VaultIconColorToken.TERTIARY -> R.string.vault_detail_favicon_color_tertiary
+            VaultIconColorToken.ERROR -> R.string.vault_detail_favicon_color_error
+            VaultIconColorToken.NEUTRAL -> R.string.vault_detail_favicon_color_neutral
+        }

@@ -67,8 +67,11 @@ fun <T> AppPackagePickerUiState<T>.search(
     val apps =
         when (this) {
             is AppPackagePickerUiState.NoApps -> return copy(query = query)
+
             is AppPackagePickerUiState.NoMatches -> installedApps
+
             is AppPackagePickerUiState.Matches -> installedApps
+
             AppPackagePickerUiState.NotRequested,
             AppPackagePickerUiState.Loading,
             AppPackagePickerUiState.Failed,
@@ -90,15 +93,31 @@ fun <T> AppPackagePickerUiState<T>.search(
 
 fun <T, R> AppPackagePickerUiState<T>.mapItems(transform: (T) -> R): AppPackagePickerUiState<R> =
     when (this) {
-        AppPackagePickerUiState.NotRequested -> AppPackagePickerUiState.NotRequested
-        AppPackagePickerUiState.Loading -> AppPackagePickerUiState.Loading
-        AppPackagePickerUiState.Failed -> AppPackagePickerUiState.Failed
-        is AppPackagePickerUiState.NoApps -> AppPackagePickerUiState.NoApps(query)
-        is AppPackagePickerUiState.NoMatches -> AppPackagePickerUiState.NoMatches(installedApps.map(transform), query)
-        is AppPackagePickerUiState.Matches ->
+        AppPackagePickerUiState.NotRequested -> {
+            AppPackagePickerUiState.NotRequested
+        }
+
+        AppPackagePickerUiState.Loading -> {
+            AppPackagePickerUiState.Loading
+        }
+
+        AppPackagePickerUiState.Failed -> {
+            AppPackagePickerUiState.Failed
+        }
+
+        is AppPackagePickerUiState.NoApps -> {
+            AppPackagePickerUiState.NoApps(query)
+        }
+
+        is AppPackagePickerUiState.NoMatches -> {
+            AppPackagePickerUiState.NoMatches(installedApps.map(transform), query)
+        }
+
+        is AppPackagePickerUiState.Matches -> {
             AppPackagePickerUiState.Matches(
                 installedApps = installedApps.map(transform),
                 query = query,
                 matchingApps = matchingApps.map(transform),
             )
+        }
     }

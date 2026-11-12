@@ -1,5 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryAssociations
 import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
@@ -7,7 +8,6 @@ import com.aozijx.passly.domain.entry.model.EntryIdentity
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.otp.OtpType
 import com.aozijx.passly.domain.entry.model.query.EntryCapabilities
 import com.aozijx.passly.domain.entry.model.query.EntryCapability
 import com.aozijx.passly.domain.entry.model.query.EntryListItem
@@ -16,39 +16,35 @@ import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.SwipeActionType
 import com.aozijx.passly.feature.vault.model.AddType
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultDisplayUiState
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultInteractionConfig
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultLayoutConfig
-import com.aozijx.passly.feature.vault.presentation.list.display.VaultStyleConfig
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
+import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemCategoryLabel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
-import com.aozijx.passly.feature.vault.presentation.list.VaultSortOption
-import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemAssociatedAppUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconGlyphUiState
+import com.aozijx.passly.presentation.shared.entryvisual.VaultItemIconImageUiState
 import com.aozijx.passly.presentation.shared.media.LocalIconImageModel
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VaultListUiMapperTest {
     @Test
-    fun creationOptionsAreMappedInStableOrder() {
-        val model = VaultUiState().toUiModel(display(), createdAtDescendingSort())
+    fun creationOptionsKeepTheirFeatureMeaningAndStableOrder() {
+        val model = VaultUiState().toUiModel(display())
         val menuTypes = model.navigation.creationOptions
         assertEquals(
             listOf(
-                VaultAddTypeUiModel.PASSWORD,
-                VaultAddTypeUiModel.TOTP,
-                VaultAddTypeUiModel.BANK_CARD,
-                VaultAddTypeUiModel.WIFI,
+                AddType.PASSWORD,
+                AddType.TOTP,
+                AddType.BANK_CARD,
+                AddType.WIFI,
             ),
             menuTypes,
         )
         assertEquals(
-            listOf(VaultAddTypeUiModel.TOTP, VaultAddTypeUiModel.PASSWORD),
+            listOf(AddType.TOTP, AddType.PASSWORD),
             model.navigation.fabMenuOptions,
         )
     }
@@ -56,8 +52,8 @@ class VaultListUiMapperTest {
     @Test
     fun allEntryTypesAreAvailableAsFilters() {
         val state = VaultUiState(selectedFilters = AddType.entries.toSet())
-        val model = state.toUiModel(display(), createdAtDescendingSort())
-        assertEquals(VaultAddTypeUiModel.entries.toList(), model.navigation.filters.map { it.type })
+        val model = state.toUiModel(display())
+        assertEquals(AddType.entries.toList(), model.navigation.filters.map { it.type })
         assertTrue(model.navigation.filters.all { it.selected })
         assertTrue(model.navigation.allFiltersSelected.not())
         assertTrue(model.navigation.hasActiveFilters)
@@ -65,7 +61,7 @@ class VaultListUiMapperTest {
 
     @Test
     fun selectedSortIsProjectedFromThePersistedSettingsOwner() {
-        val model = VaultUiState().toUiModel(display(), createdAtDescendingSort())
+        val model = VaultUiState().toUiModel(display())
 
         assertEquals(VaultSortOption.CREATED_AT, model.toolbar.selectedSort.option)
         assertTrue(model.toolbar.selectedSort.descending)
@@ -81,7 +77,7 @@ class VaultListUiMapperTest {
                 VaultSortOption.LAST_USED_AT,
                 VaultSortOption.USAGE_FREQUENCY,
             ),
-            VaultUiState().toUiModel(display(), createdAtDescendingSort()).toolbar.sortOptions,
+            VaultUiState().toUiModel(display()).toolbar.sortOptions,
         )
     }
 
@@ -97,9 +93,9 @@ class VaultListUiMapperTest {
     fun categorySearchMapsTrimmedCaseInsensitiveMatchesAndPreservesQuery() {
         val model =
             VaultUiState(
-                    categories = VaultCategoriesState.Ready(listOf("Personal", "Work", "Work Account", "social")),
-                    categorySearchQuery = " WORk ",
-                ).toUiModel(display(), createdAtDescendingSort())
+                categories = VaultCategoriesState.Ready(listOf("Personal", "Work", "Work Account", "social")),
+                categorySearchQuery = " WORk ",
+            ).toUiModel(display())
 
         assertEquals(" WORk ", model.toolbar.categorySearchQuery)
         assertEquals(listOf("Work", "Work Account"), model.toolbar.matchingCategories)
@@ -113,8 +109,8 @@ class VaultListUiMapperTest {
     fun categoryFailureStateIsPreservedForRetryPresentation() {
         val model =
             VaultUiState(
-                    categories = VaultCategoriesState.Failed,
-                ).toUiModel(display(), createdAtDescendingSort())
+                categories = VaultCategoriesState.Failed,
+            ).toUiModel(display())
 
         assertEquals(VaultCategoriesState.Failed, model.toolbar.categoriesState)
         assertTrue(model.toolbar.matchingCategories.isEmpty())
@@ -122,20 +118,15 @@ class VaultListUiMapperTest {
 
     private fun display() =
         VaultDisplayUiState.Ready(
-            layout =
-                VaultLayoutConfig(
-                    hideSystemBars = false,
-                    collapseTopBarOnScroll = false,
-                    collapseQuickFilterBarOnScroll = false,
-                ),
-            style = VaultStyleConfig(emptyList()),
-            interaction =
-                VaultInteractionConfig(
-                    isSwipeEnabled = true,
-                    isPullToSearchEnabled = false,
-                    swipeLeftAction = SwipeActionType.DELETE,
-                    swipeRightAction = SwipeActionType.COPY_PASSWORD,
-                ),
+            hideSystemBars = false,
+            collapseTopBarOnScroll = false,
+            collapseQuickFilterBarOnScroll = false,
+            entryCardPresentations = emptyList(),
+            isSwipeEnabled = true,
+            isPullToSearchEnabled = false,
+            swipeLeftAction = SwipeActionType.DELETE,
+            swipeRightAction = SwipeActionType.COPY_PASSWORD,
+            sort = createdAtDescendingSort(),
         )
 
     private fun createdAtDescendingSort() =
@@ -165,7 +156,6 @@ class VaultListUiMapperTest {
                     ),
                 capabilities = EntryCapabilities(setOf(EntryCapability.PASSWORD, EntryCapability.OTP)),
                 otpType = OtpType.STEAM,
-                otpPreview = "ABC12",
             )
 
         val ui = item.toUiModel()
@@ -174,16 +164,16 @@ class VaultListUiMapperTest {
         assertEquals("Mail", ui.title)
         assertEquals("user@example.com", ui.username)
         assertEquals(VaultListItemCategoryLabel.Tag("Personal"), ui.categoryLabel)
-        assertEquals("example.com", ui.associatedDomain)
-        assertEquals("com.example", ui.associatedAppPackage)
-        assertEquals(null, ui.iconName)
-        assertEquals("icons/mail.png", ui.iconCustomPath)
-        assertEquals(LocalIconImageModel("file://icons/mail.png"), ui.iconImageModel)
-        assertEquals(EntryVisualCategory.EMAIL, ui.visualCategory)
+        assertEquals(VaultItemAssociatedAppUiState.Package("com.example"), ui.icon.associatedApp)
+        assertEquals(
+            VaultItemIconImageUiState.Custom(LocalIconImageModel("file://icons/mail.png")),
+            ui.icon.image,
+        )
+        assertEquals(VaultItemIconGlyphUiState.CategoryFallback, ui.icon.glyph)
+        assertEquals(EntryVisualCategory.EMAIL, ui.icon.visualCategory)
         assertTrue(ui.favorite)
         assertTrue(ui.hasPassword)
-        assertEquals(VaultOtpKindUiModel.STEAM, ui.otpKind)
-        assertEquals("ABC12", ui.otpPreview)
+        assertEquals(OtpPresentation.Applicable(OtpType.STEAM), ui.otpPresentation)
         assertEquals(
             VaultPasswordCardSecondaryTextUiModel.Value("example.com"),
             ui.passwordCardSecondaryText,
@@ -212,10 +202,33 @@ class VaultListUiMapperTest {
         val ui = item.toUiModel()
         val withoutDomainUi = withoutDomain.toUiModel()
 
-        assertNull(ui.associatedDomain)
-        assertEquals("com.slack", ui.associatedAppPackage)
-        assertEquals(withoutDomainUi.visualCategory, ui.visualCategory)
+        assertEquals(VaultItemIconImageUiState.Default, ui.icon.image)
+        assertEquals(VaultItemIconGlyphUiState.CategoryFallback, ui.icon.glyph)
+        assertEquals(VaultItemAssociatedAppUiState.Package("com.slack"), ui.icon.associatedApp)
+        assertEquals(withoutDomainUi.icon.visualCategory, ui.icon.visualCategory)
         assertEquals(VaultPasswordCardSecondaryTextUiModel.Value("com.slack"), ui.passwordCardSecondaryText)
         assertEquals(VaultPasswordCardSupportingTextUiModel.AUTOFILL, ui.passwordCardSupportingText)
+    }
+
+    @Test
+    fun entryTypeNamesAreProjectedToLocalizedResources() {
+        val item =
+            EntryListItem(
+                identity =
+                    EntryIdentity(
+                        id = EntryId("entry-type-label"),
+                        type = EntryType.LOGIN,
+                        timestamps = EntryTimestamps(1L),
+                    ),
+                profile = EntryProfile(title = "Mail"),
+            )
+
+        val ui = item.toUiModel()
+
+        assertEquals(VaultListItemCategoryLabel.EntryTypeName(R.string.entry_type_login), ui.categoryLabel)
+        assertEquals(
+            VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(R.string.entry_type_login),
+            ui.passwordCardSecondaryText,
+        )
     }
 }

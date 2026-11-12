@@ -66,15 +66,16 @@ internal class RelatedPasswordOperationsImpl
                 if (alreadyRelated) return@withLoggedFailure AppResult.Success(Unit)
 
                 val now = System.currentTimeMillis()
-                val result = entryLinkRepository.upsert(
-                    EntryLink.create(
-                        id = EntryLinkId(UUID.randomUUID().toString()),
-                        sourceEntryId = sourceEntryId,
-                        targetEntryId = targetEntryId,
-                        relationType = EntryRelationType.RELATED_TO,
-                        createdAt = now,
-                    ),
-                )
+                val result =
+                    entryLinkRepository.upsert(
+                        EntryLink.create(
+                            id = EntryLinkId(UUID.randomUUID().toString()),
+                            sourceEntryId = sourceEntryId,
+                            targetEntryId = targetEntryId,
+                            relationType = EntryRelationType.RELATED_TO,
+                            createdAt = now,
+                        ),
+                    )
                 if (result is AppResult.Failure) logFailure(result.error)
                 result
             }
@@ -126,8 +127,7 @@ internal class RelatedPasswordOperationsImpl
             (link.sourceEntryId == firstEntryId && link.targetEntryId == secondEntryId) ||
                 (link.sourceEntryId == secondEntryId && link.targetEntryId == firstEntryId)
 
-        private suspend fun activeLogins(): List<EntryListItem> =
-            entryListQueryRepository.getActiveByType(EntryType.LOGIN)
+        private suspend fun activeLogins(): List<EntryListItem> = entryListQueryRepository.getActiveByType(EntryType.LOGIN)
 
         private suspend fun <T> withLoggedFailure(block: suspend () -> T): T =
             try {

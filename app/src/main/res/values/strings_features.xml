@@ -30,18 +30,22 @@
     <string name="vault_card_style_default">标准</string>
     <string name="vault_card_style_password">密码卡片</string>
     <string name="vault_card_style_totp">动态验证码</string>
+    <string name="vault_hotp_previous_code">上一次</string>
 
     <!-- 条目历史 -->
-    <string name="vault_detail_history_label">活动日志</string>
-    <string name="vault_detail_history_updates">变更</string>
-    <string name="vault_detail_history_empty_filtered">暂无记录</string>
+    <string name="vault_detail_history_label">历史记录</string>
+    <string name="vault_detail_history_filter_all">全部</string>
+    <string name="vault_detail_history_filter_content">内容变更</string>
+    <string name="vault_detail_history_filter_lifecycle">生命周期</string>
+    <string name="vault_detail_history_filter_usage">使用记录</string>
     <string name="vault_detail_activity_create">创建</string>
     <string name="vault_detail_activity_update">更新</string>
     <string name="vault_detail_activity_delete">删除</string>
     <string name="vault_detail_activity_restore">从回收站恢复</string>
     <string name="vault_detail_activity_autofill">自动填充</string>
-    <string name="vault_detail_activity_copy_password">复制密码</string>
-    <string name="vault_detail_activity_copy_username">复制用户名</string>
+    <string name="vault_detail_activity_copy_field">复制字段</string>
+    <string name="vault_detail_activity_copy_otp_code">复制验证码</string>
+    <string name="vault_detail_activity_reveal_fields">查看敏感字段</string>
     <string name="vault_detail_activity_view">查看</string>
     <string name="vault_detail_activity_export">导出</string>
     <string name="vault_detail_activity_import">导入</string>
@@ -74,8 +78,6 @@
     <string name="wifi_security_open">开放网络</string>
     <string name="wifi_security_wep" translatable="false">WEP</string>
     <string name="wifi_security_wpa_personal" translatable="false">WPA/WPA2/WPA3</string>
-    <string name="wifi_ssid_required">请输入 Wi-Fi 名称</string>
-    <string name="wifi_password_required">请输入 Wi-Fi 密码</string>
     <string name="wifi_password_invalid">密码格式不符合所选安全类型</string>
 
     <!-- 银行卡 -->
@@ -131,11 +133,16 @@
 
     <!-- 详情页图标编辑 -->
     <string name="vault_detail_favicon_title">图标</string>
-    <string name="vault_detail_favicon_edit">修改图标</string>
     <string name="vault_detail_favicon_default">默认图标</string>
     <string name="vault_detail_favicon_built_in">内置图标</string>
     <string name="vault_detail_favicon_custom_image">自定义图片</string>
     <string name="vault_detail_favicon_library">图标库</string>
+    <string name="vault_detail_favicon_color_automatic">自动颜色</string>
+    <string name="vault_detail_favicon_color_primary">主色</string>
+    <string name="vault_detail_favicon_color_secondary">次要色</string>
+    <string name="vault_detail_favicon_color_tertiary">第三色</string>
+    <string name="vault_detail_favicon_color_error">错误色</string>
+    <string name="vault_detail_favicon_color_neutral">中性色</string>
     <string name="vault_detail_favicon_image_url">图片 URL</string>
     <string name="vault_detail_favicon_choose_image">选择图片</string>
     <string name="vault_detail_favicon_download">下载图片</string>
@@ -146,7 +153,9 @@
     <string name="vault_detail_favicon_keep_editing">继续编辑</string>
     <string name="vault_detail_favicon_crop_title">裁剪图标</string>
     <string name="vault_detail_favicon_crop_hint">双指缩放并拖动图片，方框内区域会保存为图标。</string>
+    <string name="vault_detail_favicon_gif_crop_hint">GIF 动画会保留。当前不支持裁剪 GIF，请直接使用原图。</string>
     <string name="vault_detail_favicon_no_crop">不裁剪</string>
+    <string name="vault_detail_favicon_gif_use">保留 GIF 动画</string>
     <string name="vault_detail_favicon_crop_use">裁剪并使用</string>
     <string name="vault_detail_favicon_error_invalid_url">请输入有效的 HTTPS 图片链接</string>
     <string name="vault_detail_favicon_error_url_not_allowed">出于安全原因，无法访问该地址</string>

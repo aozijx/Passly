@@ -1,6 +1,9 @@
 package com.aozijx.passly.feature.vault.presentation.detail
 
 sealed interface RelatedPasswordBindingUiState {
+    val query: String
+        get() = ""
+
     data object Closed : RelatedPasswordBindingUiState
 
     data object Loading : RelatedPasswordBindingUiState
@@ -9,7 +12,7 @@ sealed interface RelatedPasswordBindingUiState {
 
     data class Ready(
         val candidates: List<RelatedPasswordCandidateUiModel>,
-        val query: String = "",
+        override val query: String = "",
         val operation: RelatedPasswordBindingOperationState = RelatedPasswordBindingOperationState.Idle,
     ) : RelatedPasswordBindingUiState {
         val results: RelatedPasswordCandidateSearchResults
@@ -20,7 +23,9 @@ sealed interface RelatedPasswordBindingUiState {
 sealed interface RelatedPasswordBindingOperationState {
     data object Idle : RelatedPasswordBindingOperationState
 
-    data class Saving(val entryId: String) : RelatedPasswordBindingOperationState
+    data class Saving(
+        val entryId: String,
+    ) : RelatedPasswordBindingOperationState
 
     data object Failed : RelatedPasswordBindingOperationState
 }
@@ -43,7 +48,7 @@ internal fun List<RelatedPasswordCandidateUiModel>.toSearchResults(query: String
         } else {
             filter { candidate ->
                 candidate.title.contains(query, ignoreCase = true) ||
-                    candidate.username.contains(query, ignoreCase = true)
+                    candidate.username.matches(query)
             }
         }
     return if (matches.isEmpty()) {
@@ -56,24 +61,33 @@ internal fun List<RelatedPasswordCandidateUiModel>.toSearchResults(query: String
 data class RelatedPasswordCandidateUiModel(
     val id: String,
     val title: String,
-    val username: String,
+    val username: RelatedPasswordCandidateUsernameUiState,
 )
+
+sealed interface RelatedPasswordCandidateUsernameUiState {
+    data object Hidden : RelatedPasswordCandidateUsernameUiState
+
+    data class Visible(
+        val value: String,
+    ) : RelatedPasswordCandidateUsernameUiState
+}
+
+private fun RelatedPasswordCandidateUsernameUiState.matches(query: String): Boolean =
+    when (this) {
+        RelatedPasswordCandidateUsernameUiState.Hidden -> false
+        is RelatedPasswordCandidateUsernameUiState.Visible -> value.contains(query, ignoreCase = true)
+    }
 
 sealed interface RelatedPasswordUnlinkUiState {
     data object Closed : RelatedPasswordUnlinkUiState
 
-    data class AwaitingConfirmation(
+    data class Open(
         val target: RelatedPasswordUnlinkTargetUiModel,
-    ) : RelatedPasswordUnlinkUiState
-
-    data class Removing(
-        val target: RelatedPasswordUnlinkTargetUiModel,
-    ) : RelatedPasswordUnlinkUiState
-
-    data class Failed(
-        val target: RelatedPasswordUnlinkTargetUiModel,
+        val phase: RelatedPasswordUnlinkPhase,
     ) : RelatedPasswordUnlinkUiState
 }
+
+enum class RelatedPasswordUnlinkPhase { AwaitingConfirmation, Removing, Failed }
 
 data class RelatedPasswordUnlinkTargetUiModel(
     val targetEntryId: String,

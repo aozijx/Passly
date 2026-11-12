@@ -1,14 +1,17 @@
 package com.aozijx.passly.feature.vault.presentation.list.action
 
+import com.aozijx.passly.R
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
+import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.domain.settings.model.SwipeActionType
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemCategoryLabel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
-import com.aozijx.passly.presentation.shared.components.EntryVisualCategory
+import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSecondaryTextUiModel
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultPasswordCardSupportingTextUiModel
+import com.aozijx.passly.presentation.shared.entryvisual.EntryVisualCategory
+import com.aozijx.passly.presentation.shared.entryvisual.vaultItemIconUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -19,18 +22,12 @@ class VaultSwipeActionHandlerTest {
             entryType = EntryType.LOGIN,
             title = "Example",
             username = "user",
-            categoryLabel = VaultListItemCategoryLabel.EntryTypeName(EntryType.LOGIN),
+            categoryLabel = VaultListItemCategoryLabel.EntryTypeName(R.string.entry_type_login),
             favorite = false,
-            associatedDomain = null,
-            associatedAppPackage = null,
-            iconName = null,
-            iconCustomPath = null,
-            iconImageModel = null,
-            visualCategory = EntryVisualCategory.ACCOUNT,
+            icon = vaultItemIconUiModel(null, null, associatedAppPackage = null, visualCategory = EntryVisualCategory.ACCOUNT),
             hasPassword = true,
-            otpKind = VaultOtpKindUiModel.NOT_APPLICABLE,
-            otpPreview = null,
-            passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(EntryType.LOGIN),
+            otpPresentation = OtpPresentation.NotApplicable,
+            passwordCardSecondaryText = VaultPasswordCardSecondaryTextUiModel.EntryTypeLabel(R.string.entry_type_login),
             passwordCardSupportingText = VaultPasswordCardSupportingTextUiModel.PROTECTED,
         )
 
@@ -78,7 +75,7 @@ class VaultSwipeActionHandlerTest {
 
     @Test
     fun copyRequestUsesOtpOnlyForPasswordOnOtpEntries() {
-        val otpItem = item.copy(otpKind = VaultOtpKindUiModel.STANDARD)
+        val otpItem = item.copy(otpPresentation = OtpPresentation.Applicable(OtpType.TOTP))
 
         assertEquals(
             VaultCopyRequest.Field("entry", EntryType.LOGIN, FieldKey.PASSWORD),

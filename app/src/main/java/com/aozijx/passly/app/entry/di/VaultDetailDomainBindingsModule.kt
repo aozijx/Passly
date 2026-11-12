@@ -1,7 +1,7 @@
 package com.aozijx.passly.app.entry.di
 
-import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
 import com.aozijx.passly.domain.entry.port.EntryDetailQuery
+import com.aozijx.passly.domain.entry.port.RelatedPasswordOperations
 import com.aozijx.passly.feature.vault.detail.EntryDetailQueryImpl
 import com.aozijx.passly.feature.vault.detail.RelatedPasswordOperationsImpl
 import dagger.Binds

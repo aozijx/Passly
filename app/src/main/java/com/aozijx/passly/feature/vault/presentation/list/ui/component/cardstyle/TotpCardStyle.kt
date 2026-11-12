@@ -1,8 +1,6 @@
 package com.aozijx.passly.feature.vault.presentation.list.ui.component.cardstyle
 
-import com.aozijx.passly.domain.entry.model.EntryType
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,40 +28,55 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.aozijx.passly.R
+import com.aozijx.passly.domain.entry.model.EntryType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpKindUiModel
-import com.aozijx.passly.feature.vault.presentation.list.model.VaultOtpUiState
-import com.aozijx.passly.feature.vault.presentation.list.model.displayCodeOrPlaceholder
-import com.aozijx.passly.feature.vault.presentation.list.model.progress
-import com.aozijx.passly.feature.vault.presentation.list.model.shouldDisplayCode
+import com.aozijx.passly.feature.vault.otp.presentation.OtpUiState
+import com.aozijx.passly.feature.vault.otp.presentation.displayCodeOrPlaceholder
+import com.aozijx.passly.feature.vault.otp.presentation.shouldDisplayCode
+import com.aozijx.passly.feature.vault.otp.presentation.ui.rememberOtpWindowProgress
+import com.aozijx.passly.feature.vault.presentation.list.preview.CardStylePreviewFixtures
 import com.aozijx.passly.presentation.shared.components.VaultItemIcon
 
 @Composable
 fun TotpStyleVaultItem(
     entry: VaultListItemUiModel,
-    totpState: VaultOtpUiState,
+    totpState: OtpUiState,
     onClick: () -> Unit,
 ) {
     val cardShape = MaterialTheme.shapes.extraLarge
-    val targetProgress = totpState.progress
-    val progress by animateFloatAsState(targetValue = targetProgress, label = "TotpProgress")
+    val progressState =
+        rememberOtpWindowProgress(
+            state = totpState,
+            expiringThreshold = CardStyleTokens.Totp.LOW_PROGRESS_THRESHOLD,
+        )
 
     val progressColor by animateColorAsState(
         targetValue =
             when (totpState) {
-                VaultOtpUiState.Failed -> MaterialTheme.colorScheme.error
-                is VaultOtpUiState.Ready ->
-                    if (progress < CardStyleTokens.Totp.LOW_PROGRESS_THRESHOLD) {
+                is OtpUiState.Failed -> {
+                    MaterialTheme.colorScheme.error
+                }
+
+                is OtpUiState.TimedReady -> {
+                    if (progressState.isExpiring.value) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
+                }
 
-                VaultOtpUiState.NotApplicable,
-                VaultOtpUiState.Hidden,
-                VaultOtpUiState.NotRequested,
-                VaultOtpUiState.Pending,
-                -> MaterialTheme.colorScheme.primary
+                is OtpUiState.HotpReady -> {
+                    MaterialTheme.colorScheme.primary
+                }
+
+                OtpUiState.NotApplicable,
+                OtpUiState.Hidden,
+                OtpUiState.NotRequested,
+                OtpUiState.Pending,
+                -> {
+                    MaterialTheme.colorScheme.primary
+                }
             },
         label = "ProgressColor",
     )
@@ -145,27 +158,24 @@ fun TotpStyleVaultItem(
                                 ),
                             color = MaterialTheme.colorScheme.primary,
                         )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(CardStyleTokens.Totp.progressRowSpacing),
-                        ) {
-                            CircularWavyProgressIndicator(
-                                progress = { progress },
-                                modifier = Modifier.size(CardStyleTokens.Totp.progressSize),
-                                color = progressColor,
-                                trackColor =
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(
-                                        alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA,
-                                    ),
-                            )
+                        if (totpState is OtpUiState.TimedReady) {
                             Text(
-                                text = entry.otpKind.codeTypeLabel,
+                                text = totpState.nextCode,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
-                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        CircularWavyProgressIndicator(
+                            progress = { progressState.progress.value },
+                            modifier = Modifier.size(CardStyleTokens.Totp.progressSize),
+                            color = progressColor,
+                            trackColor =
+                                MaterialTheme.colorScheme.surfaceVariant.copy(
+                                    alpha = CardStyleTokens.Totp.PROGRESS_TRACK_ALPHA,
+                                ),
+                        )
                     } else {
                         Icon(
                             imageVector = Icons.Default.LockClock,
@@ -187,15 +197,14 @@ internal object TotpVaultCardStyle : VaultCardStyleComponent {
     override val key: String = "totp"
     override val titleRes: Int = R.string.vault_card_style_totp
 
-    override fun supportsEntryType(entryType: EntryType): Boolean =
-        entryType == EntryType.OTP
+    override fun supportsEntryType(entryType: EntryType): Boolean = entryType == EntryType.OTP
 
-    override fun supports(entry: VaultListItemUiModel): Boolean = entry.otpKind.isApplicable
+    override fun supports(entry: VaultListItemUiModel): Boolean = entry.otpPresentation is OtpPresentation.Applicable
 
     @Composable
     override fun Render(
         entry: VaultListItemUiModel,
-        totpState: VaultOtpUiState,
+        totpState: OtpUiState,
         onClick: () -> Unit,
     ) {
         TotpStyleVaultItem(
@@ -206,7 +215,10 @@ internal object TotpVaultCardStyle : VaultCardStyleComponent {
     }
 
     @Composable
-    override fun Preview(entryType: EntryType, onClick: () -> Unit) {
+    override fun Preview(
+        entryType: EntryType,
+        onClick: () -> Unit,
+    ) {
         TotpStyleVaultItem(
             entry = CardStylePreviewFixtures.totpEntry(entryType),
             totpState = CardStylePreviewFixtures.otpState,

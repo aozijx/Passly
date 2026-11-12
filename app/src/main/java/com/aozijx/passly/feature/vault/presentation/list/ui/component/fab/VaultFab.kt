@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.animation.SharedTransitionOverlayClip
 import com.aozijx.passly.core.ui.animation.withSharedTransitionVisualOverflow
-import com.aozijx.passly.feature.vault.presentation.list.ui.model.VaultAddTypeUiModel
+import com.aozijx.passly.feature.vault.model.AddType
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.icon
 import com.aozijx.passly.feature.vault.presentation.list.ui.model.labelRes
 import com.aozijx.passly.feature.vault.presentation.ui.ADD_ENTRY_FAB_SHARED_KEY
@@ -56,16 +56,16 @@ private const val FAB_MENU_STAGGER_MILLIS = 45
 
 @Composable
 fun VaultFab(
-    creationOptions: List<VaultAddTypeUiModel>,
-    fabMenuOptions: List<VaultAddTypeUiModel>,
-    onAddTypeSelected: (VaultAddTypeUiModel) -> Unit,
+    creationOptions: List<AddType>,
+    fabMenuOptions: List<AddType>,
+    onAddTypeSelected: (AddType) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     isVisible: Boolean = true,
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showAddEntryBottomSheet by remember { mutableStateOf(false) }
-    var pendingSheetSelection by remember { mutableStateOf<VaultAddTypeUiModel?>(null) }
+    var pendingSheetSelection by remember { mutableStateOf<AddType?>(null) }
     val motionScheme = MaterialTheme.motionScheme
 
     val rotation by animateFloatAsState(

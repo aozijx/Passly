@@ -2,19 +2,19 @@ package com.aozijx.passly.feature.vault.detail
 
 import com.aozijx.passly.core.observability.ErrorCodes
 import com.aozijx.passly.core.observability.Events
+import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.core.observability.LogFieldKeys
 import com.aozijx.passly.core.observability.Logger
 import com.aozijx.passly.core.observability.Operations
 import com.aozijx.passly.core.observability.Reasons
-import com.aozijx.passly.core.observability.fields
 import com.aozijx.passly.domain.access.model.AuthenticationPurpose
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
 import com.aozijx.passly.domain.access.model.SensitiveAccessAction
 import com.aozijx.passly.domain.access.port.AuthorizationGate
+import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.Entry
 import com.aozijx.passly.domain.entry.model.EntryType
-import com.aozijx.passly.domain.entry.model.activity.ActivityType
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.otp.OtpAuthUriCodec
 import com.aozijx.passly.domain.entry.otp.OtpUriFormatResult
@@ -44,13 +44,10 @@ internal class ExportEntryQrUseCase
             var pending = OwnedChars.EMPTY
             var transferred = false
 
-            suspend fun ready(
-                kind: EntryQrKind,
-                text: String,
-            ): EntryQrExportResult.Ready {
+            suspend fun ready(text: String): EntryQrExportResult.Ready {
                 pending = OwnedChars.fromString(text)
-                activityRecorder.recordUsage(entry.id.value, ActivityType.VIEW)
-                return EntryQrExportResult.Ready(kind, pending)
+                activityRecorder.recordUsage(entry.id.value, ActivityType.EXPORT)
+                return EntryQrExportResult.Ready(pending)
             }
 
             try {
@@ -73,7 +70,7 @@ internal class ExportEntryQrUseCase
                                                         WifiQrPayload(wifi.ssid, wifi.password.orEmpty(), wifi.securityType, wifi.isHidden),
                                                     )
                                             ) {
-                                                is WifiQrFormatResult.Formatted -> ready(EntryQrKind.Wifi, formatted.content)
+                                                is WifiQrFormatResult.Formatted -> ready(formatted.content)
                                                 WifiQrFormatResult.InvalidCredential -> EntryQrExportResult.Unavailable
                                             }
                                         }
@@ -107,7 +104,7 @@ internal class ExportEntryQrUseCase
                                                             entry.title,
                                                         )
                                                 ) {
-                                                    is OtpUriFormatResult.Formatted -> ready(EntryQrKind.Otp, formatted.content)
+                                                    is OtpUriFormatResult.Formatted -> ready(formatted.content)
                                                     OtpUriFormatResult.InvalidConfiguration -> EntryQrExportResult.Unavailable
                                                 }
                                             } finally {

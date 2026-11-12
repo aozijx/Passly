@@ -16,7 +16,6 @@ import androidx.navigation.navArgument
 import com.aozijx.passly.app.navigation.AppRoute
 import com.aozijx.passly.app.navigation.ShellNavigationContext
 import com.aozijx.passly.feature.vault.entry.EditorSeedToken
-import com.aozijx.passly.feature.vault.entry.EditorSeedTokenParseResult
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeed
 import com.aozijx.passly.feature.vault.entry.EntryEditorSeedConsumeResult
 import com.aozijx.passly.feature.vault.presentation.ScannedOtpImportViewModel
@@ -157,34 +156,25 @@ internal fun NavGraphBuilder.registerVaultGraph(
     ) { backStackEntry ->
         val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
         val loadInitialContent = {
-            when (
-                val parsed =
-                    EditorSeedToken.parse(
+            val consumed =
+                EditorSeedToken
+                    .parseOrNull(
                         backStackEntry.arguments
                             ?.getString(AppRoute.AddWifiFromSeed.ARG_SEED_TOKEN)
                             .orEmpty(),
-                    )
-            ) {
-                is EditorSeedTokenParseResult.Valid -> {
-                    when (
-                        val consumed = seedCoordinator.consume(parsed.token)
-                    ) {
-                        is EntryEditorSeedConsumeResult.Consumed -> {
-                            when (val seed = consumed.seed) {
-                                is EntryEditorSeed.Wifi -> AddWifiInitialContent.Scanned(seed.payload)
-                                is EntryEditorSeed.Editable -> AddWifiInitialContent.SeedUnavailable
-                            }
-                        }
-
-                        EntryEditorSeedConsumeResult.Missing,
-                        EntryEditorSeedConsumeResult.AccessDenied,
-                        -> {
-                            AddWifiInitialContent.SeedUnavailable
-                        }
+                    )?.let(seedCoordinator::consume)
+            when (consumed) {
+                is EntryEditorSeedConsumeResult.Consumed -> {
+                    when (val seed = consumed.seed) {
+                        is EntryEditorSeed.Wifi -> AddWifiInitialContent.Scanned(seed.payload)
+                        is EntryEditorSeed.Editable -> AddWifiInitialContent.SeedUnavailable
                     }
                 }
 
-                EditorSeedTokenParseResult.Invalid -> {
+                EntryEditorSeedConsumeResult.Missing,
+                EntryEditorSeedConsumeResult.AccessDenied,
+                null,
+                -> {
                     AddWifiInitialContent.SeedUnavailable
                 }
             }
@@ -209,9 +199,12 @@ internal fun NavGraphBuilder.registerVaultGraph(
             backStackEntry.arguments
                 ?.getString(AppRoute.Detail.ARG_ENTRY_ID)
                 ?: return@composable
+        val vaultViewModel = vaultGraphViewModel(navController, backStackEntry)
         val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
         DetailRoute(
             entryId = entryId,
+            otpStates = vaultViewModel.otpStates,
+            onAcquireOtp = vaultViewModel::acquireOtp,
             onBack = context.navigateBack,
             onOpenRelatedEntry = {
                 context.navigateToRoute(AppRoute.Detail.createRoute(it))
@@ -246,17 +239,14 @@ private fun registerEditorEditDestination(
         val seedCoordinator = vaultGraphSeedCoordinator(navController, backStackEntry)
         DisposableEffect(seedToken, seedCoordinator) {
             onDispose {
-                when (val parsed = EditorSeedToken.parse(seedToken)) {
-                    is EditorSeedTokenParseResult.Valid -> seedCoordinator.discard(parsed.token)
-                    EditorSeedTokenParseResult.Invalid -> Unit
-                }
+                EditorSeedToken.parseOrNull(seedToken)?.let(seedCoordinator::discard)
             }
         }
         val consumeSeed: (String) -> EntryEditorSeedConsumeResult = { rawToken ->
-            when (val parsed = EditorSeedToken.parse(rawToken)) {
-                is EditorSeedTokenParseResult.Valid -> seedCoordinator.consume(parsed.token)
-                EditorSeedTokenParseResult.Invalid -> EntryEditorSeedConsumeResult.Missing
-            }
+            EditorSeedToken
+                .parseOrNull(rawToken)
+                ?.let(seedCoordinator::consume)
+                ?: EntryEditorSeedConsumeResult.Missing
         }
         content(seedToken, consumeSeed)
     }

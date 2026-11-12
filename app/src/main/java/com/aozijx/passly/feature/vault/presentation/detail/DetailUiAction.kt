@@ -55,10 +55,6 @@ sealed interface DetailUiAction {
         val value: String,
     ) : DetailUiAction
 
-    data class CancelFieldEdit(
-        val field: DetailField,
-    ) : DetailUiAction
-
     data class ToggleFieldVisibility(
         val field: DetailField,
     ) : DetailUiAction
@@ -98,8 +94,14 @@ sealed interface DetailUiAction {
 
     data object OpenFaviconEditor : DetailUiAction
 
-    data class SelectFaviconSource(
-        val source: DetailFaviconSource,
+    data object SelectDefaultFavicon : DetailUiAction
+
+    data class SelectFaviconIcon(
+        val key: String,
+    ) : DetailUiAction
+
+    data class SelectFaviconColor(
+        val color: DetailFaviconSource.ColorSelection,
     ) : DetailUiAction
 
     data class SelectFaviconTab(
@@ -144,6 +146,8 @@ sealed interface DetailUiAction {
 
     data object CopyOtpCode : DetailUiAction
 
+    data object RollbackHotpCounter : DetailUiAction
+
     data object ShowEntryQr : DetailUiAction
 
     data object DismissEntryQr : DetailUiAction
@@ -178,8 +182,8 @@ sealed interface DetailUiAction {
 
     data object RetryActivityHistory : DetailUiAction
 
-    data class ActivityFilterChanged(
-        val filter: DetailActivityFilter,
+    data class HistoryFilterChanged(
+        val filter: DetailHistoryFilter,
     ) : DetailUiAction
 
     data object OpenPasswordBinding : DetailUiAction

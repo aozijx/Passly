@@ -1,9 +1,9 @@
 package com.aozijx.passly.data.repository.settings
 
 import com.aozijx.passly.domain.settings.port.AppearanceSettingsRepository
-import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.AutofillSettingsRepository
 import com.aozijx.passly.domain.settings.port.AutofillSettingsSource
+import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsRepository
 import com.aozijx.passly.domain.settings.port.BackupDirectorySettingsSource
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsRepository
 import com.aozijx.passly.domain.settings.port.DiagnosticsLogSettingsSource
@@ -12,9 +12,10 @@ import com.aozijx.passly.domain.settings.port.InteractionSettingsRepository
 import com.aozijx.passly.domain.settings.port.InteractionSettingsSource
 import com.aozijx.passly.domain.settings.port.InterfaceSettingsRepository
 import com.aozijx.passly.domain.settings.port.LibraryViewSettingsRepository
-import com.aozijx.passly.domain.settings.port.LibraryViewSettingsSource
 import com.aozijx.passly.domain.settings.port.MessageSettingsRepository
 import com.aozijx.passly.domain.settings.port.MessageSettingsSource
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicyRepository
+import com.aozijx.passly.domain.settings.port.OtpRuntimePolicySnapshotReader
 import com.aozijx.passly.domain.settings.port.SecuritySettingsRepository
 import com.aozijx.passly.domain.settings.port.SecuritySettingsSource
 import dagger.Binds
@@ -44,7 +45,11 @@ internal abstract class SettingsPersistenceModule {
 
     @Binds
     @Singleton
-    abstract fun bindLibraryViewSettingsSource(impl: ProtoAppPreferencesStore): LibraryViewSettingsSource
+    abstract fun bindOtpRuntimePolicyRepository(impl: ProtoAppPreferencesStore): OtpRuntimePolicyRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOtpRuntimePolicySnapshotReader(impl: ProtoAppPreferencesStore): OtpRuntimePolicySnapshotReader
 
     @Binds
     @Singleton

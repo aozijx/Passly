@@ -27,11 +27,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
-import com.aozijx.passly.domain.entry.policy.CardNumberInvalidReason
-import com.aozijx.passly.domain.entry.policy.CardNumberValidationResult
 import com.aozijx.passly.feature.vault.presentation.editor.EditorLoadPhase
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardAction
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.AddBankCardUiState
+import com.aozijx.passly.feature.vault.presentation.editor.bankcard.BankCardFieldFeedbackUiState
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardType
 import com.aozijx.passly.feature.vault.presentation.editor.bankcard.CardTypeSelection
 import com.aozijx.passly.feature.vault.presentation.editor.ui.common.AddEntryScaffold
@@ -53,6 +52,8 @@ fun AddBankCardEditorScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val form = state.form
+    val cardNumberFeedback = form.cardNumberFeedback
+    val cvvFeedback = form.cvvFeedback
 
     fun save() {
         keyboardController?.hide()
@@ -124,17 +125,15 @@ fun AddBankCardEditorScreen(
                 label = stringResource(R.string.card_number),
                 visualTransformation = if (form.isCardNumberVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
-                isError = form.cardNumberValidation is CardNumberValidationResult.Invalid,
+                isError = cardNumberFeedback.isError,
                 supportingText =
-                    when (val validation = form.cardNumberValidation) {
-                        is CardNumberValidationResult.Invalid -> {
-                            { Text(validation.reason.label()) }
+                    when (val feedback = cardNumberFeedback) {
+                        BankCardFieldFeedbackUiState.Hidden -> {
+                            null
                         }
 
-                        CardNumberValidationResult.Empty,
-                        is CardNumberValidationResult.Valid,
-                        -> {
-                            null
+                        is BankCardFieldFeedbackUiState.Message -> {
+                            { Text(stringResource(feedback.messageRes)) }
                         }
                     },
                 trailingIcon = {
@@ -163,12 +162,16 @@ fun AddBankCardEditorScreen(
                 value = form.cardCvv,
                 onValueChange = { onAction(AddBankCardAction.CvvChanged(it)) },
                 label = stringResource(R.string.card_cvv),
-                isError = !form.isCvvValid,
+                isError = cvvFeedback.isError,
                 supportingText =
-                    if (!form.isCvvValid) {
-                        { Text(stringResource(R.string.vault_card_cvv_invalid)) }
-                    } else {
-                        null
+                    when (val feedback = cvvFeedback) {
+                        BankCardFieldFeedbackUiState.Hidden -> {
+                            null
+                        }
+
+                        is BankCardFieldFeedbackUiState.Message -> {
+                            { Text(stringResource(feedback.messageRes)) }
+                        }
                     },
                 visualTransformation = if (form.isCvvVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardType = KeyboardType.Password,
@@ -269,13 +272,3 @@ private fun CardTypeDropdown(
 
 @Composable
 private fun CardType.label(): String = stringResource(labelRes)
-
-@Composable
-private fun CardNumberInvalidReason.label(): String =
-    stringResource(
-        when (this) {
-            CardNumberInvalidReason.InvalidLength -> R.string.card_number_invalid_length
-            CardNumberInvalidReason.InvalidCharacters -> R.string.card_number_invalid_characters
-            CardNumberInvalidReason.ChecksumFailed -> R.string.card_number_checksum_failed
-        },
-    )

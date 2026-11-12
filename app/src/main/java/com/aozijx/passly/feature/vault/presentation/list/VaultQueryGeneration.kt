@@ -18,7 +18,9 @@ import kotlinx.coroutines.flow.map
 internal sealed interface VaultQueryGeneration {
     data object Unavailable : VaultQueryGeneration
 
-    data class Available(val query: EntryListQuery) : VaultQueryGeneration
+    data class Available(
+        val query: EntryListQuery,
+    ) : VaultQueryGeneration
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,6 +47,7 @@ internal fun buildRecoverableVaultQueryGenerations(
         val settings =
             when (read) {
                 is RecoverableReadState.Ready -> read.value
+
                 RecoverableReadState.Loading,
                 is RecoverableReadState.Failed,
                 -> return@combine VaultQueryGeneration.Unavailable

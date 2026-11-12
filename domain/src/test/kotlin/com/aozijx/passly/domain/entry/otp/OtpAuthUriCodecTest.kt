@@ -4,6 +4,10 @@ import com.aozijx.passly.domain.entry.model.otp.OtpConfig
 import com.aozijx.passly.domain.entry.model.otp.OtpHashAlgorithm
 import com.aozijx.passly.domain.entry.model.otp.OtpSecretEncoding
 import com.aozijx.passly.domain.entry.model.otp.OtpType
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerationMaterial
+import com.aozijx.passly.domain.entry.otp.generation.OtpGenerator
+import com.aozijx.passly.domain.entry.otp.generation.OtpResult
+import com.aozijx.passly.domain.entry.otp.generation.toGenerationConfig
 import java.util.Base64
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -79,7 +83,8 @@ class OtpAuthUriCodecTest {
 
         assertEquals(OtpSecretEncoding.BASE32, restored.encoding)
         assertEquals(SECRET, restored.secret)
-        assertEquals(OtpResult.Success("94287082"), OtpGenerator.generate(restored, timestamp = 59L))
+        val material = OtpGenerationMaterial(restored.toGenerationConfig(), SECRET.toByteArray())
+        assertEquals(OtpResult.Success("94287082"), material.use { OtpGenerator.generate(it, timestamp = 59L) })
     }
 
     @Test

@@ -22,8 +22,9 @@ import androidx.compose.ui.unit.dp
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshFingerprintUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshPassphraseUiState
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshPrivateKeyUiState
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailSshUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.model.ProtectedDetailFieldUiState
 
 @Composable
 fun SshKeySection(
@@ -48,53 +49,72 @@ fun SshKeySection(
             isRevealed = true,
             onCopy = onFingerprintCopy,
         )
-        if (model.isEditingPassphrase) {
-            OutlinedTextField(
-                value = model.editedPassphrase,
-                onValueChange = onPassphraseChanged,
-                label = { Text(stringResource(R.string.field_edit_action, stringResource(R.string.passphrase))) },
-                modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
-                trailingIcon = {
-                    IconButton(onClick = { onPassphraseSaved(model.editedPassphrase) }) {
-                        Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
-                    }
-                },
-                singleLine = true,
-            )
-        } else {
-            val passphraseValue =
-                when (val passphrase = model.passphrase) {
-                    ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> ""
-                    is ProtectedDetailFieldUiState.Revealed -> passphrase.value
-                }
-            DetailValueCard(
-                title = stringResource(R.string.passphrase),
-                value = passphraseValue,
-                isRevealed = model.passphrase is ProtectedDetailFieldUiState.Revealed,
-                onCopy = onPassphraseCopy,
-                onLongPress = onPassphraseEditStarted,
-                onRevealClick = onPassphraseReveal,
-            )
-        }
-        val privateKeyPreview =
-            when (val privateKey = model.privateKey) {
-                ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> ""
-                is ProtectedDetailFieldUiState.Revealed -> privateKey.value.take(60).plus("...")
+        when (val passphrase = model.passphrase) {
+            is DetailSshPassphraseUiState.Editing -> {
+                OutlinedTextField(
+                    value = passphrase.draft,
+                    onValueChange = onPassphraseChanged,
+                    label = { Text(stringResource(R.string.field_edit_action, stringResource(R.string.passphrase))) },
+                    modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
+                    trailingIcon = {
+                        IconButton(onClick = { onPassphraseSaved(passphrase.draft) }) {
+                            Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    singleLine = true,
+                )
             }
-        DetailValueCard(
-            title = stringResource(R.string.ssh_private_key),
-            value = privateKeyPreview,
-            isRevealed = model.privateKey is ProtectedDetailFieldUiState.Revealed,
-            onActivate = onPrivateKeyClick,
-            onCopy = null,
-        )
+
+            DetailSshPassphraseUiState.Absent,
+            DetailSshPassphraseUiState.Hidden,
+            -> {
+                DetailValueCard(
+                    title = stringResource(R.string.passphrase),
+                    value = "",
+                    isRevealed = false,
+                    onCopy = onPassphraseCopy,
+                    onRevealClick = onPassphraseReveal,
+                )
+            }
+
+            is DetailSshPassphraseUiState.Revealed -> {
+                DetailValueCard(
+                    title = stringResource(R.string.passphrase),
+                    value = passphrase.value,
+                    isRevealed = true,
+                    onCopy = onPassphraseCopy,
+                    onLongPress = onPassphraseEditStarted,
+                    onRevealClick = onPassphraseReveal,
+                )
+            }
+        }
         when (val privateKey = model.privateKey) {
-            ProtectedDetailFieldUiState.Absent, ProtectedDetailFieldUiState.Hidden -> Unit
-            is ProtectedDetailFieldUiState.Revealed -> {
-                Card(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.ssh_private_key_full), color = MaterialTheme.colorScheme.primary)
-                        Text(privateKey.value, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+            DetailSshPrivateKeyUiState.Absent,
+            DetailSshPrivateKeyUiState.Hidden,
+            -> {
+                DetailValueCard(
+                    title = stringResource(R.string.ssh_private_key),
+                    value = "",
+                    isRevealed = false,
+                    onActivate = onPrivateKeyClick,
+                    onCopy = null,
+                )
+            }
+
+            is DetailSshPrivateKeyUiState.Revealed -> {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    DetailValueCard(
+                        title = stringResource(R.string.ssh_private_key),
+                        value = privateKey.preview,
+                        isRevealed = true,
+                        onActivate = onPrivateKeyClick,
+                        onCopy = null,
+                    )
+                    Card(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text(stringResource(R.string.ssh_private_key_full), color = MaterialTheme.colorScheme.primary)
+                            Text(privateKey.value, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                        }
                     }
                 }
             }

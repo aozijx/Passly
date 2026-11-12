@@ -3,9 +3,9 @@ package com.aozijx.passly.feature.vault.history
 import com.aozijx.passly.core.error.model.Conflict
 import com.aozijx.passly.core.error.model.NotFound
 import com.aozijx.passly.core.error.result.AppResult
+import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthenticationFailure
 import com.aozijx.passly.domain.access.model.AuthenticationFailureCode
-import com.aozijx.passly.domain.access.model.AuthInput
 import com.aozijx.passly.domain.access.model.AuthorizationPermit
 import com.aozijx.passly.domain.access.model.AuthorizationResult
 import com.aozijx.passly.domain.access.model.AuthorizationScope
@@ -31,14 +31,14 @@ import com.aozijx.passly.domain.entry.model.sensitive.RevealedRevisionSensitiveF
 import com.aozijx.passly.domain.entry.model.sensitive.RevealedSensitiveField
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldKey
 import com.aozijx.passly.domain.entry.model.sensitive.SensitiveFieldPresence
-import com.aozijx.passly.domain.sensitive.OwnedChars
 import com.aozijx.passly.domain.entry.port.EntryQueryRepository
 import com.aozijx.passly.domain.entry.port.EntryRevisionRepository
 import com.aozijx.passly.domain.entry.port.SensitiveFieldRepository
+import com.aozijx.passly.domain.sensitive.OwnedChars
+import java.util.concurrent.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
-import java.util.concurrent.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -428,12 +428,11 @@ class EntryRevisionUseCasesTest {
     private fun revisionMetadata(
         id: String,
         version: Int,
-    ) =
-        EntryRevisionMetadata(
-            id = EntryRevisionId(id),
-            entryId = EntryId("entry"),
-            version = EntryVersion(version),
-            createdAtMs = version.toLong(),
-            change = RevisionChange.VALUE_CHANGED,
-        )
+    ) = EntryRevisionMetadata(
+        id = EntryRevisionId(id),
+        entryId = EntryId("entry"),
+        version = EntryVersion(version),
+        createdAtMs = version.toLong(),
+        change = RevisionChange.VALUE_CHANGED,
+    )
 }

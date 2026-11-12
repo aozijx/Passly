@@ -41,8 +41,7 @@ internal class DetailPresentationLoader
 
         suspend fun present(entry: Entry): DetailEntryPresentation = present(sessionQuery.snapshot(entry))
 
-        suspend fun reloadRelations(entryId: EntryId): EntryRelationsSnapshot? =
-            sessionQuery.reloadRelations(entryId)
+        suspend fun reloadRelations(entryId: EntryId): EntryRelationsSnapshot? = sessionQuery.reloadRelations(entryId)
 
         suspend fun launchableApps(): List<DetailInstalledApp> =
             installedAppDirectory.launchableApps().map { metadata ->
@@ -68,4 +67,4 @@ internal class DetailPresentationLoader
                     packageName = packageName,
                 )
             }
-}
+    }

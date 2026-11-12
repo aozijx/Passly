@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.aozijx.passly.R
 import com.aozijx.passly.core.ui.autofill.excludeFromAutofill
 import com.aozijx.passly.feature.vault.presentation.detail.model.DetailHeaderUiModel
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailTitleUiState
 import com.aozijx.passly.presentation.shared.components.topbar.passlyTopAppBarColors
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -47,41 +48,43 @@ fun DetailTopBar(
 
     LargeFlexibleTopAppBar(
         title = {
-            if (model.isEditingTitle) {
-                OutlinedTextField(
-                    value = model.editedTitle,
-                    onValueChange = onTitleChanged,
-                    label = null,
-                    modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
-                    textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    singleLine = true,
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            onTitleSaved()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = stringResource(R.string.save),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    },
-                )
-            } else {
-                Text(
-                    text = model.title,
-                    fontWeight = FontWeight.Bold,
-                    modifier =
-                        Modifier.combinedClickable(
-                            interactionSource = titleInteractionSource,
-                            indication = null,
-                            onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onTitleEditStarted()
-                            },
-                            onClick = {},
-                        ),
-                )
+            when (val title = model.title) {
+                is DetailTitleUiState.Editing -> {
+                    OutlinedTextField(
+                        value = title.draft,
+                        onValueChange = onTitleChanged,
+                        label = null,
+                        modifier = Modifier.fillMaxWidth().excludeFromAutofill(),
+                        textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = onTitleSaved) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = stringResource(R.string.save),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        },
+                    )
+                }
+
+                is DetailTitleUiState.Display -> {
+                    Text(
+                        text = title.text,
+                        fontWeight = FontWeight.Bold,
+                        modifier =
+                            Modifier.combinedClickable(
+                                interactionSource = titleInteractionSource,
+                                indication = null,
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onTitleEditStarted()
+                                },
+                                onClick = {},
+                            ),
+                    )
+                }
             }
         },
         navigationIcon = {

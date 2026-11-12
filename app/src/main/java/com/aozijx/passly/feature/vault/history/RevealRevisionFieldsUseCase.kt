@@ -42,13 +42,19 @@ internal class RevealRevisionFieldsUseCase
                             }
                         }
                 ) {
-                    is AuthorizationResult.Allowed ->
+                    is AuthorizationResult.Allowed -> {
                         result.value.toRevisionOperationResult().also { operationResult ->
                             transferred = operationResult is RevisionOperationResult.Succeeded
                         }
+                    }
 
-                    is AuthorizationResult.Denied -> RevisionOperationResult.AuthenticationDenied(result.failure)
-                    AuthorizationResult.Cancelled -> RevisionOperationResult.Cancelled
+                    is AuthorizationResult.Denied -> {
+                        RevisionOperationResult.AuthenticationDenied(result.failure)
+                    }
+
+                    AuthorizationResult.Cancelled -> {
+                        RevisionOperationResult.Cancelled
+                    }
                 }
             } finally {
                 if (!transferred) ownedValues.forEach { it.value.wipe() }

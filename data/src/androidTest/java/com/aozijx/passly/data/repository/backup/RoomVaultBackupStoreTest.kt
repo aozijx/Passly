@@ -3,11 +3,9 @@ package com.aozijx.passly.data.repository.backup
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.core.crypto.AesGcmCryptoEngine
+import com.aozijx.passly.core.crypto.AttachmentContentProtector
 import com.aozijx.passly.core.crypto.FieldEncryptor
-import com.aozijx.passly.data.testing.TestFieldKeyProvider
-import com.aozijx.passly.data.testing.TestSensitiveFieldCryptor
 import com.aozijx.passly.core.observability.ErrorCode
 import com.aozijx.passly.core.observability.EventKey
 import com.aozijx.passly.core.observability.LogFields
@@ -32,6 +30,8 @@ import com.aozijx.passly.data.local.database.session.DatabaseSessionEventLogger
 import com.aozijx.passly.data.repository.attachment.AttachmentResourceGarbageCollector
 import com.aozijx.passly.data.repository.entry.SecretFieldStore
 import com.aozijx.passly.data.testing.IsolatedTestContext
+import com.aozijx.passly.data.testing.TestFieldKeyProvider
+import com.aozijx.passly.data.testing.TestSensitiveFieldCryptor
 import com.aozijx.passly.domain.access.model.AuthenticationState
 import com.aozijx.passly.domain.access.port.SecureSessionAccessState
 import com.aozijx.passly.domain.backup.model.VaultBackupReadOptions
@@ -40,9 +40,9 @@ import com.aozijx.passly.domain.backup.model.VaultBackupResourceKind
 import com.aozijx.passly.domain.backup.model.VaultBackupRestoreMode
 import com.aozijx.passly.domain.backup.model.VaultBackupSnapshot
 import com.aozijx.passly.domain.entry.model.Entry
+import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryId
 import com.aozijx.passly.domain.entry.model.EntryIdentity
-import com.aozijx.passly.domain.entry.model.EntryIcon
 import com.aozijx.passly.domain.entry.model.EntryProfile
 import com.aozijx.passly.domain.entry.model.EntryTimestamps
 import com.aozijx.passly.domain.entry.model.EntryType
@@ -54,8 +54,8 @@ import javax.inject.Provider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -148,6 +148,7 @@ class RoomVaultBackupStoreTest {
                 store.restore(
                     snapshot(entries = listOf(account("existing", "Replace"))),
                     VaultBackupRestoreMode.APPEND,
+                    onCommitted = {},
                 )
 
             assertEquals(0, result.importedEntryCount)
@@ -159,13 +160,20 @@ class RoomVaultBackupStoreTest {
     fun overwriteReplacesEntriesWithinTheDatabaseSession() =
         runBlocking {
             insertAccount("old", "Old")
+            var commitNotifications = 0
 
             val result =
                 store.restore(
                     snapshot(entries = listOf(account("new", "New"))),
                     VaultBackupRestoreMode.OVERWRITE,
+                    onCommitted = {
+                        commitNotifications++
+                        assertFalse(session.queryForMaintenance { entryQueryDao().exists("old") })
+                        assertEquals("New", session.queryForMaintenance { entryQueryDao().getById("new")?.title })
+                    },
                 )
 
+            assertEquals(1, commitNotifications)
             assertEquals(1, result.importedEntryCount)
             assertEquals(0, result.existingEntryCount)
             assertFalse(session.queryForMaintenance { entryQueryDao().exists("old") })
@@ -190,19 +198,22 @@ class RoomVaultBackupStoreTest {
             store.restore(
                 snapshot(entries = listOf(account("entry-1", "Entry")), resources = listOf(source)),
                 VaultBackupRestoreMode.OVERWRITE,
+                onCommitted = {},
             )
 
             val restored =
-                store.read(
-                    VaultBackupReadOptions(
-                        includeDeleted = true,
-                        includedEntryTypes = setOf(EntryType.ACCOUNT),
-                        includeIcons = false,
-                        includeAttachments = true,
-                        maxResourceBytes = 1024L,
-                        maxTotalResourceBytes = 4096L,
-                    ),
-                ).resources.single()
+                store
+                    .read(
+                        VaultBackupReadOptions(
+                            includeDeleted = true,
+                            includedEntryTypes = setOf(EntryType.ACCOUNT),
+                            includeIcons = false,
+                            includeAttachments = true,
+                            maxResourceBytes = 1024L,
+                            maxTotalResourceBytes = 4096L,
+                        ),
+                    ).resources
+                    .single()
             assertEquals(source.id, restored.id)
             assertEquals(source.entryId, restored.entryId)
             assertEquals(source.kind, restored.kind)
@@ -218,9 +229,10 @@ class RoomVaultBackupStoreTest {
             val content = byteArrayOf(0x52, 0x49, 0x46, 0x46, 1)
             val entry =
                 account("entry-icon", "Icon").copy(
-                    profile = account("entry-icon", "Icon").profile.copy(
-                        icon = EntryIcon(customReference = "old/private/path.webp"),
-                    ),
+                    profile =
+                        account("entry-icon", "Icon").profile.copy(
+                            icon = EntryIcon(customReference = "old/private/path.webp"),
+                        ),
                 )
             val icon =
                 VaultBackupResource(
@@ -233,22 +245,28 @@ class RoomVaultBackupStoreTest {
                     content = content,
                 )
 
-            store.restore(snapshot(entries = listOf(entry), resources = listOf(icon)), VaultBackupRestoreMode.OVERWRITE)
+            store.restore(
+                snapshot(entries = listOf(entry), resources = listOf(icon)),
+                VaultBackupRestoreMode.OVERWRITE,
+                onCommitted = {},
+            )
 
             val restoredPath = requireNotNull(session.queryForMaintenance { entryQueryDao().getById(entry.id.value)?.iconCustomReference })
             assertTrue(File(restoredPath).isFile)
             assertTrue(restoredPath.contains("favicon_restored_"))
             val restored =
-                store.read(
-                    VaultBackupReadOptions(
-                        includeDeleted = true,
-                        includedEntryTypes = setOf(EntryType.ACCOUNT),
-                        includeIcons = true,
-                        includeAttachments = false,
-                        maxResourceBytes = 1024L,
-                        maxTotalResourceBytes = 4096L,
-                    ),
-                ).resources.single()
+                store
+                    .read(
+                        VaultBackupReadOptions(
+                            includeDeleted = true,
+                            includedEntryTypes = setOf(EntryType.ACCOUNT),
+                            includeIcons = true,
+                            includeAttachments = false,
+                            maxResourceBytes = 1024L,
+                            maxTotalResourceBytes = 4096L,
+                        ),
+                    ).resources
+                    .single()
             assertEquals(VaultBackupResourceKind.ICON, restored.kind)
             assertArrayEquals(content, restored.content)
         }
@@ -285,6 +303,7 @@ class RoomVaultBackupStoreTest {
                     store.restore(
                         snapshot(listOf(entry), listOf(icon, attachment)),
                         VaultBackupRestoreMode.OVERWRITE,
+                        onCommitted = {},
                     )
                     null
                 } catch (error: IllegalStateException) {
@@ -297,7 +316,8 @@ class RoomVaultBackupStoreTest {
             assertTrue(session.queryForMaintenance { entryQueryDao().exists("existing") })
             assertFalse(session.queryForMaintenance { entryQueryDao().exists("entry-rollback") })
             assertTrue(
-                VaultResourcePaths.vaultImagesDir(context)
+                VaultResourcePaths
+                    .vaultImagesDir(context)
                     .listFiles()
                     .orEmpty()
                     .none { it.name.startsWith("favicon_restored_") },
@@ -344,17 +364,16 @@ class RoomVaultBackupStoreTest {
     private fun account(
         id: String,
         title: String,
-    ) =
-        Entry(
-            identity =
-                EntryIdentity(
-                    id = EntryId(id),
-                    type = EntryType.ACCOUNT,
-                    version = EntryVersion.INITIAL,
-                    timestamps = EntryTimestamps(createdAtMs = 1L, updatedAtMs = 2L),
-                ),
-            profile = EntryProfile(title),
-        )
+    ) = Entry(
+        identity =
+            EntryIdentity(
+                id = EntryId(id),
+                type = EntryType.ACCOUNT,
+                version = EntryVersion.INITIAL,
+                timestamps = EntryTimestamps(createdAtMs = 1L, updatedAtMs = 2L),
+            ),
+        profile = EntryProfile(title),
+    )
 
     private class TestSessionAccess : SecureSessionAccessState {
         override val authenticationState = MutableStateFlow<AuthenticationState>(AuthenticationState.Authenticated(1L))
@@ -394,16 +413,64 @@ class RoomVaultBackupStoreTest {
         ) { _, _, _ -> error("Unexpected test port call") } as T
 
     private object NoOpLogger : Logger {
-        override fun debug(event: EventKey, fields: LogFields) = Unit
-        override fun info(event: EventKey, fields: LogFields) = Unit
-        override fun degraded(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, fields: LogFields) = Unit
-        override fun warn(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun error(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override fun fatal(event: EventKey, errorCode: ErrorCode, reason: ReasonCode, throwable: Throwable, fields: LogFields) = Unit
-        override suspend fun <T> withRootTrace(operation: OperationCode, block: suspend TraceScope.() -> T) = TestTraceScope.block()
-        override suspend fun <T> inSpan(operation: OperationCode, block: suspend TraceScope.() -> T) = TestTraceScope.block()
+        override fun debug(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun info(
+            event: EventKey,
+            fields: LogFields,
+        ) = Unit
+
+        override fun degraded(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            fields: LogFields,
+        ) = Unit
+
+        override fun warn(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun error(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override fun fatal(
+            event: EventKey,
+            errorCode: ErrorCode,
+            reason: ReasonCode,
+            throwable: Throwable,
+            fields: LogFields,
+        ) = Unit
+
+        override suspend fun <T> withRootTrace(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ) = TestTraceScope.block()
+
+        override suspend fun <T> inSpan(
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ) = TestTraceScope.block()
+
         override fun captureTraceToken(singleUse: Boolean): TraceToken = error("Unused")
-        override suspend fun <T> resumeTrace(token: TraceToken, operation: OperationCode, block: suspend TraceScope.() -> T): TraceResumeResult<T> = error("Unused")
+
+        override suspend fun <T> resumeTrace(
+            token: TraceToken,
+            operation: OperationCode,
+            block: suspend TraceScope.() -> T,
+        ): TraceResumeResult<T> = error("Unused")
     }
 
     private object TestTraceScope : TraceScope {

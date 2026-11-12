@@ -3,40 +3,41 @@ package com.aozijx.passly.feature.vault.presentation.detail
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.aozijx.passly.presentation.shared.components.VaultIcons
-import java.net.URI
-import java.net.URISyntaxException
 
 sealed interface DetailFaviconSource {
     data object InferredDefault : DetailFaviconSource
 
+    sealed interface ColorSelection {
+        data object Automatic : ColorSelection
+
+        data class Token(
+            val value: String,
+        ) : ColorSelection
+    }
+
     data class BuiltIn(
         val key: String,
-        val colorToken: String?,
+        val color: ColorSelection = ColorSelection.Automatic,
     ) : DetailFaviconSource
 
     data class PrivateImage(
         val localPath: String,
     ) : DetailFaviconSource
 }
+
 enum class DetailFaviconTab {
     ICON_LIBRARY,
     CUSTOM_IMAGE,
 }
 
-enum class DetailFaviconProcessingError {
-    INVALID_URL,
-    URL_NOT_ALLOWED,
-    DOWNLOAD_FAILED,
-    NOT_IMAGE,
-    IMAGE_TOO_LARGE,
-    INVALID_IMAGE,
-    SAVE_FAILED,
-}
-
 sealed interface DetailFaviconCropInput {
     data object None : DetailFaviconCropInput
 
-    data class Ready(val path: String) : DetailFaviconCropInput
+    data class Ready(
+        val path: String,
+    ) : DetailFaviconCropInput {
+        val isGif: Boolean get() = path.endsWith(".gif", ignoreCase = true)
+    }
 }
 
 sealed interface DetailFaviconEditorState {
@@ -58,8 +59,8 @@ sealed interface DetailFaviconEditorState {
                 VaultIcons.search(searchQuery).map { icon ->
                     FaviconIconUiModel(icon.key, icon.labelRes, icon.imageVector)
                 }
-        val canDownloadImageUrl: Boolean
-            get() = imageUrl.canDownloadImageUrl()
+        val canSubmitImageUrl: Boolean
+            get() = imageUrl.isNotBlank()
     }
 }
 
@@ -69,22 +70,12 @@ data class FaviconIconUiModel(
     val imageVector: ImageVector,
 )
 
-private fun String.canDownloadImageUrl(): Boolean {
-    val uri =
-        try {
-            URI(trim())
-        } catch (_: URISyntaxException) {
-            return false
-        }
-    return uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrBlank()
-}
-
 sealed interface DetailFaviconWorkState {
     data object Idle : DetailFaviconWorkState
 
     data object Processing : DetailFaviconWorkState
 
     data class Failed(
-        val error: DetailFaviconProcessingError,
+        @get:StringRes val messageRes: Int,
     ) : DetailFaviconWorkState
 }

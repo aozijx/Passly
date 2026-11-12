@@ -1,15 +1,15 @@
 package com.aozijx.passly.feature.vault.presentation.detail.ui
 
 import androidx.compose.runtime.Composable
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconCropInput
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
+import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
 import com.aozijx.passly.feature.vault.presentation.detail.DetailUiAction
+import com.aozijx.passly.feature.vault.presentation.detail.model.DetailEditorOverlaysUiModel
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconCropScreen
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.FaviconEditorSheet
 import com.aozijx.passly.feature.vault.presentation.detail.ui.component.TagEditorSheet
-import com.aozijx.passly.feature.vault.presentation.detail.model.DetailEditorOverlaysUiModel
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconEditorState
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconCropInput
-import com.aozijx.passly.feature.vault.presentation.detail.DetailTagEditorState
-import com.aozijx.passly.feature.vault.presentation.detail.DetailFaviconWorkState
 
 @Composable
 fun DetailEditorOverlays(
@@ -48,7 +48,9 @@ fun DetailEditorOverlays(
                 isSaving = model.savingIcon,
                 onTabSelected = { onAction(DetailUiAction.SelectFaviconTab(it)) },
                 onSearchChanged = { onAction(DetailUiAction.UpdateFaviconSearch(it)) },
-                onSourceSelected = { onAction(DetailUiAction.SelectFaviconSource(it)) },
+                onDefaultSelected = { onAction(DetailUiAction.SelectDefaultFavicon) },
+                onIconSelected = { onAction(DetailUiAction.SelectFaviconIcon(it)) },
+                onColorSelected = { onAction(DetailUiAction.SelectFaviconColor(it)) },
                 onUploadRequested = onFaviconUploadRequested,
                 onImageUrlChanged = { onAction(DetailUiAction.UpdateFaviconImageUrl(it)) },
                 onDownloadRequested = { onAction(DetailUiAction.DownloadFaviconImage) },
@@ -58,10 +60,14 @@ fun DetailEditorOverlays(
                 onKeepEditing = { onAction(DetailUiAction.KeepEditingFavicon) },
             )
             when (val input = faviconEditor.cropInput) {
-                DetailFaviconCropInput.None -> Unit
+                DetailFaviconCropInput.None -> {
+                    Unit
+                }
+
                 is DetailFaviconCropInput.Ready -> {
                     FaviconCropScreen(
                         stagedPath = input.path,
+                        isGif = input.isGif,
                         processing = faviconEditor.work == DetailFaviconWorkState.Processing,
                         onCrop = { zoom, x, y ->
                             onAction(DetailUiAction.CropFaviconImage(zoom, x, y))

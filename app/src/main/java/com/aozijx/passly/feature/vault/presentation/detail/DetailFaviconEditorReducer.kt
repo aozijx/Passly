@@ -86,7 +86,7 @@ internal object DetailFaviconEditorReducer {
 
             is DetailMutation.FaviconProcessingFailed -> {
                 state.copy(
-                    work = DetailFaviconWorkState.Failed(mutation.error),
+                    work = DetailFaviconWorkState.Failed(mutation.messageRes),
                 )
             }
 

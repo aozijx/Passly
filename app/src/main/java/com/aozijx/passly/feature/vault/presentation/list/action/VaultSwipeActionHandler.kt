@@ -3,6 +3,7 @@ package com.aozijx.passly.feature.vault.presentation.list.action
 import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.FieldKey
 import com.aozijx.passly.domain.settings.model.SwipeActionType
+import com.aozijx.passly.feature.vault.otp.presentation.OtpPresentation
 import com.aozijx.passly.feature.vault.presentation.list.model.VaultListItemUiModel
 
 sealed interface VaultCopyRequest {
@@ -21,7 +22,7 @@ fun resolveCopyRequest(
     item: VaultListItemUiModel,
     fieldKey: FieldKey,
 ): VaultCopyRequest =
-    if (fieldKey == FieldKey.PASSWORD && item.otpKind.isApplicable) {
+    if (fieldKey == FieldKey.PASSWORD && item.otpPresentation is OtpPresentation.Applicable) {
         VaultCopyRequest.Otp(item.id)
     } else {
         VaultCopyRequest.Field(

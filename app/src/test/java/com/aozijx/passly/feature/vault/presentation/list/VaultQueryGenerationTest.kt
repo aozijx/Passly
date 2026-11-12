@@ -2,18 +2,19 @@ package com.aozijx.passly.feature.vault.presentation.list
 
 import com.aozijx.passly.app.settings.ReadFailure
 import com.aozijx.passly.app.settings.RecoverableReadState
-import com.aozijx.passly.domain.entry.model.EntryType
 import com.aozijx.passly.domain.entry.model.query.EntryHierarchyDisplayMode
 import com.aozijx.passly.domain.entry.model.query.EntryListQuery
 import com.aozijx.passly.domain.entry.model.query.EntrySort
 import com.aozijx.passly.domain.entry.model.query.EntrySortField
 import com.aozijx.passly.domain.entry.model.query.SortDirection
 import com.aozijx.passly.domain.settings.model.LibraryViewSettings
+import com.aozijx.passly.feature.vault.model.AddType
+import com.aozijx.passly.feature.vault.model.entryTypes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -75,27 +76,6 @@ class VaultQueryGenerationTest {
             )
         }
 
-    @Test
-    fun `entry list query applies hierarchy only to all entries`() {
-        val allQuery =
-            EntryListQuery(
-                searchText = "Mail",
-                category = "Work",
-                sort = createdAtDescendingSort,
-                entryTypes = emptySet(),
-                hierarchyMode = EntryHierarchyDisplayMode.EXPANDED,
-            )
-
-        val passwordQuery = allQuery.copy(entryTypes = setOf(EntryType.LOGIN))
-
-        assertEquals("Mail", allQuery.searchText)
-        assertEquals("Work", allQuery.category)
-        assertEquals(emptySet<EntryType>(), allQuery.entryTypes)
-        assertEquals(EntryHierarchyDisplayMode.EXPANDED, allQuery.hierarchyMode)
-        assertEquals(setOf(EntryType.LOGIN), passwordQuery.entryTypes)
-        assertNull(passwordQuery.hierarchyMode)
-    }
-
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `equal query states do not restart the generation`() =
@@ -130,58 +110,36 @@ class VaultQueryGenerationTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `hierarchy changes restart unfiltered query but not type filtered query`() =
+    fun `hierarchy applies only to all entries through query generation`() =
         runTest {
-            val initial =
-                EntryListQuery(
-                    searchText = "",
-                    category = null,
-                    sort = createdAtDescendingSort,
-                    entryTypes = emptySet(),
-                    hierarchyMode = EntryHierarchyDisplayMode.COLLAPSED,
+            val uiState = MutableStateFlow(VaultUiState())
+            val settings =
+                MutableStateFlow<RecoverableReadState<LibraryViewSettings>>(
+                    readyLibrarySettingsState(EntryHierarchyDisplayMode.COLLAPSED),
                 )
-            val states = MutableSharedFlow<VaultQueryGeneration>(replay = 1)
-            states.emit(VaultQueryGeneration.Available(initial))
-            val allLoads = mutableListOf<EntryHierarchyDisplayMode?>()
-            val passwordLoads = mutableListOf<EntryHierarchyDisplayMode?>()
+            val observed = mutableListOf<EntryListQuery>()
 
-            val allCollection =
-                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    states
-                        .switchRecoverableQueryGenerations(unavailable = flowOf(Unit)) { query ->
-                            allLoads += query.hierarchyMode
-                            flowOf(Unit)
-                        }.collect {}
-                }
-            val passwordCollection =
-                backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-                    states
-                        .map { generation ->
-                            when (generation) {
-                                VaultQueryGeneration.Unavailable -> generation
-                                is VaultQueryGeneration.Available ->
-                                    generation.copy(query = generation.query.copy(entryTypes = setOf(EntryType.LOGIN)))
-                            }
-                        }
-                        .switchRecoverableQueryGenerations(unavailable = flowOf(Unit)) { query ->
-                            passwordLoads += query.hierarchyMode
-                            flowOf(Unit)
-                        }.collect {}
-                }
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                buildRecoverableVaultQueryGenerations(uiState, settings).availableQueries().collect(observed::add)
+            }
             runCurrent()
-
-            states.emit(
-                VaultQueryGeneration.Available(initial.copy(hierarchyMode = EntryHierarchyDisplayMode.EXPANDED)),
-            )
+            advanceTimeBy(250L)
             runCurrent()
+            assertEquals(EntryHierarchyDisplayMode.COLLAPSED, observed.single().hierarchyMode)
 
-            assertEquals(
-                listOf(EntryHierarchyDisplayMode.COLLAPSED, EntryHierarchyDisplayMode.EXPANDED),
-                allLoads,
-            )
-            assertEquals(listOf(null), passwordLoads)
-            allCollection.cancel()
-            passwordCollection.cancel()
+            uiState.value = uiState.value.copy(selectedFilters = setOf(AddType.PASSWORD))
+            runCurrent()
+            assertEquals(AddType.PASSWORD.entryTypes, observed.last().entryTypes)
+            assertNull(observed.last().hierarchyMode)
+
+            val filteredQueryCount = observed.size
+            settings.value = readyLibrarySettingsState(EntryHierarchyDisplayMode.EXPANDED)
+            runCurrent()
+            assertEquals(filteredQueryCount, observed.size)
+
+            uiState.value = uiState.value.copy(selectedFilters = emptySet())
+            runCurrent()
+            assertEquals(EntryHierarchyDisplayMode.EXPANDED, observed.last().hierarchyMode)
         }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -241,7 +199,11 @@ class VaultQueryGenerationTest {
             states.value = states.value.copy(showTotpCode = !states.value.showTotpCode)
             runCurrent()
             advanceTimeBy(100L)
-            states.value = states.value.copy(categories = VaultCategoriesState.Ready(listOf("Work")), categorySelection = VaultCategorySelection.Selected(" Work "))
+            states.value =
+                states.value.copy(
+                    categories = VaultCategoriesState.Ready(listOf("Work")),
+                    categorySelection = VaultCategorySelection.Selected(" Work "),
+                )
             runCurrent()
             advanceTimeBy(50L)
             runCurrent()
@@ -266,7 +228,8 @@ class VaultQueryGenerationTest {
             states.value = states.value.copy(search = VaultSearchInput.Open("vault"))
             runCurrent()
             advanceTimeBy(100L)
-            states.value = states.value.copy(search = VaultSearchInput.Open(" vault "), categorySelection = VaultCategorySelection.Selected("Work"))
+            states.value =
+                states.value.copy(search = VaultSearchInput.Open(" vault "), categorySelection = VaultCategorySelection.Selected("Work"))
             runCurrent()
             assertEquals("mail", observed.last().searchText)
             assertEquals("Work", observed.last().category)
@@ -342,17 +305,15 @@ private fun Flow<VaultQueryGeneration>.availableQueries(): Flow<EntryListQuery> 
         (generation as? VaultQueryGeneration.Available)?.query
     }
 
-private fun readyLibrarySettings(mode: EntryHierarchyDisplayMode) =
-    flowOf(readyLibrarySettingsState(mode))
+private fun readyLibrarySettings(mode: EntryHierarchyDisplayMode) = flowOf(readyLibrarySettingsState(mode))
 
 private fun readyLibrarySettingsState(
     mode: EntryHierarchyDisplayMode,
     sort: EntrySort = createdAtDescendingSort,
-) =
-    RecoverableReadState.Ready(
-        LibraryViewSettings(
-            sort = sort,
-            entryCardPresentations = emptyList(),
-            entryHierarchyDisplayMode = mode,
-        ),
-    )
+) = RecoverableReadState.Ready(
+    LibraryViewSettings(
+        sort = sort,
+        entryCardPresentations = emptyList(),
+        entryHierarchyDisplayMode = mode,
+    ),
+)

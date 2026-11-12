@@ -33,35 +33,44 @@ internal class DetailPasswordRelationsWorkflow(
     private val publish: (DetailMutation) -> Unit,
 ) {
     private var candidateJob: Job? = null
+    private var candidateLoadEntryId: EntryId? = null
+    private var candidateLoadGeneration = 0L
+    private var candidateCache: CandidateCache? = null
     private var linkMutationJob: Job? = null
+
+    private data class CandidateCache(
+        val sourceEntryId: EntryId,
+        val candidates: List<RelatedPasswordCandidateUiModel>,
+    )
 
     fun open() {
         if (linkMutationJob?.isActive == true) return
         val entry = currentEntry()?.takeIf { it.type == EntryType.LOGIN && it.deletedAt == null } ?: return
         val token = workSession.current(entry.id) ?: return
         val authentication = access.authenticationState.value
-        candidateJob?.cancel()
+        if (!isCurrent(entry.id, token, authentication)) return
+        candidateCache
+            ?.takeIf { it.sourceEntryId == entry.id }
+            ?.let { cache ->
+                publish(bindingState(RelatedPasswordBindingUiState.Ready(cache.candidates)))
+                return
+            }
+
         publish(bindingState(RelatedPasswordBindingUiState.Loading))
+        if (candidateJob?.isActive == true && candidateLoadEntryId == entry.id) return
+
+        candidateJob?.cancel()
+        val generation = ++candidateLoadGeneration
+        candidateLoadEntryId = entry.id
         candidateJob =
             scope.launch {
                 try {
-                    val candidates = operations.candidates(entry.id)
-                    if (isCurrent(entry.id, token, authentication) &&
-                        currentBindingState() == RelatedPasswordBindingUiState.Loading
-                    ) {
-                        publish(
-                            bindingState(
-                                RelatedPasswordBindingUiState.Ready(
-                                    candidates.map {
-                                        RelatedPasswordCandidateUiModel(
-                                            it.id.value,
-                                            it.title,
-                                            it.username,
-                                        )
-                                    },
-                                ),
-                            ),
-                        )
+                    val candidates = operations.candidates(entry.id).map { it.toCandidateUiModel() }
+                    if (isCurrent(entry.id, token, authentication)) {
+                        candidateCache = CandidateCache(entry.id, candidates)
+                        if (currentBindingState() == RelatedPasswordBindingUiState.Loading) {
+                            publish(bindingState(RelatedPasswordBindingUiState.Ready(candidates)))
+                        }
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
@@ -71,12 +80,16 @@ internal class DetailPasswordRelationsWorkflow(
                     ) {
                         publish(bindingState(RelatedPasswordBindingUiState.LoadFailed))
                     }
+                } finally {
+                    if (candidateLoadGeneration == generation) {
+                        candidateJob = null
+                        candidateLoadEntryId = null
+                    }
                 }
             }
     }
 
     fun dismiss() {
-        if (currentBindingState() == RelatedPasswordBindingUiState.Loading) candidateJob?.cancel()
         publish(bindingState(RelatedPasswordBindingUiState.Closed))
     }
 
@@ -91,7 +104,7 @@ internal class DetailPasswordRelationsWorkflow(
         val token = workSession.current(entry.id) ?: return
         val authentication = access.authenticationState.value
         if (linkMutationJob?.isActive == true) return
-        candidateJob?.cancel()
+        cancelCandidateLoad()
         publish(bindingState(picker.copy(operation = RelatedPasswordBindingOperationState.Saving(targetEntryId.value))))
         linkMutationJob =
             scope.launch {
@@ -104,6 +117,7 @@ internal class DetailPasswordRelationsWorkflow(
                         }
                         return@launch
                     }
+                    removeBoundCandidate(entry.id, targetEntryId)
                     val relations = reloadRelations(entry.id) ?: return@launch
                     if (!isCurrent(entry.id, token, authentication)) return@launch
                     publish(DetailMutation.RelationsChanged(entry.id, relations))
@@ -130,41 +144,53 @@ internal class DetailPasswordRelationsWorkflow(
         if (workSession.current(entry.id) == null || !access.hasFullSecureSessionAccess()) return
         if (linkMutationJob?.isActive == true) return
         val related = currentRelatedPasswords().firstOrNull { it.linkId == linkId && it.targetEntryId == targetEntryId } ?: return
-        if (currentUnlinkState() is RelatedPasswordUnlinkUiState.Removing) return
+        val unlink = currentUnlinkState()
+        if (unlink is RelatedPasswordUnlinkUiState.Open && unlink.phase == RelatedPasswordUnlinkPhase.Removing) return
         publish(
             unlinkState(
-                RelatedPasswordUnlinkUiState.AwaitingConfirmation(
+                RelatedPasswordUnlinkUiState.Open(
                     target =
                         RelatedPasswordUnlinkTargetUiModel(
                             targetEntryId = related.targetEntryId.value,
                             linkId = related.linkId.value,
                             targetTitle = related.title,
                         ),
+                    phase = RelatedPasswordUnlinkPhase.AwaitingConfirmation,
                 ),
             ),
         )
     }
 
     fun dismissUnlink() {
-        when (currentUnlinkState()) {
-            is RelatedPasswordUnlinkUiState.AwaitingConfirmation,
-            is RelatedPasswordUnlinkUiState.Failed,
-            -> publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
+        when (val state = currentUnlinkState()) {
+            is RelatedPasswordUnlinkUiState.Open -> {
+                if (state.phase != RelatedPasswordUnlinkPhase.Removing) {
+                    publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
+                }
+            }
 
-            RelatedPasswordUnlinkUiState.Closed,
-            is RelatedPasswordUnlinkUiState.Removing,
-            -> Unit
+            RelatedPasswordUnlinkUiState.Closed -> {
+                Unit
+            }
         }
     }
 
     fun confirmUnlink() {
         val target =
             when (val state = currentUnlinkState()) {
-                is RelatedPasswordUnlinkUiState.AwaitingConfirmation -> state.target
-                is RelatedPasswordUnlinkUiState.Failed -> state.target
-                RelatedPasswordUnlinkUiState.Closed,
-                is RelatedPasswordUnlinkUiState.Removing,
-                -> return
+                is RelatedPasswordUnlinkUiState.Open -> {
+                    when (state.phase) {
+                        RelatedPasswordUnlinkPhase.AwaitingConfirmation,
+                        RelatedPasswordUnlinkPhase.Failed,
+                        -> state.target
+
+                        RelatedPasswordUnlinkPhase.Removing -> return
+                    }
+                }
+
+                RelatedPasswordUnlinkUiState.Closed -> {
+                    return
+                }
             }
         if (linkMutationJob?.isActive == true) return
         val entry = activeCurrentEntry() ?: return
@@ -173,7 +199,11 @@ internal class DetailPasswordRelationsWorkflow(
         val targetEntryId = EntryId(target.targetEntryId)
         val linkId = EntryLinkId(target.linkId)
 
-        publish(unlinkState(RelatedPasswordUnlinkUiState.Removing(target)))
+        publish(
+            unlinkState(
+                RelatedPasswordUnlinkUiState.Open(target, RelatedPasswordUnlinkPhase.Removing),
+            ),
+        )
         if (currentRelatedPasswords().none { it.linkId == linkId && it.targetEntryId == targetEntryId }) {
             linkMutationJob =
                 scope.launch {
@@ -182,7 +212,7 @@ internal class DetailPasswordRelationsWorkflow(
             return
         }
 
-        candidateJob?.cancel()
+        cancelCandidateLoad()
         linkMutationJob =
             scope.launch {
                 var succeeded = false
@@ -205,21 +235,28 @@ internal class DetailPasswordRelationsWorkflow(
                         return@launch
                     }
                 if (!isCurrent(entry.id, token, authentication)) return@launch
-                if (relations != null) publish(DetailMutation.RelationsChanged(entry.id, relations))
+                if (relations != null) {
+                    candidateCache = null
+                    publish(DetailMutation.RelationsChanged(entry.id, relations))
+                }
 
                 val linkStillPresent =
                     relations?.relatedPasswords?.any { it.linkId == linkId && it.targetEntryId == targetEntryId } == true
                 if (succeeded || !linkStillPresent) {
                     publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
                 } else {
-                    publish(unlinkState(RelatedPasswordUnlinkUiState.Failed(target)))
+                    publish(
+                        unlinkState(
+                            RelatedPasswordUnlinkUiState.Open(target, RelatedPasswordUnlinkPhase.Failed),
+                        ),
+                    )
                 }
             }
     }
 
     fun close() {
-        candidateJob?.cancel()
-        candidateJob = null
+        cancelCandidateLoad()
+        candidateCache = null
         linkMutationJob?.cancel()
         linkMutationJob = null
     }
@@ -233,7 +270,10 @@ internal class DetailPasswordRelationsWorkflow(
         try {
             val relations = reloadRelations(entryId)
             if (!isCurrent(entryId, token, authentication)) return
-            if (relations != null) publish(DetailMutation.RelationsChanged(entryId, relations))
+            if (relations != null) {
+                candidateCache = null
+                publish(DetailMutation.RelationsChanged(entryId, relations))
+            }
             publish(unlinkState(RelatedPasswordUnlinkUiState.Closed))
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -263,13 +303,32 @@ internal class DetailPasswordRelationsWorkflow(
         authentication: AuthenticationState,
         target: RelatedPasswordUnlinkTargetUiModel,
     ) {
-        if (isCurrent(entryId, token, authentication) && currentUnlinkState() == RelatedPasswordUnlinkUiState.Removing(target)) {
-            publish(unlinkState(RelatedPasswordUnlinkUiState.Failed(target)))
+        val removing = RelatedPasswordUnlinkUiState.Open(target, RelatedPasswordUnlinkPhase.Removing)
+        if (isCurrent(entryId, token, authentication) && currentUnlinkState() == removing) {
+            publish(
+                unlinkState(
+                    RelatedPasswordUnlinkUiState.Open(target, RelatedPasswordUnlinkPhase.Failed),
+                ),
+            )
         }
     }
 
-    private fun activeCurrentEntry(): Entry? =
-        currentEntry()?.takeIf { it.type == EntryType.LOGIN && it.deletedAt == null }
+    private fun activeCurrentEntry(): Entry? = currentEntry()?.takeIf { it.type == EntryType.LOGIN && it.deletedAt == null }
+
+    private fun removeBoundCandidate(
+        sourceEntryId: EntryId,
+        targetEntryId: EntryId,
+    ) {
+        val cache = candidateCache?.takeIf { it.sourceEntryId == sourceEntryId } ?: return
+        candidateCache = cache.copy(candidates = cache.candidates.filterNot { it.id == targetEntryId.value })
+    }
+
+    private fun cancelCandidateLoad() {
+        candidateLoadGeneration++
+        candidateLoadEntryId = null
+        candidateJob?.cancel()
+        candidateJob = null
+    }
 
     private fun bindingState(value: RelatedPasswordBindingUiState) = DetailMutation.PasswordBindingStateChanged(value)
 
